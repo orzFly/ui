@@ -788,3 +788,22 @@
     @apply font-sans;
   }
 }
+
+/* revealBlock's landing highlight (T-38): a short flash that fades out. */
+@layer components {
+  .anchor-flash {
+    animation: anchor-flash 2s ease-out both;
+  }
+}
+
+@keyframes anchor-flash {
+  0%,
+  40% {
+    background-color: color-mix(in oklab, var(--primary) 10%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 40%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
