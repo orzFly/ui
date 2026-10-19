@@ -40,10 +40,10 @@ docs, and mockups alike:
 
 Two rules specific to commit messages:
 
-- Tracker references are written `T-<number>` — never `#<number>`. On GitHub a
+- Tracker references are written `UI-<number>` (todou's own cards: `T-<number>`) — never `#<number>`. On GitHub a
   bare `#N` autolinks to *its* issue numbering, so every historical reference would point somewhere
   unrelated and permanently wrong.
-- Never paste a tracker URL. Write `T-<number>`; the reader can resolve it.
+- Never paste a tracker URL. Write `UI-<number>`; the reader can resolve it.
 
 Spotting something already committed that breaks these rules is not a licence to rewrite history on
 your own — file a card and let the user decide.
@@ -82,3 +82,15 @@ scratch directory and on the tracker; it never enters the repository, not even a
 
 Verification artifacts — packed tarballs, screenshots, logs — go in `.tmp/` at the repository root
 (gitignored), never in `/tmp`.
+
+## Tracker
+
+Work is tracked in the todou project `orzui` (cards `UI-<number>`); the git remote has no binding,
+so pass `-p orzui`. Follow `/todou-cli` for taking a card, asking questions and the wrap-up.
+
+- Labels: `kind:` one of `bug`, `feature`, `chore`; `area:` one of `ui`, `ui-codemirror`,
+  `ui-markdown`, `ui-code`, `demo` (the component demo site), `tooling` (workspace, build, CI,
+  publishing), `docs`.
+- Work on your own branch; when done, the card goes to Ready to Ship with a summary comment.
+  Merging, pushing and publishing to npm are the orchestrator's.
+- Code copied from todou names the todou commit it came from in the commit message.
