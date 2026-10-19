@@ -22,6 +22,19 @@
       },
       "suspicious": {
         "noImportCycles": "error"
+      },
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "patterns": [
+              {
+                "group": ["@/**"],
+                "message": "`@/` is only for `shadcn add`; rewrite it to a relative .ts/.tsx import, which the build turns into .js."
+              }
+            ]
+          }
+        }
       }
     }
   },

@@ -1,4 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Only so `shadcn add` can resolve components.json's aliases; source
+    // imports stay relative, and biome rejects any `@/` that slips through.
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
   "include": ["src", "test", "vitest.config.ts"]
 }
