@@ -5,5 +5,7 @@
 /.opencode/
 
 node_modules/
-/dist/
+dist/
 *.tsbuildinfo
+/.tmp/
+coverage/

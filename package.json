@@ -1,17 +1,19 @@
 {
   "name": "orzui",
-  "version": "0.0.0",
   "private": true,
+  "license": "BSD-3-Clause",
+  "repository": "github:orzFly/orzui",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "check": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "fmt": "biome check --write .",
+    "lint": "biome check .",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
   },
   "packageManager": "pnpm@10.28.0",
   "devDependencies": {
-    "@types/node": "^26.6.5",
-    "typescript": "^7.0.2",
-    "vitest": "^5.0.5"
+    "@biomejs/biome": "^2.5.15",
+    "typescript": "^7.0.2"
   }
 }
