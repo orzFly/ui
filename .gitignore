@@ -9,3 +9,5 @@ dist/
 *.tsbuildinfo
 /.tmp/
 coverage/
+.claude/*
+!.claude/skills/
