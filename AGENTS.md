@@ -7,7 +7,8 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
 ## Environment
 
 - Ignore `.envrc`, `.mise.toml`, and similar environment manager configs. Do not run `direnv`, `mise`, or equivalent commands.
-- If `pnpm` commands fail (e.g. toolchain not found), ask the user how to proceed.
+- `pnpm` and `node` come from the pinned devshell in `.nix/`. When they are not on PATH, run them
+  through it: `nix develop ./.nix --command pnpm …`. If that fails too, ask the user how to proceed.
 
 ## Packages
 
