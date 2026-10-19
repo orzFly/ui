@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "overlayscrollbars/overlayscrollbars.css";
+@import "@orz/ui/styles.css";
+
+/* styles.css registers the package's dist/; stories run on its src/. */
+@source "../../../packages/ui/src";
+@source "../src";
