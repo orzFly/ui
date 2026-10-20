@@ -40,7 +40,7 @@ export const THEMES = [
     label: "Solarized Light",
     kind: "light",
     surface: "oklch(0.965 0.036 92)",
-    accent: "oklch(0.72 0.15 85)",
+    accent: "oklch(0.52 0.15 85)",
     syntax: "solarized-light",
   },
   {
