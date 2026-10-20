@@ -20,6 +20,17 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   callback or a prop.
 - A dependency heavy enough to matter to a consumer's bundle (CodeMirror, unified, shiki) gets its own
   package rather than landing in `@orz/ui`.
+- `apps/<dir>` holds workspace apps, such as the Storybook demo site. They are `"private": true` and
+  never published.
+- Every JS entry in a package's `exports` lists the `@orz/source` condition first, pointing at
+  `src/`, then `types` and `default` pointing at `dist/`. Only workspace apps set that condition
+  (Vite `resolve.conditions`, tsconfig `customConditions`), so they run on source with no watch
+  build. Consumers never set it and always get `dist/`.
+- Shipped CSS lives at the package root (`styles.css`, `vendor/`), not in `src/`. `tsc` never
+  touches it, `files` lists it, and `exports` points straight at it.
+- New shadcn primitives arrive with `shadcn add` run inside `packages/ui`. It writes `@/…` imports
+  through `components.json`'s aliases. Rewrite them to relative `.ts`/`.tsx` paths, because the build
+  only rewrites relative imports and biome rejects `@/`.
 
 ## Sanitization
 
