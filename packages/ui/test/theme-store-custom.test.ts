@@ -123,6 +123,19 @@ describe("custom themes in the store", () => {
     expect(themes.getPref().ui?.theme).toBe("default");
   });
 
+  it("keeps a user who never picked on the first base theme", () => {
+    stubDarkQuery(false);
+    const themes = store({
+      themes: undefined,
+      terminalThemes: [ink, ...builtinThemes],
+    });
+    const ui = store({ storageKey: "other" });
+    themes.setCustomThemes([sunrise]);
+    ui.setCustomThemes([sunrise]);
+    expect(themes.getPref().terminal?.theme).toBe("ink");
+    expect(ui.getPref().ui?.theme).toBe("default");
+  });
+
   it("gives a pick stored before its custom theme arrived its theme back", () => {
     stubDarkQuery(false);
     localStorage.setItem(

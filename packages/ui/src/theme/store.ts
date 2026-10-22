@@ -217,6 +217,12 @@ export function createThemeStore({
   let shownTerminal: Shown<TerminalTheme> | null = null;
 
   const slots = () => ({ themes, terminalThemes });
+  // A missing pick falls back to the first base theme: adding a custom theme
+  // must not change what a user who never picked sees.
+  const fallback = () => ({
+    themes: baseThemes,
+    terminalThemes: baseTerminalThemes,
+  });
   const persistsCustom = browser && persistCustomThemes;
   const baseIds = () =>
     new Set(
@@ -258,7 +264,7 @@ export function createThemeStore({
   }
 
   function renormalize() {
-    const next = normalizePref(requested, slots());
+    const next = normalizePref(requested, slots(), fallback());
     if (!same(next, pref)) pref = next;
   }
 
@@ -453,7 +459,7 @@ export function createThemeStore({
   if (persistsCustom) customs = readCustom();
   recompose();
   requested = browser ? readStored() : {};
-  pref = normalizePref(requested, slots());
+  pref = normalizePref(requested, slots(), fallback());
   apply();
   if (browser) {
     media?.addEventListener("change", onMediaChange);
