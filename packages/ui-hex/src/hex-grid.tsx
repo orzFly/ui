@@ -17,15 +17,12 @@ import {
 
 import {
   addressDigits,
-  asciiDecoding,
-  controlName,
   copyText,
   formatAddress,
   formatOffset,
   formatSize,
   hexByte,
   MAX_COPY_BYTES,
-  type TextDecoding,
 } from "./format.ts";
 import { navigate } from "./navigation.ts";
 import { createPageCache, type PageCache } from "./page-cache.ts";
@@ -36,6 +33,11 @@ import {
   topRowFromScroll,
 } from "./scroll-map.ts";
 import type { ByteSource } from "./source.ts";
+import {
+  asciiDecoding,
+  controlName,
+  type TextDecoding,
+} from "./text-decoding.ts";
 import {
   type ControlCodes,
   type HexPane,
@@ -606,7 +608,7 @@ export function HexGrid({
       }
       const lead = Math.min(decoding.lookbehind, start);
       const text = (bytes: Uint8Array) =>
-        copyText(bytes, sel.pane, uppercase, decoding, lead, start);
+        copyText(bytes, sel.pane, uppercase, decoding, lead, start, length);
       const bytes = cache.get(start - lead, length + lead);
       if (bytes && event.clipboardData) {
         event.clipboardData.setData("text/plain", text(bytes));
@@ -937,7 +939,11 @@ function HexRowImpl({
   const lead = bytes ? bytes.length - length : 0;
   const text =
     bytes && showText
-      ? decoding.decodeRow(bytes, rowStart, controlCodes).slice(0, length)
+      ? decoding.decodeRow(
+          bytes,
+          { start: rowStart, before: lead, length },
+          controlCodes,
+        )
       : undefined;
   const edited = parseModified(modified);
   const hexCells = [];
