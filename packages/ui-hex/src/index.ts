@@ -11,6 +11,7 @@ export {
 } from "./encodings.ts";
 export {
   addressDigits,
+  copyRange,
   copyText,
   formatAddress,
   formatOffset,

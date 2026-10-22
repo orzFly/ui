@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addressDigits,
+  copyRange,
   copyText,
   formatAddress,
   formatSize,
@@ -97,6 +98,41 @@ describe("copyText", () => {
 
   it("writes printable ASCII and dots for the rest", () => {
     expect(copyText(bytes, "text")).toBe(".PNG..");
+  });
+
+  it("decodes the text pane's form in the given encoding", () => {
+    // "日本" in Shift_JIS, then "é" in Windows-1252.
+    expect(
+      copyText(
+        new Uint8Array([0x93, 0xfa, 0x96, 0x7b]),
+        "text",
+        true,
+        "shift_jis",
+      ),
+    ).toBe("日本");
+    expect(copyText(new Uint8Array([0xe9]), "text", true, "windows-1252")).toBe(
+      "é",
+    );
+    expect(copyText(new Uint8Array([0xe9]), "text")).toBe(".");
+  });
+
+  it("writes edge glyphs as the view shows them, given copyRange's bytes", () => {
+    // "aé€" in UTF-8; the selection is A9 E2 82: the tail of "é", then "€".
+    const utf8 = new Uint8Array([0x61, 0xc3, 0xa9, 0xe2, 0x82, 0xac]);
+    const { from, to } = copyRange(2, 3, utf8.length, "utf-8");
+    expect([from, to]).toEqual([0, 6]);
+    expect(
+      copyText(utf8.subarray(from, to), "text", true, "utf-8", 2 - from, 2, 3),
+    ).toBe("€");
+    expect(
+      copyText(utf8.subarray(from, to), "hex", true, "utf-8", 2 - from, 2, 3),
+    ).toBe("A9 E2 82");
+  });
+
+  it("widens the range only as far as the encoding and the source allow", () => {
+    expect(copyRange(2, 3, 6)).toEqual({ from: 2, to: 5 });
+    expect(copyRange(4, 2, 6, "utf-8")).toEqual({ from: 1, to: 6 });
+    expect(copyRange(70, 2, 100, "shift_jis")).toEqual({ from: 6, to: 73 });
   });
 
   it("caps copies at 1 MiB", () => {

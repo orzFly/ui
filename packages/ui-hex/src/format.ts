@@ -1,4 +1,5 @@
-import { asciiDecoding, type TextDecoding } from "./text-decoding.ts";
+import { getTextDecoding, type HexEncoding } from "./encodings.ts";
+import type { TextDecoding } from "./text-decoding.ts";
 import type { HexPane } from "./types.ts";
 
 export type { TextCell, TextDecoding } from "./text-decoding.ts";
@@ -47,17 +48,40 @@ export function formatSize(bytes: number): string {
 
 export const MAX_COPY_BYTES = 1 << 20;
 
+function decodingOf(encoding: HexEncoding | TextDecoding): TextDecoding {
+  return typeof encoding === "string" ? getTextDecoding(encoding) : encoding;
+}
+
+/**
+ * The source range `[from, to)` to read for copying `length` bytes at
+ * `offset`: the selection widened by the encoding's lookbehind and lookahead,
+ * so `copyText` writes its first and last glyphs as the text pane shows them.
+ */
+export function copyRange(
+  offset: number,
+  length: number,
+  size: number,
+  encoding: HexEncoding | TextDecoding = "ascii",
+): { from: number; to: number } {
+  const decoding = decodingOf(encoding);
+  return {
+    from: Math.max(0, offset - decoding.lookbehind),
+    to: Math.min(size, offset + length + decoding.lookahead),
+  };
+}
+
 /**
  * The clipboard text for a selection. `bytes` starts with `lead` bytes before
- * the selection and may run past it, as a decoder's lookbehind and lookahead
- * need; `offset` is the source offset of the first selected byte, and
- * `length` the selection's length.
+ * the selection and may run past it, as `copyRange` reads them; `offset` is
+ * the source offset of the first selected byte, and `length` the selection's
+ * length. The text pane's form decodes in `encoding`, ASCII like the view's
+ * default.
  */
 export function copyText(
   bytes: Uint8Array,
   pane: HexPane,
   uppercase = true,
-  decoding: TextDecoding = asciiDecoding,
+  encoding: HexEncoding | TextDecoding = "ascii",
   lead = 0,
   offset = lead,
   length = bytes.length - lead,
@@ -71,7 +95,7 @@ export function copyText(
   }
   let out = "";
   const row = { start: offset, before: lead, length };
-  for (const cell of decoding.decodeRow(bytes, row, "dots")) {
+  for (const cell of decodingOf(encoding).decodeRow(bytes, row, "dots")) {
     // A glyph is written whole by its first byte, even when its trailing
     // bytes lie past the selection; one starting before it is left out.
     if (cell.kind === "continuation") continue;
