@@ -89,10 +89,10 @@ store.setPref({
   default, so AMOLED Solarized under `system` is default Solarized Light by day and AMOLED Solarized
   Dark at night.
 - Every read and write normalizes the pref against the current lists: an unknown theme falls back
-  to the first one under `system`, or to following for a terminal pick.
-- `setThemes(list)` and `setTerminalThemes(list)` replace the lists at runtime, which is how custom
-  themes from `composeTheme` come in. A pick whose theme leaves the list comes back when the theme
-  returns.
+  to the first theme of the list the app passed, under `system`, or to following for a terminal
+  pick.
+- `setThemes(list)` and `setTerminalThemes(list)` replace those lists at runtime. A pick whose theme
+  leaves the list comes back when the theme returns.
 
 The store paints through one `<style data-orz-theme>` element in `<head>`, holding a single
 `:root { … }` rule rendered from the data. It also toggles `.dark` and sets `data-theme`,
@@ -107,7 +107,70 @@ retune a token for every theme.
   that side shows. Outside a provider it reports the default theme, light, and ignores `setPref`.
 - `useTerminalTheme()` returns `{ following, themes, theme, colorScheme, variant, tokens }` for the
   terminal slot.
-- `<ThemeMenu />` from `@orz/ui/components/theme-menu` is a ready-made picker for the UI slot.
+- Both also return `preview`, `customThemes` and `setCustomThemes` (below). Outside a provider the
+  list is empty and the two calls are ignored.
+- `useThemeSlots()` returns `{ ui, terminal }`: which slots the store has. The two hooks fall back
+  where theirs is missing, so they cannot tell you.
+
+### Theme menu
+
+`<ThemeMenu />` from `@orz/ui/components/theme-menu` is a ready-made picker: an icon button opening
+a filter box, an Auto / Light / Dark switch, and the themes, each with its variants in a submenu.
+Whatever is highlighted previews on the whole page after resting 80 ms, and a pick commits it.
+
+```tsx
+<ThemeMenu />                                  // the UI pick
+<ThemeMenu slot="terminal" />                  // the terminal pick, e.g. on a terminal pane
+<ThemeMenu onCustomize={(id) => openEditor(id)} />
+```
+
+- `slot` is `"ui"` (default) or `"terminal"`. A picker whose slot the store lacks renders nothing.
+  The terminal picker adds a "Same as UI" row and a Terminal only group.
+- `onCustomize` adds a "Custom themes…" row, which calls it with no id, and an edit button on each
+  custom theme's row, which calls it with that theme's id. The app brings the editor.
+
+### Custom themes
+
+The store keeps the user's `CustomTheme`s from `@orz/themes`, composes each one with
+`composeTheme`, and lists the ones that compose ahead of each slot's own list.
+
+```ts
+const { customThemes, setCustomThemes } = useTheme();
+setCustomThemes([...customThemes, draft]);
+```
+
+- `getCustomThemes()` / `setCustomThemes(list)` on the store. `setCustomThemes` throws on an id that
+  repeats or that a theme in either list already has.
+- `setThemes` and `setTerminalThemes` replace the app's own lists; the custom themes are composed
+  again against them.
+- A custom theme whose bases are gone stays in `getCustomThemes()` but out of the lists, so an
+  editor can still show and repair it.
+- The list is stored as JSON under `customStorageKey` (default `` `${storageKey}-custom` ``) and
+  follows other tabs. Entries that do not have the shape of a `CustomTheme` are dropped on read, and
+  the key is only written by `setCustomThemes`.
+- `persistCustomThemes: false` keeps the store away from that key altogether. The app then loads its
+  list with `setCustomThemes` and saves it from `subscribe` and `getCustomThemes`, for example to its
+  server.
+
+### Preview
+
+`preview(next)` shows a pick without committing it, and `preview(null)` shows the committed pick
+again. It is what `ThemeMenu` calls on a highlight.
+
+```ts
+store.preview({ ui: { theme: "dracula", mode: "dark" } });
+store.preview({ terminal: "follow" });                              // the terminal following the UI
+store.preview({ ui: { theme: composeTheme(draft, themes), mode } }); // an unsaved theme
+```
+
+- A slot left out of `next` shows its committed pick. A theme passed as an object need not be in
+  any list; for `ui` it must be a UI theme (`isUiTheme`), or `preview` throws.
+- It paints exactly what `setPref` paints, and writes neither `storageKey` nor the paint cache, so
+  other tabs and a reload see only the committed pick.
+- While it is active, `getResolved()`, `getTerminal()` and the hooks report what is shown, so
+  everything themed follows the preview; `getPref()` and the hooks' `pref` stay the committed pick.
+- `setPref` and `dispose` clear it. A previewed theme that leaves its list falls back to the
+  committed pick.
 
 ### Terminals
 
@@ -246,6 +309,12 @@ highlight resting on `selectedId`, the pointer leaving the list, the menu closin
 live preview needs. A control in `header` that commits at once puts the highlight back through the
 `ref`'s `resetHighlight()`.
 
+Rows can carry a submenu: `getSubmenu(row)` returns its rows (ids unique across the whole menu), and
+`selectedSubmenuId` checks one of them. The submenu opens beside the highlighted row, → with the
+caret at the end of the query enters it, ← and Escape come back, and `onHighlight` and `onSelect`
+receive its rows like any other. The pointer can cut across other rows on its way to the submenu
+without moving the highlight. `submenuLabel(row)` names the submenu's listbox.
+
 ## Colour picker
 
 `ColorPicker` is the panel, rendered inline; `ColorPickerPopover` puts it behind a trigger that
@@ -290,7 +359,7 @@ modes the picker uses); nothing else in `@orz/ui` does.
 | `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
 | `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut` |
 | `@orz/ui/lib/<name>` | `clipboard`, `color`, `text-metrics`, `unsaved-guard`, `utils` |
-| `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
+| `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
 
 `UnsavedChangesDialog` only renders the prompt, and the blocker belongs to your router. Its JSDoc
