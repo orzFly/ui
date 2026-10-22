@@ -142,15 +142,15 @@ export const UiAndTerminal: Story = {
 function MenuWithEditor({
   onCustomize,
 }: {
-  onCustomize?: (id?: string) => void;
+  onCustomize?: (id: string | undefined, slot: "ui" | "terminal") => void;
 }) {
   const [editing, setEditing] = useState<{ id?: string } | null>(null);
   return (
     <div className="grid max-w-2xl gap-4">
       <Header>
         <ThemeMenu
-          onCustomize={(id) => {
-            onCustomize?.(id);
+          onCustomize={(id, slot) => {
+            onCustomize?.(id, slot);
             setEditing({ id });
           }}
         />

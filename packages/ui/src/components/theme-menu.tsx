@@ -45,8 +45,11 @@ import {
 export interface ThemeMenuProps {
   /** Which pick the menu edits. Default "ui". Renders nothing when the store lacks the slot. */
   slot?: "ui" | "terminal";
-  /** Present: a "Custom themes…" row (id undefined) and an edit button on custom rows (their id). */
-  onCustomize?: (id?: string) => void;
+  /**
+   * Present: a "Custom themes…" row (id undefined) and an edit button on custom rows (their id).
+   * `slot` is this menu's slot, so a new theme opened from the terminal menu is a terminal theme.
+   */
+  onCustomize?: (id: string | undefined, slot: "ui" | "terminal") => void;
 }
 
 interface Variant {
@@ -278,7 +281,7 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
     cancelSettle();
     if (row.kind === "customize") {
       show(null);
-      onCustomize?.();
+      onCustomize?.(undefined, slot);
       return;
     }
     if (row.kind === "follow") return commit(undefined);
@@ -459,7 +462,7 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
             onClick={(event) => {
               event.stopPropagation();
               close();
-              onCustomize(theme.id);
+              onCustomize(theme.id, slot);
             }}
           >
             <PencilIcon className="size-3.5" />
