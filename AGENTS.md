@@ -26,6 +26,10 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   `src/`, then `types` and `default` pointing at `dist/`. Only workspace apps set that condition
   (Vite `resolve.conditions`, tsconfig `customConditions`), so they run on source with no watch
   build. Consumers never set it and always get `dist/`.
+  A package that depends on another workspace package may set it too, in its own `tsconfig.json`
+  (`customConditions`) and `vitest.config.ts` (`resolve.conditions`), so its typecheck and tests
+  run on source. Its `tsconfig.build.json` resets `customConditions` to `[]`: the build checks
+  against the dependency's `dist/`, which `pnpm -r build` builds first.
 - Shipped CSS lives at the package root (`styles.css`, `vendor/`), not in `src/`. `tsc` never
   touches it, `files` lists it, and `exports` points straight at it.
 - New shadcn primitives arrive with `shadcn add` run inside `packages/ui`. It writes `@/…` imports
