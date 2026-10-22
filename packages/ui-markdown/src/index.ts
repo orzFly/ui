@@ -1,4 +1,9 @@
 export {
+  type MarkdownContentOptions,
+  markdownContent,
+} from "./content.tsx";
+export { type MarkdownEmbedsOptions, markdownEmbeds } from "./embeds.tsx";
+export {
   Markdown,
   MarkdownPluginsContext,
   type MarkdownProps,
