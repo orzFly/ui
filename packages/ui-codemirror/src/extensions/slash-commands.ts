@@ -27,8 +27,8 @@ import { inCodeContext } from "./code-context.ts";
  * what a line means, and it runs again at submit time on the same text.
  *
  * The registry is usually built from data that loads asynchronously, so it
- * comes in through a getter: rebuilding the extension whenever it changes would reconfigure the
- * editor mid-typing and close whatever panel was open.
+ * comes in through a getter: rebuilding the extension whenever it changes
+ * would reconfigure the editor mid-typing and close whatever panel was open.
  */
 
 /** The whole line up to the cursor, which is all a command can occupy. */

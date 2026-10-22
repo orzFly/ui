@@ -33,8 +33,9 @@ export type CodeEditorHandle = {
   /**
    * Add to the end of the document, caret after it and scrolled into view.
    *
-   * Unmarked, unlike `setValue`: the text arrives because the reader asked
-   * for it, so `userChanged()` reading true afterwards is the right answer.
+   * Unmarked, like `setValue`, but here on purpose: the text arrives because
+   * the reader asked for it, so `userChanged()` reading true afterwards is
+   * the right answer.
    */
   append: (text: string) => void;
   focus: () => void;

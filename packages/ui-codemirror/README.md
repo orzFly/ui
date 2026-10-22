@@ -158,7 +158,8 @@ reason. The engine in `lib/slash-commands` imports nothing, so it can run on a s
 ### Provenance
 
 `CodeEditorHandle.userChanged()` reports whether the reader changed the document since mount.
-Mark your own writes so they do not count:
+Mark your own writes so they do not count. `view` here is the `EditorView` that `CodeEditor`'s
+`onView` hands out, or the one a command or `ViewPlugin` of yours receives:
 
 ```ts
 import { PROGRAMMATIC_USER_EVENT } from "@orz/ui-codemirror/components/code-editor";
