@@ -147,6 +147,9 @@ importers:
       '@orz/query':
         specifier: workspace:^
         version: link:../query
+      '@orz/themes':
+        specifier: workspace:^
+        version: link:../themes
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

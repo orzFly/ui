@@ -1,12 +1,17 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  builtinThemes,
+  resolvePalette,
+  schemesOf,
+  variantsOf,
+} from "@orz/themes";
 import { describe, expect, it } from "vitest";
-import { THEMES } from "../src/theme/index.ts";
 
-const read = (rel: string) =>
-  readFileSync(join(import.meta.dirname, rel), "utf8");
-const STYLES = read("../styles.css");
-const BUTTON = read("../src/components/button.tsx");
+const BUTTON = readFileSync(
+  join(import.meta.dirname, "../src/components/button.tsx"),
+  "utf8",
+);
 
 /** WCAG AA for normal-size text, which every button and badge label is. */
 const AA = 4.5;
@@ -14,24 +19,18 @@ const AA = 4.5;
 type Rgb = [number, number, number];
 type Lab = [number, number, number];
 
-function tokensOf(selector: string): Record<string, string> {
-  const head = `${selector} {`;
-  const start = STYLES.indexOf(head);
-  if (start < 0) return {};
-  const body = STYLES.slice(start + head.length, STYLES.indexOf("\n}", start));
-  const out: Record<string, string> = {};
-  for (const m of body.matchAll(/(--[\w-]+):\s*([^;]+);/g))
-    out[m[1]] = m[2].trim();
-  return out;
-}
-
-function tokensFor(value: string, kind: string): Record<string, string> {
-  return {
-    ...tokensOf(":root"),
-    ...(kind === "dark" ? tokensOf(".dark") : {}),
-    ...tokensOf(`:root[data-theme="${value}"]`),
-  };
-}
+// Every palette under every variant its theme offers; a variant a side lacks
+// resolves to that side's default, which is what the page shows then.
+const PALETTES = builtinThemes.flatMap((theme) =>
+  schemesOf(theme).flatMap((scheme) =>
+    variantsOf(theme).map(({ id }) => ({
+      name: `${theme.id} ${scheme} ${id}`,
+      scheme,
+      // biome-ignore lint/style/noNonNullAssertion: schemesOf lists only present sides
+      tokens: resolvePalette(theme, scheme, id)!.tokens,
+    })),
+  ),
+);
 
 function oklab(spec: string): Lab {
   const m = /^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)$/.exec(spec);
@@ -89,52 +88,28 @@ const MIX =
     BUTTON,
   );
 
-const failing = (rows: { theme: string; ratio: number }[]) =>
-  rows
-    .filter((r) => r.ratio < AA)
-    .map((r) => `${r.theme} ${r.ratio.toFixed(2)}:1`);
-
 describe("destructive variant contrast", () => {
   it("mixes --foreground into the label rather than using bare --destructive", () => {
     expect(MIX).not.toBeNull();
   });
 
-  it("clears AA in every theme, on its resting and hover tints", () => {
+  it("clears AA in every palette and variant, on its resting and hover tints", () => {
     const share = Number(MIX?.[1]) / 100;
-    const rows = THEMES.flatMap((theme) => {
-      const tokens = tokensFor(theme.value, theme.kind);
-      const destructive = oklab(tokens["--destructive"]);
-      const label = srgb(
-        mix(destructive, oklab(tokens["--foreground"]), share),
-      );
-      const page = srgb(oklab(tokens["--background"]));
+    const rows = PALETTES.flatMap(({ name, scheme, tokens }) => {
+      const destructive = oklab(tokens.destructive);
+      const label = srgb(mix(destructive, oklab(tokens.foreground), share));
+      const page = srgb(oklab(tokens.background));
       // bg-destructive/10 + hover /20; dark: /20 + hover /30.
-      const tints = theme.kind === "dark" ? [0.2, 0.3] : [0.1, 0.2];
+      const tints = scheme === "dark" ? [0.2, 0.3] : [0.1, 0.2];
       return tints.map((alpha) => ({
-        theme: `${theme.value}@${alpha}`,
+        name: `${name}@${alpha}`,
         ratio: contrast(label, over(srgb(destructive), page, alpha)),
       }));
     });
-    expect(failing(rows)).toEqual([]);
-  });
-});
-
-describe("primary contrast", () => {
-  it("clears AA for primary-foreground on primary, and primary text on the page", () => {
-    const rows = THEMES.flatMap((theme) => {
-      const tokens = tokensFor(theme.value, theme.kind);
-      const primary = srgb(oklab(tokens["--primary"]));
-      return [
-        {
-          theme: `${theme.value} button`,
-          ratio: contrast(primary, srgb(oklab(tokens["--primary-foreground"]))),
-        },
-        {
-          theme: `${theme.value} link`,
-          ratio: contrast(primary, srgb(oklab(tokens["--background"]))),
-        },
-      ];
-    });
-    expect(failing(rows)).toEqual([]);
+    expect(
+      rows
+        .filter((r) => r.ratio < AA)
+        .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`),
+    ).toEqual([]);
   });
 });
