@@ -1,3 +1,4 @@
+import { codeContent } from "@orz/ui-code";
 import { Content, ContentRenderers, type ContentSource } from "@orz/ui-content";
 import { Markdown, markdownContent } from "@orz/ui-markdown";
 import { MermaidBlock, mermaidContent } from "@orz/ui-mermaid";
@@ -102,7 +103,7 @@ const steps = ["draft", "review", "merge", "ship"];
 \`\`\`
 `;
 
-const RENDERERS = [mermaidContent, markdownContent()];
+const RENDERERS = [mermaidContent, markdownContent(), codeContent];
 
 const FILE: ContentSource = {
   kind: "file",

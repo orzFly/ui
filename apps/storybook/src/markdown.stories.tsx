@@ -1,3 +1,4 @@
+import { codeContent } from "@orz/ui-code";
 import {
   type ContentRenderer,
   ContentRenderers,
@@ -217,7 +218,7 @@ const card: ContentRenderer = {
   ),
 };
 
-const RENDERERS = [card, markdownContent()];
+const RENDERERS = [card, markdownContent(), codeContent];
 
 const EMBED_DEMO = `# A document that embeds another
 
@@ -230,11 +231,15 @@ An address that does not resolve stays an image:
 ![missing](https://example.com/missing.png)
 `;
 
+const CODE = [codeContent];
+
 function MarkdownDemo({ source }: { source: string }) {
   return (
-    <div className="max-w-3xl">
-      <Markdown>{source}</Markdown>
-    </div>
+    <ContentRenderers renderers={CODE}>
+      <div className="max-w-3xl">
+        <Markdown>{source}</Markdown>
+      </div>
+    </ContentRenderers>
   );
 }
 
@@ -271,9 +276,11 @@ export const RawHtmlAndRefusedLinks: Story = { args: { source: UNSAFE } };
 export const Plugins: Story = {
   args: { source: PLUGIN_DEMO },
   render: ({ source }) => (
-    <div className="max-w-3xl">
-      <Markdown plugins={DECORATED}>{source}</Markdown>
-    </div>
+    <ContentRenderers renderers={CODE}>
+      <div className="max-w-3xl">
+        <Markdown plugins={DECORATED}>{source}</Markdown>
+      </div>
+    </ContentRenderers>
   ),
 };
 

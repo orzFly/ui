@@ -46,7 +46,22 @@ A `<pre>` holding one `<code>` is a code block. It renders inside
 `<div class="markdown-fence">`, which carries the `<pre>`'s classes and, under `rehypeSourceLines`,
 its `data-loc` stamp plus `data-loc-content-start`, the line the code starts on. Inside, the block is
 `<Content source={{ kind: "inline", text, lang }} placement="document">`: whichever renderer is
-registered draws it, and with none it is a plain `<pre><code>`.
+registered draws it, and with none it is a plain `<pre><code>`. Registering `@orz/ui-code`'s
+`codeContent` highlights every fence:
+
+```tsx
+import { codeContent } from "@orz/ui-code";
+import { ContentRenderers } from "@orz/ui-content";
+
+const RENDERERS = [codeContent];
+
+<ContentRenderers renderers={RENDERERS}>
+  <Markdown>{source}</Markdown>
+</ContentRenderers>;
+```
+
+A renderer for one language, such as `@orz/ui-mermaid`'s `mermaidContent`, goes ahead of it in the
+list.
 
 **Keep `plugins` stable**: a module constant, or a `useMemo`. A fresh array, or a fresh plugin object
 in it, makes react-markdown reparse the document and React remount every overridden element, and
@@ -94,6 +109,7 @@ Element wrappers receive react-markdown's props, including the hast `node`; pass
 ## Embeds and markdown files
 
 ```tsx
+import { codeContent } from "@orz/ui-code";
 import { ContentRenderers } from "@orz/ui-content";
 import { Markdown, markdownContent, markdownEmbeds } from "@orz/ui-markdown";
 
