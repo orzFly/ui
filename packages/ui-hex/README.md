@@ -231,7 +231,8 @@ the bytes are not all loaded, the view reads them and writes through `navigator.
 `onCopy` receives `{ ok: true, bytes }`, or `{ ok: false, reason }` with `"too-large"`,
 `"read-failed"` or `"clipboard-unavailable"`; the view shows no toast itself. `copyText`,
 `hexByte`, `formatSize` and the other formatters are exported for copy actions of your own;
-`copyText` writes the text pane's form in ASCII only, whatever the view's encoding.
+`copyText` takes the view's `encoding` (ASCII by default), and `copyRange` gives the byte range to
+read for it.
 
 ## Encodings
 
@@ -505,5 +506,5 @@ or `overwrite` itself, because the `paste` event carries no modifier keys.
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-hex` | `HexView`, `HexEditor`, `HexInspector`, `createHexDocument`, `useHexDocumentState`, `HEX_ENCODINGS`, `bytesSource`, `blobSource`, `parseHexText`, `copyText`, `hexByte`, `formatAddress`, `formatOffset`, `formatSize`, `addressDigits`, `MAX_COPY_BYTES`, types |
+| `@orz/ui-hex` | `HexView`, `HexEditor`, `HexInspector`, `createHexDocument`, `useHexDocumentState`, `HEX_ENCODINGS`, `bytesSource`, `blobSource`, `parseHexText`, `copyText`, `copyRange`, `hexByte`, `formatAddress`, `formatOffset`, `formatSize`, `addressDigits`, `MAX_COPY_BYTES`, types |
 | `@orz/ui-hex/styles.css` | the view, editor and inspector styles |
