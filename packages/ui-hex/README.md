@@ -244,7 +244,10 @@ Copy (Ctrl/⌘ + C, or the browser menu) writes the selection as space-separated
 hex pane, or as the text pane shows it from the text pane, up to 1 MiB. When
 the bytes are not all loaded, the view reads them and writes through `navigator.clipboard`.
 `onCopy` receives `{ ok: true, bytes }`, or `{ ok: false, reason }` with `"too-large"`,
-`"read-failed"` or `"clipboard-unavailable"`; the view shows no toast itself. `copyText`,
+`"read-failed"` or `"clipboard-unavailable"`; the view shows no toast itself. From the text pane,
+a copy also writes the exact bytes as hex digits under `application/x-orz-hex` (`HEX_BYTES_TYPE`),
+because its text shows an undecodable byte as a dot, which pastes back as `2E`; `navigator.clipboard`
+writes text only, so a copy through it carries no exact bytes. `copyText`,
 `hexByte`, `formatSize` and the other formatters are exported for copy actions of your own;
 `copyText` takes the view's `encoding` (ASCII by default), and `copyRange` gives the byte range to
 read for it.
@@ -461,10 +464,12 @@ Navigation, selection and copy work as in [Keyboard and copy](#keyboard-and-copy
 - **A byte still loading or failed to read** counts as 0 when a typed digit keeps its other digit.
   Nothing waits for the read.
 - **Cut** copies the selection as a copy does and deletes it only once the copy succeeds, so a
-  selection over 1 MiB, or a copy that fails, deletes nothing and reports through `onCopy`. From
-  the text pane it copies what the pane shows, dots included, which pastes back as `2E` bytes; cut
-  from the hex pane to move bytes. With the size locked or `readOnly`, cut neither copies nor
-  reports.
+  selection over 1 MiB, or a copy that fails, deletes nothing and reports through `onCopy`. The
+  copy carries the exact bytes, so a cut and paste puts back what was cut, dots included. When
+  only text can go, through `navigator.clipboard` because the selection is not loaded, the cut
+  deletes only if that text pastes back into the same pane as the same bytes; otherwise it copies,
+  keeps the bytes and announces "Copied, not cut", while `onCopy` still reports `{ ok: true }`.
+  With the size locked or `readOnly`, cut neither copies nor reports.
 - **Keys that do nothing:** typing, Delete, Backspace and cut while nothing is selected (undo, redo
   and Insert still work); a character that is not a hex digit, in the hex pane; any editing key
   when `readOnly`.
@@ -488,9 +493,12 @@ keystroke does not wait for them.
 ### Paste
 
 Paste runs on the native `paste` event while the editor has focus, so Ctrl/⌘ + V, Shift + Insert
-and a menu bar's Paste reach it; a right-click menu usually offers no Paste over the grid. It reads
-the clipboard's plain text. With nothing selected it does nothing and does not call `onPaste`, and
-a paste into the encoding picker stays native.
+and a menu bar's Paste reach it; a right-click menu usually offers no Paste over the grid. In
+either pane it writes the exact bytes from `application/x-orz-hex` when a copy put them there (see
+[Keyboard and copy](#keyboard-and-copy)); when that type is missing or does not parse, it reads the
+clipboard's plain text as below. `clipboardBytes` is the same logic, and `hexDigits` writes the
+type's format, for copy and paste commands of your own. With nothing selected a paste does nothing
+and does not call `onPaste`, and a paste into the encoding picker stays native.
 
 - **Hex pane:** the text is read as a hex dump. Whitespace, commas, semicolons, brackets, braces,
   parentheses and every `0x` / `\x` are dropped, so `89 50 4E 47`, `0x89, 0x50`, `{ 0x89, 0x50 }`,
@@ -521,5 +529,5 @@ or `overwrite` itself, because the `paste` event carries no modifier keys.
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-hex` | `HexView`, `HexEditor`, `HexInspector`, `createHexDocument`, `useHexDocumentState`, `HEX_ENCODINGS`, `bytesSource`, `blobSource`, `parseHexText`, `copyText`, `copyRange`, `hexByte`, `formatAddress`, `formatOffset`, `formatSize`, `addressDigits`, `MAX_COPY_BYTES`, types |
+| `@orz/ui-hex` | `HexView`, `HexEditor`, `HexInspector`, `createHexDocument`, `useHexDocumentState`, `HEX_ENCODINGS`, `bytesSource`, `blobSource`, `parseHexText`, `clipboardBytes`, `hexDigits`, `HEX_BYTES_TYPE`, `copyText`, `copyRange`, `hexByte`, `formatAddress`, `formatOffset`, `formatSize`, `addressDigits`, `MAX_COPY_BYTES`, types |
 | `@orz/ui-hex/styles.css` | the view, editor and inspector styles |
