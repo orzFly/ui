@@ -191,7 +191,8 @@ in.
 | `ref` | | `{ scrollToOffset(offset, align?), focus() }`; `align` is `"nearest"`, `"start"` or `"center"` |
 | `className`, `aria-label` | `"Hex view"` | |
 
-Without `rows`, give the parent a definite height. Above roughly 13 MiB at 16 columns the content
+Without `rows`, give the parent a definite height. The view scrolls by whole rows; without `rows`,
+the strip under the last whole row stays empty. Above roughly 13 MiB at 16 columns the content
 is taller than browsers let an element be; the view then maps the scrollbar onto rows and moves a
 few rows per wheel notch, so dragging the scrollbar becomes coarse but the wheel and keyboard stay
 precise.
