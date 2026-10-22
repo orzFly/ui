@@ -1,4 +1,5 @@
 import type {
+  AnyCustomTheme,
   ColorScheme,
   CustomTheme,
   TerminalTokenName,
@@ -35,7 +36,7 @@ import {
 } from "./tokens.ts";
 
 interface TokenListCommon {
-  draft: CustomTheme;
+  draft: AnyCustomTheme;
   dispatch: Dispatch<DraftAction>;
   /**
    * The groups the user opened or closed, by group id. Pass it with
@@ -75,7 +76,8 @@ export function TokenList(props: TokenListProps) {
         contrastWith={UI_CONTRAST_WITH}
         format="oklch"
         showState={sideMode(draft, scheme) === "based"}
-        overridden={(name) => isOverridden(draft, scheme, name)}
+        // The UI list only ever shows a UI theme.
+        overridden={(name) => isOverridden(draft as CustomTheme, scheme, name)}
         onPreview={props.onPreview}
         onCommit={(name, value) =>
           dispatch({ type: "setToken", scheme, name, value })

@@ -1,4 +1,8 @@
-import { builtinThemes, type CustomTheme } from "@orz/themes";
+import {
+  type AnyCustomTheme,
+  builtinThemes,
+  type CustomTheme,
+} from "@orz/themes";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -11,6 +15,7 @@ import {
   type ThemeStore,
 } from "../src/theme/index.ts";
 import {
+  dusk,
   ink,
   paper,
   resetThemeEnvironment,
@@ -34,7 +39,7 @@ const frappe: CustomTheme = {
 
 interface Setup extends ThemeMenuProps {
   pref?: ThemePref;
-  customs?: CustomTheme[];
+  customs?: AnyCustomTheme[];
   options?: Parameters<typeof store>[0];
   dark?: boolean;
 }
@@ -86,6 +91,21 @@ function groups(): string[] {
     .queryAllByRole("group")
     .map((el) => el.getAttribute("aria-labelledby") ?? "")
     .map((id) => document.getElementById(id)?.textContent ?? "");
+}
+
+/** The rows of one group, by visible text. */
+function groupRows(name: string): string[] {
+  const group = within(list())
+    .getAllByRole("group")
+    .find(
+      (el) =>
+        document.getElementById(el.getAttribute("aria-labelledby") ?? "")
+          ?.textContent === name,
+    );
+  if (!group) throw new Error(`no group ${name}`);
+  return within(group)
+    .getAllByRole("option")
+    .map((el) => el.textContent ?? "");
 }
 
 function highlighted() {
@@ -566,21 +586,50 @@ describe("ThemeMenu: onCustomize", () => {
     key("End");
     expect(highlighted()).toBe("Custom themes…");
     key("Enter");
-    expect(onCustomize).toHaveBeenLastCalledWith();
+    expect(onCustomize).toHaveBeenLastCalledWith(undefined, "ui");
 
     open();
     fireEvent.pointerMove(row("Sunrise"));
     settle();
     fireEvent.click(screen.getByRole("button", { name: "Edit Sunrise" }));
-    expect(onCustomize).toHaveBeenLastCalledWith("custom-sunrise");
+    expect(onCustomize).toHaveBeenLastCalledWith("custom-sunrise", "ui");
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(themes.getPreview()).toBeNull();
     expect(themes.getPref().ui?.theme).toBe("default");
   });
 
-  it("offers the row in the terminal picker too", () => {
-    setup({ slot: "terminal", onCustomize: () => {} });
+  it("offers the row in the terminal picker too, passing its slot", () => {
+    const onCustomize = vi.fn();
+    setup({ slot: "terminal", customs: [sunrise, dusk], onCustomize });
     open("terminal");
     expect(rows().at(-1)).toBe("Custom themes…");
+    key("End");
+    key("Enter");
+    expect(onCustomize).toHaveBeenLastCalledWith(undefined, "terminal");
+
+    open("terminal");
+    fireEvent.pointerMove(row("Dusk"));
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: "Edit Dusk" }));
+    expect(onCustomize).toHaveBeenLastCalledWith("custom-dusk", "terminal");
+  });
+
+  it("still takes a callback of one argument", () => {
+    const onCustomize = (_id?: string) => {};
+    setup({ onCustomize });
+    open();
+    expect(rows().at(-1)).toBe("Custom themes…");
+  });
+
+  it("lists a terminal custom theme in the terminal menu's Custom group only", () => {
+    setup({ customs: [sunrise, dusk], onCustomize: () => {} });
+    open();
+    expect(groupRows("Custom")).toEqual(["Sunrise"]);
+    key("Escape");
+    unmount();
+
+    setup({ slot: "terminal", customs: [sunrise, dusk] });
+    open("terminal");
+    expect(groupRows("Custom")).toEqual(["Sunrise", "Dusk"]);
   });
 });

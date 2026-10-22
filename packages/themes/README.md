@@ -98,6 +98,11 @@ shiki name and its JSON round trip.
   on any theme in the list, terminal-only ones included, with an optional `scheme`. A side whose
   base is missing is dropped, and the result is null when no side is left. Compose again whenever
   the list changes, so a custom theme follows its base.
+- `composeTerminalTheme(custom, themes)` does the same for a `CustomTerminalTheme`
+  (`kind: "terminal"`), a custom theme made of terminal colours alone. Each side is a
+  `CustomTerminal`, resolved exactly as a UI side's terminal is, and the result is a
+  `TerminalTheme` whose palettes carry `terminal` only. A `CustomTheme` has no `kind`, or
+  `kind: "ui"`; `isCustomTerminalTheme(custom)` tells the two apart in an `AnyCustomTheme` list.
 - `xtermTheme(terminal)` maps terminal tokens onto xterm.js's `ITheme` field names:
   `terminal.options.theme = xtermTheme(tokens)`.
 

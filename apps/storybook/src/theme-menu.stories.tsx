@@ -1,14 +1,12 @@
-import {
-  builtinThemes,
-  type TerminalTheme,
-  type TerminalTokens,
-} from "@orz/themes";
+import { builtinThemes } from "@orz/themes";
 import { ThemeEditor } from "@orz/ui/components/theme-editor";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { fn } from "storybook/test";
 import {
+  ember,
+  glacier,
   Header,
   OwnStore,
   PageSample,
@@ -35,84 +33,6 @@ type Story = StoryObj<typeof meta>;
 
 /** Drives the toolbar's store, so a pick here changes the whole preview. */
 export const Default: Story = {};
-
-function terminalTokens(
-  background: string,
-  foreground: string,
-  ansi: string[],
-): TerminalTokens {
-  const names = [
-    "black",
-    "red",
-    "green",
-    "yellow",
-    "blue",
-    "magenta",
-    "cyan",
-    "white",
-  ] as const;
-  const tokens: Record<string, string> = {
-    "terminal-background": background,
-    "terminal-foreground": foreground,
-    "terminal-cursor": foreground,
-    "terminal-selection": `color-mix(in oklab, ${foreground} 25%, transparent)`,
-  };
-  names.forEach((name, i) => {
-    tokens[`ansi-${name}`] = ansi[i] as string;
-    tokens[`ansi-bright-${name}`] = ansi[i + 8] as string;
-  });
-  return tokens as TerminalTokens;
-}
-
-/** Terminal-only themes: terminal colours and nothing else. */
-const ember: TerminalTheme = {
-  id: "ember",
-  label: "Ember",
-  dark: {
-    terminal: terminalTokens("#1b1410", "#eadccf", [
-      "#2a201a",
-      "#e0603c",
-      "#9fbf5a",
-      "#e8b04a",
-      "#6f97c6",
-      "#c47aa8",
-      "#5fb3a6",
-      "#d6c8ba",
-      "#5a4a3e",
-      "#ff8a63",
-      "#bedb7a",
-      "#ffcf6e",
-      "#94b8e3",
-      "#e29cc5",
-      "#83d1c4",
-      "#fff3e6",
-    ]),
-  },
-};
-const glacier: TerminalTheme = {
-  id: "glacier",
-  label: "Glacier",
-  light: {
-    terminal: terminalTokens("#f4f8fb", "#1f2d3a", [
-      "#1f2d3a",
-      "#c0392b",
-      "#2e8b57",
-      "#b7791f",
-      "#2b6cb0",
-      "#8e44ad",
-      "#138d90",
-      "#cbd5e0",
-      "#4a5568",
-      "#e53e3e",
-      "#38a169",
-      "#d69e2e",
-      "#3182ce",
-      "#9f7aea",
-      "#0bc5ea",
-      "#ffffff",
-    ]),
-  },
-};
 
 /**
  * Both slots: the UI picker in the header, and a terminal pane with a picker
@@ -142,15 +62,15 @@ export const UiAndTerminal: Story = {
 function MenuWithEditor({
   onCustomize,
 }: {
-  onCustomize?: (id?: string) => void;
+  onCustomize?: (id: string | undefined, slot: "ui" | "terminal") => void;
 }) {
   const [editing, setEditing] = useState<{ id?: string } | null>(null);
   return (
     <div className="grid max-w-2xl gap-4">
       <Header>
         <ThemeMenu
-          onCustomize={(id) => {
-            onCustomize?.(id);
+          onCustomize={(id, slot) => {
+            onCustomize?.(id, slot);
             setEditing({ id });
           }}
         />

@@ -110,10 +110,22 @@ export type CustomSide =
   | { tokens: Tokens; terminal: CustomTerminal };
 export type CustomTheme = {
   id: string;
+  /** Absent in everything written before terminal custom themes existed; writers omit it. */
+  kind?: "ui";
   label: string;
   light?: CustomSide;
   dark?: CustomSide;
 };
+/** A custom theme made of terminal colours alone; composes into a `TerminalTheme`. */
+export type CustomTerminalTheme = {
+  id: string;
+  kind: "terminal";
+  label: string;
+  light?: CustomTerminal;
+  dark?: CustomTerminal;
+};
+/** What a store's custom list holds. */
+export type AnyCustomTheme = CustomTheme | CustomTerminalTheme;
 
 export interface ResolvedPalette {
   tokens: Tokens;

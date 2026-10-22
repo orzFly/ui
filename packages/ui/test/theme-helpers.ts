@@ -1,5 +1,6 @@
 import {
   builtinThemes,
+  type CustomTerminalTheme,
   type CustomTheme,
   dracula,
   nord,
@@ -68,6 +69,14 @@ export const inkwell: CustomTheme = {
     base: { theme: "nord" },
     terminal: { base: { theme: "ink" } },
   },
+};
+
+/** A terminal custom theme: dark only, on the terminal-only `ink`, one override. */
+export const dusk: CustomTerminalTheme = {
+  id: "custom-dusk",
+  kind: "terminal",
+  label: "Dusk",
+  dark: { base: { theme: "ink" }, tokens: { "ansi-red": "#e0533d" } },
 };
 
 export const nordTerminal = nord.dark?.terminal as TerminalTokens;

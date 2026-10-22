@@ -1,6 +1,10 @@
 export { amoled } from "./amoled.ts";
 export { builtinThemes } from "./builtin.ts";
-export { composeTheme } from "./compose.ts";
+export {
+  composeTerminalTheme,
+  composeTheme,
+  isCustomTerminalTheme,
+} from "./compose.ts";
 export { renderDeclarations, renderTerminalDeclarations } from "./render.ts";
 export {
   isUiTheme,
@@ -27,9 +31,11 @@ export {
   TOKEN_NAMES,
 } from "./tokens.ts";
 export type {
+  AnyCustomTheme,
   ColorScheme,
   CustomSide,
   CustomTerminal,
+  CustomTerminalTheme,
   CustomTheme,
   Palette,
   ResolvedPalette,

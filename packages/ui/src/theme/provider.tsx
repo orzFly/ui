@@ -1,6 +1,6 @@
 import type {
+  AnyCustomTheme,
   ColorScheme,
-  CustomTheme,
   TerminalTheme,
   TerminalTokens,
   Theme,
@@ -56,13 +56,13 @@ const fallbackPref = () => FALLBACK_PREF;
 const fallbackResolved = () => FALLBACK_RESOLVED;
 const fallbackTerminal = () => FALLBACK_TERMINAL;
 const fallbackThemes = () => FALLBACK_THEMES;
-const NO_CUSTOM_THEMES: readonly CustomTheme[] = Object.freeze([]);
+const NO_CUSTOM_THEMES: readonly AnyCustomTheme[] = Object.freeze([]);
 const fallbackCustomThemes = () => NO_CUSTOM_THEMES;
 
 interface CustomThemeControls {
   preview: (next: ThemePreview | null) => void;
-  customThemes: readonly CustomTheme[];
-  setCustomThemes: (next: readonly CustomTheme[]) => void;
+  customThemes: readonly AnyCustomTheme[];
+  setCustomThemes: (next: readonly AnyCustomTheme[]) => void;
 }
 
 /** What both hooks add for a picker or an editor: preview and the custom list. */

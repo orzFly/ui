@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { composeTheme, type Palette, resolvePalette } from "../src/index.ts";
+import {
+  composeTerminalTheme,
+  composeTheme,
+  isCustomTerminalTheme,
+  type Palette,
+  resolvePalette,
+} from "../src/index.ts";
 import { duo, ink, night, term, terminal, tokens } from "./fixtures.ts";
 
 const themes = [duo, night, term, ink];
@@ -182,5 +188,116 @@ describe("composeTheme", () => {
       themes,
     );
     expect(JSON.parse(JSON.stringify(theme))).toEqual(theme);
+  });
+});
+
+describe("composeTerminalTheme", () => {
+  const compose = (sides: object) =>
+    composeTerminalTheme(
+      { id: "t", kind: "terminal", label: "Term custom", ...sides },
+      themes,
+    );
+
+  it("bases a side on a terminal-only theme and on a UI theme", () => {
+    expect(
+      compose({
+        light: { base: { theme: "term" } },
+        dark: { base: { theme: "duo" } },
+      }),
+    ).toEqual({
+      id: "t",
+      label: "Term custom",
+      light: { terminal: terminal("#fafafa") },
+      dark: { terminal: terminal("#222222") },
+    });
+  });
+
+  it("takes the pinned scheme, else the side's own, else the base's only one", () => {
+    expect(
+      compose({ light: { base: { theme: "term", scheme: "dark" } } })?.light,
+    ).toEqual({ terminal: terminal("#0a0a0a") });
+    expect(compose({ dark: { base: { theme: "term" } } })?.dark).toEqual({
+      terminal: terminal("#0a0a0a"),
+    });
+    expect(compose({ light: { base: { theme: "ink" } } })?.light).toEqual({
+      terminal: terminal("#050505"),
+    });
+  });
+
+  it("applies a variant, and falls back to default for an unknown one", () => {
+    expect(
+      compose({ dark: { base: { theme: "term", variant: "hc" } } })?.dark
+        ?.terminal,
+    ).toEqual(terminal("#0a0a0a", { "ansi-red": "#ff0000" }));
+    expect(
+      compose({ dark: { base: { theme: "term", variant: "nope" } } })?.dark
+        ?.terminal,
+    ).toEqual(terminal("#0a0a0a"));
+  });
+
+  it("spreads overrides over the base, after the variant", () => {
+    expect(
+      compose({
+        dark: {
+          base: { theme: "duo", variant: "dim" },
+          tokens: { "ansi-blue": "#0000ff" },
+        },
+      })?.dark?.terminal,
+    ).toEqual(
+      terminal("#222222", { "ansi-red": "#880000", "ansi-blue": "#0000ff" }),
+    );
+  });
+
+  it("takes a detached side as written", () => {
+    expect(compose({ light: { tokens: terminal("#abcdef") } })?.light).toEqual({
+      terminal: terminal("#abcdef"),
+    });
+  });
+
+  it("drops a side whose base is missing or lacks the scheme", () => {
+    expect(
+      compose({
+        light: { base: { theme: "gone" } },
+        dark: { base: { theme: "ink", scheme: "light" } },
+      }),
+    ).toBeNull();
+    const one = compose({
+      light: { base: { theme: "gone" } },
+      dark: { base: { theme: "ink" } },
+    });
+    expect(one).not.toHaveProperty("light");
+    expect(one?.dark).toEqual({ terminal: terminal("#050505") });
+  });
+
+  it("is null with no sides", () => {
+    expect(compose({})).toBeNull();
+  });
+
+  it("carries terminal only: no label, no variants, no UI tokens", () => {
+    const theme = compose({
+      light: { base: { theme: "duo", variant: "soft" } },
+      dark: { base: { theme: "term" } },
+    });
+    expect(Object.keys(theme?.light ?? {})).toEqual(["terminal"]);
+    expect(Object.keys(theme?.dark ?? {})).toEqual(["terminal"]);
+    expect(JSON.parse(JSON.stringify(theme))).toEqual(theme);
+  });
+});
+
+describe("isCustomTerminalTheme", () => {
+  it("tells the kinds apart", () => {
+    expect(
+      isCustomTerminalTheme({ id: "t", kind: "terminal", label: "T" }),
+    ).toBe(true);
+    expect(isCustomTerminalTheme({ id: "c", kind: "ui", label: "C" })).toBe(
+      false,
+    );
+    expect(
+      isCustomTerminalTheme({
+        id: "c",
+        label: "C",
+        light: { base: { theme: "duo" } },
+      }),
+    ).toBe(false);
   });
 });

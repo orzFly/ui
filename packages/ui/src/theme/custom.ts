@@ -1,4 +1,4 @@
-import type { CustomTheme } from "@orz/themes";
+import type { AnyCustomTheme } from "@orz/themes";
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -20,23 +20,29 @@ function sideOk(value: unknown): boolean {
   return value.base !== undefined;
 }
 
-function customOk(value: unknown): value is CustomTheme {
+function customOk(value: unknown): value is AnyCustomTheme {
   if (!isObject(value)) return false;
-  const { id, label, light, dark } = value;
+  const { id, kind, label, light, dark } = value;
   if (typeof id !== "string" || typeof label !== "string") return false;
   if (light === undefined && dark === undefined) return false;
-  return (
-    (light === undefined || sideOk(light)) &&
-    (dark === undefined || sideOk(dark))
-  );
+  // A kind this version does not know must not reach composeTheme as a UI
+  // theme: a based terminal side is also a valid based UI side.
+  const ok =
+    kind === "terminal"
+      ? sourceOk
+      : kind === undefined || kind === "ui"
+        ? sideOk
+        : null;
+  if (ok === null) return false;
+  return (light === undefined || ok(light)) && (dark === undefined || ok(dark));
 }
 
 /**
  * The custom themes stored as JSON, keeping each entry whose shape
- * `composeTheme` can read and dropping the rest; `[]` for anything that is
- * not a JSON array.
+ * `composeTheme` or `composeTerminalTheme` can read and dropping the rest;
+ * `[]` for anything that is not a JSON array.
  */
-export function parseCustomThemes(raw: string | null): CustomTheme[] {
+export function parseCustomThemes(raw: string | null): AnyCustomTheme[] {
   if (raw === null) return [];
   let parsed: unknown;
   try {

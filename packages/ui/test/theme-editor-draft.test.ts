@@ -1,9 +1,12 @@
 import {
+  type AnyCustomTheme,
   builtinThemes,
+  type CustomTerminalTheme,
   type CustomTheme,
   dracula,
   nord,
   resolvePalette,
+  resolveTerminal,
   solarized,
   TERMINAL_TOKEN_NAMES,
   type TerminalTokens,
@@ -54,12 +57,14 @@ const based: CustomTheme = {
   dark: { base: { theme: "nord" } },
 };
 
-const run = (state: DraftState, ...actions: DraftAction[]) =>
-  actions.reduce(draftReducer, state);
-const start = (draft: CustomTheme, saved: CustomTheme | null = draft) =>
+const run = <C extends AnyCustomTheme>(
+  state: DraftState<C>,
+  ...actions: DraftAction[]
+) => actions.reduce<DraftState<C>>(draftReducer, state);
+const start = <C extends AnyCustomTheme>(draft: C, saved: C | null = draft) =>
   initDraftState({ draft, saved });
 /** What the side shows now, as the editor passes it. */
-const shown = (state: DraftState, scheme: "light" | "dark") => {
+const shown = (state: DraftState<CustomTheme>, scheme: "light" | "dark") => {
   const palette = composeDraft(state.draft, themes)?.[scheme];
   if (!palette) throw new Error(`no ${scheme} side`);
   return { tokens: palette.tokens, terminal: palette.terminal };
@@ -280,12 +285,15 @@ describe("terminal", () => {
 
   it("a pin through the shared control keeps one terminal", () => {
     const solar = { base: { theme: "solarized" } };
-    const state = run(start({ ...based, light: solar, dark: solar }), {
-      type: "setTerminalToken",
-      target: "both",
-      name: "ansi-red",
-      value: "#ff0000",
-    });
+    const state = run(
+      start<CustomTheme>({ ...based, light: solar, dark: solar }),
+      {
+        type: "setTerminalToken",
+        target: "both",
+        name: "ansi-red",
+        value: "#ff0000",
+      },
+    );
     expect(state.draft.light?.terminal).toEqual({
       base: { theme: "solarized" },
       tokens: { "ansi-red": "#ff0000" },
@@ -607,6 +615,228 @@ describe("new themes", () => {
     );
     expect(fallbackBase("dark", "dracula", builtinThemes)).toEqual({
       theme: "dracula",
+    });
+  });
+});
+
+describe("terminal themes", () => {
+  const glow: CustomTerminalTheme = {
+    id: "custom-glow",
+    kind: "terminal",
+    label: "Glow",
+    dark: { base: { theme: "ink" }, tokens: { "ansi-red": "#ff3344" } },
+  };
+  const nordDark = resolveTerminal(nord, "dark")?.terminal as TerminalTokens;
+
+  it("switches None · Based · Fully custom per side, keeping each form for the session", () => {
+    let state = start(glow);
+    const before = composeDraft(glow, themes)?.dark?.terminal;
+    state = run(state, {
+      type: "setTerminalMode",
+      target: "dark",
+      mode: "detached",
+      resolved: before,
+    });
+    expect(state.draft.dark).toEqual({ tokens: before });
+    expect(sideMode(state.draft, "dark")).toBe("detached");
+    expect(terminalMode(state.draft, "dark")).toBe("detached");
+
+    state = run(
+      state,
+      {
+        type: "setTerminalToken",
+        target: "dark",
+        name: "ansi-blue",
+        value: "#0000ff",
+      },
+      { type: "setTerminalMode", target: "dark", mode: "based" },
+    );
+    expect(state.draft.dark).toEqual(glow.dark);
+
+    state = run(state, {
+      type: "setTerminalMode",
+      target: "dark",
+      mode: "none",
+    });
+    expect(state.draft).not.toHaveProperty("dark");
+    expect(terminalMode(state.draft, "dark")).toBeNull();
+    state = run(state, {
+      type: "setTerminalMode",
+      target: "dark",
+      mode: "detached",
+    });
+    expect(state.draft.dark).toEqual({
+      tokens: { ...before, "ansi-blue": "#0000ff" },
+    });
+  });
+
+  it("adds a side from None on the given base, and ignores Follow and both", () => {
+    let state = start(glow);
+    const ignored = run(
+      state,
+      { type: "setTerminalMode", target: "dark", mode: "follow" },
+      {
+        type: "setTerminalMode",
+        target: "both",
+        mode: "detached",
+        resolved: nordDark,
+      },
+      { type: "setSideMode", scheme: "dark", mode: "none" },
+      { type: "setBase", scheme: "dark", base: { theme: "nord" } },
+    );
+    expect(ignored.draft).toEqual(glow);
+    expect(isDirty(ignored)).toBe(false);
+
+    state = run(state, {
+      type: "setTerminalMode",
+      target: "light",
+      mode: "based",
+      base: { theme: "nord", scheme: "dark" },
+    });
+    expect(state.draft.light).toEqual({
+      base: { theme: "nord", scheme: "dark" },
+    });
+    expect(composeDraft(state.draft, themes)?.light?.terminal).toEqual(
+      nordDark,
+    );
+  });
+
+  it("composes to null when both sides are None", () => {
+    const state = run(start(glow), {
+      type: "setTerminalMode",
+      target: "dark",
+      mode: "none",
+    });
+    expect(state.draft).toEqual({
+      id: glow.id,
+      kind: "terminal",
+      label: glow.label,
+    });
+    expect(composeDraft(state.draft, themes)).toBeNull();
+  });
+
+  it("keeps overrides across palette and variant changes; ↺ and Reset all remove them", () => {
+    let state = run(
+      start(glow),
+      {
+        type: "setTerminalBase",
+        target: "dark",
+        base: { theme: "dracula" },
+      },
+      { type: "setTerminalVariant", target: "dark", variant: "amoled" },
+      {
+        type: "setTerminalToken",
+        target: "dark",
+        name: "ansi-green",
+        value: "#00ff00",
+      },
+    );
+    expect(state.draft.dark).toEqual({
+      base: { theme: "dracula", variant: "amoled" },
+      tokens: { "ansi-red": "#ff3344", "ansi-green": "#00ff00" },
+    });
+    expect(isTerminalOverridden(state.draft, "dark", "ansi-red")).toBe(true);
+    expect(terminalOverrideCount(state.draft, "dark")).toBe(2);
+
+    state = run(state, {
+      type: "resetTerminalToken",
+      target: "dark",
+      name: "ansi-red",
+    });
+    expect(terminalOverrideCount(state.draft, "dark")).toBe(1);
+    state = run(state, { type: "resetAllTerminal", target: "dark" });
+    expect(state.draft.dark).toEqual({
+      base: { theme: "dracula", variant: "amoled" },
+    });
+  });
+
+  it("dispatches composeDraft to a terminal palette with no UI tokens", () => {
+    const composed = composeDraft({ ...glow, label: " " }, themes);
+    expect(composed?.label).toBe("Untitled theme");
+    expect(composed?.dark).toEqual({
+      terminal: {
+        ...ink.dark?.terminal,
+        "ansi-red": "#ff3344",
+      },
+    });
+  });
+
+  describe("new terminal themes", () => {
+    const ctx = {
+      kind: "terminal" as const,
+      pref: {},
+      baseThemes: builtinThemes,
+      labels: ["Terminal theme"],
+    };
+
+    it("starts based on the base theme the terminal shows, with the variant where defined", () => {
+      const theme = newTheme({
+        ...ctx,
+        customs: [],
+        pref: {
+          terminal: { theme: "dracula", mode: "dark", variant: "amoled" },
+        },
+        terminal: { theme: dracula, variant: "amoled", following: false },
+      });
+      expect(theme.kind).toBe("terminal");
+      expect(theme.label).toBe("Terminal theme (2)");
+      expect(theme.dark).toEqual({
+        base: { theme: "dracula", variant: "amoled" },
+      });
+      expect(theme).not.toHaveProperty("light");
+
+      const following = newTheme({
+        ...ctx,
+        customs: [],
+        pref: { ui: { theme: "solarized", mode: "system" } },
+        terminal: { theme: solarized, variant: "default", following: true },
+      });
+      expect(following.light).toEqual({ base: { theme: "solarized" } });
+      expect(following.dark).toEqual({ base: { theme: "solarized" } });
+
+      const inky = newTheme({
+        ...ctx,
+        customs: [],
+        terminal: { theme: ink, variant: "default", following: false },
+      });
+      expect(inky.dark).toEqual({ base: { theme: "ink" } });
+    });
+
+    it("copies a terminal custom theme's sides", () => {
+      const shownTheme = composeDraft(glow, themes);
+      if (!shownTheme) throw new Error("composes");
+      const theme = newTheme({
+        ...ctx,
+        customs: [glow],
+        terminal: { theme: shownTheme, variant: "default", following: false },
+      });
+      expect(theme.id).not.toBe(glow.id);
+      expect({ ...theme, id: glow.id, label: glow.label }).toEqual(glow);
+      expect(theme.dark).not.toBe(glow.dark);
+    });
+
+    it("makes each side of a UI custom theme Fully custom from its terminal", () => {
+      const shownTheme = composeDraft(based, themes);
+      if (!shownTheme) throw new Error("composes");
+      const theme = newTheme({
+        ...ctx,
+        customs: [based],
+        pref: { ui: { theme: based.id, mode: "light" } },
+        terminal: { theme: shownTheme, variant: "default", following: true },
+      });
+      expect(theme.light).toEqual({ tokens: shownTheme.light?.terminal });
+      expect(theme.dark).toEqual({ tokens: nordDark });
+    });
+
+    it("duplicates with the kind kept", () => {
+      const copy = duplicate(glow, {
+        baseThemes: builtinThemes,
+        customs: [glow],
+        labels: ["Glow"],
+      });
+      expect(copy.kind).toBe("terminal");
+      expect(copy.label).toBe("Glow copy");
+      expect(copy.dark).toEqual(glow.dark);
     });
   });
 });

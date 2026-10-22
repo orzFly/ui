@@ -1,7 +1,9 @@
 export type {
+  AnyCustomTheme,
   ColorScheme,
   CustomSide,
   CustomTerminal,
+  CustomTerminalTheme,
   CustomTheme,
   Palette,
   TerminalPalette,

@@ -1,4 +1,4 @@
-import type { CustomTheme, TerminalTheme } from "@orz/themes";
+import type { TerminalTheme } from "@orz/themes";
 import { type DragEvent, useEffect, useId, useRef, useState } from "react";
 import {
   type ImportEntry,
@@ -14,10 +14,12 @@ import { Textarea } from "../textarea.tsx";
 export interface ImportPanelProps {
   /** The lists the file's references resolve against (UI and terminal-only together). */
   themes: readonly TerminalTheme[];
-  /** Labels imported themes must not take: custom and base themes. */
+  /** Labels imported themes must not take: custom themes of both kinds, and both slots' base themes. */
   labels: readonly string[];
+  /** The store's slots: a terminal theme needs a terminal, and a UI theme without a UI slot comes in as a terminal theme. */
+  slots: { ui: boolean; terminal: boolean };
   /** Writes the checked themes; ids are the caller's. */
-  onImport: (themes: Omit<CustomTheme, "id">[]) => void;
+  onImport: (themes: NonNullable<ImportEntry["theme"]>[]) => void;
   /** Why the last import could not be written, if it failed. */
   error: string | null;
   onBack: () => void;
@@ -50,6 +52,7 @@ const STATUS: Record<ImportStatus, { label: string; className: string }> = {
 export function ImportPanel({
   themes,
   labels,
+  slots,
   onImport,
   error,
   onBack,
@@ -70,11 +73,11 @@ export function ImportPanel({
       return;
     }
     const timer = setTimeout(() => {
-      setResult(parseThemeFile(text, themes, labels));
+      setResult(parseThemeFile(text, themes, labels, { slots }));
       setExcluded(new Set());
     }, PARSE_DELAY);
     return () => clearTimeout(timer);
-  }, [text, themes, labels]);
+  }, [text, themes, labels, slots]);
 
   const edit = (next: string) => {
     reading.current++;
@@ -261,6 +264,11 @@ function ImportRow({
           <label htmlFor={id} className="min-w-0 flex-1 truncate text-sm">
             {label}
           </label>
+          {entry.kind === "terminal" && (
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              Terminal
+            </span>
+          )}
           <span
             className={cn(
               "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",

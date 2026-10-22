@@ -1,7 +1,9 @@
 import {
+  type AnyCustomTheme,
   type ColorScheme,
-  type CustomTheme,
+  composeTerminalTheme,
   composeTheme,
+  isCustomTerminalTheme,
   isUiTheme,
   renderDeclarations,
   renderTerminalDeclarations,
@@ -84,7 +86,7 @@ export interface ThemeStore {
   getTerminal(): ResolvedTerminalTheme;
   /** [] without a UI slot. The composed custom themes first, then the base list. */
   getThemes(): readonly Theme[];
-  /** [] without a terminal slot. The composed custom themes first, then the base list. */
+  /** [] without a terminal slot. The composed custom themes first (UI ones only when there is a UI slot too), then the base list. */
   getTerminalThemes(): readonly TerminalTheme[];
   /** Normalizes, persists, applies, notifies. Clears the preview. */
   setPref(next: ThemePref): void;
@@ -100,14 +102,14 @@ export interface ThemeStore {
   setThemes(next: readonly Theme[]): void;
   /** Only on a store with a terminal slot; non-empty. Replaces the base list. */
   setTerminalThemes(next: readonly TerminalTheme[]): void;
-  /** Every stored custom theme, including those that compose to null. The same array until it changes. */
-  getCustomThemes(): readonly CustomTheme[];
+  /** Every stored custom theme of both kinds, including those that compose to null. The same array until it changes. */
+  getCustomThemes(): readonly AnyCustomTheme[];
   /**
    * Replaces the list, persists it (unless `persistCustomThemes: false`),
    * re-composes the theme lists, notifies. Throws on an id that repeats or
    * equals a base theme's id.
    */
-  setCustomThemes(next: readonly CustomTheme[]): void;
+  setCustomThemes(next: readonly AnyCustomTheme[]): void;
   subscribe(listener: () => void): () => void;
   /** Detaches the media-query and cross-tab listeners, and clears the preview. */
   dispose(): void;
@@ -186,7 +188,7 @@ export function createThemeStore({
   }
   let baseThemes = slot(initialThemes, "themes");
   let baseTerminalThemes = slot(initialTerminalThemes, "terminalThemes");
-  let customs: readonly CustomTheme[] = [];
+  let customs: readonly AnyCustomTheme[] = [];
   // What the slots show: the composed custom themes, then the base list.
   let themes = baseThemes;
   let terminalThemes = baseTerminalThemes;
@@ -232,21 +234,35 @@ export function createThemeStore({
   function recompose() {
     const base = [...(baseThemes ?? []), ...(baseTerminalThemes ?? [])];
     const taken = baseIds();
-    const composed: Theme[] = [];
+    const uiRun: Theme[] = [];
+    const terminalRun: TerminalTheme[] = [];
     for (const custom of customs) {
       // A stored list skips setCustomThemes' checks, and a base list may gain
       // a custom's id later: the id stays with whichever theme had it first.
       if (taken.has(custom.id)) continue;
-      const theme = composeTheme(custom, base);
-      if (theme === null) continue;
-      taken.add(theme.id);
-      composed.push(theme);
+      if (isCustomTerminalTheme(custom)) {
+        const theme = composeTerminalTheme(custom, base);
+        if (theme === null) continue;
+        taken.add(theme.id);
+        terminalRun.push(theme);
+      } else {
+        const theme = composeTheme(custom, base);
+        if (theme === null) continue;
+        taken.add(theme.id);
+        uiRun.push(theme);
+        // Without a UI slot a UI custom theme shows nowhere, as a terminal
+        // one does without a terminal: the editor there cannot open it.
+        if (baseThemes) terminalRun.push(theme);
+      }
     }
-    themes = baseThemes && [...composed, ...baseThemes];
-    terminalThemes = baseTerminalThemes && [...composed, ...baseTerminalThemes];
+    themes = baseThemes && [...uiRun, ...baseThemes];
+    terminalThemes = baseTerminalThemes && [
+      ...terminalRun,
+      ...baseTerminalThemes,
+    ];
   }
 
-  function readCustom(): readonly CustomTheme[] {
+  function readCustom(): readonly AnyCustomTheme[] {
     try {
       return parseCustomThemes(localStorage.getItem(customStorageKey));
     } catch {

@@ -2,10 +2,12 @@ import { builtinThemes, type CustomTheme, dracula } from "@orz/themes";
 import { describe, expect, it, vi } from "vitest";
 import { parseCustomThemes } from "../src/theme/custom.ts";
 import {
+  dusk,
   html,
   ink,
   inkwell,
   nordTerminal,
+  paper,
   resetThemeEnvironment,
   store,
   stubDarkQuery,
@@ -47,6 +49,142 @@ describe("parseCustomThemes", () => {
       sunrise,
       inkwell,
     ]);
+  });
+
+  it("keeps a terminal custom theme, and drops one with no side, a bad side or an unknown kind", () => {
+    const detached = {
+      id: "t-own",
+      kind: "terminal",
+      label: "Own",
+      light: { tokens: { ...nordTerminal } },
+    };
+    const entries: unknown[] = [
+      dusk,
+      { id: "t-none", kind: "terminal", label: "None" },
+      { id: "t-bad", kind: "terminal", label: "Bad", dark: { base: "ink" } },
+      {
+        id: "t-half",
+        kind: "terminal",
+        label: "Half",
+        light: { base: { theme: "ink" } },
+        dark: 3,
+      },
+      { ...sunrise, id: "future", kind: "syntax" },
+      { ...sunrise, id: "ui", kind: "ui" },
+      detached,
+    ];
+    expect(parseCustomThemes(JSON.stringify(entries))).toEqual([
+      dusk,
+      { ...sunrise, id: "ui", kind: "ui" },
+      detached,
+    ]);
+  });
+});
+
+describe("terminal custom themes in the store", () => {
+  it("lands in the terminal slot only, in list order across both kinds", () => {
+    stubDarkQuery(true);
+    const themes = store({ terminalThemes: [...builtinThemes, ink] });
+    themes.setCustomThemes([inkwell, dusk, sunrise]);
+    expect(ids(themes.getThemes())).toEqual([
+      "custom-inkwell",
+      "custom-sunrise",
+      ...ids(builtinThemes),
+    ]);
+    expect(ids(themes.getTerminalThemes())).toEqual([
+      "custom-inkwell",
+      "custom-dusk",
+      "custom-sunrise",
+      ...ids(builtinThemes),
+      "ink",
+    ]);
+    expect(themes.getTerminalThemes()[1]).toEqual({
+      id: "custom-dusk",
+      label: "Dusk",
+      dark: {
+        terminal: {
+          ...ink.dark?.terminal,
+          "ansi-red": "#e0533d",
+        },
+      },
+    });
+  });
+
+  it("stays in the list, shown nowhere, in a store with no terminal slot", () => {
+    stubDarkQuery(true);
+    const themes = store();
+    themes.setCustomThemes([dusk]);
+    expect(themes.getCustomThemes()).toEqual([dusk]);
+    expect(ids(themes.getThemes())).not.toContain("custom-dusk");
+    expect(themes.getTerminalThemes()).toEqual([]);
+  });
+
+  it("leaves a UI custom theme out of a store with no UI slot", () => {
+    stubDarkQuery(true);
+    const themes = store({
+      themes: undefined,
+      terminalThemes: [...builtinThemes, ink],
+    });
+    themes.setCustomThemes([sunrise, dusk]);
+    expect(themes.getCustomThemes()).toEqual([sunrise, dusk]);
+    expect(ids(themes.getTerminalThemes())).toEqual([
+      "custom-dusk",
+      ...ids(builtinThemes),
+      "ink",
+    ]);
+  });
+
+  it("serves a terminal pick that names it, across a reload", () => {
+    stubDarkQuery(false);
+    const first = store({ themes: undefined, terminalThemes: [ink, paper] });
+    first.setCustomThemes([dusk]);
+    first.setPref({ terminal: { theme: "custom-dusk", mode: "light" } });
+    // One dark side serves a light pick too.
+    expect(first.getPref().terminal).toEqual({
+      theme: "custom-dusk",
+      mode: "dark",
+    });
+    expect(first.getTerminal().tokens["ansi-red"]).toBe("#e0533d");
+    first.dispose();
+
+    const second = store({ themes: undefined, terminalThemes: [ink, paper] });
+    expect(second.getCustomThemes()).toEqual([dusk]);
+    expect(second.getPref().terminal?.theme).toBe("custom-dusk");
+    expect(second.getTerminal().tokens["terminal-background"]).toBe("#050505");
+    expect(html.dataset.terminalTheme).toBe("custom-dusk");
+  });
+
+  it("re-reads it when another tab writes the list", () => {
+    stubDarkQuery(true);
+    const themes = store({ themes: undefined, terminalThemes: [ink, paper] });
+    const heard = vi.fn();
+    themes.subscribe(heard);
+    localStorage.setItem("app-theme-custom", JSON.stringify([dusk]));
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "app-theme-custom" }),
+    );
+    expect(themes.getCustomThemes()).toEqual([dusk]);
+    expect(themes.getTerminalThemes()[0]?.id).toBe("custom-dusk");
+    expect(heard).toHaveBeenCalledTimes(1);
+  });
+
+  it("is left out when its base is gone", () => {
+    stubDarkQuery(true);
+    const themes = store({ themes: undefined, terminalThemes: [paper] });
+    themes.setCustomThemes([dusk]);
+    expect(themes.getCustomThemes()).toEqual([dusk]);
+    expect(ids(themes.getTerminalThemes())).toEqual(["paper"]);
+  });
+
+  it("checks ids across both kinds", () => {
+    stubDarkQuery(true);
+    const themes = store({ terminalThemes: [...builtinThemes, ink] });
+    expect(() =>
+      themes.setCustomThemes([dusk, { ...sunrise, id: "custom-dusk" }]),
+    ).toThrow(/twice/);
+    expect(() => themes.setCustomThemes([{ ...dusk, id: "ink" }])).toThrow(
+      /base/,
+    );
   });
 });
 
