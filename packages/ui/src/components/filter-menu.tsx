@@ -1,14 +1,17 @@
-import { CheckIcon, SearchIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
 import type {
   ComponentProps,
   KeyboardEvent,
+  PointerEvent,
   ReactElement,
   ReactNode,
   Ref,
+  RefObject,
 } from "react";
 import {
   Fragment,
   useCallback,
+  useEffect,
   useId,
   useImperativeHandle,
   useLayoutEffect,
@@ -17,7 +20,12 @@ import {
   useState,
 } from "react";
 import { cn } from "../lib/utils.ts";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover.tsx";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from "./popover.tsx";
 
 export interface FilterMenuRow {
   /** Unique across every section. */
@@ -64,6 +72,12 @@ export interface FilterMenuProps<R extends FilterMenuRow> {
   onHighlight?: (row: R | null) => void;
   /** The menu closes after it. */
   onSelect: (row: R) => void;
+  /** A row's submenu rows; undefined or empty = no submenu. Ids unique across the whole menu. */
+  getSubmenu?: (row: R) => readonly R[] | undefined;
+  /** The committed row inside a submenu: checked there. */
+  selectedSubmenuId?: string;
+  /** Accessible name of a row's submenu listbox. */
+  submenuLabel?: (row: R) => string;
   header?: ReactNode;
   footer?: ReactNode;
   placeholder?: string;
@@ -170,6 +184,52 @@ function focusBeside(
   from.focus({ preventScroll: true });
 }
 
+type Point = { x: number; y: number };
+
+/** Ray casting, the test Radix Menu's submenu grace area uses. */
+function insidePolygon(point: Point, polygon: readonly Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i] as Point;
+    const b = polygon[j] as Point;
+    if (
+      a.y > point.y !== b.y > point.y &&
+      point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
+    ) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/** How long the pointer may take crossing other rows toward an open submenu. */
+const GRACE_MS = 300;
+
+const OPTION_CLASS =
+  "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pl-1.5 text-sm select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-accent data-highlighted:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+
+function Mark({
+  className,
+  children,
+}: {
+  className: string;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "pointer-events-none absolute flex size-4 items-center justify-center",
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+const isEscapeOfComposition = (event: globalThis.KeyboardEvent) =>
+  event.isComposing || event.keyCode === 229;
+
 /**
  * A popover with a filter box over a list, the combobox pattern: focus stays
  * in the box, so typing always filters, and the arrow keys walk a highlight
@@ -189,6 +249,9 @@ export function FilterMenu<R extends FilterMenuRow>({
   selectedId,
   onHighlight,
   onSelect,
+  getSubmenu,
+  selectedSubmenuId,
+  submenuLabel,
   header,
   footer,
   placeholder = "Filter…",
@@ -202,12 +265,29 @@ export function FilterMenu<R extends FilterMenuRow>({
 }: FilterMenuProps<R>) {
   const [openState, setOpenState] = useState(defaultOpen);
   const open = openProp ?? openState;
-  const [highlight, setHighlightState] = useState<string | null>(null);
+  const [highlight, setHighlightId] = useState<string | null>(null);
+  // Non-null while the highlight is inside the highlighted row's submenu.
+  const [subHighlight, setSubHighlight] = useState<string | null>(null);
+  // A submenu opens for a highlight the user moved, not for one resting on
+  // the committed row or the query's first hit.
+  const [moved, setMoved] = useState(false);
   const reported = useRef<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const content = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const submenu = useRef<HTMLDivElement>(null);
+  const anchor = useRef<HTMLDivElement | null>(null);
   const tabbing = useRef<"forward" | "backward" | null>(null);
+  const grace = useRef<{
+    polygon: Point[];
+    until: number;
+    right: boolean;
+    x: number;
+    towards: boolean;
+  } | null>(null);
+  const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pointerIn = useRef<"list" | "submenu" | null>(null);
   /**
    * Who placed the highlight: resting on the committed row, on the query's
    * first hit, or by the user. The first two follow the list as it changes.
@@ -215,6 +295,7 @@ export function FilterMenu<R extends FilterMenuRow>({
   const mode = useRef<"rest" | "hit" | "user">("rest");
   const base = useId();
   const listId = `${base}-list`;
+  const submenuId = `${base}-submenu`;
 
   const visible = useMemo(
     () => sections.filter((section) => section.rows.length > 0),
@@ -226,6 +307,7 @@ export function FilterMenu<R extends FilterMenuRow>({
     [rows],
   );
   const optionId = (index: number) => `${base}-option-${index}`;
+  const subOptionId = (index: number) => `${base}-suboption-${index}`;
 
   const onHighlightRef = useRef(onHighlight);
   onHighlightRef.current = onHighlight;
@@ -236,10 +318,17 @@ export function FilterMenu<R extends FilterMenuRow>({
     onHighlightRef.current?.(row);
   }, []);
 
+  // Moving the highlight in the list always leaves the submenu.
+  const setHighlightState = useCallback((id: string | null, byUser = false) => {
+    setHighlightId(id);
+    setSubHighlight(null);
+    setMoved(byUser);
+  }, []);
+
   /** A highlight the user moved, reported as such. */
   const move = (row: R | null) => {
     mode.current = "user";
-    setHighlightState(row?.id ?? null);
+    setHighlightState(row?.id ?? null, true);
     report(row);
   };
 
@@ -251,7 +340,7 @@ export function FilterMenu<R extends FilterMenuRow>({
     mode.current = "rest";
     setHighlightState(committed);
     report(null);
-  }, [committed, report]);
+  }, [committed, report, setHighlightState]);
 
   useImperativeHandle(ref, () => ({ resetHighlight: rest }), [rest]);
 
@@ -275,6 +364,19 @@ export function FilterMenu<R extends FilterMenuRow>({
     if (!open) report(null);
     else if (query !== "") onQueryChangeRef.current("");
   }, [open, query, report]);
+
+  const highlightIndex =
+    highlight === null ? -1 : (indexOf.get(highlight) ?? -1);
+  const parent = highlightIndex < 0 ? undefined : rows[highlightIndex];
+  const subRows = useMemo(
+    () => (parent && getSubmenu?.(parent)) || [],
+    [parent, getSubmenu],
+  );
+  const submenuOpen = open && moved && subRows.length > 0;
+  const subIndex =
+    subHighlight === null
+      ? -1
+      : subRows.findIndex((row) => row.id === subHighlight);
 
   // Typing puts the highlight on the best hit, so Enter takes it; clearing the
   // query puts it back on the committed row. Until the user moves it, it keeps
@@ -301,22 +403,66 @@ export function FilterMenu<R extends FilterMenuRow>({
     } else if (highlight !== null && !indexOf.has(highlight)) {
       setHighlightState(null);
       report(null);
+    } else if (subHighlight !== null && subIndex < 0) {
+      // The submenu row is gone; the parent row still stands.
+      setSubHighlight(null);
+      report(parent ?? null);
     }
-  }, [open, query, rows, indexOf, highlight, committed, report]);
-
-  const highlightIndex =
-    highlight === null ? -1 : (indexOf.get(highlight) ?? -1);
+  }, [
+    open,
+    query,
+    rows,
+    indexOf,
+    highlight,
+    committed,
+    report,
+    setHighlightState,
+    subHighlight,
+    subIndex,
+    parent,
+  ]);
 
   useLayoutEffect(() => {
-    if (!open || highlightIndex < 0) return;
-    document
-      .getElementById(optionId(highlightIndex))
-      ?.scrollIntoView?.({ block: "nearest" });
+    if (!open) return;
+    const id =
+      subIndex >= 0
+        ? subOptionId(subIndex)
+        : highlightIndex >= 0
+          ? optionId(highlightIndex)
+          : null;
+    if (id) document.getElementById(id)?.scrollIntoView?.({ block: "nearest" });
   });
 
-  const step = (from: number, by: 1 | -1): R | undefined => {
-    for (let i = from + by; i >= 0 && i < rows.length; i += by) {
-      const row = rows[i] as R;
+  const clearGrace = useCallback(() => {
+    grace.current = null;
+    if (graceTimer.current !== null) clearTimeout(graceTimer.current);
+    graceTimer.current = null;
+  }, []);
+  useEffect(() => clearGrace, [clearGrace]);
+  useEffect(() => {
+    if (!open) clearGrace();
+  }, [open, clearGrace]);
+
+  /** `heading: false` for the list's own leave, which fires where the row's did. */
+  const inGrace = (event: PointerEvent, heading = true) => {
+    const area = grace.current;
+    if (area === null || Date.now() >= area.until) return false;
+    // As Radix does, only while heading for the submenu's side: a pointer
+    // moving straight down the list grazes the triangle's thin edge. A sample
+    // with no sideways movement keeps the last direction.
+    if (event.clientX !== area.x) {
+      area.towards = area.right === event.clientX > area.x;
+      area.x = event.clientX;
+    }
+    return (
+      (area.towards || !heading) &&
+      insidePolygon({ x: event.clientX, y: event.clientY }, area.polygon)
+    );
+  };
+
+  const step = (from: readonly R[], at: number, by: 1 | -1): R | undefined => {
+    for (let i = at + by; i >= 0 && i < from.length; i += by) {
+      const row = from[i] as R;
       if (!row.disabled) return row;
     }
     return undefined;
@@ -328,27 +474,57 @@ export function FilterMenu<R extends FilterMenuRow>({
     setOpen(false);
   };
 
+  const moveIntoSubmenu = (row: R) => {
+    mode.current = "user";
+    clearGrace();
+    setMoved(true);
+    setSubHighlight(row.id);
+    report(row);
+  };
+
+  const backToParent = () => {
+    setSubHighlight(null);
+    report(parent ?? null);
+  };
+
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     // Safari ends a composition with an Enter whose isComposing is already
     // false; keyCode 229 still marks it as the IME's.
     if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+    const inSubmenu = subIndex >= 0;
+    const from = inSubmenu ? subRows : rows;
+    const at = inSubmenu ? subIndex : highlightIndex;
     let next: R | undefined;
     switch (event.key) {
       case "ArrowDown":
-        next = step(highlightIndex < 0 ? -1 : highlightIndex, 1);
+        next = step(from, at < 0 ? -1 : at, 1);
         break;
       case "ArrowUp":
-        next = step(highlightIndex < 0 ? rows.length : highlightIndex, -1);
+        next = step(from, at < 0 ? from.length : at, -1);
         break;
       case "Home":
-        next = step(-1, 1);
+        next = step(from, -1, 1);
         break;
       case "End":
-        next = step(rows.length, -1);
+        next = step(from, from.length, -1);
         break;
+      case "ArrowRight": {
+        const box = event.currentTarget;
+        if (inSubmenu || box.selectionStart !== box.value.length) return;
+        const first = step(subRows, -1, 1);
+        if (!first) return;
+        event.preventDefault();
+        moveIntoSubmenu(first);
+        return;
+      }
+      case "ArrowLeft":
+        if (!inSubmenu) return;
+        event.preventDefault();
+        backToParent();
+        return;
       case "Enter": {
         event.preventDefault();
-        const row = highlightIndex < 0 ? undefined : rows[highlightIndex];
+        const row = at < 0 ? undefined : from[at];
         if (row) choose(row);
         return;
       }
@@ -361,7 +537,28 @@ export function FilterMenu<R extends FilterMenuRow>({
         return;
     }
     event.preventDefault();
-    if (next) move(next);
+    if (!next) return;
+    if (inSubmenu) moveIntoSubmenu(next);
+    else move(next);
+  };
+
+  /** Leaving the parent row: the triangle toward the submenu's near edge. */
+  const onParentLeave = (event: PointerEvent) => {
+    const rect = submenu.current?.getBoundingClientRect();
+    if (!rect) return;
+    const right = rect.left >= event.clientX;
+    const near = right ? rect.left : rect.right;
+    grace.current = {
+      polygon: [
+        { x: event.clientX + (right ? -5 : 5), y: event.clientY },
+        { x: near, y: rect.top },
+        { x: near, y: rect.bottom },
+      ],
+      until: Date.now() + GRACE_MS,
+      right,
+      x: event.clientX,
+      towards: false,
+    };
   };
 
   let flatIndex = 0;
@@ -397,8 +594,7 @@ export function FilterMenu<R extends FilterMenuRow>({
         }}
         onEscapeKeyDown={(event) => {
           // That Escape cancels the composition, not the menu.
-          if (event.isComposing || event.keyCode === 229)
-            event.preventDefault();
+          if (isEscapeOfComposition(event)) event.preventDefault();
         }}
         onOpenAutoFocus={(event) => {
           // The box, not the first tabbable, which may be in `header`.
@@ -431,7 +627,11 @@ export function FilterMenu<R extends FilterMenuRow>({
             aria-expanded={open}
             aria-controls={listId}
             aria-activedescendant={
-              highlightIndex < 0 ? undefined : optionId(highlightIndex)
+              subIndex >= 0
+                ? subOptionId(subIndex)
+                : highlightIndex < 0
+                  ? undefined
+                  : optionId(highlightIndex)
             }
             aria-autocomplete="list"
             autoComplete="off"
@@ -446,11 +646,29 @@ export function FilterMenu<R extends FilterMenuRow>({
         </div>
         {header}
         <div
+          ref={list}
           id={listId}
           role="listbox"
           aria-label={listLabel}
           className="min-h-0 flex-1 overflow-y-auto p-1"
-          onPointerLeave={() => {
+          onPointerEnter={() => {
+            pointerIn.current = "list";
+          }}
+          onPointerLeave={(event) => {
+            pointerIn.current = null;
+            const to = event.relatedTarget;
+            if (to instanceof Node && submenu.current?.contains(to)) return;
+            if (inGrace(event, false)) {
+              // Crossing the gap toward the submenu; if the pointer never
+              // arrives, the highlight still goes when the grace runs out.
+              const left = (grace.current?.until ?? 0) - Date.now();
+              if (graceTimer.current !== null) clearTimeout(graceTimer.current);
+              graceTimer.current = setTimeout(() => {
+                graceTimer.current = null;
+                if (pointerIn.current === null) move(null);
+              }, left);
+              return;
+            }
             if (highlight !== null) move(null);
           }}
         >
@@ -470,29 +688,51 @@ export function FilterMenu<R extends FilterMenuRow>({
               const index = flatIndex++;
               const highlighted = index === highlightIndex;
               const selected = row.id === selectedId;
+              const hasSubmenu = (getSubmenu?.(row)?.length ?? 0) > 0;
+              // One gutter for every row of a menu with submenus, so what
+              // renderRow puts at the right edge lines up.
+              const gutter = getSubmenu !== undefined;
               return (
                 // biome-ignore lint/a11y/useKeyWithClickEvents: the filter box takes the keys; focus never comes here
+                // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-expanded marks the option that owns a submenu listbox
                 <div
                   key={row.id}
+                  ref={highlighted ? anchor : undefined}
                   id={optionId(index)}
                   role="option"
                   tabIndex={-1}
-                  aria-selected={highlighted}
+                  aria-selected={highlighted && subIndex < 0}
                   aria-disabled={row.disabled || undefined}
+                  aria-haspopup={hasSubmenu ? "listbox" : undefined}
+                  aria-expanded={
+                    hasSubmenu ? highlighted && submenuOpen : undefined
+                  }
                   data-highlighted={highlighted ? "" : undefined}
                   data-selected={selected ? "" : undefined}
                   data-disabled={row.disabled ? "" : undefined}
-                  className="relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-accent data-highlighted:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
-                  onPointerMove={() => {
-                    if (!row.disabled && !highlighted) move(row);
+                  className={cn(OPTION_CLASS, gutter ? "pr-13" : "pr-8")}
+                  onPointerMove={(event) => {
+                    if (row.disabled) return;
+                    if (highlighted && subIndex < 0) return;
+                    if (inGrace(event)) return;
+                    clearGrace();
+                    move(row);
                   }}
+                  onPointerLeave={
+                    highlighted && hasSubmenu ? onParentLeave : undefined
+                  }
                   onClick={() => choose(row)}
                 >
                   {renderRow(row, { highlighted, selected })}
                   {selected && (
-                    <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
+                    <Mark className={gutter ? "right-7" : "right-2"}>
                       <CheckIcon aria-hidden />
-                    </span>
+                    </Mark>
+                  )}
+                  {hasSubmenu && (
+                    <Mark className="right-2 text-muted-foreground">
+                      <ChevronRightIcon aria-hidden />
+                    </Mark>
                   )}
                 </div>
               );
@@ -514,6 +754,81 @@ export function FilterMenu<R extends FilterMenuRow>({
           })}
         </div>
         {footer}
+        {/* Inside the parent's content, so Radix counts it as a child layer:
+            pressing in it is not "outside" the menu. */}
+        <Popover open={submenuOpen}>
+          <PopoverAnchor virtualRef={anchor as RefObject<HTMLDivElement>} />
+          <PopoverContent
+            ref={submenu}
+            side="right"
+            align="start"
+            sideOffset={4}
+            className="w-60 p-1"
+            onOpenAutoFocus={(event) => event.preventDefault()}
+            onCloseAutoFocus={(event) => event.preventDefault()}
+            onInteractOutside={(event) => {
+              const target = event.target;
+              if (target instanceof Node && content.current?.contains(target))
+                event.preventDefault();
+            }}
+            // The topmost layer gets Escape, so the menu's own keys live here
+            // while the submenu is open.
+            onEscapeKeyDown={(event) => {
+              event.preventDefault();
+              if (isEscapeOfComposition(event)) return;
+              if (subIndex >= 0) backToParent();
+              else setOpen(false);
+            }}
+            onMouseDown={(event) => event.preventDefault()}
+            onPointerEnter={() => {
+              pointerIn.current = "submenu";
+              clearGrace();
+            }}
+            onPointerLeave={(event) => {
+              pointerIn.current = null;
+              const to = event.relatedTarget;
+              if (to instanceof Node && list.current?.contains(to)) return;
+              move(null);
+            }}
+          >
+            <div
+              id={submenuId}
+              role="listbox"
+              aria-label={parent ? submenuLabel?.(parent) : undefined}
+            >
+              {subRows.map((row, index) => {
+                const highlighted = index === subIndex;
+                const selected = row.id === selectedSubmenuId;
+                return (
+                  // biome-ignore lint/a11y/useKeyWithClickEvents: the filter box takes the keys; focus never comes here
+                  <div
+                    key={row.id}
+                    id={subOptionId(index)}
+                    role="option"
+                    tabIndex={-1}
+                    aria-selected={highlighted}
+                    aria-disabled={row.disabled || undefined}
+                    data-highlighted={highlighted ? "" : undefined}
+                    data-selected={selected ? "" : undefined}
+                    data-disabled={row.disabled ? "" : undefined}
+                    className={cn(OPTION_CLASS, "pr-8")}
+                    onPointerMove={() => {
+                      if (!row.disabled && !highlighted) moveIntoSubmenu(row);
+                    }}
+                    onClick={() => choose(row)}
+                  >
+                    {renderRow(row, { highlighted, selected })}
+                    {selected && (
+                      <Mark className="right-2">
+                        <CheckIcon aria-hidden />
+                      </Mark>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
       </PopoverContent>
     </Popover>
   );

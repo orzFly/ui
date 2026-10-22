@@ -21,6 +21,12 @@ function PopoverClose({
   return <PopoverPrimitive.Close data-slot="popover-close" {...props} />;
 }
 
+function PopoverAnchor({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
+  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
+}
+
 function PopoverContent({
   className,
   align = "start",
@@ -107,4 +113,4 @@ function PopoverContent({
   );
 }
 
-export { Popover, PopoverClose, PopoverContent, PopoverTrigger };
+export { Popover, PopoverAnchor, PopoverClose, PopoverContent, PopoverTrigger };

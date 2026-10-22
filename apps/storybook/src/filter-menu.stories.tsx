@@ -88,3 +88,73 @@ export const Grouped: Story = {
 export const Plain: Story = {
   render: () => <CityPicker grouped={false} />,
 };
+
+interface Place {
+  id: string;
+  label: string;
+}
+
+const DISTRICTS: Record<string, string[]> = {
+  lisbon: ["Alfama", "Baixa", "Belém"],
+  zurich: ["Altstadt", "Wiedikon"],
+  "sao-paulo": ["Liberdade", "Pinheiros", "Vila Madalena"],
+  kyoto: ["Gion", "Arashiyama", "Higashiyama"],
+  seoul: ["Jongno", "Mapo"],
+};
+
+function districtsOf(city: Place): Place[] | undefined {
+  return DISTRICTS[city.id]?.map((label) => ({
+    id: `${city.id}/${label}`,
+    label,
+  }));
+}
+
+function DistrictPicker() {
+  const [pick, setPick] = useState<Place>({ id: "kyoto/Gion", label: "Gion" });
+  const [query, setQuery] = useState("");
+  const [highlight, setHighlight] = useState<Place | null>(null);
+  const sections = useMemo<FilterMenuSection<Place>[]>(() => {
+    const rows = CITIES.filter((c) => matchText(c.label, query));
+    return ["Europe", "Americas", "Asia"].map((region) => ({
+      id: region,
+      label: region,
+      rows: rows.filter((c) => c.region === region),
+    }));
+  }, [query]);
+  return (
+    <div className="flex items-start gap-4">
+      <FilterMenu
+        query={query}
+        onQueryChange={setQuery}
+        sections={sections}
+        selectedId={pick.id.split("/")[0]}
+        selectedSubmenuId={pick.id}
+        getSubmenu={districtsOf}
+        submenuLabel={(row) => `${row.label} districts`}
+        onSelect={setPick}
+        onHighlight={setHighlight}
+        renderRow={(row) => <MatchedText text={row.label} query={query} />}
+        inputLabel="Filter cities"
+        placeholder="Filter cities…"
+        listLabel="Cities"
+        className="w-64"
+      >
+        <Button variant="outline" className="w-48 justify-between">
+          {pick.label}
+          <ChevronDownIcon className="text-muted-foreground" />
+        </Button>
+      </FilterMenu>
+      <p className="py-1.5 text-muted-foreground text-sm">
+        Previewing: {highlight?.label ?? "nothing (the committed pick shows)"}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * A city picks itself; its districts open beside it on hover or →, and ← or
+ * Escape come back. The pointer may cut across other cities on its way in.
+ */
+export const WithSubmenus: Story = {
+  render: () => <DistrictPicker />,
+};

@@ -1,5 +1,8 @@
 import {
   type ColorScheme,
+  type CustomTheme,
+  composeTheme,
+  isUiTheme,
   renderDeclarations,
   renderTerminalDeclarations,
   resolvePalette,
@@ -9,7 +12,9 @@ import {
   type Theme,
   type Tokens,
 } from "@orz/themes";
+import { parseCustomThemes } from "./custom.ts";
 import {
+  fitPick,
   normalizePref,
   readStoredPref,
   type ThemeMode,
@@ -42,6 +47,17 @@ export interface ResolvedTerminalTheme {
   tokens: TerminalTokens;
 }
 
+/** A pick by id, or an unsaved theme carried as an object (the editor's draft). */
+export type PreviewPick =
+  | ThemePick
+  | { theme: TerminalTheme; mode: ThemeMode; variant?: string };
+
+export interface ThemePreview {
+  ui?: PreviewPick;
+  /** "follow" previews the terminal following the (shown) UI. */
+  terminal?: PreviewPick | "follow";
+}
+
 export interface ThemeStoreOptions {
   /** localStorage key holding the pref as JSON. Name it after the app; there is no default. */
   storageKey: string;
@@ -53,27 +69,47 @@ export interface ThemeStoreOptions {
   terminalThemes?: readonly TerminalTheme[];
   /** Where the attributes and `.dark` are written. Default `<html>`. */
   root?: HTMLElement;
+  /** localStorage key holding the custom themes as JSON. Default `${storageKey}-custom`. */
+  customStorageKey?: string;
+  /** false: the store never reads or writes custom themes in localStorage; the app owns them. Default true. */
+  persistCustomThemes?: boolean;
 }
 
 export interface ThemeStore {
   /** Normalized; the same object until it changes. */
   getPref(): ThemePref;
-  /** null in a terminal-only store. The same object until it changes. */
+  /** What is shown, the preview included. null in a terminal-only store. The same object until it changes. */
   getResolved(): ResolvedTheme | null;
-  /** The same object until it changes. */
+  /** What is shown, the preview included. The same object until it changes. */
   getTerminal(): ResolvedTerminalTheme;
-  /** [] without a UI slot. */
+  /** [] without a UI slot. The composed custom themes first, then the base list. */
   getThemes(): readonly Theme[];
-  /** [] without a terminal slot. */
+  /** [] without a terminal slot. The composed custom themes first, then the base list. */
   getTerminalThemes(): readonly TerminalTheme[];
-  /** Normalizes, persists, applies, notifies. */
+  /** Normalizes, persists, applies, notifies. Clears the preview. */
   setPref(next: ThemePref): void;
-  /** Only on a store with a UI slot; non-empty. */
+  /**
+   * Shows `next` without persisting it; `null` shows the committed pick again.
+   * A slot absent from `next` shows its committed pick. Throws when `next.ui`
+   * carries an object that is not a UI theme (`isUiTheme`).
+   */
+  preview(next: ThemePreview | null): void;
+  /** The active preview, or null. The same object until it changes. */
+  getPreview(): ThemePreview | null;
+  /** Only on a store with a UI slot; non-empty. Replaces the base list. */
   setThemes(next: readonly Theme[]): void;
-  /** Only on a store with a terminal slot; non-empty. */
+  /** Only on a store with a terminal slot; non-empty. Replaces the base list. */
   setTerminalThemes(next: readonly TerminalTheme[]): void;
+  /** Every stored custom theme, including those that compose to null. The same array until it changes. */
+  getCustomThemes(): readonly CustomTheme[];
+  /**
+   * Replaces the list, persists it (unless `persistCustomThemes: false`),
+   * re-composes the theme lists, notifies. Throws on an id that repeats or
+   * equals a base theme's id.
+   */
+  setCustomThemes(next: readonly CustomTheme[]): void;
   subscribe(listener: () => void): () => void;
-  /** Detaches the media-query and cross-tab listeners. */
+  /** Detaches the media-query and cross-tab listeners, and clears the preview. */
   dispose(): void;
 }
 
@@ -104,6 +140,26 @@ function schemesFor(pick: ThemePick): ColorScheme[] {
   return pick.mode === "system" ? ["light", "dark"] : [pick.mode];
 }
 
+/** A pick and the theme it names (or carries), fitted to each other. */
+interface Shown<T extends TerminalTheme> {
+  theme: T;
+  pick: ThemePick;
+}
+
+function find<T extends TerminalTheme>(
+  list: readonly T[],
+  pick: PreviewPick,
+): Shown<T> | null {
+  const theme =
+    typeof pick.theme === "string"
+      ? list.find((t) => t.id === pick.theme)
+      : (pick.theme as T);
+  if (theme === undefined) return null;
+  const fitted: ThemePick = { theme: theme.id, mode: pick.mode };
+  if (pick.variant !== undefined) fitted.variant = pick.variant;
+  return { theme, pick: fitPick(fitted, theme) };
+}
+
 const same = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b);
 
@@ -122,12 +178,18 @@ export function createThemeStore({
   themes: initialThemes,
   terminalThemes: initialTerminalThemes,
   root,
+  customStorageKey = `${storageKey}-custom`,
+  persistCustomThemes = true,
 }: ThemeStoreOptions): ThemeStore {
   if (initialThemes === undefined && initialTerminalThemes === undefined) {
     throw new Error("createThemeStore: pass themes, terminalThemes or both");
   }
-  let themes = slot(initialThemes, "themes");
-  let terminalThemes = slot(initialTerminalThemes, "terminalThemes");
+  let baseThemes = slot(initialThemes, "themes");
+  let baseTerminalThemes = slot(initialTerminalThemes, "terminalThemes");
+  let customs: readonly CustomTheme[] = [];
+  // What the slots show: the composed custom themes, then the base list.
+  let themes = baseThemes;
+  let terminalThemes = baseTerminalThemes;
 
   const browser = typeof window !== "undefined";
   const media =
@@ -149,8 +211,48 @@ export function createThemeStore({
   let resolved: ResolvedTheme | null = null;
   let terminal = null as unknown as ResolvedTerminalTheme;
   let uiTokens: Tokens | null = null;
+  let shown: ThemePreview | null = null;
+  // What resolve() last chose to show for each slot; a null terminal follows.
+  let shownUi: Shown<Theme> | null = null;
+  let shownTerminal: Shown<TerminalTheme> | null = null;
 
   const slots = () => ({ themes, terminalThemes });
+  // A missing pick falls back to the first base theme: adding a custom theme
+  // must not change what a user who never picked sees.
+  const fallback = () => ({
+    themes: baseThemes,
+    terminalThemes: baseTerminalThemes,
+  });
+  const persistsCustom = browser && persistCustomThemes;
+  const baseIds = () =>
+    new Set(
+      [...(baseThemes ?? []), ...(baseTerminalThemes ?? [])].map((t) => t.id),
+    );
+
+  function recompose() {
+    const base = [...(baseThemes ?? []), ...(baseTerminalThemes ?? [])];
+    const taken = baseIds();
+    const composed: Theme[] = [];
+    for (const custom of customs) {
+      // A stored list skips setCustomThemes' checks, and a base list may gain
+      // a custom's id later: the id stays with whichever theme had it first.
+      if (taken.has(custom.id)) continue;
+      const theme = composeTheme(custom, base);
+      if (theme === null) continue;
+      taken.add(theme.id);
+      composed.push(theme);
+    }
+    themes = baseThemes && [...composed, ...baseThemes];
+    terminalThemes = baseTerminalThemes && [...composed, ...baseTerminalThemes];
+  }
+
+  function readCustom(): readonly CustomTheme[] {
+    try {
+      return parseCustomThemes(localStorage.getItem(customStorageKey));
+    } catch {
+      return [];
+    }
+  }
 
   function readStored(): ThemePref {
     try {
@@ -162,7 +264,7 @@ export function createThemeStore({
   }
 
   function renormalize() {
-    const next = normalizePref(requested, slots());
+    const next = normalizePref(requested, slots(), fallback());
     if (!same(next, pref)) pref = next;
   }
 
@@ -171,13 +273,36 @@ export function createThemeStore({
     return media?.matches ? "dark" : "light";
   }
 
+  /** The preview's pick for a slot where it names one that exists, else the committed one. */
+  function pickFor<T extends TerminalTheme>(
+    list: readonly T[],
+    previewed: PreviewPick | undefined,
+    committed: ThemePick | undefined,
+  ): Shown<T> | null {
+    return (
+      (previewed && find(list, previewed)) ??
+      (committed ? find(list, committed) : null)
+    );
+  }
+
   function resolve() {
+    shownUi = themes ? pickFor(themes, shown?.ui, pref.ui) : null;
+    const terminalPreview = shown?.terminal;
+    // Following needs a UI to follow; a terminal-only store ignores it.
+    shownTerminal =
+      !terminalThemes || (terminalPreview === "follow" && themes)
+        ? null
+        : pickFor(
+            terminalThemes,
+            terminalPreview === "follow" ? undefined : terminalPreview,
+            pref.terminal,
+          );
+
     let nextResolved: ResolvedTheme | null = null;
     let nextTerminal: ResolvedTerminalTheme;
     let uiTerminal: TerminalTokens | null = null;
-    if (pref.ui && themes) {
-      const ui = pref.ui;
-      const theme = themes.find((t) => t.id === ui.theme) as Theme;
+    if (shownUi) {
+      const { theme, pick: ui } = shownUi;
       const colorScheme = schemeOf(ui.mode);
       const palette = resolvePalette(theme, colorScheme, ui.variant);
       if (palette !== null) {
@@ -186,11 +311,8 @@ export function createThemeStore({
         uiTokens = palette.tokens;
       }
     }
-    if (pref.terminal && terminalThemes) {
-      const pick = pref.terminal;
-      const theme = terminalThemes.find(
-        (t) => t.id === pick.theme,
-      ) as TerminalTheme;
+    if (shownTerminal) {
+      const { theme, pick } = shownTerminal;
       const colorScheme = schemeOf(pick.mode);
       const own = resolveTerminal(theme, colorScheme, pick.variant);
       nextTerminal = {
@@ -276,17 +398,35 @@ export function createThemeStore({
 
     if (ownRoot) target.setAttribute("data-orz-theme-root", rootId);
     // A terminal-only store leaves the page's own colours alone.
-    if (resolved !== null && pref.ui) {
+    if (resolved !== null && shownUi) {
       target.classList.toggle("dark", resolved.colorScheme === "dark");
       target.dataset.theme = resolved.theme.id;
-      if (pref.ui.variant) target.dataset.variant = pref.ui.variant;
+      if (shownUi.pick.variant) target.dataset.variant = shownUi.pick.variant;
       else delete target.dataset.variant;
     }
-    if (pref.terminal) target.dataset.terminalTheme = pref.terminal.theme;
+    if (shownTerminal) target.dataset.terminalTheme = shownTerminal.theme.id;
     else delete target.dataset.terminalTheme;
   }
 
+  /** True while a pick names a theme that has not arrived (a custom one the app loads later). */
+  function awaiting(): boolean {
+    const missing = (
+      pick: ThemePick | undefined,
+      list: readonly TerminalTheme[] | undefined,
+    ) =>
+      list !== undefined &&
+      typeof pick?.theme === "string" &&
+      !list.some((t) => t.id === pick.theme);
+    return (
+      missing(requested.ui, themes) ||
+      missing(requested.terminal, terminalThemes)
+    );
+  }
+
   function writePaintCache() {
+    // The cache still paints the pick from before the reload; the fallback
+    // shown meanwhile would overwrite it, and flash on the next load.
+    if (awaiting()) return;
     try {
       localStorage.setItem(paintKey, JSON.stringify(paintCache()));
     } catch {
@@ -294,11 +434,12 @@ export function createThemeStore({
     }
   }
 
-  function apply() {
+  /** `committed: false` for a preview, which the next load must not paint. */
+  function apply(committed = true) {
     resolve();
     if (!browser) return;
     paint();
-    writePaintCache();
+    if (committed) writePaintCache();
   }
 
   function notify() {
@@ -306,7 +447,10 @@ export function createThemeStore({
   }
 
   const onMediaChange = () => {
-    if (pref.ui?.mode === "system" || pref.terminal?.mode === "system") {
+    if (
+      shownUi?.pick.mode === "system" ||
+      shownTerminal?.pick.mode === "system"
+    ) {
       apply();
       notify();
     }
@@ -318,11 +462,22 @@ export function createThemeStore({
       renormalize();
       apply();
       notify();
+    } else if (persistsCustom && e.key === customStorageKey) {
+      customs = readCustom();
+      recompose();
+      renormalize();
+      apply();
+      notify();
     }
   };
 
+  // Read before the first normalization, so a stored pick naming a custom
+  // theme paints on creation. Never written back from here: a list this
+  // version cannot fully read may be a newer version's.
+  if (persistsCustom) customs = readCustom();
+  recompose();
   requested = browser ? readStored() : {};
-  pref = normalizePref(requested, slots());
+  pref = normalizePref(requested, slots(), fallback());
   apply();
   if (browser) {
     media?.addEventListener("change", onMediaChange);
@@ -336,6 +491,7 @@ export function createThemeStore({
     getThemes: () => themes ?? NO_THEMES,
     getTerminalThemes: () => terminalThemes ?? NO_TERMINAL_THEMES,
     setPref(next) {
+      shown = null;
       requested = next;
       renormalize();
       if (browser) {
@@ -352,7 +508,8 @@ export function createThemeStore({
       if (themes === undefined) {
         throw new Error("setThemes: this store has no UI slot");
       }
-      themes = slot(next, "themes");
+      baseThemes = slot(next, "themes");
+      recompose();
       renormalize();
       apply();
       notify();
@@ -361,7 +518,45 @@ export function createThemeStore({
       if (terminalThemes === undefined) {
         throw new Error("setTerminalThemes: this store has no terminal slot");
       }
-      terminalThemes = slot(next, "terminalThemes");
+      baseTerminalThemes = slot(next, "terminalThemes");
+      recompose();
+      renormalize();
+      apply();
+      notify();
+    },
+    preview(next) {
+      if (next === shown) return;
+      const ui = next?.ui;
+      if (ui && typeof ui.theme !== "string" && !isUiTheme(ui.theme)) {
+        throw new Error(`preview: ${ui.theme.id} is not a UI theme`);
+      }
+      shown = next;
+      apply(false);
+      notify();
+    },
+    getPreview: () => shown,
+    getCustomThemes: () => customs,
+    setCustomThemes(next) {
+      const taken = baseIds();
+      const ids = new Set<string>();
+      for (const { id } of next) {
+        if (ids.has(id)) {
+          throw new Error(`setCustomThemes: id ${id} appears twice`);
+        }
+        if (taken.has(id)) {
+          throw new Error(`setCustomThemes: id ${id} is a base theme's`);
+        }
+        ids.add(id);
+      }
+      customs = [...next];
+      if (persistsCustom) {
+        try {
+          localStorage.setItem(customStorageKey, JSON.stringify(customs));
+        } catch {
+          // the list just won't persist
+        }
+      }
+      recompose();
       renormalize();
       apply();
       notify();
@@ -371,6 +566,10 @@ export function createThemeStore({
       return () => listeners.delete(listener);
     },
     dispose() {
+      if (shown !== null) {
+        shown = null;
+        apply(false);
+      }
       media?.removeEventListener("change", onMediaChange);
       if (browser) window.removeEventListener("storage", onStorage);
       if (ownRoot) {

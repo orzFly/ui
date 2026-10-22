@@ -74,7 +74,7 @@ function definesVariant(theme: TerminalTheme, id: string): boolean {
 }
 
 /** The pick made valid for one theme: a possible mode, a defined variant. */
-function fitPick(pick: ThemePick, theme: TerminalTheme): ThemePick {
+export function fitPick(pick: ThemePick, theme: TerminalTheme): ThemePick {
   const mode =
     theme.light && theme.dark ? pick.mode : theme.light ? "light" : "dark";
   const out: ThemePick = { theme: theme.id, mode };
@@ -91,8 +91,15 @@ function fitPick(pick: ThemePick, theme: TerminalTheme): ThemePick {
 const SYSTEM = (theme: TerminalTheme) =>
   fitPick({ theme: theme.id, mode: "system" }, theme);
 
-/** The pref made valid for the slots the store has. */
-export function normalizePref(pref: ThemePref, slots: ThemeSlots): ThemePref {
+/**
+ * The pref made valid for the slots the store has. A pick naming no theme
+ * falls back to the first of `fallback`'s list, by default the slot's own.
+ */
+export function normalizePref(
+  pref: ThemePref,
+  slots: ThemeSlots,
+  fallback: ThemeSlots = slots,
+): ThemePref {
   const out: ThemePref = {};
   const ui = pickOf(pref.ui);
   const terminal = pickOf(pref.terminal);
@@ -101,7 +108,8 @@ export function normalizePref(pref: ThemePref, slots: ThemeSlots): ThemePref {
   if (uiSlot) {
     const themes = slots.themes as readonly Theme[];
     const theme = ui && themes.find((t) => t.id === ui.theme);
-    out.ui = ui && theme ? fitPick(ui, theme) : SYSTEM(themes[0]);
+    out.ui =
+      ui && theme ? fitPick(ui, theme) : SYSTEM((fallback.themes ?? themes)[0]);
   }
 
   const terminalThemes = slots.terminalThemes;
@@ -110,7 +118,9 @@ export function normalizePref(pref: ThemePref, slots: ThemeSlots): ThemePref {
       terminal && terminalThemes.find((t) => t.id === terminal.theme);
     if (terminal && theme) out.terminal = fitPick(terminal, theme);
     // Without a UI to follow, the terminal always has a pick of its own.
-    else if (!uiSlot) out.terminal = SYSTEM(terminalThemes[0]);
+    else if (!uiSlot) {
+      out.terminal = SYSTEM((fallback.terminalThemes ?? terminalThemes)[0]);
+    }
   }
   return out;
 }
