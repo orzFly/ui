@@ -90,13 +90,56 @@ export default defineConfig({
 });
 ```
 
+## Query input
+
+A search box that colours its own query and completes it, driven by an `@orz/query` schema.
+`@orz/query` is a dependency of this package, so it is installed with it; import the schema
+helpers from it directly.
+
+| Import | Contents |
+|---|---|
+| `@orz/ui/components/highlighted-input` | `HighlightedInput`: a one-line input whose text is painted by a mirror layer underneath, so it can be coloured while selection, undo, autofill and IME composition stay native |
+| `@orz/ui/components/query-highlight` | `highlightQuery(text, parts, schema, providers)`: the spans `HighlightedInput` paints, with keys, punctuation and values coloured by verdict |
+| `@orz/ui/hooks/use-query-completion` | `useQueryCompletion({ schema, value, caret, providers, enabled })`: key and value completions at the caret; a `search` provider is asked after 150 ms of quiet, and its answers are cached per prefix |
+| `@orz/ui/components/query-box` | `QueryBox`: the three above as a combobox, with the app's own rows (history, jumps) as `RowSource`s |
+
+```tsx
+import { defineQuerySchema } from "@orz/query";
+import { QueryBox } from "@orz/ui/components/query-box";
+import { SearchIcon } from "lucide-react";
+
+const schema = defineQuerySchema({
+  qualifiers: {
+    is: { value: { kind: "enum", values: ["open", "closed"] }, hint: "open or closed" },
+    label: { value: { kind: "named", source: "label" }, hint: "a label name" },
+  },
+});
+
+<QueryBox
+  schema={schema}
+  providers={{ label: { options: labels?.map((name) => ({ value: name })) } }}
+  value={value}
+  onValueChange={setValue}
+  onSubmit={(query) => navigate(`/search?q=${encodeURIComponent(query)}`)}
+  renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
+  leading={<SearchIcon />}
+  inputProps={{ "aria-label": "Search", placeholder: "Search…" }}
+/>;
+```
+
+Nothing in the panel is preselected, so Enter submits the query as typed unless the reader arrowed
+onto a row. Tab takes the highlighted completion, or the first one. Escape closes the panel, and a
+second Escape goes to `onEscape`. Pass `options: undefined` for a list that has not loaded: its
+values paint as valid rather than flashing amber, and `onOpenChange` tells you when the box is in
+use, so loading can wait until then.
+
 ## Entry points
 
 | Import | Contents |
 |---|---|
 | `@orz/ui` | `cn` |
-| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `confirm-dialog`, `dialog`, `dropdown-menu`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `select`, `separator`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
-| `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-slash-shortcut` |
+| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `confirm-dialog`, `dialog`, `dropdown-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
+| `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut` |
 | `@orz/ui/lib/<name>` | `clipboard`, `text-metrics`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `THEMES`, `createThemeStore`, `ThemeProvider`, `useTheme`, `themePaintGuardScript`, types |
 | `@orz/ui/styles.css` | tokens, theme blocks, base layer |

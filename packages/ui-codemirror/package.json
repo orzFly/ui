@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui-codemirror",
   "version": "0.0.0",
-  "description": "CodeMirror code and markdown editors, completion extensions and a slash-command engine",
+  "description": "CodeMirror code and markdown editors, completion extensions and slash-command editing",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -23,11 +23,6 @@
       "types": "./dist/extensions/*.d.ts",
       "default": "./dist/extensions/*.js"
     },
-    "./lib/*": {
-      "@orz/source": "./src/lib/*.ts",
-      "types": "./dist/lib/*.d.ts",
-      "default": "./dist/lib/*.js"
-    },
     "./styles.css": "./styles.css"
   },
   "files": [
@@ -35,7 +30,7 @@
     "styles.css"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -53,7 +48,8 @@
   },
   "dependencies": {
     "@lezer/json": "^1.0.3",
-    "@lezer/markdown": "^1.7.2"
+    "@lezer/markdown": "^1.7.2",
+    "@orz/query": "workspace:^"
   },
   "devDependencies": {
     "@codemirror/autocomplete": "^6.20.3",

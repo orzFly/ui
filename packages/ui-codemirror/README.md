@@ -1,7 +1,8 @@
 # @orz/ui-codemirror
 
 CodeMirror 6 editors themed by `@orz/ui`: a prose-first `CodeEditor` shell, a GFM `MarkdownEditor`,
-the completion extensions they are assembled from, and a slash-command engine.
+the completion extensions they are assembled from, and the slash-command panel and highlight over
+`@orz/query`'s command grammar.
 
 ## Install
 
@@ -104,48 +105,75 @@ space after an accepted row out of the way of punctuation typed next.
 
 ### Slash commands
 
+The command grammar lives in `@orz/query`, a dependency of this package; these extensions are the
+panel and the highlight on top of it.
+
 ```tsx
+import {
+  createCommandRegistry,
+  parseCommandLines,
+  type ValueProviders,
+} from "@orz/query";
 import {
   commandCompletionSource,
   commandDecoration,
 } from "@orz/ui-codemirror/extensions/slash-commands";
-import {
-  createCommandRegistry,
-  parseCommandLines,
-} from "@orz/ui-codemirror/lib/slash-commands";
 
-type Action = { type: "close" } | { type: "label"; name: string };
-const labels = ["bug", "docs"];
+type Action =
+  | { type: "close" }
+  | { type: "label"; name: string }
+  | { type: "move"; status: string; assignee?: string };
 
 const registry = createCommandRegistry<Action>([
   {
     name: "close",
-    argument: "none",
     detail: "→ Done",
+    args: [],
     summarize: () => "close",
     compile: () => ({ type: "close" }),
   },
   {
     name: "label",
-    argument: "required",
     detail: "add a label",
-    candidates: labels,
-    summarize: (name) => `label ${name}`,
-    compile: (name) => (labels.includes(name) ? { type: "label", name } : null),
+    args: [{ name: "label", value: { kind: "named", source: "label" }, rest: true }],
+    summarize: ([name]) => `label ${name}`,
+    compile: ([name]) => ({ type: "label", name: String(name) }),
+  },
+  {
+    name: "move",
+    detail: "change status",
+    args: [
+      { name: "status", value: { kind: "named", source: "status" } },
+      { name: "assignee", value: { kind: "named", source: "member" }, optional: true },
+    ],
+    summarize: ([status]) => `move to ${status}`,
+    compile: ([status, assignee]) => ({
+      type: "move",
+      status: String(status),
+      ...(assignee === undefined ? {} : { assignee: String(assignee) }),
+    }),
   },
 ]);
 
-// A getter, so a registry built from data that arrives later needs no reconfigure.
+// Snapshot lists, or `{ search: (prefix, signal) => … }` for a list too long to load.
+let providers: ValueProviders = {
+  label: { options: [{ value: "bug" }, { value: "docs" }] },
+  status: { options: [{ value: "Todo" }, { value: "In Progress" }] },
+  member: { options: undefined }, // still loading
+};
+
+// Getters, so a registry or providers built from data that arrives later need no reconfigure.
 const getRegistry = () => registry;
+const getProviders = () => providers;
 const extensions = [
-  completionWith([commandCompletionSource(getRegistry)]),
-  commandDecoration(getRegistry),
+  completionWith([commandCompletionSource(getRegistry, getProviders)]),
+  commandDecoration(getRegistry, getProviders),
 ];
 
 <MarkdownEditor
   extensions={extensions}
   onSubmit={(value) => {
-    const { body, commands, invalid } = parseCommandLines(value, registry);
+    const { body, commands, invalid } = parseCommandLines(value, registry, providers);
     // body: the text with every command line removed; commands: Action[].
   }}
 />;
@@ -153,7 +181,15 @@ const extensions = [
 
 A command is a whole line of the document. Lines inside fenced code are never commands, an unknown
 `/word` stays prose, and a recognized line whose argument names nothing lands in `invalid` with a
-reason. The engine in `lib/slash-commands` imports nothing, so it can run on a server too.
+reason. Arguments are shell words (`/move 'In Progress' alice`); see `@orz/query` for rest and
+`multiple` arguments.
+
+The panel offers the current argument's values, inserts a space and reopens for the next argument,
+and leads with an `↵ end of command` row while every remaining argument is optional. A `search`
+provider is asked per keystroke and the request is aborted when the next key arrives. The highlight
+tints recognized lines, marks the name (`cm-command-name`) and each argument (`cm-command-arg`,
+plus `-special` or `-invalid`), and redraws when the getters return a new registry or providers
+object, so replace `providers` rather than mutating it.
 
 ### Provenance
 
@@ -176,7 +212,6 @@ The handle's `setValue` and `append` are not marked, so they count as the reader
 | `@orz/ui-codemirror/components/code-editor` | `CodeEditor`, `CodeEditorHandle`, `CodeEditorProps`, `PROGRAMMATIC_USER_EVENT` |
 | `@orz/ui-codemirror/components/markdown-editor` | `MarkdownEditor`, `MarkdownEditorHandle`, `MarkdownEditorProps`, `FileClipboardEvent`, `FileDragEvent`, `markdownLanguage`, `markdownHighlightStyle` |
 | `@orz/ui-codemirror/extensions/<name>` | `code-context`, `completion`, `completion-space`, `json`, `slash-commands`, `tag-completion`, `trim-trailing-space` |
-| `@orz/ui-codemirror/lib/slash-commands` | the pure slash-command engine |
 | `@orz/ui-codemirror/styles.css` | `@source "./dist"` |
 
 There is no root entry, so a markdown-only app never reaches `@lezer/json` through an index file.

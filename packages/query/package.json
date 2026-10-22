@@ -1,0 +1,32 @@
+{
+  "name": "@orz/query",
+  "version": "0.0.0",
+  "description": "Search query and slash-command grammars driven by an app's schema, with no runtime dependencies",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "github:orzFly/orzui",
+    "directory": "packages/query"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "@orz/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "vitest": "^5.0.5"
+  }
+}

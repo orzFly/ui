@@ -46,7 +46,7 @@
     "vendor"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -64,6 +64,7 @@
     }
   },
   "dependencies": {
+    "@orz/query": "workspace:^",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.7.0",
@@ -82,6 +83,7 @@
     "react-dom": "^19.2.8",
     "shadcn": "^4.16.2",
     "sonner": "^2.0.8",
+    "vite": "^8.3.4",
     "vitest": "^5.0.5"
   }
 }

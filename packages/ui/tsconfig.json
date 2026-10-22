@@ -5,7 +5,9 @@
     // imports stay relative, and biome rejects any `@/` that slips through.
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    // Typecheck against @orz/query's source, so a fresh clone needs no build first.
+    "customConditions": ["@orz/source"]
   },
   "include": ["src", "test", "vitest.config.ts"]
 }
