@@ -8,6 +8,10 @@ export {
   MAX_COPY_BYTES,
 } from "./format.ts";
 export {
+  HexInspector,
+  type HexInspectorProps,
+} from "./hex-inspector.tsx";
+export {
   type HexCopyResult,
   HexView,
   type HexViewHandle,

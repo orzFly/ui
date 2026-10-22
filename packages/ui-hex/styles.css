@@ -230,3 +230,40 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* HexInspector */
+
+.orz-hex-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+}
+.orz-hex-inspector-heading {
+  margin: 0;
+  font-weight: 600;
+}
+.orz-hex-inspector-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 1rem;
+  row-gap: 0.125rem;
+  margin: 0;
+}
+.orz-hex-inspector-list dt {
+  color: var(--muted-foreground);
+}
+.orz-hex-inspector-list dd {
+  margin: 0;
+  font-family: var(--hex-font);
+  overflow-wrap: anywhere;
+}
+.orz-hex-inspector-list [data-dimmed] {
+  opacity: 0.45;
+}
+.orz-hex-inspector-endian {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
