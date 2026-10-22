@@ -6,6 +6,12 @@ export {
 export { DocumentCard, type DocumentCardProps } from "./document-card.tsx";
 export { fileIcon } from "./icon.ts";
 export {
+  DEFAULT_IMAGE_LOOK,
+  type ImageLook,
+  parseImageLook,
+  useStoredImageLook,
+} from "./image-look.ts";
+export {
   AttachmentLink,
   type AttachmentLinkProps,
   RICH_CHIP_ICON,

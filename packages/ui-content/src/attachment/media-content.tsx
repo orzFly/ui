@@ -7,15 +7,18 @@ import {
   isPdfFile,
   isVideoFile,
 } from "../file-kind.ts";
+import { useContentTitleBar } from "../title-bar.tsx";
 import type {
   ContentProps,
   ContentRenderer,
   ContentSource,
   Placement,
 } from "../types.ts";
+import { ImageCanvas } from "./image-canvas.tsx";
 import {
   type FileSource,
   useAttachmentViewer,
+  useViewerImage,
   useViewHref,
 } from "./viewer.tsx";
 
@@ -46,12 +49,33 @@ function fileOf(source: ContentSource): FileSource {
 
 /**
  * Images, in either placement. In a document the image opens the nearest
- * attachment viewer on click, and is a plain image outside one.
+ * attachment viewer on click, and is a plain image outside one. In the viewer
+ * it zooms and pans, with its controls in the viewer's title bar.
  */
 export function imageContent(): ContentRenderer {
   function ImageFile({ source, placement, className }: ContentProps) {
     const file = fileOf(source);
     const viewer = useAttachmentViewer();
+    const viewerImage = useViewerImage();
+    const titleBar = useContentTitleBar(source);
+    if (
+      placement === "viewer" &&
+      viewerImage !== null &&
+      titleBar !== undefined &&
+      file.url !== undefined
+    ) {
+      return (
+        <ImageCanvas
+          src={file.url}
+          alt={file.name}
+          maximized={viewerImage.maximized}
+          toolbar={titleBar}
+          look={viewerImage.look}
+          onLookChange={viewerImage.setLook}
+          className={className}
+        />
+      );
+    }
     if (placement === "viewer") {
       return (
         <img

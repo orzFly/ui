@@ -27,7 +27,9 @@ import {
   TEXT_PREVIEW_MAX_BYTES,
 } from "../file-kind.ts";
 import { Content, useContentDisplay } from "../registry.tsx";
+import { ContentTitleBar } from "../title-bar.tsx";
 import type { ContentSource } from "../types.ts";
+import { DEFAULT_IMAGE_LOOK, type ImageLook } from "./image-look.ts";
 
 export type FileSource = Extract<ContentSource, { kind: "file" }>;
 
@@ -48,6 +50,27 @@ type ViewerContext = AttachmentViewerControls & {
 
 const AttachmentViewerContext = createContext<ViewerContext | null>(null);
 
+type ViewerImage = {
+  /** Whether the dialog fills the window. */
+  maximized: boolean;
+  look: ImageLook;
+  setLook(look: ImageLook): void;
+};
+
+const ViewerImageContext = createContext<ViewerImage | null>(null);
+
+/** What the image renderer needs from the viewer around it; null outside one. */
+export function useViewerImage(): ViewerImage | null {
+  return useContext(ViewerImageContext);
+}
+
+type ImageLookProps = {
+  /** The image background and scaling, controlled. Default: held in memory by the viewer. */
+  imageLook?: ImageLook;
+  /** Called when the reader picks another background or scaling. */
+  onImageLookChange?(look: ImageLook): void;
+};
+
 export type AttachmentViewerProviderProps = {
   /** Where a browser tab shows this file; undefined when it would only download. */
   viewHref?: (file: FileSource) => string | undefined;
@@ -56,7 +79,7 @@ export type AttachmentViewerProviderProps = {
   /** Text files above this, or of unknown size, open the download pane. Default 1 MiB. */
   textPreviewMaxBytes?: number;
   children?: ReactNode;
-};
+} & ImageLookProps;
 
 /**
  * Owns one viewer dialog for everything below it: link chips, inline images,
@@ -67,6 +90,8 @@ export function AttachmentViewerProvider({
   viewHref,
   group,
   textPreviewMaxBytes = TEXT_PREVIEW_MAX_BYTES,
+  imageLook,
+  onImageLookChange,
   children,
 }: AttachmentViewerProviderProps) {
   const [state, setState] = useState<AttachmentViewerState | null>(null);
@@ -98,6 +123,8 @@ export function AttachmentViewerProvider({
           setState((prev) => (prev === null ? prev : { ...prev, index }))
         }
         onClose={() => setState(null)}
+        imageLook={imageLook}
+        onImageLookChange={onImageLookChange}
       />
     </AttachmentViewerContext.Provider>
   );
@@ -156,9 +183,11 @@ function DownloadOnlyPane({ file }: { file: FileSource }) {
 function ViewerBody({
   file,
   maximized,
+  titleBar,
 }: {
   file: FileSource;
   maximized: boolean;
+  titleBar: HTMLElement | null;
 }) {
   const canPreview = useCanPreview(file);
   return (
@@ -176,7 +205,9 @@ function ViewerBody({
       }
     >
       {canPreview ? (
-        <Content source={file} placement="viewer" />
+        <ContentTitleBar source={file} target={titleBar}>
+          <Content source={file} placement="viewer" />
+        </ContentTitleBar>
       ) : (
         <DownloadOnlyPane file={file} />
       )}
@@ -237,7 +268,7 @@ export type AttachmentViewerProps = {
   state: AttachmentViewerState | null;
   onNavigate(index: number): void;
   onClose(): void;
-};
+} & ImageLookProps;
 
 /**
  * The viewer dialog, controlled: one file at a time drawn by the registry in
@@ -249,10 +280,27 @@ export function AttachmentViewer({
   state,
   onNavigate,
   onClose,
+  imageLook,
+  onImageLookChange,
 }: AttachmentViewerProps) {
   // "Maximize" fills the browser window without entering system fullscreen;
   // the dialog stays a modal.
   const [maximized, setMaximized] = useState(false);
+  const [titleBar, setTitleBar] = useState<HTMLElement | null>(null);
+  // Held here rather than in the image, so paging and reopening keep it.
+  const [ownLook, setOwnLook] = useState(DEFAULT_IMAGE_LOOK);
+  const look = imageLook ?? ownLook;
+  const image = useMemo(
+    () => ({
+      maximized,
+      look,
+      setLook: (next: ImageLook) => {
+        if (imageLook === undefined) setOwnLook(next);
+        onImageLookChange?.(next);
+      },
+    }),
+    [maximized, look, imageLook, onImageLookChange],
+  );
 
   const file = state?.items[state.index];
   const count = state?.items.length ?? 0;
@@ -294,6 +342,7 @@ export function AttachmentViewer({
               <DialogTitle className="min-w-0 flex-1 truncate">
                 {file.name}
               </DialogTitle>
+              <span ref={setTitleBar} className="contents" />
               {count > 1 && (
                 <>
                   <Button
@@ -327,11 +376,14 @@ export function AttachmentViewer({
               </Button>
             </div>
             {/* Keyed by file, so paging starts the next one scrolled to its top. */}
-            <ViewerBody
-              key={`${state?.index}:${file.url ?? file.name}`}
-              file={file}
-              maximized={maximized}
-            />
+            <ViewerImageContext.Provider value={image}>
+              <ViewerBody
+                key={`${state?.index}:${file.url ?? file.name}`}
+                file={file}
+                maximized={maximized}
+                titleBar={titleBar}
+              />
+            </ViewerImageContext.Provider>
             <ViewerFooter file={file} />
           </>
         )}

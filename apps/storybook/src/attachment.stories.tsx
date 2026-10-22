@@ -13,6 +13,7 @@ import {
   imageContent,
   pdfContent,
   useAttachmentViewer,
+  useStoredImageLook,
   videoContent,
 } from "@orz/ui-content/attachment";
 import {
@@ -34,6 +35,7 @@ import guideText from "./fixtures/attachment/guide.md?raw";
 import svgText from "./fixtures/attachment/logo.svg?raw";
 import svgUrl from "./fixtures/attachment/logo.svg?url&no-inline";
 import pdfUrl from "./fixtures/attachment/paper.pdf?url&no-inline";
+import spriteUrl from "./fixtures/attachment/sprite.png?url&no-inline";
 import oggUrl from "./fixtures/attachment/tone.ogg?url&no-inline";
 
 /**
@@ -61,6 +63,8 @@ const binary = (
 
 const FILES: Record<string, FileSource> = {
   "gradient.png": binary("gradient.png", "image/png", pngUrl, 1510),
+  // Tiny and transparent: zoomed in, it shows the checkerboard and pixelated scaling.
+  "sprite.png": binary("sprite.png", "image/png", spriteUrl, 232),
   "logo.svg": {
     ...textFile("logo.svg", "image/svg+xml", svgText),
     url: svgUrl,
@@ -88,6 +92,7 @@ const file = (name: string) => FILES[name] as FileSource;
 /** Every kind the viewer knows, plus one it does not. */
 const MIXED = [
   "gradient.png",
+  "sprite.png",
   "logo.svg",
   "demo.html",
   "paper.pdf",
@@ -123,9 +128,16 @@ const RENDERERS = [
 const PLUGINS = [markdownEmbeds({ resolve }), attachmentLinks({ resolve })];
 
 function Surface({ children }: { children: ReactNode }) {
+  const [imageLook, setImageLook] = useStoredImageLook(
+    "orz-storybook-image-look",
+  );
   return (
     <ContentRenderers renderers={RENDERERS}>
-      <AttachmentViewerProvider group={group}>
+      <AttachmentViewerProvider
+        group={group}
+        imageLook={imageLook}
+        onImageLookChange={setImageLook}
+      >
         {children}
       </AttachmentViewerProvider>
     </ContentRenderers>
@@ -155,7 +167,9 @@ function ViewerDemo() {
     <Surface>
       <p className="mb-3 max-w-xl text-sm text-muted-foreground">
         Open any file, then page with ‹ › or the arrow keys. The archive has no
-        inline preview.
+        inline preview. An image zooms with the wheel, a pinch, + − 0 1 or a
+        click, and pans by dragging; its background and scaling are in the zoom
+        menu.
       </p>
       <ViewerButtons />
     </Surface>

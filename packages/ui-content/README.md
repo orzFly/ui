@@ -247,7 +247,7 @@ The order matters, because the first renderer that accepts a source draws it:
 | Renderer | Accepts | Placement | Draws |
 |---|---|---|---|
 | `attachmentCard({ maxBytes?, maxDepth?, collapsedClassName? })` | text files that are not images | `document` | `DocumentCard` around `Next` |
-| `imageContent()` | images with a `url` | both | `<img>`; in a document, a click opens the viewer |
+| `imageContent()` | images with a `url` | both | `<img>`; in a document, a click opens the viewer; in the viewer, a zoomable canvas |
 | `htmlContent({ src? })` | HTML with a `url` | `viewer` | `<iframe sandbox="allow-scripts">` |
 | `pdfContent({ src? })` | PDF with a `url` | `viewer` | `<iframe>`, unsandboxed |
 | `videoContent()` | video with a `url` | both | `<video controls preload="metadata">` |
@@ -281,11 +281,14 @@ to run in a sandboxed frame, so serve PDFs from a URL that cannot be mistaken fo
   viewHref={(file) => string | undefined}   // where a browser tab shows the file
   group={(file) => ({ items, index }) | null} // the set paging covers when one file is opened
   textPreviewMaxBytes={1024 * 1024}          // text above this, or of unknown size, downloads
+  imageLook={{ background, smoothing }}      // controlled image look; default: held in memory
+  onImageLookChange={(look) => void}
 >
 
 useAttachmentViewer(): { open(items, index), show(file) } | null  // null outside a provider
 useCanPreview(file): boolean   // whether a plain click should open the viewer
 useViewHref(file): string      // viewHref(file) ?? file.url ?? ""
+useStoredImageLook(storageKey): [ImageLook, (look: ImageLook) => void]
 ```
 
 One provider owns one dialog, and everything below it opens that one. A nested provider shadows
@@ -306,8 +309,29 @@ The dialog shows the name, ‹ n / m › for a set (← and → page, wrapping),
 fills the window and stays a modal. Its body is `<Content placement="viewer">`, or a download pane
 for a file nothing can draw. The body sets `--attachment-pane-height` (`75vh`, or the remaining
 height when maximized); a renderer in `"viewer"` placement sizes to it, as in
-`max-h-(--attachment-pane-height)`. `AttachmentViewer` is the same dialog, controlled, for an app
-that holds `{ items, index } | null` itself.
+`max-h-(--attachment-pane-height)`. The title bar lends the renderer drawing the file a slot
+between the name and the pager, through `ContentTitleBar`, for controls of its own.
+`AttachmentViewer` is the same dialog, controlled, for an app that holds `{ items, index } | null`
+itself, and takes the same `imageLook` props.
+
+An image in the viewer sits on a canvas. The wheel zooms about the pointer, as do a trackpad pinch
+(ctrl+wheel, or Safari's gesture events) and a two-finger pinch on a phone; dragging pans once
+zoomed; a click toggles between fit and actual pixels (or twice the fit, if that is deeper) at the
+pointer. Zoom runs from fit, or 100% if that is smaller, to 8× natural pixels, and panning never
+pulls an image edge inside the canvas. Restored, fit never enlarges an image; maximized, it fills
+the window. Paging starts every image at fit; maximize keeps the zoom and the point at the centre.
+
+In the title bar, − and + step the zoom (hidden on a phone, where pinch does it), and the readout
+opens a menu: Fit (key `0`), 100% (key `1`), a black or checkerboard background, and smooth or
+pixelated scaling. `+` `-` `0` `1` work from the keyboard; with Ctrl/⌘ they stay the browser's page
+zoom. Black fills the canvas; the checkerboard sits under the image only, so an opaque image looks
+the same and a transparent one shows where it ends. Pixelated applies only above 100%. An image that
+fails to load is a plain `<img>`, with no controls.
+
+The background and scaling (`ImageLook`, default checkerboard and smooth) are the viewer's, not
+the image's, so paging and reopening keep them. Without `imageLook` the viewer holds them in memory
+until the page reloads. `useStoredImageLook(storageKey)` keeps them in localStorage and follows
+other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the key after the app.
 
 ### Links, lists, cards and icons
 
