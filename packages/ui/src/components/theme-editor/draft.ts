@@ -1,10 +1,14 @@
 import {
+  type AnyCustomTheme,
   type ColorScheme,
   type CustomSide,
   type CustomTerminal,
+  type CustomTerminalTheme,
   type CustomTheme,
+  composeTerminalTheme,
   composeTheme,
   DEFAULT_VARIANT,
+  isCustomTerminalTheme,
   schemesOf,
   type TerminalTheme,
   type TerminalTokenName,
@@ -43,20 +47,24 @@ export interface SideMemory {
   terminalDetached?: DetachedTerminal;
 }
 
-export interface DraftState {
+/**
+ * `C` narrows the draft's kind for a caller that knows it; the editor, which
+ * loads themes of both kinds, keeps the default union.
+ */
+export interface DraftState<C extends AnyCustomTheme = AnyCustomTheme> {
   /** The stored theme the draft started from; null for a new one. */
-  saved: CustomTheme | null;
+  saved: C | null;
   /** None sides are absent, so the draft is always what Save writes. */
-  draft: CustomTheme;
+  draft: C;
   memory: Partial<Record<ColorScheme, SideMemory>>;
   /** The draft changed since the last load; makes a new theme dirty. */
   touched: boolean;
 }
 
 export type DraftAction =
-  | { type: "load"; draft: CustomTheme; saved: CustomTheme | null }
+  | { type: "load"; draft: AnyCustomTheme; saved: AnyCustomTheme | null }
   /** After a successful Save: `saved` (as written) becomes the draft and its baseline. */
-  | { type: "markSaved"; saved: CustomTheme }
+  | { type: "markSaved"; saved: AnyCustomTheme }
   | { type: "setLabel"; label: string }
   /**
    * `resolved`: what the side shows now (or, from None, what it would show
@@ -78,12 +86,14 @@ export type DraftAction =
   /**
    * `resolved`: the terminal colours shown now, copied when it turns
    * detached. `base`: the palette a terminal takes when it turns based with
-   * nothing remembered. Follow is ignored on a detached side.
+   * nothing remembered. Follow is ignored on a detached side. On a terminal
+   * theme the side itself is the terminal: "none" removes it, and neither
+   * "follow" nor "both" applies.
    */
   | {
       type: "setTerminalMode";
       target: TerminalTarget;
-      mode: TerminalMode;
+      mode: TerminalMode | "none";
       resolved?: TerminalTokens;
       base?: TerminalBaseRef;
     }
@@ -147,17 +157,31 @@ function setOptional<T extends object, K extends keyof T>(
   return out;
 }
 
-export function sideMode(draft: CustomTheme, scheme: ColorScheme): SideMode {
+/** On a terminal theme, the mode of the side's terminal palette. */
+export function sideMode(draft: AnyCustomTheme, scheme: ColorScheme): SideMode {
   const side = draft[scheme];
   if (side === undefined) return "none";
-  return isBased(side) ? "based" : "detached";
+  return "base" in side ? "based" : "detached";
 }
 
-/** null when the side is None. */
+/** The terminal palette a side carries: on a terminal theme, the side itself. */
+function terminalOf(
+  draft: AnyCustomTheme,
+  scheme: ColorScheme,
+): CustomTerminal | undefined {
+  return isCustomTerminalTheme(draft) ? draft[scheme] : draft[scheme]?.terminal;
+}
+
+/** null when the side is None. A terminal theme's side never follows. */
 export function terminalMode(
-  draft: CustomTheme,
+  draft: AnyCustomTheme,
   scheme: ColorScheme,
 ): TerminalMode | null {
+  if (isCustomTerminalTheme(draft)) {
+    const side = draft[scheme];
+    if (side === undefined) return null;
+    return isBasedTerminal(side) ? "based" : "detached";
+  }
   const side = draft[scheme];
   return side === undefined ? null : terminalModeOf(side);
 }
@@ -184,11 +208,11 @@ export function isOverridden(
 
 /** True only on a based terminal that pins `name`. */
 export function isTerminalOverridden(
-  draft: CustomTheme,
+  draft: AnyCustomTheme,
   scheme: ColorScheme,
   name: TerminalTokenName,
 ): boolean {
-  const terminal = draft[scheme]?.terminal;
+  const terminal = terminalOf(draft, scheme);
   return (
     terminal !== undefined &&
     isBasedTerminal(terminal) &&
@@ -212,11 +236,11 @@ export function overrideCount(
 }
 
 export function terminalOverrideCount(
-  draft: CustomTheme,
+  draft: AnyCustomTheme,
   scheme: ColorScheme,
   names?: readonly TerminalTokenName[],
 ): number {
-  const terminal = draft[scheme]?.terminal;
+  const terminal = terminalOf(draft, scheme);
   if (
     terminal === undefined ||
     !isBasedTerminal(terminal) ||
@@ -276,16 +300,16 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   return true;
 }
 
-export function isDirty(state: DraftState): boolean {
+export function isDirty(state: DraftState<AnyCustomTheme>): boolean {
   return state.saved === null
     ? state.touched
     : !deepEqual(state.draft, state.saved);
 }
 
-export function initDraftState(initial: {
-  draft: CustomTheme;
-  saved: CustomTheme | null;
-}): DraftState {
+export function initDraftState<C extends AnyCustomTheme>(initial: {
+  draft: C;
+  saved: C | null;
+}): DraftState<C> {
   return {
     saved: initial.saved,
     draft: initial.draft,
@@ -323,9 +347,12 @@ function detach(
 }
 
 type Patch = Pick<DraftState, "draft" | "memory">;
+/** The state while the draft is a UI theme; every UI action reads it. */
+type UiState = DraftState<CustomTheme>;
+type TerminalState = DraftState<CustomTerminalTheme>;
 
 function setSideMode(
-  state: DraftState,
+  state: UiState,
   action: Extract<DraftAction, { type: "setSideMode" }>,
 ): Patch | null {
   const { scheme, mode } = action;
@@ -355,7 +382,7 @@ function setSideMode(
 
 /** Applies `edit` to the side(s) `target` names that exist; an edit returning undefined leaves a side as is. */
 function editSides(
-  state: DraftState,
+  state: UiState,
   target: TerminalTarget,
   edit: (
     side: CustomSide,
@@ -376,7 +403,7 @@ function editSides(
 }
 
 function editBased(
-  state: DraftState,
+  state: UiState,
   scheme: ColorScheme,
   edit: (side: BasedSide) => BasedSide,
 ): Patch | null {
@@ -390,7 +417,7 @@ function setTerminal(side: CustomSide, terminal: CustomTerminal | undefined) {
 }
 
 function editBasedTerminal(
-  state: DraftState,
+  state: UiState,
   target: TerminalTarget,
   edit: (terminal: BasedTerminal) => BasedTerminal,
 ): Patch | null {
@@ -402,10 +429,11 @@ function editBasedTerminal(
 }
 
 function setTerminalMode(
-  state: DraftState,
+  state: UiState,
   action: Extract<DraftAction, { type: "setTerminalMode" }>,
 ): Patch | null {
   const { target, mode } = action;
+  if (mode === "none") return null;
   // For both sides, the first side's choice is written to each, so a shared
   // terminal stays one terminal even when the sides remember different ones.
   const source =
@@ -435,7 +463,7 @@ function setTerminalMode(
 }
 
 function shareTerminal(
-  state: DraftState,
+  state: UiState,
   from: ColorScheme,
   resolved: TerminalTokens | undefined,
 ): Patch | null {
@@ -482,18 +510,131 @@ function shareTerminal(
   };
 }
 
-function apply(state: DraftState, action: DraftAction): Patch | null {
+/** Applies `edit` to a terminal theme's side, when it exists. */
+function editTerminalSide(
+  state: TerminalState,
+  target: TerminalTarget,
+  edit: (side: CustomTerminal) => CustomTerminal | undefined,
+): Patch | null {
+  if (target === "both") return null;
+  const side = state.draft[target];
+  const next = side && edit(side);
+  if (next === undefined || deepEqual(next, side)) return null;
+  return { draft: { ...state.draft, [target]: next }, memory: state.memory };
+}
+
+function editBasedTerminalSide(
+  state: TerminalState,
+  target: TerminalTarget,
+  edit: (terminal: BasedTerminal) => BasedTerminal,
+): Patch | null {
+  return editTerminalSide(state, target, (side) =>
+    isBasedTerminal(side) ? edit(side) : undefined,
+  );
+}
+
+/** None · Based on a palette · Fully custom for one side of a terminal theme. */
+function setTerminalSideMode(
+  state: TerminalState,
+  action: Extract<DraftAction, { type: "setTerminalMode" }>,
+): Patch | null {
+  const { target, mode } = action;
+  if (target === "both" || mode === "follow") return null;
+  if (sideMode(state.draft, target) === mode) return null;
+  const current = state.draft[target];
+  let memory = state.memory[target] ?? {};
+  if (current !== undefined) {
+    memory = isBasedTerminal(current)
+      ? { ...memory, terminalBased: current }
+      : { ...memory, terminalDetached: current };
+  }
+  let next: CustomTerminal | undefined;
+  if (mode === "based") {
+    next =
+      memory.terminalBased ??
+      (action.base ? { base: baseRef(action.base) } : undefined);
+    if (next === undefined) return null;
+  } else if (mode === "detached") {
+    next =
+      memory.terminalDetached ??
+      (action.resolved ? { tokens: { ...action.resolved } } : undefined);
+    if (next === undefined) return null;
+  }
+  return {
+    draft: setOptional(state.draft, target, next),
+    memory: { ...state.memory, [target]: memory },
+  };
+}
+
+/** The terminal actions, on a terminal theme's sides; UI actions do nothing. */
+function applyTerminal(
+  state: TerminalState,
+  action: DraftAction,
+): Patch | null {
+  switch (action.type) {
+    case "setTerminalMode":
+      return setTerminalSideMode(state, action);
+    case "setTerminalBase":
+      return editTerminalSide(state, action.target, (side) => {
+        const next: BasedTerminal = { base: baseRef(action.base) };
+        if (isBasedTerminal(side) && side.tokens) next.tokens = side.tokens;
+        return next;
+      });
+    case "setTerminalVariant":
+      return editBasedTerminalSide(state, action.target, (terminal) => ({
+        ...terminal,
+        base: baseRef({ ...terminal.base, variant: action.variant }),
+      }));
+    case "setTerminalToken":
+      return editTerminalSide(state, action.target, (side) => {
+        const pinned = { [action.name]: action.value };
+        // A based side pins the value even when it equals the base's: only ↺ unpins.
+        return isBasedTerminal(side)
+          ? { ...side, tokens: { ...side.tokens, ...pinned } }
+          : { tokens: { ...side.tokens, ...pinned } };
+      });
+    case "resetTerminalToken":
+      return editBasedTerminalSide(state, action.target, (terminal) =>
+        setOptional(
+          terminal,
+          "tokens",
+          withoutKey(terminal.tokens, action.name),
+        ),
+      );
+    case "resetAllTerminal":
+      return editBasedTerminalSide(state, action.target, (terminal) =>
+        setOptional(terminal, "tokens", undefined),
+      );
+    default:
+      return null;
+  }
+}
+
+function apply(
+  state: DraftState<AnyCustomTheme>,
+  action: DraftAction,
+): Patch | null {
+  if (action.type === "load" || action.type === "markSaved") return null;
+  if (action.type === "setLabel") {
+    return action.label === state.draft.label
+      ? null
+      : {
+          draft: { ...state.draft, label: action.label },
+          memory: state.memory,
+        };
+  }
+  if (isCustomTerminalTheme(state.draft)) {
+    return applyTerminal(state as TerminalState, action);
+  }
+  return applyUi(state as UiState, action);
+}
+
+function applyUi(state: UiState, action: DraftAction): Patch | null {
   switch (action.type) {
     case "load":
     case "markSaved":
-      return null;
     case "setLabel":
-      return action.label === state.draft.label
-        ? null
-        : {
-            draft: { ...state.draft, label: action.label },
-            memory: state.memory,
-          };
+      return null;
     case "setSideMode":
       return setSideMode(state, action);
     case "setBase":
@@ -572,21 +713,25 @@ function apply(state: DraftState, action: DraftAction): Patch | null {
   }
 }
 
-export function draftReducer(
-  state: DraftState,
+// A load or markSaved may change the kind; only the editor sends those, and
+// it keeps the union.
+export function draftReducer<C extends AnyCustomTheme>(
+  state: DraftState<C>,
   action: DraftAction,
-): DraftState {
-  if (action.type === "load") return initDraftState(action);
+): DraftState<C> {
+  if (action.type === "load") return initDraftState(action) as DraftState<C>;
   if (action.type === "markSaved") {
     return {
       ...state,
-      saved: action.saved,
-      draft: action.saved,
+      saved: action.saved as C,
+      draft: action.saved as C,
       touched: false,
     };
   }
   const patch = apply(state, action);
-  return patch === null ? state : { ...state, ...patch, touched: true };
+  return patch === null
+    ? state
+    : ({ ...state, ...patch, touched: true } as DraftState<C>);
 }
 
 /**
@@ -596,25 +741,50 @@ export function draftReducer(
 export function composeDraft(
   draft: CustomTheme,
   themes: readonly TerminalTheme[],
-): Theme | null {
-  return composeTheme(
-    { ...draft, label: draft.label.trim() || "Untitled theme" },
-    themes,
-  );
+): Theme | null;
+export function composeDraft(
+  draft: CustomTerminalTheme,
+  themes: readonly TerminalTheme[],
+): TerminalTheme | null;
+export function composeDraft(
+  draft: AnyCustomTheme,
+  themes: readonly TerminalTheme[],
+): Theme | TerminalTheme | null;
+export function composeDraft(
+  draft: AnyCustomTheme,
+  themes: readonly TerminalTheme[],
+): Theme | TerminalTheme | null {
+  const label = draft.label.trim() || "Untitled theme";
+  return isCustomTerminalTheme(draft)
+    ? composeTerminalTheme({ ...draft, label }, themes)
+    : composeTheme({ ...draft, label }, themes);
 }
+
+/** What a draft of kind `C` composes to. */
+export type Composed<C extends AnyCustomTheme> =
+  | (C extends CustomTerminalTheme
+      ? TerminalTheme
+      : C extends CustomTheme
+        ? Theme
+        : Theme | TerminalTheme)
+  | null;
 
 /**
  * The draft for one editing session. `initial` is read on mount only; switch
  * themes with a `load` action. `themes`: the UI and terminal lists together,
  * as the store composes against.
  */
-export function useThemeDraft(
-  initial: { draft: CustomTheme; saved: CustomTheme | null },
+export function useThemeDraft<C extends AnyCustomTheme>(
+  initial: { draft: C; saved: C | null },
   themes: readonly TerminalTheme[],
 ) {
-  const [state, dispatch] = useReducer(draftReducer, initial, initDraftState);
+  const [state, dispatch] = useReducer(
+    draftReducer<C>,
+    initial,
+    initDraftState<C>,
+  );
   const composed = useMemo(
-    () => composeDraft(state.draft, themes),
+    () => composeDraft(state.draft, themes) as Composed<C>,
     [state.draft, themes],
   );
   return {
@@ -647,9 +817,17 @@ export interface NewThemeContext {
   resolved: { theme: Theme; variant: string };
   /** The store's base UI themes, custom ones excluded. */
   baseThemes: readonly Theme[];
-  customs: readonly CustomTheme[];
+  /** Every custom theme, of both kinds. */
+  customs: readonly AnyCustomTheme[];
   /** Labels a new theme must not take: custom and base themes'. */
   labels: readonly string[];
+}
+
+export interface NewTerminalThemeContext
+  extends Omit<NewThemeContext, "resolved"> {
+  kind: "terminal";
+  /** What the terminal shows (`useTerminalTheme()`), a following terminal included. */
+  terminal: { theme: TerminalTheme; variant: string; following: boolean };
 }
 
 const takenIds = (ctx: Pick<NewThemeContext, "baseThemes" | "customs">) => [
@@ -657,38 +835,54 @@ const takenIds = (ctx: Pick<NewThemeContext, "baseThemes" | "customs">) => [
   ...ctx.baseThemes.map((t) => t.id),
 ];
 
-function copySides(custom: CustomTheme): Pick<CustomTheme, ColorScheme> {
-  const out: Pick<CustomTheme, ColorScheme> = {};
+function copySides<C extends AnyCustomTheme>(custom: C): Pick<C, ColorScheme> {
+  const out: Partial<Record<ColorScheme, unknown>> = {};
   for (const scheme of SCHEMES) {
     const side = custom[scheme];
     if (side !== undefined) out[scheme] = structuredClone(side);
   }
-  return out;
+  return out as Pick<C, ColorScheme>;
 }
 
-/** "*Label* copy", numbered until free, as an unsaved theme with a new id. */
-export function duplicate(
-  custom: CustomTheme,
+/** "*Label* copy", numbered until free, as an unsaved theme of the same kind with a new id. */
+export function duplicate<C extends AnyCustomTheme>(
+  custom: C,
   ctx: Pick<NewThemeContext, "baseThemes" | "customs" | "labels">,
-): CustomTheme {
+): C {
   return {
     id: newThemeId(takenIds(ctx)),
+    ...(isCustomTerminalTheme(custom) ? { kind: "terminal" } : {}),
     label: uniqueLabel(`${custom.label} copy`, ctx.labels),
     ...copySides(custom),
-  };
+  } as C;
 }
 
 /**
  * A copy of what the page shows: on a base theme, each of its sides based on
  * it with the current variant where that palette defines it; on a custom
- * theme, its sides.
+ * theme, its sides. With `kind: "terminal"`, a copy of what the terminal
+ * shows instead (see `newTerminalTheme`).
  */
-export function newTheme(ctx: NewThemeContext): CustomTheme {
+export function newTheme(ctx: NewThemeContext): CustomTheme;
+export function newTheme(ctx: NewTerminalThemeContext): CustomTerminalTheme;
+export function newTheme(
+  ctx: NewThemeContext | NewTerminalThemeContext,
+): AnyCustomTheme;
+export function newTheme(
+  ctx: NewThemeContext | NewTerminalThemeContext,
+): AnyCustomTheme {
+  if ("kind" in ctx && ctx.kind === "terminal") return newTerminalTheme(ctx);
+  return newUiTheme(ctx as NewThemeContext);
+}
+
+function newUiTheme(ctx: NewThemeContext): CustomTheme {
   const id = newThemeId(takenIds(ctx));
   const label = uniqueLabel("Custom theme", ctx.labels);
   const shown = ctx.resolved.theme.id;
   const custom = ctx.customs.find((c) => c.id === shown);
-  if (custom !== undefined) return { id, label, ...copySides(custom) };
+  if (custom !== undefined && !isCustomTerminalTheme(custom)) {
+    return { id, label, ...copySides(custom) };
+  }
 
   const base =
     ctx.baseThemes.find((t) => t.id === shown) ??
@@ -706,6 +900,46 @@ export function newTheme(ctx: NewThemeContext): CustomTheme {
           variant !== undefined && Object.hasOwn(variants, variant)
             ? variant
             : undefined,
+      }),
+    };
+  }
+  return out;
+}
+
+/**
+ * A copy of what the terminal shows. A base theme (UI or terminal-only): each
+ * scheme it has becomes a based side on it, with the current variant where
+ * that palette defines it. A terminal custom theme: its sides. A UI custom
+ * theme cannot be a base, so each of its sides becomes Fully custom from the
+ * terminal colours it shows.
+ */
+function newTerminalTheme(ctx: NewTerminalThemeContext): CustomTerminalTheme {
+  const id = newThemeId(takenIds(ctx));
+  const label = uniqueLabel("Terminal theme", ctx.labels);
+  const { theme, following } = ctx.terminal;
+  const custom = ctx.customs.find((c) => c.id === theme.id);
+  if (custom !== undefined && isCustomTerminalTheme(custom)) {
+    return { id, kind: "terminal", label, ...copySides(custom) };
+  }
+  const out: CustomTerminalTheme = { id, kind: "terminal", label };
+  const pick = following ? ctx.pref.ui : ctx.pref.terminal;
+  const variant =
+    pick?.theme === theme.id && pick.variant !== undefined
+      ? pick.variant
+      : ctx.terminal.variant;
+  for (const scheme of schemesOf(theme)) {
+    const palette = theme[scheme];
+    if (palette === undefined) continue;
+    if (custom !== undefined) {
+      out[scheme] = { tokens: { ...palette.terminal } };
+      continue;
+    }
+    out[scheme] = {
+      base: baseRef({
+        theme: theme.id,
+        variant: Object.hasOwn(palette.variants ?? {}, variant)
+          ? variant
+          : undefined,
       }),
     };
   }
