@@ -3,6 +3,7 @@
 @import "overlayscrollbars/overlayscrollbars.css";
 @import "@orz/ui/styles.css";
 @import "@orz/ui-code/styles.css";
+@import "@orz/ui-content/styles.css";
 @import "@orz/ui-codemirror/styles.css";
 @import "@orz/ui-markdown/styles.css";
 @import "@orz/ui-mermaid/styles.css";
