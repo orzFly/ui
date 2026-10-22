@@ -1,4 +1,5 @@
 import {
+  type AnyCustomTheme,
   type ColorScheme,
   type CustomTheme,
   DEFAULT_VARIANT,
@@ -15,7 +16,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { serializeThemeFile } from "../lib/theme-file.ts";
+import { type ImportEntry, serializeThemeFile } from "../lib/theme-file.ts";
 import { useDirtySource } from "../lib/unsaved-guard.ts";
 import { useTerminalTheme, useTheme, useThemeSlots } from "../theme/index.ts";
 import { Button } from "./button.tsx";
@@ -435,13 +436,13 @@ function EditorSession({
       }),
     );
 
-  const importThemes = (picked: Omit<CustomTheme, "id">[]) =>
+  const importThemes = (picked: NonNullable<ImportEntry["theme"]>[]) =>
     guarded(() => {
       const taken = [
         ...everyCustom.map((c) => c.id),
         ...composeList.map((t) => t.id),
       ];
-      const added = picked.map((theme): CustomTheme => {
+      const added = picked.map((theme): AnyCustomTheme => {
         const id = newThemeId(taken);
         taken.push(id);
         return { ...theme, id };
@@ -454,7 +455,9 @@ function EditorSession({
         );
         return;
       }
-      const first = added[0];
+      const first = added.find(
+        (c): c is CustomTheme => !isCustomTerminalTheme(c),
+      );
       if (first) load({ draft: first, saved: first });
     });
 

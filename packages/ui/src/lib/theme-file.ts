@@ -1,10 +1,13 @@
 import {
+  type AnyCustomTheme,
   type ColorScheme,
   type CustomSide,
   type CustomTerminal,
+  type CustomTerminalTheme,
   type CustomTheme,
   composeTheme,
   DEFAULT_VARIANT,
+  isCustomTerminalTheme,
   isUiTheme,
   resolveTerminal,
   TERMINAL_TOKEN_NAMES,
@@ -12,6 +15,7 @@ import {
   type TerminalTokenName,
   type TerminalTokens,
   TOKEN_NAMES,
+  type TokenName,
   type Tokens,
 } from "@orz/themes";
 import { parseColor } from "./color.ts";
@@ -24,7 +28,18 @@ export const THEME_FILE_MAX_LENGTH = 1_000_000;
 interface ThemeFile {
   format: typeof THEME_FILE_FORMAT;
   version: typeof THEME_FILE_VERSION;
+  /** Always written, empty when there are no UI themes. */
   themes: FileTheme[];
+  // A second array rather than a kind on entries: a reader that predates
+  // terminal themes ignores an unknown key, but would read a based terminal
+  // entry as a based UI side.
+  /** Written only when non-empty. */
+  terminalThemes?: FileTerminalTheme[];
+}
+interface FileTerminalTheme {
+  label: string;
+  light?: FileTerminal;
+  dark?: FileTerminal;
 }
 interface FileTheme {
   label: string;
@@ -60,27 +75,39 @@ function terminalScheme(
 }
 
 /**
- * The file for `customs`, pretty-printed with two-space indent and a trailing newline. Ids are
- * left out; every based side and based terminal carries `resolved`, computed against `themes`
- * (UI and terminal-only lists together). A custom theme that composes to `null` is written
- * without snapshots for the sides that cannot resolve.
+ * The file for `customs` of both kinds, each in its kind's array, pretty-printed with two-space
+ * indent and a trailing newline. Ids and kinds are left out; every based side and based terminal
+ * carries `resolved`, computed against `themes` (UI and terminal-only lists together). A custom
+ * theme that composes to `null` is written without snapshots for the sides that cannot resolve.
  */
 export function serializeThemeFile(
-  customs: readonly CustomTheme[],
+  customs: readonly AnyCustomTheme[],
   themes: readonly TerminalTheme[],
 ): string {
   const file: ThemeFile = {
     format: THEME_FILE_FORMAT,
     version: THEME_FILE_VERSION,
-    themes: customs.map((custom) => {
-      const out: FileTheme = { label: custom.label };
+    themes: [],
+  };
+  const terminalThemes: FileTerminalTheme[] = [];
+  for (const custom of customs) {
+    if (isCustomTerminalTheme(custom)) {
+      const out: FileTerminalTheme = { label: custom.label };
       for (const scheme of SCHEMES) {
         const side = custom[scheme];
-        if (side) out[scheme] = serializeSide(custom, scheme, side, themes);
+        if (side) out[scheme] = serializeTerminal(side, scheme, themes);
       }
-      return out;
-    }),
-  };
+      terminalThemes.push(out);
+      continue;
+    }
+    const out: FileTheme = { label: custom.label };
+    for (const scheme of SCHEMES) {
+      const side = custom[scheme];
+      if (side) out[scheme] = serializeSide(custom, scheme, side, themes);
+    }
+    file.themes.push(out);
+  }
+  if (terminalThemes.length > 0) file.terminalThemes = terminalThemes;
   return `${JSON.stringify(file, null, 2)}\n`;
 }
 
@@ -139,9 +166,14 @@ export type ImportStatus = "ok" | "renamed" | "adjusted" | "rejected";
 export interface ImportEntry {
   /** The label as written in the file. */
   sourceLabel: string;
+  /** The kind `theme` has, after any conversion. */
+  kind: "ui" | "terminal";
   status: ImportStatus;
-  /** Present unless rejected: the theme to add, label de-duplicated, no id, no `resolved`. */
-  theme?: Omit<CustomTheme, "id">;
+  /**
+   * Present unless rejected: the theme to add, label de-duplicated, no id, no `resolved`. A UI
+   * theme carries no `kind`; a terminal theme carries `kind: "terminal"`.
+   */
+  theme?: Omit<CustomTheme, "id" | "kind"> | Omit<CustomTerminalTheme, "id">;
   /** One sentence each, shown on the row: renames, repairs, or the rejection reason. */
   messages: string[];
 }
@@ -158,6 +190,10 @@ const TOO_LARGE = "This file is too large to be a theme file.";
 const NO_THEMES = "This file contains no themes.";
 const NO_SIDE = "It has neither a light nor a dark side.";
 const BAD_SHAPE = "It isn't a valid theme entry.";
+const NO_TERMINAL_SLOT =
+  "It is a terminal theme, and this app has no terminal.";
+const CONVERTED =
+  "This app has no UI themes; imported as a terminal theme from its terminal colours.";
 
 const renamed = (from: string) =>
   `Renamed from "${from}": a theme with that name already exists.`;
@@ -323,13 +359,17 @@ function badValue(
   return null;
 }
 
-/** null when the side is dropped; its reason is in `messages`. */
-function importSide(
+interface CheckedSide {
+  tokens?: Partial<Record<TokenName, unknown>>;
+  terminalTokens?: Partial<Record<TerminalTokenName, unknown>>;
+}
+
+/** The side's known colours, or null when a value check drops it; its reason is in `messages`. */
+function checkSide(
   raw: RawSide,
   scheme: ColorScheme,
-  themes: readonly TerminalTheme[],
   messages: string[],
-): CustomSide | null {
+): CheckedSide | null {
   const unknown = [
     ...unknownNames(raw.tokens, TOKEN_NAMES),
     ...unknownNames(raw.terminal?.tokens, TERMINAL_TOKEN_NAMES),
@@ -358,6 +398,19 @@ function importSide(
     messages.push(incomplete(scheme, missing));
     return null;
   }
+  return { tokens, terminalTokens };
+}
+
+/** null when the side is dropped; its reason is in `messages`. */
+function importSide(
+  raw: RawSide,
+  scheme: ColorScheme,
+  themes: readonly TerminalTheme[],
+  messages: string[],
+): CustomSide | null {
+  const checked = checkSide(raw, scheme, messages);
+  if (checked === null) return null;
+  const { tokens, terminalTokens } = checked;
 
   let side: CustomSide;
   // The side's own snapshot terminal, when the side was detached from its snapshot.
@@ -415,6 +468,7 @@ function importSide(
     scheme,
     themes,
     messages,
+    terminalDetached,
   );
   if (terminal) {
     side.terminal = terminal;
@@ -436,7 +490,10 @@ function importSide(
   return null;
 }
 
-/** null when the base is missing here and the terminal has no usable snapshot. */
+/**
+ * null when the base is missing here and the terminal has no usable snapshot. `detached` words the
+ * message for a terminal made fully custom from its snapshot.
+ */
 function importBasedTerminal(
   ref: NonNullable<RawTerminal["base"]>,
   resolved: unknown,
@@ -444,6 +501,7 @@ function importBasedTerminal(
   scheme: ColorScheme,
   themes: readonly TerminalTheme[],
   messages: string[],
+  detached: (name: string, scheme: ColorScheme) => string,
 ): CustomTerminal | null {
   const base = themes.find((t) => t.id === ref.theme);
   const palette = base
@@ -471,64 +529,174 @@ function importBasedTerminal(
   }
   const snapshot = complete(resolved, TERMINAL_TOKEN_NAMES, isHex);
   if (snapshot === null) return null;
-  messages.push(terminalDetached(base?.label ?? ref.theme, scheme));
+  messages.push(detached(base?.label ?? ref.theme, scheme));
   return { tokens: snapshot };
 }
 
+/** A terminal theme's side; null when it is dropped, its reason in `messages`. */
+function importTerminalSide(
+  raw: RawTerminal,
+  scheme: ColorScheme,
+  themes: readonly TerminalTheme[],
+  messages: string[],
+): CustomTerminal | null {
+  const unknown = unknownNames(raw.tokens, TERMINAL_TOKEN_NAMES);
+  if (unknown.length > 0) messages.push(unknownTokens(unknown));
+  const tokens = raw.tokens && pick(raw.tokens, TERMINAL_TOKEN_NAMES);
+  const bad = tokens && badValue(tokens, isHex, notHex);
+  if (bad) {
+    messages.push(bad);
+    return null;
+  }
+  if (raw.base === undefined) {
+    const missing = tokens ? missingNames(tokens, TERMINAL_TOKEN_NAMES) : [];
+    if (missing.length > 0) {
+      messages.push(incomplete(scheme, missing));
+      return null;
+    }
+  }
+  return resolveTerminalSide(raw, tokens, scheme, themes, messages);
+}
+
+/** A checked terminal side with its base reference resolved against `themes`. */
+function resolveTerminalSide(
+  raw: RawTerminal,
+  tokens: Partial<Record<TerminalTokenName, unknown>> | undefined,
+  scheme: ColorScheme,
+  themes: readonly TerminalTheme[],
+  messages: string[],
+): CustomTerminal | null {
+  if (raw.base === undefined) return { tokens: tokens as TerminalTokens };
+  const terminal = importBasedTerminal(
+    raw.base,
+    raw.resolved,
+    tokens,
+    scheme,
+    themes,
+    messages,
+    sideDetached,
+  );
+  if (terminal) return terminal;
+  const name =
+    themes.find((t) => t.id === raw.base?.theme)?.label ?? raw.base.theme;
+  messages.push(noSnapshot(name, scheme));
+  return null;
+}
+
+/** A UI side turned into the terminal it shows, for a store with no UI slot. */
+function convertSide(
+  raw: RawSide,
+  scheme: ColorScheme,
+  themes: readonly TerminalTheme[],
+  messages: string[],
+): CustomTerminal | null {
+  const checked = checkSide(raw, scheme, messages);
+  if (checked === null) return null;
+  if (raw.terminal) {
+    return resolveTerminalSide(
+      raw.terminal,
+      checked.terminalTokens,
+      scheme,
+      themes,
+      messages,
+    );
+  }
+  // A based side following its base: the base's own terminal, with the
+  // terminal the side showed as its snapshot.
+  const base = raw.base as NonNullable<RawSide["base"]>;
+  const resolved = isObject(raw.resolved) ? raw.resolved.terminal : undefined;
+  return resolveTerminalSide(
+    { base: { theme: base.theme, variant: base.variant }, resolved },
+    undefined,
+    scheme,
+    themes,
+    messages,
+  );
+}
+
+type Slots = NonNullable<ParseThemeFileOptions["slots"]>;
+
 function importEntry(
   raw: unknown,
+  fileKind: "ui" | "terminal",
   themes: readonly TerminalTheme[],
   taken: readonly string[],
+  slots: Slots,
 ): ImportEntry {
   const sourceLabel =
     isObject(raw) && typeof raw.label === "string" ? raw.label : "";
+  const converted = fileKind === "ui" && !slots.ui;
+  const kind = converted ? "terminal" : fileKind;
   const rejected = (messages: string[]): ImportEntry => ({
     sourceLabel,
+    kind,
     status: "rejected",
     messages,
   });
   if (!isObject(raw) || sourceLabel.trim() === "") {
     return rejected([BAD_SHAPE]);
   }
-  const sides: Partial<Record<ColorScheme, RawSide>> = {};
+  const read = fileKind === "ui" ? readSide : readTerminal;
+  const sides: Partial<Record<ColorScheme, RawSide | RawTerminal>> = {};
   for (const scheme of SCHEMES) {
     if (raw[scheme] === undefined) continue;
-    const side = readSide(raw[scheme]);
+    const side = read(raw[scheme]);
     if (side === null) return rejected([BAD_SHAPE]);
     sides[scheme] = side;
   }
   if (!sides.light && !sides.dark) return rejected([NO_SIDE]);
+  if (fileKind === "terminal" && !slots.terminal) {
+    return rejected([NO_TERMINAL_SLOT]);
+  }
 
-  const messages: string[] = [];
+  const messages: string[] = converted ? [CONVERTED] : [];
   const label = sourceLabel.trim();
-  const theme: Omit<CustomTheme, "id"> = { label };
+  const theme:
+    | Omit<CustomTheme, "id" | "kind">
+    | Omit<CustomTerminalTheme, "id"> =
+    kind === "terminal" ? { kind: "terminal", label } : { label };
   for (const scheme of SCHEMES) {
     const raw = sides[scheme];
-    const side = raw && importSide(raw, scheme, themes, messages);
-    if (side) theme[scheme] = side;
+    if (raw === undefined) continue;
+    const side =
+      fileKind === "terminal"
+        ? importTerminalSide(raw, scheme, themes, messages)
+        : converted
+          ? convertSide(raw as RawSide, scheme, themes, messages)
+          : importSide(raw as RawSide, scheme, themes, messages);
+    // The kind decides the side type; the union cannot follow it.
+    if (side) (theme as Record<ColorScheme, unknown>)[scheme] = side;
   }
   if (!theme.light && !theme.dark) return rejected(messages);
 
   theme.label = uniqueLabel(label, taken);
   const repaired = messages.length > 0;
-  if (theme.label !== label) messages.unshift(renamed(label));
+  if (theme.label !== label)
+    messages.splice(converted ? 1 : 0, 0, renamed(label));
   const status: ImportStatus = repaired
     ? "adjusted"
     : messages.length > 0
       ? "renamed"
       : "ok";
-  return { sourceLabel, status, theme, messages };
+  return { sourceLabel, kind, status, theme, messages };
+}
+
+export interface ParseThemeFileOptions {
+  /** The store's slots. Default both true. */
+  slots?: { ui: boolean; terminal: boolean };
 }
 
 /**
  * Parses and validates a theme file against this app's lists. `existingLabels` are the labels the
- * new themes must not take (custom and base themes); de-duplication also covers labels taken by
- * earlier entries of the same file. Never throws.
+ * new themes must not take (custom themes of both kinds, and the base themes of both slots);
+ * de-duplication also covers labels taken by earlier entries of the same file. Entries come out
+ * in file order, `themes` first, then `terminalThemes`. Never throws.
  */
 export function parseThemeFile(
   text: string,
   themes: readonly TerminalTheme[],
   existingLabels: readonly string[],
+  { slots = { ui: true, terminal: true } }: ParseThemeFileOptions = {},
 ): ParseResult {
   if (typeof text !== "string") return { ok: false, error: NOT_JSON };
   if (text.length > THEME_FILE_MAX_LENGTH) {
@@ -547,12 +715,19 @@ export function parseThemeFile(
     return { ok: false, error: NEWER };
   }
   if (data.version !== THEME_FILE_VERSION) return { ok: false, error: NOT_ORZ };
-  if (!Array.isArray(data.themes) || data.themes.length === 0) {
+  const { themes: ui = [], terminalThemes: terminal = [] } = data;
+  if (!Array.isArray(ui) || !Array.isArray(terminal)) {
+    return { ok: false, error: NOT_ORZ };
+  }
+  if (ui.length === 0 && terminal.length === 0) {
     return { ok: false, error: NO_THEMES };
   }
   const taken = [...existingLabels];
-  const entries = data.themes.map((raw: unknown) => {
-    const entry = importEntry(raw, themes, taken);
+  const entries = [
+    ...ui.map((raw: unknown) => ["ui", raw] as const),
+    ...terminal.map((raw: unknown) => ["terminal", raw] as const),
+  ].map(([kind, raw]) => {
+    const entry = importEntry(raw, kind, themes, taken, slots);
     if (entry.theme) taken.push(entry.theme.label);
     return entry;
   });

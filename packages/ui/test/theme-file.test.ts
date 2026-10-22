@@ -1,4 +1,5 @@
 import {
+  type CustomTerminalTheme,
   type CustomTheme,
   composeTheme,
   defaultTheme,
@@ -195,6 +196,7 @@ describe("round trip", () => {
     const [entry] = entries(serializeThemeFile([custom], themes));
     expect(entry).toEqual({
       sourceLabel: custom.label,
+      kind: "ui",
       status: "ok",
       theme: withoutId(custom),
       messages: [],
@@ -403,6 +405,7 @@ describe("references", () => {
     );
     expect(entry).toEqual({
       sourceLabel: "Drift",
+      kind: "ui",
       status: "rejected",
       messages: [
         "reef isn't available here and the file has no saved colours for the light side's terminal.",
@@ -426,6 +429,7 @@ describe("references", () => {
     );
     expect(entry).toEqual({
       sourceLabel: "Ghost",
+      kind: "ui",
       status: "rejected",
       messages: [
         "gone isn't available here and the file has no saved colours for the light side.",
@@ -443,6 +447,7 @@ describe("entry messages", () => {
     );
     expect(entry).toEqual({
       sourceLabel: "Dusk",
+      kind: "ui",
       status: "renamed",
       theme: { label: "Dusk (2)", dark: { base: { theme: "harbor" } } },
       messages: ['Renamed from "Dusk": a theme with that name already exists.'],
@@ -556,6 +561,7 @@ describe("entry messages", () => {
   it("rejects an entry with neither side", () => {
     expect(only(file({ label: "Empty" }))).toEqual({
       sourceLabel: "Empty",
+      kind: "ui",
       status: "rejected",
       messages: ["It has neither a light nor a dark side."],
     });
@@ -572,6 +578,7 @@ describe("entry messages", () => {
     );
     expect(entry).toEqual({
       sourceLabel: "Holes",
+      kind: "ui",
       status: "rejected",
       messages: [
         "Its light side is missing colours: primary, ring, ansi-cyan.",
@@ -624,6 +631,7 @@ describe("entry messages", () => {
     );
     expect(entry).toEqual({
       sourceLabel: "Half",
+      kind: "ui",
       status: "adjusted",
       theme: { label: "Half", dark: { base: { theme: "harbor" } } },
       messages: [
@@ -665,6 +673,7 @@ describe("entry messages", () => {
   ])("rejects the shape of %s", (_, raw, sourceLabel) => {
     expect(only(file(raw))).toEqual({
       sourceLabel,
+      kind: "ui",
       status: "rejected",
       messages: ["It isn't a valid theme entry."],
     });
@@ -679,6 +688,360 @@ describe("entry messages", () => {
     );
     expect(result[1]?.status).toBe("ok");
     expect(result[1]?.theme?.label).toBe("Dusk");
+  });
+});
+
+/** Light based on the terminal-only `tide` at its dark scheme and `deep` variant; dark detached. */
+const glow: CustomTerminalTheme = {
+  id: "custom-glow",
+  kind: "terminal",
+  label: "Glow",
+  light: {
+    base: { theme: "tide", scheme: "dark", variant: "deep" },
+    tokens: { "ansi-red": "#ff3344" },
+  },
+  dark: { tokens: { ...dark.terminal, "ansi-green": "#33cc66" } },
+};
+/** Dark only, on the exporting app's `reef`. */
+const reefy: CustomTerminalTheme = {
+  id: "custom-reefy",
+  kind: "terminal",
+  label: "Reefy",
+  dark: { base: { theme: "reef" } },
+};
+
+function terminalFile(...entries: unknown[]): string {
+  return JSON.stringify({
+    format: "orz-themes",
+    version: 1,
+    terminalThemes: entries,
+  });
+}
+
+function withoutTerminalId({
+  id: _,
+  ...rest
+}: CustomTerminalTheme): Omit<CustomTerminalTheme, "id"> {
+  return rest;
+}
+
+const terminalOnly = { slots: { ui: false, terminal: true } };
+const uiOnly = { slots: { ui: true, terminal: false } };
+
+function parsed(
+  text: string,
+  options: Parameters<typeof parseThemeFile>[3],
+  existing: string[] = [],
+): ImportEntry[] {
+  const result = parseThemeFile(text, themes, existing, options);
+  if (!result.ok) throw new Error(result.error);
+  return result.entries;
+}
+
+describe("terminal themes in the file", () => {
+  it("writes them into terminalThemes with no id or kind, and themes empty", () => {
+    const written = JSON.parse(serializeThemeFile([glow], themes));
+    expect(written.themes).toEqual([]);
+    expect(written.terminalThemes).toHaveLength(1);
+    const [entry] = written.terminalThemes;
+    expect(entry).not.toHaveProperty("id");
+    expect(entry).not.toHaveProperty("kind");
+    expect(entry.label).toBe("Glow");
+    expect(entry.light.resolved).toEqual({
+      ...dark.terminal,
+      "terminal-background": "#000000",
+      "ansi-red": "#ff3344",
+    });
+    expect(entry.dark).toEqual(glow.dark);
+  });
+
+  it("leaves terminalThemes out of a file with UI themes only", () => {
+    const written = JSON.parse(serializeThemeFile([dusk], themes));
+    expect(written).not.toHaveProperty("terminalThemes");
+  });
+
+  it("puts each kind in its own array, keeping order within each", () => {
+    const written = JSON.parse(
+      serializeThemeFile([glow, dusk, reefy, paper], exporting),
+    );
+    expect(written.themes.map((t: { label: string }) => t.label)).toEqual([
+      "Dusk",
+      "Paper",
+    ]);
+    expect(
+      written.terminalThemes.map((t: { label: string }) => t.label),
+    ).toEqual(["Glow", "Reefy"]);
+  });
+
+  it("round-trips a based terminal theme with a scheme, and a detached side", () => {
+    const [entry] = entries(serializeThemeFile([glow], themes));
+    expect(entry).toEqual({
+      sourceLabel: "Glow",
+      kind: "terminal",
+      status: "ok",
+      theme: withoutTerminalId(glow),
+      messages: [],
+    });
+  });
+
+  it("reads a file with only terminalThemes, after the UI themes of a file with both", () => {
+    expect(only(terminalFile({ label: "Glow", dark: glow.dark })).kind).toBe(
+      "terminal",
+    );
+    const both = entries(serializeThemeFile([glow, dusk], themes));
+    expect(both.map((e) => [e.kind, e.sourceLabel])).toEqual([
+      ["ui", "Dusk"],
+      ["terminal", "Glow"],
+    ]);
+  });
+
+  it.each([
+    [
+      "terminalThemes that is not an array",
+      JSON.stringify({
+        format: "orz-themes",
+        version: 1,
+        themes: [{ label: "Embers", dark: { base: { theme: "ember" } } }],
+        terminalThemes: {},
+      }),
+      "This isn't an orz-themes file.",
+    ],
+    [
+      "themes that is not an array, beside terminal themes",
+      JSON.stringify({
+        format: "orz-themes",
+        version: 1,
+        themes: "none",
+        terminalThemes: [{ label: "Glow", dark: glow.dark }],
+      }),
+      "This isn't an orz-themes file.",
+    ],
+    [
+      "both arrays empty",
+      JSON.stringify({
+        format: "orz-themes",
+        version: 1,
+        themes: [],
+        terminalThemes: [],
+      }),
+      "This file contains no themes.",
+    ],
+  ])("refuses %s", (_, text, error) => {
+    expect(parseThemeFile(text, themes, [])).toEqual({ ok: false, error });
+  });
+
+  it("detaches a side whose base is missing, from its snapshot", () => {
+    const text = serializeThemeFile([reefy], exporting);
+    const entry = only(text);
+    expect(entry).toEqual({
+      sourceLabel: "Reefy",
+      kind: "terminal",
+      status: "adjusted",
+      theme: {
+        kind: "terminal",
+        label: "Reefy",
+        dark: { tokens: { ...dark.terminal, "ansi-red": "#ee4455" } },
+      },
+      messages: [
+        "reef isn't available here; the dark side is imported as Fully custom from the colours saved in the file.",
+      ],
+    });
+  });
+
+  it("drops a side whose base is missing with no saved colours", () => {
+    const entry = only(
+      terminalFile({
+        label: "Reefy",
+        light: { base: { theme: "tide" } },
+        dark: { base: { theme: "reef" } },
+      }),
+    );
+    expect(entry.status).toBe("adjusted");
+    expect(entry.theme).toEqual({
+      kind: "terminal",
+      label: "Reefy",
+      light: { base: { theme: "tide" } },
+    });
+    expect(entry.messages).toEqual([
+      "reef isn't available here and the file has no saved colours for the dark side.",
+    ]);
+  });
+
+  it("rejects a theme whose every side is dropped", () => {
+    expect(
+      only(terminalFile({ label: "Reefy", dark: { base: { theme: "reef" } } })),
+    ).toEqual({
+      sourceLabel: "Reefy",
+      kind: "terminal",
+      status: "rejected",
+      messages: [
+        "reef isn't available here and the file has no saved colours for the dark side.",
+      ],
+    });
+  });
+
+  it("checks a side's shape and values", () => {
+    expect(
+      only(terminalFile({ label: "Odd", dark: { base: { theme: 3 } } }))
+        .messages,
+    ).toEqual(["It isn't a valid theme entry."]);
+    expect(
+      only(
+        terminalFile({
+          label: "Odd",
+          dark: { tokens: { ...dark.terminal, "ansi-red": "red" } },
+        }),
+      ).messages,
+    ).toEqual(['"red" for ansi-red isn\'t a hex colour.']);
+    const { "ansi-red": _, ...holes } = dark.terminal;
+    expect(
+      only(terminalFile({ label: "Odd", dark: { tokens: holes } })).messages,
+    ).toEqual(["Its dark side is missing colours: ansi-red."]);
+    expect(only(terminalFile({ label: "Odd" })).messages).toEqual([
+      "It has neither a light nor a dark side.",
+    ]);
+  });
+
+  it("de-duplicates labels across both kinds", () => {
+    const result = parsed(
+      JSON.stringify({
+        format: "orz-themes",
+        version: 1,
+        themes: [{ label: "Glow", dark: { base: { theme: "harbor" } } }],
+        terminalThemes: [
+          { label: "Glow", dark: glow.dark },
+          { label: "Tide", dark: glow.dark },
+        ],
+      }),
+      undefined,
+      ["Tide"],
+    );
+    expect(result.map((e) => e.theme?.label)).toEqual([
+      "Glow",
+      "Glow (2)",
+      "Tide (2)",
+    ]);
+    expect(result[1]?.status).toBe("renamed");
+  });
+});
+
+describe("import into a store's slots", () => {
+  it("rejects a terminal theme when the store has no terminal", () => {
+    const [ui, terminal] = parsed(
+      serializeThemeFile([dusk, glow], themes),
+      uiOnly,
+    );
+    expect(ui?.status).toBe("ok");
+    expect(terminal).toEqual({
+      sourceLabel: "Glow",
+      kind: "terminal",
+      status: "rejected",
+      messages: ["It is a terminal theme, and this app has no terminal."],
+    });
+  });
+
+  it("converts a UI theme in a store with no UI slot, side by side", () => {
+    const [converted] = parsed(
+      serializeThemeFile([tidal], themes),
+      terminalOnly,
+    );
+    expect(converted).toEqual({
+      sourceLabel: "Tidal",
+      kind: "terminal",
+      status: "adjusted",
+      theme: {
+        kind: "terminal",
+        label: "Tidal",
+        // A side with its own terminal keeps it; a detached side takes its terminal.
+        light: {
+          base: { theme: "tide", scheme: "dark", variant: "deep" },
+          tokens: { "ansi-red": "#ff3344" },
+        },
+        dark: { base: { theme: "tide" } },
+      },
+      messages: [
+        "This app has no UI themes; imported as a terminal theme from its terminal colours.",
+      ],
+    });
+  });
+
+  it("turns a following side into a terminal on its base and variant", () => {
+    const [converted] = parsed(
+      serializeThemeFile([dusk], themes),
+      terminalOnly,
+    );
+    expect(converted?.theme).toEqual({
+      kind: "terminal",
+      label: "Dusk",
+      light: { base: { theme: "harbor" } },
+      dark: { base: { theme: "harbor", variant: "amoled" } },
+    });
+  });
+
+  it("takes a converted side with a missing base from the side's terminal snapshot", () => {
+    const lagoonish: CustomTheme = {
+      id: "custom-lagoonish",
+      label: "Lagoonish",
+      light: { base: { theme: "lagoon" }, tokens: { primary: "#123456" } },
+    };
+    const [converted] = parsed(
+      serializeThemeFile([lagoonish], exporting),
+      terminalOnly,
+    );
+    expect(converted).toEqual({
+      sourceLabel: "Lagoonish",
+      kind: "terminal",
+      status: "adjusted",
+      theme: {
+        kind: "terminal",
+        label: "Lagoonish",
+        light: { tokens: lagoon.light?.terminal },
+      },
+      messages: [
+        "This app has no UI themes; imported as a terminal theme from its terminal colours.",
+        "lagoon isn't available here; the light side is imported as Fully custom from the colours saved in the file.",
+      ],
+    });
+
+    const bare = file({
+      label: "Lagoonish",
+      light: { base: { theme: "lagoon" } },
+    });
+    expect(parsed(bare, terminalOnly)[0]).toEqual({
+      sourceLabel: "Lagoonish",
+      kind: "terminal",
+      status: "rejected",
+      messages: [
+        "This app has no UI themes; imported as a terminal theme from its terminal colours.",
+        "lagoon isn't available here and the file has no saved colours for the light side.",
+      ],
+    });
+  });
+
+  it("still checks the UI side's values before converting it", () => {
+    const [converted] = parsed(
+      file({
+        label: "Odd",
+        light: { base: { theme: "harbor" }, tokens: { primary: "nope" } },
+      }),
+      terminalOnly,
+    );
+    expect(converted?.status).toBe("rejected");
+    expect(converted?.messages.at(-1)).toBe(
+      '"nope" for primary isn\'t a colour.',
+    );
+  });
+
+  it("puts the conversion first, then a rename", () => {
+    const [converted] = parsed(
+      serializeThemeFile([embers], themes),
+      terminalOnly,
+      ["Embers"],
+    );
+    expect(converted?.messages).toEqual([
+      "This app has no UI themes; imported as a terminal theme from its terminal colours.",
+      'Renamed from "Embers": a theme with that name already exists.',
+    ]);
   });
 });
 

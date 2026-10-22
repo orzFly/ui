@@ -1,4 +1,4 @@
-import type { CustomTheme, TerminalTheme } from "@orz/themes";
+import type { TerminalTheme } from "@orz/themes";
 import { type DragEvent, useEffect, useId, useRef, useState } from "react";
 import {
   type ImportEntry,
@@ -17,7 +17,7 @@ export interface ImportPanelProps {
   /** Labels imported themes must not take: custom and base themes. */
   labels: readonly string[];
   /** Writes the checked themes; ids are the caller's. */
-  onImport: (themes: Omit<CustomTheme, "id">[]) => void;
+  onImport: (themes: NonNullable<ImportEntry["theme"]>[]) => void;
   /** Why the last import could not be written, if it failed. */
   error: string | null;
   onBack: () => void;
