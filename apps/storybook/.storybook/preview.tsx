@@ -11,7 +11,7 @@ import { DocsContainer } from "@storybook/addon-docs/blocks";
 import type { Decorator, Preview } from "@storybook/react-vite";
 import { type ComponentProps, useEffect, useSyncExternalStore } from "react";
 import { addons } from "storybook/preview-api";
-import { create, type ThemeVars } from "storybook/theming";
+import { storybookTheme } from "./storybook-theme.ts";
 import { THEME_EVENT } from "./theme-channel.ts";
 import "./preview.css";
 
@@ -84,65 +84,6 @@ const withTheme: Decorator = (Story, context) => {
     </ThemeProvider>
   );
 };
-
-// Storybook's theming runs every colour through polished, which cannot parse
-// oklch. Painting a token onto a canvas and reading the pixel back lets the
-// browser do the conversion, gamut mapping and var() resolution included.
-const canvas = document
-  .createElement("canvas")
-  .getContext("2d", { willReadFrequently: true });
-
-function token(name: string): string {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(
-    `--${name}`,
-  );
-  if (canvas === null) return value;
-  canvas.clearRect(0, 0, 1, 1);
-  canvas.fillStyle = "transparent";
-  canvas.fillStyle = value;
-  canvas.fillRect(0, 0, 1, 1);
-  const [r, g, b, a] = canvas.getImageData(0, 0, 1, 1).data;
-  return `rgba(${r}, ${g}, ${b}, ${Math.round((a / 255) * 100) / 100})`;
-}
-
-// Reads the tokens the store has just painted, so it must only be called for
-// the store's current theme; the cache keys on that.
-const varsCache = new Map<string, ThemeVars>();
-function storybookTheme({
-  theme,
-  colorScheme,
-  variant,
-}: ResolvedTheme): ThemeVars {
-  const key = `${theme.id}:${colorScheme}:${variant}`;
-  let vars = varsCache.get(key);
-  if (vars === undefined) {
-    vars = create({
-      base: colorScheme,
-      colorPrimary: token("primary"),
-      // Storybook draws the selected sidebar item in white on this.
-      colorSecondary: token("sidebar-primary"),
-      appBg: token("sidebar"),
-      appContentBg: token("background"),
-      appPreviewBg: token("background"),
-      appHoverBg: token("accent"),
-      appBorderColor: token("border"),
-      textColor: token("foreground"),
-      textMutedColor: token("muted-foreground"),
-      textInverseColor: token("primary-foreground"),
-      barBg: token("background"),
-      barTextColor: token("muted-foreground"),
-      buttonBg: token("secondary"),
-      buttonBorder: token("border"),
-      booleanBg: token("muted"),
-      booleanSelectedBg: token("background"),
-      inputBg: token("background"),
-      inputBorder: token("input"),
-      inputTextColor: token("foreground"),
-    });
-    varsCache.set(key, vars);
-  }
-  return vars;
-}
 
 // The store has a UI slot, so it always resolves a UI theme.
 const resolvedTheme = () => themes.getResolved() as ResolvedTheme;
