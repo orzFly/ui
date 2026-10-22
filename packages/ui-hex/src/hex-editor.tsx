@@ -40,7 +40,11 @@ export type { HexEditMode } from "./editing.ts";
 
 export type HexPasteResult =
   | { ok: true; bytes: number; truncated: boolean }
-  | { ok: false; reason: "not-hex" | "empty" | "read-only" };
+  | {
+      ok: false;
+      /** "unencodable": the text pane's encoding has no bytes for a pasted character. */
+      reason: "not-hex" | "unencodable" | "empty" | "read-only";
+    };
 
 export interface HexEditorProps extends Omit<HexViewProps, "source"> {
   document: HexDocument;
@@ -230,6 +234,7 @@ export function HexEditor({
   const editing = useMemo<GridEditing>(
     () => ({
       appendCell: doc.resizable,
+      readOnly,
       mode,
       contextRef,
       modifiedRanges: (offset, length) => doc.modifiedRanges(offset, length),
@@ -266,7 +271,10 @@ export function HexEditor({
         const bytes =
           current.pane === "hex" ? parseHexText(text) : state.encode(text);
         if (bytes === null) {
-          report({ ok: false, reason: "not-hex" });
+          report({
+            ok: false,
+            reason: current.pane === "hex" ? "not-hex" : "unencodable",
+          });
           return;
         }
         if (bytes.length === 0) {

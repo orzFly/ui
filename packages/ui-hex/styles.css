@@ -117,7 +117,53 @@
 
 .orz-hex-text-label {
   flex: none;
+  display: flex;
+  align-items: center;
+  min-width: 0;
   padding-left: 0.2ch;
+}
+/* Wraps the aria-hidden column labels without joining the header's flex row,
+   so the picker beside them stays reachable. */
+.orz-hex-header-labels {
+  display: contents;
+}
+
+/* The encoding picker: @orz/ui's SelectTrigger, shrunk to the header row.
+   Unlayered, so it wins over the trigger's layered utilities. */
+.orz-hex-encoding {
+  box-sizing: border-box;
+  max-width: 100%;
+  height: var(--hex-row-height);
+  gap: 0.25rem;
+  margin-left: -0.2ch;
+  padding: 0 0.25rem 0 0.2ch;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius, 0.5rem) - 0.25rem);
+  background: transparent;
+  box-shadow: none;
+  color: var(--hex-label);
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+.orz-hex-encoding:hover,
+.orz-hex-encoding[data-state="open"] {
+  background: var(--hex-hover);
+}
+.orz-hex-encoding:focus-visible {
+  border-color: var(--ring);
+  box-shadow: none;
+  outline: none;
+}
+.orz-hex-encoding [data-slot="select-value"] {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.orz-hex-encoding svg {
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 /* Cells have no margins: the contour depends on neighbours touching. Each
@@ -200,6 +246,25 @@
   text-align: right;
 }
 
+/* Above every cell's fill, so a neighbour's selection or hover cannot cover
+   the part of the glyph over it; hit-testing still lands on the cells
+   beneath. */
+.orz-hex-glyph {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--hex-glyph-span) * 100%);
+  pointer-events: none;
+  white-space: pre;
+}
+.orz-hex-glyph > span {
+  transform: scaleX(var(--hex-glyph-squeeze, 1));
+}
+
 .orz-hex-cell[data-faded]:not([data-sel]):not([data-hover]),
 .orz-hex-cell[data-state="loading"] {
   color: var(--hex-faded);
@@ -237,7 +302,10 @@
   box-shadow: none;
 }
 
-.orz-hex-cell[data-append][data-pane="hex"] .orz-hex-cell-content {
+/* Hex cells take their width from their digits, so a cell with none has to
+   reserve two, or a short last row pulls its text pane left. */
+.orz-hex-cell[data-append][data-pane="hex"] .orz-hex-cell-content,
+.orz-hex-cell[data-empty]:not(.orz-hex-text-cell) .orz-hex-cell-content {
   width: calc(2ch + var(--cell-pad) + var(--cell-pad-end));
 }
 .orz-hex:focus [data-append][data-caret] {

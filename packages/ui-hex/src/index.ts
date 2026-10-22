@@ -5,6 +5,11 @@ export {
   type HexPiece,
 } from "./document.ts";
 export {
+  HEX_ENCODINGS,
+  type HexEncoding,
+  type HexEncodingInfo,
+} from "./encodings.ts";
+export {
   addressDigits,
   copyText,
   formatAddress,

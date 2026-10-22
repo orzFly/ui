@@ -1,7 +1,8 @@
 import { render } from "@testing-library/react";
 import { Profiler } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { getTextDecoding, type HexEncoding } from "../src/encodings.ts";
 import {
   type GridContext,
   type GridEditing,
@@ -17,6 +18,7 @@ function stubEditing(overrides: Partial<GridEditing> = {}): GridEditing {
     onPaste: () => {},
     onCut: () => {},
     appendCell: true,
+    readOnly: false,
     mode: "overwrite",
     modifiedRanges: () => [],
     contextRef: { current: null as GridContext | null },
@@ -186,5 +188,105 @@ describe("HexGrid with editing", () => {
     expect(
       container.querySelector(".orz-hex")?.getAttribute("aria-roledescription"),
     ).toBe("hex view");
+  });
+});
+
+describe("HexGrid encoder warm-up", () => {
+  // Table decodings build nothing ahead, so the test lends them a hook.
+  const lend = (id: HexEncoding) => {
+    const decoding = getTextDecoding(id);
+    const prepare = vi.fn();
+    decoding.prepareEncode = prepare;
+    return {
+      prepare,
+      restore: () => {
+        delete decoding.prepareEncode;
+      },
+    };
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("prepares the encoder in idle time, again on each switch", () => {
+    const a = lend("windows-1251");
+    const b = lend("windows-1252");
+    const callbacks = new Map<number, () => void>();
+    let next = 0;
+    const cancel = vi.fn((id: number) => callbacks.delete(id));
+    vi.stubGlobal("requestIdleCallback", (callback: () => void) => {
+      callbacks.set(++next, callback);
+      return next;
+    });
+    vi.stubGlobal("cancelIdleCallback", cancel);
+    try {
+      const { rerender, unmount } = setup(20, stubEditing(), {
+        encoding: "windows-1251",
+      });
+      expect(callbacks.size).toBe(1);
+      rerender({ encoding: "windows-1252" });
+      expect(cancel).toHaveBeenCalledWith(1);
+      for (const callback of callbacks.values()) callback();
+      expect(a.prepare).not.toHaveBeenCalled();
+      expect(b.prepare).toHaveBeenCalledTimes(1);
+      unmount();
+      expect(cancel).toHaveBeenCalledWith(2);
+    } finally {
+      a.restore();
+      b.restore();
+    }
+  });
+
+  it("falls back to a timeout without requestIdleCallback", () => {
+    const a = lend("windows-1251");
+    vi.useFakeTimers();
+    vi.stubGlobal("requestIdleCallback", undefined);
+    try {
+      setup(20, stubEditing(), { encoding: "windows-1251" });
+      expect(a.prepare).not.toHaveBeenCalled();
+      vi.runAllTimers();
+      expect(a.prepare).toHaveBeenCalledTimes(1);
+    } finally {
+      a.restore();
+    }
+  });
+
+  it("leaves a read-only editor's encoder cold", () => {
+    const a = lend("windows-1251");
+    vi.useFakeTimers();
+    try {
+      render(
+        <HexGrid
+          source={bytesSource(new Uint8Array(20))}
+          rows={4}
+          encoding="windows-1251"
+          editing={stubEditing({ readOnly: true })}
+        />,
+      );
+      vi.runAllTimers();
+      expect(a.prepare).not.toHaveBeenCalled();
+    } finally {
+      a.restore();
+    }
+  });
+
+  it("leaves a plain view's encoder cold", () => {
+    const a = lend("windows-1251");
+    vi.useFakeTimers();
+    try {
+      render(
+        <HexGrid
+          source={bytesSource(new Uint8Array(20))}
+          rows={4}
+          encoding="windows-1251"
+        />,
+      );
+      vi.runAllTimers();
+      expect(a.prepare).not.toHaveBeenCalled();
+    } finally {
+      a.restore();
+    }
   });
 });

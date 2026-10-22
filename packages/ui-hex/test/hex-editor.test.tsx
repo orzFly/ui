@@ -297,6 +297,49 @@ describe("HexEditor paste", () => {
   });
 });
 
+describe("HexEditor encodings", () => {
+  it("refuses text-pane input the encoding cannot write", () => {
+    const onPaste = vi.fn();
+    const { click, root, type, bytes, doc } = setup({
+      encoding: "windows-1252",
+      onPaste,
+    });
+    click(1, "text");
+    paste(root, "あ");
+    expect(onPaste).toHaveBeenLastCalledWith({
+      ok: false,
+      reason: "unencodable",
+    });
+    type("あ");
+    expect(bytes()).toEqual(INITIAL);
+    expect(doc.canUndo).toBe(false);
+    paste(root, "€");
+    expect(bytes()).toEqual([0x10, 0x80, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80]);
+  });
+
+  it("types through the active encoding", () => {
+    const { click, type, bytes } = setup({ encoding: "shift_jis" });
+    click(1, "text");
+    type("あ");
+    expect(bytes()).toEqual([0x10, 0x82, 0xa0, 0x40, 0x50, 0x60, 0x70, 0x80]);
+  });
+
+  it("leaves a paste into the encoding picker alone", () => {
+    const onPaste = vi.fn();
+    const { click, root, bytes } = setup({ onPaste });
+    click(1, "text");
+    const trigger = root.querySelector(".orz-hex-encoding") as HTMLElement;
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.assign(event, { clipboardData: { getData: () => "hi" } });
+    act(() => {
+      trigger.dispatchEvent(event);
+    });
+    expect(event.defaultPrevented).toBe(false);
+    expect(onPaste).not.toHaveBeenCalled();
+    expect(bytes()).toEqual(INITIAL);
+  });
+});
+
 describe("HexEditor cut", () => {
   it("copies the selection, removes it and reports through onCopy", () => {
     const onCopy = vi.fn();
