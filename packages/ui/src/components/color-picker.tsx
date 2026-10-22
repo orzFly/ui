@@ -1,15 +1,22 @@
 import { converter } from "culori/fn";
-import { PipetteIcon } from "lucide-react";
+import {
+  LockIcon,
+  LockOpenIcon,
+  PipetteIcon,
+  RotateCcwIcon,
+} from "lucide-react";
 import { Slider as SliderPrimitive } from "radix-ui";
 import type * as React from "react";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   type ColorFormat,
   contrastRatio,
+  type DisplayGamut,
   formatColor,
   gamutOf,
   mapToSrgb,
+  maxChroma,
   type Oklch,
   parseColor,
 } from "../lib/color.ts";
@@ -25,7 +32,7 @@ const toHsv = converter("hsv");
 const toHsl = converter("hsl");
 const toOklch = converter("oklch");
 
-export type ColorSurface = "oklch" | "hsv";
+export type ColorSurface = "oklch" | "absolute" | "hsv";
 
 export interface SwatchGroup {
   label: string;
@@ -40,11 +47,20 @@ export interface ColorPickerProps {
   format?: ColorFormat;
   /** Default true. */
   alpha?: boolean;
-  /** Default ["oklch", "hsv"]; one entry hides the toggle. */
+  /** Default ["oklch", "absolute", "hsv"]; one entry hides the toggle. */
   surfaces?: readonly ColorSurface[];
   surface?: ColorSurface;
   defaultSurface?: ColorSurface;
   onSurfaceChange?: (surface: ColorSurface) => void;
+  /** Bounds the oklch surface and the chroma lock. Default "srgb". */
+  gamut?: DisplayGamut;
+  /** Shows a reset button when it parses; clicking commits it. */
+  resetValue?: string;
+  /** Keep C / maxChroma while hue or lightness changes from the hue slider or the L/H fields. */
+  chromaLock?: boolean;
+  /** Default false. */
+  defaultChromaLock?: boolean;
+  onChromaLockChange?: (locked: boolean) => void;
   swatches?: readonly string[] | readonly SwatchGroup[];
   contrastWith?: string;
   /** Default "background". */
@@ -53,11 +69,24 @@ export interface ColorPickerProps {
   eyeDropper?: boolean;
   disabled?: boolean;
   className?: string;
+  /** Rendered at the bottom of the panel. */
+  extra?: ReactNode;
 }
 
-const ALL_SURFACES: readonly ColorSurface[] = ["oklch", "hsv"];
-/** The oklch area's chroma axis; past every display gamut at every lightness. */
-const MAX_CHROMA = 0.37;
+const ALL_SURFACES: readonly ColorSurface[] = ["oklch", "absolute", "hsv"];
+const SURFACE_LABELS: Record<ColorSurface, string> = {
+  oklch: "OKLCH",
+  absolute: "Absolute",
+  hsv: "HSV",
+};
+// A token written to three decimals on its gamut's edge can read a hair past it; that is not
+// beyond the edge.
+const PIN_SLACK = 1e-3;
+// The absolute surface past P3: the row's edge colour with its chroma cut and its lightness pulled
+// toward the middle, so the region reads as "not here" rather than as more colours.
+const FADE = 0.38;
+const FADE_L0 = 0.2;
+const FADE_L1 = 0.72;
 // Converting through sRGB lands a grey a hair off the axis; below this it has no hue to trust.
 const ACHROMATIC = 1e-4;
 const EDGE = 1e-6;
@@ -172,73 +201,191 @@ function context2d(canvas: HTMLCanvasElement, p3: boolean) {
   return { ctx, p3: space === "display-p3" };
 }
 
+const axisCache = new Map<number, number>();
+
 /**
- * Paints lightness × chroma at one hue, one pixel at a time. Inside sRGB is the colour itself;
- * between sRGB and P3 is the real P3 colour on a P3 canvas, else the row's sRGB edge colour, which
- * is the same chroma reduction mapToSrgb performs; past P3 is hatched. Lines mark the two edges.
+ * The absolute surface's chroma axis at a hue: a little past the largest P3 chroma the hue reaches
+ * at any lightness, so the hue's whole P3 wedge spans the width. Cached per 0.1° — at most 3600
+ * entries — because finding it takes milliseconds and a hue drag asks every frame.
  */
-function paintArea(canvas: HTMLCanvasElement, hue: number, wantP3: boolean) {
+function axisMax(hue: number): number {
+  const key = Math.round(wrapHue(hue) * 10) % 3600;
+  const hit = axisCache.get(key);
+  if (hit !== undefined) return hit;
+  const h = key / 10;
+  let bestL = 0.5;
+  let best = 0;
+  for (let l = 0.005; l < 1; l += 0.005) {
+    const c = maxChroma(l, h, "p3");
+    if (c > best) {
+      best = c;
+      bestL = l;
+    }
+  }
+  // Chroma rises to one cusp and falls, so a ternary search around the best sample finds its top.
+  let a = Math.max(0.001, bestL - 0.005);
+  let b = Math.min(0.999, bestL + 0.005);
+  for (let k = 0; k < 30; k++) {
+    const m1 = a + (b - a) / 3;
+    const m2 = b - (b - a) / 3;
+    if (maxChroma(m1, h, "p3") < maxChroma(m2, h, "p3")) a = m1;
+    else b = m2;
+  }
+  const peak = Math.max(best, maxChroma((a + b) / 2, h, "p3"));
+  const max = peak * 1.05;
+  axisCache.set(key, max);
+  return max;
+}
+
+/**
+ * Where a colour sits on the oklch surface: C as a share of the gamut's largest chroma at its
+ * lightness and hue. A grey at L = 0 or 1, where that largest chroma is 0, is 0; a colour with
+ * chroma there is infinitely far past the edge.
+ */
+function relativeOf(color: Oklch, gamut: DisplayGamut): number {
+  const max = maxChroma(color.l, color.h, gamut);
+  if (max > 0) return color.c / max;
+  return color.c < ACHROMATIC ? 0 : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * The chroma lock: `next` with its C recomputed so that C / maxChroma stays what it was in `prev`,
+ * or what the oklch surface holds in `rel`. A colour beyond the gamut keeps its C, so the lock does
+ * not amplify the overshoot.
+ */
+function lockChroma(
+  prev: Oklch,
+  next: Oklch,
+  gamut: DisplayGamut,
+  rel: number | null,
+): { color: Oklch; rel: number | null } {
+  const r = rel ?? relativeOf(prev, gamut);
+  if (r > 1 + PIN_SLACK) return { color: next, rel: null };
+  const kept = Math.min(r, 1);
+  return {
+    color: { ...next, c: kept * maxChroma(next.l, next.h, gamut) },
+    rel: kept,
+  };
+}
+
+/** One RGBA image the size of the canvas, in the canvas's colour space. */
+function imageFor(canvas: HTMLCanvasElement, wantP3: boolean) {
   const target = context2d(canvas, wantP3);
-  if (target === null) return;
+  if (target === null) return null;
   const { ctx, p3 } = target;
   const w = canvas.width;
   const h = canvas.height;
-  if (w < 2 || h < 2) return;
+  if (w < 2 || h < 2) return null;
   const image = ctx.createImageData(w, h, {
     colorSpace: p3 ? "display-p3" : "srgb",
   });
-  const data = image.data;
+  const show = (pixel: { mode: "oklch"; l: number; c: number; h: number }) =>
+    channels(p3 ? toP3(pixel) : toRgb(pixel));
+  const put = (i: number, out: number[]) => {
+    image.data[i] = byte(out[0]);
+    image.data[i + 1] = byte(out[1]);
+    image.data[i + 2] = byte(out[2]);
+    image.data[i + 3] = 255;
+  };
+  return { ctx, p3, w, h, image, show, put };
+}
+
+function strokeEdge(
+  ctx: CanvasRenderingContext2D,
+  edge: number[],
+  dash: number[],
+) {
+  ctx.save();
+  ctx.setLineDash(dash);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.beginPath();
+  edge.forEach((x, y) => {
+    if (y === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * Paints lightness × relative chroma at one hue: each row runs from grey to the gamut's edge at
+ * that lightness, so every pixel is a colour the gamut holds. With a P3 gamut, the band past sRGB
+ * is the real P3 colour on a P3 canvas, else the row's sRGB edge colour, and a line marks sRGB's
+ * edge.
+ */
+function paintRelative(
+  canvas: HTMLCanvasElement,
+  hue: number,
+  gamut: DisplayGamut,
+  wantP3: boolean,
+) {
+  const target = imageFor(canvas, wantP3);
+  if (target === null) return;
+  const { ctx, p3, w, h, image, show, put } = target;
+  const srgbEdge = new Array<number>(h).fill(0);
+  const pixel = { mode: "oklch" as const, l: 0, c: 0, h: hue };
+  for (let y = 0; y < h; y++) {
+    pixel.l = 1 - y / (h - 1);
+    const span = maxChroma(pixel.l, hue, gamut);
+    const cs = gamut === "srgb" ? span : maxChroma(pixel.l, hue, "srgb");
+    srgbEdge[y] = span > 0 ? (cs / span) * (w - 1) : w - 1;
+    pixel.c = cs;
+    const edge = channels(toRgb(pixel));
+    for (let x = 0; x < w; x++) {
+      pixel.c = (x / (w - 1)) * span;
+      const i = (y * w + x) * 4;
+      put(i, pixel.c <= cs || p3 ? show(pixel) : edge);
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+  if (gamut === "p3") strokeEdge(ctx, srgbEdge, []);
+}
+
+/**
+ * Paints lightness × chroma at one hue, the chroma axis fitted to the hue's P3 wedge. Inside sRGB
+ * is the colour itself; between sRGB and P3 is the real P3 colour on a P3 canvas, else the row's
+ * sRGB edge colour, which is the same chroma reduction mapToSrgb performs; past P3 is a faded veil.
+ * Lines mark the two edges.
+ */
+function paintAbsolute(
+  canvas: HTMLCanvasElement,
+  hue: number,
+  wantP3: boolean,
+) {
+  const target = imageFor(canvas, wantP3);
+  if (target === null) return;
+  const { ctx, p3, w, h, image, show, put } = target;
+  const span = axisMax(hue);
   const srgbEdge = new Array<number>(h).fill(0);
   const p3Edge = new Array<number>(h).fill(0);
   const pixel = { mode: "oklch" as const, l: 0, c: 0, h: hue };
   for (let y = 0; y < h; y++) {
-    pixel.l = 1 - y / (h - 1);
-    let edge = [0, 0, 0];
+    const l = 1 - y / (h - 1);
+    const cs = maxChroma(l, hue, "srgb");
+    const cp = maxChroma(l, hue, "p3");
+    srgbEdge[y] = (cs / span) * (w - 1);
+    p3Edge[y] = (cp / span) * (w - 1);
+    pixel.l = l;
+    pixel.c = cs;
+    const edge = channels(toRgb(pixel));
+    const veil = show({
+      mode: "oklch",
+      l: FADE_L0 + FADE_L1 * l,
+      c: (p3 ? cp : cs) * FADE,
+      h: hue,
+    });
     for (let x = 0; x < w; x++) {
-      pixel.c = (x / (w - 1)) * MAX_CHROMA;
+      pixel.c = (x / (w - 1)) * span;
       const i = (y * w + x) * 4;
-      const rgb = toRgb(pixel);
-      let out: number[];
-      if (inUnit(rgb)) {
-        srgbEdge[y] = x;
-        p3Edge[y] = x;
-        edge = [rgb.r, rgb.g, rgb.b];
-        out = p3 ? channels(toP3(pixel)) : edge;
-      } else {
-        const wide = toP3(pixel);
-        if (!inUnit(wide)) {
-          const shade = ((x + y) >> 2) & 1 ? 128 : 158;
-          data[i] = shade;
-          data[i + 1] = shade;
-          data[i + 2] = shade;
-          data[i + 3] = 255;
-          continue;
-        }
-        p3Edge[y] = x;
-        out = p3 ? channels(wide) : edge;
-      }
-      data[i] = byte(out[0]);
-      data[i + 1] = byte(out[1]);
-      data[i + 2] = byte(out[2]);
-      data[i + 3] = 255;
+      if (pixel.c <= cs) put(i, show(pixel));
+      else if (pixel.c <= cp) put(i, p3 ? show(pixel) : edge);
+      else put(i, veil);
     }
   }
   ctx.putImageData(image, 0, 0);
-  const line = (edge: number[], dash: number[]) => {
-    ctx.save();
-    ctx.setLineDash(dash);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-    ctx.beginPath();
-    edge.forEach((x, y) => {
-      if (y === 0) ctx.moveTo(x + 0.5, y);
-      else ctx.lineTo(x + 0.5, y);
-    });
-    ctx.stroke();
-    ctx.restore();
-  };
-  line(p3Edge, [3, 2]);
-  line(srgbEdge, []);
+  strokeEdge(ctx, p3Edge, [3, 2]);
+  strokeEdge(ctx, srgbEdge, []);
 }
 
 function channels(c: { r: number; g: number; b: number }) {
@@ -278,6 +425,11 @@ function paintHue(canvas: HTMLCanvasElement, l: number, c: number) {
 interface PickerState {
   color: Oklch;
   hold: HsvHold | null;
+  /**
+   * The C / maxChroma the oklch surface last set, so the thumb keeps its place where that maximum
+   * is 0, at L = 0 and 1.
+   */
+  rel: number | null;
   /** The output format when `format` does not pin one. */
   format: ColorFormat;
   /** What the text field shows while it differs from the formatted value. */
@@ -298,6 +450,7 @@ function stateFor(
     return {
       color: BLACK,
       hold: null,
+      rel: null,
       format: prev?.format ?? "oklch",
       draft: value,
       seen: value,
@@ -312,6 +465,7 @@ function stateFor(
       alpha: alpha ? color.alpha : 1,
     },
     hold: null,
+    rel: null,
     format: format ?? "oklch",
     draft: null,
     seen: value,
@@ -353,18 +507,25 @@ export function ColorPicker({
   surface,
   defaultSurface,
   onSurfaceChange,
+  gamut = "srgb",
+  resetValue,
+  chromaLock,
+  defaultChromaLock = false,
+  onChromaLockChange,
   swatches,
   contrastWith,
   contrastLabel = "background",
   eyeDropper = true,
   disabled = false,
   className,
+  extra,
 }: ColorPickerProps) {
   const [st, setSt] = useState(() => stateFor(value, null, alpha));
   const [initial] = useState(() => parseColor(value)?.color ?? null);
   const [picked, setPicked] = useState<ColorSurface | undefined>(
     defaultSurface,
   );
+  const [lockPicked, setLockPicked] = useState(defaultChromaLock);
   const latest = useRef(st);
   latest.current = st;
   const uncommitted = useRef(false);
@@ -389,6 +550,7 @@ export function ColorPicker({
   const offered = surfaces.length > 0 ? surfaces : ALL_SURFACES;
   const wanted = surface ?? picked ?? (outFormat === "oklch" ? "oklch" : "hsv");
   const shown = offered.includes(wanted) ? wanted : offered[0];
+  const locked = chromaLock ?? lockPicked;
 
   const update = (next: PickerState, commit: boolean) => {
     const out = formatColor(next.color, format ?? next.format, { alpha });
@@ -414,6 +576,7 @@ export function ColorPicker({
       {
         ...latest.current,
         hold: null,
+        rel: null,
         draft: null,
         ...extra,
         color: alpha ? next : { ...next, alpha: 1 },
@@ -431,23 +594,44 @@ export function ColorPicker({
     onSurfaceChange?.(next);
   };
 
+  const toggleLock = () => {
+    setLockPicked(!locked);
+    onChromaLockChange?.(!locked);
+  };
+
   // --- area ---
   const hsv = hsvOf(color, state.hold);
-  const areaX =
-    shown === "oklch" ? Math.min(1, color.c / MAX_CHROMA) : clamp(hsv.s, 0, 1);
-  const areaY = shown === "oklch" ? 1 - color.l : 1 - hsv.v;
+  const rel = shown === "oklch" ? (state.rel ?? relativeOf(color, gamut)) : 0;
+  const areaRaw =
+    shown === "oklch"
+      ? rel
+      : shown === "absolute"
+        ? color.c / axisMax(color.h)
+        : clamp(hsv.s, 0, 1);
+  const pinned = areaRaw > 1 + (shown === "oklch" ? PIN_SLACK : 0);
+  const areaX = Math.min(1, areaRaw);
+  const areaY = shown === "hsv" ? 1 - hsv.v : 1 - color.l;
+  const gamutName = gamut === "p3" ? "P3" : "sRGB";
 
   const setFromArea = (x: number, y: number, commit: boolean) => {
     const cur = latest.current;
+    const l = clamp(1 - y, 0, 1);
     if (shown === "oklch") {
+      const r = clamp(x, 0, 1);
       setColor(
-        { ...cur.color, l: clamp(1 - y, 0, 1), c: clamp(x, 0, 1) * MAX_CHROMA },
+        { ...cur.color, l, c: r * maxChroma(l, cur.color.h, gamut) },
+        commit,
+        { rel: r },
+      );
+    } else if (shown === "absolute") {
+      setColor(
+        { ...cur.color, l, c: clamp(x, 0, 1) * axisMax(cur.color.h) },
         commit,
       );
     } else {
       const h = hsvOf(cur.color, cur.hold).h;
       const s = clamp(x, 0, 1);
-      setColor(fromHsv(h, s, clamp(1 - y, 0, 1), cur.color), commit, {
+      setColor(fromHsv(h, s, l, cur.color), commit, {
         hold: { h, s },
       });
     }
@@ -474,6 +658,24 @@ export function ColorPicker({
     event.preventDefault();
     const cur = latest.current;
     if (shown === "oklch") {
+      const r = cur.rel ?? relativeOf(cur.color, gamut);
+      if (delta[0] !== 0) {
+        // From beyond the edge, the first horizontal step starts at the edge.
+        const x = clamp(Math.min(r, 1) + delta[0] * 0.01, 0, 1);
+        const c = x * maxChroma(cur.color.l, cur.color.h, gamut);
+        setColor({ ...cur.color, c }, true, { rel: x });
+      } else {
+        const l = clamp(cur.color.l + delta[1] * 0.01, 0, 1);
+        if (r > 1 + PIN_SLACK) {
+          // Beyond the edge, a vertical step keeps C rather than clipping it to the edge.
+          setColor({ ...cur.color, l }, true);
+        } else {
+          const x = Math.min(r, 1);
+          const c = x * maxChroma(l, cur.color.h, gamut);
+          setColor({ ...cur.color, l, c }, true, { rel: x });
+        }
+      }
+    } else if (shown === "absolute") {
       setColor(
         {
           ...cur.color,
@@ -485,7 +687,7 @@ export function ColorPicker({
               : clamp(
                   cur.color.c + delta[0] * 0.004,
                   0,
-                  Math.max(MAX_CHROMA, cur.color.c),
+                  Math.max(axisMax(cur.color.h), cur.color.c),
                 ),
         },
         true,
@@ -520,21 +722,22 @@ export function ColorPicker({
 
   const areaHue = color.h;
   useEffect(() => {
-    if (shown !== "oklch") return;
+    if (shown === "hsv") return;
     const canvas = areaCanvas.current;
     if (canvas === null || areaSize.w < 2 || areaSize.h < 2) return;
     // Hue drags arrive faster than a raster can paint; one draw per frame is enough.
     const frame = requestAnimationFrame(() => {
       canvas.width = areaSize.w;
       canvas.height = areaSize.h;
-      paintArea(canvas, areaHue, p3);
+      if (shown === "oklch") paintRelative(canvas, areaHue, gamut, p3);
+      else paintAbsolute(canvas, areaHue, p3);
     });
     return () => cancelAnimationFrame(frame);
-  }, [shown, areaHue, areaSize, p3]);
+  }, [shown, areaHue, areaSize, gamut, p3]);
 
   const { l: lightness, c: chroma } = color;
   useEffect(() => {
-    if (shown !== "oklch") return;
+    if (shown === "hsv") return;
     const canvas = hueCanvas.current;
     if (canvas === null) return;
     const frame = requestAnimationFrame(() => {
@@ -546,19 +749,39 @@ export function ColorPicker({
   }, [shown, lightness, chroma]);
 
   // --- hue and alpha ---
-  const hueValue = shown === "oklch" ? color.h : hsv.h;
+  const hueValue = shown === "hsv" ? hsv.h : color.h;
   const setHue = (hue: number, commit: boolean) => {
     const cur = latest.current;
-    if (shown === "oklch") {
+    if (shown !== "hsv") {
       // Not wrapped: 360 is the slider's right end, and wrapping it to 0 would throw the thumb
       // to the left end mid-drag. formatColor writes it as 0.
-      setColor({ ...cur.color, h: clamp(hue, 0, 360) }, commit);
+      const next = { ...cur.color, h: clamp(hue, 0, 360) };
+      if (locked) {
+        const kept = lockChroma(cur.color, next, gamut, cur.rel);
+        setColor(kept.color, commit, { rel: kept.rel });
+      } else {
+        setColor(next, commit);
+      }
     } else {
       const now = hsvOf(cur.color, cur.hold);
       const h = clamp(hue, 0, 360);
       setColor(fromHsv(h, now.s, now.v, cur.color), commit, {
         hold: { h, s: now.s },
       });
+    }
+  };
+  const setChannel = (next: Oklch, key: string) => {
+    const cur = latest.current;
+    if (
+      locked &&
+      shown !== "hsv" &&
+      outFormat === "oklch" &&
+      (key === "l" || key === "h")
+    ) {
+      const kept = lockChroma(cur.color, next, gamut, cur.rel);
+      setColor(kept.color, true, { draft: null, rel: kept.rel });
+    } else {
+      setColor(next, true, { draft: null });
     }
   };
   const setAlpha = (percent: number, commit: boolean) => {
@@ -622,7 +845,7 @@ export function ColorPicker({
   };
 
   // --- chips ---
-  const gamut = gamutOf(color);
+  const colorGamut = gamutOf(color);
   const contrastTarget =
     contrastWith === undefined ? null : parseColor(contrastWith);
   const ratio =
@@ -635,6 +858,24 @@ export function ColorPicker({
       : isGrouped(swatches)
         ? [...swatches]
         : [{ label: "Swatches", colors: swatches }];
+  // A grey takes the panel's hue when picked, so it is compared with it too.
+  const isCurrent = (parsed: Oklch) =>
+    formatColor(
+      {
+        ...parsed,
+        h: parsed.c < ACHROMATIC ? color.h : parsed.h,
+        alpha: alpha ? parsed.alpha : 1,
+      },
+      outFormat,
+      { alpha },
+    ) === formatted;
+  const resetParsed = resetValue === undefined ? null : parseColor(resetValue);
+  const reset =
+    resetValue === undefined || resetParsed === null
+      ? null
+      : { text: resetValue, color: resetParsed.color };
+  const atReset = reset !== null && isCurrent(reset.color);
+
   const pickSwatch = (text: string) => {
     const parsed = parseColor(text);
     if (parsed === null) return;
@@ -657,7 +898,10 @@ export function ColorPicker({
       {offered.length > 1 && (
         <fieldset
           aria-label="Picking surface"
-          className="grid grid-cols-2 gap-0.5 rounded-md bg-muted p-0.5"
+          className="grid gap-0.5 rounded-md bg-muted p-0.5"
+          style={{
+            gridTemplateColumns: `repeat(${offered.length}, minmax(0, 1fr))`,
+          }}
         >
           {offered.map((s) => (
             <button
@@ -668,7 +912,7 @@ export function ColorPicker({
               onClick={() => pickSurface(s)}
               className="h-6 rounded-[5px] text-[0.7rem] font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs"
             >
-              {s === "oklch" ? "OKLCH" : "HSV"}
+              {SURFACE_LABELS[s]}
             </button>
           ))}
         </fieldset>
@@ -685,9 +929,13 @@ export function ColorPicker({
         aria-valuemax={100}
         aria-valuenow={Math.round((1 - areaY) * 100)}
         aria-valuetext={
-          shown === "oklch"
-            ? `lightness ${round(color.l * 100, 1)}%, chroma ${round(color.c, 3)}`
-            : `saturation ${round(hsv.s * 100, 1)}%, value ${round(hsv.v * 100, 1)}%`
+          shown === "hsv"
+            ? `saturation ${round(hsv.s * 100, 1)}%, value ${round(hsv.v * 100, 1)}%`
+            : shown === "absolute"
+              ? `lightness ${round(color.l * 100, 1)}%, chroma ${round(color.c, 3)}`
+              : pinned
+                ? `lightness ${round(color.l * 100, 1)}%, chroma ${round(color.c, 3)}, beyond the ${gamutName} edge`
+                : `lightness ${round(color.l * 100, 1)}%, chroma ${round(color.c, 3)} (${Math.round(rel * 100)}% of ${gamutName} max)`
         }
         className={cn(
           "relative h-42 cursor-crosshair touch-none overflow-hidden rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
@@ -725,51 +973,73 @@ export function ColorPicker({
         }}
         onKeyDown={disabled ? undefined : onAreaKey}
       >
-        {shown === "oklch" && (
+        {shown !== "hsv" && (
           <canvas ref={areaCanvas} className="block size-full" />
         )}
         <span
           aria-hidden
-          className="pointer-events-none absolute -mt-[7px] -ml-[7px] size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_0_0_1px_rgb(0_0_0/0.3)]"
+          data-thumb
+          data-pinned={pinned || undefined}
+          className="pointer-events-none absolute -mt-[7px] -ml-[7px] size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_0_0_1px_rgb(0_0_0/0.3)] data-pinned:outline-[1.5px] data-pinned:outline-offset-2 data-pinned:outline-destructive/70 data-pinned:outline-dashed"
           style={{ left: `${areaX * 100}%`, top: `${areaY * 100}%` }}
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute top-1 left-1.5 text-[10px] text-white/85 [text-shadow:0_0_2px_black]"
+          className="pointer-events-none absolute top-1 left-1 rounded-sm bg-black/45 px-1 text-[10px] text-white"
         >
-          {shown === "oklch" ? "L ↑" : "V ↑"}
+          {shown === "hsv" ? "V ↑" : "L ↑"}
         </span>
         <span
           aria-hidden
-          className="pointer-events-none absolute right-1.5 bottom-0.5 text-[10px] text-white/85 [text-shadow:0_0_2px_black]"
+          className="pointer-events-none absolute right-1 bottom-1 rounded-sm bg-black/45 px-1 text-[10px] text-white"
         >
-          {shown === "oklch" ? "C →" : "S →"}
+          {shown === "oklch" ? "C/max →" : shown === "absolute" ? "C →" : "S →"}
         </span>
       </div>
 
-      <TrackSlider
-        label="Hue"
-        value={hueValue}
-        max={360}
-        disabled={disabled}
-        onChange={(v) => setHue(v, false)}
-        onCommit={(v) => setHue(v, true)}
-        trackStyle={
-          shown === "hsv"
-            ? {
-                background:
-                  "linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
-              }
-            : undefined
-        }
-      >
-        {shown === "oklch" && (
-          <canvas
-            ref={hueCanvas}
-            className="absolute inset-0 block size-full"
-          />
+      <div className="flex items-center gap-1.5">
+        <TrackSlider
+          label="Hue"
+          value={hueValue}
+          max={360}
+          disabled={disabled}
+          onChange={(v) => setHue(v, false)}
+          onCommit={(v) => setHue(v, true)}
+          trackStyle={
+            shown === "hsv"
+              ? {
+                  background:
+                    "linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
+                }
+              : undefined
+          }
+        >
+          {shown !== "hsv" && (
+            <canvas
+              ref={hueCanvas}
+              className="absolute inset-0 block size-full"
+            />
+          )}
+        </TrackSlider>
+        {shown !== "hsv" && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Keep relative chroma"
+            aria-pressed={locked}
+            title={
+              locked
+                ? `Hue and lightness keep the share of the ${gamutName} maximum chroma`
+                : `Keep the share of the ${gamutName} maximum chroma when hue or lightness changes`
+            }
+            disabled={disabled}
+            onClick={toggleLock}
+          >
+            {locked ? <LockIcon /> : <LockOpenIcon />}
+          </Button>
         )}
-      </TrackSlider>
+      </div>
 
       {alpha && (
         <TrackSlider
@@ -843,6 +1113,19 @@ export function ColorPicker({
             <PipetteIcon />
           </Button>
         )}
+        {reset !== null && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            aria-label="Reset"
+            title={`Reset to ${resetValue}`}
+            disabled={disabled || atReset}
+            onClick={() => pickSwatch(reset.text)}
+          >
+            <RotateCcwIcon />
+          </Button>
+        )}
       </div>
 
       <ChannelFields
@@ -851,30 +1134,30 @@ export function ColorPicker({
         alpha={alpha}
         disabled={disabled}
         idPrefix={id}
-        onSet={(next) => setColor(next, true, { draft: null })}
+        onSet={setChannel}
       />
 
       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
         <span
-          data-gamut={gamut}
+          data-gamut={colorGamut}
           className={cn(
             "inline-flex items-center gap-1 rounded-full border px-1.5 py-px whitespace-nowrap",
-            gamut === "srgb"
+            colorGamut === "srgb"
               ? "border-emerald-500/60 text-emerald-700 dark:text-emerald-300"
-              : gamut === "p3"
+              : colorGamut === "p3"
                 ? "border-amber-500/70 text-amber-700 dark:text-amber-300"
                 : "border-destructive/70 text-destructive",
           )}
         >
-          {gamut === "srgb"
+          {colorGamut === "srgb"
             ? "in sRGB"
-            : gamut === "p3"
+            : colorGamut === "p3"
               ? "outside sRGB · in P3"
               : "outside P3"}
-          {gamut !== "srgb" && outFormat !== "oklch" && (
+          {colorGamut !== "srgb" && outFormat !== "oklch" && (
             <span>· mapped to sRGB in {outFormat}</span>
           )}
-          {gamut !== "srgb" && (
+          {colorGamut !== "srgb" && (
             <button
               type="button"
               disabled={disabled}
@@ -922,14 +1205,7 @@ export function ColorPicker({
             </div>
             <div className="grid grid-cols-10 gap-1">
               {usable.map(({ text, parsed }) => {
-                // A grey swatch takes the panel's hue when picked, so it is compared with it too.
-                const swatch = {
-                  ...parsed.color,
-                  h: parsed.color.c < ACHROMATIC ? color.h : parsed.color.h,
-                  alpha: alpha ? parsed.color.alpha : 1,
-                };
-                const pressed =
-                  formatColor(swatch, outFormat, { alpha }) === formatted;
+                const pressed = isCurrent(parsed.color);
                 return (
                   <button
                     key={text}
@@ -952,6 +1228,8 @@ export function ColorPicker({
           </div>
         );
       })}
+
+      {extra}
     </div>
   );
 }
@@ -1128,7 +1406,7 @@ function ChannelFields({
   alpha: boolean;
   disabled: boolean;
   idPrefix: string;
-  onSet: (color: Oklch) => void;
+  onSet: (color: Oklch, key: string) => void;
 }) {
   const specs = channelSpecs(color, format, alpha);
   return (
@@ -1158,7 +1436,7 @@ function ChannelField({
   id: string;
   spec: ChannelSpec;
   disabled: boolean;
-  onSet: (color: Oklch) => void;
+  onSet: (color: Oklch, key: string) => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const settle = () => {
@@ -1166,7 +1444,7 @@ function ChannelField({
     setDraft(null);
     const n = Number.parseFloat(draft);
     if (!Number.isFinite(n) || draft.trim() === spec.text) return;
-    onSet(spec.apply(n));
+    onSet(spec.apply(n), spec.key);
   };
   return (
     <div className="grid gap-px text-center">

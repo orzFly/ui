@@ -357,7 +357,9 @@ submenu without moving the highlight. `submenuLabel(row)` names the submenu's li
 `ColorPicker` is the panel, rendered inline; `ColorPickerPopover` puts it behind a trigger that
 shows the value, or behind your own trigger passed as `children`. Both come from
 `@orz/ui/components/color-picker`. The colour maths they use is `@orz/ui/lib/color`: `parseColor`,
-`formatColor`, `gamutOf`, `mapToSrgb` and `contrastRatio`, on oklch values.
+`formatColor`, `gamutOf`, `mapToSrgb`, `maxChroma` and `contrastRatio`, on oklch values.
+`maxChroma(l, h, gamut)` is the largest chroma at a lightness and hue that stays inside `"srgb"` or
+`"p3"`.
 
 ```tsx
 import { ColorPickerPopover } from "@orz/ui/components/color-picker";
@@ -381,9 +383,25 @@ import { ColorPickerPopover } from "@orz/ui/components/color-picker";
 - The output keeps the incoming value's format when that is oklch, hex, rgb or hsl, and is oklch
   otherwise; `format` pins it. hex, rgb and hsl cannot leave sRGB, so they are gamut-mapped.
   `alpha={false}` makes every output opaque.
-- Two picking surfaces: oklch (lightness × chroma at a hue, with the sRGB and Display P3 edges
-  drawn) and the HSV square. The default follows the output format; `surfaces` limits them, and
+- Three picking surfaces, all at the current hue:
+  - `oklch`: lightness up, and across, chroma as a share of the largest chroma the `gamut` holds at
+    that lightness, so every point is a colour inside it. A colour beyond the gamut sits pinned to
+    the right edge with a dashed ring, and keeps its value until the area is touched.
+  - `absolute`: lightness up, and across, chroma itself, the axis fitted to the hue's Display P3
+    wedge. The sRGB and P3 edges are drawn, and past P3 is a faded veil. It is the surface for exact
+    chroma and for colours outside sRGB.
+  - `hsv`: the HSV square.
+
+  The default is `oklch` when the output is oklch and `hsv` otherwise; `surfaces` limits them, and
   `surface` with `onSurfaceChange` controls the choice if you want to persist it.
+- `gamut` (`"srgb"`, the default, or `"p3"`) bounds the `oklch` surface and the chroma lock.
+- `resetValue` shows a reset button beside the text field that commits that value. The prop is not
+  `defaultValue`, which React reads as an uncontrolled input's initial value.
+- The chroma lock, a toggle beside the hue slider on the oklch surfaces, keeps chroma's share of
+  the gamut's maximum while the hue slider or the L and H fields move, so a vivid colour stays
+  vivid instead of falling out of the gamut. `chromaLock` / `defaultChromaLock` /
+  `onChromaLockChange` control it.
+- `extra` renders at the bottom of the panel, for a consumer's own controls.
 
 Importing either entry point brings in [culori](https://culorijs.org) (about 9 KB gzipped, only the
 modes the picker uses); nothing else in `@orz/ui` does.

@@ -58,6 +58,72 @@ export const Panel: Story = {
   render: (args) => <Live {...args} />,
 };
 
+const SURFACES = ["oklch", "absolute", "hsv"] as const;
+
+/** The three surfaces side by side on one value; `gamut` bounds the oklch one. */
+export const Surfaces: Story = {
+  args: { value: "oklch(0.7 0.1 25)", gamut: "srgb" },
+  argTypes: { gamut: { control: "inline-radio", options: ["srgb", "p3"] } },
+  render: (args) => (
+    <div className="flex flex-wrap gap-3">
+      {SURFACES.map((s) => (
+        <Live key={s} {...args} surfaces={[s]} />
+      ))}
+    </div>
+  ),
+};
+
+/** Every surface at four hues, for checking the painting. */
+export const SurfacesByHue: Story = {
+  args: { gamut: "srgb" },
+  argTypes: { gamut: { control: "inline-radio", options: ["srgb", "p3"] } },
+  render: (args) => (
+    <div className="grid gap-3">
+      {[25, 110, 145, 265].map((hue) => (
+        <div key={hue} className="flex flex-wrap gap-3">
+          {SURFACES.map((s) => (
+            <Live
+              key={s}
+              {...args}
+              value={`oklch(0.7 0.1 ${hue})`}
+              surfaces={[s]}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+function ExtraDemo(props: ComponentProps<typeof ColorPicker>) {
+  const [blur, setBlur] = useState(8);
+  return (
+    <Live
+      {...props}
+      extra={
+        <label className="flex items-center gap-2 text-xs">
+          Blur
+          <input
+            type="range"
+            min={0}
+            max={32}
+            value={blur}
+            onChange={(event) => setBlur(Number(event.target.value))}
+            className="flex-1"
+          />
+          <span className="w-8 text-right font-mono">{blur}px</span>
+        </label>
+      }
+    />
+  );
+}
+
+/** A consumer's own control in `extra`, under the swatches. */
+export const Extra: Story = {
+  args: { value: "oklch(0.7 0.15 300)" },
+  render: (args) => <ExtraDemo {...args} />,
+};
+
 /** A todou label colour: hex out, no alpha, the presets as swatches. */
 export const Hex: Story = {
   args: { value: "#3b82f6", format: "hex", alpha: false, swatches: PRESETS },
@@ -124,9 +190,11 @@ function TokenListDemo() {
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(TOKENS.map(([name, value]) => [name, value])),
   );
+  // One lock for every row, as a theme editor would keep it.
+  const [locked, setLocked] = useState(false);
   return (
     <div className="w-96 divide-y rounded-lg border">
-      {TOKENS.map(([name, , pair]) => (
+      {TOKENS.map(([name, original, pair]) => (
         <div key={name} className="flex items-center gap-2 px-2.5 py-1.5">
           <span className="flex-1 text-sm">{name}</span>
           <ColorPickerPopover
@@ -136,6 +204,9 @@ function TokenListDemo() {
             align="end"
             contrastWith={values[pair]}
             contrastLabel={pair}
+            resetValue={original}
+            chromaLock={locked}
+            onChromaLockChange={setLocked}
             swatches={[{ label: "This theme", colors: Object.values(values) }]}
             aria-label={`Edit ${name}`}
           />
@@ -145,7 +216,10 @@ function TokenListDemo() {
   );
 }
 
-/** A theme editor's rows: oklch tokens, each against the token it is read on. */
+/**
+ * A theme editor's rows: oklch tokens, each against the token it is read on, with a reset to the
+ * token's original value and one chroma lock shared by every row.
+ */
 export const TokenList: Story = {
   render: () => <TokenListDemo />,
 };

@@ -6,7 +6,7 @@ import {
   ColorPickerPopover,
   type ColorPickerProps,
 } from "../src/components/color-picker.tsx";
-import { parseColor } from "../src/lib/color.ts";
+import { maxChroma, parseColor } from "../src/lib/color.ts";
 
 function renderPicker(props: Partial<ColorPickerProps> & { value: string }) {
   const onValueChange = vi.fn();
@@ -53,6 +53,13 @@ function Echo(
 const textField = () => screen.getByRole("textbox", { name: "Colour value" });
 const area = () => screen.getByRole("slider", { name: "Colour" });
 const channel = (name: string) => screen.getByRole("textbox", { name });
+const thumb = () => area().querySelector("[data-thumb]") as HTMLElement;
+
+/** C as a share of the sRGB maximum at its lightness and hue. */
+function relative(text: string, gamut: "srgb" | "p3" = "srgb") {
+  const { l, c, h } = oklchOf(text);
+  return c / maxChroma(l, h, gamut);
+}
 
 function oklchOf(text: string) {
   const parsed = parseColor(text);
@@ -169,9 +176,10 @@ describe("ColorPicker text field", () => {
 });
 
 describe("ColorPicker by keyboard", () => {
-  it("steps lightness and chroma on the oklch area, Shift by 10, each committing", () => {
+  it("steps lightness and chroma on the absolute area, Shift by 10, each committing", () => {
     const { onValueChange, onValueCommit } = renderPicker({
       value: "oklch(0.5 0.1 200)",
+      surface: "absolute",
     });
     fireEvent.keyDown(area(), { key: "ArrowUp" });
     expect(onValueCommit).toHaveBeenLastCalledWith("oklch(0.51 0.1 200)");
@@ -186,7 +194,7 @@ describe("ColorPicker by keyboard", () => {
   });
 
   it("names both axes in aria-valuetext", () => {
-    renderPicker({ value: "oklch(0.623 0.214 259.815)" });
+    renderPicker({ value: "oklch(0.623 0.214 259.815)", surface: "absolute" });
     expect(area().getAttribute("aria-roledescription")).toBe("2D slider");
     expect(area().getAttribute("aria-valuetext")).toBe(
       "lightness 62.3%, chroma 0.214",
@@ -222,7 +230,10 @@ describe("ColorPicker by keyboard", () => {
   });
 
   it("keeps the hue through chroma 0", () => {
-    const { onValueCommit } = renderPicker({ value: "oklch(0.5 0.008 120)" });
+    const { onValueCommit } = renderPicker({
+      value: "oklch(0.5 0.008 120)",
+      surface: "absolute",
+    });
     fireEvent.keyDown(area(), { key: "ArrowLeft" });
     fireEvent.keyDown(area(), { key: "ArrowLeft" });
     expect(onValueCommit).toHaveBeenLastCalledWith("oklch(0.5 0 120)");
@@ -232,7 +243,11 @@ describe("ColorPicker by keyboard", () => {
   });
 
   it("leaves chroma alone on a vertical step, even past the area's axis", () => {
-    const { onValueCommit } = renderPicker({ value: "oklch(0.5 0.4 200)" });
+    const { onValueCommit } = renderPicker({
+      value: "oklch(0.5 0.4 200)",
+      surface: "absolute",
+    });
+    expect(thumb().hasAttribute("data-pinned")).toBe(true);
     fireEvent.keyDown(area(), { key: "ArrowUp" });
     expect(onValueCommit).toHaveBeenLastCalledWith("oklch(0.51 0.4 200)");
   });
@@ -251,6 +266,178 @@ describe("ColorPicker by keyboard", () => {
     fireEvent.change(textField(), { target: { value: "oklch(0.6 0 0)" } });
     fireEvent.blur(textField());
     expect(channel("Hue")).toHaveProperty("value", "120");
+  });
+});
+
+describe("ColorPicker oklch surface", () => {
+  const last = (fn: ReturnType<typeof vi.fn>) =>
+    oklchOf(fn.mock.lastCall?.[0] as string);
+
+  it("steps C by a hundredth of the maximum, keeping L, Shift by a tenth", () => {
+    const { onValueCommit } = renderPicker({ value: "oklch(0.7 0.1 25)" });
+    const max = maxChroma(0.7, 25, "srgb");
+    fireEvent.keyDown(area(), { key: "ArrowRight" });
+    expect(last(onValueCommit).l).toBe(0.7);
+    expect(last(onValueCommit).c).toBeCloseTo(0.1 + 0.01 * max, 3);
+    fireEvent.keyDown(area(), { key: "ArrowLeft", shiftKey: true });
+    expect(last(onValueCommit).c).toBeCloseTo(0.1 - 0.09 * max, 3);
+    expect(onValueCommit).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps C / maxChroma on a vertical step", () => {
+    const { onValueCommit } = renderPicker({ value: "oklch(0.7 0.1 25)" });
+    const r = relative("oklch(0.7 0.1 25)");
+    fireEvent.keyDown(area(), { key: "ArrowUp" });
+    expect(last(onValueCommit).l).toBe(0.71);
+    expect(relative(onValueCommit.mock.lastCall?.[0])).toBeCloseTo(r, 2);
+    fireEvent.keyDown(area(), { key: "ArrowDown", shiftKey: true });
+    expect(last(onValueCommit).l).toBe(0.61);
+    expect(relative(onValueCommit.mock.lastCall?.[0])).toBeCloseTo(r, 2);
+  });
+
+  it("holds its place through L = 1, where the maximum is 0", () => {
+    const { onValueCommit } = renderPicker({ value: "oklch(0.98 0.01 200)" });
+    const x = thumb().style.left;
+    fireEvent.keyDown(area(), { key: "ArrowUp" });
+    fireEvent.keyDown(area(), { key: "ArrowUp" });
+    expect(last(onValueCommit)).toMatchObject({ l: 1, c: 0 });
+    expect(thumb().style.left).toBe(x);
+    fireEvent.keyDown(area(), { key: "ArrowDown" });
+    fireEvent.keyDown(area(), { key: "ArrowDown" });
+    expect(last(onValueCommit).l).toBe(0.98);
+    expect(Math.abs(last(onValueCommit).c - 0.01)).toBeLessThan(1e-3);
+  });
+
+  it("names the share of the maximum in aria-valuetext", () => {
+    renderPicker({ value: "oklch(0.7 0.1 25)" });
+    const share = Math.round(relative("oklch(0.7 0.1 25)") * 100);
+    expect(area().getAttribute("aria-valuetext")).toBe(
+      `lightness 70%, chroma 0.1 (${share}% of sRGB max)`,
+    );
+    expect(thumb().hasAttribute("data-pinned")).toBe(false);
+  });
+
+  it("pins a colour beyond sRGB, and keeps its C on a vertical step", () => {
+    const { onValueCommit } = renderPicker({
+      value: "oklch(0.577 0.245 27.325)",
+    });
+    expect(thumb().hasAttribute("data-pinned")).toBe(true);
+    expect(thumb().style.left).toBe("100%");
+    expect(area().getAttribute("aria-valuetext")).toBe(
+      "lightness 57.7%, chroma 0.245, beyond the sRGB edge",
+    );
+    fireEvent.keyDown(area(), { key: "ArrowUp" });
+    expect(onValueCommit).toHaveBeenLastCalledWith("oklch(0.587 0.245 27.325)");
+  });
+
+  it("starts a horizontal step from a pinned colour at the edge", () => {
+    const { onValueCommit } = renderPicker({
+      value: "oklch(0.577 0.245 27.325)",
+    });
+    fireEvent.keyDown(area(), { key: "ArrowLeft" });
+    expect(last(onValueCommit).c).toBeCloseTo(
+      0.99 * maxChroma(0.577, 27.325, "srgb"),
+      3,
+    );
+  });
+
+  it("does not pin a P3 colour under gamut p3", () => {
+    renderPicker({ value: "oklch(0.577 0.245 27.325)", gamut: "p3" });
+    expect(thumb().hasAttribute("data-pinned")).toBe(false);
+    expect(area().getAttribute("aria-valuetext")).toMatch(/% of P3 max\)$/);
+  });
+});
+
+describe("ColorPicker chroma lock", () => {
+  const lock = () =>
+    screen.getByRole("button", { name: "Keep relative chroma" });
+  const hue = () => screen.getByRole("slider", { name: "Hue" });
+
+  it("keeps C / maxChroma through a hue step", () => {
+    const { onValueCommit } = renderPicker({ value: "oklch(0.7 0.1 25)" });
+    fireEvent.click(lock());
+    expect(lock().getAttribute("aria-pressed")).toBe("true");
+    fireEvent.keyDown(hue(), { key: "ArrowRight", shiftKey: true });
+    const out = onValueCommit.mock.lastCall?.[0] as string;
+    expect(oklchOf(out).h).toBe(35);
+    expect(relative(out)).toBeCloseTo(relative("oklch(0.7 0.1 25)"), 2);
+  });
+
+  it("keeps C / maxChroma through an L field edit", () => {
+    const { onValueCommit } = renderPicker({
+      value: "oklch(0.7 0.1 25)",
+      defaultChromaLock: true,
+    });
+    fireEvent.change(channel("Lightness"), { target: { value: "0.5" } });
+    fireEvent.keyDown(channel("Lightness"), { key: "Enter" });
+    const out = onValueCommit.mock.lastCall?.[0] as string;
+    expect(oklchOf(out).l).toBe(0.5);
+    expect(relative(out)).toBeCloseTo(relative("oklch(0.7 0.1 25)"), 2);
+  });
+
+  it("keeps C for a colour beyond the gamut", () => {
+    const { onValueCommit } = renderPicker({
+      value: "oklch(0.577 0.245 27.325)",
+      defaultChromaLock: true,
+    });
+    fireEvent.keyDown(hue(), { key: "ArrowRight" });
+    expect(oklchOf(onValueCommit.mock.lastCall?.[0]).c).toBe(0.245);
+  });
+
+  it("keeps C while off", () => {
+    const { onValueCommit } = renderPicker({ value: "oklch(0.7 0.1 25)" });
+    expect(lock().getAttribute("aria-pressed")).toBe("false");
+    fireEvent.keyDown(hue(), { key: "ArrowRight" });
+    expect(onValueCommit).toHaveBeenLastCalledWith("oklch(0.7 0.1 26)");
+  });
+
+  it("obeys a controlled chromaLock", () => {
+    const onChromaLockChange = vi.fn();
+    renderPicker({
+      value: "oklch(0.7 0.1 25)",
+      chromaLock: false,
+      onChromaLockChange,
+    });
+    fireEvent.click(lock());
+    expect(onChromaLockChange).toHaveBeenCalledWith(true);
+    expect(lock().getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("shows on both oklch surfaces and not on HSV", () => {
+    renderPicker({ value: "#3b82f6" });
+    expect(
+      screen.queryByRole("button", { name: "Keep relative chroma" }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Absolute" }));
+    expect(lock()).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "OKLCH" }));
+    expect(lock()).toBeTruthy();
+  });
+});
+
+describe("ColorPicker reset", () => {
+  const reset = () => screen.getByRole("button", { name: "Reset" });
+
+  it("commits the reset value, and is disabled at it", () => {
+    const { onValueCommit } = renderPicker({
+      value: "oklch(0.7 0.1 25)",
+      resetValue: "oklch(0.5 0.2 260 / 50%)",
+    });
+    expect(reset().getAttribute("title")).toBe(
+      "Reset to oklch(0.5 0.2 260 / 50%)",
+    );
+    expect(reset()).toHaveProperty("disabled", false);
+    fireEvent.click(reset());
+    expect(onValueCommit).toHaveBeenLastCalledWith("oklch(0.5 0.2 260 / 50%)");
+    expect(reset()).toHaveProperty("disabled", true);
+  });
+
+  it("is hidden without resetValue or when it does not parse", () => {
+    const { unmount } = renderPicker({ value: "#3b82f6" });
+    expect(screen.queryByRole("button", { name: "Reset" })).toBeNull();
+    unmount();
+    renderPicker({ value: "#3b82f6", resetValue: "var(--primary)" });
+    expect(screen.queryByRole("button", { name: "Reset" })).toBeNull();
   });
 });
 
@@ -320,6 +507,14 @@ describe("ColorPicker surfaces", () => {
       .filter((b) => b.getAttribute("aria-pressed") === "true")
       .map((b) => b.textContent);
 
+  it("offers three surfaces by default", () => {
+    renderPicker({ value: "oklch(0.5 0.1 200)" });
+    const toggle = screen.getByRole("group", { name: "Picking surface" });
+    expect(
+      [...toggle.querySelectorAll("button")].map((b) => b.textContent),
+    ).toEqual(["OKLCH", "Absolute", "HSV"]);
+  });
+
   it("defaults to the output format's surface", () => {
     const { unmount } = renderPicker({ value: "oklch(0.5 0.1 200)" });
     expect(pressed()).toEqual(["OKLCH"]);
@@ -349,6 +544,7 @@ describe("ColorPicker surfaces", () => {
     renderPicker({ value: "#3b82f6", surfaces: ["oklch"] });
     expect(screen.queryByRole("button", { name: "HSV" })).toBeNull();
     expect(screen.queryByRole("button", { name: "OKLCH" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Absolute" })).toBeNull();
     expect(area().getAttribute("aria-valuetext")).toMatch(/^lightness/);
   });
 
@@ -531,7 +727,14 @@ describe("ColorPicker disabled", () => {
     const buttons = screen.getAllByRole("button");
     expect(
       buttons.map((b) => b.textContent || b.getAttribute("aria-label")),
-    ).toEqual(["OKLCH", "HSV", "map to sRGB", "#ef4444"]);
+    ).toEqual([
+      "OKLCH",
+      "Absolute",
+      "HSV",
+      "Keep relative chroma",
+      "map to sRGB",
+      "#ef4444",
+    ]);
     for (const button of buttons)
       expect(button).toHaveProperty("disabled", true);
     for (const field of screen.getAllByRole("textbox"))
@@ -540,6 +743,13 @@ describe("ColorPicker disabled", () => {
       expect(
         screen.getByRole("slider", { name }).hasAttribute("data-disabled"),
       ).toBe(true);
+  });
+});
+
+describe("ColorPicker extra", () => {
+  it("renders at the bottom of the panel", () => {
+    renderPicker({ value: "#3b82f6", extra: <p>blur radius</p> });
+    expect(screen.getByText("blur radius")).toBeTruthy();
   });
 });
 
@@ -565,6 +775,13 @@ describe("ColorPickerPopover", () => {
     );
     openWith(screen.getByRole("button", { name: "Label colour" }));
     expect(textField()).toHaveProperty("value", "#3b82f6");
+  });
+
+  it("passes extra through to the panel", () => {
+    render(<ColorPickerPopover value="#3b82f6" extra={<p>blur radius</p>} />);
+    expect(screen.queryByText("blur radius")).toBeNull();
+    openWith(screen.getByRole("button", { name: "Pick colour" }));
+    expect(screen.getByText("blur radius")).toBeTruthy();
   });
 
   it("disables the trigger", () => {

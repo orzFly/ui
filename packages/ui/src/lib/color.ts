@@ -131,14 +131,14 @@ export type DisplayGamut = Exclude<Gamut, "out">;
  */
 export function maxChroma(l: number, h: number, gamut: DisplayGamut): number {
   if (!(l > 0 && l < 1)) return 0;
-  const convert = gamut === "p3" ? toP3 : toRgb;
   const pixel = { mode: "oklch" as const, l, c: 0, h };
+  const convert = gamut === "p3" ? () => toP3(pixel) : () => toRgb(pixel);
   // The in-gamut part of a chroma ray is one interval [0, Cmax], so bisection finds its end.
   let lo = 0;
   let hi = 0.5;
   for (let k = 0; k < 24; k++) {
     pixel.c = (lo + hi) / 2;
-    if (inUnitCube(convert(pixel))) lo = pixel.c;
+    if (inUnitCube(convert())) lo = pixel.c;
     else hi = pixel.c;
   }
   return lo;
