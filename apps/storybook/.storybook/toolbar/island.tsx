@@ -13,6 +13,12 @@ import {
 } from "@orz/ui/theme";
 import { createRoot } from "react-dom/client";
 
+/** ThemeMenu's `onCustomize`. */
+export type Customize = (
+  id: string | undefined,
+  slot: "ui" | "terminal",
+) => void;
+
 export interface ToolHandle {
   /** True while the current story pins this slot's global: the trigger is disabled. */
   setPinned(pinned: boolean): void;
@@ -27,6 +33,7 @@ export interface Toolbar {
     host: HTMLElement,
     slot: "ui" | "terminal",
     facade: ThemeStore,
+    onCustomize: Customize,
   ): ToolHandle;
 }
 
@@ -41,11 +48,13 @@ const TRIGGER =
 function Tool({
   slot,
   facade,
+  onCustomize,
   pinned,
   closed,
 }: {
   slot: "ui" | "terminal";
   facade: ThemeStore;
+  onCustomize: Customize;
   pinned: boolean;
   /** Bumped to close an open menu from outside; remounting closes it and clears its preview. */
   closed: number;
@@ -57,6 +66,7 @@ function Tool({
         // open (Back in the browser closes nothing).
         key={`${pinned}-${closed}`}
         slot={slot}
+        onCustomize={onCustomize}
         trigger={({ Icon, label }) => (
           <button
             type="button"
@@ -88,13 +98,36 @@ export function createToolbar(initial: ThemePref): Toolbar {
   store.setPref(initial);
   return {
     store,
-    mount(host, slot, facade) {
+    mount(host, slot, facade, onCustomize) {
       const root = createRoot(host);
       let pinned = false;
       let closed = 0;
+      // The editor opens in the preview iframe, and its keys only reach it
+      // while the iframe has focus. The menu hands focus back to its trigger
+      // as it closes, after onCustomize has returned, so for a moment any
+      // focus landing here goes on to the iframe.
+      let handoffUntil = 0;
+      const focusPreview = () =>
+        document.getElementById("storybook-preview-iframe")?.focus();
+      const customize: Customize = (id, slot) => {
+        handoffUntil = performance.now() + 1000;
+        // Before the editor opens, so it can take focus itself.
+        focusPreview();
+        onCustomize(id, slot);
+      };
+      const onFocusIn = () => {
+        if (performance.now() < handoffUntil) focusPreview();
+      };
+      host.addEventListener("focusin", onFocusIn);
       const render = () =>
         root.render(
-          <Tool slot={slot} facade={facade} pinned={pinned} closed={closed} />,
+          <Tool
+            slot={slot}
+            facade={facade}
+            onCustomize={customize}
+            pinned={pinned}
+            closed={closed}
+          />,
         );
       // Radix closes the menu on a pointerdown or a focusin in this
       // document; a click into the preview iframe makes neither here, only
@@ -118,6 +151,7 @@ export function createToolbar(initial: ThemePref): Toolbar {
         },
         unmount() {
           window.removeEventListener("blur", onBlur);
+          host.removeEventListener("focusin", onFocusIn);
           root.unmount();
         },
       };

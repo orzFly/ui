@@ -1,8 +1,10 @@
 import { builtinThemes } from "@orz/themes";
 import { Toaster } from "@orz/ui/components/sonner";
+import { ThemeEditor } from "@orz/ui/components/theme-editor";
 import {
   createThemeStore,
   type ResolvedTheme,
+  type ThemePref,
   type ThemePreview,
   ThemeProvider,
   type ThemeStore,
@@ -10,6 +12,7 @@ import {
 import { DocsContainer } from "@storybook/addon-docs/blocks";
 import type { Decorator, Preview } from "@storybook/react-vite";
 import { type ComponentProps, useEffect, useSyncExternalStore } from "react";
+import { createRoot } from "react-dom/client";
 import {
   GLOBALS_UPDATED,
   SET_GLOBALS,
@@ -25,7 +28,12 @@ import {
   urlGlobals,
 } from "./globals.ts";
 import { storybookTheme } from "./storybook-theme.ts";
-import { PREVIEW_EVENT, type PreviewMessage } from "./theme-channel.ts";
+import {
+  CUSTOMIZE_EVENT,
+  type CustomizeMessage,
+  PREVIEW_EVENT,
+  type PreviewMessage,
+} from "./theme-channel.ts";
 import "./preview.css";
 
 // The globals are the committed state: a stored pref would be a second one,
@@ -45,6 +53,15 @@ const last: ThemeGlobals = {
 };
 themes.setPref(prefOf(last, DEFAULT_THEME));
 
+/** The toolbar editor's draft (see PreviewMessage), shown whenever nothing else previews. */
+let draft: ThemePreview | null = null;
+const show = (preview: ThemePreview | null) => themes.preview(preview ?? draft);
+// setPref ends any preview, the draft's included.
+const setPref = (next: ThemePref) => {
+  themes.setPref(next);
+  if (draft !== null) show(null);
+};
+
 function applyGlobals(globals: Readonly<Record<string, unknown>>) {
   let moved = false;
   for (const key of Object.values(KEY_OF)) {
@@ -54,11 +71,12 @@ function applyGlobals(globals: Readonly<Record<string, unknown>>) {
       moved = true;
     }
   }
-  if (moved) themes.setPref(prefOf(last, DEFAULT_THEME));
+  if (moved) setPref(prefOf(last, DEFAULT_THEME));
 }
 
-function emitPreview(preview: ThemePreview | null) {
+function emitPreview(preview: ThemePreview | null, isDraft = false) {
   const message: PreviewMessage = { from: "preview", preview };
+  if (isDraft) message.draft = true;
   addons.getChannel().emit(PREVIEW_EVENT, message);
 }
 
@@ -68,7 +86,7 @@ const facade: ThemeStore = {
   ...themes,
   setPref(next) {
     const before = themes.getPref();
-    themes.setPref(next);
+    setPref(next);
     const changed = changedGlobals(
       before,
       themes.getPref(),
@@ -85,7 +103,7 @@ const facade: ThemeStore = {
     }
   },
   preview(next) {
-    themes.preview(next);
+    show(next);
     emitPreview(next);
   },
 };
@@ -108,9 +126,90 @@ void addons.ready().then((channel) => {
   channel.on(SET_GLOBALS, onGlobals);
   channel.on(GLOBALS_UPDATED, onGlobals);
   channel.on(PREVIEW_EVENT, (message: PreviewMessage) => {
-    if (message.from !== "preview") themes.preview(message.preview);
+    if (message.from !== "preview") show(message.preview);
   });
 });
+
+const editorStore: ThemeStore = {
+  ...facade,
+  preview(next) {
+    draft = next;
+    show(next);
+    emitPreview(next, true);
+  },
+};
+
+interface EditorState {
+  // The last request outlives the close, so the sheet keeps its content
+  // through the exit animation.
+  request: CustomizeMessage | null;
+  open: boolean;
+}
+
+/** The editor the toolbar's ThemeMenus open: "Custom themes…" and a custom row's edit button. */
+function ToolbarEditor({
+  subscribe,
+  getState,
+  setOpen,
+}: {
+  subscribe: (listener: () => void) => () => void;
+  getState: () => EditorState;
+  setOpen: (open: boolean) => void;
+}) {
+  const { request, open } = useSyncExternalStore(subscribe, getState);
+  return (
+    <ThemeProvider store={editorStore}>
+      <ThemeEditor
+        open={open}
+        themeId={request?.id}
+        kind={request?.slot}
+        onOpenChange={setOpen}
+      />
+    </ThemeProvider>
+  );
+}
+
+// A root of its own beside the story's, so the editor stays open, and keeps
+// its draft, across story changes, and a docs page gets one, not one per story.
+void addons.ready().then((channel) => {
+  // An edit to this file re-runs it in `storybook dev`, and Vite does not
+  // always dispose the old run first; each run would add an editor.
+  globalThis.__ORZ_TOOLBAR_EDITOR__?.();
+  let state: EditorState = { request: null, open: false };
+  const listeners = new Set<() => void>();
+  const set = (next: EditorState) => {
+    state = next;
+    for (const listener of listeners) listener();
+  };
+  // Here rather than in an effect: the manager sends a request made before
+  // the iframe booted as soon as it has, which may be before React commits.
+  const onCustomize = (request: CustomizeMessage) =>
+    set({ request, open: true });
+  channel.on(CUSTOMIZE_EVENT, onCustomize);
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  root.render(
+    <ToolbarEditor
+      subscribe={(listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      }}
+      getState={() => state}
+      setOpen={(open) => set({ ...state, open })}
+    />,
+  );
+  globalThis.__ORZ_TOOLBAR_EDITOR__ = () => {
+    channel.off(CUSTOMIZE_EVENT, onCustomize);
+    root.unmount();
+    host.remove();
+  };
+});
+
+declare global {
+  /** Removes the toolbar editor's root. */
+  var __ORZ_TOOLBAR_EDITOR__: (() => void) | undefined;
+}
 
 const withTheme: Decorator = (Story, context) => {
   const { theme, terminal } = context.globals;

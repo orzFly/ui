@@ -1,7 +1,12 @@
 // Plain .ts without JSX: Storybook's manager esbuild compiles JSX only in .js
 // files, and to the classic React.createElement. React here is the manager's
 // own React 18; the menus themselves render in the island's React 19 roots.
-import type { ResolvedTheme, ThemePreview, ThemeStore } from "@orz/ui/theme";
+import type {
+  ResolvedTheme,
+  ThemePref,
+  ThemePreview,
+  ThemeStore,
+} from "@orz/ui/theme";
 import React from "react";
 import { GLOBALS_UPDATED, SET_GLOBALS } from "storybook/internal/core-events";
 import { addons, types } from "storybook/manager-api";
@@ -16,8 +21,13 @@ import {
   urlGlobals,
 } from "./globals.ts";
 import { storybookTheme } from "./storybook-theme.ts";
-import { PREVIEW_EVENT, type PreviewMessage } from "./theme-channel.ts";
-import type { ToolHandle } from "./toolbar/island.tsx";
+import {
+  CUSTOMIZE_EVENT,
+  type CustomizeMessage,
+  PREVIEW_EVENT,
+  type PreviewMessage,
+} from "./theme-channel.ts";
+import type { Customize, ToolHandle } from "./toolbar/island.tsx";
 
 const island = globalThis.__ORZ_TOOLBAR__;
 if (island === undefined) {
@@ -48,10 +58,28 @@ addons.register("orz/theme", (api) => {
   // SET_GLOBALS announces; a pick made before then waits here.
   let ready = false;
   let pending: ThemeGlobals = {};
+  let pendingCustomize: CustomizeMessage | null = null;
+
+  // The editor is the preview's: it edits the preview store's custom list
+  // and previews its draft on the canvas.
+  const customize: Customize = (id, slot) => {
+    const message: CustomizeMessage = { id, slot };
+    if (ready) api.emit(CUSTOMIZE_EVENT, message);
+    else pendingCustomize = message;
+  };
 
   const emitPreview = (preview: ThemePreview | null) => {
     const message: PreviewMessage = { from: "manager", preview };
     api.emit(PREVIEW_EVENT, message);
+  };
+  /** The preview's editor draft, shown whenever nothing else previews. */
+  let draft: ThemePreview | null = null;
+  const show = (preview: ThemePreview | null) =>
+    store.preview(preview ?? draft);
+  // setPref ends any preview, the draft's included.
+  const setPref = (next: ThemePref) => {
+    store.setPref(next);
+    if (draft !== null) show(null);
   };
 
   // The only code on this side that writes globals or emits previews, and
@@ -61,7 +89,7 @@ addons.register("orz/theme", (api) => {
     ...store,
     setPref(next) {
       const before = store.getPref();
-      store.setPref(next);
+      setPref(next);
       const changed = changedGlobals(
         before,
         store.getPref(),
@@ -83,7 +111,7 @@ addons.register("orz/theme", (api) => {
       }
     },
     preview(next) {
-      store.preview(next);
+      show(next);
       emitPreview(next);
     },
     // The preview store owns the custom list; this store follows its key.
@@ -109,7 +137,7 @@ addons.register("orz/theme", (api) => {
         moved = true;
       }
     }
-    if (moved) store.setPref(prefOf(last, defaultThemeId));
+    if (moved) setPref(prefOf(last, defaultThemeId));
   };
 
   api.on(
@@ -121,10 +149,16 @@ addons.register("orz/theme", (api) => {
       globals: Record<string, unknown>;
       storyGlobals?: Record<string, unknown>;
     }) => {
-      // An iframe (re)boot: a hover mirrored from the old document is gone.
+      // An iframe (re)boot: a hover or a draft mirrored from the old
+      // document is gone.
+      draft = null;
       store.preview(null);
       const wasReady = ready;
       ready = true;
+      if (pendingCustomize !== null) {
+        api.emit(CUSTOMIZE_EVENT, pendingCustomize);
+        pendingCustomize = null;
+      }
       if (!wasReady && Object.keys(pending).length > 0) {
         api.updateGlobals(pending);
         pending = {};
@@ -144,15 +178,34 @@ addons.register("orz/theme", (api) => {
     }) => onGlobals(globals, storyGlobals),
   );
   api.on(PREVIEW_EVENT, (message: PreviewMessage) => {
-    if (message.from !== "manager") store.preview(message.preview);
+    if (message.from === "manager") return;
+    if (message.draft) draft = message.preview;
+    show(message.preview);
   });
 
-  store.subscribe(() => api.setOptions({ theme: chrome() }));
+  // Once per task: setOptions drops a theme equal to the state its previous
+  // call has not written yet, so a commit that re-shows the draft (two
+  // notifications, the second back to the theme already showing) would
+  // leave the chrome on the commit.
+  let chromeQueued = false;
+  store.subscribe(() => {
+    if (chromeQueued) return;
+    chromeQueued = true;
+    queueMicrotask(() => {
+      chromeQueued = false;
+      api.setOptions({ theme: chrome() });
+    });
+  });
 
   function Tool({ slot }: { slot: Slot }) {
     const host = React.useRef<HTMLSpanElement>(null);
     React.useEffect(() => {
-      const handle = toolbar.mount(host.current as HTMLElement, slot, facade);
+      const handle = toolbar.mount(
+        host.current as HTMLElement,
+        slot,
+        facade,
+        customize,
+      );
       handle.setPinned(pinned[slot]);
       handles[slot] = handle;
       return () => {
