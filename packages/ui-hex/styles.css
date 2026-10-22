@@ -1,0 +1,232 @@
+/* Load after @orz/ui/styles.css. The --hex-* defaults are declared on the
+   components' own roots, so their var(--primary) and friends resolve
+   against whichever theme class sits above them; an override therefore has
+   to target .orz-hex or .orz-hex-inspector itself, not an ancestor. */
+
+.orz-hex,
+.orz-hex-inspector {
+  --hex-font: var(
+    --font-mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace
+  );
+  --hex-row-height: 1.375rem;
+  --hex-fill: color-mix(in oklch, var(--primary) 32%, var(--card));
+  --hex-edge: var(--primary);
+  --hex-twin-fill: color-mix(in oklch, var(--foreground) 6%, var(--card));
+  --hex-twin-edge: var(--muted-foreground);
+  --hex-hover: var(--accent);
+  --hex-label: var(--muted-foreground);
+  --hex-faded: color-mix(in oklch, var(--muted-foreground) 70%, transparent);
+  /* Not documented as tokens: cell geometry the panes and header share. */
+  --hex-cell-pad: 0.25rem;
+  --hex-group-gap: 0.6rem;
+  --hex-text-cell: 1.6ch;
+}
+
+.orz-hex {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  width: max-content;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 0.5rem);
+  background: var(--card);
+  color: var(--card-foreground);
+  font-family: var(--hex-font);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  line-height: var(--hex-row-height);
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-x pan-y;
+}
+.orz-hex[data-fill] {
+  height: 100%;
+}
+.orz-hex:focus {
+  border-color: var(--ring);
+}
+
+.orz-hex-probe {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  width: 0;
+  height: var(--hex-row-height);
+}
+
+.orz-hex-scroller {
+  position: relative;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-inline: 0.625rem;
+}
+.orz-hex[data-fill] .orz-hex-scroller {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.orz-hex-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--card);
+  color: var(--hex-label);
+}
+
+.orz-hex-spacer {
+  position: relative;
+  width: max-content;
+  /* The layer's spare row must not grow the scroll extent, but a selected
+     cell's 1px contour may overhang the edge. */
+  overflow: clip;
+  overflow-clip-margin: 1px;
+}
+.orz-hex-layer {
+  will-change: transform;
+}
+
+.orz-hex-row {
+  display: flex;
+  height: var(--hex-row-height);
+  white-space: pre;
+}
+
+.orz-hex-addr {
+  flex: none;
+  box-sizing: content-box;
+  min-width: 4ch;
+  padding-right: 0.75rem;
+  color: var(--hex-label);
+}
+
+.orz-hex-pane-gap {
+  flex: none;
+  width: 1rem;
+}
+
+.orz-hex-text-label {
+  flex: none;
+  padding-left: 0.2ch;
+}
+
+/* Cells have no margins: the contour depends on neighbours touching. Each
+   state sets variables on the cell, and the content box reads them once. */
+.orz-hex-cell {
+  --cell-pad: var(--hex-cell-pad);
+  --cell-pad-end: var(--cell-pad);
+  --cell-fill: var(--hex-twin-fill);
+  --cell-edge: var(--hex-twin-edge);
+  position: relative;
+  display: block;
+  flex: none;
+  height: var(--hex-row-height);
+}
+.orz-hex-text-cell {
+  --cell-pad: 0;
+  width: var(--hex-text-cell);
+  text-align: center;
+}
+.orz-hex-cell[data-group-end] {
+  --cell-pad-end: var(--hex-group-gap);
+}
+.orz-hex:focus[data-active-pane="hex"] [data-pane="hex"],
+.orz-hex:focus[data-active-pane="text"] [data-pane="text"] {
+  --cell-fill: var(--hex-fill);
+  --cell-edge: var(--hex-edge);
+}
+
+/* One contour per range: an edge layer 1px larger behind every selected
+   cell, and fills above all of them that cover the inner edges. */
+.orz-hex-cell[data-sel] {
+  --cell-bg: var(--cell-fill);
+}
+.orz-hex-cell[data-sel]::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  background: var(--cell-edge);
+}
+.orz-hex:not([data-dragging]) [data-hover] {
+  --cell-bg: var(--hex-hover);
+}
+.orz-hex:not([data-dragging]) [data-hover][data-sel] {
+  --cell-bg: color-mix(in oklch, var(--cell-fill) 60%, var(--hex-hover));
+}
+.orz-hex:focus [data-caret] {
+  --cell-caret: inset 0 -2px 0 var(--cell-edge);
+}
+
+.orz-hex-cell-content {
+  position: relative;
+  z-index: 1;
+  display: block;
+  box-sizing: border-box;
+  height: 100%;
+  padding-inline: var(--cell-pad) var(--cell-pad-end);
+  background: var(--cell-bg, transparent);
+  box-shadow: var(--cell-caret, none);
+}
+
+/* Two stacked letters, drawn as text: no monospace webfont covers the
+   U+2400 control pictures, and a fallback glyph would break the grid. */
+.orz-hex-control {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  align-content: center;
+  padding-block: 0.15em;
+  font-size: 0.55em;
+  font-weight: 500;
+  line-height: 1;
+}
+.orz-hex-control b {
+  display: block;
+  padding-inline: 0.15em;
+  font-weight: inherit;
+  text-align: left;
+}
+.orz-hex-control b + b {
+  text-align: right;
+}
+
+.orz-hex-cell[data-faded]:not([data-sel]):not([data-hover]),
+.orz-hex-cell[data-state="loading"] {
+  color: var(--hex-faded);
+}
+.orz-hex-cell[data-state="error"] {
+  color: var(--destructive);
+}
+
+.orz-hex-status {
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem 0.625rem;
+  border-top: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+
+.orz-hex-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
