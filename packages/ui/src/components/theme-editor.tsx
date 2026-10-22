@@ -7,6 +7,7 @@ import {
 } from "@orz/themes";
 import { XIcon } from "lucide-react";
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { serializeThemeFile } from "../lib/theme-file.ts";
 import { useDirtySource } from "../lib/unsaved-guard.ts";
 import { useTerminalTheme, useTheme, useThemeSlots } from "../theme/index.ts";
 import { Button } from "./button.tsx";
@@ -28,11 +29,17 @@ import {
   useThemeDraft,
 } from "./theme-editor/draft.ts";
 import {
+  ALL_THEMES_FILE_NAME,
+  ExportPanel,
+  themeFileName,
+} from "./theme-editor/export-panel.tsx";
+import {
   type EditorTab,
   type PendingColour,
   type TerminalView,
   ThemeForm,
 } from "./theme-editor/form.tsx";
+import { ImportPanel } from "./theme-editor/import-panel.tsx";
 import { displayLabel, ThemeList } from "./theme-editor/theme-list.tsx";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog.tsx";
 
@@ -167,6 +174,7 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
   const [prompt, setPrompt] = useState<{ proceed: () => void } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const both = draft.light !== undefined && draft.dark !== undefined;
   const shared = both && !terminalView.split && sameTerminal(draft);
@@ -365,6 +373,46 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
       }),
     );
 
+  const importThemes = (picked: Omit<CustomTheme, "id">[]) =>
+    guarded(() => {
+      const taken = [
+        ...customs.map((c) => c.id),
+        ...composeList.map((t) => t.id),
+      ];
+      const added = picked.map((theme): CustomTheme => {
+        const id = newThemeId(taken);
+        taken.push(id);
+        return { ...theme, id };
+      });
+      try {
+        ui.setCustomThemes([...customs, ...added]);
+      } catch (error) {
+        setImportError(
+          `The themes could not be imported: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return;
+      }
+      const first = added[0];
+      if (first) load({ draft: first, saved: first });
+    });
+
+  const exported = useMemo(() => {
+    if (panel.kind !== "export") return null;
+    if (panel.scope === "all") {
+      return {
+        title: "Export all themes",
+        text: serializeThemeFile(customs, composeList),
+        fileName: ALL_THEMES_FILE_NAME,
+      };
+    }
+    const label = displayLabel(draft.label);
+    return {
+      title: `Export ${label}`,
+      text: serializeThemeFile([{ ...draft, label }], composeList),
+      fileName: themeFileName(label),
+    };
+  }, [panel, customs, composeList, draft]);
+
   const changeTab = (next: EditorTab) => {
     setTab(next);
     if (next !== "terminal") setUiScheme(next);
@@ -396,7 +444,10 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
           themes={composeList}
           onSelect={select}
           onNew={() => select(undefined)}
-          onImport={() => setPanel({ kind: "import" })}
+          onImport={() => {
+            setImportError(null);
+            setPanel({ kind: "import" });
+          }}
           onExportAll={() => setPanel({ kind: "export", scope: "all" })}
         />
       </SheetHeader>
@@ -430,8 +481,18 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
               onPreview={queuePreview}
             />
           </>
+        ) : panel.kind === "import" ? (
+          <ImportPanel
+            themes={composeList}
+            labels={labels}
+            onImport={importThemes}
+            error={importError}
+            onBack={() => setPanel(FORM)}
+          />
         ) : (
-          <PanelPlaceholder panel={panel} onBack={() => setPanel(FORM)} />
+          exported && (
+            <ExportPanel {...exported} onBack={() => setPanel(FORM)} />
+          )
         )}
       </div>
       {panel.kind === "form" && (
@@ -502,27 +563,5 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
         onConfirm={remove}
       />
     </>
-  );
-}
-
-/** Stands in for the import and export panels. */
-function PanelPlaceholder({
-  panel,
-  onBack,
-}: {
-  panel: Exclude<EditorPanel, { kind: "form" }>;
-  onBack: () => void;
-}) {
-  return (
-    <div className="flex flex-col items-start gap-3">
-      <p className="text-sm text-muted-foreground">
-        {panel.kind === "import"
-          ? "Importing themes is not available yet."
-          : "Exporting themes is not available yet."}
-      </p>
-      <Button type="button" variant="outline" size="sm" onClick={onBack}>
-        Back to the theme
-      </Button>
-    </div>
   );
 }
