@@ -74,7 +74,7 @@ function definesVariant(theme: TerminalTheme, id: string): boolean {
 }
 
 /** The pick made valid for one theme: a possible mode, a defined variant. */
-function fitPick(pick: ThemePick, theme: TerminalTheme): ThemePick {
+export function fitPick(pick: ThemePick, theme: TerminalTheme): ThemePick {
   const mode =
     theme.light && theme.dark ? pick.mode : theme.light ? "light" : "dark";
   const out: ThemePick = { theme: theme.id, mode };
