@@ -1,5 +1,6 @@
 import type {
   ColorScheme,
+  CustomTheme,
   TerminalTheme,
   TerminalTokens,
   Theme,
@@ -16,6 +17,7 @@ import type { ThemePref } from "./pref.ts";
 import type {
   ResolvedTerminalTheme,
   ResolvedTheme,
+  ThemePreview,
   ThemeStore,
 } from "./store.ts";
 
@@ -54,11 +56,38 @@ const fallbackPref = () => FALLBACK_PREF;
 const fallbackResolved = () => FALLBACK_RESOLVED;
 const fallbackTerminal = () => FALLBACK_TERMINAL;
 const fallbackThemes = () => FALLBACK_THEMES;
+const NO_CUSTOM_THEMES: readonly CustomTheme[] = Object.freeze([]);
+const fallbackCustomThemes = () => NO_CUSTOM_THEMES;
+
+interface CustomThemeControls {
+  preview: (next: ThemePreview | null) => void;
+  customThemes: readonly CustomTheme[];
+  setCustomThemes: (next: readonly CustomTheme[]) => void;
+}
+
+/** What both hooks add for a picker or an editor: preview and the custom list. */
+function useCustomThemeControls(
+  store: ThemeStore | null,
+  subscribe: ThemeStore["subscribe"],
+): CustomThemeControls {
+  const getCustomThemes = store?.getCustomThemes ?? fallbackCustomThemes;
+  const customThemes = useSyncExternalStore(
+    subscribe,
+    getCustomThemes,
+    getCustomThemes,
+  );
+  return {
+    preview: store?.preview ?? noop,
+    customThemes,
+    setCustomThemes: store?.setCustomThemes ?? noop,
+  };
+}
 
 /**
- * The provider's UI theme. Outside a provider it answers the default theme
- * under system, light, and ignores `setPref`, so a primitive rendered on its
- * own still renders.
+ * The provider's UI theme, as shown (a preview included); `pref` is the
+ * committed pick. Outside a provider it answers the default theme under
+ * system, light, and ignores `setPref`, `preview` and `setCustomThemes`, so a
+ * primitive rendered on its own still renders.
  */
 export function useTheme(): {
   pref: ThemePref;
@@ -67,7 +96,7 @@ export function useTheme(): {
   colorScheme: ColorScheme;
   variant: string;
   setPref: (next: ThemePref) => void;
-} {
+} & CustomThemeControls {
   const store = useContext(ThemeContext);
   const subscribe = store?.subscribe ?? subscribeNowhere;
   const getPref = store?.getPref ?? fallbackPref;
@@ -81,7 +110,9 @@ export function useTheme(): {
   const pref = useSyncExternalStore(subscribe, getPref, getPref);
   const resolved = useSyncExternalStore(subscribe, getResolved, getResolved);
   const themes = useSyncExternalStore(subscribe, getThemes, getThemes);
+  const controls = useCustomThemeControls(store, subscribe);
   return {
+    ...controls,
     pref,
     themes,
     theme: resolved.theme,
@@ -91,10 +122,10 @@ export function useTheme(): {
   };
 }
 
-/** The provider's terminal theme, ready for `xtermTheme(tokens)`. */
+/** The provider's terminal theme as shown, ready for `xtermTheme(tokens)`. */
 export function useTerminalTheme(): ResolvedTerminalTheme & {
   themes: readonly TerminalTheme[];
-} {
+} & CustomThemeControls {
   const store = useContext(ThemeContext);
   const subscribe = store?.subscribe ?? subscribeNowhere;
   const getTerminal = store?.getTerminal ?? fallbackTerminal;
@@ -106,5 +137,33 @@ export function useTerminalTheme(): ResolvedTerminalTheme & {
       : store.getThemes;
   const terminal = useSyncExternalStore(subscribe, getTerminal, getTerminal);
   const themes = useSyncExternalStore(subscribe, getThemes, getThemes);
-  return useMemo(() => ({ ...terminal, themes }), [terminal, themes]);
+  const { preview, customThemes, setCustomThemes } = useCustomThemeControls(
+    store,
+    subscribe,
+  );
+  return useMemo(
+    () => ({ ...terminal, themes, preview, customThemes, setCustomThemes }),
+    [terminal, themes, preview, customThemes, setCustomThemes],
+  );
+}
+
+const OUTSIDE_SLOTS = { ui: true, terminal: false };
+
+/**
+ * Which slots the provider's store has, which the two hooks cannot say: each
+ * falls back where its slot is missing. Outside a provider: the UI slot only.
+ */
+export function useThemeSlots(): { ui: boolean; terminal: boolean } {
+  const store = useContext(ThemeContext);
+  // A store's slots are fixed when it is created.
+  return useMemo(
+    () =>
+      store
+        ? {
+            ui: store.getThemes().length > 0,
+            terminal: store.getTerminalThemes().length > 0,
+          }
+        : OUTSIDE_SLOTS,
+    [store],
+  );
 }

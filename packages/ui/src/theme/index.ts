@@ -22,11 +22,18 @@ export {
   type ThemePick,
   type ThemePref,
 } from "./pref.ts";
-export { ThemeProvider, useTerminalTheme, useTheme } from "./provider.tsx";
+export {
+  ThemeProvider,
+  useTerminalTheme,
+  useTheme,
+  useThemeSlots,
+} from "./provider.tsx";
 export {
   createThemeStore,
+  type PreviewPick,
   type ResolvedTerminalTheme,
   type ResolvedTheme,
+  type ThemePreview,
   type ThemeStore,
   type ThemeStoreOptions,
 } from "./store.ts";
