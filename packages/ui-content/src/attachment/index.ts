@@ -1,3 +1,7 @@
+export {
+  type AttachmentCardOptions,
+  attachmentCard,
+} from "./card-content.tsx";
 export { DocumentCard, type DocumentCardProps } from "./document-card.tsx";
 export { fileIcon } from "./icon.ts";
 export {
@@ -8,6 +12,14 @@ export {
   RICH_CHIP_SKIN,
   RICH_CHIP_STRUCTURE,
 } from "./link.tsx";
+export {
+  audioContent,
+  type FrameContentOptions,
+  htmlContent,
+  imageContent,
+  pdfContent,
+  videoContent,
+} from "./media-content.tsx";
 export {
   AttachmentViewer,
   type AttachmentViewerControls,
