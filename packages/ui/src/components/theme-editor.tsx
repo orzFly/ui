@@ -2,6 +2,7 @@ import {
   type ColorScheme,
   type CustomTheme,
   DEFAULT_VARIANT,
+  isCustomTerminalTheme,
   type TerminalTheme,
   type Theme,
 } from "@orz/themes";
@@ -139,9 +140,19 @@ function EditorSession({
   const ui = useTheme();
   const terminal = useTerminalTheme();
   const slots = useThemeSlots();
-  const { customThemes: customs, themes, pref, setPref, preview } = ui;
+  const { customThemes: everyCustom, themes, pref, setPref, preview } = ui;
+  // Writes go through the whole stored list, so a kind this store cannot
+  // show is written back untouched.
+  const customs = useMemo(
+    () =>
+      everyCustom.filter((c): c is CustomTheme => !isCustomTerminalTheme(c)),
+    [everyCustom],
+  );
 
-  const customIds = useMemo(() => new Set(customs.map((c) => c.id)), [customs]);
+  const customIds = useMemo(
+    () => new Set(everyCustom.map((c) => c.id)),
+    [everyCustom],
+  );
   const baseThemes = useMemo(
     () => themes.filter((t) => !customIds.has(t.id)),
     [themes, customIds],
@@ -160,8 +171,11 @@ function EditorSession({
     [baseThemes, palettes],
   );
   const labels = useMemo(
-    () => [...customs.map((c) => c.label), ...baseThemes.map((t) => t.label)],
-    [customs, baseThemes],
+    () => [
+      ...everyCustom.map((c) => c.label),
+      ...baseThemes.map((t) => t.label),
+    ],
+    [everyCustom, baseThemes],
   );
 
   const start = (id: string | undefined) => {
@@ -363,14 +377,14 @@ function EditorSession({
       theme = {
         ...theme,
         id: newThemeId([
-          ...customs.map((c) => c.id),
+          ...everyCustom.map((c) => c.id),
           ...composeList.map((t) => t.id),
         ]),
       };
     }
-    const next = customs.some((c) => c.id === theme.id)
-      ? customs.map((c) => (c.id === theme.id ? theme : c))
-      : [...customs, theme];
+    const next = everyCustom.some((c) => c.id === theme.id)
+      ? everyCustom.map((c) => (c.id === theme.id ? theme : c))
+      : [...everyCustom, theme];
     try {
       ui.setCustomThemes(next);
     } catch (error) {
@@ -403,7 +417,7 @@ function EditorSession({
     const at = customs.findIndex((c) => c.id === draft.id);
     const next = customs[at + 1] ?? customs[at - 1];
     try {
-      ui.setCustomThemes(customs.filter((c) => c.id !== draft.id));
+      ui.setCustomThemes(everyCustom.filter((c) => c.id !== draft.id));
     } catch (error) {
       setSaveError(
         `The theme could not be deleted: ${error instanceof Error ? error.message : String(error)}`,
@@ -424,7 +438,7 @@ function EditorSession({
   const importThemes = (picked: Omit<CustomTheme, "id">[]) =>
     guarded(() => {
       const taken = [
-        ...customs.map((c) => c.id),
+        ...everyCustom.map((c) => c.id),
         ...composeList.map((t) => t.id),
       ];
       const added = picked.map((theme): CustomTheme => {
@@ -433,7 +447,7 @@ function EditorSession({
         return { ...theme, id };
       });
       try {
-        ui.setCustomThemes([...customs, ...added]);
+        ui.setCustomThemes([...everyCustom, ...added]);
       } catch (error) {
         setImportError(
           `The themes could not be imported: ${error instanceof Error ? error.message : String(error)}`,

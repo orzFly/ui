@@ -534,7 +534,7 @@ describe("ThemeEditor: sides", () => {
     fireEvent.click(radio("Terminal of", "Dark side"));
     fireEvent.click(radio("Terminal colours", "Follow the base"));
     fireEvent.click(button("Save"));
-    const saved = themes.getCustomThemes()[0];
+    const saved = themes.getCustomThemes()[0] as CustomTheme;
     expect(saved?.light?.terminal).toEqual({ base: { theme: "nord" } });
     expect(saved?.dark?.terminal).toBeUndefined();
   });
