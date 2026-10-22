@@ -13,6 +13,7 @@ import {
   prefOf,
   type Slot,
   urlGlobals,
+  withUrlGlobals,
 } from "../.storybook/globals.ts";
 
 const DEFAULT = builtinThemes[0].id;
@@ -191,6 +192,33 @@ describe("urlGlobals", () => {
   it("is empty without the parameter", () => {
     expect(urlGlobals("")).toEqual({});
     expect(urlGlobals("?globals=")).toEqual({});
+  });
+});
+
+describe("withUrlGlobals", () => {
+  const globals = { theme: "dracula_dark_amoled", terminal: "follow" };
+
+  it("adds the parameter urlGlobals reads back", () => {
+    const url = withUrlGlobals("iframe.html", globals);
+    expect(url.startsWith("iframe.html?globals=")).toBe(true);
+    expect(urlGlobals(url.slice(url.indexOf("?")))).toEqual(globals);
+  });
+
+  it("keeps the base URL's other parameters and replaces its globals", () => {
+    const url = withUrlGlobals(
+      "/sb/iframe.html?foo=1&globals=theme:nord_dark",
+      { theme: "system" },
+    );
+    const params = new URLSearchParams(url.slice(url.indexOf("?")));
+    expect(url.startsWith("/sb/iframe.html?")).toBe(true);
+    expect(params.get("foo")).toBe("1");
+    expect(params.get("globals")).toBe("theme:system");
+  });
+
+  it("leaves the parameter out with no globals", () => {
+    expect(withUrlGlobals("iframe.html?globals=theme:x", {})).toBe(
+      "iframe.html",
+    );
   });
 });
 

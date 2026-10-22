@@ -26,6 +26,7 @@ import {
   prefOf,
   type ThemeGlobals,
   urlGlobals,
+  withUrlGlobals,
 } from "./globals.ts";
 import { storybookTheme } from "./storybook-theme.ts";
 import {
@@ -53,6 +54,15 @@ const last: ThemeGlobals = {
 };
 themes.setPref(prefOf(last, DEFAULT_THEME));
 
+// A docs page that renders its stories in iframes (ThemeMenu's) takes their
+// URL from PREVIEW_URL, and Storybook remounts them on every globals change.
+// Without the globals there, each one reloads on initialGlobals.
+const PREVIEW_BASE = globalThis.PREVIEW_URL ?? "iframe.html";
+const syncPreviewUrl = () => {
+  globalThis.PREVIEW_URL = withUrlGlobals(PREVIEW_BASE, last);
+};
+syncPreviewUrl();
+
 /** The toolbar editor's draft (see PreviewMessage), shown whenever nothing else previews. */
 let draft: ThemePreview | null = null;
 const show = (preview: ThemePreview | null) => themes.preview(preview ?? draft);
@@ -71,7 +81,9 @@ function applyGlobals(globals: Readonly<Record<string, unknown>>) {
       moved = true;
     }
   }
-  if (moved) setPref(prefOf(last, DEFAULT_THEME));
+  if (!moved) return;
+  syncPreviewUrl();
+  setPref(prefOf(last, DEFAULT_THEME));
 }
 
 function emitPreview(preview: ThemePreview | null, isDraft = false) {
@@ -95,6 +107,7 @@ const facade: ThemeStore = {
     );
     if (Object.keys(changed).length > 0) {
       Object.assign(last, changed);
+      syncPreviewUrl();
       // What the preview's own useGlobals sends.
       addons.getChannel().emit(UPDATE_GLOBALS, { globals: changed });
     } else {
@@ -209,6 +222,8 @@ void addons.ready().then((channel) => {
 declare global {
   /** Removes the toolbar editor's root. */
   var __ORZ_TOOLBAR_EDITOR__: (() => void) | undefined;
+  /** The base URL addon-docs builds a docs page's story iframes from. */
+  var PREVIEW_URL: string | undefined;
 }
 
 const withTheme: Decorator = (Story, context) => {

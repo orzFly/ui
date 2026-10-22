@@ -112,3 +112,19 @@ export function changedGlobals(
   }
   return out;
 }
+
+/**
+ * `url` with the theme globals as its `globals` parameter, in the form
+ * urlGlobals reads and Storybook's own preview applies on load.
+ */
+export function withUrlGlobals(url: string, globals: ThemeGlobals): string {
+  const [path, query = ""] = url.split("?");
+  const params = new URLSearchParams(query);
+  const pairs = Object.entries(globals).map(
+    ([key, value]) => `${key}:${value}`,
+  );
+  if (pairs.length > 0) params.set("globals", pairs.join(";"));
+  else params.delete("globals");
+  const search = params.toString();
+  return search === "" ? path : `${path}?${search}`;
+}
