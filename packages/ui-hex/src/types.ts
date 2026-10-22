@@ -7,6 +7,8 @@ export interface HexSelection {
   focus: number;
   /** The pane it was made in: gets the focused colours, and decides the copy format. */
   pane: HexPane;
+  /** The hex digit an editor's next keystroke writes; only the hex pane counts it. */
+  nibble?: 0 | 1;
 }
 
 export type ControlCodes = "abbreviations" | "dots";
