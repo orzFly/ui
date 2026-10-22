@@ -1,4 +1,11 @@
-import { act, fireEvent, render, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { HexEncoding } from "../src/encodings.ts";
@@ -712,37 +719,90 @@ describe("HexView encodings", () => {
     expect(cell(19, "text").getAttribute("data-kind")).toBe("dot");
 
     fireEvent.keyDown(trigger, { key: "ArrowRight" });
-    fireEvent.pointerDown(trigger, { button: 0, pointerType: "mouse" });
     fireEvent.click(trigger);
-    const listbox = await waitFor(() => {
-      const el = document.querySelector('[role="listbox"]');
-      expect(el).not.toBeNull();
-      return el as HTMLElement;
-    });
-    const groups = [
-      ...listbox.querySelectorAll('[data-slot="select-label"]'),
-    ].map((el) => el.textContent);
-    expect(groups).toEqual(["Western", "Unicode", "East Asian", "Other"]);
+    const box = screen.getByRole("combobox", { name: "Filter encodings" });
+    await waitFor(() => expect(document.activeElement).toBe(box));
+    const listbox = screen.getByRole("listbox", { name: "Text encodings" });
+    const groups = () =>
+      within(listbox)
+        .queryAllByRole("group")
+        .map(
+          (el) =>
+            document.getElementById(el.getAttribute("aria-labelledby") ?? "")
+              ?.textContent,
+        );
+    expect(groups()).toEqual(["Western", "Unicode", "East Asian", "Other"]);
 
-    const option = [...listbox.querySelectorAll('[role="option"]')].find(
-      (el) => el.textContent === "Windows-1251 (Cyrillic)",
-    ) as HTMLElement;
-    fireEvent.keyDown(option, { key: "ArrowDown" });
-    fireEvent.keyDown(option, { key: "ArrowRight" });
+    const options = () =>
+      within(listbox)
+        .queryAllByRole("option")
+        .map((el) => el.textContent);
+    fireEvent.change(box, { target: { value: "cyril" } });
+    expect(options()).toEqual([
+      "Windows-1251 (Cyrillic)",
+      "ISO-8859-5 (Cyrillic)",
+      "IBM866 (Cyrillic DOS)",
+    ]);
+    expect(groups()).toEqual(["Other"]);
+    fireEvent.keyDown(box, { key: "ArrowDown" });
+    fireEvent.keyDown(box, { key: "ArrowUp" });
+    fireEvent.keyDown(box, { key: "ArrowRight" });
+    fireEvent.keyDown(box, { key: "Enter" });
     expect(onSelectionChange).not.toHaveBeenCalled();
-
-    fireEvent.pointerUp(option, { button: 0, pointerType: "mouse" });
-    fireEvent.click(option);
-    await waitFor(() =>
-      expect(onEncodingChange).toHaveBeenCalledWith("windows-1251"),
-    );
+    expect(onEncodingChange).toHaveBeenCalledWith("windows-1251");
     expect(onEncodingChange).toHaveBeenCalledTimes(1);
-    await waitFor(() =>
-      expect(
-        (root.querySelector(".orz-hex-encoding") as HTMLElement).textContent,
-      ).toBe("Windows-1251 (Cyrillic)"),
-    );
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(
+      (root.querySelector(".orz-hex-encoding") as HTMLElement).textContent,
+    ).toBe("Windows-1251 (Cyrillic)");
     expect(cell(19, "text").textContent).toBe("Ж");
     expect(onSelectionChange).not.toHaveBeenCalled();
+  });
+
+  it("filters the picker by aliases and ids, and says when nothing matches", () => {
+    const { root } = setup({ encoding: "utf-8" });
+    fireEvent.click(root.querySelector(".orz-hex-encoding") as HTMLElement);
+    const box = screen.getByRole("combobox", { name: "Filter encodings" });
+    const options = () =>
+      screen
+        .queryAllByRole("option")
+        .map((el) => el.querySelector(".orz-hex-encoding-label")?.textContent);
+    const aliases = () =>
+      screen
+        .queryAllByRole("option")
+        .map((el) => el.querySelector(".orz-hex-encoding-alias")?.textContent);
+    const checked = () =>
+      screen
+        .queryAllByRole("option")
+        .filter((el) => el.hasAttribute("data-selected"))
+        .map((el) => el.textContent);
+    expect(checked()).toEqual(["UTF-8"]);
+    fireEvent.change(box, { target: { value: "sjis" } });
+    expect(options()).toEqual(["Shift_JIS"]);
+    // The name it matched by, since the label does not show it.
+    expect(aliases()).toEqual(["sjis"]);
+    fireEvent.change(box, { target: { value: "utf8" } });
+    expect(options()).toEqual(["UTF-8"]);
+    expect(aliases()).toEqual([undefined]);
+    fireEvent.change(box, { target: { value: "cp1252" } });
+    expect(options()).toEqual(["Windows-1252 (Western)"]);
+    fireEvent.change(box, { target: { value: "8859 15" } });
+    expect(options()).toEqual(["ISO-8859-15 (Western)"]);
+    fireEvent.change(box, { target: { value: "gbk" } });
+    expect(options()).toEqual(["GB18030 (GBK)"]);
+    expect(screen.getByRole("listbox").querySelector("mark")?.textContent).toBe(
+      "GBK",
+    );
+    fireEvent.change(box, { target: { value: "asian" } });
+    expect(options()).toEqual([
+      "Shift_JIS",
+      "EUC-JP",
+      "GB18030 (GBK)",
+      "Big5",
+      "EUC-KR",
+    ]);
+    fireEvent.change(box, { target: { value: "klingon" } });
+    expect(options()).toEqual([]);
+    expect(screen.getByText('No encodings match "klingon"')).toBeTruthy();
   });
 });

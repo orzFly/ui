@@ -1,13 +1,4 @@
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@orz/ui/components/select";
-import {
   type CSSProperties,
   memo,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -24,14 +15,13 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-
 import { type ColumnMetrics, fitColumns, rowWidth } from "./column-fit.ts";
+import { EncodingPicker } from "./encoding-picker.tsx";
 import {
   encodingLabel,
   getTextDecoding,
   HEX_ENCODINGS,
   type HexEncoding,
-  type HexEncodingInfo,
 } from "./encodings.ts";
 import {
   addressDigits,
@@ -204,15 +194,6 @@ export function useControllableSelection(
 ) {
   return useControllable(value, defaultValue ?? null, onChange, sameSelection);
 }
-
-const ENCODING_GROUPS = HEX_ENCODINGS.reduce<
-  Array<{ group: HexEncodingInfo["group"]; entries: HexEncodingInfo[] }>
->((groups, info) => {
-  const lastGroup = groups.at(-1);
-  if (lastGroup?.group === info.group) lastGroup.entries.push(info);
-  else groups.push({ group: info.group, entries: [info] });
-  return groups;
-}, []);
 
 function useElementSize(
   ref: RefObject<HTMLElement | null>,
@@ -1212,41 +1193,6 @@ function isGroupEnd(column: number, columns: number, groupSize: number) {
 
 // Memoised: the grid re-renders on every scroll frame, and a closed radix
 // Select still renders its items to collect their text.
-const EncodingPicker = memo(function EncodingPicker({
-  value,
-  onChange,
-}: {
-  value: HexEncoding;
-  onChange: (encoding: HexEncoding) => void;
-}) {
-  return (
-    <Select
-      value={value}
-      onValueChange={(next) => onChange(next as HexEncoding)}
-    >
-      <SelectTrigger
-        size="sm"
-        className="orz-hex-encoding"
-        aria-label="Text encoding"
-      >
-        <SelectValue>{encodingLabel(value)}</SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {ENCODING_GROUPS.map(({ group, entries }) => (
-          <SelectGroup key={group}>
-            <SelectLabel>{group}</SelectLabel>
-            {entries.map((info) => (
-              <SelectItem key={info.id} value={info.id}>
-                {info.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-});
-
 interface HexRowProps {
   rowStart: number;
   length: number;

@@ -157,10 +157,13 @@
   display: contents;
 }
 
-/* The encoding picker: @orz/ui's SelectTrigger, shrunk to the header row.
-   Unlayered, so it wins over the trigger's layered utilities. */
+/* The encoding picker's trigger, @orz/ui's FilterMenu behind it, sized to
+   the header row. Unlayered, so it wins over any layered utilities. */
 .orz-hex-encoding {
+  display: inline-flex;
+  align-items: center;
   box-sizing: border-box;
+  white-space: nowrap;
   max-width: 100%;
   height: var(--hex-row-height);
   gap: 0.25rem;
@@ -184,15 +187,33 @@
   box-shadow: none;
   outline: none;
 }
-.orz-hex-encoding [data-slot="select-value"] {
+.orz-hex-encoding-value {
   display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .orz-hex-encoding svg {
+  flex-shrink: 0;
   width: 0.875rem;
   height: 0.875rem;
+}
+/* The menu is portalled out of .orz-hex, and this sheet is plain CSS that
+   Tailwind never scans, so its rows are styled here rather than by utilities. */
+.orz-hex-encoding-menu {
+  width: 20rem;
+}
+.orz-hex-encoding-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.orz-hex-encoding-alias {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
 }
 
 /* Cells have no margins: the contour depends on neighbours touching. Each
