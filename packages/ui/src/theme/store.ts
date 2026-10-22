@@ -86,7 +86,7 @@ export interface ThemeStore {
   getTerminal(): ResolvedTerminalTheme;
   /** [] without a UI slot. The composed custom themes first, then the base list. */
   getThemes(): readonly Theme[];
-  /** [] without a terminal slot. The composed custom themes of both kinds first, then the base list. */
+  /** [] without a terminal slot. The composed custom themes first (UI ones only when there is a UI slot too), then the base list. */
   getTerminalThemes(): readonly TerminalTheme[];
   /** Normalizes, persists, applies, notifies. Clears the preview. */
   setPref(next: ThemePref): void;
@@ -250,7 +250,9 @@ export function createThemeStore({
         if (theme === null) continue;
         taken.add(theme.id);
         uiRun.push(theme);
-        terminalRun.push(theme);
+        // Without a UI slot a UI custom theme shows nowhere, as a terminal
+        // one does without a terminal: the editor there cannot open it.
+        if (baseThemes) terminalRun.push(theme);
       }
     }
     themes = baseThemes && [...uiRun, ...baseThemes];

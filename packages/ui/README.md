@@ -136,7 +136,7 @@ Whatever is highlighted previews on the whole page after resting 80 ms, and a pi
 The store keeps the user's custom themes from `@orz/themes` in one list of two kinds, and lists the
 ones that compose ahead of each slot's own list, in list order:
 
-- a `CustomTheme` (no `kind`) is composed with `composeTheme` and goes into both slots;
+- a `CustomTheme` (no `kind`) is composed with `composeTheme` and goes into both slots. In a store with no UI slot it stays in the list and shows nowhere;
 - a `CustomTerminalTheme` (`kind: "terminal"`), made of terminal colours alone, is composed with
   `composeTerminalTheme` and goes into the terminal slot only. In a store with no terminal slot it
   stays in the list and shows nowhere.

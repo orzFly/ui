@@ -119,6 +119,21 @@ describe("terminal custom themes in the store", () => {
     expect(themes.getTerminalThemes()).toEqual([]);
   });
 
+  it("leaves a UI custom theme out of a store with no UI slot", () => {
+    stubDarkQuery(true);
+    const themes = store({
+      themes: undefined,
+      terminalThemes: [...builtinThemes, ink],
+    });
+    themes.setCustomThemes([sunrise, dusk]);
+    expect(themes.getCustomThemes()).toEqual([sunrise, dusk]);
+    expect(ids(themes.getTerminalThemes())).toEqual([
+      "custom-dusk",
+      ...ids(builtinThemes),
+      "ink",
+    ]);
+  });
+
   it("serves a terminal pick that names it, across a reload", () => {
     stubDarkQuery(false);
     const first = store({ themes: undefined, terminalThemes: [ink, paper] });
