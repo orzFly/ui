@@ -1,4 +1,17 @@
 export {
+  type FileLike,
+  formatSize,
+  isArchiveFile,
+  isAudioFile,
+  isHtmlFile,
+  isImageFile,
+  isMarkdownFile,
+  isPdfFile,
+  isTextEmbed,
+  isTextFile,
+  isVideoFile,
+} from "./file-kind.ts";
+export {
   Content,
   ContentFallback,
   ContentRenderers,

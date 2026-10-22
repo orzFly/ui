@@ -133,3 +133,22 @@ function does. Keep such a `load` stable. A `load` beside a `url` is read from t
 a resolver building a fresh closure each render does not restart the load.
 
 Size caps are the caller's: check `size` before asking for the text.
+
+## File kinds
+
+```ts
+import { isImageFile, isTextFile, isMarkdownFile, formatSize } from "@orz/ui-content";
+
+isImageFile(f)  isTextFile(f)     isMarkdownFile(f)  isHtmlFile(f)
+isPdfFile(f)    isArchiveFile(f)  isAudioFile(f)     isVideoFile(f)
+isTextEmbed(f)  // a text file that is not also an image (.svg is both)
+formatSize(bytes) // "512 B", "1.5 KB", "20 KB"
+```
+
+Each predicate takes `{ name, mime? }`, so a file `ContentSource` passes straight in. A declared
+type outranks the filename: the extension only counts when `mime` is missing, empty or
+`application/octet-stream`. A `.png` declared `text/plain` is text, and a `.ts` uploaded as
+octet-stream is TypeScript, never an MPEG transport stream.
+
+Renderers use these in `accepts` rather than matching extensions of their own, so that every
+package draws the same file as the same kind.
