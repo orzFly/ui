@@ -3,6 +3,20 @@ export {
   type BraceExpansion,
   expandBraces,
 } from "./braces.ts";
+export { diagnoseQuery, type QueryDiagnostic } from "./diagnostics.ts";
+export {
+  type CompiledQuerySchema,
+  defineQuerySchema,
+  parseQuery,
+  type QualifierSpec,
+  type QueryFilter,
+  type QueryPart,
+  type QuerySchema,
+  type QueryValue,
+  queryFilters,
+  queryTerms,
+  quoteQueryValue,
+} from "./query.ts";
 export {
   quoteShellWord,
   type ShellSegment,
