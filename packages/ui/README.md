@@ -159,6 +159,10 @@ setCustomThemes([...customThemes, draft]);
 - `persistCustomThemes: false` keeps the store away from that key altogether. The app then loads its
   list with `setCustomThemes` and saves it from `subscribe` and `getCustomThemes`, for example to its
   server.
+- `persistPref: false` does the same for the pref under `storageKey`: the store starts from the
+  default pick, never writes the pref, and ignores other tabs' writes to it. The app then commits
+  picks itself with `setPref`, for example from a URL. The paint cache and the custom themes are
+  unaffected.
 
 ### Custom theme editor
 
