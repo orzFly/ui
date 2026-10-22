@@ -93,10 +93,10 @@ interface ByteSource {
 
 The size must be known up front, because it sets the scroll extent. A source that holds bytes in
 memory can answer `peek`, and a view then redraws from it at once after a change instead of showing
-placeholders while it re-reads. `createHexDocument` reads zero bytes at offset 0 when it is created,
-to tell a sync source from an async one, so a zero-length read has to return at once without I/O.
+placeholders while it re-reads. `createHexDocument` learns whether a source is sync from its first
+real read, and never reads zero bytes.
 
-In memory, reads are subarrays and nothing is copied or cached:
+In memory, reads are subarrays and nothing is copied or cached; `peek` answers the same way:
 
 ```ts
 import { bytesSource } from "@orz/ui-hex";
