@@ -144,6 +144,7 @@ isImageFile(f)  isTextFile(f)     isMarkdownFile(f)  isHtmlFile(f)
 isPdfFile(f)    isArchiveFile(f)  isAudioFile(f)     isVideoFile(f)
 isTextEmbed(f)  // a text file that is not also an image (.svg is both)
 formatSize(bytes) // "512 B", "1.5 KB", "20 KB"
+TEXT_PREVIEW_MAX_BYTES // 1 MiB: the text a surface draws at most, here and in `codeContent`
 ```
 
 Each predicate takes `{ name, mime? }`, so a file `ContentSource` passes straight in. A declared
@@ -239,8 +240,8 @@ to run in a sandboxed frame, so serve PDFs from a URL that cannot be mistaken fo
   `markdownContent` counts it) it draws an `AttachmentLink` chip instead of a frame, so a document
   inside a card shows its own documents as links;
 - over `maxBytes` (default `TEXT_PREVIEW_MAX_BYTES`, 1 MiB) it draws the frame with a note and no
-  body. A file of unknown size is not capped; an app that cannot vouch for a size caps in its
-  `load`;
+  body. A file of unknown size is not capped here; the renderer `Next` reaches
+  decides once the text is loaded (`codeContent` draws text over 1 MiB without highlighting);
 - otherwise it draws the frame with the size, a download button and, inside a provider, an expand
   button that opens the viewer. Loading and load errors are drawn by the renderer `Next` reaches.
 
@@ -268,7 +269,8 @@ the outer one, so a surface can page through its own set.
   it returns null for opens alone.
 - **`useCanPreview`** is true when some registered renderer accepts the file in `"viewer"`
   placement and, for a text file, its size is known and within the cap. HTML is not capped: the
-  browser streams it into the frame rather than this tab drawing it as text. `attachmentCard` draws
+  browser streams it into the frame rather than this tab drawing it as text. HTML that no frame
+  takes (no `htmlContent`, or no `url`) reaches the text renderers, which apply their own cap. `attachmentCard` draws
   its expand button only when this holds.
 
 The dialog shows the name, ‹ n / m › for a set (← and → page, wrapping), and a maximize toggle that

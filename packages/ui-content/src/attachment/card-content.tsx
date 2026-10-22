@@ -1,12 +1,15 @@
 import type { ComponentType } from "react";
-import { formatSize, isTextEmbed } from "../file-kind.ts";
+import {
+  formatSize,
+  isTextEmbed,
+  TEXT_PREVIEW_MAX_BYTES,
+} from "../file-kind.ts";
 import { useContentDepth, useContentMaxDepth } from "../registry.tsx";
 import type { ContentProps, ContentRenderer } from "../types.ts";
 import { DocumentCard } from "./document-card.tsx";
 import { AttachmentLink } from "./link.tsx";
 import {
   type FileSource,
-  TEXT_PREVIEW_MAX_BYTES,
   useAttachmentViewer,
   useCanPreview,
 } from "./viewer.tsx";

@@ -1,3 +1,4 @@
+export { TEXT_PREVIEW_MAX_BYTES } from "../file-kind.ts";
 export {
   type AttachmentCardOptions,
   attachmentCard,
@@ -33,7 +34,6 @@ export {
   type AttachmentViewerProviderProps,
   type AttachmentViewerState,
   type FileSource,
-  TEXT_PREVIEW_MAX_BYTES,
   useAttachmentViewer,
   useCanPreview,
   useViewHref,

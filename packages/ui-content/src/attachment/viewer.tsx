@@ -20,7 +20,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { formatSize, isHtmlFile, isTextFile } from "../file-kind.ts";
+import {
+  formatSize,
+  isHtmlFile,
+  isTextFile,
+  TEXT_PREVIEW_MAX_BYTES,
+} from "../file-kind.ts";
 import { Content, useContentDisplay } from "../registry.tsx";
 import type { ContentSource } from "../types.ts";
 
@@ -28,12 +33,6 @@ export type FileSource = Extract<ContentSource, { kind: "file" }>;
 
 /** What the viewer is showing: a set of files and a position in it. */
 export type AttachmentViewerState = { items: FileSource[]; index: number };
-
-/**
- * Highlighting a multi-megabyte file would freeze the tab (T-31), so bigger
- * text files are download-only everywhere.
- */
-export const TEXT_PREVIEW_MAX_BYTES = 1024 * 1024;
 
 export type AttachmentViewerControls = {
   /** Opens the viewer on `items[index]`, paging through `items`. */

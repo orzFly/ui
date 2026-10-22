@@ -88,8 +88,13 @@ const RENDERERS = [mermaidContent, markdownContent(), codeContent];
 <ContentRenderers renderers={RENDERERS}>{app}</ContentRenderers>;
 ```
 
-It sets no size cap: a viewer that should not highlight a large file decides that before it
-renders one.
+It highlights at most `TEXT_PREVIEW_MAX_BYTES` (1 MiB, from `@orz/ui-content`), so a path that
+reaches it with a large file cannot freeze the tab:
+
+- A file whose `size` is over the cap is not loaded: it draws the registry's fallback and a "too
+  large to preview" note.
+- Text found over the cap once loaded (a file of unknown size, or an inline source) is drawn as
+  plain text, with no highlighting and no line numbers.
 
 ### `@orz/ui-code/word-diff`
 

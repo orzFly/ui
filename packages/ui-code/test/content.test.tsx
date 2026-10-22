@@ -3,11 +3,12 @@ import {
   type ContentRenderer,
   ContentRenderers,
   type ContentSource,
+  TEXT_PREVIEW_MAX_BYTES,
   useContentDisplay,
 } from "@orz/ui-content";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { codeContent } from "../src/content.tsx";
+import { codeContent, exceedsBytes } from "../src/content.tsx";
 
 // pierre is covered by code-block-degrade; here only what the renderer hands
 // CodeBlock matters, so the stand-in prints its props.
@@ -227,5 +228,57 @@ describe("files", () => {
     draw(file("bundle.zip", { mime: "application/zip" }));
     expect(screen.getByRole("link", { name: "bundle.zip" })).toBeTruthy();
     expect(screen.queryByTestId("code-block")).toBeNull();
+  });
+});
+
+describe("size cap", () => {
+  const huge = "x".repeat(TEXT_PREVIEW_MAX_BYTES + 1);
+
+  it("does not load a file declared over the cap", () => {
+    const load = vi.fn(async () => "print(1)");
+    draw(file("big.py", { size: TEXT_PREVIEW_MAX_BYTES + 1, load }));
+    expect(load).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "big.py" })).toBeTruthy();
+    expect(screen.getByText(/Too large to preview/)).toBeTruthy();
+    expect(screen.queryByTestId("code-block")).toBeNull();
+  });
+
+  it("loads a file declared at the cap", async () => {
+    draw(
+      file("edge.py", {
+        size: TEXT_PREVIEW_MAX_BYTES,
+        load: async () => "print(1)",
+      }),
+    );
+    expect((await screen.findByTestId("code-block")).textContent).toBe(
+      "print(1)",
+    );
+  });
+
+  it("draws a file of unknown size plain once it loads over the cap", async () => {
+    const { container } = draw(file("big.py", { load: async () => huge }));
+    await vi.waitFor(() => expect(container.querySelector("pre")).toBeTruthy());
+    expect(screen.queryByTestId("code-block")).toBeNull();
+    expect(container.querySelector("pre code")?.textContent).toBe(huge);
+  });
+
+  it("draws an inline source over the cap plain", () => {
+    const { container } = draw(inline(huge, "ts"));
+    expect(screen.queryByTestId("code-block")).toBeNull();
+    expect(container.querySelector("pre code")?.textContent).toBe(huge);
+  });
+});
+
+describe("exceedsBytes", () => {
+  it("counts UTF-8 bytes, not UTF-16 units", () => {
+    expect(exceedsBytes("abc", 3)).toBe(false);
+    expect(exceedsBytes("abcd", 3)).toBe(true);
+    // é is two bytes, 中 three, 😀 four (two surrogates).
+    expect(exceedsBytes("é", 1)).toBe(true);
+    expect(exceedsBytes("é", 2)).toBe(false);
+    expect(exceedsBytes("中中", 5)).toBe(true);
+    expect(exceedsBytes("中中", 6)).toBe(false);
+    expect(exceedsBytes("😀", 3)).toBe(true);
+    expect(exceedsBytes("😀", 4)).toBe(false);
   });
 });

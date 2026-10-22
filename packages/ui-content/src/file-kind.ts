@@ -132,6 +132,12 @@ export function isVideoFile(file: FileLike): boolean {
   return hasGenericType(type) && VIDEO_EXTENSION.test(file.name);
 }
 
+/**
+ * Highlighting a multi-megabyte file would freeze the tab (T-31), so bigger
+ * text files are download-only everywhere.
+ */
+export const TEXT_PREVIEW_MAX_BYTES = 1024 * 1024;
+
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB"];
