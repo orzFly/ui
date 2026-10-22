@@ -1,12 +1,16 @@
 import {
+  type AnyCustomTheme,
   type ColorScheme,
+  type CustomTerminalTheme,
   type CustomTheme,
+  composeTerminalTheme,
   composeTheme,
   DEFAULT_VARIANT,
   isUiTheme,
   schemesOf,
   type TerminalTheme,
   type TerminalTokenName,
+  type TerminalTokens,
   type Theme,
   type TokenName,
 } from "@orz/themes";
@@ -38,6 +42,7 @@ import {
   type TerminalBaseRef,
   type TerminalTarget,
   terminalMode,
+  terminalOf,
   terminalOverrideCount,
 } from "./draft.ts";
 import { TokenList } from "./token-list.tsx";
@@ -265,6 +270,53 @@ function Notice({ children }: { children: ReactNode }) {
   );
 }
 
+function NameField({
+  draft,
+  dispatch,
+  nameError,
+}: {
+  draft: AnyCustomTheme;
+  dispatch: Dispatch<DraftAction>;
+  nameError: string | null;
+}) {
+  const nameId = useId();
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={nameId}>Name</Label>
+      <Input
+        id={nameId}
+        value={draft.label}
+        onChange={(event) =>
+          dispatch({ type: "setLabel", label: event.target.value })
+        }
+        aria-invalid={nameError !== null || undefined}
+        aria-describedby={nameError ? `${nameId}-error` : undefined}
+        autoComplete="off"
+      />
+      {nameError && (
+        <p
+          id={`${nameId}-error`}
+          className="text-xs text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
+        >
+          {nameError}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Kept per tab, so a group the user opened stays open across tab switches. */
+function useGroupProps() {
+  const [openGroups, setOpenGroups] = useState<
+    Record<string, Record<string, boolean>>
+  >({});
+  return (key: string): GroupProps => ({
+    openGroups: openGroups[key] ?? {},
+    onOpenGroupsChange: (next: Record<string, boolean>) =>
+      setOpenGroups((all) => ({ ...all, [key]: next })),
+  });
+}
+
 /** Name, the Light · Dark · Terminal tabs, and each tab's controls over the token list. */
 export function ThemeForm(props: ThemeFormProps) {
   const {
@@ -276,16 +328,7 @@ export function ThemeForm(props: ThemeFormProps) {
     tab,
     onTabChange,
   } = props;
-  const nameId = useId();
-  // Kept per tab, so a group the user opened stays open across tab switches.
-  const [openGroups, setOpenGroups] = useState<
-    Record<string, Record<string, boolean>>
-  >({});
-  const groupProps = (key: string) => ({
-    openGroups: openGroups[key] ?? {},
-    onOpenGroupsChange: (next: Record<string, boolean>) =>
-      setOpenGroups((all) => ({ ...all, [key]: next })),
-  });
+  const groupProps = useGroupProps();
 
   const tabs: { value: EditorTab; label: string; subtitle: string }[] = [
     ...SCHEMES.map((scheme) => ({
@@ -302,27 +345,7 @@ export function ThemeForm(props: ThemeFormProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={nameId}>Name</Label>
-        <Input
-          id={nameId}
-          value={draft.label}
-          onChange={(event) =>
-            dispatch({ type: "setLabel", label: event.target.value })
-          }
-          aria-invalid={nameError !== null || undefined}
-          aria-describedby={nameError ? `${nameId}-error` : undefined}
-          autoComplete="off"
-        />
-        {nameError && (
-          <p
-            id={`${nameId}-error`}
-            className="text-xs text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
-          >
-            {nameError}
-          </p>
-        )}
-      </div>
+      <NameField draft={draft} dispatch={dispatch} nameError={nameError} />
       <Tabs value={tab} onValueChange={(v) => onTabChange(v as EditorTab)}>
         <TabsList className="w-full">
           {tabs.map((t) => (
@@ -693,15 +716,19 @@ function TerminalBaseControls({
   composeList,
   target,
   source,
+  kept,
 }: {
-  draft: CustomTheme;
+  draft: AnyCustomTheme;
   dispatch: Dispatch<DraftAction>;
   palettes: readonly TerminalTheme[];
   composeList: readonly TerminalTheme[];
   target: TerminalTarget;
   source: ColorScheme;
+  /** The colours a terminal theme's side last showed; offers to keep them when the palette is gone. */
+  kept?: TerminalTokens | null;
 }) {
-  const terminal = draft[source]?.terminal as BasedTerminal;
+  const paletteSelect = useRef<HTMLButtonElement>(null);
+  const terminal = terminalOf(draft, source) as BasedTerminal;
   const { base } = terminal;
   const palette = composeList.find((t) => t.id === base.theme);
   const options =
@@ -758,7 +785,12 @@ function TerminalBaseControls({
               value={palette ? palette.id : ""}
               onValueChange={choosePalette}
             >
-              <SelectTrigger id={id} size="sm" className="w-full">
+              <SelectTrigger
+                id={id}
+                ref={paletteSelect}
+                size="sm"
+                className="w-full"
+              >
                 <SelectValue placeholder="Choose a palette" />
               </SelectTrigger>
               <SelectContent position="popper">
@@ -850,11 +882,206 @@ function TerminalBaseControls({
         </div>
       ) : (
         <Notice>
-          <p>
-            Palette <em>{base.theme}</em> is no longer available. Choose
-            another.
-          </p>
+          {kept === undefined ? (
+            <p>
+              Palette <em>{base.theme}</em> is no longer available. Choose
+              another.
+            </p>
+          ) : (
+            <>
+              <p>
+                Base <em>{base.theme}</em> is no longer available.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => paletteSelect.current?.focus()}
+                >
+                  Choose another
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  disabled={kept === null}
+                  onClick={() =>
+                    dispatch({
+                      type: "setTerminalMode",
+                      target,
+                      mode: "detached",
+                      resolved: kept ?? undefined,
+                    })
+                  }
+                >
+                  Keep as fully custom
+                </Button>
+              </div>
+            </>
+          )}
         </Notice>
+      )}
+    </>
+  );
+}
+
+function terminalSideSubtitle(
+  draft: CustomTerminalTheme,
+  scheme: ColorScheme,
+  composeList: readonly TerminalTheme[],
+): string {
+  const side = draft[scheme];
+  if (side === undefined) return "None";
+  if (!("base" in side)) return "Fully custom";
+  const label =
+    composeList.find((t) => t.id === side.base.theme)?.label ?? side.base.theme;
+  return withCount(label, terminalOverrideCount(draft, scheme));
+}
+
+export interface TerminalThemeFormProps {
+  draft: CustomTerminalTheme;
+  dispatch: Dispatch<DraftAction>;
+  /** The draft composed against the base lists; null when no side resolves. */
+  composed: TerminalTheme | null;
+  /** The colours a side last showed, for detaching a side whose palette is gone. */
+  lastShown: (scheme: ColorScheme) => TerminalTokens | undefined;
+  /** What a side can be based on: the terminal list, custom ones excluded. */
+  palettes: readonly TerminalTheme[];
+  /** Everything the draft composes against. */
+  composeList: readonly TerminalTheme[];
+  nameError: string | null;
+  tab: ColorScheme;
+  onTabChange: (tab: ColorScheme) => void;
+  onPreview: (pending: PendingColour | null) => void;
+}
+
+/**
+ * A terminal theme's form: Name, and Light · Dark tabs whose sides are
+ * terminal palettes. No Terminal tab, no Follow the base (there is no UI
+ * base), no Same terminal for both sides (one side serves both modes).
+ */
+export function TerminalThemeForm(props: TerminalThemeFormProps) {
+  const { draft, dispatch, composeList, nameError, tab, onTabChange } = props;
+  const groupProps = useGroupProps();
+  return (
+    <div className="flex flex-col gap-4">
+      <NameField draft={draft} dispatch={dispatch} nameError={nameError} />
+      <Tabs value={tab} onValueChange={(v) => onTabChange(v as ColorScheme)}>
+        <TabsList className="w-full">
+          {SCHEMES.map((scheme) => (
+            <TabsTrigger
+              key={scheme}
+              value={scheme}
+              className="h-auto min-w-0 flex-1 flex-col gap-0"
+            >
+              {SCHEME_LABEL[scheme]}
+              <span className="max-w-full truncate text-[11px] font-normal text-muted-foreground">
+                {terminalSideSubtitle(draft, scheme, composeList)}
+              </span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {SCHEMES.map((scheme) => (
+          <TabsContent
+            key={scheme}
+            value={scheme}
+            className="flex flex-col gap-3 pt-2"
+          >
+            <TerminalSideTab
+              {...props}
+              scheme={scheme}
+              groups={groupProps(scheme)}
+            />
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+}
+
+function TerminalSideTab({
+  draft,
+  dispatch,
+  composed,
+  lastShown,
+  palettes,
+  composeList,
+  onPreview,
+  scheme,
+  groups,
+}: TerminalThemeFormProps & { scheme: ColorScheme; groups: GroupProps }) {
+  const mode = sideMode(draft, scheme);
+  const values = draft[scheme] && composed?.[scheme]?.terminal;
+  const other = scheme === "light" ? "dark" : "light";
+
+  const setMode = (next: "none" | "based" | "detached") => {
+    if (next === "none") {
+      dispatch({ type: "setTerminalMode", target: scheme, mode: "none" });
+      return;
+    }
+    const palette = palettes.find((t) => t[scheme]) ?? palettes[0];
+    const base = palette && { theme: palette.id };
+    let resolved = values || lastShown(scheme);
+    if (resolved === undefined && base !== undefined) {
+      // From None: the colours the side would show based on the fallback.
+      resolved = composeTerminalTheme(
+        { id: draft.id, kind: "terminal", label: "-", [scheme]: { base } },
+        composeList,
+      )?.[scheme]?.terminal;
+    }
+    dispatch({
+      type: "setTerminalMode",
+      target: scheme,
+      mode: next,
+      base,
+      resolved,
+    });
+  };
+
+  return (
+    <>
+      <ModeControl
+        label={`${SCHEME_LABEL[scheme]} side`}
+        value={mode}
+        onChange={setMode}
+        options={[
+          { value: "none", label: "None" },
+          { value: "based", label: "Based on a palette" },
+          { value: "detached", label: "Fully custom" },
+        ]}
+      />
+      {mode === "none" && (
+        <p className={MUTED_NOTE}>
+          This theme has no {scheme} palette.{" "}
+          {draft[other]
+            ? `The ${other} side serves both modes; choose a mode above to add a ${scheme} one.`
+            : "Choose a mode above to add one."}
+        </p>
+      )}
+      {mode === "based" && (
+        <TerminalBaseControls
+          draft={draft}
+          dispatch={dispatch}
+          palettes={palettes}
+          composeList={composeList}
+          target={scheme}
+          source={scheme}
+          kept={lastShown(scheme) ?? null}
+        />
+      )}
+      {values && (
+        <TokenList
+          kind="terminal"
+          draft={draft}
+          dispatch={dispatch}
+          target={scheme}
+          values={values}
+          onPreview={(name, value) =>
+            onPreview(value === null ? null : { kind: "terminal", name, value })
+          }
+          {...groups}
+        />
       )}
     </>
   );

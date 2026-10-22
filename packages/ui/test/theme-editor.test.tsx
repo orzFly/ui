@@ -1,6 +1,14 @@
-import { builtinThemes, type CustomTheme, type Theme } from "@orz/themes";
+import {
+  type AnyCustomTheme,
+  builtinThemes,
+  type CustomTerminalTheme,
+  type CustomTheme,
+  type TerminalTheme,
+  type Theme,
+} from "@orz/themes";
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -17,6 +25,7 @@ import {
   type ThemeStore,
 } from "../src/theme/index.ts";
 import {
+  dusk,
   ink,
   inkwell,
   paper,
@@ -42,14 +51,22 @@ const detached: CustomTheme = {
 };
 
 interface Setup {
-  customs?: CustomTheme[];
+  customs?: AnyCustomTheme[];
   pref?: ThemePref;
   themeId?: string;
+  kind?: "ui" | "terminal";
   options?: Parameters<typeof store>[0];
   dark?: boolean;
 }
 
-function setup({ customs, pref, themeId, options, dark = false }: Setup = {}) {
+function setup({
+  customs,
+  pref,
+  themeId,
+  kind,
+  options,
+  dark = false,
+}: Setup = {}) {
   stubDarkQuery(dark);
   const themes = store(options);
   if (customs) themes.setCustomThemes(customs);
@@ -65,6 +82,7 @@ function setup({ customs, pref, themeId, options, dark = false }: Setup = {}) {
         <ThemeEditor
           open={open}
           themeId={id}
+          kind={kind}
           onOpenChange={(next) => {
             onOpenChange(next);
             setOpen(next);
@@ -129,11 +147,6 @@ function previewed(themes: ThemeStore) {
 }
 
 describe("ThemeEditor: opening", () => {
-  it("renders nothing in a store without a UI slot", () => {
-    setup({ options: { themes: undefined, terminalThemes: [ink, paper] } });
-    expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
   it("opens the theme it is given", () => {
     setup({ customs: [sunrise, inkwell], themeId: "custom-inkwell" });
     expect(screen.getByRole("dialog", { name: "Custom themes" })).toBeTruthy();
@@ -701,5 +714,230 @@ describe("ThemeEditor: preview", () => {
     showTab("Dark");
     fireEvent.click(radio("Dark side", "None"));
     expect(themes.getPreview()).toBeNull();
+  });
+});
+
+const TERMINAL_ONLY = {
+  themes: undefined,
+  terminalThemes: [...builtinThemes, ink, paper],
+};
+const BOTH_SLOTS = { terminalThemes: [...builtinThemes, ink, paper] };
+
+/** The terminal theme the store previews, and its mode. */
+function previewedTerminal(themes: ThemeStore) {
+  const terminal = themes.getPreview()?.terminal;
+  if (
+    terminal === undefined ||
+    terminal === "follow" ||
+    typeof terminal.theme === "string"
+  ) {
+    return null;
+  }
+  return { theme: terminal.theme as TerminalTheme, mode: terminal.mode };
+}
+
+const saved = (themes: ThemeStore, id: string) =>
+  themes.getCustomThemes().find((c) => c.id === id);
+
+describe("ThemeEditor: terminal themes", () => {
+  it("opens the terminal layout in a terminal-only store", () => {
+    setup({
+      options: TERMINAL_ONLY,
+      pref: { terminal: { theme: "dracula", mode: "dark" } },
+    });
+    expect(screen.getByRole("dialog", { name: "Custom themes" })).toBeTruthy();
+    expect((nameField() as HTMLInputElement).value).toBe("Terminal theme");
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
+      "LightNone",
+      "DarkDracula",
+    ]);
+    expect(screen.queryByRole("tab", { name: /^Terminal/ })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Follow the base" })).toBeNull();
+    expect(
+      screen.queryByRole("switch", { name: "Same terminal for both sides" }),
+    ).toBeNull();
+    expect(
+      radio("Dark side", "Based on a palette").getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(
+      screen.getByText(/Colours you change override/).textContent,
+    ).toContain("Dracula");
+  });
+
+  it("previews through the terminal slot and leaves the UI slot alone", () => {
+    const { themes } = setup({
+      options: BOTH_SLOTS,
+      customs: [dusk],
+      themeId: dusk.id,
+      pref: { ui: { theme: "vs", mode: "light" } },
+    });
+    expect(themes.getPreview()?.ui).toBeUndefined();
+    expect(previewedTerminal(themes)).toMatchObject({
+      theme: { id: dusk.id },
+      mode: "dark",
+    });
+    expect(themes.getTerminal().tokens["ansi-red"]).toBe("#e0533d");
+    expect(themes.getResolved()?.theme.id).toBe("vs");
+  });
+
+  it("repaints an ANSI colour edit, and saves it with the terminal pick", () => {
+    const { themes } = setup({
+      options: BOTH_SLOTS,
+      customs: [dusk],
+      themeId: dusk.id,
+      pref: {
+        ui: { theme: "vs", mode: "light" },
+        terminal: { theme: "ink", mode: "dark" },
+      },
+    });
+    const field = pick("ansi-green", "#00ff00");
+    fireEvent.keyDown(field, { key: "Enter" });
+    fireEvent.keyDown(field, { key: "Escape" });
+    expect(previewedTerminal(themes)?.theme.dark?.terminal["ansi-green"]).toBe(
+      "#00ff00",
+    );
+    expect(tab("Dark").textContent).toContain("Ink + 2");
+    fireEvent.click(button("Save"));
+    expect(saved(themes, dusk.id)).toEqual({
+      ...dusk,
+      dark: {
+        base: { theme: "ink" },
+        tokens: { "ansi-red": "#e0533d", "ansi-green": "#00ff00" },
+      },
+    });
+    expect(themes.getPref()).toEqual({
+      ui: { theme: "vs", mode: "light" },
+      terminal: { theme: dusk.id, mode: "dark" },
+    });
+  });
+
+  it("saves a new terminal theme as the terminal pick, its mode the UI pick's when the terminal follows", () => {
+    const { themes } = setup({
+      options: BOTH_SLOTS,
+      kind: "terminal",
+      pref: { ui: { theme: "solarized", mode: "light" } },
+    });
+    expect((nameField() as HTMLInputElement).value).toBe("Terminal theme");
+    expect(tab("Light").textContent).toContain("Solarized");
+    fireEvent.click(button("Save"));
+    const [theme] = themes.getCustomThemes() as CustomTerminalTheme[];
+    expect(theme).toMatchObject({
+      kind: "terminal",
+      light: { base: { theme: "solarized" } },
+      dark: { base: { theme: "solarized" } },
+    });
+    expect(themes.getPref().terminal).toEqual({
+      theme: theme?.id,
+      mode: "light",
+    });
+    expect(themes.getPref().ui?.theme).toBe("solarized");
+  });
+
+  it("switches a side between None, Based and Fully custom, and needs one side", () => {
+    setup({ options: TERMINAL_ONLY, customs: [dusk], themeId: dusk.id });
+    fireEvent.click(radio("Dark side", "Fully custom"));
+    expect(tab("Dark").textContent).toContain("Fully custom");
+    fireEvent.click(radio("Dark side", "Based on a palette"));
+    expect(tab("Dark").textContent).toContain("Ink + 1");
+    fireEvent.click(radio("Dark side", "None"));
+    expect(screen.getByRole("alert").textContent).toBe(
+      "A theme needs a light or a dark side.",
+    );
+    expect(button("Save").hasAttribute("disabled")).toBe(true);
+    showTab("Light");
+    fireEvent.click(radio("Light side", "Based on a palette"));
+    expect(button("Save").hasAttribute("disabled")).toBe(false);
+  });
+
+  it("refuses a name another kind already has", () => {
+    setup({ options: BOTH_SLOTS, customs: [sunrise], kind: "terminal" });
+    rename("sunrise");
+    expect(screen.getByText(/already has this name/).textContent).toBe(
+      'The theme "Sunrise" already has this name.',
+    );
+    rename("Ink");
+    expect(screen.getByText(/already has this name/).textContent).toBe(
+      'The theme "Ink" already has this name.',
+    );
+  });
+
+  it("offers both kinds from + New with both slots, in two list groups", async () => {
+    setup({
+      options: BOTH_SLOTS,
+      customs: [sunrise, dusk],
+      themeId: sunrise.id,
+    });
+    const groups = (() => {
+      themeOptions();
+      return screen.getAllByRole("group").map((g) =>
+        within(g)
+          .getAllByRole("option")
+          .map((o) => o.textContent),
+      );
+    })();
+    expect(groups).toEqual([["Sunrise"], ["Dusk"]]);
+    fireEvent.keyDown(screen.getByRole("listbox"), { key: "Escape" });
+
+    fireEvent.pointerDown(button("New"), { button: 0, pointerType: "mouse" });
+    await waitFor(() => expect(screen.getByRole("menu")).toBeTruthy());
+    expect(
+      screen.getAllByRole("menuitem").map((item) => item.textContent),
+    ).toEqual(["Theme", "Terminal theme"]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Terminal theme" }));
+    expect((nameField() as HTMLInputElement).value).toBe("Terminal theme");
+    expect(screen.queryByRole("tab", { name: /^Terminal/ })).toBeNull();
+  });
+
+  it("opens a new theme of the kind it is given, or of the kind the store offers", () => {
+    setup({ options: BOTH_SLOTS, kind: "terminal" });
+    expect(screen.queryByRole("tab", { name: /^Terminal/ })).toBeNull();
+    cleanup();
+
+    setup({ kind: "terminal" });
+    expect((nameField() as HTMLInputElement).value).toBe("Custom theme");
+    expect(tab("Terminal")).toBeTruthy();
+  });
+
+  it("hides a terminal theme in a UI-only store and keeps it on save", () => {
+    const { themes } = setup({
+      customs: [sunrise, dusk],
+      themeId: dusk.id,
+    });
+    expect((nameField() as HTMLInputElement).value).toBe("Custom theme");
+    expect(themeOptions().map((o) => o.textContent)).toEqual([
+      "Sunrise",
+      "Custom theme",
+    ]);
+    fireEvent.click(screen.getByRole("option", { name: "Sunrise" }));
+    rename("Sunrise II");
+    fireEvent.click(button("Save"));
+    expect(themes.getCustomThemes()).toEqual([
+      { ...sunrise, label: "Sunrise II" },
+      dusk,
+    ]);
+  });
+
+  it("deletes a terminal theme and opens its neighbour", () => {
+    const other: CustomTerminalTheme = {
+      ...dusk,
+      id: "custom-other",
+      label: "Other",
+    };
+    const { themes } = setup({
+      options: TERMINAL_ONLY,
+      customs: [dusk, other],
+      themeId: dusk.id,
+    });
+    fireEvent.click(button("Delete"));
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Delete Dusk?" })).getByRole(
+        "button",
+        {
+          name: "Delete",
+        },
+      ),
+    );
+    expect(themes.getCustomThemes()).toEqual([other]);
+    expect((nameField() as HTMLInputElement).value).toBe("Other");
   });
 });

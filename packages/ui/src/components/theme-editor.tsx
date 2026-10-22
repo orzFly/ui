@@ -5,6 +5,7 @@ import {
   DEFAULT_VARIANT,
   isCustomTerminalTheme,
   type TerminalTheme,
+  type TerminalTokens,
   type Theme,
 } from "@orz/themes";
 import { XIcon } from "lucide-react";
@@ -18,7 +19,12 @@ import {
 } from "react";
 import { type ImportEntry, serializeThemeFile } from "../lib/theme-file.ts";
 import { useDirtySource } from "../lib/unsaved-guard.ts";
-import { useTerminalTheme, useTheme, useThemeSlots } from "../theme/index.ts";
+import {
+  type ThemeMode,
+  useTerminalTheme,
+  useTheme,
+  useThemeSlots,
+} from "../theme/index.ts";
 import { Button } from "./button.tsx";
 import { ConfirmDialog } from "./confirm-dialog.tsx";
 import {
@@ -45,6 +51,7 @@ import {
 import {
   type EditorTab,
   type PendingColour,
+  TerminalThemeForm,
   type TerminalView,
   ThemeForm,
 } from "./theme-editor/form.tsx";
@@ -52,15 +59,24 @@ import { ImportPanel } from "./theme-editor/import-panel.tsx";
 import { displayLabel, ThemeList } from "./theme-editor/theme-list.tsx";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog.tsx";
 
+export type CustomThemeKind = "ui" | "terminal";
+
 export interface ThemeEditorProps {
   open: boolean;
   onOpenChange(open: boolean): void;
   /**
-   * The custom theme to open, as `ThemeMenu`'s `onCustomize(id?)` passes it. Absent, or an id the
-   * store does not hold: a new theme. Read when `open` turns true; changing it while open selects
-   * that theme (with the unsaved-changes prompt).
+   * The custom theme to open, as `ThemeMenu`'s `onCustomize(id?)` passes it. Absent, an id the
+   * store does not hold, or a theme of a kind this store cannot show: a new theme. Read when
+   * `open` turns true; changing it while open selects that theme (with the unsaved-changes
+   * prompt).
    */
   themeId?: string;
+  /**
+   * The kind of a new theme, as `ThemeMenu`'s `onCustomize(id, slot)` passes its slot. Unset, or a
+   * slot the store lacks: "ui" when the store has a UI slot, else "terminal". Read when `open`
+   * turns true, as `themeId` is.
+   */
+  kind?: CustomThemeKind;
 }
 
 /** What the panel's body shows: the form, or the import or export panel in its place. */
@@ -73,14 +89,16 @@ const FORM: EditorPanel = { kind: "form" };
 const SCHEMES: readonly ColorScheme[] = ["light", "dark"];
 const other = (scheme: ColorScheme): ColorScheme =>
   scheme === "light" ? "dark" : "light";
+const kindOf = (custom: AnyCustomTheme): CustomThemeKind =>
+  isCustomTerminalTheme(custom) ? "terminal" : "ui";
 
 /**
  * The custom theme editor: a panel docked to the right that edits the
- * store's custom themes while the page previews the draft. Renders nothing
- * in a store with no UI slot.
+ * store's custom themes while the page previews the draft. A store with a
+ * UI slot edits UI themes, one with a terminal slot terminal themes, and one
+ * with both, both kinds.
  */
 export function ThemeEditor(props: ThemeEditorProps) {
-  const slots = useThemeSlots();
   // Esc, the outside click and ✕ all arrive here; the session decides
   // whether to ask first.
   const requestClose = useRef(() => props.onOpenChange(false));
@@ -93,7 +111,6 @@ export function ThemeEditor(props: ThemeEditorProps) {
       count: opening.count + (props.open ? 1 : 0),
     });
   }
-  if (!slots.ui) return null;
   return (
     <Sheet
       open={props.open}
@@ -135,19 +152,24 @@ interface SessionProps extends ThemeEditorProps {
 function EditorSession({
   open,
   themeId,
+  kind,
   onOpenChange,
   requestClose,
 }: SessionProps) {
   const ui = useTheme();
   const terminal = useTerminalTheme();
   const slots = useThemeSlots();
-  const { customThemes: everyCustom, themes, pref, setPref, preview } = ui;
+  const { customThemes: everyCustom, pref, setPref, preview } = ui;
+  // Without a UI slot useTheme() answers a fallback list.
+  const themes = slots.ui ? ui.themes : NO_THEMES;
+  const offered = (k: CustomThemeKind) => slots[k];
+  const newKind: CustomThemeKind =
+    kind !== undefined && offered(kind) ? kind : slots.ui ? "ui" : "terminal";
   // Writes go through the whole stored list, so a kind this store cannot
   // show is written back untouched.
   const customs = useMemo(
-    () =>
-      everyCustom.filter((c): c is CustomTheme => !isCustomTerminalTheme(c)),
-    [everyCustom],
+    () => everyCustom.filter((c) => slots[kindOf(c)]),
+    [everyCustom, slots],
   );
 
   const customIds = useMemo(
@@ -171,19 +193,57 @@ function EditorSession({
     () => [...baseThemes, ...palettes],
     [baseThemes, palettes],
   );
+  // Names are unique across both kinds and both slots' base themes, so the
+  // two pickers never show two rows with one name.
   const labels = useMemo(
     () => [
       ...everyCustom.map((c) => c.label),
-      ...baseThemes.map((t) => t.label),
+      ...composeList.map((t) => t.label),
     ],
-    [everyCustom, baseThemes],
+    [everyCustom, composeList],
   );
 
-  const start = (id: string | undefined) => {
+  const start = (
+    id: string | undefined,
+    kindForNew: CustomThemeKind = newKind,
+  ): { draft: AnyCustomTheme; saved: AnyCustomTheme | null } => {
     const custom =
       id === undefined ? undefined : customs.find((c) => c.id === id);
     if (custom !== undefined) return { draft: custom, saved: custom };
+    // The committed picks, not what the page shows: that may be this
+    // session's preview.
     const committed = themes.find((t) => t.id === pref.ui?.theme) ?? ui.theme;
+    if (kindForNew === "terminal") {
+      const pick = pref.terminal;
+      const picked = pick && terminal.themes.find((t) => t.id === pick.theme);
+      const shown =
+        picked !== undefined
+          ? {
+              theme: picked,
+              variant: pick?.variant ?? DEFAULT_VARIANT,
+              following: false,
+            }
+          : slots.ui
+            ? {
+                theme: committed,
+                variant: pref.ui?.variant ?? DEFAULT_VARIANT,
+                following: true,
+              }
+            : {
+                theme: terminal.theme,
+                variant: terminal.variant,
+                following: false,
+              };
+      const draft = newTheme({
+        kind: "terminal",
+        pref,
+        terminal: shown,
+        baseThemes,
+        customs: everyCustom,
+        labels,
+      });
+      return { draft, saved: null };
+    }
     const draft = newTheme({
       pref,
       resolved: {
@@ -191,7 +251,7 @@ function EditorSession({
         variant: pref.ui?.variant ?? DEFAULT_VARIANT,
       },
       baseThemes,
-      customs,
+      customs: everyCustom,
       labels,
     });
     return { draft, saved: null };
@@ -202,18 +262,33 @@ function EditorSession({
     initial,
     composeList,
   );
+  const terminalDraft = isCustomTerminalTheme(draft) ? draft : null;
+  const uiDraft = isCustomTerminalTheme(draft) ? null : draft;
+  const composedUi = terminalDraft ? null : (composed as Theme | null);
+  const composedTerminal = terminalDraft
+    ? (composed as TerminalTheme | null)
+    : null;
 
-  const firstScheme = (custom: CustomTheme): ColorScheme =>
-    custom[ui.colorScheme]
-      ? ui.colorScheme
-      : (SCHEMES.find((s) => custom[s] !== undefined) ?? ui.colorScheme);
+  const shownScheme = (custom: AnyCustomTheme) =>
+    isCustomTerminalTheme(custom) || !slots.ui
+      ? terminal.colorScheme
+      : ui.colorScheme;
+  const firstScheme = (custom: AnyCustomTheme): ColorScheme => {
+    const scheme = shownScheme(custom);
+    return custom[scheme]
+      ? scheme
+      : (SCHEMES.find((s) => custom[s] !== undefined) ?? scheme);
+  };
   const [tab, setTab] = useState<EditorTab>(() => firstScheme(initial.draft));
-  // The UI side the page shows: the last Light or Dark tab.
+  // The side the page shows: the last Light or Dark tab.
   const [uiScheme, setUiScheme] = useState<ColorScheme>(() =>
     firstScheme(initial.draft),
   );
-  const viewFor = (custom: CustomTheme, side: ColorScheme): TerminalView => ({
-    split: !sameTerminal(custom),
+  const viewFor = (
+    custom: AnyCustomTheme,
+    side: ColorScheme,
+  ): TerminalView => ({
+    split: isCustomTerminalTheme(custom) || !sameTerminal(custom),
     side: custom[side] ? side : other(side),
   });
   const [terminalView, setTerminalView] = useState(() =>
@@ -227,17 +302,25 @@ function EditorSession({
   const [importError, setImportError] = useState<string | null>(null);
 
   const both = draft.light !== undefined && draft.dark !== undefined;
-  const shared = both && !terminalView.split && sameTerminal(draft);
+  const shared =
+    uiDraft !== null && both && !terminalView.split && sameTerminal(uiDraft);
 
   // The colours each side last showed, so a side whose base disappears can
   // still be kept as fully custom.
   const lastShown = useRef<Partial<Record<ColorScheme, SidePalette>>>({});
+  const lastShownTerminal = useRef<
+    Partial<Record<ColorScheme, TerminalTokens>>
+  >({});
   useEffect(() => {
     for (const scheme of SCHEMES) {
-      const palette = composed?.[scheme];
+      const palette = composedUi?.[scheme];
       if (palette) lastShown.current[scheme] = palette;
+      const terminalPalette = composedTerminal?.[scheme];
+      if (terminalPalette) {
+        lastShownTerminal.current[scheme] = terminalPalette.terminal;
+      }
     }
-  }, [composed]);
+  }, [composedUi, composedTerminal]);
 
   // A drag repaints at most once a frame.
   const [pending, setPending] = useState<PendingColour | null>(null);
@@ -262,16 +345,16 @@ function EditorSession({
     theme: Theme;
     scheme: ColorScheme;
   } | null => {
-    if (composed === null) return null;
-    const scheme = composed[uiScheme] ? uiScheme : other(uiScheme);
-    const palette = composed[scheme];
+    if (composedUi === null) return null;
+    const scheme = composedUi[uiScheme] ? uiScheme : other(uiScheme);
+    const palette = composedUi[scheme];
     if (palette === undefined) return null;
     let { tokens, terminal: terminalTokens } = palette;
     // On the Terminal tab the page keeps its UI side and shows the terminal
     // being edited.
     const edited =
       tab === "terminal" && both && !shared ? terminalView.side : scheme;
-    const editedPalette = composed[edited];
+    const editedPalette = composedUi[edited];
     if (editedPalette) terminalTokens = editedPalette.terminal;
     if (pending?.kind === "ui" && pending.scheme === scheme) {
       tokens = { ...tokens, [pending.name]: pending.value };
@@ -280,18 +363,48 @@ function EditorSession({
     }
     return {
       theme: {
-        ...composed,
+        ...composedUi,
         [scheme]: { ...palette, tokens, terminal: terminalTokens },
       } as Theme,
       scheme,
     };
-  }, [composed, uiScheme, tab, both, shared, terminalView.side, pending]);
+  }, [composedUi, uiScheme, tab, both, shared, terminalView.side, pending]);
+
+  // A terminal theme previews through the terminal slot alone, on the side
+  // of the active tab (or the one it has).
+  const shownTerminal = useMemo((): {
+    theme: TerminalTheme;
+    scheme: ColorScheme;
+  } | null => {
+    if (composedTerminal === null) return null;
+    const scheme = composedTerminal[uiScheme] ? uiScheme : other(uiScheme);
+    const palette = composedTerminal[scheme];
+    if (palette === undefined) return null;
+    if (pending?.kind !== "terminal") {
+      return { theme: composedTerminal, scheme };
+    }
+    return {
+      theme: {
+        ...composedTerminal,
+        [scheme]: {
+          terminal: { ...palette.terminal, [pending.name]: pending.value },
+        },
+      } as TerminalTheme,
+      scheme,
+    };
+  }, [composedTerminal, uiScheme, pending]);
 
   // Set once the editor hands back control, so a re-render on the way out
   // (Save re-composes the lists) does not preview again.
   const closing = useRef(false);
   useEffect(() => {
     if (closing.current) return;
+    if (open && shownTerminal !== null) {
+      preview({
+        terminal: { theme: shownTerminal.theme, mode: shownTerminal.scheme },
+      });
+      return;
+    }
     if (!open || shownTheme === null) {
       preview(null);
       return;
@@ -303,7 +416,7 @@ function EditorSession({
         ? { terminal: "follow" as const }
         : {}),
     });
-  }, [open, shownTheme, tab, slots.terminal, preview]);
+  }, [open, shownTheme, shownTerminal, tab, slots.terminal, preview]);
   useEffect(
     () => () => {
       cancelAnimationFrame(frame.current);
@@ -328,16 +441,25 @@ function EditorSession({
     requestClose.current = close;
   });
 
-  const load = (next: { draft: CustomTheme; saved: CustomTheme | null }) => {
+  const load = (next: {
+    draft: AnyCustomTheme;
+    saved: AnyCustomTheme | null;
+  }) => {
     dispatch({ type: "load", ...next });
     lastShown.current = {};
+    lastShownTerminal.current = {};
     queuePreview(null);
     setPanel(FORM);
     setSaveError(null);
+    // A terminal theme has no Terminal tab.
+    if (isCustomTerminalTheme(next.draft) && tab === "terminal") {
+      setTab(uiScheme);
+    }
     setTerminalView(viewFor(next.draft, uiScheme));
     setFormKey((k) => k + 1);
   };
-  const select = (id: string | undefined) => guarded(() => load(start(id)));
+  const select = (id: string | undefined, kindForNew?: CustomThemeKind) =>
+    guarded(() => load(start(id, kindForNew)));
 
   const seenThemeId = useRef(themeId);
   useEffect(() => {
@@ -355,7 +477,7 @@ function EditorSession({
   const clash =
     label === ""
       ? undefined
-      : [...customs.filter((c) => c.id !== draft.id), ...baseThemes].find(
+      : [...everyCustom.filter((c) => c.id !== draft.id), ...composeList].find(
           (t) => t.label.trim().toLowerCase() === label.toLowerCase(),
         );
   const nameError =
@@ -371,7 +493,7 @@ function EditorSession({
 
   const save = () => {
     if (nameError !== null || sideError !== null) return;
-    let theme: CustomTheme = { ...draft, label };
+    let theme: AnyCustomTheme = { ...draft, label };
     // A new theme's id was free when it was made; another tab may have
     // taken it since.
     if (state.saved === null && stored) {
@@ -383,9 +505,10 @@ function EditorSession({
         ]),
       };
     }
-    const next = everyCustom.some((c) => c.id === theme.id)
-      ? everyCustom.map((c) => (c.id === theme.id ? theme : c))
-      : [...everyCustom, theme];
+    const saved = theme;
+    const next = everyCustom.some((c) => c.id === saved.id)
+      ? everyCustom.map((c) => (c.id === saved.id ? saved : c))
+      : [...everyCustom, saved];
     try {
       ui.setCustomThemes(next);
     } catch (error) {
@@ -394,29 +517,47 @@ function EditorSession({
       );
       return;
     }
-    dispatch({ type: "markSaved", saved: theme });
+    dispatch({ type: "markSaved", saved });
     // The saved theme stays on screen: reverting to the old pick right
     // after the page showed the new one would look like the save failed.
-    setPref({
-      ...pref,
-      ui: { theme: theme.id, mode: pref.ui?.mode ?? uiScheme },
-    });
+    if (isCustomTerminalTheme(saved)) {
+      const mode: ThemeMode = pref.terminal?.mode ?? pref.ui?.mode ?? "system";
+      setPref({ ...pref, terminal: { theme: saved.id, mode } });
+    } else {
+      setPref({
+        ...pref,
+        ui: { theme: saved.id, mode: pref.ui?.mode ?? uiScheme },
+      });
+    }
     finish();
   };
 
+  // The order the list shows: UI themes, then terminal themes.
+  const listed = useMemo(
+    () => [
+      ...customs.filter((c) => !isCustomTerminalTheme(c)),
+      ...customs.filter(isCustomTerminalTheme),
+    ],
+    [customs],
+  );
+
   // After Delete the editor stays open on a neighbour of the deleted theme,
-  // or a new one; loaded once the store's list and pick reflect the delete.
-  const [afterDelete, setAfterDelete] = useState<{ id?: string } | null>(null);
+  // or a new one of its kind; loaded once the store's list and pick reflect
+  // the delete.
+  const [afterDelete, setAfterDelete] = useState<{
+    id?: string;
+    kind: CustomThemeKind;
+  } | null>(null);
   useLayoutEffect(() => {
     if (afterDelete === null) return;
     setAfterDelete(null);
-    load(start(afterDelete.id));
+    load(start(afterDelete.id, afterDelete.kind));
   });
 
   const remove = () => {
     setConfirmingDelete(false);
-    const at = customs.findIndex((c) => c.id === draft.id);
-    const next = customs[at + 1] ?? customs[at - 1];
+    const at = listed.findIndex((c) => c.id === draft.id);
+    const next = listed[at + 1] ?? listed[at - 1];
     try {
       ui.setCustomThemes(everyCustom.filter((c) => c.id !== draft.id));
     } catch (error) {
@@ -425,13 +566,17 @@ function EditorSession({
       );
       return;
     }
-    setAfterDelete({ id: next?.id });
+    setAfterDelete({ id: next?.id, kind: kindOf(draft) });
   };
 
   const copy = () =>
     guarded(() =>
       load({
-        draft: duplicate(state.saved ?? draft, { baseThemes, customs, labels }),
+        draft: duplicate(state.saved ?? draft, {
+          baseThemes,
+          customs: everyCustom,
+          labels,
+        }),
         saved: null,
       }),
     );
@@ -455,9 +600,7 @@ function EditorSession({
         );
         return;
       }
-      const first = added.find(
-        (c): c is CustomTheme => !isCustomTerminalTheme(c),
-      );
+      const first = added.find((c) => offered(kindOf(c)));
       if (first) load({ draft: first, saved: first });
     });
 
@@ -466,7 +609,7 @@ function EditorSession({
     if (panel.scope === "all") {
       return {
         title: "Export all themes",
-        text: serializeThemeFile(customs, composeList),
+        text: serializeThemeFile(everyCustom, composeList),
         fileName: ALL_THEMES_FILE_NAME,
       };
     }
@@ -476,7 +619,7 @@ function EditorSession({
       text: serializeThemeFile([{ ...draft, label }], composeList),
       fileName: themeFileName(label),
     };
-  }, [panel, customs, composeList, draft]);
+  }, [panel, everyCustom, composeList, draft]);
 
   // The button that switched panels is gone with the old panel; without
   // this, focus would fall back to the sheet itself.
@@ -514,15 +657,17 @@ function EditorSession({
         </SheetDescription>
         <ThemeList
           customs={customs}
+          kinds={(["ui", "terminal"] as const).filter(offered)}
           draft={draft}
           dirty={dirty}
           themes={composeList}
-          onSelect={select}
-          onNew={() => select(undefined)}
+          onSelect={(id) => select(id)}
+          onNew={(k) => select(undefined, k)}
           onImport={() => {
             setImportError(null);
             setPanel({ kind: "import" });
           }}
+          exportAllDisabled={everyCustom.length === 0}
           onExportAll={() => setPanel({ kind: "export", scope: "all" })}
         />
       </SheetHeader>
@@ -537,29 +682,46 @@ function EditorSession({
                 This theme was deleted elsewhere. Save adds it again.
               </p>
             )}
-            <ThemeForm
-              key={formKey}
-              draft={draft}
-              dispatch={dispatch}
-              composed={composed}
-              lastShown={(scheme) => lastShown.current[scheme]}
-              baseThemes={baseThemes}
-              palettes={palettes}
-              composeList={composeList}
-              committedTheme={pref.ui?.theme}
-              nameError={nameError}
-              tab={tab}
-              onTabChange={changeTab}
-              terminalView={terminalView}
-              onTerminalViewChange={setTerminalView}
-              shared={shared}
-              onPreview={queuePreview}
-            />
+            {terminalDraft ? (
+              <TerminalThemeForm
+                key={formKey}
+                draft={terminalDraft}
+                dispatch={dispatch}
+                composed={composedTerminal}
+                lastShown={(scheme) => lastShownTerminal.current[scheme]}
+                palettes={palettes}
+                composeList={composeList}
+                nameError={nameError}
+                tab={tab === "terminal" ? uiScheme : tab}
+                onTabChange={changeTab}
+                onPreview={queuePreview}
+              />
+            ) : (
+              <ThemeForm
+                key={formKey}
+                draft={uiDraft as CustomTheme}
+                dispatch={dispatch}
+                composed={composedUi}
+                lastShown={(scheme) => lastShown.current[scheme]}
+                baseThemes={baseThemes}
+                palettes={palettes}
+                composeList={composeList}
+                committedTheme={pref.ui?.theme}
+                nameError={nameError}
+                tab={tab}
+                onTabChange={changeTab}
+                terminalView={terminalView}
+                onTerminalViewChange={setTerminalView}
+                shared={shared}
+                onPreview={queuePreview}
+              />
+            )}
           </>
         ) : panel.kind === "import" ? (
           <ImportPanel
             themes={composeList}
             labels={labels}
+            slots={slots}
             onImport={importThemes}
             error={importError}
             onBack={() => setPanel(FORM)}
@@ -640,3 +802,5 @@ function EditorSession({
     </>
   );
 }
+
+const NO_THEMES: readonly Theme[] = [];

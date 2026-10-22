@@ -165,7 +165,7 @@ export function sideMode(draft: AnyCustomTheme, scheme: ColorScheme): SideMode {
 }
 
 /** The terminal palette a side carries: on a terminal theme, the side itself. */
-function terminalOf(
+export function terminalOf(
   draft: AnyCustomTheme,
   scheme: ColorScheme,
 ): CustomTerminal | undefined {

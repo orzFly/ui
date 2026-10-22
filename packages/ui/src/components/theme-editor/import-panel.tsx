@@ -14,8 +14,10 @@ import { Textarea } from "../textarea.tsx";
 export interface ImportPanelProps {
   /** The lists the file's references resolve against (UI and terminal-only together). */
   themes: readonly TerminalTheme[];
-  /** Labels imported themes must not take: custom and base themes. */
+  /** Labels imported themes must not take: custom themes of both kinds, and both slots' base themes. */
   labels: readonly string[];
+  /** The store's slots: a terminal theme needs a terminal, and a UI theme without a UI slot comes in as a terminal theme. */
+  slots: { ui: boolean; terminal: boolean };
   /** Writes the checked themes; ids are the caller's. */
   onImport: (themes: NonNullable<ImportEntry["theme"]>[]) => void;
   /** Why the last import could not be written, if it failed. */
@@ -50,6 +52,7 @@ const STATUS: Record<ImportStatus, { label: string; className: string }> = {
 export function ImportPanel({
   themes,
   labels,
+  slots,
   onImport,
   error,
   onBack,
@@ -70,11 +73,11 @@ export function ImportPanel({
       return;
     }
     const timer = setTimeout(() => {
-      setResult(parseThemeFile(text, themes, labels));
+      setResult(parseThemeFile(text, themes, labels, { slots }));
       setExcluded(new Set());
     }, PARSE_DELAY);
     return () => clearTimeout(timer);
-  }, [text, themes, labels]);
+  }, [text, themes, labels, slots]);
 
   const edit = (next: string) => {
     reading.current++;
