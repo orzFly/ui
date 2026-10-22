@@ -1,5 +1,9 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+  builtinThemes,
+  resolvePalette,
+  schemesOf,
+  variantsOf,
+} from "@orz/themes";
 import { describe, expect, it } from "vitest";
 import {
   type ColorFormat,
@@ -10,9 +14,6 @@ import {
   type Oklch,
   parseColor,
 } from "../src/lib/color.ts";
-
-const read = (rel: string) =>
-  readFileSync(join(import.meta.dirname, rel), "utf8");
 
 function parsed(text: string): Oklch {
   const result = parseColor(text);
@@ -28,11 +29,18 @@ function expectClose(actual: Oklch, expected: Oklch) {
 }
 
 describe("parseColor and formatColor on the shipped tokens", () => {
-  const tokens = [read("../styles.css"), read("../../ui-hex/styles.css")]
-    .flatMap((css) => [...css.matchAll(/--[\w-]+:\s*([^;]+);/g)])
-    .map((m) => m[1].trim())
-    .filter((value) => value.startsWith("#") || value.startsWith("oklch("));
-  const unique = [...new Set(tokens)];
+  // Every palette under every variant, resolved, so variant overrides and
+  // the computed AMOLED surfaces are covered alongside the base palettes.
+  const values = builtinThemes.flatMap((theme) =>
+    schemesOf(theme).flatMap((scheme) =>
+      variantsOf(theme).flatMap(({ id }) => {
+        // biome-ignore lint/style/noNonNullAssertion: schemesOf lists only present sides
+        const { tokens, terminal } = resolvePalette(theme, scheme, id)!;
+        return [...Object.values(tokens), ...Object.values(terminal)];
+      }),
+    ),
+  );
+  const unique = [...new Set(values)];
 
   it("finds the tokens", () => {
     expect(unique.length).toBeGreaterThan(50);
