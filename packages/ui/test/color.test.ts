@@ -11,6 +11,7 @@ import {
   formatColor,
   gamutOf,
   mapToSrgb,
+  maxChroma,
   type Oklch,
   parseColor,
 } from "../src/lib/color.ts";
@@ -203,6 +204,39 @@ describe("gamutOf and mapToSrgb", () => {
       expect(mapped.alpha).toBe(color.alpha);
     },
   );
+});
+
+describe("maxChroma", () => {
+  const ls = [0.05, 0.2, 0.35, 0.5, 0.65, 0.8, 0.95];
+  const hs = Array.from({ length: 12 }, (_, i) => i * 30);
+  const grid = ls.flatMap((l) => hs.map((h) => [l, h] as const));
+  const at = (l: number, c: number, h: number) =>
+    gamutOf({ l, c, h, alpha: 1 });
+
+  it.each(grid)("lands on the sRGB edge at L %s, h %s", (l, h) => {
+    const c = maxChroma(l, h, "srgb");
+    expect(at(l, c, h)).toBe("srgb");
+    expect(at(l, c + 1e-4, h)).not.toBe("srgb");
+  });
+
+  it.each(grid)("lands on the P3 edge at L %s, h %s", (l, h) => {
+    const c = maxChroma(l, h, "p3");
+    expect(at(l, c, h)).not.toBe("out");
+    expect(at(l, c + 1e-4, h)).toBe("out");
+    expect(c).toBeGreaterThanOrEqual(maxChroma(l, h, "srgb"));
+  });
+
+  it("is 0 at both ends of lightness", () => {
+    for (const gamut of ["srgb", "p3"] as const) {
+      expect(maxChroma(0, 30, gamut)).toBe(0);
+      expect(maxChroma(1, 30, gamut)).toBe(0);
+    }
+  });
+
+  it("reaches the sRGB red primary", () => {
+    const red = parsed("#ff0000");
+    expect(maxChroma(red.l, red.h, "srgb")).toBeCloseTo(red.c, 3);
+  });
 });
 
 describe("contrastRatio", () => {
