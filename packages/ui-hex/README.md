@@ -13,8 +13,8 @@ pnpm add @orz/ui-hex @orz/ui react react-dom radix-ui lucide-react sonner
 
 `@orz/ui`, `radix-ui` and React are peer dependencies; `lucide-react` and `sonner` are there because
 `@orz/ui` declares them as its own peers. The encoding picker in the view's and the editor's header
-is `@orz/ui`'s `Select`, and the inspector's endianness switch its `Switch`; both have to share the
-app's radix copy.
+is `@orz/ui`'s `FilterMenu`, and the inspector's endianness switch its `Switch`; both have to share
+the app's radix copy.
 
 ## CSS
 
@@ -269,10 +269,14 @@ on its `TextDecoder`: `HEX_ENCODINGS` lists the supported ones, each with its `i
 `group`, in picker order. Node, for one, lacks ISO-8859-16. An id the runtime lacks renders as ASCII
 and logs one warning.
 
-The picker sits in the text pane's header. Hide it with `showEncodingPicker={false}`, and the header
-shows the encoding's name instead; with no header (`showColumnLabels={false}`) or no text pane, the
-prop alone sets the encoding. A controlled `encoding` without `onEncodingChange` makes the picker
-change nothing. To pass a detected charset through:
+The picker sits in the text pane's header and filters as you type: a query matches an encoding's
+label, id or a common alias (`cp1252`, `sjis`, `latin2`, …), ignoring case and separators, so `utf8`
+finds UTF-8. A row found by an alias shows that alias beside its label.
+
+Hide it with `showEncodingPicker={false}`, and the header shows the encoding's name instead; with no
+header (`showColumnLabels={false}`) or no text pane, the prop alone sets the encoding. A controlled
+`encoding` without `onEncodingChange` makes the picker change nothing. To pass a detected charset
+through:
 
 ```tsx
 import { HEX_ENCODINGS, type HexEncoding, HexView } from "@orz/ui-hex";
