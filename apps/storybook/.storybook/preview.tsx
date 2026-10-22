@@ -11,7 +11,15 @@ import {
 } from "@orz/ui/theme";
 import { DocsContainer } from "@storybook/addon-docs/blocks";
 import type { Decorator, Preview } from "@storybook/react-vite";
-import { type ComponentProps, useEffect, useSyncExternalStore } from "react";
+import {
+  type ComponentProps,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { createRoot } from "react-dom/client";
 import {
   GLOBALS_UPDATED,
@@ -39,8 +47,9 @@ import "./preview.css";
 
 // The globals are the committed state: a stored pref would be a second one,
 // and another tab's pick would repaint this canvas but not its toolbar or URL.
+const STORAGE_KEY = "orz-storybook-theme";
 const themes = createThemeStore({
-  storageKey: "orz-storybook-theme",
+  storageKey: STORAGE_KEY,
   persistPref: false,
   themes: builtinThemes,
   terminalThemes: builtinThemes,
@@ -226,13 +235,81 @@ declare global {
   var PREVIEW_URL: string | undefined;
 }
 
+/**
+ * A story that pins a theme, as one block of a docs page: a store of its own
+ * paints only this block, so the page and its other stories keep the
+ * toolbar's theme.
+ */
+function PinnedTheme({
+  globals,
+  children,
+}: {
+  globals: ThemeGlobals;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [store, setStore] = useState<ThemeStore | null>(null);
+  // Layout effects, so the block's first paint is already in its theme.
+  useLayoutEffect(() => {
+    const own = createThemeStore({
+      storageKey: `${STORAGE_KEY}-pinned`,
+      persistPref: false,
+      persistCustomThemes: false,
+      root: ref.current ?? undefined,
+      themes: builtinThemes,
+      terminalThemes: builtinThemes,
+    });
+    // The page store's custom themes, kept in step: a pin may name one, and
+    // the toolbar's editor changes them in this tab, which fires no `storage`.
+    let synced: ReturnType<ThemeStore["getCustomThemes"]> | null = null;
+    const syncCustom = () => {
+      const customs = themes.getCustomThemes();
+      if (customs === synced) return;
+      synced = customs;
+      own.setCustomThemes(customs);
+    };
+    syncCustom();
+    const unsubscribe = themes.subscribe(syncCustom);
+    setStore(own);
+    return () => {
+      unsubscribe();
+      own.dispose();
+    };
+  }, []);
+  const { theme, terminal } = globals;
+  useLayoutEffect(() => {
+    store?.setPref(prefOf({ theme, terminal }, DEFAULT_THEME));
+  }, [store, theme, terminal]);
+  return (
+    <div ref={ref} className="bg-background p-4 text-foreground">
+      {store && <ThemeProvider store={store}>{children}</ThemeProvider>}
+    </div>
+  );
+}
+
 const withTheme: Decorator = (Story, context) => {
   const { theme, terminal } = context.globals;
-  // The channel listeners above apply a change first; this is the fallback
-  // for a story's own globals.
+  // On a docs page every inline story mounts at once; each applying its pin
+  // to the page's store would repaint the page once per pin. The page's own
+  // globals reach that store through the channel listeners above.
+  const docs = context.viewMode === "docs";
+  const pinned =
+    docs &&
+    (context.storyGlobals.theme !== undefined ||
+      context.storyGlobals.terminal !== undefined);
+  // In story view the channel listeners apply a change first; this is the
+  // fallback for a story's own globals.
   useEffect(() => {
-    applyGlobals({ theme, terminal });
-  }, [theme, terminal]);
+    if (!docs) applyGlobals({ theme, terminal });
+  }, [docs, theme, terminal]);
+  if (pinned) {
+    return (
+      <PinnedTheme globals={{ theme, terminal }}>
+        <Story />
+        <Toaster />
+      </PinnedTheme>
+    );
+  }
   return (
     <ThemeProvider store={facade}>
       <Story />
