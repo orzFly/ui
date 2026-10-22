@@ -149,6 +149,21 @@ describe("custom themes in the store", () => {
     expect(html.dataset.theme).toBe("custom-sunrise");
   });
 
+  it("leaves the paint cache alone until a stored custom pick's theme arrives", () => {
+    stubDarkQuery(false);
+    localStorage.setItem(
+      "app-theme",
+      JSON.stringify({ ui: { theme: "custom-sunrise", mode: "light" } }),
+    );
+    localStorage.setItem("app-theme-paint", "cached");
+    const themes = store({ persistCustomThemes: false });
+    expect(localStorage.getItem("app-theme-paint")).toBe("cached");
+    themes.setCustomThemes([sunrise]);
+    expect(
+      JSON.parse(localStorage.getItem("app-theme-paint") ?? "").ui.theme,
+    ).toBe("custom-sunrise");
+  });
+
   it("paints a stored custom pick on creation", () => {
     stubDarkQuery(false);
     localStorage.setItem("app-theme-custom", JSON.stringify([sunrise]));

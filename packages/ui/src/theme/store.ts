@@ -408,7 +408,25 @@ export function createThemeStore({
     else delete target.dataset.terminalTheme;
   }
 
+  /** True while a pick names a theme that has not arrived (a custom one the app loads later). */
+  function awaiting(): boolean {
+    const missing = (
+      pick: ThemePick | undefined,
+      list: readonly TerminalTheme[] | undefined,
+    ) =>
+      list !== undefined &&
+      typeof pick?.theme === "string" &&
+      !list.some((t) => t.id === pick.theme);
+    return (
+      missing(requested.ui, themes) ||
+      missing(requested.terminal, terminalThemes)
+    );
+  }
+
   function writePaintCache() {
+    // The cache still paints the pick from before the reload; the fallback
+    // shown meanwhile would overwrite it, and flash on the next load.
+    if (awaiting()) return;
     try {
       localStorage.setItem(paintKey, JSON.stringify(paintCache()));
     } catch {
