@@ -1191,8 +1191,6 @@ function isGroupEnd(column: number, columns: number, groupSize: number) {
   );
 }
 
-// Memoised: the grid re-renders on every scroll frame, and a closed radix
-// Select still renders its items to collect their text.
 interface HexRowProps {
   rowStart: number;
   length: number;

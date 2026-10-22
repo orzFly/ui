@@ -31,6 +31,7 @@
   },
   "peerDependencies": {
     "@orz/ui": "workspace:^",
+    "lucide-react": "^1",
     "radix-ui": "^1",
     "react": "^19",
     "react-dom": "^19"

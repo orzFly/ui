@@ -87,6 +87,7 @@ function aliasHit(info: HexEncodingInfo, query: string): string | undefined {
   );
 }
 
+// Memoised: the grid re-renders on every scroll frame.
 export const EncodingPicker = memo(function EncodingPicker({
   value,
   onChange,

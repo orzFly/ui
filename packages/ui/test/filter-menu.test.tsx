@@ -104,6 +104,9 @@ describe("matchText", () => {
     expect(matchText("Café!", "e")).toEqual({ start: 3, end: 5 });
     expect(matchText("Apple", "x")).toBeNull();
     expect(matchText("Apple", "")).toEqual({ start: 0, end: 0 });
+    // Σ at a word's end lowers to ς, a lone one to σ.
+    expect(matchText("ΟΔΟΣ", "ΟΔΟΣ")).toEqual({ start: 0, end: 4 });
+    expect(matchText("ΟΔΟΣ", "ος")).toEqual({ start: 2, end: 4 });
   });
 
   it("marks the match in MatchedText", () => {
@@ -315,5 +318,100 @@ describe("FilterMenu", () => {
       "apple",
       null,
     ]);
+  });
+
+  it("opens from the trigger with the arrow keys", () => {
+    render(<Harness />);
+    fireEvent.keyDown(screen.getByRole("button", { name: "Pick" }), {
+      key: "ArrowDown",
+    });
+    expect(screen.getByRole("listbox")).toBeTruthy();
+  });
+
+  it("keeps focus in the box when the surface around it is pressed", () => {
+    render(<Harness />);
+    const box = open();
+    const icon = box.parentElement?.querySelector("svg") as SVGElement;
+    expect(fireEvent.mouseDown(icon)).toBe(false);
+    expect(fireEvent.mouseDown(box)).toBe(true);
+  });
+
+  it("finds the committed row in rows that arrive after opening", () => {
+    const sections = (rows: Fruit[]): FilterMenuSection<Fruit>[] => [
+      { id: "all", rows },
+    ];
+    const props = {
+      query: "",
+      onQueryChange: () => {},
+      onSelect: () => {},
+      selectedId: "pear",
+      renderRow: (row: Fruit) => row.label,
+      inputLabel: "Filter fruit",
+    };
+    const { rerender } = render(
+      <FilterMenu {...props} sections={sections([])}>
+        <button type="button">Pick</button>
+      </FilterMenu>,
+    );
+    open();
+    expect(highlighted()).toBeUndefined();
+    rerender(
+      <FilterMenu {...props} sections={sections(FRUIT)}>
+        <button type="button">Pick</button>
+      </FilterMenu>,
+    );
+    expect(highlighted()).toBe("Pear");
+  });
+
+  it("follows a filter that lags the query to its new first hit", () => {
+    const onHighlight = vi.fn();
+    const props = {
+      onQueryChange: () => {},
+      onSelect: () => {},
+      onHighlight,
+      renderRow: (row: Fruit) => row.label,
+      inputLabel: "Filter fruit",
+    };
+    const menu = (query: string, rows: Fruit[]) => (
+      <FilterMenu {...props} query={query} sections={[{ id: "all", rows }]}>
+        <button type="button">Pick</button>
+      </FilterMenu>
+    );
+    const { rerender } = render(menu("", FRUIT));
+    open();
+    rerender(menu("pe", FRUIT));
+    expect(highlighted()).toBe("Apple");
+    rerender(menu("pe", [FRUIT[1] as Fruit]));
+    expect(highlighted()).toBe("Pear");
+    expect(onHighlight.mock.calls.map(([row]) => row?.id)).toEqual([
+      "apple",
+      "pear",
+    ]);
+  });
+
+  it("resets and reports a controlled open the parent flips", () => {
+    const onHighlight = vi.fn();
+    const onQueryChange = vi.fn();
+    const menu = (isOpen: boolean, query: string) => (
+      <FilterMenu
+        open={isOpen}
+        query={query}
+        onQueryChange={onQueryChange}
+        onSelect={() => {}}
+        onHighlight={onHighlight}
+        sections={[{ id: "all", rows: FRUIT }]}
+        renderRow={(row) => row.label}
+        inputLabel="Filter fruit"
+      >
+        <button type="button">Pick</button>
+      </FilterMenu>
+    );
+    const { rerender } = render(menu(true, ""));
+    key(screen.getByRole("combobox"), "ArrowDown");
+    expect(onHighlight.mock.calls.at(-1)?.[0]).toBe(FRUIT[0]);
+    rerender(menu(false, "pe"));
+    expect(onHighlight.mock.calls.at(-1)?.[0]).toBeNull();
+    rerender(menu(true, "pe"));
+    expect(onQueryChange).toHaveBeenLastCalledWith("");
   });
 });

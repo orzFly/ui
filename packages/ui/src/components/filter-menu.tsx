@@ -78,7 +78,13 @@ export interface FilterMenuProps<R extends FilterMenuRow> {
 
 /** Case-folded, with diacritics dropped, so `frappe` finds `Frappé`. */
 function fold(text: string): string {
-  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  // A final sigma lowers to ς only at a word's end, which a single character
+  // folded on its own never is; σ for both keeps a text matching itself.
+  return text
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/ς/g, "σ");
 }
 
 /**
@@ -136,6 +142,9 @@ export function MatchedText({ text, query }: { text: string; query: string }) {
     </span>
   );
 }
+
+const FOCUSABLE =
+  'input, textarea, select, button, a[href], [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
 
 const TABBABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
@@ -199,6 +208,11 @@ export function FilterMenu<R extends FilterMenuRow>({
   const trigger = useRef<HTMLButtonElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const tabbing = useRef<"forward" | "backward" | null>(null);
+  /**
+   * Who placed the highlight: resting on the committed row, on the query's
+   * first hit, or by the user. The first two follow the list as it changes.
+   */
+  const mode = useRef<"rest" | "hit" | "user">("rest");
   const base = useId();
   const listId = `${base}-list`;
 
@@ -224,30 +238,48 @@ export function FilterMenu<R extends FilterMenuRow>({
 
   /** A highlight the user moved, reported as such. */
   const move = (row: R | null) => {
+    mode.current = "user";
     setHighlightState(row?.id ?? null);
     report(row);
   };
 
+  const committed =
+    selectedId !== undefined && indexOf.has(selectedId) ? selectedId : null;
+
   /** The highlight back on the committed row, which shows no preview. */
   const rest = useCallback(() => {
-    setHighlightState(selectedId ?? null);
+    mode.current = "rest";
+    setHighlightState(committed);
     report(null);
-  }, [selectedId, report]);
+  }, [committed, report]);
 
   useImperativeHandle(ref, () => ({ resetHighlight: rest }), [rest]);
 
   const setOpen = (next: boolean) => {
     if (next === open) return;
+    // Cleared here as well as below, so the opening render is already
+    // unfiltered rather than one pass later.
     if (next) onQueryChange("");
-    else report(null);
     setOpenState(next);
     onOpenChange?.(next);
   };
 
+  // In an effect rather than setOpen, so a controlled `open` that the parent
+  // flips gets the same reset and the same closing null.
+  const wasOpen = useRef(false);
+  const onQueryChangeRef = useRef(onQueryChange);
+  onQueryChangeRef.current = onQueryChange;
+  useLayoutEffect(() => {
+    if (open === wasOpen.current) return;
+    wasOpen.current = open;
+    if (!open) report(null);
+    else if (query !== "") onQueryChangeRef.current("");
+  }, [open, query, report]);
+
   // Typing puts the highlight on the best hit, so Enter takes it; clearing the
-  // query puts it back on the committed row. Otherwise the list changed under
-  // the highlight (another tab, a late load), which may take its row away.
-  // One effect, because both read the highlight a single commit leaves.
+  // query puts it back on the committed row. Until the user moves it, it keeps
+  // following those as the list changes (a late load, a filter that lags the
+  // query); a row of theirs that leaves the list takes the highlight with it.
   const lastQuery = useRef<string | null>(null);
   useLayoutEffect(() => {
     if (!open) {
@@ -257,20 +289,20 @@ export function FilterMenu<R extends FilterMenuRow>({
     if (lastQuery.current !== query) {
       const opening = lastQuery.current === null;
       lastQuery.current = query;
-      if (query === "" || opening) {
-        rest();
-        return;
-      }
+      mode.current = query === "" || opening ? "rest" : "hit";
+    }
+    if (mode.current === "rest") {
+      setHighlightState(committed);
+      report(null);
+    } else if (mode.current === "hit") {
       const first = rows.find((row) => !row.disabled) ?? null;
       setHighlightState(first?.id ?? null);
       report(first);
-      return;
-    }
-    if (highlight !== null && !indexOf.has(highlight)) {
+    } else if (highlight !== null && !indexOf.has(highlight)) {
       setHighlightState(null);
       report(null);
     }
-  }, [open, query, rows, indexOf, highlight, rest, report]);
+  }, [open, query, rows, indexOf, highlight, committed, report]);
 
   const highlightIndex =
     highlight === null ? -1 : (indexOf.get(highlight) ?? -1);
@@ -297,7 +329,9 @@ export function FilterMenu<R extends FilterMenuRow>({
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.nativeEvent.isComposing) return;
+    // Safari ends a composition with an Enter whose isComposing is already
+    // false; keyCode 229 still marks it as the IME's.
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     let next: R | undefined;
     switch (event.key) {
       case "ArrowDown":
@@ -333,7 +367,16 @@ export function FilterMenu<R extends FilterMenuRow>({
   let flatIndex = 0;
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild ref={trigger}>
+      <PopoverTrigger
+        asChild
+        ref={trigger}
+        // What a select's trigger does; a popover's opens on click alone.
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+          event.preventDefault();
+          setOpen(true);
+        }}
+      >
         {children}
       </PopoverTrigger>
       <PopoverContent
@@ -345,6 +388,18 @@ export function FilterMenu<R extends FilterMenuRow>({
           "flex max-h-[min(24rem,var(--radix-popover-content-available-height))] flex-col overflow-hidden p-0",
           className,
         )}
+        // Pressing anything but a control (a row, the search icon, padding)
+        // would move focus onto the surface, out of the box and its keys.
+        onMouseDown={(event) => {
+          if (!(event.target as Element).closest(FOCUSABLE)) {
+            event.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(event) => {
+          // That Escape cancels the composition, not the menu.
+          if (event.isComposing || event.keyCode === 229)
+            event.preventDefault();
+        }}
         onOpenAutoFocus={(event) => {
           // The box, not the first tabbable, which may be in `header`.
           event.preventDefault();
@@ -395,8 +450,6 @@ export function FilterMenu<R extends FilterMenuRow>({
           role="listbox"
           aria-label={listLabel}
           className="min-h-0 flex-1 overflow-y-auto p-1"
-          // Pressing a row would otherwise move focus out of the box.
-          onMouseDown={(event) => event.preventDefault()}
           onPointerLeave={() => {
             if (highlight !== null) move(null);
           }}
