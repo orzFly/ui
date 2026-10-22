@@ -121,34 +121,41 @@ Whatever is highlighted previews on the whole page after resting 80 ms, and a pi
 ```tsx
 <ThemeMenu />                                  // the UI pick
 <ThemeMenu slot="terminal" />                  // the terminal pick, e.g. on a terminal pane
-<ThemeMenu onCustomize={(id) => openEditor(id)} />
+<ThemeMenu onCustomize={(id, slot) => openEditor(id, slot)} />
 ```
 
 - `slot` is `"ui"` (default) or `"terminal"`. A picker whose slot the store lacks renders nothing.
   The terminal picker adds a "Same as UI" row and a Terminal only group.
 - `onCustomize` adds a "Custom themes…" row, which calls it with no id, and an edit button on each
-  custom theme's row, which calls it with that theme's id. The app brings the editor, such as
-  `ThemeEditor` below.
+  custom theme's row, which calls it with that theme's id. The second argument is the menu's slot,
+  so a new theme opened from the terminal menu is a terminal theme; a callback that takes only the
+  id still fits. The app brings the editor, such as `ThemeEditor` below.
 
 ### Custom themes
 
-The store keeps the user's `CustomTheme`s from `@orz/themes`, composes each one with
-`composeTheme`, and lists the ones that compose ahead of each slot's own list.
+The store keeps the user's custom themes from `@orz/themes` in one list of two kinds, and lists the
+ones that compose ahead of each slot's own list, in list order:
+
+- a `CustomTheme` (no `kind`) is composed with `composeTheme` and goes into both slots;
+- a `CustomTerminalTheme` (`kind: "terminal"`), made of terminal colours alone, is composed with
+  `composeTerminalTheme` and goes into the terminal slot only. In a store with no terminal slot it
+  stays in the list and shows nowhere.
 
 ```ts
 const { customThemes, setCustomThemes } = useTheme();
 setCustomThemes([...customThemes, draft]);
 ```
 
-- `getCustomThemes()` / `setCustomThemes(list)` on the store. `setCustomThemes` throws on an id that
-  repeats or that a theme in either list already has.
+- `getCustomThemes()` / `setCustomThemes(list)` on the store, typed `AnyCustomTheme`.
+  `setCustomThemes` throws on an id that repeats across both kinds or that a theme in either list
+  already has.
 - `setThemes` and `setTerminalThemes` replace the app's own lists; the custom themes are composed
   again against them.
 - A custom theme whose bases are gone stays in `getCustomThemes()` but out of the lists, so an
   editor can still show and repair it.
 - The list is stored as JSON under `customStorageKey` (default `` `${storageKey}-custom` ``) and
-  follows other tabs. Entries that do not have the shape of a `CustomTheme` are dropped on read, and
-  the key is only written by `setCustomThemes`.
+  follows other tabs. Entries that do not have the shape of either kind, or carry a `kind` this
+  version does not know, are dropped on read, and the key is only written by `setCustomThemes`.
 - `persistCustomThemes: false` keeps the store away from that key altogether. The app then loads its
   list with `setCustomThemes` and saves it from `subscribe` and `getCustomThemes`, for example to its
   server.
@@ -161,31 +168,46 @@ draft as it changes. Each side of a theme is based on a theme from the store's l
 overrides, fully custom, or absent; its terminal colours follow the base or are edited the same
 way.
 
-```tsx
-const [editing, setEditing] = useState<{ id?: string } | null>(null);
+A store with a terminal slot also gets terminal themes, in a layout of their own: Light and Dark
+tabs, each side None, based on a palette (with its scheme and variant) or fully custom, over the
+terminal colours. A terminal theme with one side serves both modes. A terminal-only store edits
+terminal themes only; a store with both slots lists the two kinds in two groups, and **+ New** asks
+which to make.
 
-<ThemeMenu onCustomize={(id) => setEditing({ id })} />
+```tsx
+const [editing, setEditing] = useState<{ id?: string; slot: "ui" | "terminal" } | null>(null);
+
+<ThemeMenu onCustomize={(id, slot) => setEditing({ id, slot })} />
+<ThemeMenu slot="terminal" onCustomize={(id, slot) => setEditing({ id, slot })} />
 <ThemeEditor
   open={editing !== null}
   themeId={editing?.id}
+  kind={editing?.slot}
   onOpenChange={(open) => { if (!open) setEditing(null); }}
 />
 ```
 
-- `themeId` opens that custom theme; without one, or with an id the store does not hold, the editor
-  starts a new theme from what the page shows.
+- `themeId` opens that custom theme; without one, with an id the store does not hold, or with a
+  theme of a kind the store cannot show, the editor starts a new theme from what the page shows (a
+  terminal theme from what the terminal shows).
+- `kind` is the kind of that new theme. Unset, or naming a slot the store lacks, it is a UI theme
+  when the store has a UI slot, else a terminal theme.
 - It reads and writes the store's custom list (`customThemes` / `setCustomThemes`), so the themes
   are stored wherever the store keeps that list: under `customStorageKey`, or wherever the app saves
-  it with `persistCustomThemes: false`. Save also makes the theme the UI pick.
+  it with `persistCustomThemes: false`. A kind the store cannot show is left out of the editor and
+  written back untouched. Save also makes a UI theme the UI pick, and a terminal theme the terminal
+  pick, leaving the UI pick alone.
 - `onOpenChange(false)` comes after Save, or after the unsaved-changes prompt resolves to Discard.
   While the draft has unsaved edits it is registered with `@orz/ui/lib/unsaved-guard`, so the app's
   leave-page guard covers it.
-- In a store with no UI slot it renders nothing.
 
-Import… and Export carry themes as JSON files (`format: "orz-themes"`, `version: 1`). An entry is a
-`CustomTheme` without its id, and every based side or terminal also carries the colours it showed
-at export, so a theme whose base the importing app lacks arrives as fully custom instead of being
-lost. `serializeThemeFile`, `parseThemeFile` and `uniqueLabel` in `@orz/ui/lib/theme-file` read and
+Import… and Export carry themes as JSON files (`format: "orz-themes"`, `version: 1`). UI themes go
+in `themes`, always written; terminal themes in `terminalThemes`, written only when there is one. An
+entry is a custom theme without its id or kind, and every based side or terminal also carries the
+colours it showed at export, so a theme whose base the importing app lacks arrives as fully custom
+instead of being lost. Import follows the store's slots: a terminal theme is refused where there is
+no terminal, and a UI theme arrives in a terminal-only store as a terminal theme made from the
+terminal colours each side shows. `serializeThemeFile`, `parseThemeFile` and `uniqueLabel` in `@orz/ui/lib/theme-file` read and
 write the format with no React or DOM, for example to validate uploads on a server.
 
 ### Preview

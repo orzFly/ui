@@ -7,23 +7,32 @@ import { PaletteIcon } from "lucide-react";
 import { useState } from "react";
 import { fn } from "storybook/test";
 import {
+  ember,
+  glacier,
   Header,
   OwnStore,
   PageSample,
   sampleCustomThemes,
+  sampleTerminalThemes,
   TerminalPane,
 } from "./theme-fixtures.tsx";
 
 /**
  * Edits the store's custom themes in a panel docked to the right, while the
  * page previews the draft. Save adds the theme to `ThemeMenu`'s Custom group
- * and picks it; Import… and Export carry themes between apps as JSON.
+ * and picks it; Import… and Export carry themes between apps as JSON. A store
+ * with a terminal slot also edits terminal themes, made of terminal colours
+ * alone.
  */
 const meta = {
   title: "Patterns/ThemeEditor",
   component: ThemeEditor,
   args: { open: false, onOpenChange: fn() },
-  argTypes: { open: { control: false }, themeId: { control: false } },
+  argTypes: {
+    open: { control: false },
+    themeId: { control: false },
+    kind: { control: false },
+  },
   parameters: {
     layout: "padded",
     // Each story paints the page from a store of its own; in one docs page
@@ -35,29 +44,34 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+type Editing = { id?: string; slot?: "ui" | "terminal" };
+
 /**
- * Seeded with three custom themes that are not persisted, so a reload starts
- * over; the pick is kept under a storage key of the story's own.
+ * Both slots, seeded with custom themes of both kinds that are not
+ * persisted, so a reload starts over; the pick is kept under a storage key
+ * of the story's own. Each menu opens the editor on its own slot's kind.
  */
 function EditorDemo({
   initial,
   onOpenChange,
 }: {
-  initial?: { id?: string };
+  initial?: Editing;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [editing, setEditing] = useState<{ id?: string } | null>(
-    initial ?? null,
-  );
+  const [editing, setEditing] = useState<Editing | null>(initial ?? null);
+  const customize = (id: string | undefined, slot: "ui" | "terminal") =>
+    setEditing({ id, slot });
   return (
     <OwnStore
       options={{
         storageKey: "orz-storybook-theme-editor",
         themes: builtinThemes,
-        terminalThemes: builtinThemes,
+        terminalThemes: [...builtinThemes, ember, glacier],
         persistCustomThemes: false,
       }}
-      setup={(store) => store.setCustomThemes(sampleCustomThemes)}
+      setup={(store) =>
+        store.setCustomThemes([...sampleCustomThemes, ...sampleTerminalThemes])
+      }
     >
       <div className="grid max-w-2xl gap-4">
         <Header>
@@ -65,14 +79,15 @@ function EditorDemo({
             <PaletteIcon />
             Custom themes
           </Button>
-          <ThemeMenu onCustomize={(id) => setEditing({ id })} />
+          <ThemeMenu onCustomize={customize} />
         </Header>
         <PageSample />
-        <TerminalPane />
+        <TerminalPane onCustomize={customize} />
       </div>
       <ThemeEditor
         open={editing !== null}
         themeId={editing?.id}
+        kind={editing?.slot}
         onOpenChange={(open) => {
           onOpenChange(open);
           if (!open) setEditing(null);
@@ -83,7 +98,7 @@ function EditorDemo({
 }
 
 /**
- * Closed until "Custom themes" or `ThemeMenu`'s "Custom themes…" and edit
+ * Closed until "Custom themes" or a `ThemeMenu`'s "Custom themes…" and edit
  * buttons open it.
  */
 export const Default: Story = {
@@ -112,3 +127,57 @@ export const MissingBase: Story = {
     />
   ),
 };
+
+/**
+ * Both slots, opened as the terminal menu's "Custom themes…" opens it: a new
+ * terminal theme copied from what the terminal shows. The list groups the
+ * two kinds, and + New asks which one to make.
+ */
+export const BothSlots: Story = {
+  render: (args) => (
+    <EditorDemo
+      initial={{ slot: "terminal" }}
+      onOpenChange={args.onOpenChange}
+    />
+  ),
+};
+
+/**
+ * A store with a terminal slot only: the editor makes terminal themes, each
+ * side None, based on a palette, or fully custom. Ember dusk is based on
+ * Ember with two colours changed; Moss is fully custom.
+ */
+export const TerminalOnly: Story = {
+  render: (args) => <TerminalOnlyDemo onOpenChange={args.onOpenChange} />,
+};
+
+function TerminalOnlyDemo({
+  onOpenChange,
+}: {
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [editing, setEditing] = useState<Editing | null>(null);
+  return (
+    <OwnStore
+      options={{
+        storageKey: "orz-storybook-theme-editor-terminal",
+        terminalThemes: [...builtinThemes, ember, glacier],
+        persistCustomThemes: false,
+      }}
+      setup={(store) => store.setCustomThemes(sampleTerminalThemes)}
+    >
+      <div className="grid max-w-2xl gap-4">
+        <TerminalPane onCustomize={(id, slot) => setEditing({ id, slot })} />
+      </div>
+      <ThemeEditor
+        open={editing !== null}
+        themeId={editing?.id}
+        kind={editing?.slot}
+        onOpenChange={(open) => {
+          onOpenChange(open);
+          if (!open) setEditing(null);
+        }}
+      />
+    </OwnStore>
+  );
+}

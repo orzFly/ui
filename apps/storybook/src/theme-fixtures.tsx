@@ -1,4 +1,9 @@
-import type { CustomTheme, TerminalTokens } from "@orz/themes";
+import type {
+  CustomTerminalTheme,
+  CustomTheme,
+  TerminalTheme,
+  TerminalTokens,
+} from "@orz/themes";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import {
   createThemeStore,
@@ -119,6 +124,125 @@ export const sampleCustomThemes: CustomTheme[] = [
   },
 ];
 
+function terminalTokens(
+  background: string,
+  foreground: string,
+  ansi: string[],
+): TerminalTokens {
+  const names = [
+    "black",
+    "red",
+    "green",
+    "yellow",
+    "blue",
+    "magenta",
+    "cyan",
+    "white",
+  ] as const;
+  const tokens: Record<string, string> = {
+    "terminal-background": background,
+    "terminal-foreground": foreground,
+    "terminal-cursor": foreground,
+    "terminal-selection": `${foreground}40`,
+  };
+  names.forEach((name, i) => {
+    tokens[`ansi-${name}`] = ansi[i] as string;
+    tokens[`ansi-bright-${name}`] = ansi[i + 8] as string;
+  });
+  return tokens as TerminalTokens;
+}
+
+/** Terminal-only themes: terminal colours and nothing else. */
+export const ember: TerminalTheme = {
+  id: "ember",
+  label: "Ember",
+  dark: {
+    terminal: terminalTokens("#1b1410", "#eadccf", [
+      "#2a201a",
+      "#e0603c",
+      "#9fbf5a",
+      "#e8b04a",
+      "#6f97c6",
+      "#c47aa8",
+      "#5fb3a6",
+      "#d6c8ba",
+      "#5a4a3e",
+      "#ff8a63",
+      "#bedb7a",
+      "#ffcf6e",
+      "#94b8e3",
+      "#e29cc5",
+      "#83d1c4",
+      "#fff3e6",
+    ]),
+  },
+};
+export const glacier: TerminalTheme = {
+  id: "glacier",
+  label: "Glacier",
+  light: {
+    terminal: terminalTokens("#f4f8fb", "#1f2d3a", [
+      "#1f2d3a",
+      "#c0392b",
+      "#2e8b57",
+      "#b7791f",
+      "#2b6cb0",
+      "#8e44ad",
+      "#138d90",
+      "#cbd5e0",
+      "#4a5568",
+      "#e53e3e",
+      "#38a169",
+      "#d69e2e",
+      "#3182ce",
+      "#9f7aea",
+      "#0bc5ea",
+      "#ffffff",
+    ]),
+  },
+};
+
+/**
+ * Terminal custom themes: one based on Ember with two colours changed, and
+ * one fully custom.
+ */
+export const sampleTerminalThemes: CustomTerminalTheme[] = [
+  {
+    id: "custom-ember-dusk",
+    kind: "terminal",
+    label: "Ember dusk",
+    dark: {
+      base: { theme: "ember" },
+      tokens: { "ansi-red": "#f0503a", "terminal-background": "#140e0b" },
+    },
+  },
+  {
+    id: "custom-moss",
+    kind: "terminal",
+    label: "Moss",
+    light: {
+      tokens: terminalTokens("#f3f5ee", "#2c3324", [
+        "#2c3324",
+        "#b8442f",
+        "#4f7a2e",
+        "#a77b1c",
+        "#3c6a8c",
+        "#8a4f7d",
+        "#2f7f72",
+        "#d5dacb",
+        "#5d6651",
+        "#d65a42",
+        "#69983f",
+        "#c79a2e",
+        "#5287ab",
+        "#a86a9a",
+        "#45a08f",
+        "#ffffff",
+      ]),
+    },
+  },
+];
+
 export function PageSample() {
   return (
     <section className="grid gap-3 rounded-lg border bg-card p-4 text-card-foreground">
@@ -151,7 +275,11 @@ export function Header({ children }: { children?: ReactNode }) {
   );
 }
 
-export function TerminalPane() {
+export function TerminalPane({
+  onCustomize,
+}: {
+  onCustomize?: (id: string | undefined, slot: "ui" | "terminal") => void;
+} = {}) {
   const { tokens, theme, following } = useTerminalTheme();
   const c = (name: keyof TerminalTokens) => ({ color: tokens[name] });
   const prompt = (
@@ -169,7 +297,7 @@ export function TerminalPane() {
             {following ? `(same as UI: ${theme.label})` : `(${theme.label})`}
           </span>
         </h2>
-        <ThemeMenu slot="terminal" />
+        <ThemeMenu slot="terminal" onCustomize={onCustomize} />
       </div>
       <pre
         className="overflow-x-auto rounded-md p-3 font-mono text-sm leading-relaxed"
