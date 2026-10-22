@@ -101,7 +101,7 @@ Work is tracked in the todou project `orzui` (cards `UI-<number>`); the git remo
 so pass `-p orzui`. Follow `/todou-cli` for taking a card, asking questions and the wrap-up.
 
 - Labels: `kind:` one of `bug`, `feature`, `chore`; `area:` one of `ui`, `ui-codemirror`,
-  `ui-markdown`, `ui-code`, `demo` (the component demo site), `tooling` (workspace, build, CI,
+  `ui-markdown`, `ui-code`, `ui-hex`, `demo` (the component demo site), `tooling` (workspace, build, CI,
   publishing), `docs`.
 - Work on your own branch; when done, the card goes to Ready to Ship with a summary comment.
   Merging, pushing, deploying and publishing to npm are the orchestrator's.
