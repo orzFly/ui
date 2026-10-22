@@ -310,10 +310,11 @@ live preview needs. A control in `header` that commits at once puts the highligh
 `ref`'s `resetHighlight()`.
 
 Rows can carry a submenu: `getSubmenu(row)` returns its rows (ids unique across the whole menu), and
-`selectedSubmenuId` checks one of them. The submenu opens beside the highlighted row, → with the
-caret at the end of the query enters it, ← and Escape come back, and `onHighlight` and `onSelect`
-receive its rows like any other. The pointer can cut across other rows on its way to the submenu
-without moving the highlight. `submenuLabel(row)` names the submenu's listbox.
+`selectedSubmenuId` checks one of them. The submenu opens beside a row the user highlights, by
+pointer or keys, but not for the highlight resting on `selectedId` or on the query's first hit. →
+with the caret at the end of the query enters it, ← and Escape come back, and `onHighlight` and
+`onSelect` receive its rows like any other. The pointer can cut across other rows on its way to the
+submenu without moving the highlight. `submenuLabel(row)` names the submenu's listbox.
 
 ## Colour picker
 
