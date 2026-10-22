@@ -32,6 +32,19 @@ export interface PageCache {
    * caller's wait, and the read is aborted once every caller has given up.
    */
   load(page: number, signal?: AbortSignal): Promise<Uint8Array>;
+  /**
+   * The range, like the source's own `read`: in place while the source
+   * answers synchronously, else assembled from cached pages. The first call
+   * learns which by loading the range's first page, so an async source's
+   * first read is cached like any other.
+   */
+  read(
+    offset: number,
+    length: number,
+    signal?: AbortSignal,
+  ): Uint8Array | Promise<Uint8Array>;
+  /** Whether the source has answered synchronously so far; `undefined` before its first read. */
+  sync(): boolean | undefined;
   /** The whole range, bypassing the cache; used by copy. */
   readRange(
     offset: number,
@@ -167,6 +180,32 @@ export function createPageCache(
     if (!flight) return;
     flights.delete(page);
     flight.controller.abort();
+  };
+
+  const loadRange = async (
+    offset: number,
+    end: number,
+    first: number,
+    signal?: AbortSignal,
+  ) => {
+    const last = Math.floor((end - 1) / pageSize);
+    const loads: Promise<Uint8Array>[] = [];
+    for (let page = first; page <= last; page++) {
+      loads.push(cache.load(page, signal));
+    }
+    const loaded = await Promise.all(loads);
+    if (first === last) {
+      const at = offset - first * pageSize;
+      return (loaded[0] as Uint8Array).subarray(at, at + end - offset);
+    }
+    const out = new Uint8Array(end - offset);
+    loaded.forEach((bytes, i) => {
+      const pageStart = (first + i) * pageSize;
+      const from = Math.max(offset, pageStart) - pageStart;
+      const to = Math.min(end, pageStart + bytes.length) - pageStart;
+      out.set(bytes.subarray(from, to), pageStart + from - offset);
+    });
+    return out;
   };
 
   const cache: PageCache = {
@@ -319,6 +358,41 @@ export function createPageCache(
         );
       });
     },
+
+    read(offset, length, signal) {
+      const end = Math.min(offset + length, source.size);
+      if (end <= offset) return new Uint8Array(0);
+      const first = Math.floor(offset / pageSize);
+      if (sync === undefined) {
+        if (signal?.aborted) return Promise.reject(abortError(signal));
+        const fetched = flights.has(first)
+          ? undefined
+          : fetchPage(first, false);
+        if (fetched && "error" in fetched) {
+          // The page can fail where the range would not (a bad region
+          // elsewhere in it), so the range alone decides; and while the kind
+          // is unknown, a throw is reported the way every caller handles.
+          errors.delete(first);
+          let result: Uint8Array | Promise<Uint8Array>;
+          try {
+            result = source.read(offset, end - offset, signal);
+          } catch (error) {
+            return Promise.reject(error);
+          }
+          sync = result instanceof Uint8Array;
+          return result;
+        }
+      }
+      if (sync) {
+        const result = source.read(offset, end - offset, signal);
+        // Mixed sources page from here on, as in `get`.
+        if (!(result instanceof Uint8Array)) sync = false;
+        return result;
+      }
+      return loadRange(offset, end, first, signal);
+    },
+
+    sync: () => sync,
 
     async readRange(offset, length, signal) {
       return source.read(offset, length, signal);

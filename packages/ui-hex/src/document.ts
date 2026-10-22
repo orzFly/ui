@@ -270,14 +270,11 @@ export function createHexDocument(
   let group: { step: Step | undefined } | undefined;
   let changedInGroup = false;
 
-  // A sync source is read in place; anything else goes through a cache keyed
-  // by source offsets, which no edit moves, so it stays valid across edits.
-  const probe = source.read(0, 0);
-  const sync = probe instanceof Uint8Array;
-  if (!sync) probe.catch(() => {});
-  const cache = sync ? undefined : createPageCache(source);
-  // cache.get probes the source the first time it is asked; peek must not.
-  let cacheUsed = false;
+  // Source reads go through a cache keyed by source offsets, which no edit
+  // moves, so it stays valid across edits. It reads a sync source in place,
+  // and learns which kind it has from the first real read: probing at
+  // creation would be a request of its own, and a zero-length one at that.
+  const cache = createPageCache(source);
 
   const listeners = new Set<() => void>();
   let unsubscribeSource: (() => void) | undefined;
@@ -334,35 +331,6 @@ export function createHexDocument(
     return out;
   };
 
-  const readSource = async (
-    offset: number,
-    length: number,
-    signal?: AbortSignal,
-  ): Promise<Uint8Array> => {
-    if (!cache) return source.read(offset, length, signal);
-    cacheUsed = true;
-    const end = offset + length;
-    const first = Math.floor(offset / cache.pageSize);
-    const last = Math.floor((end - 1) / cache.pageSize);
-    const loads: Promise<Uint8Array>[] = [];
-    for (let page = first; page <= last; page++) {
-      loads.push(cache.load(page, signal));
-    }
-    const pages = await Promise.all(loads);
-    if (first === last) {
-      const at = offset - first * cache.pageSize;
-      return (pages[0] as Uint8Array).subarray(at, at + length);
-    }
-    const out = new Uint8Array(length);
-    pages.forEach((bytes, i) => {
-      const pageStart = (first + i) * cache.pageSize;
-      const from = Math.max(offset, pageStart) - pageStart;
-      const to = Math.min(end, pageStart + bytes.length) - pageStart;
-      out.set(bytes.subarray(from, to), pageStart + from - offset);
-    });
-    return out;
-  };
-
   const join = (parts: Uint8Array[], length: number) => {
     if (parts.length === 1) return parts[0] as Uint8Array;
     const out = new Uint8Array(length);
@@ -386,25 +354,41 @@ export function createHexDocument(
   ): Uint8Array | Promise<Uint8Array> {
     const [start, end] = clamp(offset, length);
     const parts = segments(start, end);
-    if (sync) {
-      return join(
-        parts.map(({ piece, from, length }) =>
-          piece.buffer === "add"
-            ? add.read(from, length)
-            : (source.read(from, length) as Uint8Array),
-        ),
-        end - start,
-      );
+    if (cache.sync() === false && signal?.aborted) {
+      return Promise.reject(abortError(signal));
     }
-    if (signal?.aborted) return Promise.reject(abortError(signal));
-    return Promise.all(
-      parts.map(({ piece, from, length }) =>
-        piece.buffer === "add"
-          ? add.read(from, length)
-          : readSource(from, length, signal),
-      ),
-    ).then((read) => join(read, end - start));
+    const read = parts.map(({ piece, from, length }) =>
+      piece.buffer === "add"
+        ? add.read(from, length)
+        : cache.read(from, length, signal),
+    );
+    // A document answers in place only once its source has: a view that saw
+    // edited bytes come back at once would take an async document for a
+    // sync one. With no source byte in this read to learn from, the source's
+    // first page decides; it is cached, and undo may well need it. An empty
+    // source has no bytes to read, so it never decides.
+    if (
+      cache.sync() === undefined &&
+      source.size > 0 &&
+      parts.length > 0 &&
+      parts.every(({ piece }) => piece.buffer === "add")
+    ) {
+      const first = cache.read(0, 1);
+      if (first instanceof Promise) first.catch(() => {});
+    }
+    const sync = cache.sync() ?? source.size === 0;
+    if (sync && read.every((r) => r instanceof Uint8Array)) {
+      return join(read as Uint8Array[], end - start);
+    }
+    return Promise.all(read).then((bytes) => join(bytes, end - start));
   }
+
+  const readInPlace = (offset: number, length: number) => {
+    const bytes = source.read(offset, length);
+    if (bytes instanceof Uint8Array) return bytes;
+    bytes.catch(() => {});
+    return undefined;
+  };
 
   function peek(offset: number, length: number): Uint8Array | undefined {
     const [start, end] = clamp(offset, length);
@@ -412,8 +396,10 @@ export function createHexDocument(
     for (const { piece, from, length } of segments(start, end)) {
       let bytes: Uint8Array | undefined;
       if (piece.buffer === "add") bytes = add.read(from, length);
-      else if (sync) bytes = source.read(from, length) as Uint8Array;
-      else if (cacheUsed) bytes = cache?.get(from, length);
+      else if (cache.sync() === false) bytes = cache.get(from, length);
+      else if (cache.sync()) bytes = readInPlace(from, length);
+      // Unknown until the first read, and finding out would be one.
+      else bytes = source.peek?.(from, length);
       if (!bytes) return undefined;
       parts.push(bytes);
     }
@@ -500,7 +486,7 @@ export function createHexDocument(
       listeners.add(listener);
       if (listeners.size === 1) {
         unsubscribeSource = source.subscribe?.(() => {
-          cache?.invalidate();
+          cache.invalidate();
           state.lastChange = { kind: "other" };
           notify();
         });

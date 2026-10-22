@@ -8,6 +8,7 @@ import {
   type HexDocument,
   lastChange,
 } from "../src/document.ts";
+import { createPageCache } from "../src/page-cache.ts";
 import { type ByteSource, blobSource, bytesSource } from "../src/source.ts";
 
 function xorshift(seed: number) {
@@ -245,6 +246,115 @@ describe("HexDocument", () => {
     const empty = createHexDocument(asyncSource(new Uint8Array(0)));
     empty.insert(0, Uint8Array.of(5));
     expect([...(empty.peek(0, 1) ?? [])]).toEqual([5]);
+  });
+
+  it("reads nothing until asked, and never zero bytes", async () => {
+    const calls: Array<[number, number]> = [];
+    const recording = (bytes: Uint8Array): ByteSource => {
+      const base = asyncSource(bytes);
+      return {
+        size: bytes.length,
+        read(offset, length, signal) {
+          calls.push([offset, length]);
+          return base.read(offset, length, signal);
+        },
+      };
+    };
+    const empty = createHexDocument(recording(new Uint8Array(0)));
+    empty.insert(0, Uint8Array.of(1, 2));
+    expect(await readAll(empty)).toEqual([1, 2]);
+    empty.peek(0, 2);
+    const doc = createHexDocument(recording(range(10)));
+    expect(calls).toEqual([]);
+    doc.insert(0, Uint8Array.of(0xaa));
+    doc.delete(5, 6);
+    expect(await readAll(doc)).toEqual([0xaa, 0, 1, 2, 3]);
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls.every(([, length]) => length > 0)).toBe(true);
+  });
+
+  it("makes no read for a first read already aborted", async () => {
+    const reads: number[] = [];
+    const doc = createHexDocument(asyncSource(range(10), reads));
+    const aborted = AbortSignal.abort();
+    await expect(doc.read(0, 4, aborted)).rejects.toBe(aborted.reason);
+    expect(reads).toEqual([]);
+    expect(await readAll(doc, 0, 4)).toEqual([0, 1, 2, 3]);
+  });
+
+  it("reads a sync source in place from its first read", () => {
+    const bytes = range(10);
+    const doc = createHexDocument(bytesSource(bytes));
+    const read = doc.read(2, 4);
+    expect(read).toBeInstanceOf(Uint8Array);
+    expect((read as Uint8Array).buffer).toBe(bytes.buffer);
+    expect([...(doc.peek(2, 2) ?? [])]).toEqual([2, 3]);
+  });
+
+  it("peeks a sync source in place before its first read", () => {
+    const doc = createHexDocument(bytesSource(range(10)));
+    expect([...(doc.peek(0, 4) ?? [])]).toEqual([0, 1, 2, 3]);
+  });
+
+  it("answers edited bytes in place only once the source has", async () => {
+    const doc = createHexDocument(asyncSource(range(200_000)));
+    doc.insert(0, new Uint8Array(70_000));
+    // A view over it must not take it for a sync document.
+    const view = createPageCache(doc);
+    view.request(0, 0);
+    expect(view.sync()).toBe(false);
+    expect(view.status(1)).toBe("idle");
+    expect(doc.read(0, 4)).toBeInstanceOf(Promise);
+    const empty = createHexDocument(asyncSource(new Uint8Array(0)));
+    empty.insert(0, Uint8Array.of(1));
+    expect(empty.read(0, 1)).toBeInstanceOf(Uint8Array);
+  });
+
+  it("learns a sync source even when every source byte was edited away first", () => {
+    const replaced = createHexDocument(bytesSource(range(4)));
+    replaced.replace(0, 4, Uint8Array.of(9, 9, 9, 9));
+    expect(replaced.read(0, 4)).toBeInstanceOf(Uint8Array);
+    const deleted = createHexDocument(bytesSource(range(4)));
+    deleted.delete(0, 4);
+    deleted.insert(0, Uint8Array.of(7));
+    expect([...(deleted.read(0, 1) as Uint8Array)]).toEqual([7]);
+  });
+
+  it("reads good bytes of a sync source whose first page holds a bad one", () => {
+    const bytes = range(70_000);
+    const doc = createHexDocument({
+      size: bytes.length,
+      read(offset, length) {
+        if (offset <= 60_000 && 60_000 < offset + length) {
+          throw new Error("bad sector");
+        }
+        return bytes.subarray(offset, offset + length);
+      },
+    });
+    expect([...(doc.read(10, 4) as Uint8Array)]).toEqual([10, 11, 12, 13]);
+    expect([...(doc.peek(10, 4) ?? [])]).toEqual([10, 11, 12, 13]);
+    expect(() => doc.read(59_999, 2)).toThrow("bad sector");
+  });
+
+  it("rejects, not throws, when an async source throws on its first read", async () => {
+    const doc = createHexDocument({
+      size: 10,
+      read() {
+        throw new Error("boom");
+      },
+    });
+    const read = doc.read(0, 4);
+    expect(read).toBeInstanceOf(Promise);
+    await expect(read).rejects.toThrow("boom");
+  });
+
+  it("stays async over an async source, even for edited bytes", async () => {
+    const doc = createHexDocument(asyncSource(range(10)));
+    await doc.read(0, 4);
+    doc.insert(0, Uint8Array.of(0xaa));
+    const read = doc.read(0, 1);
+    expect(read).toBeInstanceOf(Promise);
+    expect([...(await read)]).toEqual([0xaa]);
   });
 
   it("forwards source notifications and re-reads after them", async () => {

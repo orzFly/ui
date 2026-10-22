@@ -26,14 +26,11 @@ function clampRange(offset: number, length: number, size: number) {
 export function bytesSource(
   bytes: Uint8Array,
 ): ByteSource & { readonly bytes: Uint8Array } {
-  return {
-    bytes,
-    size: bytes.length,
-    read(offset, length) {
-      const [start, end] = clampRange(offset, length, bytes.length);
-      return bytes.subarray(start, end);
-    },
+  const read = (offset: number, length: number) => {
+    const [start, end] = clampRange(offset, length, bytes.length);
+    return bytes.subarray(start, end);
   };
+  return { bytes, size: bytes.length, read, peek: read };
 }
 
 function abortError(signal: AbortSignal): unknown {

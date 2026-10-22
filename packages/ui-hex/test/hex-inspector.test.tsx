@@ -82,6 +82,19 @@ describe("HexInspector", () => {
     }
   });
 
+  it("reads nothing at the end of the source", () => {
+    const read = vi.fn(source.read);
+    const { container } = render(
+      <HexInspector
+        source={{ size: BYTES.length, read }}
+        selection={{ anchor: 32, focus: 32, pane: "hex" }}
+      />,
+    );
+    expect(read).not.toHaveBeenCalled();
+    // Not left loading: an empty row shows the dash.
+    expect(row(container, "Uint8").dd.textContent).toBe("—");
+  });
+
   it("reads async sources and aborts a superseded read", async () => {
     const signals: AbortSignal[] = [];
     const asyncSource: ByteSource = {

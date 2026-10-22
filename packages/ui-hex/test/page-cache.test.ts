@@ -41,6 +41,41 @@ function fakeSource(size: number) {
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("createPageCache", () => {
+  it("reads a sync source in place, learning so from the first read", () => {
+    const bytes = Uint8Array.from({ length: 250 }, (_, i) => i);
+    const source = bytesSource(bytes);
+    const read = vi.spyOn(source, "read");
+    const cache = createPageCache(source, { pageSize: 100 });
+    expect(cache.sync()).toBeUndefined();
+    const got = cache.read(150, 10);
+    expect(cache.sync()).toBe(true);
+    expect(got).toBeInstanceOf(Uint8Array);
+    expect((got as Uint8Array).buffer).toBe(bytes.buffer);
+    expect((got as Uint8Array)[0]).toBe(150);
+    expect(read.mock.calls.map(([o, l]) => [o, l])).toEqual([
+      [100, 100],
+      [150, 10],
+    ]);
+  });
+
+  it("assembles reads of an async source from cached pages", async () => {
+    const { source, calls } = fakeSource(250);
+    const cache = createPageCache(source, { pageSize: 100 });
+    const got = cache.read(95, 10);
+    expect(cache.sync()).toBe(false);
+    expect(calls.map((c) => [c.offset, c.length])).toEqual([
+      [0, 100],
+      [100, 100],
+    ]);
+    for (const call of calls) call.resolve();
+    expect(await got).toEqual(
+      Uint8Array.from({ length: 10 }, (_, i) => 95 + i),
+    );
+    expect(cache.get(95, 10)?.length).toBe(10);
+    expect(cache.read(300, 10)).toEqual(new Uint8Array(0));
+    expect(calls).toHaveLength(2);
+  });
+
   it("aligns pages and reads a short final page", async () => {
     const { source, calls } = fakeSource(250);
     const cache = createPageCache(source, { pageSize: 100 });

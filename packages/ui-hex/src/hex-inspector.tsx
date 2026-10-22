@@ -54,10 +54,13 @@ export function HexInspector({
     bytes: Uint8Array;
   } | null>(null);
   const key = `${start}:${version}`;
+  // At the end (an editor's append cell) there is nothing to read, and a
+  // zero-length read is one a range-request source can get wrong.
+  const atEnd = start >= 0 && start >= source.size;
 
   useEffect(() => {
-    if (start < 0) return;
-    const count = Math.max(0, Math.min(8, source.size - start));
+    if (start < 0 || atEnd) return;
+    const count = Math.min(8, source.size - start);
     const controller = new AbortController();
     const result = source.read(start, count, controller.signal);
     if (result instanceof Uint8Array) {
@@ -73,10 +76,13 @@ export function HexInspector({
       },
     );
     return () => controller.abort();
-  }, [source, start, key]);
+  }, [source, start, key, atEnd]);
 
-  const bytes =
-    read?.source === source && read.key === key ? read.bytes : undefined;
+  const bytes = atEnd
+    ? EMPTY
+    : read?.source === source && read.key === key
+      ? read.bytes
+      : undefined;
   const rows = decodeAll(bytes ?? EMPTY, bytes?.length ?? 0, littleEndian);
   const loading = start >= 0 && !bytes;
   const failed = bytes === FAILED;
