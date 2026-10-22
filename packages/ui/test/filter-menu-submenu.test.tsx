@@ -283,6 +283,29 @@ describe("FilterMenu submenus", () => {
     expect(ids(onHighlight)).toEqual(["apple", "pear", "apple", "pear"]);
   });
 
+  it("lets a pointer moving straight down the list take the next row", () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    open();
+    const apple = screen.getByRole("option", { name: "Apple" });
+    const pear = screen.getByRole("option", { name: "Pear" });
+    fireEvent.pointerMove(apple);
+    const surface = screen
+      .getByRole("listbox", { name: "Apple varieties" })
+      .closest('[data-slot="popover-content"]') as HTMLElement;
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 200, y: 0, width: 150, height: 200 }),
+    );
+    fireEvent.pointerLeave(apple, {
+      clientX: 100,
+      clientY: 20,
+      relatedTarget: pear,
+    });
+    // Inside the triangle's lower edge, but not heading for the submenu.
+    fireEvent.pointerMove(pear, { clientX: 100, clientY: 22 });
+    expect(highlighted()).toBe("Pear");
+  });
+
   it("keeps the highlight across the gap, and drops it when the pointer never arrives", () => {
     vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
     const onHighlight = vi.fn();

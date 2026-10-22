@@ -276,7 +276,12 @@ export function FilterMenu<R extends FilterMenuRow>({
   const submenu = useRef<HTMLDivElement>(null);
   const anchor = useRef<HTMLDivElement | null>(null);
   const tabbing = useRef<"forward" | "backward" | null>(null);
-  const grace = useRef<{ polygon: Point[]; until: number } | null>(null);
+  const grace = useRef<{
+    polygon: Point[];
+    until: number;
+    right: boolean;
+    x: number;
+  } | null>(null);
   const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pointerIn = useRef<"list" | "submenu" | null>(null);
   /**
@@ -433,13 +438,21 @@ export function FilterMenu<R extends FilterMenuRow>({
     if (!open) clearGrace();
   }, [open, clearGrace]);
 
-  const inGrace = (event: PointerEvent) =>
-    grace.current !== null &&
-    Date.now() < grace.current.until &&
-    insidePolygon(
-      { x: event.clientX, y: event.clientY },
-      grace.current.polygon,
+  /** `heading: false` for the list's own leave, which fires where the row's did. */
+  const inGrace = (event: PointerEvent, heading = true) => {
+    const area = grace.current;
+    if (area === null || Date.now() >= area.until) return false;
+    // As Radix does, only while heading for the submenu's side: a pointer
+    // moving straight down the list grazes the triangle's thin edge.
+    const towards = area.right
+      ? event.clientX > area.x
+      : event.clientX < area.x;
+    area.x = event.clientX;
+    return (
+      (towards || !heading) &&
+      insidePolygon({ x: event.clientX, y: event.clientY }, area.polygon)
     );
+  };
 
   const step = (from: readonly R[], at: number, by: 1 | -1): R | undefined => {
     for (let i = at + by; i >= 0 && i < from.length; i += by) {
@@ -535,6 +548,8 @@ export function FilterMenu<R extends FilterMenuRow>({
         { x: near, y: rect.bottom },
       ],
       until: Date.now() + GRACE_MS,
+      right,
+      x: event.clientX,
     };
   };
 
@@ -635,7 +650,7 @@ export function FilterMenu<R extends FilterMenuRow>({
             pointerIn.current = null;
             const to = event.relatedTarget;
             if (to instanceof Node && submenu.current?.contains(to)) return;
-            if (inGrace(event)) {
+            if (inGrace(event, false)) {
               // Crossing the gap toward the submenu; if the pointer never
               // arrives, the highlight still goes when the grace runs out.
               const left = (grace.current?.until ?? 0) - Date.now();
@@ -666,6 +681,9 @@ export function FilterMenu<R extends FilterMenuRow>({
               const highlighted = index === highlightIndex;
               const selected = row.id === selectedId;
               const hasSubmenu = (getSubmenu?.(row)?.length ?? 0) > 0;
+              // One gutter for every row of a menu with submenus, so what
+              // renderRow puts at the right edge lines up.
+              const gutter = getSubmenu !== undefined;
               return (
                 // biome-ignore lint/a11y/useKeyWithClickEvents: the filter box takes the keys; focus never comes here
                 // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-expanded marks the option that owns a submenu listbox
@@ -684,7 +702,7 @@ export function FilterMenu<R extends FilterMenuRow>({
                   data-highlighted={highlighted ? "" : undefined}
                   data-selected={selected ? "" : undefined}
                   data-disabled={row.disabled ? "" : undefined}
-                  className={cn(OPTION_CLASS, hasSubmenu ? "pr-13" : "pr-8")}
+                  className={cn(OPTION_CLASS, gutter ? "pr-13" : "pr-8")}
                   onPointerMove={(event) => {
                     if (row.disabled) return;
                     if (highlighted && subIndex < 0) return;
@@ -699,7 +717,7 @@ export function FilterMenu<R extends FilterMenuRow>({
                 >
                   {renderRow(row, { highlighted, selected })}
                   {selected && (
-                    <Mark className={hasSubmenu ? "right-7" : "right-2"}>
+                    <Mark className={gutter ? "right-7" : "right-2"}>
                       <CheckIcon aria-hidden />
                     </Mark>
                   )}
