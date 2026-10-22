@@ -133,12 +133,46 @@ second Escape goes to `onEscape`. Pass `options: undefined` for a list that has 
 values paint as valid rather than flashing amber, and `onOpenChange` tells you when the box is in
 use, so loading can wait until then.
 
+## Filter menu
+
+`@orz/ui/components/filter-menu` exports `FilterMenu`: a popover with a filter box over a list of
+sections, for a pick from more rows than a menu should make anyone scroll through. Focus stays in the
+box, so typing always filters; ↑↓, Home and End move a highlight that `aria-activedescendant`
+follows, Enter picks, Escape closes, and Tab closes and moves on. The caller does the filtering and
+passes the sections in, so it decides what a match means (aliases, ids, other fields);
+`matchText(text, query)` and `MatchedText` fold case and diacritics, and mark the hit.
+
+```tsx
+import { FilterMenu, MatchedText, matchText } from "@orz/ui/components/filter-menu";
+
+const [query, setQuery] = useState("");
+const rows = FRUIT.filter((fruit) => matchText(fruit.label, query));
+
+<FilterMenu
+  query={query}
+  onQueryChange={setQuery}
+  sections={[{ id: "fruit", label: "Fruit", rows }]}
+  selectedId={fruit}
+  onSelect={(row) => setFruit(row.id)}
+  renderRow={(row) => <MatchedText text={row.label} query={query} />}
+  inputLabel="Filter fruit"
+>
+  <Button variant="outline">{label}</Button>
+</FilterMenu>;
+```
+
+On opening, the query is cleared and the highlight rests on `selectedId`. `onHighlight(row)` reports
+each highlight the user moves to, and `onHighlight(null)` a return to the committed state (the
+highlight resting on `selectedId`, the pointer leaving the list, the menu closing), which is what a
+live preview needs. A control in `header` that commits at once puts the highlight back through the
+`ref`'s `resetHighlight()`.
+
 ## Entry points
 
 | Import | Contents |
 |---|---|
 | `@orz/ui` | `cn` |
-| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `confirm-dialog`, `dialog`, `dropdown-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
+| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
 | `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut` |
 | `@orz/ui/lib/<name>` | `clipboard`, `text-metrics`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `THEMES`, `createThemeStore`, `ThemeProvider`, `useTheme`, `themePaintGuardScript`, types |
