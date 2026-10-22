@@ -122,6 +122,28 @@ export function gamutOf(color: Oklch): Gamut {
   return "out";
 }
 
+/** A display gamut a surface can be bounded by. */
+export type DisplayGamut = Exclude<Gamut, "out">;
+
+/**
+ * The largest chroma at lightness `l` and hue `h` (degrees) that is inside `gamut`, by bisection.
+ * It is 0 when `l <= 0` or `l >= 1`.
+ */
+export function maxChroma(l: number, h: number, gamut: DisplayGamut): number {
+  if (!(l > 0 && l < 1)) return 0;
+  const pixel = { mode: "oklch" as const, l, c: 0, h };
+  const convert = gamut === "p3" ? () => toP3(pixel) : () => toRgb(pixel);
+  // The in-gamut part of a chroma ray is one interval [0, Cmax], so bisection finds its end.
+  let lo = 0;
+  let hi = 0.5;
+  for (let k = 0; k < 24; k++) {
+    pixel.c = (lo + hi) / 2;
+    if (inUnitCube(convert())) lo = pixel.c;
+    else hi = pixel.c;
+  }
+  return lo;
+}
+
 /** CSS Color 4 gamut mapping into sRGB; lightness and hue kept, alpha kept. */
 export function mapToSrgb(color: Oklch): Oklch {
   if (gamutOf(color) === "srgb") return color;
