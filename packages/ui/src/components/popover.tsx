@@ -102,9 +102,11 @@ function PopoverContent({
           element.focus({ preventScroll: true });
         }}
         className={cn(
-          // This surface carried no height cap and no inner scroll at all, so
-          // a list longer than the viewport simply ran off it.
-          "z-50 max-h-[calc(100dvh-1rem)] w-72 origin-(--radix-popover-content-transform-origin) overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/5 duration-100 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // The viewport term alone let a surface taller than the room on its
+          // chosen side run off the screen past that side's edge. The Radix
+          // variable bounds it to that room; min() keeps both terms for the
+          // reason DropdownMenuContent gives.
+          "z-50 max-h-[min(calc(100dvh-1rem),var(--radix-popover-content-available-height,100dvh))] w-72 origin-(--radix-popover-content-transform-origin) overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/5 duration-100 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className,
         )}
         {...props}

@@ -697,8 +697,27 @@ describe("ColorPicker chips", () => {
 
   it("says when a hex output is mapped", () => {
     renderPicker({ value: "oklch(0.7 0.37 145)", format: "hex" });
-    expect(screen.getByText(/outside P3/)).toBeTruthy();
-    expect(screen.getByText(/mapped to sRGB in hex/)).toBeTruthy();
+    expect(screen.getByText("outside P3").getAttribute("title")).toBe(
+      "Mapped to sRGB in hex",
+    );
+  });
+
+  it("hides the map button in sRGB without giving up its place", () => {
+    const { rerender } = renderPicker({
+      value: "#777777",
+      contrastWith: "#ffffff",
+    });
+    const map = () => screen.getByText("map to sRGB");
+    expect(map().style.visibility).toBe("hidden");
+    expect(screen.queryByRole("button", { name: "map to sRGB" })).toBeNull();
+    rerender(
+      <ColorPicker
+        value="oklch(0.7 0.37 145)"
+        format="hex"
+        contrastWith="#ffffff"
+      />,
+    );
+    expect(map().style.visibility).toBe("");
   });
 });
 

@@ -1167,58 +1167,68 @@ export function ColorPicker({
         onSet={setChannel}
       />
 
-      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-        <span
-          data-gamut={colorGamut}
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full border px-1.5 py-px whitespace-nowrap",
-            colorGamut === "srgb"
-              ? "border-emerald-500/60 text-emerald-700 dark:text-emerald-300"
-              : colorGamut === "p3"
-                ? "border-amber-500/70 text-amber-700 dark:text-amber-300"
-                : "border-destructive/70 text-destructive",
-          )}
-        >
-          {colorGamut === "srgb"
-            ? "in sRGB"
-            : colorGamut === "p3"
-              ? "outside sRGB · in P3"
-              : "outside P3"}
-          {colorGamut !== "srgb" && outFormat !== "oklch" && (
-            <span>· mapped to sRGB in {outFormat}</span>
-          )}
-          {colorGamut !== "srgb" && (
-            <button
-              type="button"
-              disabled={disabled}
-              title="Replace with the nearest colour inside sRGB"
-              onClick={() =>
-                setColor(mapToSrgb(latest.current.color), true, {
-                  draft: null,
-                })
-              }
-              className="underline underline-offset-2 disabled:opacity-50"
-            >
-              map to sRGB
-            </button>
-          )}
-        </span>
-        {ratio !== null && (
+      {/* A line of its own per chip, never wrapped, and the map button holding its place while
+          hidden: a chip that wrapped or a button that came and went changed the panel's height
+          mid-drag, and in a popover opened upwards that moved the surface from under the pointer. */}
+      <div className="grid gap-1 text-[11px]">
+        <div className="flex h-5 items-center gap-1.5">
           <span
-            data-contrast
-            title={`WCAG 2 contrast against ${contrastWith}`}
+            data-gamut={colorGamut}
+            title={
+              colorGamut !== "srgb" && outFormat !== "oklch"
+                ? `Mapped to sRGB in ${outFormat}`
+                : undefined
+            }
             className={cn(
-              "rounded-full border px-1.5 py-px whitespace-nowrap",
-              ratio >= 4.5
+              "min-w-0 truncate rounded-full border px-1.5 py-px",
+              colorGamut === "srgb"
                 ? "border-emerald-500/60 text-emerald-700 dark:text-emerald-300"
-                : ratio >= 3
+                : colorGamut === "p3"
                   ? "border-amber-500/70 text-amber-700 dark:text-amber-300"
                   : "border-destructive/70 text-destructive",
             )}
           >
-            {/* Truncated, so 4.4997 does not read 4.50 beside a grade that says it misses AA. */}
-            {`${(Math.floor(ratio * 100 + 1e-6) / 100).toFixed(2)}:1 vs ${contrastLabel} · ${gradeOf(ratio)}`}
+            {colorGamut === "srgb"
+              ? "in sRGB"
+              : colorGamut === "p3"
+                ? "outside sRGB · in P3"
+                : "outside P3"}
           </span>
+          <button
+            type="button"
+            disabled={disabled}
+            title="Replace with the nearest colour inside sRGB"
+            onClick={() =>
+              setColor(mapToSrgb(latest.current.color), true, {
+                draft: null,
+              })
+            }
+            className="ml-auto shrink-0 underline underline-offset-2 disabled:opacity-50"
+            // visibility rather than unmounting, for the space; inline rather than a class, so
+            // jsdom sees it too and the button leaves the accessibility tree there as well.
+            style={colorGamut === "srgb" ? { visibility: "hidden" } : undefined}
+          >
+            map to sRGB
+          </button>
+        </div>
+        {ratio !== null && (
+          <div className="flex h-5 items-center">
+            <span
+              data-contrast
+              title={`WCAG 2 contrast against ${contrastWith}`}
+              className={cn(
+                "min-w-0 truncate rounded-full border px-1.5 py-px",
+                ratio >= 4.5
+                  ? "border-emerald-500/60 text-emerald-700 dark:text-emerald-300"
+                  : ratio >= 3
+                    ? "border-amber-500/70 text-amber-700 dark:text-amber-300"
+                    : "border-destructive/70 text-destructive",
+              )}
+            >
+              {/* Truncated, so 4.4997 does not read 4.50 beside a grade that says it misses AA. */}
+              {`${(Math.floor(ratio * 100 + 1e-6) / 100).toFixed(2)}:1 vs ${contrastLabel} · ${gradeOf(ratio)}`}
+            </span>
+          </div>
         )}
       </div>
 
