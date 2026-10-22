@@ -96,6 +96,15 @@ describe("navigate", () => {
     });
   });
 
+  it("reaches an editor's append cell but selects all without it", () => {
+    const editing = { ...layout, maxOffset: 100 };
+    expect(navigate(at(99), key("ArrowRight"), editing)).toEqual(at(100));
+    expect(navigate(at(20), key("End", false, true), editing)).toEqual(at(100));
+    expect(navigate(at(20), key("a", false, true), editing)).toEqual(at(99, 0));
+    const empty = { ...layout, size: 0, maxOffset: 0, firstVisible: 0 };
+    expect(navigate(at(0), key("a", false, true), empty)).toEqual(at(0));
+  });
+
   it("ignores other keys", () => {
     expect(navigate(at(3), key("Tab"), layout)).toBeUndefined();
     expect(navigate(at(3), key("x"), layout)).toBeUndefined();
