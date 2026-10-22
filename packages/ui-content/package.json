@@ -9,16 +9,25 @@
     "directory": "packages/ui-content"
   },
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": {
       "@orz/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./attachment": {
+      "@orz/source": "./src/attachment/index.ts",
+      "types": "./dist/attachment/index.d.ts",
+      "default": "./dist/attachment/index.js"
+    },
+    "./styles.css": "./styles.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "styles.css"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -26,13 +35,19 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "react": "^19"
+    "@orz/ui": "workspace:^",
+    "lucide-react": "^1",
+    "react": "^19",
+    "react-dom": "^19"
   },
   "devDependencies": {
+    "@orz/ui": "workspace:*",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "happy-dom": "^21.0.3",
+    "lucide-react": "^1.31.0",
+    "radix-ui": "^1.6.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "vitest": "^5.0.5"

@@ -122,6 +122,12 @@ function Doc({ source }: { source: string }) {
   (else the provider's `maxDepth`, else 1) is a link: a document inside a document shows its own
   documents as links, which is what stops a document that embeds itself. A `"viewer"` placement is
   never limited.
+- **`attachmentLinks({ resolve, boxed? })`** draws a link whose address `resolve` turns into a
+  file as an `AttachmentLink` chip from `@orz/ui-content/attachment`, which opens the nearest
+  `AttachmentViewerProvider`'s viewer on a plain click. Every other link goes on to the next
+  plugin. `resolve` has `markdownEmbeds`' signature, so one function serves both:
+  `[markdownEmbeds({ resolve }), attachmentLinks({ resolve })]`. Using it means installing what
+  `@orz/ui-content/attachment` needs (its README, "Attachments").
 
 Register `markdownContent` ahead of any renderer that takes every text file, since the first renderer
 that accepts wins. `react-markdown` refuses some URL schemes (`file:` among them), and an address it
@@ -131,7 +137,7 @@ refuses is drawn as source text before `resolve` sees it: use relative addresses
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `markdownContent`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
+| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `markdownContent`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
 | `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `parseMarkdown` |
 | `@orz/ui-markdown/lib/remark-frontmatter-table` | `remarkFrontmatterTable`, `frontmatterFields`, `FRONTMATTER_FLAVOURS`, node types |
 | `@orz/ui-markdown/lib/remark-rejected-urls` | `remarkRejectedUrlsAsText` |

@@ -6,7 +6,10 @@
     "declarationMap": true,
     "sourceMap": true,
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    // On source, @orz/ui's src/ would join this program and break rootDir;
+    // `pnpm -r build` builds @orz/ui first, so its dist/ is there instead.
+    "customConditions": []
   },
   "include": ["src"]
 }

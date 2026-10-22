@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sandboxed page</title>
+    <style>
+      body {
+        font: 14px/1.5 system-ui, sans-serif;
+        margin: 24px;
+        color: #222;
+      }
+      code {
+        background: #eee;
+        padding: 0 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>A sandboxed HTML attachment</h1>
+    <p>The frame allows scripts and nothing else, so it runs on an opaque origin.</p>
+    <p id="script">The script below has not run.</p>
+    <p id="origin"></p>
+    <script>
+      document.getElementById("script").textContent =
+        "This line was written by the page's own script.";
+      let reach;
+      try {
+        reach = String(window.parent.document.title);
+      } catch (error) {
+        reach = `blocked (${error.name})`;
+      }
+      document.getElementById("origin").innerHTML =
+        `<code>window.origin</code> is <code>${window.origin}</code>; ` +
+        `reading the parent document: ${reach}.`;
+    </script>
+  </body>
+</html>

@@ -1,4 +1,8 @@
 export {
+  type AttachmentLinksOptions,
+  attachmentLinks,
+} from "./attachment-links.tsx";
+export {
   type MarkdownContentOptions,
   markdownContent,
 } from "./content.tsx";
