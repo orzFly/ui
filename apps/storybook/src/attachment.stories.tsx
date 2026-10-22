@@ -35,7 +35,6 @@ import zipUrl from "./fixtures/attachment/bundle.zip?url&no-inline";
 import chapterText from "./fixtures/attachment/chapter.md?raw";
 import webmUrl from "./fixtures/attachment/clip.webm?url&no-inline";
 import htmlText from "./fixtures/attachment/demo.html?raw";
-import htmlUrl from "./fixtures/attachment/demo.html?url&no-inline";
 import tsText from "./fixtures/attachment/fetch-task.ts?raw";
 import pngUrl from "./fixtures/attachment/gradient.png?url&no-inline";
 import guideText from "./fixtures/attachment/guide.md?raw";
@@ -73,12 +72,9 @@ const FILES: Record<string, FileSource> = {
     ...textFile("logo.svg", "image/svg+xml", svgText),
     url: svgUrl,
   },
-  "demo.html": {
-    ...textFile("demo.html", "text/html", htmlText),
-    // The frame loads the served page; the blob would do, but this is the
-    // address an app would hand it.
-    url: htmlUrl,
-  },
+  // A blob, not a served asset: Vite's dev server answers an .html asset URL
+  // with a 404. The sandboxed frame still runs it on an opaque origin.
+  "demo.html": textFile("demo.html", "text/html", htmlText),
   "paper.pdf": binary("paper.pdf", "application/pdf", pdfUrl, 689),
   "clip.webm": binary("clip.webm", "video/webm", webmUrl, 10556),
   "tone.ogg": binary("tone.ogg", "audio/ogg", oggUrl, 4649),
@@ -131,6 +127,9 @@ const plainText: ContentRenderer = {
     const text = useSourceText(source);
     return (
       <pre
+        // A scrolling region has to be reachable by keyboard.
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: it scrolls, so it takes focus
+        tabIndex={0}
         className={cn(
           "overflow-auto rounded-md bg-muted/40 p-3 text-xs",
           className,
