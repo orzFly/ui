@@ -453,8 +453,8 @@ Navigation, selection and copy work as in [Keyboard and copy](#keyboard-and-copy
 - **Keys that do nothing:** typing, Delete, Backspace and cut while nothing is selected (undo, redo
   and Insert still work); a character that is not a hex digit, in the hex pane; any editing key
   when `readOnly`.
-- **Modifiers:** keys held with Ctrl, ⌘ or Alt never type, though AltGr does. Browsers report a
-  Mac's Option as Alt, so characters a Mac layout types with Option do not type either.
+- **Modifiers:** keys held with Ctrl, ⌘ or Alt never type, though AltGr does. On macOS, ⌥ types
+  the characters it composes (ø, ¢…); ⌘⌥ and ⌃⌥ chords are left to shortcuts.
 - **Input methods:** typing comes from `keydown`, so IME composition, for CJK text say, is not
   supported. Paste such text instead.
 
