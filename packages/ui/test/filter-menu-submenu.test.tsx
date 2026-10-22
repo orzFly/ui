@@ -306,6 +306,40 @@ describe("FilterMenu submenus", () => {
     expect(highlighted()).toBe("Pear");
   });
 
+  it("keeps heading for the submenu through a sample with no sideways movement", () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    open();
+    const apple = screen.getByRole("option", { name: "Apple" });
+    const pear = screen.getByRole("option", { name: "Pear" });
+    fireEvent.pointerMove(apple);
+    const surface = screen
+      .getByRole("listbox", { name: "Apple varieties" })
+      .closest('[data-slot="popover-content"]') as HTMLElement;
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 200, y: 0, width: 150, height: 200 }),
+    );
+    fireEvent.pointerLeave(apple, {
+      clientX: 100,
+      clientY: 10,
+      relatedTarget: pear,
+    });
+    fireEvent.pointerMove(pear, { clientX: 140, clientY: 30 });
+    fireEvent.pointerMove(pear, { clientX: 140, clientY: 32 });
+    expect(highlighted()).toBe("Apple");
+  });
+
+  it("opens a submenu only for a highlight the user moved", () => {
+    render(<Harness selectedId="apple" />);
+    open();
+    expect(highlighted()).toBe("Apple");
+    expect(
+      screen.queryByRole("listbox", { name: "Apple varieties" }),
+    ).toBeNull();
+    key(screen.getByRole("combobox"), "ArrowRight");
+    expect(highlighted()).toBe("Gala");
+  });
+
   it("keeps the highlight across the gap, and drops it when the pointer never arrives", () => {
     vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
     const onHighlight = vi.fn();

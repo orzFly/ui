@@ -268,6 +268,9 @@ export function FilterMenu<R extends FilterMenuRow>({
   const [highlight, setHighlightId] = useState<string | null>(null);
   // Non-null while the highlight is inside the highlighted row's submenu.
   const [subHighlight, setSubHighlight] = useState<string | null>(null);
+  // A submenu opens for a highlight the user moved, not for one resting on
+  // the committed row or the query's first hit.
+  const [moved, setMoved] = useState(false);
   const reported = useRef<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -281,6 +284,7 @@ export function FilterMenu<R extends FilterMenuRow>({
     until: number;
     right: boolean;
     x: number;
+    towards: boolean;
   } | null>(null);
   const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pointerIn = useRef<"list" | "submenu" | null>(null);
@@ -315,15 +319,16 @@ export function FilterMenu<R extends FilterMenuRow>({
   }, []);
 
   // Moving the highlight in the list always leaves the submenu.
-  const setHighlightState = useCallback((id: string | null) => {
+  const setHighlightState = useCallback((id: string | null, byUser = false) => {
     setHighlightId(id);
     setSubHighlight(null);
+    setMoved(byUser);
   }, []);
 
   /** A highlight the user moved, reported as such. */
   const move = (row: R | null) => {
     mode.current = "user";
-    setHighlightState(row?.id ?? null);
+    setHighlightState(row?.id ?? null, true);
     report(row);
   };
 
@@ -367,7 +372,7 @@ export function FilterMenu<R extends FilterMenuRow>({
     () => (parent && getSubmenu?.(parent)) || [],
     [parent, getSubmenu],
   );
-  const submenuOpen = open && subRows.length > 0;
+  const submenuOpen = open && moved && subRows.length > 0;
   const subIndex =
     subHighlight === null
       ? -1
@@ -443,13 +448,14 @@ export function FilterMenu<R extends FilterMenuRow>({
     const area = grace.current;
     if (area === null || Date.now() >= area.until) return false;
     // As Radix does, only while heading for the submenu's side: a pointer
-    // moving straight down the list grazes the triangle's thin edge.
-    const towards = area.right
-      ? event.clientX > area.x
-      : event.clientX < area.x;
-    area.x = event.clientX;
+    // moving straight down the list grazes the triangle's thin edge. A sample
+    // with no sideways movement keeps the last direction.
+    if (event.clientX !== area.x) {
+      area.towards = area.right === event.clientX > area.x;
+      area.x = event.clientX;
+    }
     return (
-      (towards || !heading) &&
+      (area.towards || !heading) &&
       insidePolygon({ x: event.clientX, y: event.clientY }, area.polygon)
     );
   };
@@ -471,6 +477,7 @@ export function FilterMenu<R extends FilterMenuRow>({
   const moveIntoSubmenu = (row: R) => {
     mode.current = "user";
     clearGrace();
+    setMoved(true);
     setSubHighlight(row.id);
     report(row);
   };
@@ -550,6 +557,7 @@ export function FilterMenu<R extends FilterMenuRow>({
       until: Date.now() + GRACE_MS,
       right,
       x: event.clientX,
+      towards: false,
     };
   };
 
