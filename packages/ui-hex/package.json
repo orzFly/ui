@@ -1,0 +1,52 @@
+{
+  "name": "@orz/ui-hex",
+  "version": "0.0.0",
+  "description": "Virtualised hex viewer and data inspector over in-memory or paged byte sources",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "github:orzFly/orzui",
+    "directory": "packages/ui-hex"
+  },
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "@orz/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./styles.css"
+  },
+  "files": [
+    "dist",
+    "styles.css"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@orz/ui": "workspace:^",
+    "radix-ui": "^1",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@orz/ui": "workspace:*",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "happy-dom": "^21.0.3",
+    "lucide-react": "^1.31.0",
+    "radix-ui": "^1.6.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "sonner": "^2.0.8",
+    "vitest": "^5.0.5"
+  }
+}
