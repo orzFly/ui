@@ -1,5 +1,7 @@
 import {
   type ColorScheme,
+  type CustomTheme,
+  composeTheme,
   renderDeclarations,
   renderTerminalDeclarations,
   resolvePalette,
@@ -9,6 +11,7 @@ import {
   type Theme,
   type Tokens,
 } from "@orz/themes";
+import { parseCustomThemes } from "./custom.ts";
 import {
   normalizePref,
   readStoredPref,
@@ -53,6 +56,10 @@ export interface ThemeStoreOptions {
   terminalThemes?: readonly TerminalTheme[];
   /** Where the attributes and `.dark` are written. Default `<html>`. */
   root?: HTMLElement;
+  /** localStorage key holding the custom themes as JSON. Default `${storageKey}-custom`. */
+  customStorageKey?: string;
+  /** false: the store never reads or writes custom themes in localStorage; the app owns them. Default true. */
+  persistCustomThemes?: boolean;
 }
 
 export interface ThemeStore {
@@ -62,16 +69,24 @@ export interface ThemeStore {
   getResolved(): ResolvedTheme | null;
   /** The same object until it changes. */
   getTerminal(): ResolvedTerminalTheme;
-  /** [] without a UI slot. */
+  /** [] without a UI slot. The composed custom themes first, then the base list. */
   getThemes(): readonly Theme[];
-  /** [] without a terminal slot. */
+  /** [] without a terminal slot. The composed custom themes first, then the base list. */
   getTerminalThemes(): readonly TerminalTheme[];
   /** Normalizes, persists, applies, notifies. */
   setPref(next: ThemePref): void;
-  /** Only on a store with a UI slot; non-empty. */
+  /** Only on a store with a UI slot; non-empty. Replaces the base list. */
   setThemes(next: readonly Theme[]): void;
-  /** Only on a store with a terminal slot; non-empty. */
+  /** Only on a store with a terminal slot; non-empty. Replaces the base list. */
   setTerminalThemes(next: readonly TerminalTheme[]): void;
+  /** Every stored custom theme, including those that compose to null. The same array until it changes. */
+  getCustomThemes(): readonly CustomTheme[];
+  /**
+   * Replaces the list, persists it (unless `persistCustomThemes: false`),
+   * re-composes the theme lists, notifies. Throws on an id that repeats or
+   * equals a base theme's id.
+   */
+  setCustomThemes(next: readonly CustomTheme[]): void;
   subscribe(listener: () => void): () => void;
   /** Detaches the media-query and cross-tab listeners. */
   dispose(): void;
@@ -122,12 +137,18 @@ export function createThemeStore({
   themes: initialThemes,
   terminalThemes: initialTerminalThemes,
   root,
+  customStorageKey = `${storageKey}-custom`,
+  persistCustomThemes = true,
 }: ThemeStoreOptions): ThemeStore {
   if (initialThemes === undefined && initialTerminalThemes === undefined) {
     throw new Error("createThemeStore: pass themes, terminalThemes or both");
   }
-  let themes = slot(initialThemes, "themes");
-  let terminalThemes = slot(initialTerminalThemes, "terminalThemes");
+  let baseThemes = slot(initialThemes, "themes");
+  let baseTerminalThemes = slot(initialTerminalThemes, "terminalThemes");
+  let customs: readonly CustomTheme[] = [];
+  // What the slots show: the composed custom themes, then the base list.
+  let themes = baseThemes;
+  let terminalThemes = baseTerminalThemes;
 
   const browser = typeof window !== "undefined";
   const media =
@@ -151,6 +172,36 @@ export function createThemeStore({
   let uiTokens: Tokens | null = null;
 
   const slots = () => ({ themes, terminalThemes });
+  const persistsCustom = browser && persistCustomThemes;
+  const baseIds = () =>
+    new Set(
+      [...(baseThemes ?? []), ...(baseTerminalThemes ?? [])].map((t) => t.id),
+    );
+
+  function recompose() {
+    const base = [...(baseThemes ?? []), ...(baseTerminalThemes ?? [])];
+    const taken = baseIds();
+    const composed: Theme[] = [];
+    for (const custom of customs) {
+      // A stored list skips setCustomThemes' checks, and a base list may gain
+      // a custom's id later: the id stays with whichever theme had it first.
+      if (taken.has(custom.id)) continue;
+      const theme = composeTheme(custom, base);
+      if (theme === null) continue;
+      taken.add(theme.id);
+      composed.push(theme);
+    }
+    themes = baseThemes && [...composed, ...baseThemes];
+    terminalThemes = baseTerminalThemes && [...composed, ...baseTerminalThemes];
+  }
+
+  function readCustom(): readonly CustomTheme[] {
+    try {
+      return parseCustomThemes(localStorage.getItem(customStorageKey));
+    } catch {
+      return [];
+    }
+  }
 
   function readStored(): ThemePref {
     try {
@@ -318,9 +369,20 @@ export function createThemeStore({
       renormalize();
       apply();
       notify();
+    } else if (persistsCustom && e.key === customStorageKey) {
+      customs = readCustom();
+      recompose();
+      renormalize();
+      apply();
+      notify();
     }
   };
 
+  // Read before the first normalization, so a stored pick naming a custom
+  // theme paints on creation. Never written back from here: a list this
+  // version cannot fully read may be a newer version's.
+  if (persistsCustom) customs = readCustom();
+  recompose();
   requested = browser ? readStored() : {};
   pref = normalizePref(requested, slots());
   apply();
@@ -352,7 +414,8 @@ export function createThemeStore({
       if (themes === undefined) {
         throw new Error("setThemes: this store has no UI slot");
       }
-      themes = slot(next, "themes");
+      baseThemes = slot(next, "themes");
+      recompose();
       renormalize();
       apply();
       notify();
@@ -361,7 +424,34 @@ export function createThemeStore({
       if (terminalThemes === undefined) {
         throw new Error("setTerminalThemes: this store has no terminal slot");
       }
-      terminalThemes = slot(next, "terminalThemes");
+      baseTerminalThemes = slot(next, "terminalThemes");
+      recompose();
+      renormalize();
+      apply();
+      notify();
+    },
+    getCustomThemes: () => customs,
+    setCustomThemes(next) {
+      const taken = baseIds();
+      const ids = new Set<string>();
+      for (const { id } of next) {
+        if (ids.has(id)) {
+          throw new Error(`setCustomThemes: id ${id} appears twice`);
+        }
+        if (taken.has(id)) {
+          throw new Error(`setCustomThemes: id ${id} is a base theme's`);
+        }
+        ids.add(id);
+      }
+      customs = [...next];
+      if (persistsCustom) {
+        try {
+          localStorage.setItem(customStorageKey, JSON.stringify(customs));
+        } catch {
+          // the list just won't persist
+        }
+      }
+      recompose();
       renormalize();
       apply();
       notify();
