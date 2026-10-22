@@ -1,10 +1,13 @@
 import { isUiTheme, resolvePalette, resolveTerminal } from "./resolve.ts";
 import type {
+  AnyCustomTheme,
   ColorScheme,
   CustomSide,
   CustomTerminal,
+  CustomTerminalTheme,
   CustomTheme,
   Palette,
+  TerminalPalette,
   TerminalTheme,
   TerminalTokens,
   Theme,
@@ -72,4 +75,34 @@ export function composeTheme(
   if (light) theme.light = light;
   if (dark) theme.dark = dark;
   return theme as Theme;
+}
+
+export function isCustomTerminalTheme(
+  custom: AnyCustomTheme,
+): custom is CustomTerminalTheme {
+  return custom.kind === "terminal";
+}
+
+/**
+ * A terminal custom theme made into an ordinary `TerminalTheme`, each side
+ * resolved as a UI side's terminal is. null when no side survives.
+ */
+export function composeTerminalTheme(
+  custom: CustomTerminalTheme,
+  themes: readonly TerminalTheme[],
+): TerminalTheme | null {
+  const light =
+    custom.light && resolveCustomTerminal(custom.light, "light", themes);
+  const dark =
+    custom.dark && resolveCustomTerminal(custom.dark, "dark", themes);
+  if (!light && !dark) return null;
+  const theme: {
+    id: string;
+    label: string;
+    light?: TerminalPalette;
+    dark?: TerminalPalette;
+  } = { id: custom.id, label: custom.label };
+  if (light) theme.light = { terminal: light };
+  if (dark) theme.dark = { terminal: dark };
+  return theme as TerminalTheme;
 }
