@@ -53,8 +53,32 @@
 .orz-hex[data-fill] {
   height: 100%;
 }
+/* As wide as the most columns need, so that a narrower width is the limit
+   the columns are fitted to. */
+.orz-hex[data-columns-auto] {
+  width: var(--hex-auto-width, max-content);
+}
+.orz-hex[data-resizable] {
+  min-width: 10rem;
+  min-height: 6rem;
+}
+.orz-hex[data-resizable="both"] {
+  resize: both;
+}
+.orz-hex[data-resizable="horizontal"] {
+  resize: horizontal;
+}
+.orz-hex[data-resizable="vertical"] {
+  resize: vertical;
+}
 .orz-hex:focus {
   border-color: var(--ring);
+}
+
+.orz-hex-measure {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .orz-hex-probe {
@@ -357,6 +381,10 @@
   font-size: 0.6875rem;
   line-height: 1.25rem;
   white-space: nowrap;
+}
+/* Clear of the resize handle in the corner. */
+.orz-hex[data-resizable] .orz-hex-status {
+  padding-right: 1.25rem;
 }
 
 .orz-hex-live {

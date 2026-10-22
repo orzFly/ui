@@ -25,6 +25,7 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { type ColumnMetrics, fitColumns, rowWidth } from "./column-fit.ts";
 import {
   encodingLabel,
   getTextDecoding,
@@ -81,14 +82,21 @@ export interface HexViewProps {
   selection?: HexSelection | null;
   defaultSelection?: HexSelection | null;
   onSelectionChange?: (selection: HexSelection | null) => void;
-  /** Bytes per row; 16. */
-  columns?: number;
+  /**
+   * Bytes per row; 16. `"auto"` picks the widest of `maxColumns` and the
+   * powers of two below it, down to 4, that fits the view's width.
+   */
+  columns?: number | "auto";
+  /** The most columns `"auto"` picks; 16. */
+  maxColumns?: number;
   /** Bytes per group, separated by a gap; 8, and 0 for no gap. */
   groupSize?: number;
   /** Added to every displayed address, never to selection offsets; 0. */
   baseAddress?: number;
   /** A fixed viewport height in rows; omitted, the view fills its parent. */
   rows?: number;
+  /** A resize handle in the bottom corner; `true` resizes both ways. */
+  resizable?: boolean | "horizontal" | "vertical";
   showAddresses?: boolean;
   showColumnLabels?: boolean;
   /** The text pane beside the hex pane. */
@@ -242,10 +250,12 @@ export function HexGrid({
   selection: selectionProp,
   defaultSelection,
   onSelectionChange,
-  columns = 16,
+  columns: columnsProp = 16,
+  maxColumns = 16,
   groupSize = 8,
   baseAddress = 0,
   rows,
+  resizable = false,
   showAddresses = true,
   showColumnLabels = true,
   showText = true,
@@ -309,8 +319,20 @@ export function HexGrid({
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
   const liveRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+
+  const autoColumns = columnsProp === "auto";
+  const fit = useColumnFit(
+    autoColumns,
+    maxColumns,
+    groupSize,
+    rootRef,
+    scrollerRef,
+    measureRef,
+  );
+  const columns = autoColumns ? (fit?.columns ?? maxColumns) : columnsProp;
 
   const rowHeight =
     useElementSize(probeRef, (el) => el.getBoundingClientRect().height) ||
@@ -339,6 +361,12 @@ export function HexGrid({
   const geometryRef = useLatest(geometry);
 
   const [topRowState, setTopRowState] = useState(0);
+  // A new row width keeps the byte at the top left in the top row.
+  const [topColumns, setTopColumns] = useState(columns);
+  if (topColumns !== columns) {
+    setTopColumns(columns);
+    setTopRowState(Math.floor((topRowState * topColumns) / columns));
+  }
   const topRow = clampTopRow(topRowState, geometry);
   const topRowRef = useLatest(topRow);
   const lastWritten = useRef(-1);
@@ -907,6 +935,12 @@ export function HexGrid({
     );
   }
 
+  const resize = resizable === true ? "both" : resizable || undefined;
+  const rowsHeight =
+    rows === undefined
+      ? undefined
+      : `calc(var(--hex-row-height) * ${rows + (showColumnLabels ? 1 : 0)} + ${scrollbarHeight}px)`;
+
   const pending = cache.pending();
   let statusLeft = "";
   if (selection) {
@@ -920,7 +954,14 @@ export function HexGrid({
     <div
       ref={rootRef}
       className={className ? `orz-hex ${className}` : "orz-hex"}
+      style={
+        fit
+          ? ({ "--hex-auto-width": `${fit.width}px` } as CSSProperties)
+          : undefined
+      }
       data-active-pane={selection?.pane ?? "hex"}
+      data-columns-auto={autoColumns ? "" : undefined}
+      data-resizable={resize}
       data-dragging={dragging ? "" : undefined}
       data-fill={rows === undefined ? "" : undefined}
       data-mode={editing?.mode}
@@ -934,15 +975,48 @@ export function HexGrid({
       onKeyDown={handleKey}
     >
       <div ref={probeRef} className="orz-hex-probe" aria-hidden />
+      {autoColumns && (
+        <div
+          ref={measureRef}
+          className="orz-hex-row orz-hex-measure"
+          aria-hidden
+        >
+          {showAddresses && (
+            <span className="orz-hex-addr" data-measure="addr">
+              {formatAddress(baseAddress, digits, uppercase)}
+            </span>
+          )}
+          <span className="orz-hex-cell" data-measure="hex">
+            <span className="orz-hex-cell-content">00</span>
+          </span>
+          <span
+            className="orz-hex-cell"
+            data-measure="group-end"
+            data-group-end=""
+          >
+            <span className="orz-hex-cell-content">00</span>
+          </span>
+          {showText && (
+            <>
+              <span className="orz-hex-pane-gap" data-measure="gap" />
+              <span
+                className="orz-hex-cell orz-hex-text-cell"
+                data-measure="text"
+              />
+            </>
+          )}
+        </div>
+      )}
       <div
         ref={scrollerRef}
         className="orz-hex-scroller"
         style={
-          rows === undefined
+          rowsHeight === undefined
             ? undefined
-            : {
-                height: `calc(var(--hex-row-height) * ${rows + (showColumnLabels ? 1 : 0)} + ${scrollbarHeight}px)`,
-              }
+            : // A handle that drags the height lets the rows follow it.
+              resize === "both" || resize === "vertical"
+              ? { flex: `1 1 ${rowsHeight}` }
+              : { height: rowsHeight }
         }
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -1027,6 +1101,74 @@ export function HexGrid({
       <div ref={liveRef} className="orz-hex-live" aria-live="polite" />
     </div>
   );
+}
+
+interface ColumnFit {
+  columns: number;
+  /** The root's width at `maxColumns`, the most it grows to. */
+  width: number;
+}
+
+/**
+ * `columns="auto"`: the root is as wide as `maxColumns` need, capped by its
+ * max-width, and the columns are the most that fit the width it gets.
+ */
+function useColumnFit(
+  enabled: boolean,
+  maxColumns: number,
+  groupSize: number,
+  rootRef: RefObject<HTMLElement | null>,
+  scrollerRef: RefObject<HTMLElement | null>,
+  measureRef: RefObject<HTMLElement | null>,
+) {
+  const [fit, setFit] = useState<ColumnFit | null>(null);
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const scroller = scrollerRef.current;
+    const measure = measureRef.current;
+    if (!enabled || !root || !scroller || !measure) return;
+    const width = (part: string) =>
+      measure.querySelector(`[data-measure="${part}"]`)?.getBoundingClientRect()
+        .width ?? 0;
+    const update = () => {
+      const hex = width("hex");
+      // happy-dom and a detached tree lay out at 0.
+      if (!hex) return;
+      const metrics: ColumnMetrics = {
+        fixed: width("addr") + width("gap"),
+        column: hex + width("text"),
+        groupGap: width("group-end") - hex,
+        groupSize,
+      };
+      const style = getComputedStyle(scroller);
+      const padding =
+        Number.parseFloat(style.paddingLeft) +
+        Number.parseFloat(style.paddingRight);
+      // The border, the scrollbar gutter and the padding.
+      const chrome =
+        root.getBoundingClientRect().width - scroller.clientWidth + padding;
+      const next = {
+        columns: fitColumns(
+          scroller.clientWidth - padding,
+          maxColumns,
+          metrics,
+        ),
+        width: Math.ceil(rowWidth(maxColumns, metrics) + chrome),
+      };
+      setFit((prev) =>
+        prev?.columns === next.columns && prev.width === next.width
+          ? prev
+          : next,
+      );
+    };
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(update);
+    observer.observe(root);
+    observer.observe(measure);
+    return () => observer.disconnect();
+  }, [enabled, maxColumns, groupSize, rootRef, scrollerRef, measureRef]);
+  return enabled ? fit : null;
 }
 
 function rangeState(

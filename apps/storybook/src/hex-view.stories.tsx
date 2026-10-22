@@ -236,3 +236,8 @@ function ReadErrorsDemo() {
 export const ReadErrors: Story = {
   render: () => <ReadErrorsDemo />,
 };
+
+// Drag the corner: the columns follow the width, 16, 8 or 4 at a time.
+export const FitsWidth: Story = {
+  args: { columns: "auto", resizable: true },
+};

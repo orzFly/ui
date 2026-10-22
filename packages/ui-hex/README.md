@@ -175,10 +175,12 @@ in.
 | `source` | | The bytes |
 | `selection`, `onSelectionChange` | | Controlled selection |
 | `defaultSelection` | `null` | Uncontrolled selection |
-| `columns` | `16` | Bytes per row |
+| `columns` | `16` | Bytes per row, or `"auto"` to fit the width (below) |
+| `maxColumns` | `16` | The most columns `"auto"` picks |
 | `groupSize` | `8` | Bytes between group gaps; `0` for none |
 | `baseAddress` | `0` | Added to displayed addresses, never to offsets |
 | `rows` | | A fixed viewport height in rows; omitted, the view fills its parent's height |
+| `resizable` | `false` | A resize handle in the bottom corner: `true` for both ways, `"horizontal"` or `"vertical"` |
 | `showAddresses`, `showColumnLabels`, `showText`, `showStatusBar` | `true` | |
 | `uppercase` | `true` | Hex digit case |
 | `fadeZeroBytes` | `true` | Fades `00` |
@@ -196,6 +198,19 @@ the strip under the last whole row stays empty. Above roughly 13 MiB at 16 colum
 is taller than browsers let an element be; the view then maps the scrollbar onto rows and moves a
 few rows per wheel notch, so dragging the scrollbar becomes coarse but the wheel and keyboard stay
 precise.
+
+The view is as wide as its columns, and never wider than its container. With a fixed `columns`, a
+narrower container scrolls it sideways. With `columns="auto"` it takes the width `maxColumns` need
+and shows the widest of `maxColumns` and the powers of two below it, down to 4, that fits the width
+it gets, so a narrow container or a narrow drag of the handle gets 8 or 4 columns instead of a
+scrollbar; below 4 it scrolls. A resize keeps the byte at the start of the top row in the top row.
+To cap the width in pixels rather than columns, put the view in a container with a `max-width`: the
+stylesheet is unlayered, so its `max-width: 100%` on `.orz-hex` wins over a Tailwind class passed
+through `className`.
+
+`resizable` lets the user drag the view's size. A dragged height adds rows beyond `rows`, and a
+dragged width overrides the content width, so a fixed `columns` scrolls or leaves space beside the
+text pane while `"auto"` refits.
 
 ### `HexInspector` props
 

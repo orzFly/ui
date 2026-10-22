@@ -284,6 +284,47 @@ describe("HexView", () => {
     expect(addresses).toEqual(["0010", "0020", "0030", "0040"]);
   });
 
+  it("keeps the top row's first byte on top when the columns change", () => {
+    let handle: HexViewHandle | null = null;
+    const ref = (h: HexViewHandle | null) => {
+      handle = h;
+    };
+    const { root, rerender } = setup({ ref });
+    act(() => handle?.scrollToOffset(0x30, "start"));
+    rerender(<HexView source={source} rows={4} ref={ref} columns={8} />);
+    const first = () =>
+      root.querySelector(".orz-hex-layer .orz-hex-addr")?.textContent;
+    expect(first()).toBe("0030");
+    rerender(<HexView source={source} rows={4} ref={ref} columns={16} />);
+    expect(first()).toBe("0030");
+  });
+
+  it("lays out maxColumns for columns=auto until it can measure", () => {
+    const { root } = setup({ columns: "auto", maxColumns: 8 });
+    expect(root.hasAttribute("data-columns-auto")).toBe(true);
+    const header = root.querySelector(".orz-hex-header") as HTMLElement;
+    expect(header.querySelectorAll(".orz-hex-cell")).toHaveLength(8);
+    const addresses = [
+      ...root.querySelectorAll(".orz-hex-layer .orz-hex-addr"),
+    ].map((el) => el.textContent);
+    expect(addresses).toEqual(["0000", "0008", "0010", "0018"]);
+  });
+
+  it("lets a vertical resize handle grow the rows past `rows`", () => {
+    const { root } = setup({ resizable: true });
+    expect(root.getAttribute("data-resizable")).toBe("both");
+    const scroller = root.querySelector(".orz-hex-scroller") as HTMLElement;
+    expect(scroller.style.flex).toContain("calc(");
+    expect(scroller.style.height).toBe("");
+
+    const fixed = setup({ resizable: "horizontal" });
+    expect(fixed.root.getAttribute("data-resizable")).toBe("horizontal");
+    const fixedScroller = fixed.root.querySelector(
+      ".orz-hex-scroller",
+    ) as HTMLElement;
+    expect(fixedScroller.style.height).toContain("calc(");
+  });
+
   it("adds small wheel steps up to whole rows when scaled", () => {
     const huge: ByteSource = {
       size: 2 ** 32,
