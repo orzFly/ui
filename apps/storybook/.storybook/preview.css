@@ -6,11 +6,3 @@
 /* styles.css registers the package's dist/; stories run on its src/. */
 @source "../../../packages/ui/src";
 @source "../src";
-
-/* Storybook's docs theme only knows light and dark (see preview.tsx); paint
-   the page and each story's canvas in the selected theme's own surface, so a
-   story reads on docs exactly as it does on its own. */
-.sbdocs.sbdocs-wrapper,
-.sbdocs .docs-story {
-  background-color: var(--background);
-}
