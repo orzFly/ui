@@ -1,3 +1,4 @@
+import { builtinThemes } from "@orz/themes";
 import { act, render, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -26,15 +27,18 @@ afterEach(() => {
 });
 
 describe("Toaster", () => {
-  it("takes the provider's kind, not the OS's", async () => {
+  it("takes the provider's color scheme, not the OS's", async () => {
     // The OS says light, so a toaster following the OS would come out light.
     vi.stubGlobal("matchMedia", () => ({
       matches: false,
       addEventListener() {},
       removeEventListener() {},
     }));
-    const store = createThemeStore({ storageKey: "app-theme" });
-    store.setPref("dracula");
+    const store = createThemeStore({
+      storageKey: "app-theme",
+      themes: builtinThemes,
+    });
+    store.setPref({ ui: { theme: "dracula", mode: "dark" } });
     render(
       <ThemeProvider store={store}>
         <Toaster />
