@@ -34,6 +34,13 @@ package yourself:
 @source "../node_modules/@orz/ui/dist";
 ```
 
+`styles.css` is `theme.css` plus the page-level rules: the base layer (`* { border-color }`,
+`body` colours, `html` font), the overlayscrollbars theme, `revealBlock`'s `.anchor-flash` and
+`@source "./dist"`. A surface that
+shares a document with someone else's UI, and must not restyle it, imports
+`@orz/ui/theme.css` instead: the tokens, `.dark`, `tw-animate-css` and shadcn's variants, nothing
+global. `theme.css` carries no `@source`, so that surface names the files Tailwind scans itself.
+
 `styles.css` does not load a font. `--font-sans` names `'Geist Variable'` first and falls back to
 the system UI font, so install `@fontsource-variable/geist` (or define `--font-sans`) if you want it.
 `useOverlayScrollbars` needs the library's own stylesheet, which you import yourself:
@@ -131,6 +138,22 @@ Whatever is highlighted previews on the whole page after resting 80 ms, and a pi
   so a new theme opened from the terminal menu is a terminal theme; a callback that takes only the
   id still fits. The app brings the editor, such as `ThemeEditor` below.
 
+`trigger` replaces the icon button, for a toolbar with buttons of its own look. It gets the icon
+the default button would show (it follows the mode in the UI picker) and the menu's name, "Theme"
+or "Terminal theme", which the element should carry as its accessible name. The element goes
+through Radix's `PopoverTrigger asChild`, so it must take a ref and spread the props it is given
+onto a DOM element.
+
+```tsx
+<ThemeMenu
+  trigger={({ Icon, label }) => (
+    <button type="button" aria-label={label} title={label} className="…">
+      <Icon className="size-3.5" />
+    </button>
+  )}
+/>
+```
+
 ### Custom themes
 
 The store keeps the user's custom themes from `@orz/themes` in one list of two kinds, and lists the
@@ -159,6 +182,10 @@ setCustomThemes([...customThemes, draft]);
 - `persistCustomThemes: false` keeps the store away from that key altogether. The app then loads its
   list with `setCustomThemes` and saves it from `subscribe` and `getCustomThemes`, for example to its
   server.
+- `persistPref: false` does the same for the pref under `storageKey`: the store starts from the
+  default pick, never writes the pref, and ignores other tabs' writes to it. The app then commits
+  picks itself with `setPref`, for example from a URL. The paint cache and the custom themes are
+  unaffected.
 
 ### Custom theme editor
 
@@ -440,6 +467,7 @@ modes the picker uses); nothing else in `@orz/ui` does.
 | `@orz/ui/lib/<name>` | `clipboard`, `color`, `text-metrics`, `theme-file`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
+| `@orz/ui/theme.css` | baseline tokens and custom variants, without the base layer or @source |
 
 `UnsavedChangesDialog` only renders the prompt, and the blocker belongs to your router. Its JSDoc
 shows the TanStack Router wiring. Register the work that can be lost with `useDirtySource()` from

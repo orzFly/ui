@@ -1,37 +1,33 @@
 import type { StorybookConfig } from "@storybook/react-vite";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defaultClientConditions, mergeConfig } from "vite";
+import { mergeConfig } from "vite";
+import { buildToolbar, VITE_SHARED } from "./toolbar/build.ts";
 
-const config: StorybookConfig = {
+// StorybookConfig does not declare the managerEntries preset, which is the
+// one hook that runs before the manager's esbuild bundle.
+type Config = StorybookConfig & {
+  managerEntries?: (
+    entries: string[] | undefined,
+    options: { configType?: string },
+  ) => Promise<string[]>;
+};
+
+const config: Config = {
   framework: "@storybook/react-vite",
   stories: ["../src/**/*.stories.tsx"],
   addons: ["@storybook/addon-docs", "@storybook/addon-a11y"],
   core: { disableTelemetry: true },
+  // First, so the island has set globalThis.__ORZ_TOOLBAR__ by the time
+  // manager.ts, the last entry, reads it.
+  managerEntries: async (entries = [], options) => [
+    await buildToolbar(options.configType),
+    ...entries,
+  ],
   viteFinal: (base) =>
     mergeConfig(base, {
       plugins: [react(), tailwindcss()],
-      resolve: {
-        // @orz/ui's exports point this condition at src/, so stories run on
-        // the package's source through the same entry points a consumer
-        // imports, with no watch build in between.
-        conditions: ["@orz/source", ...defaultClientConditions],
-        // Source files resolve their peers from packages/ui/node_modules; a
-        // second React or radix-ui beside the app's would split their module
-        // state the moment the two lockfile entries drift apart.
-        dedupe: [
-          "react",
-          "react-dom",
-          "radix-ui",
-          "sonner",
-          "lucide-react",
-          "@pierre/diffs",
-          "@codemirror/state",
-          "@codemirror/view",
-          "@lezer/highlight",
-          "@orz/ui-content",
-        ],
-      },
+      resolve: VITE_SHARED,
     }),
 };
 

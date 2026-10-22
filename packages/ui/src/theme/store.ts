@@ -75,6 +75,12 @@ export interface ThemeStoreOptions {
   customStorageKey?: string;
   /** false: the store never reads or writes custom themes in localStorage; the app owns them. Default true. */
   persistCustomThemes?: boolean;
+  /**
+   * false: the store never reads, writes or follows the pref in localStorage (`storageKey`); the
+   * app owns the committed pick, for example in a URL. The paint cache and custom themes are
+   * unaffected. Default true.
+   */
+  persistPref?: boolean;
 }
 
 export interface ThemeStore {
@@ -182,6 +188,7 @@ export function createThemeStore({
   root,
   customStorageKey = `${storageKey}-custom`,
   persistCustomThemes = true,
+  persistPref = true,
 }: ThemeStoreOptions): ThemeStore {
   if (initialThemes === undefined && initialTerminalThemes === undefined) {
     throw new Error("createThemeStore: pass themes, terminalThemes or both");
@@ -226,6 +233,7 @@ export function createThemeStore({
     terminalThemes: baseTerminalThemes,
   });
   const persistsCustom = browser && persistCustomThemes;
+  const persists = browser && persistPref;
   const baseIds = () =>
     new Set(
       [...(baseThemes ?? []), ...(baseTerminalThemes ?? [])].map((t) => t.id),
@@ -473,7 +481,7 @@ export function createThemeStore({
   };
   // Keep multiple open tabs in step.
   const onStorage = (e: StorageEvent) => {
-    if (e.key === storageKey) {
+    if (persists && e.key === storageKey) {
       requested = readStored();
       renormalize();
       apply();
@@ -492,7 +500,7 @@ export function createThemeStore({
   // version cannot fully read may be a newer version's.
   if (persistsCustom) customs = readCustom();
   recompose();
-  requested = browser ? readStored() : {};
+  requested = persists ? readStored() : {};
   pref = normalizePref(requested, slots(), fallback());
   apply();
   if (browser) {
@@ -510,7 +518,7 @@ export function createThemeStore({
       shown = null;
       requested = next;
       renormalize();
-      if (browser) {
+      if (persists) {
         try {
           localStorage.setItem(storageKey, JSON.stringify(pref));
         } catch {

@@ -4,5 +4,5 @@
     "customConditions": ["@orz/source"],
     "types": ["vite/client"]
   },
-  "include": [".storybook", "src"]
+  "include": [".storybook", "src", "test", "vitest.config.ts"]
 }
