@@ -47,6 +47,9 @@ importers:
       '@orz/query':
         specifier: workspace:*
         version: link:../../packages/query
+      '@orz/themes':
+        specifier: workspace:*
+        version: link:../../packages/themes
       '@orz/ui':
         specifier: workspace:*
         version: link:../../packages/ui
