@@ -1,0 +1,85 @@
+From 4c1d2e8f0a9b7c6d5e4f3a2b1c0d9e8f7a6b5c4d Mon Sep 17 00:00:00 2001
+From: alice <noreply@example.com>
+Date: Tue, 20 Oct 2026 16:04:27 +0000
+Subject: [PATCH 1/2] feat: retry a failed fetch once before giving up
+
+A flaky network used to fail the whole task on its first error. One
+retry, after a short pause, covers the common blip without hiding a
+real outage.
+---
+ src/fetch-task.ts | 14 +++++++++-----
+ src/retry.ts      | 11 +++++++++++
+ 2 files changed, 20 insertions(+), 5 deletions(-)
+ create mode 100644 src/retry.ts
+
+diff --git a/src/fetch-task.ts b/src/fetch-task.ts
+index 3b18e51..9f2c4a7 100644
+--- a/src/fetch-task.ts
++++ b/src/fetch-task.ts
+@@ -1,13 +1,17 @@
++import { retryOnce } from "./retry.ts";
++
+ export type Task = { id: string; title: string; done: boolean };
+ 
+ export async function fetchTask(id: string): Promise<Task> {
+-  const response = await fetch(`/api/tasks/${id}`);
+-  if (!response.ok) {
+-    throw new Error(`task ${id}: ${response.status}`);
+-  }
+-  return response.json();
++  return retryOnce(async () => {
++    const response = await fetch(`/api/tasks/${id}`);
++    if (!response.ok) {
++      throw new Error(`task ${id}: ${response.status}`);
++    }
++    return response.json();
++  });
+ }
+ 
+ export function isDone(task: Task): boolean {
+   return task.done;
+ }
+diff --git a/src/retry.ts b/src/retry.ts
+new file mode 100644
+index 0000000..d1e5c0a
+--- /dev/null
++++ b/src/retry.ts
+@@ -0,0 +1,11 @@
++const PAUSE_MS = 250;
++
++/** Runs `attempt`, and once more after a pause if it throws. */
++export async function retryOnce<T>(attempt: () => Promise<T>): Promise<T> {
++  try {
++    return await attempt();
++  } catch {
++    await new Promise((resolve) => setTimeout(resolve, PAUSE_MS));
++    return attempt();
++  }
++}
+-- 
+2.47.0
+
+
+From 7e6f5d4c3b2a1908f7e6d5c4b3a29180f7e6d5c4 Mon Sep 17 00:00:00 2001
+From: bot-one <noreply@example.com>
+Date: Wed, 21 Oct 2026 11:52:07 +0000
+Subject: [PATCH 2/2] docs: say what fetchTask does on a network error
+
+---
+ README.md | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/README.md b/README.md
+index 5a1b2c3..6d7e8f9 100644
+--- a/README.md
++++ b/README.md
+@@ -3,3 +3,7 @@
+ ## fetchTask
+ 
+ Loads one task by id.
++
++A network error is retried once, a quarter of a second later. A second
++failure, or any error status from the server, rejects with the status in
++the message.
+-- 
+2.47.0

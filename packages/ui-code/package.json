@@ -38,6 +38,7 @@
     "@orz/ui": "workspace:^",
     "@orz/ui-content": "workspace:^",
     "@pierre/diffs": "^1.6.1",
+    "lucide-react": "^1",
     "react": "^19",
     "react-dom": "^19"
   },
@@ -54,6 +55,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "happy-dom": "^21.0.3",
+    "lucide-react": "^1.31.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "vitest": "^5.0.5"

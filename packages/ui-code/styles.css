@@ -23,3 +23,12 @@ diffs-container {
 .dark diffs-container {
   color-scheme: dark;
 }
+
+/* A patch's +/- counts take the theme's diff colours, mixed toward the
+   foreground so small text stays legible. */
+.diff-addition-text {
+  color: color-mix(in oklab, var(--foreground) 75%, var(--diff-addition));
+}
+.diff-deletion-text {
+  color: color-mix(in oklab, var(--foreground) 75%, var(--diff-deletion));
+}

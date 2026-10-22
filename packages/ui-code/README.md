@@ -2,12 +2,13 @@
 
 Read-only code and diff blocks, syntax-highlighted by [pierre](https://www.npmjs.com/package/@pierre/diffs)
 on shiki and themed by `@orz/ui`, plus a word differ that segments CJK as well as English. The
-package contributes a code renderer to `@orz/ui-content`'s registry, `codeContent`.
+package contributes two renderers to `@orz/ui-content`'s registry: `codeContent` for code and
+`patchContent` for unified diffs.
 
 ## Install
 
 ```bash
-pnpm add @orz/ui-code @orz/ui @orz/ui-content @pierre/diffs react react-dom
+pnpm add @orz/ui-code @orz/ui @orz/ui-content @pierre/diffs lucide-react react react-dom
 ```
 
 `@orz/ui-content` is a peer dependency so that the app and every content package share one registry.
@@ -28,7 +29,8 @@ and its own wasm, and two highlighters that disagree about the engine.
 Import it after `@orz/ui/styles.css`. It pins every `diffs-container` to the app theme's
 `color-scheme` and paints pierre's background and foreground from `--background` and
 `--foreground`, so a block matches the page under every theme, including themes with no syntax
-counterpart. Like `@orz/ui`'s stylesheet, it registers `@source "./dist"` on its own.
+counterpart. It also colours a patch's `+`/`−` counts from the theme's `--diff-addition` and
+`--diff-deletion`. Like `@orz/ui`'s stylesheet, it registers `@source "./dist"` on its own.
 
 ## Theme
 
@@ -42,7 +44,7 @@ slots from the side on screen. Outside a provider, blocks use pierre's pair.
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `fenceFilename`, `codeContent`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
+| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `fenceFilename`, `codeContent`, `patchContent`, `PatchView`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
 | `@orz/ui-code/word-diff` | `wordDiff`, `coalescedWordDiff`, `wordBag`, `bagWith`, types |
 | `@orz/ui-code/styles.css` | the `diffs-container` rules |
 
@@ -97,6 +99,39 @@ reaches it with a large file cannot freeze the tab:
   large to preview" note.
 - Text found over the cap once loaded (a file of unknown size, or an inline source) is drawn as
   plain text, with no highlighting and no line numbers.
+
+### `patchContent`
+
+Draws a unified diff as one diff per file, each commit's subject, author, date and hash in a row
+above its message and files, with a file list (with `+`/`−` counts, jumping to a file) and a *raw*
+toggle back to the text as written. It accepts a source tagged `diff` or `patch` (a fenced block)
+and a file `isPatchFile` calls a patch, in either placement, so it goes before `codeContent`:
+
+```tsx
+const RENDERERS = [attachmentCard(), markdownContent(), patchContent, codeContent];
+```
+
+- `format-patch` mail, `show` / `log -p` output and a plain `diff -u` all read. The mail headers
+  and the `--stat` are left to *raw*; a `diff` command line or an `Index:` banner above a plain diff
+  names no commit.
+- Parsing is strict: a hunk whose line counts do not add up, or text with no file in it, shows the
+  text instead, rather than a patch with a change silently missing. A fence that is not a patch,
+  such as a bare `+`/`-` snippet, stays highlighted text; a file that is not one says so above it.
+- The file list and *raw* go into the title bar a surrounding surface lends (`useContentTitleBar`;
+  `attachmentCard` lends its card's). With none, the patch draws a framed bar of its own, which is
+  what a fence gets, so a fence inside a markdown card never takes over the card's bar.
+- The diffs scroll inside a height-capped box, which is what lets pierre virtualize them: 70vh in a
+  document, the viewer's 75vh pane less its bar (maximized too, for now). Inside a card, whose
+  collapsed body hides its overflow, they do not scroll and the file list does not jump; the card
+  expands instead. That assumes the card's `collapsedClassName` caps it below one screen: past it,
+  the patch is cut at one screen.
+- A file is loaded and capped as `codeContent` caps it.
+
+`PatchView` is the same view on its own, for a surface outside the registry:
+
+```tsx
+<PatchView filename="fix.patch" text={text} lineNumbers invalidNote titleBar={bar} />
+```
 
 ### `@orz/ui-code/word-diff`
 

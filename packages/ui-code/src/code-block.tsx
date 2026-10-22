@@ -1,10 +1,16 @@
 import { type ColorScheme, type Theme, useTheme } from "@orz/ui/theme";
-import type { CodeViewProps, MultiFileDiffProps } from "@pierre/diffs/react";
+import type { CodeViewItem, ParsedPatch } from "@pierre/diffs";
+import type {
+  CodeViewHandle,
+  CodeViewProps,
+  MultiFileDiffProps,
+} from "@pierre/diffs/react";
 import {
   Component,
   type ComponentType,
   lazy,
   type ReactNode,
+  type Ref,
   Suspense,
   useCallback,
   useMemo,
@@ -18,7 +24,11 @@ import {
 // of the app must only use type imports.
 const LazyCodeView = lazy(() =>
   import("@pierre/diffs/react").then((m) => ({
-    default: m.CodeView as ComponentType<CodeViewProps<undefined, undefined>>,
+    default: m.CodeView as ComponentType<
+      CodeViewProps<undefined, undefined> & {
+        ref?: Ref<CodeViewHandle<undefined, undefined>>;
+      }
+    >,
   })),
 );
 
@@ -29,6 +39,23 @@ export const LazyMultiFileDiff = lazy(() =>
     >,
   })),
 );
+
+/**
+ * A unified diff split into commits and their files, or null when the text is
+ * not one. Strict on purpose: pierre's lenient mode skips a hunk whose counts
+ * do not add up and carries on, so the reader would be shown a patch with a
+ * change silently missing. Text before the first file — a commit message — is
+ * no reason to refuse; a patch with no file in it is.
+ */
+export async function parsePatch(text: string): Promise<ParsedPatch[] | null> {
+  const { parsePatchFiles } = await import("@pierre/diffs");
+  try {
+    const patches = parsePatchFiles(text, undefined, true);
+    return patches.some((patch) => patch.files.length > 0) ? patches : null;
+  } catch {
+    return null;
+  }
+}
 
 export const PIERRE_THEME = {
   dark: "pierre-dark",
@@ -178,6 +205,48 @@ const FENCE_DIFF_OPTIONS = new Map<
   SyntaxTheme,
   MultiFileDiffProps<undefined, undefined>["options"]
 >();
+
+const PATCH_OPTIONS = new Map<
+  SyntaxTheme,
+  CodeViewProps<undefined, undefined>["options"]
+>();
+
+// The only file items in a patch view are commit messages, and a message's
+// line numbers count nothing the reader can use. pierre's own
+// disableLineNumbers would take them off the diffs as well.
+const COMMIT_MESSAGE_CSS = `
+[data-file] [data-gutter-buffer], [data-file] [data-column-number] {
+  min-width: 0; padding: 0; border-right: 0;
+}
+[data-file] [data-column-number]::before { min-width: 0; }
+[data-file] [data-line-number-content] { display: none; }
+[data-file] [data-line] { min-height: 1lh; }
+`;
+
+/** px; the header rows `PatchFiles` callers draw must be exactly this tall. */
+export const PATCH_HEADER_HEIGHT = 36;
+
+function patchOptions(
+  theme: SyntaxTheme,
+): CodeViewProps<undefined, undefined>["options"] {
+  const cached = PATCH_OPTIONS.get(theme);
+  if (cached) return cached;
+  // The fence diff's look, with a header row per item: a patch is a list of
+  // files, and the header is the only place each one is named.
+  const options = {
+    theme,
+    themeType: PIERRE_THEME_TYPE,
+    diffStyle: "unified",
+    overflow: "wrap",
+    preferredHighlighter: PIERRE_HIGHLIGHTER,
+    onPostRender: handlePostRender,
+    unsafeCSS: COMMIT_MESSAGE_CSS,
+    layout: { paddingTop: 0, paddingBottom: 0, gap: 8 },
+    itemMetrics: { diffHeaderHeight: PATCH_HEADER_HEIGHT },
+  } as const;
+  PATCH_OPTIONS.set(theme, options);
+  return options;
+}
 
 function snippetOptions(
   theme: SyntaxTheme,
@@ -476,4 +545,112 @@ export function CodeDiffBlock({
     return <CodeBlock filename={filename} contents={after} />;
   }
   return <FenceDiff filename={filename} before={before} after={after} />;
+}
+
+/** The CodeView item id of a patch's `index`-th file, counted across commits. */
+export function patchFileId(index: number): string {
+  return `file-${index}`;
+}
+
+/** The CodeView item id of a commit's message, counted across the patch. */
+export function patchCommitId(index: number): string {
+  return `commit-${index}`;
+}
+
+/**
+ * A parsed patch in one virtualized CodeView: per commit, its message, then
+ * one diff per file.
+ *
+ * `className` must cap the height. CodeView virtualizes against its own box,
+ * so an uncapped one grows to the whole patch and lays every line out: a
+ * 1 MB, 116-file patch froze the tab for 15 s in one task that way, against
+ * under 0.3 s capped.
+ *
+ * A highlighter failure takes the whole patch back to its plain text rather
+ * than one file: the grammar that failed is likely shared by its neighbours.
+ */
+export function PatchFiles({
+  patches,
+  messages,
+  text,
+  className,
+  viewRef,
+  renderHeader,
+}: {
+  patches: ParsedPatch[];
+  /**
+   * Each patch's commit message, index for index with `patches`, drawn as an
+   * item of its own above its files: an empty one is only its header row, and
+   * null gets no item at all.
+   */
+  messages: (string | null)[];
+  /** The patch as written, for the plain-text fallback. */
+  text: string;
+  className: string;
+  /** For scrolling to an item by `patchFileId`. */
+  viewRef?: Ref<CodeViewHandle<undefined, undefined>>;
+  /**
+   * Every item's header row, `PATCH_HEADER_HEIGHT` tall: pierre reserves that
+   * height for it without measuring.
+   */
+  renderHeader: (item: CodeViewItem<undefined>) => ReactNode;
+}) {
+  const syntaxTheme = useSyntaxTheme();
+  const options = useMemo(() => patchOptions(syntaxTheme), [syntaxTheme]);
+  const items = useMemo(() => {
+    let position = 0;
+    return patches.flatMap((patch, index): CodeViewItem<undefined>[] => {
+      const files = patch.files.map(
+        (fileDiff): CodeViewItem<undefined> => ({
+          id: patchFileId(position++),
+          type: "diff",
+          fileDiff,
+        }),
+      );
+      const message = messages[index];
+      if (message == null) return files;
+      return [
+        {
+          id: patchCommitId(index),
+          type: "file",
+          collapsed: message === "",
+          file: {
+            name: patchCommitId(index),
+            contents: message,
+            lang: "text",
+          },
+        },
+        ...files,
+      ];
+    });
+  }, [patches, messages]);
+  const [degraded, setDegraded] = useState(false);
+  const warned = useRef(false);
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (node === null) return;
+    DEGRADE_HANDLERS.set(node, () => {
+      if (!warned.current) {
+        warned.current = true;
+        console.warn(
+          "syntax highlighting failed for a patch; showing plain text",
+        );
+      }
+      setDegraded(true);
+    });
+  }, []);
+  if (degraded) return <PlainCodeFallback contents={text} />;
+  return (
+    <CodeViewBoundary contents={text}>
+      <Suspense fallback={<PlainCodeFallback contents={text} />}>
+        <LazyCodeView
+          ref={viewRef}
+          items={items}
+          options={options}
+          className={className}
+          containerRef={containerRef}
+          renderCustomHeader={renderHeader}
+        />
+      </Suspense>
+    </CodeViewBoundary>
+  );
 }

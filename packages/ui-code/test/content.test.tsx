@@ -8,7 +8,8 @@ import {
 } from "@orz/ui-content";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { codeContent, exceedsBytes } from "../src/content.tsx";
+import { exceedsBytes } from "../src/capped-code-block.tsx";
+import { codeContent } from "../src/content.tsx";
 
 // pierre is covered by code-block-degrade; here only what the renderer hands
 // CodeBlock matters, so the stand-in prints its props.
