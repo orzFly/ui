@@ -9,6 +9,7 @@ import {
   variantsOf,
 } from "@orz/themes";
 import {
+  type LucideIcon,
   MonitorIcon,
   MoonIcon,
   PaletteIcon,
@@ -16,7 +17,14 @@ import {
   SquareTerminalIcon,
   SunIcon,
 } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useMediaQuery } from "../hooks/use-media-query.ts";
 import { cn } from "../lib/utils.ts";
 import {
@@ -43,6 +51,13 @@ import {
 } from "./filter-menu.tsx";
 
 export interface ThemeMenuProps {
+  /**
+   * Replaces the trigger button. Gets the icon the default trigger would show (it follows the mode
+   * for the UI slot) and the menu's accessible name ("Theme" or "Terminal theme"). The element goes
+   * through Radix's `PopoverTrigger asChild`, so it must accept a ref and spread the props it is
+   * given onto a DOM element.
+   */
+  trigger?: (info: { Icon: LucideIcon; label: string }) => ReactElement;
   /** Which pick the menu edits. Default "ui". Renders nothing when the store lacks the slot. */
   slot?: "ui" | "terminal";
   /**
@@ -180,7 +195,11 @@ const subId = (theme: string, variant: string) => `sub:${theme}:${variant}`;
  * Light / Dark, and the themes with their variants in submenus. Whatever is
  * highlighted previews on the page; a pick commits it.
  */
-export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
+export function ThemeMenu({
+  slot = "ui",
+  onCustomize,
+  trigger,
+}: ThemeMenuProps) {
   const slots = useThemeSlots();
   const ui = useTheme();
   const terminal = useTerminalTheme();
@@ -509,7 +528,7 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
     </fieldset>
   );
 
-  const TriggerIcon =
+  const Icon: LucideIcon =
     slot === "terminal"
       ? SquareTerminalIcon
       : current.mode === "system"
@@ -517,7 +536,7 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
         : current.mode === "dark"
           ? MoonIcon
           : SunIcon;
-  const name = slot === "ui" ? "Theme" : "Terminal theme";
+  const label = slot === "ui" ? "Theme" : "Terminal theme";
 
   return (
     <FilterMenu<Row>
@@ -548,9 +567,13 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
       align="end"
       className="w-80"
     >
-      <Button variant="ghost" size="sm" aria-label={name} title={name}>
-        <TriggerIcon className="size-4" />
-      </Button>
+      {trigger ? (
+        trigger({ Icon, label })
+      ) : (
+        <Button variant="ghost" size="sm" aria-label={label} title={label}>
+          <Icon className="size-4" />
+        </Button>
+      )}
     </FilterMenu>
   );
 }

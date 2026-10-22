@@ -138,6 +138,22 @@ Whatever is highlighted previews on the whole page after resting 80 ms, and a pi
   so a new theme opened from the terminal menu is a terminal theme; a callback that takes only the
   id still fits. The app brings the editor, such as `ThemeEditor` below.
 
+`trigger` replaces the icon button, for a toolbar with buttons of its own look. It gets the icon
+the default button would show (it follows the mode in the UI picker) and the menu's name, "Theme"
+or "Terminal theme", which the element should carry as its accessible name. The element goes
+through Radix's `PopoverTrigger asChild`, so it must take a ref and spread the props it is given
+onto a DOM element.
+
+```tsx
+<ThemeMenu
+  trigger={({ Icon, label }) => (
+    <button type="button" aria-label={label} title={label} className="…">
+      <Icon className="size-3.5" />
+    </button>
+  )}
+/>
+```
+
 ### Custom themes
 
 The store keeps the user's custom themes from `@orz/themes` in one list of two kinds, and lists the

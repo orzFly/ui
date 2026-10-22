@@ -4,6 +4,13 @@ import {
   type CustomTheme,
 } from "@orz/themes";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  type LucideIcon,
+  MonitorIcon,
+  MoonIcon,
+  SquareTerminalIcon,
+  SunIcon,
+} from "lucide-react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ThemeMenu,
@@ -567,6 +574,54 @@ describe("ThemeMenu: mode switch", () => {
       mode: "light",
     });
     expect(themes.getPref().ui).toEqual({ theme: "vs", mode: "light" });
+  });
+});
+
+describe("ThemeMenu: trigger", () => {
+  const custom = vi.fn(
+    ({ Icon, label }: { Icon: LucideIcon; label: string }) => (
+      <button type="button" aria-label={label} data-custom="">
+        <Icon />
+      </button>
+    ),
+  );
+  const lastInfo = () => custom.mock.lastCall?.[0];
+
+  afterEach(() => custom.mockClear());
+
+  it("renders the given trigger in place of the button, and opens the menu", () => {
+    setup({ trigger: custom });
+    const button = screen.getByRole("button", { name: "Theme" });
+    expect(button.hasAttribute("data-custom")).toBe(true);
+    expect(button.hasAttribute("title")).toBe(false);
+    open();
+    expect(list()).toBeTruthy();
+  });
+
+  it.each([
+    ["system", MonitorIcon],
+    ["light", SunIcon],
+    ["dark", MoonIcon],
+  ] as const)("hands it the %s mode's icon", (mode, Icon) => {
+    setup({ trigger: custom, pref: { ui: { theme: "github", mode } } });
+    expect(lastInfo()).toEqual({ Icon, label: "Theme" });
+  });
+
+  it("hands the terminal slot its own icon and name", () => {
+    setup({ trigger: custom, slot: "terminal" });
+    expect(lastInfo()).toEqual({
+      Icon: SquareTerminalIcon,
+      label: "Terminal theme",
+    });
+    open("terminal");
+    expect(list()).toBeTruthy();
+  });
+
+  it("keeps the ghost button without one", () => {
+    setup();
+    const button = screen.getByRole("button", { name: "Theme" });
+    expect(button.getAttribute("title")).toBe("Theme");
+    expect(button.dataset.variant).toBe("ghost");
   });
 });
 
