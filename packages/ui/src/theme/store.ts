@@ -11,14 +11,20 @@ import {
 } from "@orz/themes";
 import {
   normalizePref,
-  parseStoredPref,
+  readStoredPref,
   type ThemeMode,
   type ThemePick,
   type ThemePref,
 } from "./pref.ts";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
-const STYLE_SELECTOR = "style[data-orz-theme]";
+// The <html> rule's element carries an empty value, as the paint guard's
+// does; a store on its own root marks its element with that root's id.
+const STYLE_SELECTOR = 'style[data-orz-theme=""]';
+// Shared, so a missing slot's getter is as stable a snapshot as the others.
+const NO_THEMES: readonly Theme[] = Object.freeze([]);
+const NO_TERMINAL_THEMES: readonly TerminalTheme[] = Object.freeze([]);
+let nextRootId = 0;
 
 export interface ResolvedTheme {
   theme: Theme;
@@ -131,6 +137,9 @@ export function createThemeStore({
   const target = root ?? (browser ? document.documentElement : null);
   const ownRoot =
     browser && root !== undefined && root !== document.documentElement;
+  // Each store on its own root scopes its rule to that root, so two such
+  // stores never repaint each other's.
+  const rootId = ownRoot ? `r${nextRootId++}` : "";
   const listeners = new Set<() => void>();
 
   // What was asked for, kept apart from the normalized pref so a theme that
@@ -145,10 +154,10 @@ export function createThemeStore({
 
   function readStored(): ThemePref {
     try {
-      return parseStoredPref(localStorage.getItem(storageKey), slots());
+      return readStoredPref(localStorage.getItem(storageKey));
     } catch {
       // storage may be unavailable (private mode)
-      return normalizePref({}, slots());
+      return {};
     }
   }
 
@@ -248,7 +257,7 @@ export function createThemeStore({
       ? null
       : document.head.querySelector<HTMLStyleElement>(STYLE_SELECTOR);
     style = found ?? document.createElement("style");
-    style.setAttribute("data-orz-theme", "");
+    style.setAttribute("data-orz-theme", rootId);
     // Last in <head>, so the rule outranks the stylesheet's own :root/.dark
     // baseline, which ties with it on specificity.
     document.head.append(style);
@@ -262,10 +271,10 @@ export function createThemeStore({
       declarations.push(renderDeclarations(uiTokens, resolved.colorScheme));
     }
     declarations.push(renderTerminalDeclarations(terminal.tokens));
-    const selector = ownRoot ? "[data-orz-theme-root]" : ":root";
+    const selector = ownRoot ? `[data-orz-theme-root="${rootId}"]` : ":root";
     styleElement().textContent = `${selector} { ${declarations.join(" ")} }`;
 
-    if (ownRoot) target.setAttribute("data-orz-theme-root", "");
+    if (ownRoot) target.setAttribute("data-orz-theme-root", rootId);
     // A terminal-only store leaves the page's own colours alone.
     if (resolved !== null && pref.ui) {
       target.classList.toggle("dark", resolved.colorScheme === "dark");
@@ -324,8 +333,8 @@ export function createThemeStore({
     getPref: () => pref,
     getResolved: () => resolved,
     getTerminal: () => terminal,
-    getThemes: () => themes ?? [],
-    getTerminalThemes: () => terminalThemes ?? [],
+    getThemes: () => themes ?? NO_THEMES,
+    getTerminalThemes: () => terminalThemes ?? NO_TERMINAL_THEMES,
     setPref(next) {
       requested = next;
       renormalize();
@@ -364,7 +373,10 @@ export function createThemeStore({
     dispose() {
       media?.removeEventListener("change", onMediaChange);
       if (browser) window.removeEventListener("storage", onStorage);
-      if (ownRoot) style?.remove();
+      if (ownRoot) {
+        style?.remove();
+        target?.removeAttribute("data-orz-theme-root");
+      }
       listeners.clear();
     },
   };

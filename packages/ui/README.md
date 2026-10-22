@@ -96,10 +96,11 @@ store.setPref({
 
 The store paints through one `<style data-orz-theme>` element in `<head>`, holding a single
 `:root { … }` rule rendered from the data. It also toggles `.dark` and sets `data-theme`,
-`data-variant` and `data-terminal-theme` on the root. Given a `root` other than `<html>`, the rule
-targets `[data-orz-theme-root]`, which the store sets on that root. The rule has plain `:root`
-specificity, so a stylesheet loaded later, or a `:root:root` selector, can still retune a token for
-every theme.
+`data-variant` and `data-terminal-theme` on the root. Given a `root` other than `<html>`, the store
+keeps an element of its own, sets `data-orz-theme-root` on that root to an id unique to the store,
+and scopes the rule to it, so stores on different roots never repaint each other. The rule has
+plain `:root` specificity, so a stylesheet loaded later, or a `:root:root` selector, can still
+retune a token for every theme.
 
 - `useTheme()` returns `{ pref, themes, theme, colorScheme, variant, setPref }`: the UI slot's
   normalized pref and list, the resolved theme object, the color scheme on screen, and the variant

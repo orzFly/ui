@@ -518,9 +518,116 @@ describe("createThemeStore", () => {
     expect(html.dataset.theme).toBeUndefined();
     const own = [...document.head.querySelectorAll("style[data-orz-theme]")];
     expect(own).toHaveLength(1);
-    expect(own[0].textContent).toMatch(/^\[data-orz-theme-root\] \{ /);
+    const id = root.getAttribute("data-orz-theme-root");
+    expect(
+      own[0].textContent?.startsWith(`[data-orz-theme-root="${id}"] { `),
+    ).toBe(true);
     themes.dispose();
     expect(document.head.querySelector("style[data-orz-theme]")).toBeNull();
+    expect(root.hasAttribute("data-orz-theme-root")).toBe(false);
+  });
+
+  it("keeps two stores on their own roots, and one on <html>, apart", () => {
+    stubDarkQuery(false);
+    const a = document.createElement("div");
+    const b = document.createElement("div");
+    store({ root: a, storageKey: "a" }).setPref({
+      ui: { theme: "nord", mode: "dark" },
+    });
+    store({ root: b, storageKey: "b" }).setPref({
+      ui: { theme: "github", mode: "light" },
+    });
+    const page = store({ storageKey: "page" });
+    const rules = [
+      ...document.head.querySelectorAll("style[data-orz-theme]"),
+    ].map((el) => el.textContent ?? "");
+    expect(rules).toHaveLength(3);
+    const ruleFor = (el: HTMLElement) =>
+      rules.find((r) =>
+        r.startsWith(
+          `[data-orz-theme-root="${el.getAttribute("data-orz-theme-root")}"]`,
+        ),
+      );
+    expect(a.getAttribute("data-orz-theme-root")).not.toBe(
+      b.getAttribute("data-orz-theme-root"),
+    );
+    expect(ruleFor(a)).toContain(
+      `--background: ${nord.dark?.tokens.background};`,
+    );
+    expect(ruleFor(b)).toContain(
+      `--background: ${github.light?.tokens.background};`,
+    );
+    // The <html> store made its own element rather than adopting a root's.
+    expect(rules.filter((r) => r.startsWith(":root {"))).toHaveLength(1);
+    page.setPref({ ui: { theme: "dracula", mode: "dark" } });
+    expect(ruleFor(a)).toContain(
+      `--background: ${nord.dark?.tokens.background};`,
+    );
+  });
+
+  it("returns the same empty list for a slot it does not have", () => {
+    stubDarkQuery(false);
+    const ui = store();
+    expect(ui.getTerminalThemes()).toBe(ui.getTerminalThemes());
+    const terminal = store({ themes: undefined, terminalThemes: [ink] });
+    expect(terminal.getThemes()).toBe(terminal.getThemes());
+  });
+
+  describe("a stored pick on a theme that arrives later", () => {
+    const custom: Theme = {
+      id: "custom",
+      label: "Custom",
+      dark: {
+        ...(nord.dark as NonNullable<Theme["dark"]>),
+        variants: undefined,
+      },
+    };
+
+    it("comes back when setThemes brings the theme", () => {
+      stubDarkQuery(false);
+      localStorage.setItem(
+        "app-theme",
+        JSON.stringify({ ui: { theme: "custom", mode: "dark" } }),
+      );
+      const themes = store();
+      expect(themes.getPref().ui?.theme).toBe("default");
+      themes.setThemes([...builtinThemes, custom]);
+      expect(themes.getPref()).toEqual({
+        ui: { theme: "custom", mode: "dark" },
+      });
+      // Still stored as asked for, so a reload before the list loads keeps it.
+      expect(stored()).toEqual({ ui: { theme: "custom", mode: "dark" } });
+    });
+
+    it("comes back after another tab wrote it", () => {
+      stubDarkQuery(false);
+      const themes = store();
+      localStorage.setItem(
+        "app-theme",
+        JSON.stringify({ ui: { theme: "custom", mode: "dark" } }),
+      );
+      window.dispatchEvent(new StorageEvent("storage", { key: "app-theme" }));
+      themes.setThemes([...builtinThemes, custom]);
+      expect(themes.getPref().ui?.theme).toBe("custom");
+    });
+
+    it("comes back for the terminal when setTerminalThemes brings it", () => {
+      stubDarkQuery(false);
+      localStorage.setItem(
+        "app-theme",
+        JSON.stringify({
+          ui: { theme: "github", mode: "light" },
+          terminal: { theme: "ink", mode: "dark" },
+        }),
+      );
+      const themes = store({ terminalThemes: builtinThemes });
+      expect(themes.getTerminal().following).toBe(true);
+      themes.setTerminalThemes([...builtinThemes, ink]);
+      expect(themes.getTerminal()).toMatchObject({
+        following: false,
+        theme: ink,
+      });
+    });
   });
 
   it("adopts a guard-inserted element instead of adding a second", () => {

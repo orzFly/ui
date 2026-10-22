@@ -115,11 +115,12 @@ export function normalizePref(pref: ThemePref, slots: ThemeSlots): ThemePref {
   return out;
 }
 
-/** JSON in the current shape, else a legacy shape, else the fallback. */
-export function parseStoredPref(
-  raw: string | null,
-  slots: ThemeSlots,
-): ThemePref {
+/**
+ * The stored pref in the current shape, not yet fitted to any theme list:
+ * the store keeps it as asked for, so a pick on a theme that arrives later
+ * (a custom one) survives until it does.
+ */
+export function readStoredPref(raw: string | null): ThemePref {
   let parsed: unknown = raw;
   if (raw !== null) {
     try {
@@ -132,16 +133,29 @@ export function parseStoredPref(
     const legacy = Object.hasOwn(LEGACY_THEME_PREFS, parsed)
       ? LEGACY_THEME_PREFS[parsed]
       : undefined;
-    return normalizePref({ ui: legacy }, slots);
+    return legacy ? { ui: legacy } : {};
   }
   if (typeof parsed === "object" && parsed !== null) {
     const record = parsed as Record<string, unknown>;
     // The JSON shape @orz/ui stored a pick in before it had two slots.
-    if ("theme" in record) return normalizePref({ ui: pickOf(record) }, slots);
-    return normalizePref(
-      { ui: record.ui as ThemePick, terminal: record.terminal as ThemePick },
-      slots,
-    );
+    if ("theme" in record) {
+      const ui = pickOf(record);
+      return ui ? { ui } : {};
+    }
+    const out: ThemePref = {};
+    const ui = pickOf(record.ui);
+    const terminal = pickOf(record.terminal);
+    if (ui) out.ui = ui;
+    if (terminal) out.terminal = terminal;
+    return out;
   }
-  return normalizePref({}, slots);
+  return {};
+}
+
+/** JSON in the current shape, else a legacy shape, else the fallback. */
+export function parseStoredPref(
+  raw: string | null,
+  slots: ThemeSlots,
+): ThemePref {
+  return normalizePref(readStoredPref(raw), slots);
 }

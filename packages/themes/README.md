@@ -86,9 +86,9 @@ shiki name and its JSON round trip.
   declarations for a rule body (`color-scheme: dark; --background: …;`).
 - `amoled(palette)` derives the AMOLED variant of a dark palette. Every surface token drops by the
   background's lightness, so the background becomes pure black while the surfaces keep their
-  step from it and their hue; text, accent and alpha values stay as they are, and the terminal
-  background becomes `#000000`. A theme opts in with `variants: { amoled: amoled(palette) }`, and
-  can spread over the result to retune a token.
+  step from it and their hue. Text, primary, chart, diff and ring tokens, and values carrying
+  alpha, stay as they are, and the terminal background becomes `#000000`. A theme opts in with
+  `variants: { amoled: amoled(palette) }`, and can spread over the result to retune a token.
 - `composeTheme(custom, themes)` turns a `CustomTheme` into a `Theme` against the current list.
   Each side either bases on a theme (`{ base: { theme, variant? }, tokens? }`) and overrides some
   tokens, or is detached (`{ tokens, terminal }`) and owns all of them. A side's terminal can base
@@ -103,8 +103,8 @@ shiki name and its JSON round trip.
 The UI tokens were ported from `@orz/ui`'s earlier stylesheet. The terminal tokens come from each
 theme's upstream terminal palette; `terminal-background` and `terminal-foreground` are the
 palette's own background and foreground, so a terminal sits on the page's surface. Where upstream
-sets no cursor, the cursor is the foreground, and where it sets no selection, the selection is
-VS Code's fallback.
+sets no cursor, the cursor is the foreground (Monokai takes its editor cursor, `#f8f8f0`), and
+where it sets no selection, the selection is VS Code's fallback.
 
 | Theme | Terminal palette | Licence |
 |---|---|---|
