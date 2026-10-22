@@ -5,6 +5,7 @@
 @import "@orz/ui-code/styles.css";
 @import "@orz/ui-codemirror/styles.css";
 @import "@orz/ui-markdown/styles.css";
+@import "@orz/ui-mermaid/styles.css";
 
 /* The packages' stylesheets register their dist/; stories run on src/. The
    glob also reaches packages that ship no stylesheet, and new ones before
