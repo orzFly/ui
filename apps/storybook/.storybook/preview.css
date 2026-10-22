@@ -3,6 +3,7 @@
 @import "overlayscrollbars/overlayscrollbars.css";
 @import "@orz/ui/styles.css";
 @import "@orz/ui-code/styles.css";
+@import "@orz/ui-markdown/styles.css";
 
 /* The packages' stylesheets register their dist/; stories run on src/. */
 @source "../../../packages/ui/src";

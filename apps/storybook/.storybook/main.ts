@@ -26,6 +26,7 @@ const config: StorybookConfig = {
           "sonner",
           "lucide-react",
           "@pierre/diffs",
+          "@orz/ui-content",
         ],
       },
     }),
