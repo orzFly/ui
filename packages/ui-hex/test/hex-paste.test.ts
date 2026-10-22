@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseHexText } from "../src/hex-paste.ts";
+import { clipboardBytes, hexDigits, parseHexText } from "../src/hex-paste.ts";
 
 const PNG = [0x89, 0x50, 0x4e, 0x47];
 
@@ -33,5 +33,36 @@ describe("parseHexText", () => {
 
   it.each(["", "  \n "])("returns no bytes for %j", (text) => {
     expect(parseHexText(text)?.length).toBe(0);
+  });
+});
+
+describe("clipboardBytes", () => {
+  const ascii = (text: string) =>
+    [...text].every((c) => c.charCodeAt(0) < 0x80)
+      ? new TextEncoder().encode(text)
+      : null;
+
+  it("prefers the exact bytes in either pane", () => {
+    const clipboard = {
+      text: "P..",
+      bytes: hexDigits(Uint8Array.of(0x50, 0, 0xff)),
+    };
+    expect(clipboard.bytes).toBe("5000ff");
+    for (const pane of ["hex", "text"] as const) {
+      expect([...(clipboardBytes(clipboard, pane, ascii) ?? [])]).toEqual([
+        0x50, 0, 0xff,
+      ]);
+    }
+  });
+
+  it("reads the text by pane without exact bytes", () => {
+    expect([
+      ...(clipboardBytes({ text: "41 42" }, "hex", ascii) ?? []),
+    ]).toEqual([0x41, 0x42]);
+    expect([
+      ...(clipboardBytes({ text: "41", bytes: "" }, "text", ascii) ?? []),
+    ]).toEqual([0x34, 0x31]);
+    expect(clipboardBytes({ text: "zz" }, "hex", ascii)).toBeNull();
+    expect(clipboardBytes({ text: "é" }, "text", ascii)).toBeNull();
   });
 });

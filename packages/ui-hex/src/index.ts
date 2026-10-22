@@ -29,7 +29,13 @@ export {
   HexInspector,
   type HexInspectorProps,
 } from "./hex-inspector.tsx";
-export { parseHexText } from "./hex-paste.ts";
+export {
+  clipboardBytes,
+  HEX_BYTES_TYPE,
+  type HexClipboard,
+  hexDigits,
+  parseHexText,
+} from "./hex-paste.ts";
 export {
   type HexCopyResult,
   HexView,

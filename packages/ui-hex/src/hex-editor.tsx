@@ -33,7 +33,7 @@ import {
   useControllableSelection,
   useLatest,
 } from "./hex-grid.tsx";
-import { parseHexText } from "./hex-paste.ts";
+import { clipboardBytes, HEX_BYTES_TYPE } from "./hex-paste.ts";
 import type { HexSelection } from "./types.ts";
 
 export type { HexEditMode } from "./editing.ts";
@@ -281,10 +281,16 @@ export function HexEditor({
           report({ ok: false, reason: "read-only" });
           return;
         }
-        const text = event.clipboardData?.getData("text/plain") ?? "";
+        const data = event.clipboardData;
         const state = editState(ctx);
-        const bytes =
-          current.pane === "hex" ? parseHexText(text) : state.encode(text);
+        const bytes = clipboardBytes(
+          {
+            text: data?.getData("text/plain") ?? "",
+            bytes: data?.getData(HEX_BYTES_TYPE),
+          },
+          current.pane,
+          state.encode,
+        );
         if (bytes === null) {
           report({
             ok: false,

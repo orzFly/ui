@@ -7,6 +7,7 @@ import {
   HexEditor,
   type HexEditorProps,
 } from "../src/hex-editor.tsx";
+import { HEX_BYTES_TYPE } from "../src/hex-paste.ts";
 import { bytesSource } from "../src/source.ts";
 import type { HexSelection } from "../src/types.ts";
 
@@ -43,10 +44,12 @@ function setup(
   return { ...utils, root, cell, click, type, bytes, doc, selection };
 }
 
-function paste(root: HTMLElement, text: string | null) {
+function paste(root: HTMLElement, text: string | null, exact?: string) {
   const event = new Event("paste", { bubbles: true, cancelable: true });
+  const data: Record<string, string> = { "text/plain": text ?? "" };
+  if (exact !== undefined) data[HEX_BYTES_TYPE] = exact;
   Object.assign(event, {
-    clipboardData: { getData: () => text ?? "" },
+    clipboardData: { getData: (type: string) => data[type] ?? "" },
   });
   act(() => {
     root.focus();
@@ -322,6 +325,29 @@ describe("HexEditor encodings", () => {
     click(1, "text");
     type("あ");
     expect(bytes()).toEqual([0x10, 0x82, 0xa0, 0x40, 0x50, 0x60, 0x70, 0x80]);
+  });
+
+  it.each(["hex", "text"] as const)(
+    "writes a copy's exact bytes over its text in the %s pane",
+    (pane) => {
+      const onPaste = vi.fn();
+      const { click, root, bytes } = setup({ onPaste });
+      click(1, pane);
+      paste(root, "A..", "4100ff");
+      expect(bytes()).toEqual([0x10, 0x41, 0x00, 0xff, 0x50, 0x60, 0x70, 0x80]);
+      expect(onPaste).toHaveBeenCalledWith({
+        ok: true,
+        bytes: 3,
+        truncated: false,
+      });
+    },
+  );
+
+  it("falls back to the text when the exact bytes do not parse", () => {
+    const { click, root, bytes } = setup();
+    click(1, "text");
+    paste(root, "hi", "xyz");
+    expect(bytes().slice(1, 3)).toEqual([0x68, 0x69]);
   });
 
   it("leaves a paste into the encoding picker alone", () => {
