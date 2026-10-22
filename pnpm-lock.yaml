@@ -212,6 +212,9 @@ importers:
         specifier: ^9.0.0
         version: 9.0.0
     devDependencies:
+      '@orz/themes':
+        specifier: workspace:*
+        version: link:../themes
       '@orz/ui':
         specifier: workspace:*
         version: link:../ui
@@ -443,6 +446,9 @@ importers:
         specifier: ^12.2.0
         version: 12.2.0
     devDependencies:
+      '@orz/themes':
+        specifier: workspace:*
+        version: link:../themes
       '@orz/ui':
         specifier: workspace:*
         version: link:../ui

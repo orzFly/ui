@@ -38,6 +38,7 @@
     "mermaid": "^12.2.0"
   },
   "devDependencies": {
+    "@orz/themes": "workspace:*",
     "@orz/ui": "workspace:*",
     "@orz/ui-content": "workspace:*",
     "@testing-library/react": "^16.3.2",
