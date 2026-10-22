@@ -25,6 +25,7 @@
     "@orz/ui-content": "workspace:*",
     "@orz/ui-hex": "workspace:*",
     "@orz/ui-markdown": "workspace:*",
+    "@orz/ui-mermaid": "workspace:*",
     "@pierre/diffs": "^1.6.1",
     "lucide-react": "^1.59.0",
     "overlayscrollbars": "^2.16.0",

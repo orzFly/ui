@@ -1,0 +1,22 @@
+/* Tailwind resolves an imported file's @source against that file, so a
+   consumer importing this stylesheet scans the classes in the package's
+   shipped JS without writing an @source of its own. */
+@source "./dist";
+
+@layer components {
+  /* A diagram shrinks to the column, but never below 75% of its natural
+     width — past that its labels stop being readable, so it scrolls instead
+     (T-523). Never enlarged. `!important` beats the width attribute and the
+     inline max-width mermaid writes onto its own <svg>. */
+  /* biome-ignore-start lint/complexity/noImportantStyles: mermaid's inline style, see above */
+  .mermaid-diagram > svg {
+    display: block;
+    width: min(
+      var(--diagram-width),
+      max(100%, calc(var(--diagram-width) * 0.75))
+    ) !important;
+    max-width: none !important;
+    height: auto;
+  }
+  /* biome-ignore-end lint/complexity/noImportantStyles: mermaid's inline style, see above */
+}
