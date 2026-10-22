@@ -2,7 +2,9 @@
 @import "@fontsource-variable/geist";
 @import "overlayscrollbars/overlayscrollbars.css";
 @import "@orz/ui/styles.css";
+@import "@orz/ui-code/styles.css";
 
-/* styles.css registers the package's dist/; stories run on its src/. */
+/* The packages' stylesheets register their dist/; stories run on src/. */
 @source "../../../packages/ui/src";
+@source "../../../packages/ui-code/src";
 @source "../src";

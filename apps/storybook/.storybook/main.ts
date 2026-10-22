@@ -19,7 +19,14 @@ const config: StorybookConfig = {
         // Source files resolve their peers from packages/ui/node_modules; a
         // second React or radix-ui beside the app's would split their module
         // state the moment the two lockfile entries drift apart.
-        dedupe: ["react", "react-dom", "radix-ui", "sonner", "lucide-react"],
+        dedupe: [
+          "react",
+          "react-dom",
+          "radix-ui",
+          "sonner",
+          "lucide-react",
+          "@pierre/diffs",
+        ],
       },
     }),
 };
