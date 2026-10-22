@@ -11,7 +11,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/Card",
+  title: "Primitives/Card",
   component: Card,
   args: { size: "default" },
   argTypes: { size: { control: "inline-radio", options: ["default", "sm"] } },

@@ -7,7 +7,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/HoverCard",
+  title: "Primitives/HoverCard",
   component: HoverCard,
 } satisfies Meta<typeof HoverCard>;
 

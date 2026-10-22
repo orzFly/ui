@@ -11,7 +11,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/Select",
+  title: "Primitives/Select",
   component: Select,
 } satisfies Meta<typeof Select>;
 

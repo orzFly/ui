@@ -10,7 +10,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/Popover",
+  title: "Primitives/Popover",
   component: Popover,
 } satisfies Meta<typeof Popover>;
 

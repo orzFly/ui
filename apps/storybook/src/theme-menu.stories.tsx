@@ -6,7 +6,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
  * the whole preview (the toolbar re-applies its own value on the next story).
  */
 const meta = {
-  title: "Components/ThemeMenu",
+  title: "Patterns/ThemeMenu",
   component: ThemeMenu,
 } satisfies Meta<typeof ThemeMenu>;
 

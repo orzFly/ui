@@ -14,7 +14,7 @@ import { Label } from "@orz/ui/components/label";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/Dialog",
+  title: "Primitives/Dialog",
   component: Dialog,
 } satisfies Meta<typeof Dialog>;
 

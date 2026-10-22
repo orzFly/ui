@@ -3,7 +3,7 @@ import { Textarea } from "@orz/ui/components/textarea";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/Textarea",
+  title: "Primitives/Textarea",
   component: Textarea,
   args: { placeholder: "Write a comment…", "aria-label": "Comment" },
 } satisfies Meta<typeof Textarea>;

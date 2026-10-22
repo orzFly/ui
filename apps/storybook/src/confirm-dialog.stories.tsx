@@ -5,7 +5,7 @@ import { useState } from "react";
 import { fn } from "storybook/test";
 
 const meta = {
-  title: "Components/ConfirmDialog",
+  title: "Patterns/ConfirmDialog",
   component: ConfirmDialog,
   args: {
     open: false,

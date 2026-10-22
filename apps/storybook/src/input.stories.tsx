@@ -3,7 +3,7 @@ import { Label } from "@orz/ui/components/label";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/Input",
+  title: "Primitives/Input",
   component: Input,
   args: { placeholder: "Search…", "aria-label": "Search" },
 } satisfies Meta<typeof Input>;

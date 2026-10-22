@@ -39,7 +39,7 @@ const TOKENS = [
 
 /** Pick a theme from the toolbar; this page follows it. */
 const meta = {
-  title: "Theme",
+  title: "Foundations/Theme",
   parameters: { layout: "padded" },
 } satisfies Meta;
 

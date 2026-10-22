@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { fn } from "storybook/test";
 
 const meta = {
-  title: "Components/LoadMoreFooter",
+  title: "Patterns/LoadMoreFooter",
   component: LoadMoreFooter,
   args: {
     pending: false,

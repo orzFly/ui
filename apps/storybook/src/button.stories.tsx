@@ -14,7 +14,7 @@ const TEXT_SIZES = ["xs", "sm", "default", "lg"] as const;
 const ICON_SIZES = ["icon-xs", "icon-sm", "icon", "icon-lg"] as const;
 
 const meta = {
-  title: "Components/Button",
+  title: "Primitives/Button",
   component: Button,
   args: { children: "Button" },
   argTypes: {

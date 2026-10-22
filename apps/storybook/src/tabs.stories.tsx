@@ -7,7 +7,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/Tabs",
+  title: "Primitives/Tabs",
   component: Tabs,
 } satisfies Meta<typeof Tabs>;
 

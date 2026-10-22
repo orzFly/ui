@@ -3,7 +3,7 @@ import { Switch } from "@orz/ui/components/switch";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/Label",
+  title: "Primitives/Label",
   component: Label,
 } satisfies Meta<typeof Label>;
 

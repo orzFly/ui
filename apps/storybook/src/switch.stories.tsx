@@ -3,7 +3,7 @@ import { Switch } from "@orz/ui/components/switch";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Components/Switch",
+  title: "Primitives/Switch",
   component: Switch,
   args: { "aria-label": "Toggle" },
 } satisfies Meta<typeof Switch>;
