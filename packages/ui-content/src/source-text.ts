@@ -89,7 +89,15 @@ export function useSourceText(source: ContentSource): SourceText {
       return;
     }
     const controller = new AbortController();
-    load(controller.signal).then(
+    let pending: Promise<string>;
+    try {
+      pending = load(controller.signal);
+    } catch (error) {
+      // A load that throws before returning its promise has still failed to
+      // load; it must not escape the effect and take the host document down.
+      pending = Promise.reject(error);
+    }
+    pending.then(
       (text) => {
         if (controller.signal.aborted) return;
         setSettled({ key: forKey, result: { status: "ready", text } });

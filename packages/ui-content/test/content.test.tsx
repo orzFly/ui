@@ -430,6 +430,16 @@ describe("useSourceText", () => {
     expect(latest?.text).toBe("x");
   });
 
+  it("reports a load that throws before returning a promise as an error", async () => {
+    const load = () => {
+      throw new Error("bad address");
+    };
+    render(<Text source={{ kind: "file", name: "a.md", load }} />);
+    await act(async () => {});
+    expect(latest?.status).toBe("error");
+    expect(latest?.error?.message).toBe("bad address");
+  });
+
   it("re-runs a failed load on retry()", async () => {
     let calls = 0;
     const load = async () => {
