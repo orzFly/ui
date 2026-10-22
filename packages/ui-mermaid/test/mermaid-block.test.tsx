@@ -15,6 +15,7 @@ import {
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mermaidContent } from "../src/content.tsx";
+import type { DiagramPalette } from "../src/render.ts";
 
 // mermaid itself cannot lay anything out under happy-dom (no getBBox), so the
 // renderer is the seam: these cases pin what the block does with each answer.
@@ -24,7 +25,10 @@ const result = vi.hoisted(() => ({
     | { ok: false; error: string },
 }));
 const renderDiagram = vi.hoisted(() =>
-  vi.fn(async (_source: string) => result.next),
+  vi.fn(
+    async (_source: string, _palette: DiagramPalette, _fontFamily: string) =>
+      result.next,
+  ),
 );
 vi.mock("../src/render.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/render.ts")>()),
@@ -167,6 +171,36 @@ describe("mermaid sources (T-523)", () => {
     document.documentElement.classList.remove("dark");
   });
 
+  it("ignores a render that lands after a newer one started", async () => {
+    let finishOld: () => void = () => {};
+    renderDiagram.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishOld = () =>
+            resolve({ ok: true, svg: '<svg data-old=""></svg>', width: 10 });
+        }),
+    );
+    result.next = { ok: true, svg: SVG, width: 1360 };
+    const view = (text: string) => (
+      <ContentRenderers renderers={WITH_PROBE}>
+        <Content
+          source={{ kind: "inline", text, lang: "mermaid" }}
+          placement="document"
+        />
+      </ContentRenderers>
+    );
+    const { container, rerender } = render(view("flowchart LR\n  A"));
+    rerender(view(DIAGRAM));
+    await drawn(container);
+    await act(async () => finishOld());
+    expect(container.querySelector("svg[data-old]")).toBeNull();
+    expect(
+      container
+        .querySelector<HTMLElement>(".mermaid-diagram")
+        ?.style.getPropertyValue("--diagram-width"),
+    ).toBe("1360px");
+  });
+
   it("falls back to a plain code block for the source with nothing after it", async () => {
     renderDiagram.mockImplementationOnce(() => new Promise(() => {}));
     const container = mount(INLINE, { renderers: ALONE });
@@ -231,8 +265,11 @@ describe("mermaid files", () => {
       .fn<() => Promise<string>>()
       .mockRejectedValueOnce(new Error("503 Service Unavailable"))
       .mockResolvedValue(DIAGRAM);
-    const container = mount(file(load));
+    const container = mount(file(load), { className: "marked" });
     expect(await screen.findByText("503 Service Unavailable")).toBeTruthy();
+    expect(container.firstElementChild?.classList.contains("marked")).toBe(
+      true,
+    );
     expect(renderDiagram).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
@@ -259,5 +296,35 @@ describe("mermaidContent.accepts", () => {
     expect(accepts(named("a.mmd"))).toBe(true);
     expect(accepts(named("B.MERMAID"))).toBe(true);
     expect(accepts(named("a.md"))).toBe(false);
+  });
+});
+
+// Runs last: the block keeps the first 2D context it gets, so the stub stays
+// in place for anything after it.
+describe("the palette", () => {
+  it("is resolved to hex, with dark read off the background", async () => {
+    let pixel = [255, 255, 255, 255];
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      clearRect() {},
+      fillRect() {},
+      fillStyle: "",
+      getImageData: () => ({ data: pixel }),
+    } as unknown as CanvasRenderingContext2D);
+    result.next = { ok: true, svg: SVG, width: 1360 };
+
+    mount(INLINE);
+    await waitFor(() => expect(renderDiagram).toHaveBeenCalledTimes(1));
+    expect(renderDiagram.mock.calls[0]?.[1]).toMatchObject({
+      dark: false,
+      background: "#ffffff",
+    });
+
+    pixel = [40, 42, 54, 255];
+    mount(INLINE);
+    await waitFor(() => expect(renderDiagram).toHaveBeenCalledTimes(2));
+    expect(renderDiagram.mock.calls[1]?.[1]).toMatchObject({
+      dark: true,
+      background: "#282a36",
+    });
   });
 });

@@ -13,7 +13,6 @@ type MermaidProps = ContentProps & { Next: ComponentType<ContentProps> };
 
 function isMermaid(source: ContentSource): boolean {
   if (source.kind === "inline") return source.lang?.toLowerCase() === "mermaid";
-  // The two extensions todou's text preview already lists for mermaid.
   return /\.(mmd|mermaid)$/i.test(source.name);
 }
 

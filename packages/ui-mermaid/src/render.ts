@@ -42,10 +42,11 @@ export function renderDiagram(
       try {
         mermaid = await loadMermaid();
       } catch (error) {
-        // A chunk that failed once (offline, replaced by a deploy) stays
-        // rejected in the memo, which would leave every later diagram on its
-        // source for the life of the page: forget it so the next render
-        // fetches it again.
+        // A chunk that failed once (a dropped connection) would stay rejected
+        // in the memo and leave every later diagram on its source for the
+        // life of the page: forget it so the next render imports again.
+        // Whether that refetches is the browser's call; some still cache a
+        // failed module fetch.
         loaded = undefined;
         throw error;
       }

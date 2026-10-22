@@ -42,10 +42,10 @@ becomes, and files named `*.mmd` or `*.mermaid`, in either placement. Register i
 renderer that takes every inline source, such as a code renderer, since the first renderer that
 accepts wins.
 
-The source shows until the first render lands, in place of a diagram that does not parse (with the
-parser's message under it), and behind the Source toggle. That source view is `Next`: the renderers
-registered after this one draw it, so it is highlighted when a code renderer is registered and a
-plain `<pre><code>` when none is. A file is loaded once: the source view gets its text as an inline
+The source shows until the first render lands, in place of a diagram that does not parse (with a
+one-line summary of the parser's message under it), and behind the Source toggle. That source view
+is `Next`: the renderers registered after this one draw it, so it is highlighted when a code
+renderer is registered and a plain `<pre><code>` when none is. A file is loaded once: the source view gets its text as an inline
 source tagged `mermaid`. A file that fails to load shows the message and a Retry button.
 
 ## `MermaidBlock`
@@ -73,8 +73,9 @@ present when it was drawn and does not follow a later switch.
 
 mermaid is only reached through `import("mermaid")`, so a bundler splits it into chunks of its own,
 fetched the first time a page holds a diagram. A chunk that fails to load leaves the diagram on its
-source, and the next render fetches it again. Labels go through mermaid's `securityLevel: "strict"`,
-which sanitises them: markup survives, scripts and handlers do not.
+source, and the next render tries the import again; whether that refetches is the browser's call,
+since some cache a failed module fetch for the life of the page. Labels go through mermaid's
+`securityLevel: "strict"`, which sanitises them: markup survives, scripts and handlers do not.
 
 ## Entry points
 
