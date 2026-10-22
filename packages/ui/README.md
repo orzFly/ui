@@ -34,6 +34,13 @@ package yourself:
 @source "../node_modules/@orz/ui/dist";
 ```
 
+`styles.css` is `theme.css` plus the page-level rules: the base layer (`* { border-color }`,
+`body` colours, `html` font), the overlayscrollbars theme, `revealBlock`'s `.anchor-flash` and
+`@source "./dist"`. A surface that
+shares a document with someone else's UI, and must not restyle it, imports
+`@orz/ui/theme.css` instead: the tokens, `.dark`, `tw-animate-css` and shadcn's variants, nothing
+global. `theme.css` carries no `@source`, so that surface names the files Tailwind scans itself.
+
 `styles.css` does not load a font. `--font-sans` names `'Geist Variable'` first and falls back to
 the system UI font, so install `@fontsource-variable/geist` (or define `--font-sans`) if you want it.
 `useOverlayScrollbars` needs the library's own stylesheet, which you import yourself:
@@ -444,6 +451,7 @@ modes the picker uses); nothing else in `@orz/ui` does.
 | `@orz/ui/lib/<name>` | `clipboard`, `color`, `text-metrics`, `theme-file`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
+| `@orz/ui/theme.css` | baseline tokens and custom variants, without the base layer or @source |
 
 `UnsavedChangesDialog` only renders the prompt, and the blocker belongs to your router. Its JSDoc
 shows the TanStack Router wiring. Register the work that can be lost with `useDirtySource()` from

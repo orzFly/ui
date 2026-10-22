@@ -38,11 +38,13 @@
       "types": "./dist/theme/index.d.ts",
       "default": "./dist/theme/index.js"
     },
-    "./styles.css": "./styles.css"
+    "./styles.css": "./styles.css",
+    "./theme.css": "./theme.css"
   },
   "files": [
     "dist",
     "styles.css",
+    "theme.css",
     "vendor"
   ],
   "scripts": {

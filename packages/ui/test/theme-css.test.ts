@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 
 // Not `new URL(…, import.meta.url)`: under happy-dom `URL` is the window's
 // class, which node:fs refuses as a file URL.
-const STYLES = readFileSync(join(import.meta.dirname, "../styles.css"), "utf8");
+const STYLES = readFileSync(join(import.meta.dirname, "../theme.css"), "utf8");
 
 function tokensOf(selector: string): Record<string, string> {
   const head = `\n${selector} {`;
@@ -34,7 +34,7 @@ function expected(
   };
 }
 
-describe("styles.css baseline", () => {
+describe("theme.css baseline", () => {
   // The baseline is what a primitive paints with outside any store, so it
   // must be the default theme exactly, or the first paint and the store's
   // disagree.
