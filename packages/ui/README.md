@@ -246,14 +246,50 @@ highlight resting on `selectedId`, the pointer leaving the list, the menu closin
 live preview needs. A control in `header` that commits at once puts the highlight back through the
 `ref`'s `resetHighlight()`.
 
+## Colour picker
+
+`ColorPicker` is the panel, rendered inline; `ColorPickerPopover` puts it behind a trigger that
+shows the value, or behind your own trigger passed as `children`. Both come from
+`@orz/ui/components/color-picker`. The colour maths they use is `@orz/ui/lib/color`: `parseColor`,
+`formatColor`, `gamutOf`, `mapToSrgb` and `contrastRatio`, on oklch values.
+
+```tsx
+import { ColorPickerPopover } from "@orz/ui/components/color-picker";
+
+<ColorPickerPopover
+  value={token}
+  onValueChange={preview}
+  onValueCommit={save}
+  format="oklch"
+  contrastWith={background}
+  contrastLabel="background"
+  swatches={[{ label: "This theme", colors: tokens }]}
+/>;
+```
+
+- `value` is any CSS colour. The panel follows it, except that the parent echoing the panel's own
+  output changes nothing, so the panel keeps full precision between strings.
+- `onValueChange` fires on every drag frame and every keystroke that parses; `onValueCommit` when
+  an interaction ends (pointer release, a keyboard step, Enter or blur, a swatch, the eyedropper).
+  Preview on change, save on commit.
+- The output keeps the incoming value's format when that is oklch, hex, rgb or hsl, and is oklch
+  otherwise; `format` pins it. hex, rgb and hsl cannot leave sRGB, so they are gamut-mapped.
+  `alpha={false}` makes every output opaque.
+- Two picking surfaces: oklch (lightness × chroma at a hue, with the sRGB and Display P3 edges
+  drawn) and the HSV square. The default follows the output format; `surfaces` limits them, and
+  `surface` with `onSurfaceChange` controls the choice if you want to persist it.
+
+Importing either entry point brings in [culori](https://culorijs.org) (about 9 KB gzipped, only the
+modes the picker uses); nothing else in `@orz/ui` does.
+
 ## Entry points
 
 | Import | Contents |
 |---|---|
 | `@orz/ui` | `cn` |
-| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
+| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
 | `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut` |
-| `@orz/ui/lib/<name>` | `clipboard`, `text-metrics`, `unsaved-guard`, `utils` |
+| `@orz/ui/lib/<name>` | `clipboard`, `color`, `text-metrics`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
 
