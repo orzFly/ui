@@ -42,6 +42,14 @@ export interface FilterMenuSection<R extends FilterMenuRow> {
 export interface FilterMenuRowState {
   highlighted: boolean;
   selected: boolean;
+  /** What the row's own list is filtered by: the menu's query, or its submenu's. */
+  query: string;
+}
+
+export interface FilterMenuSubmenuFilter {
+  placeholder?: string;
+  /** Defaults to "Filter" and the submenu's label. */
+  label?: string;
 }
 
 export interface FilterMenuHandle {
@@ -72,8 +80,14 @@ export interface FilterMenuProps<R extends FilterMenuRow> {
   onHighlight?: (row: R | null) => void;
   /** The menu closes after it. */
   onSelect: (row: R) => void;
-  /** A row's submenu rows; undefined or empty = no submenu. Ids unique across the whole menu. */
-  getSubmenu?: (row: R) => readonly R[] | undefined;
+  /**
+   * A row's submenu rows, filtered for `query`: what its filter box holds, or
+   * `""` without one. Undefined or empty for `""` = no submenu. Ids unique
+   * across the whole menu.
+   */
+  getSubmenu?: (row: R, query: string) => readonly R[] | undefined;
+  /** Gives a row's submenu its own filter box; undefined = none. */
+  submenuFilter?: (row: R) => FilterMenuSubmenuFilter | undefined;
   /** The committed row inside a submenu: checked there. */
   selectedSubmenuId?: string;
   /** Accessible name of a row's submenu listbox. */
@@ -205,8 +219,63 @@ function insidePolygon(point: Point, polygon: readonly Point[]): boolean {
 /** How long the pointer may take crossing other rows toward an open submenu. */
 const GRACE_MS = 300;
 
-const OPTION_CLASS =
-  "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pl-1.5 text-sm select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-accent data-highlighted:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+const ROW_CLASS =
+  "group/option relative flex w-full cursor-default items-center rounded-md text-sm select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+
+const CELL_CLASS = "gap-1.5 py-1 pl-1.5";
+
+const OPTION_CLASS = cn(
+  ROW_CLASS,
+  CELL_CLASS,
+  "data-highlighted:bg-accent data-highlighted:text-accent-foreground",
+);
+
+/**
+ * A split row's left half, the part that picks the row. Only it lights up:
+ * the chevron's half opens the submenu, which hovering the row already did.
+ */
+const ACTION_CLASS = cn(
+  "relative flex min-w-0 flex-1 items-center self-stretch rounded-md pr-6.5",
+  CELL_CLASS,
+  "group-data-highlighted/option:bg-accent group-data-highlighted/option:text-accent-foreground",
+);
+
+function step<R extends FilterMenuRow>(
+  from: readonly R[],
+  at: number,
+  by: 1 | -1,
+): R | undefined {
+  for (let i = at + by; i >= 0 && i < from.length; i += by) {
+    const row = from[i] as R;
+    if (!row.disabled) return row;
+  }
+  return undefined;
+}
+
+function FilterBox({
+  expanded,
+  ...props
+}: ComponentProps<"input"> & { expanded: boolean }) {
+  return (
+    <div className="flex items-center gap-2 border-b px-2.5">
+      <SearchIcon
+        aria-hidden
+        className="size-4 shrink-0 text-muted-foreground"
+      />
+      <input
+        type="text"
+        role="combobox"
+        aria-expanded={expanded}
+        aria-autocomplete="list"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        {...props}
+      />
+    </div>
+  );
+}
 
 function Mark({
   className,
@@ -250,6 +319,7 @@ export function FilterMenu<R extends FilterMenuRow>({
   onHighlight,
   onSelect,
   getSubmenu,
+  submenuFilter,
   selectedSubmenuId,
   submenuLabel,
   header,
@@ -271,8 +341,26 @@ export function FilterMenu<R extends FilterMenuRow>({
   // A submenu opens for a highlight the user moved, not for one resting on
   // the committed row or the query's first hit.
   const [moved, setMoved] = useState(false);
+  // Kept by parent, so passing back over the parent row on the way into its
+  // submenu does not wipe what was typed there.
+  const [subQuery, setSubQuery] = useState<{
+    parent: string;
+    text: string;
+    /**
+     * The surface's height before the first keystroke. Shrinking under a
+     * filter, a submenu that was shifted to fit the viewport would slide back
+     * toward its row and out from under the pointer, which closes it.
+     */
+    height: number;
+  } | null>(null);
+  // The submenu's filter box has focus, and with it the keys.
+  const [subKeys, setSubKeys] = useState(false);
+  // Like `mode`: typing in the submenu's box puts its highlight on the first
+  // hit until the user moves it.
+  const subMode = useRef<"hit" | "user">("user");
   const reported = useRef<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const subInput = useRef<HTMLInputElement | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -325,6 +413,8 @@ export function FilterMenu<R extends FilterMenuRow>({
   const setHighlightState = useCallback((id: string | null, byUser = false) => {
     setHighlightId(id);
     setSubHighlight(null);
+    setSubKeys(false);
+    subMode.current = "user";
     setMoved(byUser);
   }, []);
 
@@ -365,17 +455,29 @@ export function FilterMenu<R extends FilterMenuRow>({
     if (open === wasOpen.current) return;
     wasOpen.current = open;
     if (!open) report(null);
-    else if (query !== "") onQueryChangeRef.current("");
+    else {
+      setSubQuery(null);
+      if (query !== "") onQueryChangeRef.current("");
+    }
   }, [open, query, report]);
 
   const highlightIndex =
     highlight === null ? -1 : (indexOf.get(highlight) ?? -1);
   const parent = highlightIndex < 0 ? undefined : rows[highlightIndex];
+  const hasSubmenu = (row: R) => (getSubmenu?.(row, "")?.length ?? 0) > 0;
+  const subFilter =
+    parent && hasSubmenu(parent) ? submenuFilter?.(parent) : undefined;
+  const ownQuery =
+    subFilter && subQuery && subQuery.parent === parent?.id ? subQuery : null;
+  const subText = ownQuery?.text ?? "";
   const subRows = useMemo(
-    () => (parent && getSubmenu?.(parent)) || [],
-    [parent, getSubmenu],
+    () => (parent && getSubmenu?.(parent, subText)) || [],
+    [parent, getSubmenu, subText],
   );
-  const submenuOpen = open && moved && subRows.length > 0;
+  const submenuOpen =
+    open && moved && parent !== undefined && hasSubmenu(parent);
+  const subBox = submenuOpen && subFilter !== undefined;
+  const inSubBox = subBox && subKeys;
   const subIndex =
     subHighlight === null
       ? -1
@@ -406,6 +508,12 @@ export function FilterMenu<R extends FilterMenuRow>({
     } else if (highlight !== null && !indexOf.has(highlight)) {
       setHighlightState(null);
       report(null);
+    } else if (inSubBox && subMode.current === "hit") {
+      const first = step(subRows, -1, 1) ?? null;
+      if ((first?.id ?? null) !== subHighlight) {
+        setSubHighlight(first?.id ?? null);
+        report(first ?? parent ?? null);
+      }
     } else if (subHighlight !== null && subIndex < 0) {
       // The submenu row is gone; the parent row still stands.
       setSubHighlight(null);
@@ -422,8 +530,35 @@ export function FilterMenu<R extends FilterMenuRow>({
     setHighlightState,
     subHighlight,
     subIndex,
+    subRows,
+    inSubBox,
     parent,
   ]);
+
+  // Focus follows whichever box has the keys. Only between the two boxes, or
+  // back from nowhere when the submenu took the focused box away with it.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const target = inSubBox ? subInput.current : input.current;
+    const active = document.activeElement;
+    if (!target || active === target) return;
+    if (
+      active === null ||
+      active === document.body ||
+      active === input.current ||
+      active === subInput.current
+    ) {
+      target.focus({ preventScroll: true });
+    }
+  }, [open, inSubBox]);
+  const inSubBoxRef = useRef(inSubBox);
+  inSubBoxRef.current = inSubBox;
+  // The submenu mounts a render after it opens, so a box entered by → is not
+  // there yet when the effect above runs.
+  const subInputRef = useCallback((el: HTMLInputElement | null) => {
+    subInput.current = el;
+    if (el && inSubBoxRef.current) el.focus({ preventScroll: true });
+  }, []);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -463,14 +598,6 @@ export function FilterMenu<R extends FilterMenuRow>({
     );
   };
 
-  const step = (from: readonly R[], at: number, by: 1 | -1): R | undefined => {
-    for (let i = at + by; i >= 0 && i < from.length; i += by) {
-      const row = from[i] as R;
-      if (!row.disabled) return row;
-    }
-    return undefined;
-  };
-
   const choose = (row: R) => {
     if (row.disabled) return;
     onSelect(row);
@@ -479,24 +606,40 @@ export function FilterMenu<R extends FilterMenuRow>({
 
   const moveIntoSubmenu = (row: R) => {
     mode.current = "user";
+    subMode.current = "user";
     clearGrace();
     setMoved(true);
     setSubHighlight(row.id);
     report(row);
   };
 
+  /** The submenu's filter box takes the keys; its highlight stays put. */
+  const enterSubBox = () => {
+    mode.current = "user";
+    clearGrace();
+    setMoved(true);
+    setSubKeys(true);
+  };
+
   const backToParent = () => {
     setSubHighlight(null);
+    setSubKeys(false);
+    subMode.current = "user";
     report(parent ?? null);
   };
 
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  /** Both boxes' keys; `box` says which one they were pressed in. */
+  const onKeyDown = (
+    event: KeyboardEvent<HTMLInputElement>,
+    box: "menu" | "submenu",
+  ) => {
     // Safari ends a composition with an Enter whose isComposing is already
     // false; keyCode 229 still marks it as the IME's.
     if (event.nativeEvent.isComposing || event.keyCode === 229) return;
-    const inSubmenu = subIndex >= 0;
+    const inSubmenu = box === "submenu" || subIndex >= 0;
     const from = inSubmenu ? subRows : rows;
     const at = inSubmenu ? subIndex : highlightIndex;
+    const field = event.currentTarget;
     let next: R | undefined;
     switch (event.key) {
       case "ArrowDown":
@@ -512,16 +655,25 @@ export function FilterMenu<R extends FilterMenuRow>({
         next = step(from, from.length, -1);
         break;
       case "ArrowRight": {
-        const box = event.currentTarget;
-        if (inSubmenu || box.selectionStart !== box.value.length) return;
+        if (inSubmenu || field.selectionStart !== field.value.length) return;
+        if (!parent || !hasSubmenu(parent)) return;
         const first = step(subRows, -1, 1);
-        if (!first) return;
+        // A filter box is somewhere to go even with every row filtered out.
+        if (!first && !subFilter) return;
         event.preventDefault();
-        moveIntoSubmenu(first);
+        if (subFilter) enterSubBox();
+        if (first) moveIntoSubmenu(first);
         return;
       }
       case "ArrowLeft":
         if (!inSubmenu) return;
+        // The submenu's own box moves its caret first, as → does in the menu's.
+        if (
+          box === "submenu" &&
+          (field.selectionStart !== 0 || field.selectionEnd !== 0)
+        ) {
+          return;
+        }
         event.preventDefault();
         backToParent();
         return;
@@ -618,36 +770,27 @@ export function FilterMenu<R extends FilterMenuRow>({
           );
         }}
       >
-        <div className="flex items-center gap-2 border-b px-2.5">
-          <SearchIcon
-            aria-hidden
-            className="size-4 shrink-0 text-muted-foreground"
-          />
-          <input
-            ref={input}
-            type="text"
-            role="combobox"
-            aria-label={inputLabel}
-            aria-expanded={open}
-            aria-controls={listId}
-            aria-activedescendant={
-              subIndex >= 0
-                ? subOptionId(subIndex)
-                : highlightIndex < 0
-                  ? undefined
-                  : optionId(highlightIndex)
-            }
-            aria-autocomplete="list"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            placeholder={placeholder}
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            onKeyDown={onKeyDown}
-            className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-          />
-        </div>
+        <FilterBox
+          ref={input}
+          aria-label={inputLabel}
+          expanded={open}
+          aria-controls={listId}
+          aria-activedescendant={
+            subIndex >= 0
+              ? subOptionId(subIndex)
+              : highlightIndex < 0
+                ? undefined
+                : optionId(highlightIndex)
+          }
+          placeholder={placeholder}
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          onKeyDown={(event) => onKeyDown(event, "menu")}
+          // Pressed back into while the submenu's box had the keys.
+          onFocus={() => {
+            if (subKeys) backToParent();
+          }}
+        />
         {header}
         <div
           ref={list}
@@ -696,10 +839,24 @@ export function FilterMenu<R extends FilterMenuRow>({
               const index = flatIndex++;
               const highlighted = index === highlightIndex;
               const selected = row.id === selectedId;
-              const hasSubmenu = (getSubmenu?.(row)?.length ?? 0) > 0;
+              const split = hasSubmenu(row);
               // One gutter for every row of a menu with submenus, so what
               // renderRow puts at the right edge lines up.
               const gutter = getSubmenu !== undefined;
+              const cell = (
+                <>
+                  {renderRow(row, { highlighted, selected, query })}
+                  {selected && (
+                    <Mark
+                      className={
+                        split ? "right-0.5" : gutter ? "right-7" : "right-2"
+                      }
+                    >
+                      <CheckIcon aria-hidden />
+                    </Mark>
+                  )}
+                </>
+              );
               return (
                 // biome-ignore lint/a11y/useKeyWithClickEvents: the filter box takes the keys; focus never comes here
                 // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-expanded marks the option that owns a submenu listbox
@@ -711,37 +868,46 @@ export function FilterMenu<R extends FilterMenuRow>({
                   tabIndex={-1}
                   aria-selected={highlighted && subIndex < 0}
                   aria-disabled={row.disabled || undefined}
-                  aria-haspopup={hasSubmenu ? "listbox" : undefined}
-                  aria-expanded={
-                    hasSubmenu ? highlighted && submenuOpen : undefined
-                  }
+                  aria-haspopup={split ? "listbox" : undefined}
+                  aria-expanded={split ? highlighted && submenuOpen : undefined}
                   data-highlighted={highlighted ? "" : undefined}
                   data-selected={selected ? "" : undefined}
                   data-disabled={row.disabled ? "" : undefined}
-                  className={cn(OPTION_CLASS, gutter ? "pr-13" : "pr-8")}
+                  className={
+                    split
+                      ? ROW_CLASS
+                      : cn(OPTION_CLASS, gutter ? "pr-13" : "pr-8")
+                  }
                   onPointerMove={(event) => {
                     if (row.disabled) return;
-                    if (highlighted && subIndex < 0) return;
+                    // A highlight resting here (the committed row, the first
+                    // hit) still takes the hover, so its submenu opens; and
+                    // back on the parent from its submenu's box, the keys
+                    // come back too.
+                    if (highlighted && moved && subIndex < 0 && !subKeys) {
+                      return;
+                    }
                     if (inGrace(event)) return;
                     clearGrace();
                     move(row);
                   }}
                   onPointerLeave={
-                    highlighted && hasSubmenu ? onParentLeave : undefined
+                    highlighted && split ? onParentLeave : undefined
                   }
                   onClick={() => choose(row)}
                 >
-                  {renderRow(row, { highlighted, selected })}
-                  {selected && (
-                    <Mark className={gutter ? "right-7" : "right-2"}>
-                      <CheckIcon aria-hidden />
-                    </Mark>
+                  {split ? (
+                    <span data-slot="submenu-action" className={ACTION_CLASS}>
+                      {cell}
+                    </span>
+                  ) : (
+                    cell
                   )}
-                  {hasSubmenu && (
+                  {split && (
                     <span
                       aria-hidden
                       data-slot="submenu-trigger"
-                      className="absolute inset-y-0 right-0 flex w-6.5 items-center justify-end pr-2 text-muted-foreground"
+                      className="relative flex w-6.5 shrink-0 items-center justify-end self-stretch pr-2 text-muted-foreground group-aria-expanded/option:text-foreground"
                       // A split button's other half: it opens the submenu,
                       // where the rest of the row picks the row. A touch
                       // has no hover to open it any other way.
@@ -789,7 +955,14 @@ export function FilterMenu<R extends FilterMenuRow>({
             side="right"
             align="start"
             sideOffset={4}
-            className="w-60 p-1"
+            className="flex max-h-[min(24rem,var(--radix-popover-content-available-height))] w-60 flex-col overflow-hidden p-0"
+            style={
+              ownQuery
+                ? {
+                    minHeight: `min(${ownQuery.height}px, var(--radix-popover-content-available-height))`,
+                  }
+                : undefined
+            }
             onOpenAutoFocus={(event) => event.preventDefault()}
             onCloseAutoFocus={(event) => event.preventDefault()}
             onInteractOutside={(event) => {
@@ -802,26 +975,77 @@ export function FilterMenu<R extends FilterMenuRow>({
             onEscapeKeyDown={(event) => {
               event.preventDefault();
               if (isEscapeOfComposition(event)) return;
-              if (subIndex >= 0) backToParent();
+              if (subIndex >= 0 || inSubBox) backToParent();
               else setOpen(false);
             }}
-            onMouseDown={(event) => event.preventDefault()}
-            onPointerEnter={() => {
+            onMouseDown={(event) => {
+              if (!(event.target as Element).closest(FOCUSABLE)) {
+                event.preventDefault();
+              }
+            }}
+            // Hover only: a tap's leave comes with the pointer lifting, not
+            // moving off, and would close the submenu under the tap.
+            onPointerEnter={(event) => {
+              if (event.pointerType === "touch") return;
               pointerIn.current = "submenu";
               clearGrace();
+              // Typing with the pointer over a submenu filters the submenu.
+              if (subBox && !subKeys) enterSubBox();
             }}
             onPointerLeave={(event) => {
+              if (event.pointerType === "touch") return;
               pointerIn.current = null;
               const to = event.relatedTarget;
               if (to instanceof Node && list.current?.contains(to)) return;
               move(null);
             }}
           >
+            {subBox && parent && (
+              <FilterBox
+                ref={subInputRef}
+                aria-label={
+                  subFilter.label ??
+                  (submenuLabel ? `Filter ${submenuLabel(parent)}` : "Filter")
+                }
+                expanded
+                aria-controls={submenuId}
+                aria-activedescendant={
+                  subIndex < 0 ? undefined : subOptionId(subIndex)
+                }
+                placeholder={subFilter.placeholder ?? "Filter…"}
+                value={subText}
+                onChange={(event) => {
+                  subMode.current = "hit";
+                  setSubQuery({
+                    parent: parent.id,
+                    text: event.target.value,
+                    height:
+                      ownQuery?.height ??
+                      submenu.current?.getBoundingClientRect().height ??
+                      0,
+                  });
+                }}
+                onKeyDown={(event) => onKeyDown(event, "submenu")}
+                onFocus={() => {
+                  if (!subKeys) enterSubBox();
+                }}
+              />
+            )}
             <div
               id={submenuId}
               role="listbox"
               aria-label={parent ? submenuLabel?.(parent) : undefined}
+              className="min-h-0 flex-1 overflow-y-auto p-1"
             >
+              {/* Not while it fades out, emptied by the parent it lost. */}
+              {submenuOpen && subRows.length === 0 && (
+                <div
+                  role="presentation"
+                  className="px-2 py-4 text-center text-muted-foreground text-sm"
+                >
+                  {empty(subText)}
+                </div>
+              )}
               {subRows.map((row, index) => {
                 const highlighted = index === subIndex;
                 const selected = row.id === selectedSubmenuId;
@@ -843,7 +1067,7 @@ export function FilterMenu<R extends FilterMenuRow>({
                     }}
                     onClick={() => choose(row)}
                   >
-                    {renderRow(row, { highlighted, selected })}
+                    {renderRow(row, { highlighted, selected, query: subText })}
                     {selected && (
                       <Mark className="right-2">
                         <CheckIcon aria-hidden />

@@ -405,6 +405,44 @@ describe("FilterMenu submenus", () => {
     expect(onSelect).toHaveBeenCalledWith(ROWS[2]);
   });
 
+  it("lights only a split row's left half, the one that picks the row", () => {
+    render(<Harness selectedId="apple" />);
+    const box = open();
+    key(box, "ArrowDown");
+    key(box, "ArrowUp");
+    const apple = screen.getByRole("option", { name: "Apple" });
+    expect(apple.hasAttribute("data-highlighted")).toBe(true);
+    expect(apple.className).not.toMatch(/data-highlighted:bg-accent/);
+    const action = apple.querySelector(
+      '[data-slot="submenu-action"]',
+    ) as HTMLElement;
+    expect(action.className).toMatch(
+      /group-data-highlighted\/option:bg-accent/,
+    );
+    // The row's content and its check sit in that half; the chevron does not.
+    expect(action.textContent).toBe("Apple");
+    expect(action.querySelector("svg")).not.toBeNull();
+    expect(
+      action.contains(apple.querySelector('[data-slot="submenu-trigger"]')),
+    ).toBe(false);
+    // A row with no submenu lights whole.
+    const pear = screen.getByRole("option", { name: "Pear" });
+    expect(pear.querySelector('[data-slot="submenu-action"]')).toBeNull();
+    expect(pear.className).toMatch(/data-highlighted:bg-accent/);
+  });
+
+  it("opens the submenu of a row the highlight rests on once the pointer hovers it", () => {
+    render(<Harness selectedId="apple" />);
+    open();
+    expect(
+      screen.queryByRole("listbox", { name: "Apple varieties" }),
+    ).toBeNull();
+    fireEvent.pointerMove(screen.getByRole("option", { name: "Apple" }));
+    expect(
+      screen.getByRole("listbox", { name: "Apple varieties" }),
+    ).toBeTruthy();
+  });
+
   it("opens a submenu only for a highlight the user moved", () => {
     render(<Harness selectedId="apple" />);
     open();

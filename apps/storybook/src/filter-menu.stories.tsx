@@ -133,7 +133,9 @@ function DistrictPicker() {
         submenuLabel={(row) => `${row.label} districts`}
         onSelect={setPick}
         onHighlight={setHighlight}
-        renderRow={(row) => <MatchedText text={row.label} query={query} />}
+        renderRow={(row, state) => (
+          <MatchedText text={row.label} query={state.query} />
+        )}
         inputLabel="Filter cities"
         placeholder="Filter cities…"
         listLabel="Cities"
@@ -157,4 +159,109 @@ function DistrictPicker() {
  */
 export const WithSubmenus: Story = {
   render: () => <DistrictPicker />,
+};
+
+const STOPS: Record<string, string[]> = {
+  Europe: [
+    "Amsterdam",
+    "Athína",
+    "Barcelona",
+    "Berlin",
+    "Bruxelles",
+    "Budapest",
+    "České Budějovice",
+    "Dublin",
+    "Göteborg",
+    "Kraków",
+    "Lisbon",
+    "Ljubljana",
+    "Malmö",
+    "Porto",
+    "Praha",
+    "Reykjavík",
+    "Rīga",
+    "Sevilla",
+    "Tallinn",
+    "Wien",
+    "Zürich",
+  ],
+  Americas: [
+    "Bogotá",
+    "Buenos Aires",
+    "Cusco",
+    "Halifax",
+    "La Paz",
+    "Medellín",
+    "Mérida",
+    "Montréal",
+    "Oaxaca",
+    "Québec",
+    "Santiago",
+    "São Paulo",
+    "Valparaíso",
+  ],
+  Asia: ["Đà Lạt", "Hà Nội", "Huế", "Kyōto", "Ōsaka", "Seoul", "Tainan"],
+};
+
+interface Stop {
+  id: string;
+  label: string;
+  region?: string;
+}
+
+const REGIONS: Stop[] = [
+  { id: "anywhere", label: "Anywhere" },
+  ...Object.keys(STOPS).map((region) => ({ id: region, label: region })),
+];
+
+function stopsOf(row: Stop, query: string): Stop[] | undefined {
+  return STOPS[row.id]
+    ?.filter((label) => matchText(label, query))
+    .map((label) => ({ id: `${row.id}/${label}`, label, region: row.id }));
+}
+
+function StopPicker() {
+  const [pick, setPick] = useState<Stop>(REGIONS[0] as Stop);
+  const [query, setQuery] = useState("");
+  const sections = useMemo<FilterMenuSection<Stop>[]>(
+    () => [
+      { id: "regions", rows: REGIONS.filter((r) => matchText(r.label, query)) },
+    ],
+    [query],
+  );
+  return (
+    <FilterMenu
+      query={query}
+      onQueryChange={setQuery}
+      sections={sections}
+      selectedId={pick.region ?? pick.id}
+      selectedSubmenuId={pick.id}
+      getSubmenu={stopsOf}
+      submenuFilter={(row) => ({ placeholder: `Filter ${row.label}…` })}
+      submenuLabel={(row) => `Stops in ${row.label}`}
+      onSelect={setPick}
+      renderRow={(row, state) => (
+        <MatchedText text={row.label} query={state.query} />
+      )}
+      inputLabel="Filter regions"
+      placeholder="Filter regions…"
+      listLabel="Regions"
+      className="w-56"
+    >
+      <Button variant="outline" className="w-48 justify-between">
+        {pick.region ? `${pick.region} › ${pick.label}` : pick.label}
+        <ChevronDownIcon className="text-muted-foreground" />
+      </Button>
+    </FilterMenu>
+  );
+}
+
+/**
+ * A region picks the whole region; its submenu lists the stops in it, with a
+ * filter box of its own. The box takes the keys once the pointer enters the
+ * submenu, or on → from the menu's box; ← at its start or Escape hand them
+ * back.
+ */
+export const WithSearchableSubmenus: Story = {
+  render: () => <StopPicker />,
 };
