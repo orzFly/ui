@@ -69,6 +69,10 @@
   position: relative;
   overflow: auto;
   overscroll-behavior: contain;
+  /* Firefox leaves a vertical scrollbar that appears after layout out of the
+     max-content width, so the rows overflow by its width; a reserved gutter
+     is counted up front. */
+  scrollbar-gutter: stable;
   padding-inline: 0.625rem;
 }
 .orz-hex[data-fill] .orz-hex-scroller {
