@@ -32,9 +32,11 @@ counterpart. Like `@orz/ui`'s stylesheet, it registers `@source "./dist"` on its
 
 ## Theme
 
-Blocks follow `@orz/ui`'s `ThemeProvider`: a theme with a mapped syntax theme (`syntaxThemeOf`)
-gets those token colors, and the rest use pierre's own light/dark pair. Outside a provider, blocks
-use pierre's pair.
+Blocks follow `@orz/ui`'s `ThemeProvider`. A palette's `syntax` (or its variant's) names the shiki
+theme for its token colors, and a palette without one uses that slot of pierre's own light/dark
+pair. Under `system` each slot comes from its own palette, so Solarized highlights as
+solarized-light by day and solarized-dark at night. A pinned mode or a one-palette theme fills both
+slots from the side on screen. Outside a provider, blocks use pierre's pair.
 
 ## Entry points
 

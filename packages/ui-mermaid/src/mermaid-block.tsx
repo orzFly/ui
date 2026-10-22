@@ -68,8 +68,9 @@ function readPalette(el: Element): DiagramPalette {
  * with the parser's complaint under it.
  *
  * The colors are the theme tokens in effect on this element. The diagram is
- * drawn again whenever `useTheme()` reports a new theme; outside a
- * ThemeProvider it keeps the colors present when it was drawn.
+ * drawn again whenever `useTheme()` reports a new theme, color scheme or
+ * variant; outside a ThemeProvider it keeps the colors present when it was
+ * drawn.
  */
 export function MermaidBlock({
   source,
@@ -82,7 +83,7 @@ export function MermaidBlock({
   /** On the outer element, which also carries the probe the palette is read from. */
   className?: string;
 }) {
-  const { theme } = useTheme();
+  const { theme, colorScheme, variant } = useTheme();
   const probe = useRef<HTMLDivElement>(null);
   const [result, setResult] = useState<DiagramResult | null>(null);
   const [showSource, setShowSource] = useState(false);
@@ -90,7 +91,7 @@ export function MermaidBlock({
   useEffect(() => {
     // Read only as a trigger: the colors come off the computed style below,
     // which the store has already switched by the time it notifies.
-    void theme;
+    void [theme, colorScheme, variant];
     const el = probe.current;
     if (el === null) return;
     let live = true;
@@ -104,7 +105,7 @@ export function MermaidBlock({
     return () => {
       live = false;
     };
-  }, [source, theme]);
+  }, [source, theme, colorScheme, variant]);
 
   const diagram = result?.ok === true ? result : null;
   const sourceShown = sourceView ?? (

@@ -89,15 +89,15 @@ export const Highlighted: Story = {};
 /** A theme whose syntax colours come from the matching shiki theme. */
 export const GithubLight: Story = {
   name: "GitHub Light",
-  globals: { theme: "github-light" },
+  globals: { theme: "github_light" },
 };
 
-export const SolarizedDark: Story = { globals: { theme: "solarized-dark" } };
+export const SolarizedDark: Story = { globals: { theme: "solarized_dark" } };
 
-export const Dracula: Story = { globals: { theme: "dracula" } };
+export const Dracula: Story = { globals: { theme: "dracula_dark" } };
 
 /** A theme with no syntax counterpart: pierre's own token colours over the theme's background. */
-export const PicoLight: Story = { globals: { theme: "pico-light" } };
+export const PicoLight: Story = { globals: { theme: "picotera_light" } };
 
 /** With no code renderer registered, every fence is the registry's plain `<pre><code>`. */
 export const WithoutCodeContent: Story = {

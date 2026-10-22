@@ -1,5 +1,6 @@
+import type { ColorScheme, Palette } from "@orz/themes";
 import { CheckIcon, MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
-import { THEMES, themeKind, useTheme } from "../theme/index.ts";
+import { useTheme } from "../theme/index.ts";
 import { Button } from "./button.tsx";
 import {
   DropdownMenu,
@@ -22,24 +23,52 @@ function Swatch({ surface, accent }: { surface: string; accent: string }) {
   );
 }
 
-/** Theme picker (T-36): system + every named theme, from the provider's store. */
-export function ThemeMenu() {
-  const { pref, setPref } = useTheme();
-  const TriggerIcon =
-    pref === "system"
-      ? MonitorIcon
-      : themeKind(pref) === "dark"
-        ? MoonIcon
-        : SunIcon;
+const SCHEME_LABEL: Record<ColorScheme, string> = {
+  light: "Light",
+  dark: "Dark",
+};
 
-  const group = (kind: "light" | "dark") =>
-    THEMES.filter((t) => t.kind === kind).map((t) => (
-      <DropdownMenuItem key={t.value} onSelect={() => setPref(t.value)}>
-        <Swatch surface={t.surface} accent={t.accent} />
-        <span className="flex-1">{t.label}</span>
-        {pref === t.value && <CheckIcon className="size-4" />}
-      </DropdownMenuItem>
-    ));
+/**
+ * Theme picker (T-36): system, then every theme's light and dark palette,
+ * from the provider's store. Sets the UI pick only, with default variants.
+ */
+export function ThemeMenu() {
+  const { pref, themes, setPref } = useTheme();
+  const ui = pref.ui;
+  const TriggerIcon =
+    ui?.mode === "dark"
+      ? MoonIcon
+      : ui?.mode === "light"
+        ? SunIcon
+        : MonitorIcon;
+  const system = { theme: themes[0].id, mode: "system" } as const;
+  const isSystem =
+    ui?.theme === system.theme && ui.mode === "system" && !ui.variant;
+
+  const group = (scheme: ColorScheme) =>
+    themes.flatMap((theme) => {
+      const palette: Palette | undefined = theme[scheme];
+      if (palette === undefined) return [];
+      const checked =
+        ui?.theme === theme.id && ui.mode === scheme && !ui.variant;
+      return (
+        <DropdownMenuItem
+          key={theme.id}
+          onSelect={() =>
+            setPref({ ...pref, ui: { theme: theme.id, mode: scheme } })
+          }
+        >
+          <Swatch
+            surface={palette.tokens.background}
+            accent={palette.tokens.primary}
+          />
+          <span className="flex-1">
+            {theme.label} {palette.label ?? SCHEME_LABEL[scheme]}
+          </span>
+          {checked && <CheckIcon className="size-4" />}
+        </DropdownMenuItem>
+      );
+    });
 
   return (
     <DropdownMenu>
@@ -52,10 +81,10 @@ export function ThemeMenu() {
         align="end"
         className="max-h-[min(70vh,32rem)] w-52 overflow-y-auto"
       >
-        <DropdownMenuItem onSelect={() => setPref("system")}>
+        <DropdownMenuItem onSelect={() => setPref({ ...pref, ui: system })}>
           <MonitorIcon className="size-4 text-muted-foreground" />
           <span className="flex-1">System</span>
-          {pref === "system" && <CheckIcon className="size-4" />}
+          {isSystem && <CheckIcon className="size-4" />}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-xs text-muted-foreground">

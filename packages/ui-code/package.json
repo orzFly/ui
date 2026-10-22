@@ -45,6 +45,7 @@
     "diff": "^9.0.0"
   },
   "devDependencies": {
+    "@orz/themes": "workspace:*",
     "@orz/ui": "workspace:*",
     "@orz/ui-content": "workspace:*",
     "@pierre/diffs": "^1.6.1",

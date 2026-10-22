@@ -4,28 +4,58 @@ function literal(value: string): string {
 }
 
 /**
- * An inline script for `<head>` that applies the persisted theme before the
- * bundle loads, so a dark-theme reload never flashes white. Built from the
- * same keys the store is given, so the two cannot drift apart; it reads the
- * stored kind rather than the slug, so it needs no list of dark themes.
+ * An inline script for `<head>` that paints the persisted theme before the
+ * bundle loads, so a dark-theme reload never flashes white. It replays the
+ * declarations the store cached under `paintKey`, so neither it nor the page
+ * needs a theme list; the store adopts the `<style>` it inserts.
  */
 export function themePaintGuardScript({
   storageKey,
-  kindStorageKey = `${storageKey}-kind`,
+  paintKey = `${storageKey}-paint`,
 }: {
   storageKey: string;
-  kindStorageKey?: string;
+  paintKey?: string;
 }): string {
   return `(() => {
   try {
-    const theme = localStorage.getItem(${literal(storageKey)});
-    const kind = localStorage.getItem(${literal(kindStorageKey)});
-    const dark = kind
-      ? kind === "dark"
-      : window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (dark) document.documentElement.classList.add("dark");
-    if (theme && theme !== "system")
-      document.documentElement.dataset.theme = theme;
+    const root = document.documentElement;
+    const raw = localStorage.getItem(${literal(paintKey)});
+    if (!raw) {
+      // Written by the store before it cached declarations; it rewrites the
+      // cache on creation, so this path runs once.
+      if (localStorage.getItem(${literal(`${storageKey}-kind`)}) === "dark")
+        root.classList.add("dark");
+      return;
+    }
+    const cache = JSON.parse(raw);
+    const pick = (side) => {
+      if (!side) return null;
+      const scheme =
+        side.light && side.dark
+          ? window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light"
+          : side.light
+            ? "light"
+            : "dark";
+      return { scheme, text: side[scheme] || "" };
+    };
+    const ui = pick(cache.ui);
+    const terminal = pick(cache.terminal);
+    const style = document.createElement("style");
+    style.setAttribute("data-orz-theme", "");
+    // Doubled because a stylesheet <link> parsed after this script would
+    // otherwise outrank it on order; the store rewrites it as plain :root
+    // and moves it last.
+    style.textContent =
+      ":root:root { " + [ui && ui.text, terminal && terminal.text].filter(Boolean).join(" ") + " }";
+    document.head.append(style);
+    if (ui) {
+      root.classList.toggle("dark", ui.scheme === "dark");
+      root.dataset.theme = cache.ui.theme;
+      if (cache.ui.variant) root.dataset.variant = cache.ui.variant;
+    }
+    if (terminal) root.dataset.terminalTheme = cache.terminal.theme;
   } catch {}
 })();`;
 }

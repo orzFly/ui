@@ -1,11 +1,34 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { builtinThemes, dracula, type TerminalTheme } from "@orz/themes";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createThemeStore,
   type ThemePref,
+  type ThemeStoreOptions,
   themePaintGuardScript,
 } from "../src/theme/index.ts";
 
 const html = document.documentElement;
+
+const ink: TerminalTheme = {
+  id: "ink",
+  label: "Ink",
+  light: {
+    terminal: {
+      ...(dracula.dark?.terminal as NonNullable<
+        TerminalTheme["light"]
+      >["terminal"]),
+      "terminal-background": "#fafafa",
+    },
+  },
+  dark: {
+    terminal: {
+      ...(dracula.dark?.terminal as NonNullable<
+        TerminalTheme["dark"]
+      >["terminal"]),
+      "terminal-background": "#050505",
+    },
+  },
+};
 
 function stubOsDark(matches: boolean) {
   vi.stubGlobal("matchMedia", () => ({
@@ -15,64 +38,159 @@ function stubOsDark(matches: boolean) {
   }));
 }
 
-function resetHtml() {
+function reset() {
   delete html.dataset.theme;
+  delete html.dataset.variant;
+  delete html.dataset.terminalTheme;
   html.classList.remove("dark");
+  for (const el of document.head.querySelectorAll("style")) el.remove();
 }
 
+beforeEach(reset);
 afterEach(() => {
   localStorage.clear();
-  resetHtml();
+  reset();
   vi.unstubAllGlobals();
 });
 
 /**
- * Persist `pref` the way the app does, then paint once with the guard and
- * once with a fresh store, each onto a clean root.
+ * What a paint left on <html>: the value each property ends up with, and the
+ * attributes. Values, not text: the guard replays the followed UI palette's
+ * terminal tokens before a terminal pick's, where the store writes only the
+ * pick's, and the later declaration wins either way.
  */
-function paintBoth(pref: ThemePref, osDark: boolean) {
-  stubOsDark(osDark);
-  const keys = { storageKey: "app-theme", kindStorageKey: "app-kind" };
-  const writer = createThemeStore(keys);
+function snapshot() {
+  const text =
+    document.head.querySelector("style[data-orz-theme]")?.textContent ?? "";
+  const values: Record<string, string> = {};
+  const body = text.slice(text.indexOf("{") + 1);
+  for (const m of body.matchAll(/([\w-]+):\s*([^;]+);/g)) values[m[1]] = m[2];
+  return {
+    values,
+    dark: html.classList.contains("dark"),
+    theme: html.dataset.theme,
+    variant: html.dataset.variant,
+    terminalTheme: html.dataset.terminalTheme,
+  };
+}
+
+/**
+ * Persist `pref` the way the app does under one OS setting, then paint once
+ * with the guard and once with a fresh store under another, each from a
+ * clean <html>.
+ */
+function paintBoth(
+  slots: Partial<ThemeStoreOptions>,
+  pref: ThemePref,
+  osDark: boolean,
+  writtenUnderDark = !osDark,
+) {
+  const options = { storageKey: "app-theme", ...slots };
+  stubOsDark(writtenUnderDark);
+  const writer = createThemeStore(options);
   writer.setPref(pref);
   writer.dispose();
 
-  resetHtml();
-  new Function(themePaintGuardScript(keys))();
-  const guard = {
-    theme: html.dataset.theme,
-    dark: html.classList.contains("dark"),
-  };
+  reset();
+  stubOsDark(osDark);
+  new Function(themePaintGuardScript(options))();
+  const guard = snapshot();
 
-  const root = document.createElement("div");
-  createThemeStore({ ...keys, root }).dispose();
-  const store = {
-    theme: root.dataset.theme,
-    dark: root.classList.contains("dark"),
-  };
-  return { guard, store };
+  reset();
+  createThemeStore(options).dispose();
+  return { guard, store: snapshot() };
 }
+
+const ui = { themes: builtinThemes };
+const both = { themes: builtinThemes, terminalThemes: [...builtinThemes, ink] };
+const terminalOnly = { terminalThemes: [ink] };
 
 describe("themePaintGuardScript", () => {
   it.each([
-    ["dracula", false],
-    ["catppuccin-latte", true],
-    ["dark", false],
-    ["light", true],
-  ] as const)("paints %s the way the store does (OS dark: %s)", (pref, os) => {
-    const { guard, store } = paintBoth(pref, os);
-    expect(guard).toEqual(store);
+    ["system", { ui: { theme: "solarized", mode: "system" } }],
+    ["light", { ui: { theme: "github", mode: "light" } }],
+    ["dark", { ui: { theme: "github", mode: "dark", variant: "amoled" } }],
+    ["one-palette", { ui: { theme: "dracula", mode: "dark" } }],
+  ] as const)("paints a UI pick under %s the way the store does", (_, pref) => {
+    for (const os of [false, true]) {
+      const { guard, store } = paintBoth(ui, pref, os);
+      expect(guard, `OS dark: ${os}`).toEqual(store);
+    }
   });
 
-  // Under "system" the guard leaves data-theme off while the store writes
-  // "light"/"dark". Those two are the defaults with no block of their own, so
-  // both paint the same :root / .dark palette; only .dark has to agree.
-  it.each([true, false])("agrees on .dark under system (OS dark: %s)", (os) => {
-    const { guard, store } = paintBoth("system", os);
-    expect(guard.theme).toBeUndefined();
-    expect(store.theme).toBe(os ? "dark" : "light");
-    expect(guard.dark).toBe(store.dark);
-    expect(guard.dark).toBe(os);
+  it.each([
+    ["following", { ui: { theme: "solarized", mode: "system" } }],
+    [
+      "system",
+      {
+        ui: { theme: "github", mode: "light" },
+        terminal: { theme: "ink", mode: "system" },
+      },
+    ],
+    [
+      "pinned",
+      {
+        ui: { theme: "solarized", mode: "system" },
+        terminal: { theme: "dracula", mode: "dark", variant: "amoled" },
+      },
+    ],
+  ] as const)("paints a terminal pick %s the way the store does", (_, pref) => {
+    for (const os of [false, true]) {
+      const { guard, store } = paintBoth(both, pref, os);
+      expect(guard, `OS dark: ${os}`).toEqual(store);
+    }
+  });
+
+  it.each([
+    ["system", { terminal: { theme: "ink", mode: "system" } }],
+    ["dark", { terminal: { theme: "ink", mode: "dark" } }],
+  ] as const)(
+    "paints a terminal-only store under %s the way the store does",
+    (_, pref) => {
+      for (const os of [false, true]) {
+        const { guard, store } = paintBoth(terminalOnly, pref, os);
+        expect(guard, `OS dark: ${os}`).toEqual(store);
+        expect(guard.dark).toBe(false);
+        expect(guard.theme).toBeUndefined();
+      }
+    },
+  );
+
+  it("picks the side from the OS only when both are cached", () => {
+    const { guard } = paintBoth(
+      ui,
+      { ui: { theme: "github", mode: "dark" } },
+      false,
+    );
+    expect(guard.dark).toBe(true);
+  });
+
+  it("sets only .dark from a legacy kind key when there is no cache", () => {
+    stubOsDark(false);
+    localStorage.setItem("app-theme", "dracula");
+    localStorage.setItem("app-theme-kind", "dark");
+    new Function(themePaintGuardScript({ storageKey: "app-theme" }))();
+    expect(html.classList.contains("dark")).toBe(true);
+    expect(html.dataset.theme).toBeUndefined();
+    expect(document.head.querySelector("style")).toBeNull();
+  });
+
+  it("paints nothing with neither a cache nor a kind", () => {
+    stubOsDark(true);
+    new Function(themePaintGuardScript({ storageKey: "app-theme" }))();
+    expect(html.classList.contains("dark")).toBe(false);
+    expect(document.head.querySelector("style")).toBeNull();
+  });
+
+  it("reads the paint key it was given", () => {
+    stubOsDark(false);
+    const options = { storageKey: "app-theme", paintKey: "my-paint", ...ui };
+    const writer = createThemeStore(options);
+    writer.setPref({ ui: { theme: "nord", mode: "dark" } });
+    writer.dispose();
+    reset();
+    new Function(themePaintGuardScript(options))();
+    expect(html.dataset.theme).toBe("nord");
   });
 
   it("cannot be closed early by a key holding </script>", () => {

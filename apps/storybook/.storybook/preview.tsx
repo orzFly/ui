@@ -1,11 +1,11 @@
+import { builtinThemes, type ColorScheme, schemesOf } from "@orz/themes";
 import { Toaster } from "@orz/ui/components/sonner";
 import {
   createThemeStore,
-  THEMES,
-  type Theme,
+  type ResolvedTheme,
+  type ThemePick,
   type ThemePref,
   ThemeProvider,
-  themeKind,
 } from "@orz/ui/theme";
 import { DocsContainer } from "@storybook/addon-docs/blocks";
 import type { Decorator, Preview } from "@storybook/react-vite";
@@ -15,13 +15,68 @@ import { create, type ThemeVars } from "storybook/theming";
 import { THEME_EVENT } from "./theme-channel.ts";
 import "./preview.css";
 
-const themes = createThemeStore({ storageKey: "orz-storybook-theme" });
+const themes = createThemeStore({
+  storageKey: "orz-storybook-theme",
+  themes: builtinThemes,
+  terminalThemes: builtinThemes,
+});
+
+const SCHEME_TITLE: Record<ColorScheme, string> = {
+  light: "Light",
+  dark: "Dark",
+};
+
+// Toolbar values must be plain strings, so each item is `id_scheme` (plus
+// `_variant`), and prefOf turns the two globals back into a pref. Not `:`:
+// Storybook drops a URL global holding anything but [a-zA-Z0-9 _-], so a
+// reload would lose the pick.
+const SEPARATOR = "_";
+const palettes = builtinThemes.flatMap((theme) =>
+  schemesOf(theme).map((scheme) => ({
+    value: `${theme.id}${SEPARATOR}${scheme}`,
+    title: `${theme.label} ${theme[scheme]?.label ?? SCHEME_TITLE[scheme]}`,
+    hasAmoled: theme[scheme]?.variants?.amoled !== undefined,
+  })),
+);
+const THEME_ITEMS = [
+  { value: "system", title: "System" },
+  ...palettes.map(({ value, title }) => ({ value, title })),
+  ...palettes
+    .filter((p) => p.hasAmoled)
+    .map(({ value, title }) => ({
+      value: `${value}${SEPARATOR}amoled`,
+      title: `${title} AMOLED`,
+    })),
+];
+const TERMINAL_ITEMS = [
+  { value: "follow", title: "Follow theme" },
+  ...palettes.map(({ value, title }) => ({ value, title })),
+];
+
+function pickOf(value: string): ThemePick {
+  const [theme, mode, variant] = value.split(SEPARATOR);
+  const pick: ThemePick = { theme, mode: mode as ColorScheme };
+  if (variant) pick.variant = variant;
+  return pick;
+}
+
+function prefOf(theme: string, terminal: string): ThemePref {
+  const pref: ThemePref = {
+    ui:
+      theme === "system"
+        ? { theme: builtinThemes[0].id, mode: "system" }
+        : pickOf(theme),
+  };
+  if (terminal !== "follow") pref.terminal = pickOf(terminal);
+  return pref;
+}
 
 const withTheme: Decorator = (Story, context) => {
-  const pref = context.globals.theme as ThemePref;
+  const theme = (context.globals.theme as string | undefined) ?? "system";
+  const terminal = (context.globals.terminal as string | undefined) ?? "follow";
   useEffect(() => {
-    themes.setPref(pref);
-  }, [pref]);
+    themes.setPref(prefOf(theme, terminal));
+  }, [theme, terminal]);
   return (
     <ThemeProvider store={themes}>
       <Story />
@@ -50,14 +105,19 @@ function token(name: string): string {
   return `rgba(${r}, ${g}, ${b}, ${Math.round((a / 255) * 100) / 100})`;
 }
 
-// Reads the theme the store has just written onto <html>, so it must only be
-// called for the store's current theme; the cache keys on that.
-const varsCache = new Map<Theme, ThemeVars>();
-function storybookTheme(theme: Theme): ThemeVars {
-  let vars = varsCache.get(theme);
+// Reads the tokens the store has just painted, so it must only be called for
+// the store's current theme; the cache keys on that.
+const varsCache = new Map<string, ThemeVars>();
+function storybookTheme({
+  theme,
+  colorScheme,
+  variant,
+}: ResolvedTheme): ThemeVars {
+  const key = `${theme.id}:${colorScheme}:${variant}`;
+  let vars = varsCache.get(key);
   if (vars === undefined) {
     vars = create({
-      base: themeKind(theme),
+      base: colorScheme,
       colorPrimary: token("primary"),
       // Storybook draws the selected sidebar item in white on this.
       colorSecondary: token("sidebar-primary"),
@@ -79,14 +139,16 @@ function storybookTheme(theme: Theme): ThemeVars {
       inputBorder: token("input"),
       inputTextColor: token("foreground"),
     });
-    varsCache.set(theme, vars);
+    varsCache.set(key, vars);
   }
   return vars;
 }
 
+// The store has a UI slot, so it always resolves a UI theme.
+const resolvedTheme = () => themes.getResolved() as ResolvedTheme;
+
 void addons.ready().then((channel) => {
-  const send = () =>
-    channel.emit(THEME_EVENT, storybookTheme(themes.getTheme()));
+  const send = () => channel.emit(THEME_EVENT, storybookTheme(resolvedTheme()));
   send();
   themes.subscribe(send);
 });
@@ -95,8 +157,8 @@ void addons.ready().then((channel) => {
 // toolbar; left alone it stays light under a dark @orz/ui theme and the
 // stories' light text lands on a white page.
 function ThemedDocsContainer(props: ComponentProps<typeof DocsContainer>) {
-  const theme = useSyncExternalStore(themes.subscribe, themes.getTheme);
-  return <DocsContainer {...props} theme={storybookTheme(theme)} />;
+  const resolved = useSyncExternalStore(themes.subscribe, resolvedTheme);
+  return <DocsContainer {...props} theme={storybookTheme(resolved)} />;
 }
 
 const preview: Preview = {
@@ -107,14 +169,21 @@ const preview: Preview = {
         title: "Theme",
         icon: "paintbrush",
         dynamicTitle: true,
-        items: [
-          { value: "system", title: "System" },
-          ...THEMES.map((t) => ({ value: t.value, title: t.label })),
-        ],
+        items: THEME_ITEMS,
+      },
+    },
+    terminal: {
+      description: "Terminal theme",
+      toolbar: {
+        title: "Terminal",
+        // Storybook ships no terminal icon; ⌘ is the nearest shell glyph.
+        icon: "command",
+        dynamicTitle: true,
+        items: TERMINAL_ITEMS,
       },
     },
   },
-  initialGlobals: { theme: "system" },
+  initialGlobals: { theme: "system", terminal: "follow" },
   parameters: {
     docs: { container: ThemedDocsContainer },
     options: {

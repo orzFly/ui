@@ -1,4 +1,4 @@
-import { syntaxThemeOf, type ThemePref, useTheme } from "@orz/ui/theme";
+import { type ColorScheme, type Theme, useTheme } from "@orz/ui/theme";
 import type { CodeViewProps, MultiFileDiffProps } from "@pierre/diffs/react";
 import {
   Component,
@@ -45,26 +45,51 @@ export const PIERRE_THEME_TYPE = "system" as const;
 
 export type SyntaxTheme = { light: string; dark: string };
 
-// Keyed by preference, so every surface on the page hands pierre the same
+// Keyed by the pair, so every surface on the page hands pierre the same
 // object identity across renders (props-stability guidance below).
-const SYNTAX_THEMES = new Map<ThemePref, SyntaxTheme>();
+const SYNTAX_THEMES = new Map<string, SyntaxTheme>();
+
+function syntaxOf(
+  theme: Theme,
+  scheme: ColorScheme,
+  variant: string | undefined,
+): string | undefined {
+  const palette = theme[scheme];
+  const variants = palette?.variants;
+  const picked =
+    variant !== undefined && variants && Object.hasOwn(variants, variant)
+      ? variants[variant]
+      : undefined;
+  return picked?.syntax ?? palette?.syntax;
+}
 
 /**
- * Syntax token colors for the active theme (T-144). Under "system" the pair
- * stays pierre's own, because the light/dark choice is then made by CSS
- * light-dark() inside the shadow root rather than by a React render. A named
- * theme resolves to one shiki theme in both slots: its kind is fixed, so the
- * slot the browser will not paint is irrelevant.
+ * Syntax token colors for the active theme (T-144). Under "system" each slot
+ * takes its own palette's shiki theme, because the light/dark choice is then
+ * made by CSS light-dark() inside the shadow root rather than by a React
+ * render. A pinned mode or a one-palette theme fills both slots from the side
+ * on screen: the slot the browser will not paint is irrelevant. A palette
+ * with no shiki theme keeps that slot of pierre's own pair.
  */
 export function useSyntaxTheme(): SyntaxTheme {
-  const { pref } = useTheme();
-  const cached = SYNTAX_THEMES.get(pref);
-  if (cached) return cached;
-  const syntax = pref === "system" ? undefined : syntaxThemeOf(pref);
-  const resolved: SyntaxTheme =
-    syntax === undefined ? PIERRE_THEME : { light: syntax, dark: syntax };
-  SYNTAX_THEMES.set(pref, resolved);
-  return resolved;
+  const { pref, theme, colorScheme } = useTheme();
+  const variant = pref.ui?.variant;
+  const both = pref.ui?.mode === "system" && theme.light && theme.dark;
+  const light =
+    syntaxOf(theme, both ? "light" : colorScheme, variant) ??
+    PIERRE_THEME.light;
+  const dark =
+    syntaxOf(theme, both ? "dark" : colorScheme, variant) ?? PIERRE_THEME.dark;
+  const key = `${light}\0${dark}`;
+  let cached = SYNTAX_THEMES.get(key);
+  if (cached === undefined) {
+    cached =
+      light === PIERRE_THEME.light && dark === PIERRE_THEME.dark
+        ? PIERRE_THEME
+        : { light, dark };
+    SYNTAX_THEMES.set(key, cached);
+  }
+  return cached;
 }
 
 /** The shape every code surface falls back to: the code, unhighlighted. */

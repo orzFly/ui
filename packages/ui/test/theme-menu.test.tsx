@@ -1,3 +1,4 @@
+import { builtinThemes } from "@orz/themes";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { ThemeMenu } from "../src/components/theme-menu.tsx";
@@ -15,7 +16,11 @@ afterEach(() => {
 });
 
 function renderMenu() {
-  store = createThemeStore({ storageKey: "app-theme" });
+  store = createThemeStore({
+    storageKey: "app-theme",
+    themes: builtinThemes,
+    terminalThemes: builtinThemes,
+  });
   render(
     <ThemeProvider store={store}>
       <ThemeMenu />
@@ -39,19 +44,54 @@ function checked(): string[] {
 }
 
 describe("ThemeMenu", () => {
-  it("sets the store's pref when an item is picked", () => {
+  it("lists every palette under its scheme, named by theme and palette", () => {
     renderMenu();
     openMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: /Dracula/ }));
-    expect(store.getPref()).toBe("dracula");
+    const items = screen.getAllByRole("menuitem").map((i) => i.textContent);
+    expect(items).toContain("Solarized Light");
+    expect(items).toContain("Solarized Dark");
+    expect(items).toContain("Catppuccin Latte");
+    expect(items).toContain("Picotera Tera");
+    expect(items).toContain("Dracula Dark");
+    expect(items).not.toContain("Dracula Light");
+    // System, then one row per palette.
+    const palettes = builtinThemes.flatMap((t) =>
+      [t.light, t.dark].filter(Boolean),
+    );
+    expect(items).toHaveLength(1 + palettes.length);
   });
 
-  it("checks the item matching the pref, and follows it", () => {
+  it("sets the UI pick when a row is picked, keeping the terminal pick", () => {
+    renderMenu();
+    act(() =>
+      store.setPref({
+        ui: { theme: "default", mode: "system" },
+        terminal: { theme: "nord", mode: "dark" },
+      }),
+    );
+    openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /Dracula/ }));
+    expect(store.getPref()).toEqual({
+      ui: { theme: "dracula", mode: "dark" },
+      terminal: { theme: "nord", mode: "dark" },
+    });
+  });
+
+  it("checks the row matching the UI pick, and follows it", () => {
     renderMenu();
     openMenu();
     expect(checked()).toEqual(["System"]);
 
-    act(() => store.setPref("nord"));
-    expect(checked()).toEqual(["Nord"]);
+    act(() => store.setPref({ ui: { theme: "nord", mode: "dark" } }));
+    expect(checked()).toEqual(["Nord Dark"]);
+
+    act(() => store.setPref({ ui: { theme: "solarized", mode: "light" } }));
+    expect(checked()).toEqual(["Solarized Light"]);
+
+    // A variant pick is not one of the menu's rows.
+    act(() =>
+      store.setPref({ ui: { theme: "nord", mode: "dark", variant: "amoled" } }),
+    );
+    expect(checked()).toEqual([]);
   });
 });

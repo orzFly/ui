@@ -66,7 +66,7 @@ import { MermaidBlock } from "@orz/ui-mermaid";
 A diagram is drawn in the theme tokens in effect on its element (`--background`, `--foreground`,
 `--muted`, `--muted-foreground`, `--border`), so every `@orz/ui` theme gets its own colours with no
 table to maintain. The palette is baked into the SVG, so the diagram is drawn again whenever
-`@orz/ui`'s `useTheme()` reports a new theme. Outside a `ThemeProvider` a diagram keeps the colours
+`@orz/ui`'s `useTheme()` reports a new theme, color scheme or variant. Outside a `ThemeProvider` a diagram keeps the colours
 present when it was drawn and does not follow a later switch.
 
 ## Loading

@@ -1,3 +1,4 @@
+import { builtinThemes } from "@orz/themes";
 import { createThemeStore, ThemeProvider } from "@orz/ui/theme";
 import {
   Content,
@@ -154,21 +155,35 @@ describe("mermaid sources (T-523)", () => {
 
   it("re-renders when the theme changes", async () => {
     result.next = { ok: true, svg: SVG, width: 1360 };
-    const store = createThemeStore({ storageKey: "test-theme" });
+    const store = createThemeStore({
+      storageKey: "test-theme",
+      themes: builtinThemes,
+    });
     const container = mount(INLINE, {
       wrap: (node) => <ThemeProvider store={store}>{node}</ThemeProvider>,
     });
     await drawn(container);
     const calls = renderDiagram.mock.calls.length;
     await act(async () => {
-      store.setPref("solarized-dark");
+      store.setPref({ ui: { theme: "solarized", mode: "dark" } });
     });
     await waitFor(() => {
       expect(renderDiagram.mock.calls.length).toBe(calls + 1);
     });
+    // Same theme and scheme, other variant: the surfaces still change.
+    await act(async () => {
+      store.setPref({
+        ui: { theme: "solarized", mode: "dark", variant: "amoled" },
+      });
+    });
+    await waitFor(() => {
+      expect(renderDiagram.mock.calls.length).toBe(calls + 2);
+    });
     store.dispose();
     delete document.documentElement.dataset.theme;
+    delete document.documentElement.dataset.variant;
     document.documentElement.classList.remove("dark");
+    document.head.querySelector("style[data-orz-theme]")?.remove();
   });
 
   it("ignores a render that lands after a newer one started", async () => {
