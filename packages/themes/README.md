@@ -84,9 +84,12 @@ shiki name and its JSON round trip.
 - `schemesOf(theme)`, `variantsOf(theme)` and `isUiTheme(theme)` describe a theme for a picker.
 - `renderDeclarations(tokens, scheme)` and `renderTerminalDeclarations(terminal)` return the CSS
   declarations for a rule body (`color-scheme: dark; --background: …;`).
-- `amoled(palette)` derives the AMOLED variant of a dark palette. Every surface token drops by the
-  background's lightness, so the background becomes pure black while the surfaces keep their
-  step from it and their hue. Text, primary, chart, diff and ring tokens, and values carrying
+- `amoled(palette)` derives the AMOLED variant of a dark palette. The panels (`background`, `card`,
+  `popover`, `sidebar`) drop by the background's lightness, so the background becomes pure black
+  and the rest stay near it. Highlights, fills and opaque borders (`accent`, `muted`, `secondary`,
+  `border`, …) keep their contrast with the background instead, so a hovered row or a menu
+  highlight reads as clearly on black as on the dark palette. Every token keeps its hue and
+  chroma. Text, primary, chart, diff and ring tokens, and values carrying
   alpha, stay as they are, and the terminal background becomes `#000000`. A theme opts in with
   `variants: { amoled: amoled(palette) }`, and can spread over the result to retune a token.
 - `composeTheme(custom, themes)` turns a `CustomTheme` into a `Theme` against the current list.

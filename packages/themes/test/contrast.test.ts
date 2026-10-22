@@ -44,3 +44,41 @@ describe("primary contrast", () => {
     ).toEqual([]);
   });
 });
+
+// A highlight, fill or border on the surface it usually sits on; the first
+// is a menu row under the pointer.
+const STATES = [
+  ["accent", "popover"],
+  ["accent", "background"],
+  ["muted", "background"],
+  ["secondary", "background"],
+  ["sidebar-accent", "sidebar"],
+  ["border", "popover"],
+] as const;
+
+describe("AMOLED state contrast", () => {
+  it("shows every highlight, fill and opaque border at least as clearly as the dark palette", () => {
+    const rows = builtinThemes.flatMap((theme) => {
+      const dark = resolvePalette(theme, "dark")?.tokens;
+      const black = resolvePalette(theme, "dark", "amoled")?.tokens;
+      if (!dark || !black) return [];
+      return STATES.flatMap(([state, surface]) => {
+        // An alpha value composites over the surface, which rgbOf cannot do.
+        if (dark[state].includes("/")) return [];
+        return [
+          {
+            name: `${theme.id} ${state}/${surface}`,
+            before: contrast(rgbOf(dark[state]), rgbOf(dark[surface])),
+            after: contrast(rgbOf(black[state]), rgbOf(black[surface])),
+          },
+        ];
+      });
+    });
+    expect(rows.length).toBeGreaterThan(60);
+    expect(
+      rows
+        .filter((r) => r.after < r.before - 0.01)
+        .map((r) => `${r.name} ${r.before.toFixed(2)} → ${r.after.toFixed(2)}`),
+    ).toEqual([]);
+  });
+});

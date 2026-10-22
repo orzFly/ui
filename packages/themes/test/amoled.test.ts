@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { amoled } from "../src/index.ts";
+import { contrast, rgbOf } from "./color.ts";
 import { terminal, tokens } from "./fixtures.ts";
 
 const palette = {
@@ -29,13 +30,33 @@ describe("amoled", () => {
     expect(variant.terminal).toEqual({ "terminal-background": "#000000" });
   });
 
-  it("keeps each surface's step from the background, and its hue", () => {
+  it("drops each panel by the background's lightness, keeping its hue", () => {
     expect(variant.tokens?.card).toBe("oklch(0.05 0.02 260)");
-    expect(variant.tokens?.secondary).toBe("oklch(0.1 0.03 250)");
-    expect(variant.tokens?.accent).toBe("oklch(0.15 0.09 262)");
-    expect(variant.tokens?.["sidebar-border"]).toBe("oklch(0.12 0.02 255)");
+    expect(variant.tokens?.popover).toBe("oklch(0.05 0.02 260)");
     // Darker than the background clamps at black.
     expect(variant.tokens?.sidebar).toBe("oklch(0 0 0)");
+  });
+
+  it("lifts fills, highlights and opaque borders to keep their contrast with the background", () => {
+    const original = palette.tokens;
+    const black = rgbOf("oklch(0 0 0)");
+    for (const name of [
+      "secondary",
+      "muted",
+      "accent",
+      "sidebar-accent",
+      "sidebar-border",
+    ] as const) {
+      const lifted = variant.tokens?.[name] ?? "";
+      expect(lifted.split(" ").slice(1), name).toEqual(
+        original[name].split(" ").slice(1),
+      );
+      expect(contrast(rgbOf(lifted), black), name).toBeCloseTo(
+        contrast(rgbOf(original[name]), rgbOf(original.background)),
+        1,
+      );
+    }
+    expect(variant.tokens?.accent).toBe("oklch(0.312 0.09 262)");
   });
 
   it("leaves text, accents, alpha values and ANSI colours alone", () => {
