@@ -341,6 +341,23 @@ describe("ColorPicker oklch surface", () => {
     );
   });
 
+  it("drops its hold when the gamut changes", () => {
+    const { rerender } = render(
+      <ColorPicker value="oklch(0.7 0.05 25)" gamut="srgb" />,
+    );
+    for (let i = 0; i < 10; i++)
+      fireEvent.keyDown(area(), { key: "ArrowRight", shiftKey: true });
+    expect(area().getAttribute("aria-valuetext")).toMatch(/100% of sRGB max/);
+    rerender(<ColorPicker value="oklch(0.7 0.05 25)" gamut="p3" />);
+    // The panel's own colour is still the sRGB edge, which is well inside P3.
+    const share = Math.round(
+      (maxChroma(0.7, 25, "srgb") / maxChroma(0.7, 25, "p3")) * 100,
+    );
+    expect(area().getAttribute("aria-valuetext")).toMatch(
+      new RegExp(`\\(${share}% of P3 max\\)$`),
+    );
+  });
+
   it("does not pin a P3 colour under gamut p3", () => {
     renderPicker({ value: "oklch(0.577 0.245 27.325)", gamut: "p3" });
     expect(thumb().hasAttribute("data-pinned")).toBe(false);
@@ -429,6 +446,24 @@ describe("ColorPicker reset", () => {
     expect(reset()).toHaveProperty("disabled", false);
     fireEvent.click(reset());
     expect(onValueCommit).toHaveBeenLastCalledWith("oklch(0.5 0.2 260 / 50%)");
+    expect(reset()).toHaveProperty("disabled", true);
+  });
+
+  it("restores the reset value's format", () => {
+    const onCommit = vi.fn();
+    render(
+      <Echo
+        initial="oklch(0.6 0.25 25)"
+        resetValue="oklch(0.6 0.25 25)"
+        onCommit={onCommit}
+      />,
+    );
+    expect(reset()).toHaveProperty("disabled", true);
+    fireEvent.change(textField(), { target: { value: "#ff0000" } });
+    fireEvent.keyDown(textField(), { key: "Enter" });
+    expect(reset()).toHaveProperty("disabled", false);
+    fireEvent.click(reset());
+    expect(onCommit).toHaveBeenLastCalledWith("oklch(0.6 0.25 25)");
     expect(reset()).toHaveProperty("disabled", true);
   });
 

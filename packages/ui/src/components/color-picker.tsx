@@ -329,7 +329,7 @@ function paintRelative(
     pixel.l = 1 - y / (h - 1);
     const span = maxChroma(pixel.l, hue, gamut);
     const cs = gamut === "srgb" ? span : maxChroma(pixel.l, hue, "srgb");
-    srgbEdge[y] = span > 0 ? (cs / span) * (w - 1) : w - 1;
+    srgbEdge[y] = span > 0 ? (cs / span) * (w - 1) : -1;
     pixel.c = cs;
     const edge = channels(toRgb(pixel));
     for (let x = 0; x < w; x++) {
@@ -339,6 +339,9 @@ function paintRelative(
     }
   }
   ctx.putImageData(image, 0, 0);
+  // At L = 0 and 1 both edges are 0 and the ratio has no value; those rows take their neighbour's.
+  if (srgbEdge[0] < 0) srgbEdge[0] = srgbEdge[1];
+  if (srgbEdge[h - 1] < 0) srgbEdge[h - 1] = srgbEdge[h - 2];
   if (gamut === "p3") strokeEdge(ctx, srgbEdge, []);
 }
 
@@ -430,6 +433,8 @@ interface PickerState {
    * is 0, at L = 0 and 1.
    */
   rel: number | null;
+  /** The gamut `rel` was measured against; a hold from another gamut no longer applies. */
+  relGamut: DisplayGamut | null;
   /** The output format when `format` does not pin one. */
   format: ColorFormat;
   /** What the text field shows while it differs from the formatted value. */
@@ -451,6 +456,7 @@ function stateFor(
       color: BLACK,
       hold: null,
       rel: null,
+      relGamut: null,
       format: prev?.format ?? "oklch",
       draft: value,
       seen: value,
@@ -466,6 +472,7 @@ function stateFor(
     },
     hold: null,
     rel: null,
+    relGamut: null,
     format: format ?? "oklch",
     draft: null,
     seen: value,
@@ -579,6 +586,7 @@ export function ColorPicker({
         rel: null,
         draft: null,
         ...extra,
+        relGamut: gamut,
         color: alpha ? next : { ...next, alpha: 1 },
       },
       commit,
@@ -588,6 +596,8 @@ export function ColorPicker({
   const commitPending = () => {
     if (uncommitted.current) update(latest.current, true);
   };
+
+  const heldRel = (s: PickerState) => (s.relGamut === gamut ? s.rel : null);
 
   const pickSurface = (next: ColorSurface) => {
     setPicked(next);
@@ -601,7 +611,8 @@ export function ColorPicker({
 
   // --- area ---
   const hsv = hsvOf(color, state.hold);
-  const rel = shown === "oklch" ? (state.rel ?? relativeOf(color, gamut)) : 0;
+  const rel =
+    shown === "oklch" ? (heldRel(state) ?? relativeOf(color, gamut)) : 0;
   const areaRaw =
     shown === "oklch"
       ? rel
@@ -658,7 +669,7 @@ export function ColorPicker({
     event.preventDefault();
     const cur = latest.current;
     if (shown === "oklch") {
-      const r = cur.rel ?? relativeOf(cur.color, gamut);
+      const r = heldRel(cur) ?? relativeOf(cur.color, gamut);
       if (delta[0] !== 0) {
         // From beyond the edge, the first horizontal step starts at the edge.
         const x = clamp(Math.min(r, 1) + delta[0] * 0.01, 0, 1);
@@ -757,7 +768,7 @@ export function ColorPicker({
       // to the left end mid-drag. formatColor writes it as 0.
       const next = { ...cur.color, h: clamp(hue, 0, 360) };
       if (locked) {
-        const kept = lockChroma(cur.color, next, gamut, cur.rel);
+        const kept = lockChroma(cur.color, next, gamut, heldRel(cur));
         setColor(kept.color, commit, { rel: kept.rel });
       } else {
         setColor(next, commit);
@@ -778,7 +789,7 @@ export function ColorPicker({
       outFormat === "oklch" &&
       (key === "l" || key === "h")
     ) {
-      const kept = lockChroma(cur.color, next, gamut, cur.rel);
+      const kept = lockChroma(cur.color, next, gamut, heldRel(cur));
       setColor(kept.color, true, { draft: null, rel: kept.rel });
     } else {
       setColor(next, true, { draft: null });
@@ -873,8 +884,27 @@ export function ColorPicker({
   const reset =
     resetValue === undefined || resetParsed === null
       ? null
-      : { text: resetValue, color: resetParsed.color };
-  const atReset = reset !== null && isCurrent(reset.color);
+      : { color: resetParsed.color, format: resetParsed.format };
+  // Reset adopts the reset value's format unless `format` pins one, so it is only done once the
+  // output is in that format too.
+  const atReset =
+    reset !== null &&
+    (format !== undefined ||
+      reset.format === null ||
+      reset.format === state.format) &&
+    isCurrent(reset.color);
+  const resetTo = () => {
+    if (reset === null) return;
+    const cur = latest.current;
+    setColor(
+      {
+        ...reset.color,
+        h: reset.color.c < ACHROMATIC ? cur.color.h : reset.color.h,
+      },
+      true,
+      { draft: null, format: reset.format ?? cur.format },
+    );
+  };
 
   const pickSwatch = (text: string) => {
     const parsed = parseColor(text);
@@ -1121,7 +1151,7 @@ export function ColorPicker({
             aria-label="Reset"
             title={`Reset to ${resetValue}`}
             disabled={disabled || atReset}
-            onClick={() => pickSwatch(reset.text)}
+            onClick={resetTo}
           >
             <RotateCcwIcon />
           </Button>
