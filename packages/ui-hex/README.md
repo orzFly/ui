@@ -170,6 +170,9 @@ in.
 | `uppercase` | `true` | Hex digit case |
 | `fadeZeroBytes` | `true` | Fades `00` |
 | `controlCodes` | `"abbreviations"` | Or `"dots"` |
+| `encoding`, `onEncodingChange` | | Controlled text-pane encoding (below) |
+| `defaultEncoding` | `"ascii"` | Uncontrolled text-pane encoding |
+| `showEncodingPicker` | `true` | The encoding picker in the text pane's header |
 | `onCopy` | | Reports each copy (below) |
 | `onReadError` | | `(error, offset)` per failed page |
 | `ref` | | `{ scrollToOffset(offset, align?), focus() }`; `align` is `"nearest"`, `"start"` or `"center"` |
@@ -209,15 +212,61 @@ Shift extends the selection from its anchor. Tab leaves the view; clicking in th
 switches panes, and a drag may cross from one pane into the other.
 
 Copy (Ctrl/⌘ + C, or the browser menu) writes the selection as space-separated hex pairs from the
-hex pane, or as printable ASCII with `.` for every other byte from the text pane, up to 1 MiB. When
+hex pane, or as the text pane shows it from the text pane, up to 1 MiB. When
 the bytes are not all loaded, the view reads them and writes through `navigator.clipboard`.
 `onCopy` receives `{ ok: true, bytes }`, or `{ ok: false, reason }` with `"too-large"`,
 `"read-failed"` or `"clipboard-unavailable"`; the view shows no toast itself. `copyText`,
 `hexByte`, `formatSize` and the other formatters are exported for copy actions of your own.
 
+## Encodings
+
+The text pane decodes its bytes in one of these encodings, ASCII by default:
+
+| Group | Encodings |
+|---|---|
+| Western | ASCII, ISO-8859-1, Windows-1252 |
+| Unicode | UTF-8, UTF-16LE, UTF-16BE |
+| East Asian | Shift_JIS, EUC-JP, GB18030 (which covers GBK), Big5, EUC-KR |
+| Other | Windows-1250, 1251, 1253–1258; ISO-8859-2 to -8, -10, -13 to -16; KOI8-R, KOI8-U; IBM866; Macintosh |
+
+The ids are the [Encoding Standard](https://encoding.spec.whatwg.org/) names (`"utf-8"`,
+`"shift_jis"`, `"windows-1251"`, …), typed as `HexEncoding`. Which of them a runtime supports depends
+on its `TextDecoder`: `HEX_ENCODINGS` lists the supported ones, each with its `id`, picker `label` and
+`group`, in picker order. Node, for one, lacks ISO-8859-16. An id the runtime lacks renders as ASCII
+and logs one warning.
+
+The picker sits in the text pane's header. Hide it with `showEncodingPicker={false}`, and the header
+shows the encoding's name instead; with no header (`showColumnLabels={false}`) or no text pane, the
+prop alone sets the encoding. A controlled `encoding` without `onEncodingChange` makes the picker
+change nothing. To pass a detected charset through:
+
+```tsx
+import { HEX_ENCODINGS, type HexEncoding, HexView } from "@orz/ui-hex";
+
+function encodingFor(charset: string | undefined): HexEncoding {
+  const id = charset?.toLowerCase();
+  return HEX_ENCODINGS.find((info) => info.id === id)?.id ?? "utf-8";
+}
+
+<HexView source={source} defaultEncoding={encodingFor(detectedCharset)} />;
+```
+
+A multi-byte character is drawn once, centred over its bytes; one that crosses the end of a row is
+drawn on its starting row, squeezed into the cells left there. Bytes that do not decode, control
+codes and characters with no glyph of their own (format characters, combining marks, private use)
+show as faded dots, as in ASCII.
+
+- **Selection** stays per byte in both panes, so a selection may end inside a character.
+- **Hover** lights up every byte of the character under the pointer, in both panes.
+- **Copy** from the text pane writes what is shown: a character whose first byte is selected is
+  copied whole, one whose first byte lies before the selection is left out, and every dot is `.`.
+
+Wide characters fall back to the platform's CJK fonts when `--hex-font` lacks them; how well they
+look depends on the fonts the reader has installed.
+
 ## Entry points
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-hex` | `HexView`, `HexInspector`, `bytesSource`, `blobSource`, `copyText`, `hexByte`, `formatAddress`, `formatOffset`, `formatSize`, `addressDigits`, `MAX_COPY_BYTES`, types |
+| `@orz/ui-hex` | `HexView`, `HexInspector`, `HEX_ENCODINGS`, `bytesSource`, `blobSource`, `copyText`, `hexByte`, `formatAddress`, `formatOffset`, `formatSize`, `addressDigits`, `MAX_COPY_BYTES`, types |
 | `@orz/ui-hex/styles.css` | the view and inspector styles |
