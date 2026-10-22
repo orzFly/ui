@@ -39,14 +39,20 @@ function MermaidFile({ source, placement, className, Next }: MermaidProps) {
     );
   }
   // Handed on as inline text, not as the file: the code renderer below would
-  // load the file a second time, while the diagram is still rendering.
+  // load the file a second time, while the diagram is still rendering. Inline
+  // text is spelled as a fence's contents, without the file's final newline,
+  // which a code view would draw as an empty last line.
   return (
     <MermaidBlock
       source={text.text}
       className={className}
       sourceView={
         <Next
-          source={{ kind: "inline", text: text.text, lang: "mermaid" }}
+          source={{
+            kind: "inline",
+            text: text.text.replace(/\r?\n$/, ""),
+            lang: "mermaid",
+          }}
           placement={placement}
         />
       }
