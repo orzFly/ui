@@ -1,0 +1,204 @@
+import {
+  type Completion,
+  type CompletionContext,
+  type CompletionResult,
+  startCompletion,
+} from "@codemirror/autocomplete";
+import { syntaxTree } from "@codemirror/language";
+import type { Extension, Range } from "@codemirror/state";
+import {
+  Decoration,
+  type DecorationSet,
+  EditorView,
+  ViewPlugin,
+  type ViewUpdate,
+} from "@codemirror/view";
+import {
+  type CommandDef,
+  type CommandRegistry,
+  commandLinesOf,
+} from "../lib/slash-commands.ts";
+import { inCodeContext } from "./code-context.ts";
+
+/**
+ * The editor half of slash commands (T-161): a panel to type them with, and
+ * a highlight so a recognized command line is visibly different from prose.
+ * Neither decides anything — `lib/slash-commands.ts` is the single verdict on
+ * what a line means, and it runs again at submit time on the same text.
+ *
+ * The registry is usually built from data that loads asynchronously, so it
+ * comes in through a getter: rebuilding the extension whenever it changes would reconfigure the
+ * editor mid-typing and close whatever panel was open.
+ */
+
+/** The whole line up to the cursor, which is all a command can occupy. */
+function lineBefore(context: CompletionContext): {
+  text: string;
+  from: number;
+} {
+  const line = context.state.doc.lineAt(context.pos);
+  return {
+    text: line.text.slice(0, context.pos - line.from),
+    from: line.from,
+  };
+}
+
+const FIRST_LEVEL = /^\/([a-z0-9-]*)$/;
+const SECOND_LEVEL = /^\/([a-z0-9-]+)[ \t]+(.*)$/;
+
+function firstLevelOption<T>(command: CommandDef<T>): Completion {
+  return {
+    label: `/${command.name}`,
+    detail: command.detail,
+    type: "command",
+    apply: (view, _completion, from, to) => {
+      // A trailing space for the argument, then straight into the second
+      // level — picking `/label` without a label is never the whole intent.
+      // A command that takes no argument cannot be followed by anything on
+      // this line, so the newline is completed along with it and the cursor
+      // lands where the prose starts.
+      const insert =
+        command.argument === "none"
+          ? `/${command.name}\n`
+          : `/${command.name} `;
+      view.dispatch({
+        changes: { from, to, insert },
+        selection: { anchor: from + insert.length },
+      });
+      if (command.argument !== "none") startCompletion(view);
+    },
+  };
+}
+
+export function commandCompletionSource<T>(
+  getRegistry: () => CommandRegistry<T> | null,
+): (context: CompletionContext) => CompletionResult | null {
+  return (context: CompletionContext): CompletionResult | null => {
+    const registry = getRegistry();
+    if (registry === null) return null;
+    const { text, from } = lineBefore(context);
+    if (!text.startsWith("/")) return null;
+    if (inCodeContext(syntaxTree(context.state), context.pos)) return null;
+
+    const first = FIRST_LEVEL.exec(text);
+    if (first !== null) {
+      return {
+        from,
+        options: registry.commands.map(firstLevelOption),
+      };
+    }
+
+    const second = SECOND_LEVEL.exec(text);
+    if (second === null) return null;
+    const command = registry.byName.get(second[1] as string);
+    if (command === undefined || command.argument === "none") return null;
+    const typed = second[2] as string;
+    const names = command.candidates ?? [];
+    if (names.length === 0) return null;
+    const options: Completion[] = names.map((name) => ({
+      label: name,
+      type: "command",
+    }));
+    /**
+     * A command that also stands alone gets a first row that ends it, so
+     * Enter lands on "I am done" rather than on whatever candidate happens to
+     * sort first. An optional command with nothing typed is already
+     * complete, and its candidates are often escalations (`/hide-all force`)
+     * — a key that reads as "newline" elsewhere should not reach one. Type a
+     * character and this row is gone, because the argument is no longer
+     * empty.
+     */
+    if (typed === "" && command.argument === "optional") {
+      options.unshift({
+        label: "↵",
+        detail: "end of command",
+        // Equal scores are ordered by label's localeCompare, so source order
+        // counts for nothing: without the boost this row sorts after `force`
+        // and the whole design inverts.
+        boost: 1,
+        apply: (view, _completion, from, to) => {
+          view.dispatch({
+            changes: { from, to, insert: "\n" },
+            selection: { anchor: from + 1 },
+          });
+        },
+      });
+    }
+    return {
+      from: context.pos - typed.length,
+      options,
+    };
+  };
+}
+
+const commandLine = Decoration.line({ class: "cm-command-line" });
+const brokenCommandLine = Decoration.line({
+  class: "cm-command-line cm-command-line-broken",
+});
+
+function commandDecorations<T>(
+  view: EditorView,
+  registry: CommandRegistry<T> | null,
+): DecorationSet {
+  if (registry === null) return Decoration.none;
+  const doc = view.state.doc;
+  const found = commandLinesOf(doc.toString(), registry);
+  const marks: Range<Decoration>[] = [];
+  for (const [index, recognized] of found) {
+    const line = doc.line(index + 1);
+    marks.push(
+      (recognized.compiled === null ? brokenCommandLine : commandLine).range(
+        line.from,
+      ),
+    );
+  }
+  return Decoration.set(marks);
+}
+
+/**
+ * Highlight for recognized command lines. Redrawn when the document changes
+ * and when the registry finally arrives — the latter is why the plugin keeps
+ * the last registry it saw rather than reading it once at construction.
+ */
+function commandHighlight<T>(
+  getRegistry: () => CommandRegistry<T> | null,
+): Extension {
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      #registry: CommandRegistry<T> | null;
+
+      constructor(view: EditorView) {
+        this.#registry = getRegistry();
+        this.decorations = commandDecorations(view, this.#registry);
+      }
+
+      update(update: ViewUpdate) {
+        const registry = getRegistry();
+        if (!update.docChanged && registry === this.#registry) return;
+        this.#registry = registry;
+        this.decorations = commandDecorations(update.view, registry);
+      }
+    },
+    { decorations: (plugin) => plugin.decorations },
+  );
+}
+
+const commandTheme = EditorView.theme({
+  ".cm-command-line": {
+    backgroundColor: "color-mix(in oklab, var(--primary) 18%, transparent)",
+    borderRadius: "0.25rem",
+  },
+  ".cm-command-line-broken": {
+    backgroundColor: "color-mix(in oklab, var(--destructive) 16%, transparent)",
+    textDecoration: "underline wavy var(--destructive)",
+    textDecorationSkipInk: "none",
+  },
+});
+
+/** The highlight and theme half; the panel source is registered by the caller. */
+export function commandDecoration<T>(
+  getRegistry: () => CommandRegistry<T> | null,
+): Extension {
+  return [commandHighlight(getRegistry), commandTheme];
+}

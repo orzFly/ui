@@ -1,4 +1,9 @@
+import { CompletionContext } from "@codemirror/autocomplete";
+import { EditorState } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
+import { markdownLanguage } from "../src/components/markdown-editor.tsx";
+import { commandCompletionSource } from "../src/extensions/slash-commands.ts";
 import {
   type CommandDef,
   commandLinesOf,
@@ -268,5 +273,149 @@ describe("commandLinesOf (what the editor highlights)", () => {
     const found = commandLinesOf("/label nope", registry);
     expect(found.get(0)?.compiled).toBeNull();
     expect([...found.keys()]).toEqual([0]);
+  });
+});
+
+describe("commandCompletionSource (the panel)", () => {
+  const source = commandCompletionSource(() => registry);
+  const at = (doc: string, pos = doc.length) =>
+    source(new CompletionContext(EditorState.create({ doc }), pos, false));
+  // A real view for exercising `apply`: hand-rolled dispatch would not catch
+  // an apply written against the wrong coordinates.
+  const bareView = (doc: string) =>
+    new EditorView({ state: EditorState.create({ doc }) });
+  /**
+   * `Completion.apply` is either a function or a snippet string, and these
+   * rows use the function form; this runs one and fails loudly otherwise.
+   */
+  const applyAt = (
+    view: EditorView,
+    label: string,
+    doc: string,
+    from: number,
+    to: number,
+  ) => {
+    const option = at(doc)?.options.find((o) => o.label === label);
+    expect(option).toBeDefined();
+    if (typeof option?.apply !== "function") {
+      throw new Error(`${label} has no function apply`);
+    }
+    option.apply(view, option, from, to);
+    return view.state.doc.toString();
+  };
+
+  it("opens the whole command list on a line-leading slash", () => {
+    const result = at("/");
+    expect(result?.from).toBe(0);
+    expect(result?.options.map((o) => o.label)).toEqual([
+      "/close",
+      "/label",
+      "/hide-all",
+    ]);
+  });
+
+  it("shows each command's detail so the panel says where it lands", () => {
+    const options = at("/")?.options ?? [];
+    expect(options.find((o) => o.label === "/close")?.detail).toBe("→ Done");
+    expect(options.find((o) => o.label === "/label")?.detail).toBe(
+      "add a label",
+    );
+  });
+
+  it("offers the command's candidates once the command is typed", () => {
+    expect(at("/label ")?.options.map((o) => o.label)).toEqual(LABELS);
+  });
+
+  it("leads an optional-argument panel with a row that ends the command", () => {
+    const options = at("/hide-all ")?.options ?? [];
+    expect(options.map((o) => o.label)).toEqual(["↵", "force"]);
+    const end = options[0];
+    expect(end?.detail).toBe("end of command");
+    // Equal scores are ordered by label, so without the boost `force` wins
+    // and Enter reaches the escalation.
+    expect(end?.boost).toBeGreaterThan(0);
+  });
+
+  it("drops that row as soon as the argument has a character", () => {
+    expect(at("/hide-all f")?.options.map((o) => o.label)).toEqual(["force"]);
+  });
+
+  it("keeps it away from commands whose argument is required", () => {
+    // /label with nothing typed cannot end the command, so the first row is
+    // still the candidate the user is choosing between.
+    expect(at("/label ")?.options[0]?.label).toBe("bug");
+  });
+
+  it("opens no second level for an optional command without candidates", () => {
+    const bare = createCommandRegistry<Compiled>([
+      {
+        name: "hide-all",
+        argument: "optional",
+        detail: "hide every comment before this one",
+        summarize: () => "hide every comment",
+        compile: () => ({ type: "hide_all", force: false }),
+      },
+    ]);
+    const context = new CompletionContext(
+      EditorState.create({ doc: "/hide-all " }),
+      "/hide-all ".length,
+      false,
+    );
+    expect(commandCompletionSource(() => bare)(context)).toBeNull();
+  });
+
+  it("applies the end row as a newline", () => {
+    const view = bareView("/hide-all ");
+    expect(applyAt(view, "↵", "/hide-all ", 10, 10)).toBe("/hide-all \n");
+    expect(view.state.selection.main.anchor).toBe(11);
+  });
+
+  it("completes an argument-less command together with its newline", () => {
+    const view = bareView("/clo");
+    expect(applyAt(view, "/close", "/clo", 0, 4)).toBe("/close\n");
+    expect(view.state.selection.main.anchor).toBe(7);
+  });
+
+  it("still stops at the trailing space for a command that takes one", () => {
+    const view = bareView("/lab");
+    // The argument is still to come, so the line stays open.
+    expect(applyAt(view, "/label", "/lab", 0, 4)).toBe("/label ");
+    expect(view.state.selection.main.anchor).toBe(7);
+  });
+
+  it("replaces only the argument already typed", () => {
+    const result = at("/label ar");
+    expect(result?.from).toBe("/label ".length);
+  });
+
+  it("stays shut where a command cannot live", () => {
+    expect(at("please /close")).toBeNull();
+    // A no-argument command has no second stage.
+    expect(at("/close ")).toBeNull();
+    expect(at("/clsoe ")).toBeNull();
+  });
+
+  it("stays shut inside code", () => {
+    const inMarkdown = (doc: string, pos = doc.length) =>
+      source(
+        new CompletionContext(
+          EditorState.create({ doc, extensions: markdownLanguage }),
+          pos,
+          false,
+        ),
+      );
+    // The controls: the same parser outside code does open the panel.
+    expect(inMarkdown("/")).not.toBeNull();
+    expect(inMarkdown("`code\n/")).not.toBeNull();
+    expect(inMarkdown("```\n/")).toBeNull();
+    // A code span may cross a line break, so a line-leading slash can sit in one.
+    expect(inMarkdown("`code\n/ and`", "`code\n/".length)).toBeNull();
+  });
+
+  it("yields nothing without a registry", () => {
+    const bare = commandCompletionSource(() => null);
+    expect(
+      bare(new CompletionContext(EditorState.create({ doc: "/" }), 1, false)),
+    ).toBeNull();
   });
 });
