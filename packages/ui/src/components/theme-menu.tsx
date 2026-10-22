@@ -529,7 +529,7 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
       listLabel={slot === "ui" ? "Themes" : "Terminal themes"}
       empty={(q) => `No themes match "${q}"`}
       align="end"
-      className="w-72"
+      className="w-80"
     >
       <Button variant="ghost" size="sm" aria-label={name} title={name}>
         <TriggerIcon className="size-4" />
