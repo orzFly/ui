@@ -2,6 +2,8 @@ import { Button } from "@orz/ui/components/button";
 import { Input } from "@orz/ui/components/input";
 import {
   bytesSource,
+  HEX_ENCODINGS,
+  type HexEncoding,
   type HexSelection,
   HexView,
   type HexViewHandle,
@@ -9,7 +11,9 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useArgs } from "storybook/preview-api";
 import {
+  ENCODING_SAMPLES,
   HexFrame,
   SAMPLE_PNG,
   syntheticBytes,
@@ -41,6 +45,8 @@ const meta = {
     uppercase: true,
     fadeZeroBytes: true,
     controlCodes: "abbreviations",
+    encoding: "ascii",
+    showEncodingPicker: true,
   },
   argTypes: {
     source: { control: false },
@@ -48,13 +54,56 @@ const meta = {
       control: "inline-radio",
       options: ["abbreviations", "dots"],
     },
+    encoding: {
+      control: "select",
+      options: HEX_ENCODINGS.map((info) => info.id),
+    },
   },
 } satisfies Meta<typeof HexView>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Basic: Story = {};
+export const Basic: Story = {
+  render: function BasicRender(args) {
+    // The encoding arg makes the view controlled, so the picker has to write
+    // back into the args or it could never change anything.
+    const [, updateArgs] = useArgs<typeof args>();
+    return (
+      <HexView
+        {...args}
+        onEncodingChange={(encoding) => updateArgs({ encoding })}
+      />
+    );
+  },
+};
+
+const EMPTY = new Uint8Array(0);
+
+function EncodingsDemo() {
+  const [encoding, setEncoding] = useState<HexEncoding>("utf-8");
+  // An encoding with no sample of its own shows the UTF-8 one, misread.
+  const source = useMemo(
+    () =>
+      bytesSource(
+        ENCODING_SAMPLES[encoding] ?? ENCODING_SAMPLES["utf-8"] ?? EMPTY,
+      ),
+    [encoding],
+  );
+  return (
+    <HexView
+      source={source}
+      rows={6}
+      encoding={encoding}
+      onEncodingChange={setEncoding}
+      aria-label="Encoding samples"
+    />
+  );
+}
+
+export const Encodings: Story = {
+  render: () => <EncodingsDemo />,
+};
 
 function LargeInMemoryDemo() {
   // 64 MiB at 16 columns is past the 1:1 spacer cap, so this scrolls scaled.

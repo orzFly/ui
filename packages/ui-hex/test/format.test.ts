@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   addressDigits,
-  asciiDecoding,
   copyText,
   formatAddress,
   formatSize,
   hexByte,
   MAX_COPY_BYTES,
 } from "../src/format.ts";
+import { asciiDecoding } from "../src/text-decoding.ts";
 
 describe("hexByte", () => {
   it("pads and follows the case", () => {
@@ -20,12 +20,16 @@ describe("hexByte", () => {
 
 describe("asciiDecoding", () => {
   const decode = (bytes: number[], mode: "abbreviations" | "dots") =>
-    asciiDecoding.decodeRow(new Uint8Array(bytes), 0, mode);
+    asciiDecoding.decodeRow(
+      new Uint8Array(bytes),
+      { start: 0, before: 0, length: bytes.length },
+      mode,
+    );
 
   it("names control codes by position", () => {
     expect(
       decode([0x00, 0x0a, 0x0d, 0x1b, 0x1f, 0x7f], "abbreviations"),
-    ).toEqual([
+    ).toMatchObject([
       { kind: "control", text: "NU" },
       { kind: "control", text: "LF" },
       { kind: "control", text: "CR" },
@@ -36,7 +40,9 @@ describe("asciiDecoding", () => {
   });
 
   it("shows printable ASCII as itself and high bytes as dots", () => {
-    expect(decode([0x20, 0x41, 0x7e, 0x80, 0xff], "abbreviations")).toEqual([
+    expect(
+      decode([0x20, 0x41, 0x7e, 0x80, 0xff], "abbreviations"),
+    ).toMatchObject([
       { kind: "char", text: " " },
       { kind: "char", text: "A" },
       { kind: "char", text: "~" },
@@ -46,7 +52,7 @@ describe("asciiDecoding", () => {
   });
 
   it("renders control codes as dots in dots mode", () => {
-    expect(decode([0x00, 0x7f, 0x41], "dots")).toEqual([
+    expect(decode([0x00, 0x7f, 0x41], "dots")).toMatchObject([
       { kind: "dot" },
       { kind: "dot" },
       { kind: "char", text: "A" },

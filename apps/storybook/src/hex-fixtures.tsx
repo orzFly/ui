@@ -3,6 +3,9 @@ import "@orz/ui-hex/styles.css";
 import type { ByteSource } from "@orz/ui-hex";
 import type { ReactNode } from "react";
 
+// The package's tests check these byte literals; they are not shipped code.
+export { ENCODING_SAMPLES } from "../../../packages/ui-hex/test/fixtures/encoding-samples.ts";
+
 /** A 24×24 RGB PNG with sRGB, gAMA, pHYs and tEXt chunks before its IDAT. */
 export const SAMPLE_PNG = Uint8Array.from(
   atob(

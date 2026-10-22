@@ -1,6 +1,7 @@
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import type { HexEncoding } from "../src/encodings.ts";
 import { HexView, type HexViewHandle } from "../src/hex-view.tsx";
 import { type ByteSource, bytesSource } from "../src/source.ts";
 import type { HexSelection } from "../src/types.ts";
@@ -39,7 +40,7 @@ describe("HexView", () => {
     expect(labels[0]).toBe("00");
     expect(labels[15]).toBe("0F");
     expect(labels).toHaveLength(16);
-    expect(header.textContent).toContain("Text");
+    expect(header.textContent).toContain("ASCII");
     const addresses = [
       ...root.querySelectorAll(".orz-hex-layer .orz-hex-addr"),
     ].map((el) => el.textContent);
@@ -307,5 +308,335 @@ describe("HexView", () => {
     act(() => notify?.());
     await waitFor(() => expect(cell(0).textContent).toBe("41"));
     expect(status()).not.toContain("Read failed");
+  });
+});
+
+const utf8Bytes = (...parts: Array<string | number[]>) =>
+  Uint8Array.from(
+    parts.flatMap((part) =>
+      typeof part === "string" ? [...new TextEncoder().encode(part)] : part,
+    ),
+  );
+
+const hovered = (root: HTMLElement) =>
+  [...root.querySelectorAll("[data-hover]")].map(
+    (el) => `${el.getAttribute("data-pane")}${el.getAttribute("data-offset")}`,
+  );
+
+describe("HexView encodings", () => {
+  it("draws a multi-byte glyph in its first cell, over continuation cells", () => {
+    const { cell } = setup({
+      source: bytesSource(Uint8Array.of(0xe4, 0xb8, 0x96, 0xe7, 0x95, 0x8c)),
+      encoding: "utf-8",
+    });
+    for (const [lead, glyph] of [
+      [0, "世"],
+      [3, "界"],
+    ] as const) {
+      const first = cell(lead, "text");
+      expect(first.getAttribute("data-kind")).toBe("char");
+      const box = first.querySelector(".orz-hex-glyph") as HTMLElement;
+      expect(box.textContent).toBe(glyph);
+      expect(box.style.getPropertyValue("--hex-glyph-span")).toBe("3");
+      expect(box.style.getPropertyValue("--hex-glyph-squeeze")).toBe("1");
+      for (const offset of [lead + 1, lead + 2]) {
+        expect(cell(offset, "text").getAttribute("data-kind")).toBe(
+          "continuation",
+        );
+        expect(cell(offset, "text").textContent).toBe("");
+      }
+      for (const offset of [lead, lead + 1, lead + 2]) {
+        for (const pane of ["hex", "text"] as const) {
+          expect(cell(offset, pane).getAttribute("data-glyph")).toBe(
+            String(lead),
+          );
+          expect(cell(offset, pane).getAttribute("data-glyph-length")).toBe(
+            "3",
+          );
+        }
+      }
+    }
+  });
+
+  it("draws a glyph crossing the row end on its starting row, squeezed", () => {
+    const { cell } = setup({
+      source: bytesSource(utf8Bytes("A".repeat(15), "世B")),
+      encoding: "utf-8",
+    });
+    const box = cell(15, "text").querySelector(".orz-hex-glyph") as HTMLElement;
+    expect(box.textContent).toBe("世");
+    expect(box.style.getPropertyValue("--hex-glyph-span")).toBe("1");
+    expect(
+      Number(box.style.getPropertyValue("--hex-glyph-squeeze")),
+    ).toBeLessThan(1);
+    for (const offset of [16, 17]) {
+      expect(cell(offset, "text").getAttribute("data-kind")).toBe(
+        "continuation",
+      );
+      expect(cell(offset, "text").querySelector(".orz-hex-glyph")).toBeNull();
+      expect(cell(offset, "hex").getAttribute("data-glyph")).toBe("15");
+      expect(cell(offset, "hex").getAttribute("data-glyph-length")).toBe("3");
+    }
+    expect(cell(18, "text").textContent).toBe("B");
+  });
+
+  it("hovers a glyph's bytes in both panes, across the row boundary", () => {
+    const { root, cell } = setup({
+      source: bytesSource(utf8Bytes("A".repeat(15), "世B")),
+      encoding: "utf-8",
+    });
+    fireEvent.pointerMove(cell(16, "text"));
+    expect(hovered(root)).toEqual([
+      "hex15",
+      "text15",
+      "hex16",
+      "hex17",
+      "text16",
+      "text17",
+    ]);
+    fireEvent.pointerMove(cell(18));
+    expect(hovered(root)).toEqual(["hex18", "text18"]);
+  });
+
+  it("hovers a glyph whole when it spans three rows", () => {
+    const { root, cell } = setup({
+      source: bytesSource(utf8Bytes("A", "😀", "B")),
+      encoding: "utf-8",
+      columns: 2,
+      groupSize: 0,
+    });
+    fireEvent.pointerMove(cell(2, "text"));
+    expect(hovered(root).filter((id) => id.startsWith("hex"))).toEqual([
+      "hex1",
+      "hex2",
+      "hex3",
+      "hex4",
+    ]);
+  });
+
+  it("hovers by the new encoding's glyphs after a switch", () => {
+    const glyphs = bytesSource(utf8Bytes("世界"));
+    const { root, cell, rerender } = setup({
+      source: glyphs,
+      encoding: "utf-8",
+    });
+    fireEvent.pointerMove(cell(1, "text"));
+    expect(hovered(root)).toHaveLength(6);
+    rerender(<HexView source={glyphs} rows={4} encoding="ascii" />);
+    expect(hovered(root)).toEqual(["hex1", "text1"]);
+  });
+
+  it("copies the text pane as displayed, from mid-glyph to mid-glyph", () => {
+    const setData = vi.fn();
+    const { root } = setup({
+      source: bytesSource(utf8Bytes("A世B界C")),
+      encoding: "utf-8",
+      // 世 is 1–3, B is 4 and 界 5–7: the selection starts and ends inside a glyph.
+      selection: { anchor: 2, focus: 6, pane: "text" },
+    });
+    root.focus();
+    fireEvent.copy(root, { clipboardData: { setData } });
+    expect(setData).toHaveBeenCalledWith("text/plain", "B界");
+  });
+
+  it("announces the glyph a continuation byte belongs to", () => {
+    const { root } = setup({
+      source: bytesSource(utf8Bytes("A".repeat(15), "世B")),
+      encoding: "utf-8",
+      defaultSelection: { anchor: 0, focus: 0, pane: "text" },
+    });
+    fireEvent.keyDown(root, { key: "ArrowDown" });
+    expect(root.querySelector(".orz-hex-live")?.textContent).toBe(
+      "0x10: B8 (世)",
+    );
+  });
+
+  it("switches the encoding without touching the selection or the scroll", () => {
+    const bytes = Uint8Array.from({ length: 256 }, (_, i) => i);
+    const selection: HexSelection = { anchor: 0xc1, focus: 0xc1, pane: "text" };
+    let handle: HexViewHandle | null = null;
+    const { cell, root, rerender, onSelectionChange } = setup({
+      source: bytesSource(bytes),
+      selection,
+      ref: (h: HexViewHandle | null) => {
+        handle = h;
+      },
+    });
+    act(() => handle?.scrollToOffset(0xc0, "start"));
+    expect(cell(0xc0, "text").getAttribute("data-kind")).toBe("dot");
+    rerender(
+      <HexView
+        source={bytesSource(bytes)}
+        rows={4}
+        selection={selection}
+        encoding="windows-1251"
+        onSelectionChange={onSelectionChange}
+      />,
+    );
+    expect(cell(0xc0, "text").textContent).toBe("А");
+    expect(cell(0xc1, "text").hasAttribute("data-sel")).toBe(true);
+    expect(
+      root.querySelector(".orz-hex-layer .orz-hex-addr")?.textContent,
+    ).toBe("00C0");
+    expect(onSelectionChange).not.toHaveBeenCalled();
+  });
+
+  it("keeps a row loading until its lookahead's page arrives", async () => {
+    const PAGE = 65536;
+    const pending = new Map<number, () => void>();
+    const big: ByteSource = {
+      size: PAGE + 64,
+      read: (offset, length) =>
+        new Promise((resolve) => {
+          pending.set(offset, () => resolve(new Uint8Array(length).fill(0x41)));
+        }),
+    };
+    const view = (encoding: HexEncoding) => (
+      <HexView source={big} rows={1} encoding={encoding} />
+    );
+    let handle: HexViewHandle | null = null;
+    const { container, rerender } = render(
+      <HexView
+        source={big}
+        rows={1}
+        encoding="utf-8"
+        ref={(h: HexViewHandle | null) => {
+          handle = h;
+        }}
+      />,
+    );
+    act(() => handle?.scrollToOffset(PAGE - 16, "start"));
+    const cell = (pane: string, offset: number) =>
+      container.querySelector(
+        `[data-pane="${pane}"][data-offset="${offset}"]`,
+      ) as HTMLElement;
+    await waitFor(() => expect(pending.has(0)).toBe(true));
+    await act(async () => pending.get(0)?.());
+    // The hex pane shows the row's own bytes; only the text pane waits.
+    expect(cell("hex", PAGE - 1).textContent).toBe("41");
+    expect(cell("text", PAGE - 1).getAttribute("data-state")).toBe("loading");
+    rerender(view("ascii"));
+    expect(cell("text", PAGE - 1).textContent).toBe("A");
+    rerender(view("utf-8"));
+    expect(cell("text", PAGE - 1).getAttribute("data-state")).toBe("loading");
+    await waitFor(() => expect(pending.has(PAGE)).toBe(true));
+    await act(async () => pending.get(PAGE)?.());
+    await waitFor(() => expect(cell("text", PAGE - 1).textContent).toBe("A"));
+  });
+
+  it("shows a row's bytes when only its lookbehind page failed", async () => {
+    const PAGE = 65536;
+    const failing: ByteSource = {
+      size: PAGE * 2,
+      read: async (offset, length) => {
+        if (offset < PAGE) throw new Error("unreadable");
+        return new Uint8Array(length).fill(0x41);
+      },
+    };
+    let handle: HexViewHandle | null = null;
+    const { container } = render(
+      <HexView
+        source={failing}
+        rows={1}
+        encoding="shift_jis"
+        onReadError={() => {}}
+        ref={(h: HexViewHandle | null) => {
+          handle = h;
+        }}
+      />,
+    );
+    act(() => handle?.scrollToOffset(PAGE, "start"));
+    const cell = (pane: string) =>
+      container.querySelector(
+        `[data-pane="${pane}"][data-offset="${PAGE}"]`,
+      ) as HTMLElement;
+    await waitFor(() =>
+      expect(cell("text").getAttribute("data-state")).toBe("error"),
+    );
+    expect(cell("hex").textContent).toBe("41");
+    expect(cell("hex").getAttribute("data-state")).toBeNull();
+  });
+
+  it("leaves a copy from the header native", () => {
+    const onCopy = vi.fn();
+    const { root } = setup({
+      selection: { anchor: 0, focus: 3, pane: "hex" },
+      onCopy,
+    });
+    const trigger = root.querySelector(".orz-hex-encoding") as HTMLElement;
+    const setData = vi.fn();
+    fireEvent.copy(trigger, { clipboardData: { setData } });
+    expect(setData).not.toHaveBeenCalled();
+    expect(onCopy).not.toHaveBeenCalled();
+  });
+
+  it("renders the plain label when the picker is hidden", () => {
+    const { root } = setup({
+      encoding: "windows-1252",
+      showEncodingPicker: false,
+    });
+    const header = root.querySelector(".orz-hex-header") as HTMLElement;
+    expect(header.querySelector(".orz-hex-encoding")).toBeNull();
+    expect(header.querySelector(".orz-hex-text-label")?.textContent).toBe(
+      "Windows-1252 (Western)",
+    );
+  });
+
+  it("labels an encoding this runtime lacks as the ASCII it renders", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { root } = setup({
+      encoding: "not-an-encoding" as HexEncoding,
+      showEncodingPicker: false,
+    });
+    expect(root.querySelector(".orz-hex-text-label")?.textContent).toBe(
+      "ASCII",
+    );
+    warn.mockRestore();
+  });
+
+  it("switches through the header picker, and keeps its keys from the grid", async () => {
+    const onEncodingChange = vi.fn();
+    const { root, cell, onSelectionChange } = setup({
+      defaultSelection: { anchor: 5, focus: 5, pane: "hex" },
+      onEncodingChange,
+    });
+    const trigger = root.querySelector(".orz-hex-encoding") as HTMLElement;
+    expect(trigger.getAttribute("aria-label")).toBe("Text encoding");
+    expect(trigger.textContent).toBe("ASCII");
+    expect(cell(19, "text").getAttribute("data-kind")).toBe("dot");
+
+    fireEvent.keyDown(trigger, { key: "ArrowRight" });
+    fireEvent.pointerDown(trigger, { button: 0, pointerType: "mouse" });
+    fireEvent.click(trigger);
+    const listbox = await waitFor(() => {
+      const el = document.querySelector('[role="listbox"]');
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    const groups = [
+      ...listbox.querySelectorAll('[data-slot="select-label"]'),
+    ].map((el) => el.textContent);
+    expect(groups).toEqual(["Western", "Unicode", "East Asian", "Other"]);
+
+    const option = [...listbox.querySelectorAll('[role="option"]')].find(
+      (el) => el.textContent === "Windows-1251 (Cyrillic)",
+    ) as HTMLElement;
+    fireEvent.keyDown(option, { key: "ArrowDown" });
+    fireEvent.keyDown(option, { key: "ArrowRight" });
+    expect(onSelectionChange).not.toHaveBeenCalled();
+
+    fireEvent.pointerUp(option, { button: 0, pointerType: "mouse" });
+    fireEvent.click(option);
+    await waitFor(() =>
+      expect(onEncodingChange).toHaveBeenCalledWith("windows-1251"),
+    );
+    expect(onEncodingChange).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(
+        (root.querySelector(".orz-hex-encoding") as HTMLElement).textContent,
+      ).toBe("Windows-1251 (Cyrillic)"),
+    );
+    expect(cell(19, "text").textContent).toBe("Ж");
+    expect(onSelectionChange).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,14 @@
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@orz/ui/components/select";
+import {
+  type CSSProperties,
   memo,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
@@ -16,16 +26,20 @@ import {
 } from "react";
 
 import {
+  encodingLabel,
+  getTextDecoding,
+  HEX_ENCODINGS,
+  type HexEncoding,
+  type HexEncodingInfo,
+} from "./encodings.ts";
+import {
   addressDigits,
-  asciiDecoding,
-  controlName,
   copyText,
   formatAddress,
   formatOffset,
   formatSize,
   hexByte,
   MAX_COPY_BYTES,
-  type TextDecoding,
 } from "./format.ts";
 import { navigate } from "./navigation.ts";
 import { createPageCache, type PageCache } from "./page-cache.ts";
@@ -36,6 +50,11 @@ import {
   topRowFromScroll,
 } from "./scroll-map.ts";
 import type { ByteSource } from "./source.ts";
+import {
+  glyphCells,
+  type TextCell,
+  type TextDecoding,
+} from "./text-decoding.ts";
 import {
   type ControlCodes,
   type HexPane,
@@ -78,6 +97,13 @@ export interface HexViewProps {
   uppercase?: boolean;
   fadeZeroBytes?: boolean;
   controlCodes?: ControlCodes;
+  /** How the text pane decodes the bytes; controlled when set. */
+  encoding?: HexEncoding;
+  /** "ascii". */
+  defaultEncoding?: HexEncoding;
+  onEncodingChange?: (encoding: HexEncoding) => void;
+  /** The encoding picker in the text pane's header; true. */
+  showEncodingPicker?: boolean;
   onCopy?: (result: HexCopyResult) => void;
   onReadError?: (error: unknown, offset: number) => void;
   ref?: Ref<HexViewHandle>;
@@ -88,6 +114,7 @@ export interface HexViewProps {
 /** What the grid hands an editor: the pieces of the view its commands drive. */
 export interface GridContext {
   cache: PageCache;
+  /** The active encoding's decoding; an editor encodes typed text through it. */
   decoding: TextDecoding;
   /** Scrolls the offset into view. */
   reveal(offset: number): void;
@@ -108,6 +135,8 @@ export interface GridEditing {
   onCut(event: ClipboardEvent, ctx: GridContext): void;
   /** One empty cell after the last byte, where typing appends. */
   appendCell: boolean;
+  /** Refuses every edit, so the encoder is never warmed up. */
+  readOnly: boolean;
   mode: "overwrite" | "insert";
   modifiedRanges(offset: number, length: number): Array<[number, number]>;
   statusExtra?: ReactNode;
@@ -127,19 +156,20 @@ export function useLatest<T>(value: T) {
 }
 
 /** Controlled when `value` is not `undefined`, like a radix primitive. */
-export function useControllableSelection(
-  value: HexSelection | null | undefined,
-  defaultValue: HexSelection | null | undefined,
-  onChange: ((selection: HexSelection | null) => void) | undefined,
+function useControllable<T>(
+  value: T | undefined,
+  defaultValue: T,
+  onChange: ((value: T) => void) | undefined,
+  same: (a: T, b: T) => boolean,
 ) {
-  const [inner, setInner] = useState(defaultValue ?? null);
+  const [inner, setInner] = useState(defaultValue);
   const controlled = value !== undefined;
   const current = controlled ? value : inner;
   const currentRef = useLatest(current);
   const onChangeRef = useLatest(onChange);
   const set = useCallback(
-    (next: HexSelection | null) => {
-      if (sameSelection(currentRef.current, next)) return;
+    (next: T) => {
+      if (same(currentRef.current, next)) return;
       if (!controlled) {
         // Later calls in the same event see this one before the re-render.
         currentRef.current = next;
@@ -147,10 +177,27 @@ export function useControllableSelection(
       }
       onChangeRef.current?.(next);
     },
-    [controlled, currentRef, onChangeRef],
+    [controlled, currentRef, onChangeRef, same],
   );
   return [current, set, currentRef] as const;
 }
+
+export function useControllableSelection(
+  value: HexSelection | null | undefined,
+  defaultValue: HexSelection | null | undefined,
+  onChange: ((selection: HexSelection | null) => void) | undefined,
+) {
+  return useControllable(value, defaultValue ?? null, onChange, sameSelection);
+}
+
+const ENCODING_GROUPS = HEX_ENCODINGS.reduce<
+  Array<{ group: HexEncodingInfo["group"]; entries: HexEncodingInfo[] }>
+>((groups, info) => {
+  const lastGroup = groups.at(-1);
+  if (lastGroup?.group === info.group) lastGroup.entries.push(info);
+  else groups.push({ group: info.group, entries: [info] });
+  return groups;
+}, []);
 
 function useElementSize(
   ref: RefObject<HTMLElement | null>,
@@ -176,12 +223,18 @@ interface Hit {
   pane: HexPane;
 }
 
+interface HoverRange {
+  start: number;
+  end: number;
+}
+
 function hitFromElement(el: Element | null, grid: Element): Hit | null {
   const cell = el?.closest?.("[data-offset]");
   if (!cell || !grid.contains(cell)) return null;
   const offset = Number(cell.getAttribute("data-offset"));
+  if (!Number.isFinite(offset)) return null;
   const pane = cell.getAttribute("data-pane") === "text" ? "text" : "hex";
-  return Number.isFinite(offset) ? { offset, pane } : null;
+  return { offset, pane };
 }
 
 export function HexGrid({
@@ -200,6 +253,10 @@ export function HexGrid({
   uppercase = true,
   fadeZeroBytes = true,
   controlCodes = "abbreviations",
+  encoding: encodingProp,
+  defaultEncoding = "ascii",
+  onEncodingChange,
+  showEncodingPicker = true,
   onCopy,
   onReadError,
   ref,
@@ -212,7 +269,19 @@ export function HexGrid({
     defaultSelection,
     onSelectionChange,
   );
-  const decoding: TextDecoding = asciiDecoding;
+  const [encoding, setEncoding] = useControllable(
+    encodingProp,
+    defaultEncoding,
+    onEncodingChange,
+    Object.is,
+  );
+  const decoding = useMemo(() => getTextDecoding(encoding), [encoding]);
+  // An id this runtime lacks renders ASCII, and the header says so.
+  const shownEncoding: HexEncoding = HEX_ENCODINGS.some(
+    (info) => info.id === encoding,
+  )
+    ? encoding
+    : "ascii";
 
   const [readError, setReadError] = useState<{
     cache: PageCache;
@@ -241,6 +310,7 @@ export function HexGrid({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLDivElement>(null);
   const liveRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const rowHeight =
     useElementSize(probeRef, (el) => el.getBoundingClientRect().height) ||
@@ -338,12 +408,13 @@ export function HexGrid({
   const layerTop =
     scrollFromTopRow(topRow, geometry) - (topRow - firstRow) * rowHeight;
 
-  const lookbehind = decoding.lookbehind;
+  const { lookbehind, lookahead } = decoding;
   const firstPage = Math.floor(
     Math.max(0, firstRow * columns - lookbehind) / cache.pageSize,
   );
   const lastPage = Math.floor(
-    Math.max(0, Math.min(size, (lastRow + 1) * columns) - 1) / cache.pageSize,
+    Math.max(0, Math.min(size, (lastRow + 1) * columns + lookahead) - 1) /
+      cache.pageSize,
   );
   const hasRows = lastRow >= firstRow;
   // Keyed on pages, not rows: a failed page is retried when it comes back
@@ -379,7 +450,9 @@ export function HexGrid({
 
   // Pointer
 
-  const [hover, setHover] = useState(-1);
+  // The hovered byte; its glyph's range is derived as rows render, so an
+  // encoding switch or an edit under a resting pointer cannot leave a stale one.
+  const [hoverOffset, setHover] = useState(-1);
   const [dragging, setDragging] = useState(false);
   const drag = useRef<{
     pointerId: number;
@@ -517,6 +590,25 @@ export function HexGrid({
 
   // Keyboard
 
+  /** The cell `offset` shows, decoded from its row's window as the row renders it. */
+  const decodedCell = useCallback(
+    (offset: number): TextCell | undefined => {
+      const rowStart = offset - (offset % columns);
+      const length = Math.min(columns, size - rowStart);
+      if (offset - rowStart >= length) return undefined;
+      const ws = Math.max(0, rowStart - decoding.lookbehind);
+      const we = Math.min(size, rowStart + length + decoding.lookahead);
+      const window = cache.get(ws, we - ws);
+      if (!window) return undefined;
+      return decoding.decodeRow(
+        window,
+        { start: rowStart, before: rowStart - ws, length },
+        "abbreviations",
+      )[offset - rowStart];
+    },
+    [cache, columns, decoding, size],
+  );
+
   const announce = useCallback(
     (sel: HexSelection | null | string) => {
       const live = liveRef.current;
@@ -538,19 +630,27 @@ export function HexGrid({
       const byte = cache.get(sel.focus, 1)?.[0];
       let text = formatOffset(baseAddress + sel.focus);
       if (byte !== undefined) {
+        let cell = decodedCell(sel.focus);
+        if (cell?.kind === "continuation" && cell.lead !== undefined) {
+          cell = decodedCell(cell.lead);
+        }
+        // UI-5 spoke a control's abbreviation too, whatever `controlCodes` draws.
         const glyph =
-          byte >= 0x20 && byte < 0x7f
-            ? String.fromCharCode(byte)
-            : controlName(byte);
+          cell?.kind === "char" || cell?.kind === "control"
+            ? cell.text
+            : undefined;
         text += `: ${hexByte(byte, uppercase)}${glyph ? ` (${glyph})` : ""}`;
       }
       live.textContent = text;
     },
-    [baseAddress, cache, uppercase],
+    [baseAddress, cache, decodedCell, uppercase],
   );
 
   // The one place keys are handled; editing hooks its input in here.
   const handleKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    // Keys from the encoding picker, its portalled list included, bubble here
+    // through React; they must not move the caret.
+    if (event.target !== event.currentTarget) return;
     if (editing?.onKey(event, context)) return;
     const current = selectionRef.current;
     const g = geometryRef.current;
@@ -604,10 +704,22 @@ export function HexGrid({
         report({ ok: false, reason: "too-large" });
         return;
       }
-      const lead = Math.min(decoding.lookbehind, start);
+      const textPane = sel.pane === "text";
+      const from = textPane ? Math.max(0, start - decoding.lookbehind) : start;
+      const to = textPane
+        ? Math.min(source.size, end + 1 + decoding.lookahead)
+        : end + 1;
       const text = (bytes: Uint8Array) =>
-        copyText(bytes, sel.pane, uppercase, decoding, lead, start);
-      const bytes = cache.get(start - lead, length + lead);
+        copyText(
+          bytes,
+          sel.pane,
+          uppercase,
+          decoding,
+          start - from,
+          start,
+          length,
+        );
+      const bytes = cache.get(from, to - from);
       if (bytes && event.clipboardData) {
         event.clipboardData.setData("text/plain", text(bytes));
         report({ ok: true, bytes: length });
@@ -619,7 +731,7 @@ export function HexGrid({
         report({ ok: false, reason: "clipboard-unavailable" });
         return;
       }
-      cache.readRange(start - lead, length + lead).then(
+      cache.readRange(from, to - from).then(
         (read) =>
           clipboard.writeText(text(read)).then(
             () => report({ ok: true, bytes: length }),
@@ -628,7 +740,7 @@ export function HexGrid({
         () => report({ ok: false, reason: "read-failed" }),
       );
     },
-    [cache, onCopyRef, selectionRef, source, uppercase],
+    [cache, decoding, onCopyRef, selectionRef, source, uppercase],
   );
 
   const context: GridContext = {
@@ -643,6 +755,19 @@ export function HexGrid({
   const contextRef = useLatest(context);
   const editingRef = useLatest(editing);
   const isEditor = editing !== undefined;
+  const writable = isEditor && !editing.readOnly;
+
+  // Warms the encoder up before the first keystroke needs it.
+  useEffect(() => {
+    if (!writable || !decoding.prepareEncode) return;
+    const prepare = () => decoding.prepareEncode?.();
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(prepare);
+      return () => cancelIdleCallback(id);
+    }
+    const id = setTimeout(prepare, 0);
+    return () => clearTimeout(id);
+  }, [decoding, writable]);
 
   // Chromium fires `copy` at the body, not at a focused non-editable element,
   // when nothing is selected in the document; listening on the document
@@ -651,6 +776,8 @@ export function HexGrid({
     const ours = (event: ClipboardEvent) => {
       const root = rootRef.current;
       if (!root || event.defaultPrevented) return false;
+      // Copying a selected encoding label stays native.
+      if (headerRef.current?.contains(event.target as Node)) return false;
       const active = document.activeElement;
       return active === root || root.contains(event.target as Node);
     };
@@ -693,27 +820,44 @@ export function HexGrid({
     baseAddress + Math.max(0, (totalRows - 1) * columns),
   );
 
+  const glyphRange = (offset: number): HoverRange => {
+    const cell = showText && offset < size ? decodedCell(offset) : undefined;
+    const lead = cell?.kind === "continuation" ? cell.lead : offset;
+    if (lead === undefined) return { start: offset, end: offset };
+    // The lead's own cell knows the glyph's length, even when the glyph
+    // crosses more than one row end.
+    const length = (lead === offset ? cell : decodedCell(lead))?.length ?? 1;
+    return length > 1
+      ? { start: lead, end: Math.min(size - 1, lead + length - 1) }
+      : { start: offset, end: offset };
+  };
+  const hover = hoverOffset >= 0 ? glyphRange(hoverOffset) : null;
+
   const rowElements = [];
   for (let row = firstRow; row <= lastRow; row++) {
     const rowStart = row * columns;
     const length = Math.min(columns, size - rowStart);
-    const before = Math.min(lookbehind, rowStart);
+    const windowStart = Math.max(0, rowStart - lookbehind);
+    const windowEnd = Math.min(size, rowStart + length + lookahead);
+    const windowBytes = cache.get(windowStart, windowEnd - windowStart);
+    // The hex pane needs only the row's own bytes: a failed or loading page
+    // in the decoder's lookbehind or lookahead holds back the text pane alone.
+    const own = windowBytes ?? cache.get(rowStart, length);
     // A copy: a sync source may change its buffer in place, and the row's
     // memo compares the bytes it last rendered with these.
-    const bytes = cache.get(rowStart - before, length + before)?.slice();
-    let state: "ready" | "loading" | "error" = "ready";
-    if (!bytes) {
-      const p0 = Math.floor((rowStart - before) / cache.pageSize);
-      const p1 = Math.floor((rowStart + length - 1) / cache.pageSize);
-      state = "loading";
-      for (let p = p0; p <= p1; p++) {
-        if (cache.status(p) === "error") state = "error";
-      }
-    }
+    const bytes = own?.slice();
+    const state = own
+      ? "ready"
+      : rangeState(cache, rowStart, rowStart + length);
+    const textState = windowBytes
+      ? "ready"
+      : rangeState(cache, windowStart, windowEnd);
     const rowEnd = rowStart + length - 1;
     const append = appendCell && size - rowStart < columns;
     const cellEnd = append ? rowEnd + 1 : rowEnd;
     const inSel = selStart <= rowEnd && selLast >= rowStart && selStart >= 0;
+    const hovered =
+      hover !== null && hover.start <= cellEnd && hover.end >= rowStart;
     let modified = "";
     if (editing && length > 0) {
       modified = editing
@@ -732,10 +876,13 @@ export function HexGrid({
         append={append}
         modified={modified}
         bytes={bytes}
+        before={windowBytes ? rowStart - windowStart : 0}
         state={state}
+        textState={textState}
         selFrom={inSel ? Math.max(selStart, rowStart) : -1}
         selTo={inSel ? Math.min(selLast, rowEnd) : -1}
-        hover={hover >= rowStart && hover <= cellEnd ? hover : -1}
+        hoverFrom={hovered ? Math.max(hover.start, rowStart) : -1}
+        hoverTo={hovered ? Math.min(hover.end, cellEnd) : -1}
         caret={caret >= rowStart && caret <= cellEnd ? caret : -1}
         caretNibble={caretNibble}
         columns={columns}
@@ -750,6 +897,7 @@ export function HexGrid({
         controlCodes={controlCodes}
         showText={showText}
         decoding={decoding}
+        encoding={encoding}
       />,
     );
   }
@@ -801,34 +949,44 @@ export function HexGrid({
         }}
       >
         {showColumnLabels && (
-          <div className="orz-hex-row orz-hex-header" aria-hidden>
-            {showAddresses && (
-              <span className="orz-hex-addr" style={{ width: `${digits}ch` }} />
-            )}
-            {Array.from({ length: columns }, (_, i) => (
-              <span
-                // biome-ignore lint/suspicious/noArrayIndexKey: columns are positional
-                key={i}
-                className="orz-hex-cell"
-                data-group-end={
-                  isGroupEnd(i, columns, groupSize) ? "" : undefined
-                }
-              >
-                <span className="orz-hex-cell-content">
-                  {hexByte(i, uppercase)}
-                </span>
-              </span>
-            ))}
-            {showText && (
-              <>
-                <span className="orz-hex-pane-gap" />
+          <div ref={headerRef} className="orz-hex-row orz-hex-header">
+            <span className="orz-hex-header-labels" aria-hidden>
+              {showAddresses && (
                 <span
-                  className="orz-hex-text-label"
-                  style={{ width: `calc(var(--hex-text-cell) * ${columns})` }}
+                  className="orz-hex-addr"
+                  style={{ width: `${digits}ch` }}
+                />
+              )}
+              {Array.from({ length: columns }, (_, i) => (
+                <span
+                  // biome-ignore lint/suspicious/noArrayIndexKey: columns are positional
+                  key={i}
+                  className="orz-hex-cell"
+                  data-group-end={
+                    isGroupEnd(i, columns, groupSize) ? "" : undefined
+                  }
                 >
-                  Text
+                  <span className="orz-hex-cell-content">
+                    {hexByte(i, uppercase)}
+                  </span>
                 </span>
-              </>
+              ))}
+              {showText && <span className="orz-hex-pane-gap" />}
+            </span>
+            {showText && (
+              <span
+                className="orz-hex-text-label"
+                style={{ width: `calc(var(--hex-text-cell) * ${columns})` }}
+              >
+                {showEncodingPicker ? (
+                  <EncodingPicker
+                    value={shownEncoding}
+                    onChange={setEncoding}
+                  />
+                ) : (
+                  encodingLabel(shownEncoding)
+                )}
+              </span>
             )}
           </div>
         )}
@@ -869,11 +1027,61 @@ export function HexGrid({
   );
 }
 
+function rangeState(
+  cache: PageCache,
+  from: number,
+  to: number,
+): "loading" | "error" {
+  const p0 = Math.floor(from / cache.pageSize);
+  const p1 = Math.floor(Math.max(from, to - 1) / cache.pageSize);
+  for (let p = p0; p <= p1; p++) {
+    if (cache.status(p) === "error") return "error";
+  }
+  return "loading";
+}
+
 function isGroupEnd(column: number, columns: number, groupSize: number) {
   return (
     groupSize > 0 && column < columns - 1 && (column + 1) % groupSize === 0
   );
 }
+
+// Memoised: the grid re-renders on every scroll frame, and a closed radix
+// Select still renders its items to collect their text.
+const EncodingPicker = memo(function EncodingPicker({
+  value,
+  onChange,
+}: {
+  value: HexEncoding;
+  onChange: (encoding: HexEncoding) => void;
+}) {
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => onChange(next as HexEncoding)}
+    >
+      <SelectTrigger
+        size="sm"
+        className="orz-hex-encoding"
+        aria-label="Text encoding"
+      >
+        <SelectValue>{encodingLabel(value)}</SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {ENCODING_GROUPS.map(({ group, entries }) => (
+          <SelectGroup key={group}>
+            <SelectLabel>{group}</SelectLabel>
+            {entries.map((info) => (
+              <SelectItem key={info.id} value={info.id}>
+                {info.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+});
 
 interface HexRowProps {
   rowStart: number;
@@ -882,12 +1090,18 @@ interface HexRowProps {
   append: boolean;
   /** Edited bytes as `from-to` pairs relative to the row start; compared as a string so equal ranges skip the row. */
   modified: string;
-  /** The decoder's lookbehind bytes, then the row; `undefined` while not loaded. */
+  /** The decoder's lookbehind bytes, the row, then its lookahead bytes; `undefined` while not loaded. */
   bytes: Uint8Array | undefined;
+  /** How many of `bytes` come before the row. */
+  before: number;
   state: "ready" | "loading" | "error";
+  /** The state of the whole window the text pane decodes; `bytes` holds only the row's own bytes until it is ready. */
+  textState: "ready" | "loading" | "error";
   selFrom: number;
   selTo: number;
-  hover: number;
+  /** The hovered glyph's bytes inside this row, inclusive; -1 when none. */
+  hoverFrom: number;
+  hoverTo: number;
   caret: number;
   /** The hex digit an editor's caret is on; `undefined` in a plain view. */
   caretNibble: 0 | 1 | undefined;
@@ -899,6 +1113,8 @@ interface HexRowProps {
   controlCodes: ControlCodes;
   showText: boolean;
   decoding: TextDecoding;
+  /** Repaints every row on a switch, and keys the row's decoded cells. */
+  encoding: HexEncoding;
 }
 
 const flag = (on: boolean) => (on ? "" : undefined);
@@ -913,16 +1129,103 @@ function parseModified(modified: string): boolean[] {
   return out;
 }
 
+type GlyphSpan = readonly [lead: number, length: number];
+
+/** Per row byte, the multi-byte glyph it belongs to, for hovering a glyph whole. */
+function glyphSpans(cells: readonly TextCell[], rowStart: number) {
+  const out: Array<GlyphSpan | undefined> = new Array(cells.length);
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i] as TextCell;
+    if (cell.kind !== "continuation") {
+      const length = cell.length ?? 1;
+      if (length > 1) out[i] = [rowStart + i, length];
+      continue;
+    }
+    const lead = cell.lead ?? rowStart + i;
+    if (lead >= rowStart) {
+      out[i] = out[lead - rowStart];
+      continue;
+    }
+    // The lead sits on an earlier row: the glyph ends with its last
+    // continuation here.
+    let end = i;
+    while (
+      end + 1 < cells.length &&
+      cells[end + 1]?.kind === "continuation" &&
+      cells[end + 1]?.lead === lead
+    ) {
+      end++;
+    }
+    const span: GlyphSpan = [lead, rowStart + end - lead + 1];
+    for (let k = i; k <= end; k++) out[k] = span;
+    i = end;
+  }
+  return out;
+}
+
+interface DecodedRow {
+  bytes: Uint8Array;
+  before: number;
+  rowStart: number;
+  length: number;
+  encoding: HexEncoding;
+  controlCodes: ControlCodes;
+  cells: TextCell[];
+  spans: Array<GlyphSpan | undefined>;
+}
+
+/** Decodes once per change of the row's bytes or encoding, not on every selection or hover repaint. */
+function useDecodedRow(
+  bytes: Uint8Array | undefined,
+  row: { rowStart: number; before: number; length: number },
+  decoding: TextDecoding,
+  encoding: HexEncoding,
+  controlCodes: ControlCodes,
+): DecodedRow | undefined {
+  const last = useRef<DecodedRow | undefined>(undefined);
+  if (!bytes) return undefined;
+  const prev = last.current;
+  if (
+    prev &&
+    prev.encoding === encoding &&
+    prev.controlCodes === controlCodes &&
+    prev.rowStart === row.rowStart &&
+    prev.before === row.before &&
+    prev.length === row.length &&
+    sameBytes(prev.bytes, bytes)
+  ) {
+    return prev;
+  }
+  const cells = decoding.decodeRow(
+    bytes,
+    { start: row.rowStart, before: row.before, length: row.length },
+    controlCodes,
+  );
+  const next: DecodedRow = {
+    ...row,
+    bytes,
+    encoding,
+    controlCodes,
+    cells,
+    spans: glyphSpans(cells, row.rowStart),
+  };
+  last.current = next;
+  return next;
+}
+
 function HexRowImpl({
   rowStart,
   length,
   append,
   modified,
   bytes,
+  before,
   state,
+  textState,
   selFrom,
   selTo,
-  hover,
+  hoverFrom,
+  hoverTo,
   caret,
   caretNibble,
   columns,
@@ -933,21 +1236,25 @@ function HexRowImpl({
   controlCodes,
   showText,
   decoding,
+  encoding,
 }: HexRowProps) {
-  const lead = bytes ? bytes.length - length : 0;
-  const text =
-    bytes && showText
-      ? decoding.decodeRow(bytes, rowStart, controlCodes).slice(0, length)
-      : undefined;
+  const decoded = useDecodedRow(
+    showText && textState === "ready" ? bytes : undefined,
+    { rowStart, before, length },
+    decoding,
+    encoding,
+    controlCodes,
+  );
+  const text = decoded?.cells;
   const edited = parseModified(modified);
   const hexCells = [];
   const textCells = [];
   for (let i = 0; i < columns; i++) {
     const offset = rowStart + i;
     const groupEnd = flag(isGroupEnd(i, columns, groupSize));
+    const hov = flag(offset >= hoverFrom && offset <= hoverTo);
     if (append && i === length) {
       const car = offset === caret;
-      const hov = flag(offset === hover);
       hexCells.push(
         <span
           key={i}
@@ -1004,10 +1311,10 @@ function HexRowImpl({
       continue;
     }
     const sel = flag(selFrom >= 0 && offset >= selFrom && offset <= selTo);
-    const hov = flag(offset === hover);
     const car = flag(offset === caret);
     const mod = flag(edited[i] === true);
-    const byte = bytes?.[lead + i];
+    const glyph = decoded?.spans[i];
+    const byte = bytes?.[before + i];
     const digits =
       byte === undefined
         ? state === "error"
@@ -1027,6 +1334,8 @@ function HexRowImpl({
         data-group-end={groupEnd}
         data-faded={flag(fadeZeroBytes && byte === 0)}
         data-state={byte === undefined ? state : undefined}
+        data-glyph={glyph?.[0]}
+        data-glyph-length={glyph?.[1]}
       >
         <span className="orz-hex-cell-content">
           {caretNibble === undefined ? (
@@ -1043,6 +1352,17 @@ function HexRowImpl({
     );
     if (!showText) continue;
     const cell = text?.[i];
+    let box: { span: number; squeeze: number } | undefined;
+    if (cell?.kind === "char" && cell.text) {
+      const width = glyphCells(cell.text);
+      const glyphLength = cell.length ?? 1;
+      if (glyphLength > 1 || width > 1) {
+        // A glyph crossing the row end is drawn here only, squeezed into
+        // the bytes this row has.
+        const span = Math.min(glyphLength, length - i);
+        box = { span, squeeze: Math.min(1, span / width) };
+      }
+    }
     textCells.push(
       <span
         key={i}
@@ -1055,7 +1375,9 @@ function HexRowImpl({
         data-modified={mod}
         data-kind={cell?.kind}
         data-faded={flag(cell?.kind === "control" || cell?.kind === "dot")}
-        data-state={cell ? undefined : state}
+        data-state={cell ? undefined : textState}
+        data-glyph={glyph?.[0]}
+        data-glyph-length={glyph?.[1]}
       >
         <span
           className={
@@ -1064,7 +1386,7 @@ function HexRowImpl({
               : "orz-hex-cell-content"
           }
         >
-          {cell?.kind === "control" && cell.text ? (
+          {box ? null : cell?.kind === "control" && cell.text ? (
             <>
               <b>{cell.text[0]}</b>
               <b>{cell.text[1]}</b>
@@ -1075,6 +1397,19 @@ function HexRowImpl({
             (cell?.text ?? "")
           )}
         </span>
+        {box && (
+          <span
+            className="orz-hex-glyph"
+            style={
+              {
+                "--hex-glyph-span": box.span,
+                "--hex-glyph-squeeze": box.squeeze,
+              } as CSSProperties
+            }
+          >
+            <span>{cell?.text}</span>
+          </span>
+        )}
       </span>,
     );
   }
