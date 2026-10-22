@@ -1,5 +1,5 @@
 import { act, fireEvent, render } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createHexDocument, type HexDocument } from "../src/document.ts";
 import {
@@ -337,6 +337,74 @@ describe("HexEditor encodings", () => {
     expect(event.defaultPrevented).toBe(false);
     expect(onPaste).not.toHaveBeenCalled();
     expect(bytes()).toEqual(INITIAL);
+  });
+});
+
+describe("HexEditor modifier keys", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // jsdom reports AltGraph whenever Alt is held, so each browser's answer is
+  // stubbed in by hand.
+  function press(
+    root: HTMLElement,
+    init: KeyboardEventInit,
+    altGraph = false,
+  ): boolean {
+    const event = new KeyboardEvent("keydown", {
+      bubbles: true,
+      cancelable: true,
+      ...init,
+    });
+    event.getModifierState = (key) => key === "AltGraph" && altGraph;
+    act(() => {
+      root.dispatchEvent(event);
+    });
+    return event.defaultPrevented;
+  }
+
+  const onPlatform = (platform: string) =>
+    vi.spyOn(navigator, "platform", "get").mockReturnValue(platform);
+
+  it("types ⌥-composed characters on a Mac, whatever the browser reports", () => {
+    onPlatform("MacIntel");
+    const { click, root, bytes } = setup({ encoding: "utf-8" });
+    click(1, "text");
+    // Chrome and Safari: Alt alone.
+    expect(press(root, { key: "ø", code: "KeyO", altKey: true })).toBe(true);
+    // Firefox: Alt and AltGraph.
+    expect(press(root, { key: "¢", code: "Digit4", altKey: true }, true)).toBe(
+      true,
+    );
+    expect(bytes()).toEqual([0x10, 0xc3, 0xb8, 0xc2, 0xa2, 0x60, 0x70, 0x80]);
+  });
+
+  it("leaves ⌘⌥ and ⌃⌥ to shortcuts on a Mac, even with AltGraph reported", () => {
+    onPlatform("MacIntel");
+    const { click, root, bytes, doc } = setup({ encoding: "utf-8" });
+    click(1, "text");
+    const chord = { key: "k", code: "KeyK", altKey: true };
+    expect(press(root, { ...chord, metaKey: true }, true)).toBe(false);
+    expect(press(root, { ...chord, ctrlKey: true }, true)).toBe(false);
+    expect(bytes()).toEqual(INITIAL);
+    expect(doc.canUndo).toBe(false);
+  });
+
+  it("leaves Alt to shortcuts elsewhere, and types AltGr", () => {
+    onPlatform("Win32");
+    const { click, root, bytes } = setup({ encoding: "utf-8" });
+    click(1, "text");
+    expect(press(root, { key: "f", code: "KeyF", altKey: true })).toBe(false);
+    expect(bytes()).toEqual(INITIAL);
+    expect(
+      press(
+        root,
+        { key: "@", code: "KeyQ", altKey: true, ctrlKey: true },
+        true,
+      ),
+    ).toBe(true);
+    expect(bytes()[1]).toBe(0x40);
   });
 });
 

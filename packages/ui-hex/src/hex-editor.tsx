@@ -62,6 +62,21 @@ export interface HexEditorProps extends Omit<HexViewProps, "source"> {
 const utf8 = new TextEncoder();
 const MODE_NAMES = { insert: "Insert mode", overwrite: "Overwrite mode" };
 
+const isApple = () =>
+  typeof navigator !== "undefined" &&
+  /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+/**
+ * Whether the held modifiers compose a character rather than form a shortcut.
+ * ⌥ is how a Mac types characters, yet Chrome and Safari report it as Alt
+ * alone and Firefox reports AltGraph even with ⌘ held, so on Apple platforms
+ * the keys themselves decide.
+ */
+function composing(event: ReactKeyboardEvent): boolean {
+  if (isApple()) return event.altKey && !event.ctrlKey && !event.metaKey;
+  return event.getModifierState?.("AltGraph") ?? false;
+}
+
 function useControllableMode(
   value: HexEditMode | undefined,
   defaultValue: HexEditMode,
@@ -246,7 +261,7 @@ export function HexEditor({
           shift: event.shiftKey,
           mod: event.ctrlKey || event.metaKey,
           alt: event.altKey,
-          altGraph: event.getModifierState?.("AltGraph") ?? false,
+          altGraph: composing(event),
         });
         if (!command) return false;
         // The native cut event follows the key; cancelling the key would stop it.

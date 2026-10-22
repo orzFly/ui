@@ -20,7 +20,10 @@ export interface EditInput {
   /** Ctrl, or ⌘ on Apple platforms. */
   mod: boolean;
   alt: boolean;
-  /** AltGr: reported with Ctrl and Alt held, yet it types characters. */
+  /**
+   * AltGr, or ⌥ alone on Apple platforms: reported with Alt (and on Windows
+   * Ctrl) held, yet it types characters.
+   */
   altGraph: boolean;
 }
 
