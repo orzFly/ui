@@ -104,5 +104,8 @@ so pass `-p orzui`. Follow `/todou-cli` for taking a card, asking questions and 
   `ui-markdown`, `ui-code`, `demo` (the component demo site), `tooling` (workspace, build, CI,
   publishing), `docs`.
 - Work on your own branch; when done, the card goes to Ready to Ship with a summary comment.
-  Merging, pushing and publishing to npm are the orchestrator's.
+  Merging, pushing, deploying and publishing to npm are the orchestrator's.
+- Deploy: after a batch is merged to master and pushed, run `scripts/deploy-storybook.sh` from the
+  main checkout on master. It builds the Storybook site and serves it at `http://127.0.0.1:6106/`
+  through the `orzui-storybook` systemd user service; only then do the cards move to Shipped.
 - Code copied from todou names the todou commit it came from in the commit message.
