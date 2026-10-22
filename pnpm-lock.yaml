@@ -50,6 +50,12 @@ importers:
       '@orz/ui-codemirror':
         specifier: workspace:*
         version: link:../../packages/ui-codemirror
+      '@orz/ui-content':
+        specifier: workspace:*
+        version: link:../../packages/ui-content
+      '@orz/ui-markdown':
+        specifier: workspace:*
+        version: link:../../packages/ui-markdown
       '@pierre/diffs':
         specifier: ^1.6.1
         version: 1.6.1(@shikijs/themes@4.5.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)

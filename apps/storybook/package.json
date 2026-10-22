@@ -21,6 +21,8 @@
     "@orz/ui": "workspace:*",
     "@orz/ui-code": "workspace:*",
     "@orz/ui-codemirror": "workspace:*",
+    "@orz/ui-content": "workspace:*",
+    "@orz/ui-markdown": "workspace:*",
     "@pierre/diffs": "^1.6.1",
     "lucide-react": "^1.59.0",
     "overlayscrollbars": "^2.16.0",
