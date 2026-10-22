@@ -1,7 +1,7 @@
 # @orz/ui
 
-React components, hooks and a 20-theme token set, built on shadcn's radix-nova primitives and
-Tailwind CSS v4.
+React components, hooks and a theme store, built on shadcn's radix-nova primitives and Tailwind
+CSS v4. The theme data itself lives in `@orz/themes`.
 
 ## Install
 
@@ -23,7 +23,7 @@ a dialog from one copy and a menu from the other, and `toast()` would not reach 
 @import "@orz/ui/styles.css";
 ```
 
-`styles.css` brings the tokens, the theme blocks, the base layer, `tw-animate-css` and shadcn's
+`styles.css` brings the baseline tokens, the base layer, `tw-animate-css` and shadcn's
 Tailwind variants. It also registers `@source "./dist"` on its own, so Tailwind finds the classes
 used inside the package without any `@source` line from you.
 
@@ -42,14 +42,18 @@ the system UI font, so install `@fontsource-variable/geist` (or define `--font-s
 ## Theme
 
 Importing anything from `@orz/ui` has no side effects. Creating a theme store does: it reads the
-stored pref, writes `data-theme` and `.dark` onto `<html>`, and starts following the OS and other
-tabs.
+stored pref, paints it, and starts following the OS and other tabs. The store takes its themes as
+input, so an app ships only the themes it passes.
 
 ```tsx
+import { builtinThemes } from "@orz/themes";
 import { Toaster } from "@orz/ui/components/sonner";
 import { createThemeStore, ThemeProvider } from "@orz/ui/theme";
 
-const themes = createThemeStore({ storageKey: "app-theme" });
+const themes = createThemeStore({
+  storageKey: "app-theme",
+  themes: builtinThemes,
+});
 
 createRoot(root).render(
   <ThemeProvider store={themes}>
@@ -59,16 +63,87 @@ createRoot(root).render(
 );
 ```
 
-- `useTheme()` returns `{ pref, theme, kind, setPref }`. `pref` may be `"system"`, while `theme`
-  is always the resolved one. Outside a provider it reports `system`/light and ignores `setPref`.
-- `<ThemeMenu />` from `@orz/ui/components/theme-menu` is a ready-made picker.
-- The resolved kind is stored under `kindStorageKey`, which defaults to `` `${storageKey}-kind` ``.
+The store has two slots, and an app enables either or both by handing over a list for it:
+
+- `themes` is the UI slot. Its pick paints the page.
+- `terminalThemes` is the terminal slot. It may also hold terminal-only themes from
+  `@orz/themes`. Without a terminal pick, the terminal follows the UI pick: same theme, color
+  scheme and variant.
+
+A store with only a UI slot still writes the UI pick's terminal tokens, so an ANSI-escape renderer
+anywhere on the page works without a slot of its own. A store with only a terminal slot writes the
+terminal tokens alone and leaves `color-scheme`, `.dark` and `data-theme` to the page.
+
+The pick is one theme, a mode and an optional variant per slot:
+
+```ts
+store.setPref({
+  ui: { theme: "github", mode: "light" },
+  terminal: { theme: "dracula", mode: "dark", variant: "amoled" },
+});
+```
+
+- `mode` is `"system"`, `"light"` or `"dark"`. On a theme with one palette it is always that
+  palette's side.
+- `variant` names one variant for the whole theme. A palette that does not define it shows its
+  default, so AMOLED Solarized under `system` is default Solarized Light by day and AMOLED Solarized
+  Dark at night.
+- Every read and write normalizes the pref against the current lists: an unknown theme falls back
+  to the first one under `system`, or to following for a terminal pick.
+- `setThemes(list)` and `setTerminalThemes(list)` replace the lists at runtime, which is how custom
+  themes from `composeTheme` come in. A pick whose theme leaves the list comes back when the theme
+  returns.
+
+The store paints through one `<style data-orz-theme>` element in `<head>`, holding a single
+`:root { … }` rule rendered from the data. It also toggles `.dark` and sets `data-theme`,
+`data-variant` and `data-terminal-theme` on the root. Given a `root` other than `<html>`, the rule
+targets `[data-orz-theme-root]`, which the store sets on that root. The rule has plain `:root`
+specificity, so a stylesheet loaded later, or a `:root:root` selector, can still retune a token for
+every theme.
+
+- `useTheme()` returns `{ pref, themes, theme, colorScheme, variant, setPref }`: the UI slot's
+  normalized pref and list, the resolved theme object, the color scheme on screen, and the variant
+  that side shows. Outside a provider it reports the default theme, light, and ignores `setPref`.
+- `useTerminalTheme()` returns `{ following, themes, theme, colorScheme, variant, tokens }` for the
+  terminal slot.
+- `<ThemeMenu />` from `@orz/ui/components/theme-menu` is a ready-made picker for the UI slot.
+
+### Terminals
+
+The terminal tokens are CSS variables (`--terminal-background`, `--terminal-foreground`,
+`--terminal-cursor`, `--terminal-selection`, and `--ansi-black` through `--ansi-bright-white`), and
+Tailwind classes such as `bg-terminal-background` and `text-ansi-red`. An ANSI-escape renderer can
+use the classes directly. xterm.js takes the resolved tokens:
+
+```tsx
+import { xtermTheme } from "@orz/themes";
+import { useTerminalTheme } from "@orz/ui/theme";
+
+const { tokens } = useTerminalTheme();
+useEffect(() => {
+  terminal.options.theme = xtermTheme(tokens);
+}, [terminal, tokens]);
+```
+
+### Storage
+
+`storageKey` holds the pref as JSON:
+`{"ui":{"theme":"github","mode":"light"},"terminal":{"theme":"dracula","mode":"dark"}}`. A default
+variant and a following terminal are left out.
+
+Prefs stored by earlier versions of `@orz/ui` are read and rewritten in this shape on the next
+write. A plain slug such as `solarized-dark` becomes `{ theme: "solarized", mode: "dark" }`, and
+`system`, `light` and `dark` map onto the `default` theme. An app that keeps its old `storageKey`
+keeps its users' themes.
 
 ### Paint guard
 
-Without a guard, a reload in a dark theme flashes white before the bundle runs.
-`themePaintGuardScript()` returns an inline script that applies the stored theme first. Give it
-the same keys as the store:
+Without a guard, a reload in a dark theme flashes white before the bundle runs. The store caches
+the declarations it painted under `paintKey` (default `` `${storageKey}-paint` ``), one per side the
+slot's mode can show. `themePaintGuardScript()` returns an inline script that replays them before
+the bundle loads, choosing the side from the OS when both are cached, so neither the guard nor the
+page needs a theme list. The store adopts the guard's `<style>` element when it starts. Give the
+guard the same keys as the store:
 
 ```ts
 // vite.config.ts
@@ -89,6 +164,9 @@ export default defineConfig({
   ],
 });
 ```
+
+On the first load after an upgrade there is no cache yet. The guard then sets `.dark` from the
+`` `${storageKey}-kind` `` value earlier versions stored, and the store writes the cache.
 
 ## Query input
 
@@ -175,8 +253,8 @@ live preview needs. A control in `header` that commits at once puts the highligh
 | `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
 | `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut` |
 | `@orz/ui/lib/<name>` | `clipboard`, `text-metrics`, `unsaved-guard`, `utils` |
-| `@orz/ui/theme` | `THEMES`, `createThemeStore`, `ThemeProvider`, `useTheme`, `themePaintGuardScript`, types |
-| `@orz/ui/styles.css` | tokens, theme blocks, base layer |
+| `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
+| `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
 
 `UnsavedChangesDialog` only renders the prompt, and the blocker belongs to your router. Its JSDoc
 shows the TanStack Router wiring. Register the work that can be lost with `useDirtySource()` from
