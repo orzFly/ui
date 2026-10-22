@@ -125,7 +125,30 @@ describe("ThemeMenu: filtering", () => {
     expect(rows()).toEqual(["Dracula"]);
     expect(list().querySelector("mark")?.textContent).toBe("Drac");
     type("mocha");
-    expect(rows()).toEqual(["Catppuccin"]);
+    expect(rows()).toEqual(["Catppuccin · Mocha"]);
+    expect(list().querySelector("mark")?.textContent).toBe("Mocha");
+  });
+
+  it("takes a keyword from three letters on, so a short query filters by label", () => {
+    setup();
+    open();
+    type("d");
+    expect(rows()).not.toContain("Picotera");
+    type("dar");
+    expect(rows()).toEqual(
+      builtinThemes.filter((t) => t.dark).map((t) => t.label),
+    );
+  });
+
+  it("matches Same as UI by same or follow only", () => {
+    setup({ slot: "terminal" });
+    open("terminal");
+    type("s");
+    expect(highlighted()).not.toBe("Same as UI (Default)");
+    type("same");
+    expect(highlighted()).toBe("Same as UI (Default)");
+    type("follow");
+    expect(rows()).toEqual(["Same as UI (Default)"]);
   });
 
   it("matches light and dark against the palettes a theme has", () => {
@@ -149,6 +172,17 @@ describe("ThemeMenu: filtering", () => {
     type("custom");
     expect(groups()).toEqual(["Custom"]);
     expect(rows()).toEqual(["Sunrise"]);
+  });
+
+  it("keeps a base theme out of Custom when a stored custom theme had its id", () => {
+    localStorage.setItem(
+      "app-theme-custom",
+      JSON.stringify([sunrise, { ...sunrise, id: "vs", label: "Clash" }]),
+    );
+    setup();
+    open();
+    expect(groups()).toEqual(["Custom", "Themes"]);
+    expect(rows().slice(0, 2)).toEqual(["Sunrise", "Default"]);
   });
 
   it("matches terminal to the Terminal only group", () => {

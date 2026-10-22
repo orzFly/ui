@@ -77,7 +77,16 @@ const CUSTOMIZE_LABEL = "Custom themes…";
 
 /** True when `query` starts `keyword`, so `dar` finds the dark palettes. */
 const keyword = (word: string, query: string) =>
-  matchText(word, query)?.start === 0;
+  // Three letters at least, or `d` and `l` would turn into palette filters.
+  query.length >= 3 && matchText(word, query)?.start === 0;
+
+/** The palette label a query hit when the theme's own label did not. */
+function paletteHit(theme: TerminalTheme, query: string): string | undefined {
+  if (query === "" || matchText(theme.label, query)) return undefined;
+  return schemesOf(theme)
+    .map((scheme) => theme[scheme]?.label)
+    .find((label) => label !== undefined && matchText(label, query));
+}
 
 function UiSwatch({ theme, variant }: { theme: Theme; variant?: string }) {
   return (
@@ -184,10 +193,18 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
   const { pref, setPref, preview } = ui;
   const themes: readonly TerminalTheme[] =
     slot === "ui" ? ui.themes : terminal.themes;
-  const customIds = useMemo(
-    () => new Set(ui.customThemes.map((c) => c.id)),
-    [ui.customThemes],
-  );
+  // The composed custom themes lead the list. Only that run counts: a stored
+  // custom theme whose id a base theme took is left out of the list, and the
+  // base theme must not show as custom.
+  const customIds = useMemo(() => {
+    const ids = new Set(ui.customThemes.map((c) => c.id));
+    const leading = new Set<string>();
+    for (const theme of themes) {
+      if (!ids.has(theme.id) || leading.has(theme.id)) break;
+      leading.add(theme.id);
+    }
+    return leading;
+  }, [ui.customThemes, themes]);
   const committed = slot === "ui" ? pref.ui : pref.terminal;
   const following = slot === "terminal" && committed === undefined;
   // A first terminal pick starts from the UI's mode.
@@ -309,12 +326,8 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
           all ||
           keyword(group, q) ||
           matchText(theme.label, q) ||
-          schemesOf(theme).some(
-            (scheme) =>
-              keyword(scheme, q) ||
-              (theme[scheme]?.label !== undefined &&
-                matchText(theme[scheme]?.label as string, q)),
-          )
+          paletteHit(theme, q) !== undefined ||
+          schemesOf(theme).some((scheme) => keyword(scheme, q))
         ) {
           return [row];
         }
@@ -331,13 +344,7 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
     const custom = themes.filter((t) => customIds.has(t.id));
     const rest = themes.filter((t) => !customIds.has(t.id));
     const out: FilterMenuSection<Row>[] = [];
-    if (
-      showFollow &&
-      (all ||
-        matchText(FOLLOW_LABEL, q) ||
-        keyword("follow", q) ||
-        keyword("same", q))
-    ) {
+    if (showFollow && (all || keyword("follow", q) || keyword("same", q))) {
       out.push({ id: "follow", rows: [{ id: "follow", kind: "follow" }] });
     }
     out.push({
@@ -425,11 +432,18 @@ export function ThemeMenu({ slot = "ui", onCustomize }: ThemeMenuProps) {
         </>
       );
     }
+    const palette = paletteHit(theme, query.trim());
     return (
       <>
         <Swatch theme={theme as Theme} />
         <span className="flex-1 truncate">
           <MatchedText text={theme.label} query={query.trim()} />
+          {palette && (
+            <span className="text-muted-foreground">
+              {" · "}
+              <MatchedText text={palette} query={query.trim()} />
+            </span>
+          )}
         </span>
         {onCustomize && customIds.has(theme.id) && (
           <button
