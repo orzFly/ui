@@ -7,6 +7,7 @@ import {
   hasNextSnippetField,
   startCompletion,
 } from "@codemirror/autocomplete";
+import { createCommandRegistry, type ValueProviders } from "@orz/query";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MarkdownEditor } from "../src/components/markdown-editor.tsx";
@@ -16,7 +17,6 @@ import {
   pendingSpaceAt,
 } from "../src/extensions/completion-space.ts";
 import { commandCompletionSource } from "../src/extensions/slash-commands.ts";
-import { createCommandRegistry } from "../src/lib/slash-commands.ts";
 import {
   cmGetValue,
   cmInput,
@@ -399,12 +399,16 @@ describe("the completion panel's keys", () => {
 const commandRegistry = createCommandRegistry([
   {
     name: "hide-all",
-    argument: "optional",
     detail: "hide every comment before this one",
-    candidates: ["force"],
+    args: [
+      {
+        name: "force",
+        value: { kind: "enum", values: ["force"] },
+        optional: true,
+      },
+    ],
     summarize: () => "hide every comment",
-    compile: (argument: string) =>
-      argument === "" || argument === "force" ? { force: argument } : null,
+    compile: ([force]) => ({ force: force === "force" }),
   },
 ]);
 
@@ -430,5 +434,97 @@ describe("the slash panel's keys", () => {
     cmPressKey(view.container, "ArrowDown");
     cmPressKey(view.container, "Enter");
     expect(cmGetValue(view.container)).toBe("/hide-all force");
+  });
+});
+
+const moveRegistry = createCommandRegistry([
+  {
+    name: "move",
+    detail: "change status",
+    args: [
+      { name: "status", value: { kind: "named", source: "status" } },
+      {
+        name: "assignee",
+        value: { kind: "named", source: "member", special: ["@me"] },
+        optional: true,
+      },
+    ],
+    summarize: () => "move",
+    compile: () => "move",
+  },
+]);
+
+/** A member search that answers only when the test says so. */
+function controlledSearch() {
+  const requests: {
+    prefix: string;
+    signal: AbortSignal;
+    answer: (logins: string[]) => void;
+  }[] = [];
+  const providers: ValueProviders = {
+    status: { options: [{ value: "Todo" }, { value: "In Progress" }] },
+    member: {
+      search: (prefix, signal) =>
+        new Promise((resolve) => {
+          requests.push({
+            prefix,
+            signal,
+            answer: (logins) => resolve(logins.map((value) => ({ value }))),
+          });
+        }),
+    },
+  };
+  return { requests, providers };
+}
+
+function moveEditor(providers: ValueProviders) {
+  return render(
+    <MarkdownEditor
+      ariaLabel="Body"
+      extensions={completionWith([
+        commandCompletionSource(
+          () => moveRegistry,
+          () => providers,
+        ),
+      ])}
+    />,
+  );
+}
+
+describe("the slash panel's arguments", () => {
+  it("moves on to the next argument after accepting one", async () => {
+    const { requests, providers } = controlledSearch();
+    const view = moveEditor(providers);
+    await panelFor(view.container, "/move In");
+    cmPressKey(view.container, "Enter");
+    expect(cmGetValue(view.container)).toBe("/move 'In Progress' ");
+    // The panel reopens on its own for the assignee, which is a search.
+    await waitFor(() => expect(requests).toHaveLength(1));
+    expect(requests[0]?.prefix).toBe("");
+  });
+
+  it("shows a search provider's rows once it answers", async () => {
+    const { requests, providers } = controlledSearch();
+    const view = moveEditor(providers);
+    act(() => cmType(view.container, "/move Todo al"));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    expect(requests[0]?.prefix).toBe("al");
+    act(() => requests[0]?.answer(["alice", "alicia"]));
+    await active(view.container);
+    expect(labels(view.container)).toEqual(["alice", "alicia"]);
+    cmPressKey(view.container, "Enter");
+    expect(cmGetValue(view.container)).toBe("/move Todo alice");
+  });
+
+  it("aborts a pending search when the next key arrives", async () => {
+    const { requests, providers } = controlledSearch();
+    const view = moveEditor(providers);
+    act(() => cmType(view.container, "/move Todo a"));
+    await waitFor(() => expect(requests).toHaveLength(1));
+    act(() => cmInput(view.container, "l"));
+    expect(requests[0]?.signal.aborted).toBe(true);
+    await waitFor(() => expect(requests).toHaveLength(2));
+    expect(requests[1]?.prefix).toBe("al");
+    expect(requests[1]?.signal.aborted).toBe(false);
   });
 });

@@ -1,6 +1,11 @@
 import type { CompiledQuerySchema, QueryPart } from "./query.ts";
 import { didYouMean } from "./suggest.ts";
-import { type ValueProviders, type ValueSpec, valueVerdict } from "./values.ts";
+import {
+  providerOf,
+  suggestionCandidates,
+  type ValueProviders,
+  valueVerdict,
+} from "./values.ts";
 
 export type QueryDiagnostic = {
   key: string;
@@ -14,22 +19,6 @@ export type QueryDiagnostic = {
 
 const article = (word: string): string =>
   /^[aeiou]/i.test(word) ? `an ${word}` : `a ${word}`;
-
-function candidatesOf(spec: ValueSpec, providers?: ValueProviders): string[] {
-  const special = spec.special ?? [];
-  switch (spec.kind) {
-    case "enum":
-      return [...spec.values, ...Object.keys(spec.aliases ?? {}), ...special];
-    case "named": {
-      const provider = providers?.[spec.source];
-      const options =
-        provider !== undefined && "options" in provider ? provider.options : [];
-      return [...(options ?? []).map((o) => o.value), ...special];
-    }
-    case "free":
-      return [...special];
-  }
-}
 
 /**
  * What a query gets wrong that this package can tell without the app:
@@ -61,10 +50,7 @@ export function diagnoseQuery(
     }
     const spec = schema.qualifiers[part.key]?.value;
     if (spec === undefined) continue;
-    const provider =
-      spec.kind === "enum" || spec.source === undefined
-        ? undefined
-        : providers?.[spec.source];
+    const provider = providerOf(spec, providers);
     for (const value of part.values) {
       const where = { key: part.key, start: value.start, end: value.end };
       if (value.error !== undefined) {
@@ -87,7 +73,7 @@ export function diagnoseQuery(
           ...where,
           value: each,
           message,
-          suggestion: didYouMean(each, candidatesOf(spec, providers)),
+          suggestion: didYouMean(each, suggestionCandidates(spec, provider)),
         });
       }
     }

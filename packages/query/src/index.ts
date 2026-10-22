@@ -3,6 +3,36 @@ export {
   type BraceExpansion,
   expandBraces,
 } from "./braces.ts";
+export {
+  type ArgSpec,
+  type ArgValue,
+  type CommandDef,
+  type CommandRegistry,
+  commandLinesOf,
+  createCommandRegistry,
+  type ParsedDraft,
+  parseCommandLines,
+  type RecognizedLine,
+  recognizeCommandLine,
+  slugifyCommandName,
+  summarizeCommands,
+} from "./commands.ts";
+export {
+  type CompletionRow,
+  type CompletionSlot,
+  commandCompletionSlot,
+  filterOptions,
+  keyRows,
+  orderRows,
+  queryCompletionSlot,
+  quoteArgument,
+  type SourceResult,
+  slotValues,
+  splice,
+  spliceThenSpace,
+  type ValueSlot,
+  valueRows,
+} from "./completion.ts";
 export { diagnoseQuery, type QueryDiagnostic } from "./diagnostics.ts";
 export {
   type CompiledQuerySchema,
@@ -27,6 +57,7 @@ export {
 export { didYouMean } from "./suggest.ts";
 export {
   canonicalValue,
+  providerOf,
   specialValue,
   type ValueOption,
   type ValueProvider,
@@ -34,4 +65,5 @@ export {
   type ValueSpec,
   type ValueVerdict,
   valueVerdict,
+  worstVerdict,
 } from "./values.ts";

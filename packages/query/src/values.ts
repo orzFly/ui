@@ -99,3 +99,51 @@ export function valueVerdict(
       return "valid";
   }
 }
+
+const VERDICT_RANK: Record<ValueVerdict, number> = {
+  valid: 0,
+  unknown: 1,
+  special: 2,
+  invalid: 3,
+};
+
+/** One verdict for a list of values, as a brace expansion paints. */
+export function worstVerdict(
+  verdicts: readonly ValueVerdict[],
+): ValueVerdict | null {
+  let worst: ValueVerdict | null = null;
+  for (const verdict of verdicts) {
+    if (worst === null || VERDICT_RANK[verdict] > VERDICT_RANK[worst]) {
+      worst = verdict;
+    }
+  }
+  return worst;
+}
+
+/** The provider a spec reads from; an enum never has one. */
+export function providerOf(
+  spec: ValueSpec,
+  providers?: ValueProviders,
+): ValueProvider | undefined {
+  if (spec.kind === "enum" || spec.source === undefined) return undefined;
+  return providers?.[spec.source];
+}
+
+/** What a did-you-mean may suggest: only spellings that would be accepted. */
+export function suggestionCandidates(
+  spec: ValueSpec,
+  provider?: ValueProvider,
+): string[] {
+  const special = spec.special ?? [];
+  switch (spec.kind) {
+    case "enum":
+      return [...spec.values, ...Object.keys(spec.aliases ?? {}), ...special];
+    case "named": {
+      const options =
+        provider !== undefined && "options" in provider ? provider.options : [];
+      return [...(options ?? []).map((o) => o.value), ...special];
+    }
+    case "free":
+      return [...special];
+  }
+}

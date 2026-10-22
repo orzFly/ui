@@ -83,7 +83,17 @@ parseCommandLines("Looks done.\n/label {kind:bug,area:web}\n/close", registry, p
 
 A command is a whole line starting with `/name`; anything else, including `/close the door`, is
 prose. Arguments are shell words, a `rest` argument takes the remainder of the line unquoted, and
-brace expansion applies only to arguments declared `multiple`.
+brace expansion applies only to arguments declared `multiple`, which `compile` receives as a list.
+A value with an `invalid` verdict, an unclosed quote or an expansion past 64 values breaks the line
+before `compile` runs; the reason lands in `invalid`.
+
+## Completion
+
+`queryCompletionSlot` and `commandCompletionSlot` say what is being typed at the caret: a key, a
+value, a command or an argument, with its extent and value spec. Inside a brace group the slot is
+only the current alternative. `slotValues` lists what fits (or answers `"fetch"` for a `search`
+provider), `keyRows` and `valueRows` turn a query slot into rows that carry the rewritten query,
+and `orderRows` keeps the submit row first unless something is genuinely being completed.
 
 ## Building blocks
 

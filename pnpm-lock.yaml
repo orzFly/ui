@@ -44,6 +44,9 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.5
+      '@orz/query':
+        specifier: workspace:*
+        version: link:../../packages/query
       '@orz/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -230,6 +233,9 @@ importers:
       '@lezer/markdown':
         specifier: ^1.7.2
         version: 1.8.1
+      '@orz/query':
+        specifier: workspace:^
+        version: link:../query
     devDependencies:
       '@codemirror/autocomplete':
         specifier: ^6.20.3
