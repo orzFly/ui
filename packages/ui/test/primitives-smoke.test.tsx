@@ -64,6 +64,14 @@ import {
   SelectValue,
 } from "../src/components/select.tsx";
 import { Separator } from "../src/components/separator.tsx";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "../src/components/sheet.tsx";
 import { Skeleton } from "../src/components/skeleton.tsx";
 import { Toaster } from "../src/components/sonner.tsx";
 import { Switch } from "../src/components/switch.tsx";
@@ -200,6 +208,19 @@ const CASES: [file: string, slot: string, tree: ReactElement][] = [
     </Select>,
   ],
   ["separator", "separator", <Separator key="a" />],
+  [
+    "sheet",
+    "sheet-footer",
+    <Sheet key="a" open>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Title</SheetTitle>
+          <SheetDescription>Description</SheetDescription>
+        </SheetHeader>
+        <SheetFooter>Footer</SheetFooter>
+      </SheetContent>
+    </Sheet>,
+  ],
   ["skeleton", "skeleton", <Skeleton key="a" />],
   ["switch", "switch-thumb", <Switch key="a" />],
   [
@@ -251,6 +272,35 @@ describe("every primitive renders", () => {
   it.each(CASES)("%s", (_file, slot, tree) => {
     render(tree);
     expect(document.querySelector(`[data-slot="${slot}"]`)).not.toBeNull();
+  });
+
+  it("sheet is a dialog named by its title", () => {
+    render(
+      <Sheet open>
+        <SheetContent>
+          <SheetTitle>Edit theme</SheetTitle>
+          <SheetDescription>Description</SheetDescription>
+        </SheetContent>
+      </Sheet>,
+    );
+    expect(screen.getByRole("dialog", { name: "Edit theme" })).toBeTruthy();
+    const overlay = document.querySelector('[data-slot="sheet-overlay"]');
+    expect(overlay?.className).toMatch(/\bbg-/);
+  });
+
+  it("sheet with a clear overlay paints no background", () => {
+    render(
+      <Sheet open>
+        <SheetContent overlay="clear">
+          <SheetTitle>Edit theme</SheetTitle>
+          <SheetDescription>Description</SheetDescription>
+        </SheetContent>
+      </Sheet>,
+    );
+    const overlay = document.querySelector('[data-slot="sheet-overlay"]');
+    expect(overlay).not.toBeNull();
+    expect(overlay?.className).not.toMatch(/\bbg-/);
+    expect(overlay?.className).not.toMatch(/backdrop-blur/);
   });
 
   it("sonner", () => {
