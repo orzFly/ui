@@ -1,6 +1,7 @@
 import {
   AppWindowIcon,
   FileArchiveIcon,
+  FileDiffIcon,
   FileHeadphoneIcon,
   FileIcon,
   FilePlayIcon,
@@ -13,6 +14,7 @@ import {
   isAudioFile,
   isHtmlFile,
   isImageFile,
+  isPatchFile,
   isTextFile,
   isVideoFile,
 } from "../file-kind.ts";
@@ -30,6 +32,7 @@ import {
 export function fileIcon(file: FileLike) {
   if (isImageFile(file)) return ImageIcon;
   if (isHtmlFile(file)) return AppWindowIcon;
+  if (isPatchFile(file)) return FileDiffIcon;
   if (isTextFile(file)) return FileTextIcon;
   if (isArchiveFile(file)) return FileArchiveIcon;
   // `FileHeadphone` and `FilePlay` are lucide's current names for the audio

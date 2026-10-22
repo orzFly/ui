@@ -14,6 +14,8 @@ const FILES = [
   ["notes.txt", "text/plain", "lucide-file-text"],
   // TypeScript source, not MPEG transport stream.
   ["index.ts", "application/octet-stream", "lucide-file-text"],
+  ["fix.patch", "text/x-patch", "lucide-file-diff"],
+  ["fix.diff", "application/octet-stream", "lucide-file-diff"],
   ["bundle.zip", "application/zip", "lucide-file-archive"],
   ["take.mp3", "audio/mpeg", "lucide-file-headphone"],
   ["clip.mp4", "video/mp4", "lucide-file-play"],

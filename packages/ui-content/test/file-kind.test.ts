@@ -6,6 +6,7 @@ import {
   isHtmlFile,
   isImageFile,
   isMarkdownFile,
+  isPatchFile,
   isPdfFile,
   isTextEmbed,
   isTextFile,
@@ -73,6 +74,23 @@ describe("isMarkdownFile", () => {
     expect(isMarkdownFile(file("REPORT.MARKDOWN", "text/plain"))).toBe(true);
     expect(isMarkdownFile(file("notes", "text/markdown"))).toBe(true);
     expect(isMarkdownFile(file("notes.txt", "text/plain"))).toBe(false);
+  });
+});
+
+describe("isPatchFile", () => {
+  it("trusts the declared diff types, whatever the name", () => {
+    expect(isPatchFile(file("fix", "text/x-patch"))).toBe(true);
+    expect(isPatchFile(file("fix.txt", "text/x-diff"))).toBe(true);
+  });
+
+  it("falls back to .patch/.diff only for generic types", () => {
+    expect(isPatchFile(file("fix.patch", "application/octet-stream"))).toBe(
+      true,
+    );
+    expect(isPatchFile(file("FIX.DIFF", ""))).toBe(true);
+    // A declared type outranks the name, as it does for every other kind.
+    expect(isPatchFile(file("fix.patch", "text/plain"))).toBe(false);
+    expect(isPatchFile(file("diff.txt", ""))).toBe(false);
   });
 });
 

@@ -106,6 +106,32 @@ code fence inside an embedded document still renders.
 `<ContentRenderers maxDepth>` stores a limit for renderers to read with `useContentMaxDepth()`.
 `<Content>` does not enforce it; each renderer that recurses decides what its limit means.
 
+## Title bar
+
+A surface with a title bar of its own (a card, a dialog) can lend a spot in it to the renderer
+drawing its file, for controls that belong next to the surface's own:
+
+```tsx
+import { ContentTitleBar, useContentTitleBar } from "@orz/ui-content";
+
+// The surface: a spot in its bar, and the slot around its body.
+const [bar, setBar] = useState<HTMLElement | null>(null);
+<span ref={setBar} className="contents" />
+<ContentTitleBar source={file} target={bar}>
+  <Content source={file} placement="viewer" />
+</ContentTitleBar>
+
+// A renderer: portal the controls there, or draw a bar of its own.
+const bar = useContentTitleBar(source);
+if (bar === undefined) return <FramedWithOwnBar />;
+return <>{bar !== null && createPortal(controls, bar)}{body}</>;
+```
+
+`useContentTitleBar` returns the element, `null` while the bar is still mounting, or `undefined`
+when no surface lent one for this source. The slot is keyed by the source object, not by nesting:
+only the renderer drawing that exact source sees it, so a fence or an embed inside the file, being
+a source of its own, never takes over the surface's bar. `attachmentCard` lends its card's bar.
+
 ## Loading text
 
 ```tsx
@@ -142,6 +168,7 @@ import { isImageFile, isTextFile, isMarkdownFile, formatSize } from "@orz/ui-con
 
 isImageFile(f)  isTextFile(f)     isMarkdownFile(f)  isHtmlFile(f)
 isPdfFile(f)    isArchiveFile(f)  isAudioFile(f)     isVideoFile(f)
+isPatchFile(f)  // text/x-patch, text/x-diff, or .patch / .diff under a generic type
 isTextEmbed(f)  // a text file that is not also an image (.svg is both)
 formatSize(bytes) // "512 B", "1.5 KB", "20 KB"
 TEXT_PREVIEW_MAX_BYTES // 1 MiB: the text a surface draws at most, here and in `codeContent`
@@ -198,6 +225,7 @@ const RENDERERS = [
   audioContent(),
   mermaidContent,
   markdownContent(),
+  patchContent,
   codeContent,
 ];
 
@@ -243,7 +271,8 @@ to run in a sandboxed frame, so serve PDFs from a URL that cannot be mistaken fo
   body. A file of unknown size is not capped here; the renderer `Next` reaches
   decides once the text is loaded (`codeContent` draws text over 1 MiB without highlighting);
 - otherwise it draws the frame with the size, a download button and, inside a provider, an expand
-  button that opens the viewer. Loading and load errors are drawn by the renderer `Next` reaches.
+  button that opens the viewer. Loading and load errors are drawn by the renderer `Next` reaches,
+  which may also put controls in the frame's title bar (`useContentTitleBar`).
 
 ### The viewer
 
@@ -291,11 +320,12 @@ that holds `{ items, index } | null` itself.
   optional ISO `createdAt`) with their icon, size, time and a download button. A list of eight or
   more keeps its newest five rows and folds the rest behind a toggle. A plain click on a row opens
   the viewer on the whole list. An empty list renders nothing.
-- **`<DocumentCard name icon? meta? headerActions? downloadUrl? onExpand? collapsedClassName?>`** is
-  the frame `attachmentCard` draws, for anything else that wants it: a header with the name, a
+- **`<DocumentCard name icon? meta? headerActions? titleBarFor? downloadUrl? onExpand? collapsedClassName?>`**
+  is the frame `attachmentCard` draws, for anything else that wants it: a header with the name, a
   muted note, extra actions, download and expand, around a height-capped body that offers "Show full
-  document" when it overflows. Without `onExpand` it draws no expand controls.
-- **`fileIcon(file)`** is the lucide icon for a file's kind: image, HTML, text, archive, audio,
-  video, else a generic file.
+  document" when it overflows. Without `onExpand` it draws no expand controls. With `titleBarFor`,
+  it lends a spot in the header, after the name, to the renderer drawing that source.
+- **`fileIcon(file)`** is the lucide icon for a file's kind: image, HTML, patch, text, archive,
+  audio, video, else a generic file.
 
 `@orz/ui-markdown`'s `attachmentLinks` plugin draws markdown links to files as `AttachmentLink`s.

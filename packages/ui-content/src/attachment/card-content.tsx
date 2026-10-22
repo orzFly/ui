@@ -76,6 +76,7 @@ export function attachmentCard(
         name={source.name}
         meta={meta}
         downloadUrl={source.url}
+        titleBarFor={source}
         // Only when the viewer would draw it: a text file of unknown size
         // would open on the download pane.
         onExpand={

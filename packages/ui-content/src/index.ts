@@ -6,6 +6,7 @@ export {
   isHtmlFile,
   isImageFile,
   isMarkdownFile,
+  isPatchFile,
   isPdfFile,
   isTextEmbed,
   isTextFile,
@@ -22,6 +23,7 @@ export {
   useContentMaxDepth,
 } from "./registry.tsx";
 export { type SourceText, useSourceText } from "./source-text.ts";
+export { ContentTitleBar, useContentTitleBar } from "./title-bar.tsx";
 export type {
   ContentDisplay,
   ContentProps,

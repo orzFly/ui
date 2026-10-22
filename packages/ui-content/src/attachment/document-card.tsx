@@ -7,6 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { ContentTitleBar } from "../title-bar.tsx";
+import type { ContentSource } from "../types.ts";
 import { fileIcon } from "./icon.ts";
 
 export type DocumentCardProps = {
@@ -17,6 +19,11 @@ export type DocumentCardProps = {
   meta?: ReactNode;
   /** Extra header controls, rendered before download/expand. */
   headerActions?: ReactNode;
+  /**
+   * The source the body draws, when its renderer may put controls in the header
+   * (`useContentTitleBar`). They sit after the name, before `headerActions`.
+   */
+  titleBarFor?: ContentSource;
   downloadUrl?: string;
   /** Opens the full document; without it the card draws no expand controls. */
   onExpand?: () => void;
@@ -36,6 +43,7 @@ export function DocumentCard({
   icon,
   meta,
   headerActions,
+  titleBarFor,
   downloadUrl,
   onExpand,
   collapsedClassName = "max-h-80",
@@ -45,6 +53,7 @@ export function DocumentCard({
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [overflowing, setOverflowing] = useState(false);
+  const [titleBar, setTitleBar] = useState<HTMLElement | null>(null);
 
   // The cap sits on the outer box, so growth of the inner content (lazy
   // code block upgrade, images loading) never resizes the observed border
@@ -95,6 +104,9 @@ export function DocumentCard({
             {title}
           </span>
         )}
+        {titleBarFor !== undefined && (
+          <span ref={setTitleBar} className="contents" />
+        )}
         {headerActions}
         {downloadUrl !== undefined && (
           <a
@@ -122,7 +134,13 @@ export function DocumentCard({
         className={cn("relative overflow-hidden", collapsedClassName)}
       >
         <div ref={innerRef} className="p-3">
-          {children}
+          {titleBarFor === undefined ? (
+            children
+          ) : (
+            <ContentTitleBar source={titleBarFor} target={titleBar}>
+              {children}
+            </ContentTitleBar>
+          )}
         </div>
         {overflowing &&
           (onExpand ? (

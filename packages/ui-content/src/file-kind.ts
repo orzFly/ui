@@ -70,6 +70,19 @@ export function isMarkdownFile(file: FileLike): boolean {
   );
 }
 
+// What browsers on Linux declare for .patch and .diff, from shared-mime-info.
+const PATCH_TYPES = new Set(["text/x-patch", "text/x-diff"]);
+
+/**
+ * A unified diff, by declared type, or by filename when the type is generic: a `.patch` someone
+ * uploaded as text/plain keeps the plain text view it asked for.
+ */
+export function isPatchFile(file: FileLike): boolean {
+  const type = mimeOf(file);
+  if (PATCH_TYPES.has(type)) return true;
+  return hasGenericType(type) && /\.(patch|diff)$/i.test(file.name);
+}
+
 export function isHtmlFile(file: FileLike): boolean {
   const type = mimeOf(file);
   if (type === "text/html" || type === "application/xhtml+xml") return true;
