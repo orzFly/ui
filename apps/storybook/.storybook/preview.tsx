@@ -1,84 +1,126 @@
-import { builtinThemes, type ColorScheme, schemesOf } from "@orz/themes";
+import { builtinThemes } from "@orz/themes";
 import { Toaster } from "@orz/ui/components/sonner";
 import {
   createThemeStore,
   type ResolvedTheme,
-  type ThemePick,
-  type ThemePref,
+  type ThemePreview,
   ThemeProvider,
+  type ThemeStore,
 } from "@orz/ui/theme";
 import { DocsContainer } from "@storybook/addon-docs/blocks";
 import type { Decorator, Preview } from "@storybook/react-vite";
 import { type ComponentProps, useEffect, useSyncExternalStore } from "react";
+import {
+  GLOBALS_UPDATED,
+  SET_GLOBALS,
+  UPDATE_GLOBALS,
+} from "storybook/internal/core-events";
 import { addons } from "storybook/preview-api";
+import {
+  changedGlobals,
+  INITIAL_GLOBALS,
+  KEY_OF,
+  prefOf,
+  type ThemeGlobals,
+  urlGlobals,
+} from "./globals.ts";
 import { storybookTheme } from "./storybook-theme.ts";
-import { THEME_EVENT } from "./theme-channel.ts";
+import { PREVIEW_EVENT, type PreviewMessage } from "./theme-channel.ts";
 import "./preview.css";
 
+// The globals are the committed state: a stored pref would be a second one,
+// and another tab's pick would repaint this canvas but not its toolbar or URL.
 const themes = createThemeStore({
   storageKey: "orz-storybook-theme",
+  persistPref: false,
   themes: builtinThemes,
   terminalThemes: builtinThemes,
 });
+const DEFAULT_THEME = builtinThemes[0].id;
 
-const SCHEME_TITLE: Record<ColorScheme, string> = {
-  light: "Light",
-  dark: "Dark",
+/** Per global, the string this side last wrote or applied; anything equal to it is skipped. */
+const last: ThemeGlobals = {
+  ...INITIAL_GLOBALS,
+  ...urlGlobals(location.search),
+};
+themes.setPref(prefOf(last, DEFAULT_THEME));
+
+function applyGlobals(globals: Readonly<Record<string, unknown>>) {
+  let moved = false;
+  for (const key of Object.values(KEY_OF)) {
+    const value = globals[key];
+    if (typeof value === "string" && value !== last[key]) {
+      last[key] = value;
+      moved = true;
+    }
+  }
+  if (moved) themes.setPref(prefOf(last, DEFAULT_THEME));
+}
+
+function emitPreview(preview: ThemePreview | null) {
+  const message: PreviewMessage = { from: "preview", preview };
+  addons.getChannel().emit(PREVIEW_EVENT, message);
+}
+
+// What ThemeProvider hands to a ThemeMenu inside a story: a pick there writes
+// the globals, so the toolbar, the chrome and the URL follow it.
+const facade: ThemeStore = {
+  ...themes,
+  setPref(next) {
+    const before = themes.getPref();
+    themes.setPref(next);
+    const changed = changedGlobals(
+      before,
+      themes.getPref(),
+      last,
+      DEFAULT_THEME,
+    );
+    if (Object.keys(changed).length > 0) {
+      Object.assign(last, changed);
+      // What the preview's own useGlobals sends.
+      addons.getChannel().emit(UPDATE_GLOBALS, { globals: changed });
+    } else {
+      // The manager's chrome may still show this side's hover.
+      emitPreview(null);
+    }
+  },
+  preview(next) {
+    themes.preview(next);
+    emitPreview(next);
+  },
 };
 
-// Toolbar values must be plain strings, so each item is `id_scheme` (plus
-// `_variant`), and prefOf turns the two globals back into a pref. Not `:`:
-// Storybook drops a URL global holding anything but [a-zA-Z0-9 _-], so a
-// reload would lose the pick.
-const SEPARATOR = "_";
-const palettes = builtinThemes.flatMap((theme) =>
-  schemesOf(theme).map((scheme) => ({
-    value: `${theme.id}${SEPARATOR}${scheme}`,
-    title: `${theme.label} ${theme[scheme]?.label ?? SCHEME_TITLE[scheme]}`,
-    hasAmoled: theme[scheme]?.variants?.amoled !== undefined,
-  })),
-);
-const THEME_ITEMS = [
-  { value: "system", title: "System" },
-  ...palettes.map(({ value, title }) => ({ value, title })),
-  ...palettes
-    .filter((p) => p.hasAmoled)
-    .map(({ value, title }) => ({
-      value: `${value}${SEPARATOR}amoled`,
-      title: `${title} AMOLED`,
-    })),
-];
-const TERMINAL_ITEMS = [
-  { value: "follow", title: "Follow theme" },
-  ...palettes.map(({ value, title }) => ({ value, title })),
-];
-
-function pickOf(value: string): ThemePick {
-  const [theme, mode, variant] = value.split(SEPARATOR);
-  const pick: ThemePick = { theme, mode: mode as ColorScheme };
-  if (variant) pick.variant = variant;
-  return pick;
-}
-
-function prefOf(theme: string, terminal: string): ThemePref {
-  const pref: ThemePref = {
-    ui:
-      theme === "system"
-        ? { theme: builtinThemes[0].id, mode: "system" }
-        : pickOf(theme),
+void addons.ready().then((channel) => {
+  // Ahead of the story's re-render, so a commit repaints the canvas with no
+  // frame of the old theme.
+  // Only this preview's own globals. A docs page whose stories render in
+  // iframes (ThemeMenu's) hosts a preview per story, and each one's channel
+  // posts its own SET_GLOBALS, at the initial globals, to this window. The
+  // channel calls a listener with the event as `this`, and an event's `from`
+  // is the sending channel's id.
+  const sender = (channel as unknown as { sender: string }).sender;
+  const onGlobals = function (
+    this: { from?: string },
+    { globals }: { globals: Record<string, unknown> },
+  ) {
+    if (this.from === sender) applyGlobals(globals);
   };
-  if (terminal !== "follow") pref.terminal = pickOf(terminal);
-  return pref;
-}
+  channel.on(SET_GLOBALS, onGlobals);
+  channel.on(GLOBALS_UPDATED, onGlobals);
+  channel.on(PREVIEW_EVENT, (message: PreviewMessage) => {
+    if (message.from !== "preview") themes.preview(message.preview);
+  });
+});
 
 const withTheme: Decorator = (Story, context) => {
-  const theme = (context.globals.theme as string | undefined) ?? "system";
-  const terminal = (context.globals.terminal as string | undefined) ?? "follow";
+  const { theme, terminal } = context.globals;
+  // The channel listeners above apply a change first; this is the fallback
+  // for a story's own globals.
   useEffect(() => {
-    themes.setPref(prefOf(theme, terminal));
+    applyGlobals({ theme, terminal });
   }, [theme, terminal]);
   return (
-    <ThemeProvider store={themes}>
+    <ThemeProvider store={facade}>
       <Story />
       <Toaster />
     </ThemeProvider>
@@ -87,12 +129,6 @@ const withTheme: Decorator = (Story, context) => {
 
 // The store has a UI slot, so it always resolves a UI theme.
 const resolvedTheme = () => themes.getResolved() as ResolvedTheme;
-
-void addons.ready().then((channel) => {
-  const send = () => channel.emit(THEME_EVENT, storybookTheme(resolvedTheme()));
-  send();
-  themes.subscribe(send);
-});
 
 // Docs pages are drawn by Storybook's own theme, which knows nothing of the
 // toolbar; left alone it stays light under a dark @orz/ui theme and the
@@ -103,28 +139,13 @@ function ThemedDocsContainer(props: ComponentProps<typeof DocsContainer>) {
 }
 
 const preview: Preview = {
+  // No `toolbar`: the pickers are the ThemeMenus manager.ts puts there.
+  // Storybook still takes both globals from the URL and from updateGlobals.
   globalTypes: {
-    theme: {
-      description: "Theme",
-      toolbar: {
-        title: "Theme",
-        icon: "paintbrush",
-        dynamicTitle: true,
-        items: THEME_ITEMS,
-      },
-    },
-    terminal: {
-      description: "Terminal theme",
-      toolbar: {
-        title: "Terminal",
-        // Storybook ships no terminal icon; ⌘ is the nearest shell glyph.
-        icon: "command",
-        dynamicTitle: true,
-        items: TERMINAL_ITEMS,
-      },
-    },
+    theme: { description: "Theme" },
+    terminal: { description: "Terminal theme" },
   },
-  initialGlobals: { theme: "system", terminal: "follow" },
+  initialGlobals: INITIAL_GLOBALS,
   parameters: {
     docs: { container: ThemedDocsContainer },
     options: {

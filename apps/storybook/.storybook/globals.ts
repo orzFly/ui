@@ -55,6 +55,24 @@ export function decodePick(
   return pick;
 }
 
+/**
+ * The theme globals in a Storybook URL's `globals` parameter
+ * (`key:value;key:value`), which the manager's URL and the preview iframe's
+ * both carry, so either side can paint before the first globals event.
+ */
+export function urlGlobals(search: string): ThemeGlobals {
+  const out: ThemeGlobals = {};
+  const raw = new URLSearchParams(search).get("globals") ?? "";
+  for (const pair of raw.split(";")) {
+    const colon = pair.indexOf(":");
+    const key = pair.slice(0, colon);
+    if (colon > 0 && (key === "theme" || key === "terminal")) {
+      out[key] = pair.slice(colon + 1);
+    }
+  }
+  return out;
+}
+
 /** Both slots from Storybook's globals; a missing global reads as its initial value. */
 export function prefOf(
   globals: Readonly<Record<string, unknown>>,

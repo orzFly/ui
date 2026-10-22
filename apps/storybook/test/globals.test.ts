@@ -12,6 +12,7 @@ import {
   encodePick,
   prefOf,
   type Slot,
+  urlGlobals,
 } from "../.storybook/globals.ts";
 
 const DEFAULT = builtinThemes[0].id;
@@ -166,6 +167,30 @@ describe("round trip", () => {
       }
     }
     expect(encodePick(undefined, "terminal", DEFAULT)).toBe("follow");
+  });
+});
+
+describe("urlGlobals", () => {
+  it("reads the theme keys out of Storybook's globals parameter", () => {
+    expect(
+      urlGlobals(
+        "?path=/story/x&globals=backgrounds.value:dark;theme:github_system_amoled;terminal:custom-ab12cd34_dark",
+      ),
+    ).toEqual({
+      theme: "github_system_amoled",
+      terminal: "custom-ab12cd34_dark",
+    });
+  });
+
+  it("reads the encoded form an iframe URL carries", () => {
+    expect(urlGlobals("?id=x&globals=theme%3Anord_dark")).toEqual({
+      theme: "nord_dark",
+    });
+  });
+
+  it("is empty without the parameter", () => {
+    expect(urlGlobals("")).toEqual({});
+    expect(urlGlobals("?globals=")).toEqual({});
   });
 });
 
