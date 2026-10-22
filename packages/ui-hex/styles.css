@@ -21,6 +21,7 @@
   --hex-hover: var(--accent);
   --hex-label: var(--muted-foreground);
   --hex-faded: color-mix(in oklch, var(--muted-foreground) 70%, transparent);
+  --hex-modified: var(--destructive);
   /* Not documented as tokens: cell geometry the panes and header share. */
   --hex-cell-pad: 0.25rem;
   --hex-group-gap: 0.6rem;
@@ -205,6 +206,70 @@
 }
 .orz-hex-cell[data-state="error"] {
   color: var(--destructive);
+}
+
+/* HexEditor */
+
+/* Wins over the faded rule above: a typed 00 is an edit, not padding. */
+.orz-hex .orz-hex-cell[data-modified]:not([data-state]) {
+  color: var(--hex-modified);
+}
+
+/* In the hex pane the caret marks the digit the next keystroke writes. */
+.orz-hex:focus [data-pane="hex"][data-caret="0"],
+.orz-hex:focus [data-pane="hex"][data-caret="1"] {
+  --cell-caret: none;
+}
+.orz-hex-nibble {
+  display: inline-block;
+}
+.orz-hex:focus [data-caret="0"] .orz-hex-nibble:first-child,
+.orz-hex:focus [data-caret="1"] .orz-hex-nibble:last-child {
+  box-shadow: inset 0 -2px 0 var(--cell-edge);
+}
+
+/* Insert mode: a bar before the cell, where the next byte goes. Mid-byte,
+   the low digit is still overwritten, so it keeps the digit underline. */
+.orz-hex[data-mode="insert"]:focus [data-caret]:not([data-caret="1"]) {
+  --cell-caret: inset 2px 0 0 var(--cell-edge);
+}
+.orz-hex[data-mode="insert"]:focus [data-caret="0"] .orz-hex-nibble {
+  box-shadow: none;
+}
+
+.orz-hex-cell[data-append][data-pane="hex"] .orz-hex-cell-content {
+  width: calc(2ch + var(--cell-pad) + var(--cell-pad-end));
+}
+.orz-hex:focus [data-append][data-caret] {
+  --cell-caret: inset 0 -2px 0 var(--cell-edge);
+}
+
+.orz-hex-status-end {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.orz-hex-mode {
+  padding: 0 0.375rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius, 0.5rem) - 0.25rem);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1rem;
+  cursor: pointer;
+}
+.orz-hex-mode[aria-pressed="true"] {
+  background: var(--background);
+  color: var(--foreground);
+}
+.orz-hex-mode:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.orz-hex-mode:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
 }
 
 .orz-hex-status {

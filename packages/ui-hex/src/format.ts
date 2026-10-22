@@ -23,6 +23,8 @@ export interface TextDecoding {
     rowStart: number,
     controlCodes: ControlCodes,
   ): TextCell[];
+  /** The bytes an editor writes for typed or pasted text; `null` when the text is not representable. */
+  encode?(text: string): Uint8Array | null;
 }
 
 const CONTROL_NAMES =

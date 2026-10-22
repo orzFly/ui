@@ -37,16 +37,19 @@ export function navigate(
 
   if (key === "Escape") return null;
   if (mod && (key === "a" || key === "A")) {
+    // Every byte, but not an editor's append cell past the last one.
+    const last = Math.min(maxOffset, layout.size - 1);
     const pane = selection?.pane ?? layout.pane ?? "hex";
     if (
-      selection &&
-      selection.anchor === 0 &&
-      selection.focus === maxOffset &&
-      selection.pane === pane
+      last < 0 ||
+      (selection &&
+        selection.anchor === 0 &&
+        selection.focus === last &&
+        selection.pane === pane)
     ) {
       return selection;
     }
-    return { anchor: 0, focus: maxOffset, pane };
+    return { anchor: 0, focus: last, pane };
   }
 
   const from = selection?.focus;

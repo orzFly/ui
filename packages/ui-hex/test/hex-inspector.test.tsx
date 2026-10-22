@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { HexInspector } from "../src/hex-inspector.tsx";
@@ -100,6 +106,35 @@ describe("HexInspector", () => {
     expect(signals[0]?.aborted).toBe(true);
     await waitFor(() =>
       expect(row(container, "Uint8").dd.textContent).toBe("5"),
+    );
+  });
+
+  it("re-reads an unchanged selection when the source changes", async () => {
+    const bytes = BYTES.slice();
+    let onChange: (() => void) | undefined;
+    const changing: ByteSource = {
+      size: bytes.length,
+      read: (offset, length) => bytes.subarray(offset, offset + length),
+      subscribe(listener) {
+        onChange = listener;
+        return () => {
+          onChange = undefined;
+        };
+      },
+    };
+    const { container } = render(
+      <HexInspector
+        source={changing}
+        selection={{ anchor: 2, focus: 2, pane: "hex" }}
+      />,
+    );
+    await waitFor(() =>
+      expect(row(container, "Uint8").dd.textContent).toBe("3"),
+    );
+    bytes[2] = 0x7f;
+    act(() => onChange?.());
+    await waitFor(() =>
+      expect(row(container, "Uint8").dd.textContent).toBe("127"),
     );
   });
 });

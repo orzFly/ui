@@ -10,7 +10,10 @@ export interface PageCacheOptions {
 
 export interface PageCache {
   readonly pageSize: number;
-  /** The bytes, when every covering page is available synchronously; otherwise `undefined`. */
+  /**
+   * The bytes, when every covering page is available synchronously or the
+   * source can `peek` them; otherwise `undefined`.
+   */
   get(offset: number, length: number): Uint8Array | undefined;
   /** Makes sure these pages are loading; pages already in flight are shared. */
   request(firstPage: number, lastPage: number): void;
@@ -23,6 +26,12 @@ export interface PageCache {
   /** Changes whenever what `get` or `status` return may have changed. */
   version(): number;
   invalidate(): void;
+  /**
+   * One page's bytes, stored like a requested page. Callers of one page share
+   * a read with each other and with `request`; `signal` ends only its own
+   * caller's wait, and the read is aborted once every caller has given up.
+   */
+  load(page: number, signal?: AbortSignal): Promise<Uint8Array>;
   /** The whole range, bypassing the cache; used by copy. */
   readRange(
     offset: number,
@@ -33,7 +42,18 @@ export interface PageCache {
 
 interface Flight {
   controller: AbortController;
+  promise: Promise<Uint8Array>;
+  /** Callers of `load` still waiting for it. */
+  waiters: number;
+  /** Wanted by `request`; a flight only `load` wants ends with its last waiter. */
+  requested: boolean;
 }
+
+function abortError(signal: AbortSignal): unknown {
+  return signal.reason ?? new DOMException("Aborted", "AbortError");
+}
+
+type Fetched = { bytes: Uint8Array } | { flight: Flight } | { error: unknown };
 
 export function createPageCache(
   source: ByteSource,
@@ -68,44 +88,50 @@ export function createPageCache(
   };
 
   /** Reads `page`; a sync source's bytes come back at once and are not stored. */
-  const load = (page: number): Uint8Array | undefined => {
+  const fetchPage = (page: number, requested: boolean): Fetched => {
     const start = page * pageSize;
     const length = Math.min(pageSize, source.size - start);
-    if (length <= 0) return undefined;
+    if (length <= 0) return { bytes: new Uint8Array(0) };
     const controller = new AbortController();
     let result: Uint8Array | Promise<Uint8Array>;
     try {
       result = source.read(start, length, controller.signal);
     } catch (error) {
       fail(page, error);
-      return undefined;
+      return { error };
     }
     if (result instanceof Uint8Array) {
       sync = true;
       errors.delete(page);
-      return result;
+      return { bytes: result };
     }
     sync = false;
-    const flight: Flight = { controller };
-    flights.set(page, flight);
-    errors.delete(page);
-    result.then(
+    const flight = { controller, waiters: 0, requested } as Flight;
+    flight.promise = result.then(
       (bytes) => {
-        if (flights.get(page) !== flight) return;
-        flights.delete(page);
-        pages.set(page, bytes);
-        while (pages.size > maxPages) {
-          pages.delete(pages.keys().next().value as number);
+        if (flights.get(page) === flight) {
+          flights.delete(page);
+          pages.set(page, bytes);
+          while (pages.size > maxPages) {
+            pages.delete(pages.keys().next().value as number);
+          }
+          notify();
         }
-        notify();
+        return bytes;
       },
       (error: unknown) => {
-        if (flights.get(page) !== flight) return;
-        flights.delete(page);
-        fail(page, error);
+        if (flights.get(page) === flight) {
+          flights.delete(page);
+          fail(page, error);
+        }
+        throw error;
       },
     );
-    return undefined;
+    // `load`'s callers get the rejection; with none, it would go unhandled.
+    flight.promise.catch(() => {});
+    flights.set(page, flight);
+    errors.delete(page);
+    return { flight };
   };
 
   /** A direct read from a source that has answered synchronously so far. */
@@ -152,7 +178,7 @@ export function createPageCache(
       const first = Math.floor(offset / pageSize);
       const last = Math.floor((end - 1) / pageSize);
       if (sync === undefined && !flights.has(first) && !errors.has(first)) {
-        load(first);
+        fetchPage(first, true);
       }
       if (sync) {
         const bytes = readSync(offset, end - offset);
@@ -160,14 +186,14 @@ export function createPageCache(
       }
       if (first === last) {
         const bytes = cachedPage(first);
-        if (!bytes) return undefined;
+        if (!bytes) return source.peek?.(offset, end - offset);
         const at = offset - first * pageSize;
         return bytes.subarray(at, at + end - offset);
       }
       const out = new Uint8Array(end - offset);
       for (let page = first; page <= last; page++) {
         const bytes = cachedPage(page);
-        if (!bytes) return undefined;
+        if (!bytes) return source.peek?.(offset, end - offset);
         const pageStart = page * pageSize;
         const from = Math.max(offset, pageStart) - pageStart;
         const to = Math.min(end, pageStart + bytes.length) - pageStart;
@@ -187,19 +213,22 @@ export function createPageCache(
           retried = errors.delete(page) || retried;
           continue;
         }
-        if (pages.has(page) || flights.has(page)) continue;
-        load(page);
+        const flight = flights.get(page);
+        if (flight) flight.requested = true;
+        if (pages.has(page) || flight) continue;
+        fetchPage(page, true);
       }
       if (retried) notify();
     },
 
     retain(firstPage, lastPage) {
       let aborted = false;
-      for (const page of [...flights.keys()]) {
-        if (page < firstPage - 1 || page > lastPage + 1) {
-          abort(page);
-          aborted = true;
-        }
+      for (const [page, flight] of [...flights]) {
+        if (page >= firstPage - 1 && page <= lastPage + 1) continue;
+        flight.requested = false;
+        if (flight.waiters > 0) continue;
+        abort(page);
+        aborted = true;
       }
       // pending() may have just turned false with nothing left to load.
       if (aborted) notify();
@@ -225,7 +254,10 @@ export function createPageCache(
         if (!listeners.delete(listener) || listeners.size > 0) return;
         unsubscribeSource?.();
         unsubscribeSource = undefined;
-        for (const page of [...flights.keys()]) abort(page);
+        for (const [page, flight] of [...flights]) {
+          flight.requested = false;
+          if (flight.waiters === 0) abort(page);
+        }
       };
     },
 
@@ -237,6 +269,55 @@ export function createPageCache(
       errors.clear();
       if (wanted) cache.request(wanted[0], wanted[1]);
       notify();
+    },
+
+    load(page, signal) {
+      if (signal?.aborted) return Promise.reject(abortError(signal));
+      const cached = cachedPage(page);
+      if (cached) return Promise.resolve(cached);
+      let flight = flights.get(page);
+      if (!flight) {
+        const fetched = fetchPage(page, false);
+        if ("bytes" in fetched) return Promise.resolve(fetched.bytes);
+        if ("error" in fetched) return Promise.reject(fetched.error);
+        flight = fetched.flight;
+      }
+      const shared = flight;
+      shared.waiters++;
+      return new Promise<Uint8Array>((resolve, reject) => {
+        let done = false;
+        const finish = () => {
+          done = true;
+          shared.waiters--;
+          signal?.removeEventListener("abort", onAbort);
+        };
+        const onAbort = () => {
+          if (done) return;
+          finish();
+          reject(abortError(signal as AbortSignal));
+          if (
+            flights.get(page) === shared &&
+            shared.waiters === 0 &&
+            !shared.requested
+          ) {
+            abort(page);
+            notify();
+          }
+        };
+        signal?.addEventListener("abort", onAbort, { once: true });
+        shared.promise.then(
+          (bytes) => {
+            if (done) return;
+            finish();
+            resolve(bytes);
+          },
+          (error: unknown) => {
+            if (done) return;
+            finish();
+            reject(error);
+          },
+        );
+      });
     },
 
     async readRange(offset, length, signal) {

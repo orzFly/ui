@@ -7,6 +7,12 @@ export interface ByteSource {
     length: number,
     signal?: AbortSignal,
   ): Uint8Array | Promise<Uint8Array>;
+  /**
+   * The bytes when they are at hand with no I/O, else `undefined`; never
+   * starts a read. A view redraws from it after an edit instead of
+   * flashing placeholders while it re-reads pages the source already has.
+   */
+  peek?(offset: number, length: number): Uint8Array | undefined;
   /** Content or size changed: the view drops its cache and re-reads what is visible. */
   subscribe?(onChange: () => void): () => void;
 }
@@ -17,8 +23,11 @@ function clampRange(offset: number, length: number, size: number) {
 }
 
 /** A sync source over `bytes`; reads are subarrays, never copies. */
-export function bytesSource(bytes: Uint8Array): ByteSource {
+export function bytesSource(
+  bytes: Uint8Array,
+): ByteSource & { readonly bytes: Uint8Array } {
   return {
+    bytes,
     size: bytes.length,
     read(offset, length) {
       const [start, end] = clampRange(offset, length, bytes.length);
@@ -31,8 +40,9 @@ function abortError(signal: AbortSignal): unknown {
   return signal.reason ?? new DOMException("Aborted", "AbortError");
 }
 
-export function blobSource(blob: Blob): ByteSource {
+export function blobSource(blob: Blob): ByteSource & { readonly blob: Blob } {
   return {
+    blob,
     size: blob.size,
     async read(offset, length, signal) {
       if (signal?.aborted) throw abortError(signal);
