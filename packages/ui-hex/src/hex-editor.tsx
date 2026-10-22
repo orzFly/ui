@@ -61,6 +61,13 @@ export interface HexEditorProps extends Omit<HexViewProps, "source"> {
 
 const utf8 = new TextEncoder();
 const MODE_NAMES = { insert: "Insert mode", overwrite: "Overwrite mode" };
+const NOT_CUT = "Copied, not cut: the text would not paste back as these bytes";
+
+function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
 
 const isApple = () =>
   typeof navigator !== "undefined" &&
@@ -321,9 +328,20 @@ export function HexEditor({
           return;
         }
         const version = documentVersion(doc);
-        ctx.copy(event, () => {
+        ctx.copy(event, ({ bytes, clipboard }) => {
           // An async copy lands later; an edit in between moved the bytes.
           if (documentVersion(doc) !== version) return;
+          // Text alone may not paste back as the bytes (a dot for 00), and a
+          // cut that deletes what the clipboard lacks loses it.
+          const back = clipboardBytes(
+            clipboard,
+            current.pane,
+            editState(ctx).encode,
+          );
+          if (!back || !sameBytes(back, bytes)) {
+            ctx.announce(NOT_CUT);
+            return;
+          }
           run(
             {
               kind: "edit",

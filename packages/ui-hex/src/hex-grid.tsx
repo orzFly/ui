@@ -42,6 +42,7 @@ import {
   hexByte,
   MAX_COPY_BYTES,
 } from "./format.ts";
+import { HEX_BYTES_TYPE, type HexClipboard, hexDigits } from "./hex-paste.ts";
 import { navigate } from "./navigation.ts";
 import { createPageCache, type PageCache } from "./page-cache.ts";
 import {
@@ -119,6 +120,12 @@ export interface HexViewProps {
   "aria-label"?: string;
 }
 
+/** What a copy put on the clipboard, and the selected bytes it came from. */
+export interface HexCopied {
+  bytes: Uint8Array;
+  clipboard: HexClipboard;
+}
+
 /** What the grid hands an editor: the pieces of the view its commands drive. */
 export interface GridContext {
   cache: PageCache;
@@ -129,7 +136,7 @@ export interface GridContext {
   /** Speaks a selection like a keyboard move does, or a message. */
   announce(what: HexSelection | null | string): void;
   /** The copy path for the selection, excluding the append cell; `onCopied` runs once the text is on the clipboard. */
-  copy(event: ClipboardEvent, onCopied?: () => void): void;
+  copy(event: ClipboardEvent, onCopied?: (copied: HexCopied) => void): void;
   focus(): void;
 }
 
@@ -720,7 +727,7 @@ export function HexGrid({
 
   const onCopyRef = useLatest(onCopy);
   const copy = useCallback(
-    (event: ClipboardEvent, onCopied?: () => void) => {
+    (event: ClipboardEvent, onCopied?: (copied: HexCopied) => void) => {
       const sel = selectionRef.current;
       if (!sel) return;
       const start = Math.min(sel.anchor, sel.focus);
@@ -728,9 +735,9 @@ export function HexGrid({
       const end = Math.min(Math.max(sel.anchor, sel.focus), source.size - 1);
       if (end < start) return;
       const length = end - start + 1;
-      const report = (result: HexCopyResult) => {
+      const report = (result: HexCopyResult, copied?: HexCopied) => {
         onCopyRef.current?.(result);
-        if (result.ok) onCopied?.();
+        if (result.ok && copied) onCopied?.(copied);
       };
       event.preventDefault();
       if (length > MAX_COPY_BYTES) {
@@ -742,20 +749,30 @@ export function HexGrid({
       const to = textPane
         ? Math.min(source.size, end + 1 + decoding.lookahead)
         : end + 1;
-      const text = (bytes: Uint8Array) =>
-        copyText(
-          bytes,
-          sel.pane,
-          uppercase,
-          decoding,
-          start - from,
-          start,
-          length,
-        );
+      const copied = (read: Uint8Array): HexCopied => ({
+        bytes: read.subarray(start - from, start - from + length),
+        clipboard: {
+          text: copyText(
+            read,
+            sel.pane,
+            uppercase,
+            decoding,
+            start - from,
+            start,
+            length,
+          ),
+        },
+      });
       const bytes = cache.get(from, to - from);
       if (bytes && event.clipboardData) {
-        event.clipboardData.setData("text/plain", text(bytes));
-        report({ ok: true, bytes: length });
+        const out = copied(bytes);
+        event.clipboardData.setData("text/plain", out.clipboard.text);
+        // The hex pane's text already pastes back exactly.
+        if (textPane) {
+          out.clipboard.bytes = hexDigits(out.bytes);
+          event.clipboardData.setData(HEX_BYTES_TYPE, out.clipboard.bytes);
+        }
+        report({ ok: true, bytes: length }, out);
         return;
       }
       const clipboard =
@@ -764,12 +781,15 @@ export function HexGrid({
         report({ ok: false, reason: "clipboard-unavailable" });
         return;
       }
+      // writeText carries no second type, so the exact bytes stay behind.
       cache.readRange(from, to - from).then(
-        (read) =>
-          clipboard.writeText(text(read)).then(
-            () => report({ ok: true, bytes: length }),
+        (read) => {
+          const out = copied(read);
+          return clipboard.writeText(out.clipboard.text).then(
+            () => report({ ok: true, bytes: length }, out),
             () => report({ ok: false, reason: "clipboard-unavailable" }),
-          ),
+          );
+        },
         () => report({ ok: false, reason: "read-failed" }),
       );
     },

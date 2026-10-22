@@ -2,6 +2,7 @@ import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { HexEncoding } from "../src/encodings.ts";
+import { HEX_BYTES_TYPE } from "../src/hex-paste.ts";
 import { HexView, type HexViewHandle } from "../src/hex-view.tsx";
 import { type ByteSource, bytesSource } from "../src/source.ts";
 import type { HexSelection } from "../src/types.ts";
@@ -197,8 +198,20 @@ describe("HexView", () => {
         onCopy={onCopy}
       />,
     );
+    setData.mockClear();
     fireEvent.copy(root, { clipboardData: { setData } });
-    expect(setData).toHaveBeenLastCalledWith("text/plain", "AHO.");
+    expect(setData.mock.calls).toEqual([
+      ["text/plain", "AHO."],
+      [HEX_BYTES_TYPE, "41484f00"],
+    ]);
+  });
+
+  it("writes no exact bytes beside the hex pane's text", () => {
+    const { root } = setup({ selection: { anchor: 0, focus: 1, pane: "hex" } });
+    root.focus();
+    const setData = vi.fn();
+    fireEvent.copy(root, { clipboardData: { setData } });
+    expect(setData.mock.calls).toEqual([["text/plain", "41 48"]]);
   });
 
   it("shows loading cells for an async source, then the bytes", async () => {

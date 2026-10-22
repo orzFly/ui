@@ -1,5 +1,5 @@
-import { act, fireEvent, render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createHexDocument, type HexDocument } from "../src/document.ts";
 import {
@@ -451,6 +451,75 @@ describe("HexEditor cut", () => {
       focus: 1,
       pane: "hex",
       nibble: 0,
+    });
+  });
+
+  it("cuts the text pane's exact bytes, which paste back unchanged", () => {
+    const { click, root, bytes } = setup({ defaultMode: "insert" });
+    click(0, "text");
+    fireEvent.keyDown(root, { key: "ArrowRight", shiftKey: true });
+    const clipboard: Record<string, string> = {};
+    const setData = (type: string, value: string) => {
+      clipboard[type] = value;
+    };
+    fireEvent.cut(root, { clipboardData: { setData } });
+    expect(clipboard).toEqual({
+      "text/plain": ". ",
+      [HEX_BYTES_TYPE]: "1020",
+    });
+    expect(bytes()).toEqual(INITIAL.slice(2));
+    paste(root, clipboard["text/plain"] ?? "", clipboard[HEX_BYTES_TYPE]);
+    expect(bytes()).toEqual(INITIAL);
+  });
+
+  describe("without the exact bytes", () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    beforeEach(() => {
+      writeText.mockClear();
+      vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    async function cutAsync(
+      offset: number,
+      pane: "hex" | "text",
+      doc?: HexDocument,
+    ) {
+      const onCopy = vi.fn();
+      const utils = setup({ onCopy }, doc);
+      utils.click(offset, pane);
+      fireEvent.keyDown(utils.root, { key: "ArrowRight", shiftKey: true });
+      fireEvent.cut(utils.root);
+      await waitFor(() =>
+        expect(onCopy).toHaveBeenCalledWith({ ok: true, bytes: 2 }),
+      );
+      return utils;
+    }
+
+    it("copies text that would paste back as other bytes, and keeps them", async () => {
+      const { bytes, root } = await cutAsync(0, "text");
+      expect(writeText).toHaveBeenCalledWith(". ");
+      expect(bytes()).toEqual(INITIAL);
+      expect(root.querySelector(".orz-hex-live")?.textContent).toBe(
+        "Copied, not cut: the text would not paste back as these bytes",
+      );
+    });
+
+    it("cuts text that pastes back as the same bytes", async () => {
+      const doc = createHexDocument(
+        bytesSource(Uint8Array.of(0x41, 0x42, 0x43)),
+      );
+      const { bytes } = await cutAsync(0, "text", doc);
+      expect(writeText).toHaveBeenCalledWith("AB");
+      await waitFor(() => expect(bytes()).toEqual([0x43]));
+    });
+
+    it("cuts from the hex pane, whose text pastes back exactly", async () => {
+      const { bytes } = await cutAsync(0, "hex");
+      expect(writeText).toHaveBeenCalledWith("10 20");
+      await waitFor(() => expect(bytes()).toEqual(INITIAL.slice(2)));
     });
   });
 
