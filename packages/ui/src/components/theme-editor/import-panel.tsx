@@ -264,6 +264,11 @@ function ImportRow({
           <label htmlFor={id} className="min-w-0 flex-1 truncate text-sm">
             {label}
           </label>
+          {entry.kind === "terminal" && (
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              Terminal
+            </span>
+          )}
           <span
             className={cn(
               "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",

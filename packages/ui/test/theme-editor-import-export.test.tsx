@@ -1,4 +1,9 @@
-import { builtinThemes, type CustomTheme } from "@orz/themes";
+import {
+  type AnyCustomTheme,
+  builtinThemes,
+  type CustomTerminalTheme,
+  type CustomTheme,
+} from "@orz/themes";
 import {
   fireEvent,
   render,
@@ -12,7 +17,10 @@ import { ThemeEditor } from "../src/components/theme-editor.tsx";
 import { serializeThemeFile } from "../src/lib/theme-file.ts";
 import { ThemeProvider } from "../src/theme/index.ts";
 import {
+  dusk,
+  ink,
   inkwell,
+  paper,
   resetThemeEnvironment,
   store,
   stubDarkQuery,
@@ -34,12 +42,14 @@ const harbour: CustomTheme = {
 function setup({
   customs = [],
   themeId,
+  options,
 }: {
-  customs?: CustomTheme[];
+  customs?: AnyCustomTheme[];
   themeId?: string;
+  options?: Parameters<typeof store>[0];
 } = {}) {
   stubDarkQuery(false);
-  const themes = store();
+  const themes = store(options);
   themes.setCustomThemes(customs);
   const onOpenChange = vi.fn();
   function App() {
@@ -352,5 +362,98 @@ describe("ThemeEditor: export", () => {
       expect(fileField().selectionStart).toBe(0);
       expect(fileField().selectionEnd).toBe(fileField().value.length);
     });
+  });
+});
+
+const TERMINAL_ONLY = {
+  themes: undefined,
+  terminalThemes: [...builtinThemes, ink, paper],
+};
+
+describe("ThemeEditor: terminal themes in files", () => {
+  it("exports a terminal theme and imports it back in a terminal-only store", async () => {
+    const { themes } = setup({
+      options: TERMINAL_ONLY,
+      customs: [dusk],
+      themeId: dusk.id,
+    });
+    fireEvent.click(button("Export"));
+    const text = fileField().value;
+    expect(text).toBe(serializeThemeFile([dusk], TERMINAL_ONLY.terminalThemes));
+    const file = JSON.parse(text);
+    expect(file.themes).toEqual([]);
+    expect(file.terminalThemes[0].label).toBe("Dusk");
+    fireEvent.click(button("Back to the theme"));
+
+    fireEvent.click(button("Import…"));
+    paste(text);
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    const [row] = rows() as HTMLElement[];
+    expect(row?.dataset.status).toBe("renamed");
+    expect(row?.textContent).toContain("Dusk (2)");
+    expect(row?.textContent).toContain("Terminal");
+    fireEvent.click(button("Import 1"));
+
+    const [, imported] = themes.getCustomThemes() as CustomTerminalTheme[];
+    expect(imported).toMatchObject({
+      kind: "terminal",
+      label: "Dusk (2)",
+      dark: dusk.dark,
+    });
+    expect(imported?.id).not.toBe(dusk.id);
+    expect(nameField().value).toBe("Dusk (2)");
+  });
+
+  it("brings a UI theme into a terminal-only store as a terminal theme", async () => {
+    const { themes } = setup({ options: TERMINAL_ONLY });
+    fireEvent.click(button("Import…"));
+    paste(serializeThemeFile([harbour], builtinThemes));
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    const [row] = rows() as HTMLElement[];
+    expect(row?.dataset.status).toBe("adjusted");
+    expect(row?.textContent).toContain("Terminal");
+    expect(row?.textContent).toContain(
+      "This app has no UI themes; imported as a terminal theme from its terminal colours.",
+    );
+    fireEvent.click(button("Import 1"));
+    expect(themes.getCustomThemes()).toEqual([
+      {
+        id: expect.stringMatching(/^custom-/),
+        kind: "terminal",
+        label: "Harbour",
+        dark: { base: { theme: "nord" } },
+      },
+    ]);
+  });
+
+  it("rejects a terminal theme in a UI-only store", async () => {
+    const { themes } = setup({ customs: [sunrise] });
+    fireEvent.click(button("Import…"));
+    paste(serializeThemeFile([dusk, harbour], [...builtinThemes, ink]));
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    const [ui, terminal] = rows() as HTMLElement[];
+    expect(ui?.dataset.status).toBe("ok");
+    expect(terminal?.dataset.status).toBe("rejected");
+    expect(terminal?.textContent).toContain(
+      "It is a terminal theme, and this app has no terminal.",
+    );
+    expect(checkbox(terminal as HTMLElement).disabled).toBe(true);
+    fireEvent.click(button("Import 1"));
+    expect(themes.getCustomThemes().map((c) => c.label)).toEqual([
+      "Sunrise",
+      "Harbour",
+    ]);
+  });
+
+  it("exports both kinds from Export all, even a kind the store hides", () => {
+    setup({ customs: [sunrise, dusk], themeId: sunrise.id });
+    fireEvent.click(button("Export all"));
+    const file = JSON.parse(fileField().value);
+    expect(file.themes.map((t: { label: string }) => t.label)).toEqual([
+      "Sunrise",
+    ]);
+    expect(file.terminalThemes.map((t: { label: string }) => t.label)).toEqual([
+      "Dusk",
+    ]);
   });
 });
