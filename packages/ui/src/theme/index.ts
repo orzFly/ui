@@ -16,7 +16,10 @@ export type {
   Tokens,
   Variant,
 } from "@orz/themes";
-export { themePaintGuardScript } from "./paint-guard.ts";
+export {
+  themePaintCookieStyle,
+  themePaintGuardScript,
+} from "./paint-guard.ts";
 export {
   normalizePref,
   parseStoredPref,

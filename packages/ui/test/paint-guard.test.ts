@@ -53,6 +53,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const ruleText = () =>
+  document.head.querySelector("style[data-orz-theme]")?.textContent ?? "";
+
 /**
  * What a paint left on <html>: the value each property ends up with, and the
  * attributes. Values, not text: the guard replays the followed UI palette's
@@ -65,6 +68,8 @@ function snapshot() {
   const values: Record<string, string> = {};
   const body = text.slice(text.indexOf("{") + 1);
   for (const m of body.matchAll(/([\w-]+):\s*([^;]+);/g)) values[m[1]] = m[2];
+  // The guard's alone; "paints the page background" covers it.
+  delete values["background-color"];
   return {
     values,
     dark: html.classList.contains("dark"),
@@ -155,6 +160,29 @@ describe("themePaintGuardScript", () => {
       }
     },
   );
+
+  it("paints the page background under a UI pick, where the store does not", () => {
+    const options = { storageKey: "app-theme", ...ui };
+    stubOsDark(true);
+    createThemeStore(options).setPref({ ui: { theme: "nord", mode: "dark" } });
+    reset();
+    new Function(themePaintGuardScript(options))();
+    expect(ruleText()).toContain("background-color: var(--background);");
+    createThemeStore(options).dispose();
+    expect(ruleText()).not.toContain("background-color");
+  });
+
+  it("leaves the page background alone in a terminal-only store", () => {
+    const options = { storageKey: "app-theme", ...terminalOnly };
+    stubOsDark(true);
+    createThemeStore(options).setPref({
+      terminal: { theme: "ink", mode: "dark" },
+    });
+    reset();
+    new Function(themePaintGuardScript(options))();
+    expect(ruleText()).toContain("--terminal-background");
+    expect(ruleText()).not.toContain("background-color");
+  });
 
   it("picks the side from the OS only when both are cached", () => {
     const { guard } = paintBoth(

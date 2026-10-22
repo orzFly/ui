@@ -182,10 +182,12 @@ setCustomThemes([...customThemes, draft]);
 - `persistCustomThemes: false` keeps the store away from that key altogether. The app then loads its
   list with `setCustomThemes` and saves it from `subscribe` and `getCustomThemes`, for example to its
   server.
-- `persistPref: false` does the same for the pref under `storageKey`: the store starts from the
-  default pick, never writes the pref, and ignores other tabs' writes to it. The app then commits
-  picks itself with `setPref`, for example from a URL. The paint cache and the custom themes are
-  unaffected.
+- `persistPref: false` does the same for the pref under `storageKey`: the store never writes the
+  pref and ignores other tabs' writes to it. The app then commits picks itself with `setPref`, for
+  example from a URL. Until it does, the store shows the pick the paint cache last painted (the
+  first theme when there is none), so it does not repaint over the [paint guard](#paint-guard).
+  An app whose source holds no pick, such as a bare URL, commits its default with `setPref` rather
+  than relying on the store's. The paint cache and the custom themes are unaffected.
 
 ### Custom theme editor
 
@@ -285,6 +287,12 @@ write. A plain slug such as `solarized-dark` becomes `{ theme: "solarized", mode
 `system`, `light` and `dark` map onto the `default` theme. An app that keeps its old `storageKey`
 keeps its users' themes.
 
+When the app keeps the pick on its server, keep `persistPref` on and hand the server's answer to
+`setPref` when it arrives. Until then the store shows the copy in `storageKey`, so a reload paints
+the last pick at once, and the server's answer repaints only when another device changed it. Save
+the user's picks from `subscribe` and `getPref`. `persistPref: false` is for an app whose pick must
+not have a second source, such as one held in the URL.
+
 ### Paint guard
 
 Without a guard, a reload in a dark theme flashes white before the bundle runs. The store caches
@@ -316,6 +324,25 @@ export default defineConfig({
 
 On the first load after an upgrade there is no cache yet. The guard then sets `.dark` from the
 `` `${storageKey}-kind` `` value earlier versions stored, and the store writes the cache.
+
+Under a UI pick, the guard's rule also sets `background-color: var(--background)` on `<html>`, so
+frames painted before the stylesheet loads already show the theme's background. The store's rule
+leaves it out, so once the store starts, `body`'s background reaches the canvas as usual.
+
+A page that cannot run an inline script, under a Content Security Policy without
+`'unsafe-inline'` for example, can have its server paint the background instead. Given
+`paintCookie: "app-theme-paint"`, the store also writes the committed UI pick's background for each
+side it can show to that cookie (path `/`, one year, `SameSite=Lax`). `themePaintCookieStyle(value)`
+turns the cookie's value, URL-encoded or not, into CSS for a `<style>` in `<head>`: the background
+and `color-scheme` on `html`, with the dark side under `@media (prefers-color-scheme: dark)` when
+both are stored. A side whose colour could break out of the rule is dropped, and a missing or
+malformed value gives `""`.
+
+```ts
+// a server template
+const css = themePaintCookieStyle(request.cookies["app-theme-paint"]);
+html`<head><style>${css}</style>…</head>`;
+```
 
 ## Query input
 

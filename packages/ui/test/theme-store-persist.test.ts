@@ -1,6 +1,9 @@
+import { builtinThemes } from "@orz/themes";
 import { describe, expect, it, vi } from "vitest";
 import {
   html,
+  ink,
+  paper,
   resetThemeEnvironment,
   store,
   stubDarkQuery,
@@ -55,6 +58,58 @@ describe("persistPref: false", () => {
     expect(styleText()).toBe(paint);
     expect(html.dataset.theme).toBe("nord");
     expect(heard).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["system", { ui: { theme: "solarized", mode: "system" } }],
+    ["light", { ui: { theme: "github", mode: "light" } }],
+    ["a variant", { ui: { theme: "github", mode: "dark", variant: "amoled" } }],
+    ["one palette", { ui: { theme: "dracula", mode: "dark" } }],
+    [
+      "a terminal pick",
+      {
+        ui: { theme: "solarized", mode: "system" },
+        terminal: { theme: "nord", mode: "dark" },
+      },
+    ],
+  ] as const)("boots on the painted pick under %s", (_, pref) => {
+    stubDarkQuery(false);
+    const options = { persistPref: false, terminalThemes: builtinThemes };
+    store(options).setPref(pref);
+    expect(store(options).getPref()).toEqual(pref);
+  });
+
+  it("boots on the painted terminal-only pick", () => {
+    stubDarkQuery(true);
+    const options = {
+      persistPref: false,
+      themes: undefined,
+      terminalThemes: [paper, ink],
+    };
+    store(options).setPref({ terminal: { theme: "ink", mode: "dark" } });
+    expect(store(options).getPref()).toEqual({
+      terminal: { theme: "ink", mode: "dark" },
+    });
+  });
+
+  it("keeps the painted pick through a load that never commits one", () => {
+    stubDarkQuery(false);
+    store({ persistPref: false }).setPref({
+      ui: { theme: "nord", mode: "dark" },
+    });
+    const paint = localStorage.getItem("app-theme-paint");
+    store({ persistPref: false }).dispose();
+    expect(localStorage.getItem("app-theme-paint")).toBe(paint);
+    expect(store({ persistPref: false }).getPref().ui?.theme).toBe("nord");
+    expect(html.dataset.theme).toBe("nord");
+  });
+
+  it("boots on the first theme from an unreadable paint cache", () => {
+    stubDarkQuery(false);
+    localStorage.setItem("app-theme-paint", "{not json");
+    expect(store({ persistPref: false }).getPref()).toEqual({
+      ui: { theme: "default", mode: "system" },
+    });
   });
 
   it("still follows another tab's custom themes", () => {

@@ -15,6 +15,7 @@ import {
   type Tokens,
 } from "@orz/themes";
 import { parseCustomThemes } from "./custom.ts";
+import type { PaintBackgrounds } from "./paint-guard.ts";
 import {
   fitPick,
   normalizePref,
@@ -77,10 +78,17 @@ export interface ThemeStoreOptions {
   persistCustomThemes?: boolean;
   /**
    * false: the store never reads, writes or follows the pref in localStorage (`storageKey`); the
-   * app owns the committed pick, for example in a URL. The paint cache and custom themes are
-   * unaffected. Default true.
+   * app owns the committed pick, for example in a URL or on its server. Until the app's first
+   * `setPref`, the store shows the pick the paint cache last painted. The paint cache and custom
+   * themes are unaffected. Default true.
    */
   persistPref?: boolean;
+  /**
+   * A cookie name: the store also writes the committed UI pick's background and color scheme
+   * there, for a server to paint with `themePaintCookieStyle()` before any script runs. Default:
+   * no cookie.
+   */
+  paintCookie?: string;
 }
 
 export interface ThemeStore {
@@ -189,6 +197,7 @@ export function createThemeStore({
   customStorageKey = `${storageKey}-custom`,
   persistCustomThemes = true,
   persistPref = true,
+  paintCookie,
 }: ThemeStoreOptions): ThemeStore {
   if (initialThemes === undefined && initialTerminalThemes === undefined) {
     throw new Error("createThemeStore: pass themes, terminalThemes or both");
@@ -283,6 +292,34 @@ export function createThemeStore({
       return readStoredPref(localStorage.getItem(storageKey));
     } catch {
       // storage may be unavailable (private mode)
+      return {};
+    }
+  }
+
+  /**
+   * The pick the paint cache records. A side cached under both schemes was
+   * under system; fitted to its theme, this is the pick that was painted.
+   */
+  function readPainted(): ThemePref {
+    const pickOf = (side: PaintSide | undefined): ThemePick | undefined => {
+      if (typeof side?.theme !== "string") return undefined;
+      const mode: ThemeMode =
+        side.light && side.dark ? "system" : side.light ? "light" : "dark";
+      const pick: ThemePick = { theme: side.theme, mode };
+      if (typeof side.variant === "string") pick.variant = side.variant;
+      return pick;
+    };
+    try {
+      const cache: PaintCache | null = JSON.parse(
+        localStorage.getItem(paintKey) ?? "null",
+      );
+      const out: ThemePref = {};
+      const ui = pickOf(cache?.ui);
+      const terminal = pickOf(cache?.terminal);
+      if (ui) out.ui = ui;
+      if (terminal) out.terminal = terminal;
+      return out;
+    } catch {
       return {};
     }
   }
@@ -456,6 +493,22 @@ export function createThemeStore({
     } catch {
       // the next load just paints late
     }
+    if (paintCookie !== undefined) writePaintCookie(paintCookie);
+  }
+
+  function writePaintCookie(name: string) {
+    const ui = pref.ui;
+    const theme = ui && themes?.find((t) => t.id === ui.theme);
+    if (!ui || !theme) return;
+    const backgrounds: PaintBackgrounds = {};
+    for (const scheme of schemesFor(ui)) {
+      const palette = resolvePalette(theme, scheme, ui.variant);
+      if (palette !== null) backgrounds[scheme] = palette.tokens.background;
+    }
+    // biome-ignore lint/suspicious/noDocumentCookie: synchronous like the localStorage cache beside it, and the Cookie Store API is missing from older Firefox and Safari
+    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(
+      JSON.stringify(backgrounds),
+    )}; path=/; max-age=31536000; samesite=lax`;
   }
 
   /** `committed: false` for a preview, which the next load must not paint. */
@@ -500,7 +553,9 @@ export function createThemeStore({
   // version cannot fully read may be a newer version's.
   if (persistsCustom) customs = readCustom();
   recompose();
-  requested = persists ? readStored() : {};
+  // Booting on the first theme instead would repaint over the guard until
+  // the app's pick arrives, and cache that fallback for the next load.
+  requested = persists ? readStored() : browser ? readPainted() : {};
   pref = normalizePref(requested, slots(), fallback());
   apply();
   if (browser) {
