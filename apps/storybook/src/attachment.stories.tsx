@@ -1,13 +1,6 @@
 import { Button } from "@orz/ui/components/button";
-import { cn } from "@orz/ui/lib/utils";
-import {
-  type ContentProps,
-  type ContentRenderer,
-  ContentRenderers,
-  type ContentSource,
-  isTextFile,
-  useSourceText,
-} from "@orz/ui-content";
+import { codeContent } from "@orz/ui-code";
+import { ContentRenderers, type ContentSource } from "@orz/ui-content";
 import {
   type AttachmentItem,
   AttachmentLink,
@@ -116,35 +109,6 @@ function group(target: FileSource) {
   return index === -1 ? null : { items: MIXED, index };
 }
 
-/**
- * Stands in for `@orz/ui-code`'s renderer until it registers one: every other text file, as a
- * plain `<pre>`.
- */
-const plainText: ContentRenderer = {
-  name: "plain-text",
-  accepts: (source) => source.kind === "file" && isTextFile(source),
-  Component: function PlainText({ source, className }: ContentProps) {
-    const text = useSourceText(source);
-    return (
-      <pre
-        // A scrolling region has to be reachable by keyboard.
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: it scrolls, so it takes focus
-        tabIndex={0}
-        className={cn(
-          "overflow-auto rounded-md bg-muted/40 p-3 text-xs",
-          className,
-        )}
-      >
-        {text.status === "ready"
-          ? text.text
-          : text.status === "error"
-            ? text.error.message
-            : "Loading…"}
-      </pre>
-    );
-  },
-};
-
 const RENDERERS = [
   attachmentCard(),
   imageContent(),
@@ -153,7 +117,7 @@ const RENDERERS = [
   videoContent(),
   audioContent(),
   markdownContent(),
-  plainText,
+  codeContent,
 ];
 
 const PLUGINS = [markdownEmbeds({ resolve }), attachmentLinks({ resolve })];

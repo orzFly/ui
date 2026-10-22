@@ -1,7 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // Typecheck against @orz/ui's source, so a fresh clone needs no build first.
+    // Typecheck against @orz/ui's and @orz/ui-content's source, so a fresh
+    // clone needs no build first.
     "customConditions": ["@orz/source"]
   },
   "include": ["src", "test", "vitest.config.ts"]

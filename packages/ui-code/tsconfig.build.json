@@ -7,8 +7,8 @@
     "sourceMap": true,
     "rootDir": "src",
     "outDir": "dist",
-    // On source, @orz/ui's src/ would join this program and break rootDir;
-    // `pnpm -r build` builds @orz/ui first, so its dist/ is there instead.
+    // On source, the workspace peers' src/ would join this program and break
+    // rootDir; `pnpm -r build` builds them first, so their dist/ is there.
     "customConditions": []
   },
   "include": ["src"]

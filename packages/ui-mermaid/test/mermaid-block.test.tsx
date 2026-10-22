@@ -259,6 +259,14 @@ describe("mermaid files", () => {
     expect(source.textContent).toBe(DIAGRAM);
   });
 
+  it("hands its source on without the file's final newline", async () => {
+    result.next = { ok: true, svg: SVG, width: 1360 };
+    const container = mount(file(async () => `${DIAGRAM}\n`));
+    await drawn(container);
+    fireEvent.click(screen.getByRole("button", { name: "Source" }));
+    expect((await screen.findByTestId("probe")).textContent).toBe(DIAGRAM);
+  });
+
   it("offers Retry when the file fails to load", async () => {
     result.next = { ok: true, svg: SVG, width: 1360 };
     const load = vi
