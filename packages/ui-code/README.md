@@ -1,13 +1,16 @@
 # @orz/ui-code
 
 Read-only code and diff blocks, syntax-highlighted by [pierre](https://www.npmjs.com/package/@pierre/diffs)
-on shiki and themed by `@orz/ui`, plus a word differ that segments CJK as well as English.
+on shiki and themed by `@orz/ui`, plus a word differ that segments CJK as well as English. The
+package contributes a code renderer to `@orz/ui-content`'s registry, `codeContent`.
 
 ## Install
 
 ```bash
-pnpm add @orz/ui-code @orz/ui @pierre/diffs react react-dom
+pnpm add @orz/ui-code @orz/ui @orz/ui-content @pierre/diffs react react-dom
 ```
+
+`@orz/ui-content` is a peer dependency so that the app and every content package share one registry.
 
 `@pierre/diffs` is a peer dependency. pierre's highlighter is a module singleton, and its engine is
 fixed by whichever surface creates it first. An app that renders pierre surfaces of its own has to
@@ -37,7 +40,7 @@ use pierre's pair.
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `fenceFilename`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
+| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `fenceFilename`, `codeContent`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
 | `@orz/ui-code/word-diff` | `wordDiff`, `coalescedWordDiff`, `wordBag`, `bagWith`, types |
 | `@orz/ui-code/styles.css` | the `diffs-container` rules |
 
@@ -59,6 +62,34 @@ import { CodeBlock, CodeDiffBlock, fenceFilename } from "@orz/ui-code";
 ```
 
 `CodeDiffBlock` is a unified line diff of one block; with identical sides it renders a `CodeBlock`.
+
+### `codeContent`
+
+The renderer this package contributes to `@orz/ui-content`'s registry. It
+accepts every inline source, whatever its `lang`, and every file `isTextFile` calls text, in either
+placement:
+
+- An inline source, such as a markdown fence, is a `CodeBlock` named `fenceFilename(lang)`.
+- A file is loaded through `useSourceText` and drawn as a `CodeBlock` under its own name, with
+  line numbers and without its final newline. While it loads, it is the registry's fallback: a
+  download link, or the bare name when there is no `url`. A failed load shows that fallback, the
+  error and a Retry button.
+
+It takes everything a narrower renderer would, so it goes after them in the list:
+
+```tsx
+import { codeContent } from "@orz/ui-code";
+import { ContentRenderers } from "@orz/ui-content";
+import { markdownContent } from "@orz/ui-markdown";
+import { mermaidContent } from "@orz/ui-mermaid";
+
+const RENDERERS = [mermaidContent, markdownContent(), codeContent];
+
+<ContentRenderers renderers={RENDERERS}>{app}</ContentRenderers>;
+```
+
+It sets no size cap: a viewer that should not highlight a large file decides that before it
+renders one.
 
 ### `@orz/ui-code/word-diff`
 

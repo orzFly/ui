@@ -9,3 +9,4 @@ export {
   type SyntaxTheme,
   useSyntaxTheme,
 } from "./code-block.tsx";
+export { codeContent } from "./content.tsx";

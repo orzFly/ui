@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui-code",
   "version": "0.0.0",
-  "description": "Syntax-highlighted code and diff blocks on pierre, plus a CJK-aware word differ",
+  "description": "Syntax-highlighted code and diff blocks on pierre, a CJK-aware word differ, and the code renderer for the @orz/ui-content registry",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -36,6 +36,7 @@
   },
   "peerDependencies": {
     "@orz/ui": "workspace:^",
+    "@orz/ui-content": "workspace:^",
     "@pierre/diffs": "^1.6.1",
     "react": "^19",
     "react-dom": "^19"
@@ -45,6 +46,7 @@
   },
   "devDependencies": {
     "@orz/ui": "workspace:*",
+    "@orz/ui-content": "workspace:*",
     "@pierre/diffs": "^1.6.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^22.20.5",
