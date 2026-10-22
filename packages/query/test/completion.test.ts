@@ -15,6 +15,8 @@ import {
   type CompiledQuerySchema,
   defineQuerySchema,
   parseQuery,
+  queryFilters,
+  queryTerms,
 } from "../src/query.ts";
 import {
   providerOf,
@@ -355,6 +357,18 @@ describe("query slots inside a brace group", () => {
       value: "label:{area:web,kind:bug",
       caret: 24,
     });
+  });
+
+  it("quote a spaced alternative so the closed group reads it whole", () => {
+    const { rows } = values("status:{Todo,|", plainBraces);
+    const row = rows.find((r) => r.text === '"In Progress"');
+    if (row?.apply === undefined) throw new Error("no In Progress row");
+    const query = `${row.apply.value}}`;
+    const parts = parseQuery(plainBraces, query);
+    expect(queryFilters(parts)).toEqual([
+      { key: "status", negated: false, values: ["Todo", "In Progress"] },
+    ]);
+    expect(queryTerms(parts)).toEqual([]);
   });
 
   it("are not groups with braces off", () => {

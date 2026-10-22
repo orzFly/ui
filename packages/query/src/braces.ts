@@ -15,7 +15,9 @@ export type BraceExpansion =
 /** Fail rather than cut, the way a query with too many terms is rejected. */
 export const BRACE_LIMIT = 64;
 
-type Char = { ch: string; active: boolean };
+/** One character; only an active one can group or separate. */
+export type BraceChar = { ch: string; active: boolean };
+type Char = BraceChar;
 type Item = string | { alternatives: Item[][] };
 
 /** Quoted and escaped characters are literal; only bare ones can group. */
@@ -67,12 +69,22 @@ function findGroups(
   return groups;
 }
 
+class OverLimit extends Error {}
+
+/**
+ * Every kept group has at least two alternatives, so nesting deeper than the
+ * limit already expands past it; failing here keeps the recursion shallow.
+ * The 256 cap protects the stack from a large custom limit.
+ */
 function parse(
   chars: Char[],
   groups: Map<number, { close: number; commas: number[] }>,
   from: number,
   to: number,
+  depth: number,
+  limit: number,
 ): Item[] {
+  if (depth > Math.min(limit, 256)) throw new OverLimit();
   const items: Item[] = [];
   let text = "";
   for (let i = from; i < to; i += 1) {
@@ -92,6 +104,8 @@ function parse(
           groups,
           (bounds[b] as number) + 1,
           bounds[b + 1] as number,
+          depth + 1,
+          limit,
         ),
       );
     }
@@ -101,8 +115,6 @@ function parse(
   if (text !== "") items.push(text);
   return items;
 }
-
-class OverLimit extends Error {}
 
 function expand(items: Item[], limit: number): string[] {
   let words = [""];
@@ -126,11 +138,20 @@ export function expandBraces(
   word: ShellWord | string,
   options?: { limit?: number },
 ): BraceExpansion {
-  const limit = options?.limit ?? BRACE_LIMIT;
-  const chars = charsOf(word);
+  return expandBraceChars(charsOf(word), options?.limit ?? BRACE_LIMIT);
+}
+
+/**
+ * For readings that are not shell words, such as plain mode's quoted
+ * alternatives, whose quotes carry no escapes.
+ */
+export function expandBraceChars(
+  chars: BraceChar[],
+  limit: number,
+): BraceExpansion {
   const groups = findGroups(chars);
-  const items = parse(chars, groups, 0, chars.length);
   try {
+    const items = parse(chars, groups, 0, chars.length, 0, limit);
     return { ok: true, words: expand(items, limit) };
   } catch (error) {
     if (!(error instanceof OverLimit)) throw error;

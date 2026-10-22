@@ -72,6 +72,13 @@ const OPTION = "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm";
 /** Nothing highlighted. Enter then submits what was typed, not an offer. */
 const NONE = -1;
 
+/** Also the React key; the highlight follows it, not an index. */
+function rowKey<R>(row: BoxRow<R>): string {
+  if (row.kind === "submit") return "submit";
+  if (row.kind === "app") return `${row.source.id}:${row.source.key(row.row)}`;
+  return `completion:${row.row.id}`;
+}
+
 /**
  * One glyph per kind of offer. A row is a short run of monospace and a few
  * grey words, so the icon carries the whole distinction between a key and a
@@ -143,7 +150,8 @@ export function QueryBox<R>({
 }) {
   const [focused, setFocused] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [highlight, setHighlight] = useState(NONE);
+  // A key, so a search answer that lands rows above it does not move it.
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
   const [position, setPosition] = useState<CaretPosition>({ caret: 0 });
 
   const input = useRef<HTMLInputElement>(null);
@@ -174,7 +182,27 @@ export function QueryBox<R>({
   const rows = orderRows<BoxRow<R>>(results, { kind: "submit" }, limit);
   const query = value.trim();
   const open = focused && !dismissed && (query !== "" || rows.length > 1);
-  const hl = highlight >= rows.length ? NONE : highlight;
+  const hl =
+    highlightKey === null
+      ? NONE
+      : rows.findIndex((row) => rowKey(row) === highlightKey);
+  const setHighlight = (idx: number) => {
+    const row = idx === NONE ? undefined : rows[idx];
+    setHighlightKey(row === undefined ? null : rowKey(row));
+  };
+
+  // A value the app set (a submitted row loaded into the box, say) is a new
+  // query, and nothing in it is aimed at yet.
+  const emitted = useRef(value);
+  const [seen, setSeen] = useState(value);
+  if (seen !== value) {
+    setSeen(value);
+    if (value !== emitted.current) setHighlightKey(null);
+  }
+  const emit = (next: string) => {
+    emitted.current = next;
+    onValueChange(next);
+  };
   const optionId = (idx: number) => `${listId}-${idx}`;
 
   // Reported on change only, so an app can tie loading to it without being
@@ -224,7 +252,7 @@ export function QueryBox<R>({
    */
   const pending = useRef<{ value: string; caret: number } | null>(null);
   const accept = (apply: { value: string; caret: number }) => {
-    onValueChange(apply.value);
+    emit(apply.value);
     setHighlight(NONE);
     setDismissed(false);
     pending.current = apply;
@@ -273,6 +301,7 @@ export function QueryBox<R>({
     // being submitted, a past query say.
     if (query === "" && chosen?.kind !== "app") return;
     setDismissed(true);
+    setHighlight(NONE);
     onSubmit(query, chosen?.kind === "app" ? chosen.row : undefined);
   };
 
@@ -296,8 +325,11 @@ export function QueryBox<R>({
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     inputProps.onKeyDown?.(e);
     if (e.defaultPrevented) return;
-    imeEnter.current =
-      e.key === "Enter" && (e.nativeEvent.isComposing || e.keyCode === 229);
+    const composing = e.nativeEvent.isComposing || e.keyCode === 229;
+    imeEnter.current = e.key === "Enter" && composing;
+    // The IME owns every key until it commits: Escape cancels its candidate,
+    // Tab and the arrows pick one.
+    if (composing) return;
     if (e.key === "Escape") {
       // The first press closes the panel and stays the box's own; only with
       // nothing left to close is Escape the app's (leaving an overlay, say).
@@ -306,6 +338,7 @@ export function QueryBox<R>({
         return;
       }
       setDismissed(true);
+      setHighlight(NONE);
     } else if (e.key === "Tab" && open && !e.shiftKey) {
       // Never falls through to the submit row or an app row without
       // `apply`: with nothing to take, Tab moves focus as it always does.
@@ -377,7 +410,7 @@ export function QueryBox<R>({
           aria-busy={loading || undefined}
           value={value}
           onValueChange={(next) => {
-            onValueChange(next);
+            emit(next);
             setDismissed(false);
             setHighlight(NONE);
           }}
@@ -394,6 +427,7 @@ export function QueryBox<R>({
           onFocus={(e) => {
             setFocused(true);
             setDismissed(false);
+            setHighlight(NONE);
             inputProps.onFocus?.(e);
           }}
           onBlur={(e) => {
@@ -437,14 +471,14 @@ export function QueryBox<R>({
             const option = optionProps(idx);
             if (row.kind === "submit") {
               return (
-                <Fragment key="submit">
+                <Fragment key={rowKey(row)}>
                   {renderSubmitRow(query, option)}
                 </Fragment>
               );
             }
             if (row.kind === "app") {
               return (
-                <Fragment key={`${row.source.id}:${row.source.key(row.row)}`}>
+                <Fragment key={rowKey(row)}>
                   {row.source.render(row.row, option)}
                 </Fragment>
               );
@@ -456,7 +490,7 @@ export function QueryBox<R>({
               // cancels the mousedown that would move it.
               <button
                 type="button"
-                key={`completion:${row.row.id}`}
+                key={rowKey(row)}
                 {...option}
                 onClick={() => accept(row.row.apply)}
               >

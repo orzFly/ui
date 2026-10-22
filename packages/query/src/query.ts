@@ -13,7 +13,12 @@
  * function on either side of the wire.
  */
 
-import { BRACE_LIMIT, expandBraces } from "./braces.ts";
+import {
+  BRACE_LIMIT,
+  type BraceChar,
+  expandBraceChars,
+  expandBraces,
+} from "./braces.ts";
 import {
   quoteShellWord,
   type ShellSegment,
@@ -163,33 +168,56 @@ function expandedOf(
 }
 
 /**
- * Where the `{` at `at` closes, when it does before whitespace or a quote
- * ends the value; null leaves it an ordinary character, so text that merely
- * contains a brace reads as it always did.
+ * The brace groups of a filter's value list, matched in one pass: open →
+ * close for each `{` that closes before whitespace or a stray quote ends the
+ * list, so text that merely contains a brace reads as it always did. A quote
+ * opens a run only where completion's `plainUnits` opens one — where a value
+ * or an alternative starts — so a quoted alternative cannot split its group.
+ * `runs` maps such a run's opening quote inside a group to its closing one.
  */
-function closingBrace(q: string, at: number): number | null {
-  let depth = 0;
-  for (let i = at; i < q.length; i += 1) {
+type PlainBraces = { closeOf: Map<number, number>; runs: Map<number, number> };
+
+function plainBraces(q: string, from: number): PlainBraces {
+  const closeOf = new Map<number, number>();
+  const runs = new Map<number, number>();
+  const stack: { open: number; alternative: number }[] = [];
+  let valueStart = from;
+  let i = from;
+  while (i < q.length) {
     const ch = q[i] as string;
-    if (isSpace(ch) || ch === '"') return null;
-    if (ch === "{") depth += 1;
-    else if (ch === "}") {
-      depth -= 1;
-      if (depth === 0) return i;
+    if (isSpace(ch)) break;
+    const top = stack.at(-1);
+    if (ch === '"') {
+      if (i !== (top === undefined ? valueStart : top.alternative)) break;
+      const close = q.indexOf('"', i + 1);
+      if (close === -1) break;
+      if (top !== undefined) runs.set(i, close);
+      i = close + 1;
+      continue;
     }
+    if (ch === "{") stack.push({ open: i, alternative: i + 1 });
+    else if (ch === "}") {
+      const open = stack.pop();
+      if (open !== undefined) closeOf.set(open.open, i);
+    } else if (ch === ",") {
+      if (top !== undefined) top.alternative = i + 1;
+      else valueStart = i + 1;
+    }
+    i += 1;
   }
-  return null;
+  return { closeOf, runs };
 }
 
 /**
  * A value: a quoted run, or one stretch of non-space, non-comma, non-quote.
- * With braces on, a balanced `{…}` is absorbed commas and all. A quoted
- * value is never expanded: quoting is how a brace is searched for literally.
+ * With braces on, a balanced `{…}` is absorbed commas, quoted alternatives
+ * and all. A quoted value is never expanded: quoting is how a brace is
+ * searched for literally.
  */
 function scanPlainValue(
-  schema: CompiledQuerySchema,
   q: string,
   at: number,
+  braces: PlainBraces | null,
 ): QueryValue {
   if (q[at] === '"') {
     const close = q.indexOf('"', at + 1);
@@ -202,22 +230,33 @@ function scanPlainValue(
   while (end < q.length) {
     const ch = q[end] as string;
     if (isSpace(ch) || ch === "," || ch === '"') break;
-    if (ch === "{" && schema.braces) {
-      const close = closingBrace(q, end);
-      if (close !== null) {
-        end = close + 1;
-        continue;
-      }
-    }
-    end += 1;
+    const close = braces?.closeOf.get(end);
+    end = close === undefined ? end + 1 : close + 1;
   }
-  const value = q.slice(at, end);
+  const raw = q.slice(at, end);
+  if (braces === null) {
+    return { start: at, end, raw, value: raw, expanded: [raw] };
+  }
+  const chars: BraceChar[] = [];
+  for (let i = at; i < end; i += 1) {
+    const close = braces.runs.get(i);
+    if (close === undefined) {
+      chars.push({ ch: q[i] as string, active: true });
+      continue;
+    }
+    for (const ch of q.slice(i + 1, close)) chars.push({ ch, active: false });
+    i = close;
+  }
+  const value = chars.map((c) => c.ch).join("");
+  const expansion = expandBraceChars(chars, BRACE_LIMIT);
   return {
     start: at,
     end,
-    raw: value,
+    raw,
     value,
-    ...expandedOf(schema, value, value),
+    ...(expansion.ok
+      ? { expanded: expansion.words }
+      : { expanded: [value], error: expansion.reason }),
   };
 }
 
@@ -248,9 +287,10 @@ function scanPlainFilter<K extends string>(
   if (key === undefined) return null;
   i += 1;
 
+  const braces = schema.braces ? plainBraces(q, i) : null;
   const values: QueryValue[] = [];
   for (;;) {
-    const value = scanPlainValue(schema, q, i);
+    const value = scanPlainValue(q, i, braces);
     i = value.end;
     // An empty value is someone mid-typing (`label:`), not an error and not a
     // condition; the comma that may follow is still consumed so the scan
@@ -361,15 +401,23 @@ function unitsOf(word: ShellWord, from: number): Unit[] {
 
 /** Unit indexes inside a balanced bare `{…}`, where a comma does not split. */
 function groupedUnits(units: Unit[]): Set<number> {
-  const grouped = new Set<number>();
+  // Depth deltas swept once, so nested pairs stay linear in the word's length.
+  const delta = new Array<number>(units.length + 1).fill(0);
   const stack: number[] = [];
   for (let i = 0; i < units.length; i += 1) {
     const bare = units[i]?.bare;
     if (bare === "{") stack.push(i);
     else if (bare === "}" && stack.length > 0) {
       const open = stack.pop() as number;
-      for (let j = open + 1; j < i; j += 1) grouped.add(j);
+      delta[open + 1] = (delta[open + 1] as number) + 1;
+      delta[i] = (delta[i] as number) - 1;
     }
+  }
+  const grouped = new Set<number>();
+  let depth = 0;
+  for (let i = 0; i < units.length; i += 1) {
+    depth += delta[i] as number;
+    if (depth > 0) grouped.add(i);
   }
   return grouped;
 }

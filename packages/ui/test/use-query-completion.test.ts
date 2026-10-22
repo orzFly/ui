@@ -163,6 +163,24 @@ describe("useQueryCompletion", () => {
     expect(result.current.loading).toBe(false);
   });
 
+  it("is loading again while a failed prefix is asked for again", async () => {
+    const { provider, search, calls } = searchProvider();
+    const providers = { member: provider };
+    const { result, rerender } = mount({ value: "assignee:a", providers });
+    await act(() => vi.advanceTimersByTimeAsync(150));
+    await act(async () => calls[0]?.reject(new Error("offline")));
+    expect(result.current.loading).toBe(false);
+    rerender({ value: "assignee:ab", providers });
+    rerender({ value: "assignee:a", providers });
+    expect(result.current.loading).toBe(true);
+    await act(() => vi.advanceTimersByTimeAsync(150));
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(result.current.loading).toBe(true);
+    await act(async () => calls[1]?.resolve([{ value: "alice" }]));
+    expect(result.current.loading).toBe(false);
+    expect(texts(result)).toEqual(["alice"]);
+  });
+
   it("computes and fetches nothing while disabled", async () => {
     const { provider, search } = searchProvider();
     const { result } = mount({

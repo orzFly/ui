@@ -128,10 +128,22 @@ export function HighlightedInput({
           onValueChange(e.target.value);
           report();
         }}
-        onScroll={report}
-        onSelect={report}
-        onKeyUp={report}
-        onClick={report}
+        onScroll={(e) => {
+          report();
+          rest.onScroll?.(e);
+        }}
+        onSelect={(e) => {
+          report();
+          rest.onSelect?.(e);
+        }}
+        onKeyUp={(e) => {
+          report();
+          rest.onKeyUp?.(e);
+        }}
+        onClick={(e) => {
+          report();
+          rest.onClick?.(e);
+        }}
         onFocus={(e) => {
           report();
           rest.onFocus?.(e);

@@ -155,7 +155,8 @@ export function rawWord(text: string, start: number): ShellWord {
  * The words after the command name, one per argument, or null when there
  * are too few for the required arguments or too many for the command: then
  * the line is not that command and stays prose, so `/close the door` is a
- * sentence.
+ * sentence. An open quote swallows the words after it, so with one the line
+ * still counts when it has too few: it is reported broken, not posted.
  *
  * A rest argument whose text does not start with a quote is the raw
  * remainder, so `/label In Progress` and `/status Won't fix` need no quoting
@@ -177,7 +178,11 @@ function argumentWords<T>(
     words.splice(last, words.length - last, rawWord(text, head.start));
   }
   const required = command.args.filter((arg) => !arg.optional).length;
-  if (words.length < required || words.length > command.args.length) {
+  const unclosed = words.at(-1)?.unclosed === true;
+  if (
+    (!unclosed && words.length < required) ||
+    words.length > command.args.length
+  ) {
     return null;
   }
   return words;

@@ -1,5 +1,5 @@
 import type { ValueProviders } from "@orz/query";
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { todouSchema } from "../../query/test/fixtures/todou-schema.ts";
@@ -44,21 +44,31 @@ function Harness({
   onOpenChange?: (open: boolean) => void;
   sources?: readonly RowSource<Past>[];
   limit?: number;
+  providers?: ValueProviders;
+  /** Load a submitted past query into the box, as an app would. */
+  loadChosen?: boolean;
+  onClick?: () => void;
 }) {
   const [value, setValue] = useState(initial);
   return (
     <QueryBox<Past>
       schema={todouSchema}
-      providers={PROVIDERS}
+      providers={props.providers ?? PROVIDERS}
       value={value}
       onValueChange={setValue}
-      onSubmit={props.onSubmit ?? (() => {})}
+      onSubmit={(query, chosen) => {
+        props.onSubmit?.(query, chosen);
+        if (props.loadChosen && chosen !== undefined) setValue(chosen.q);
+      }}
       renderSubmitRow={(query, option) => (
         <div {...option} data-row="submit">
           Search for “{query}”
         </div>
       )}
-      inputProps={{ "aria-label": "Search" }}
+      inputProps={{
+        "aria-label": "Search",
+        ...(props.onClick === undefined ? {} : { onClick: props.onClick }),
+      }}
       {...(props.onEscape === undefined ? {} : { onEscape: props.onEscape })}
       {...(props.onOpenChange === undefined
         ? {}
@@ -80,8 +90,7 @@ function mount(props: Parameters<typeof Harness>[0] = {}) {
   const listbox = () => utils.container.querySelector('[role="listbox"]');
   /** The box only offers anything while it has focus. */
   const type = (value: string, caret = value.length) => {
-    input.focus();
-    fireEvent.focus(input);
+    act(() => input.focus());
     fireEvent.change(input, { target: { value } });
     input.setSelectionRange(caret, caret);
     fireEvent.select(input);
@@ -228,6 +237,64 @@ describe("QueryBox · keyboard model", () => {
     box.key("Escape");
     fireEvent.submit(box.form);
     expect(onSubmit).toHaveBeenCalledWith("部署", undefined);
+  });
+
+  it.each(["submit", "Escape"])(
+    "preselects nothing again after %s, blur and refocus",
+    (how) => {
+      const onSubmit = vi.fn();
+      const box = mount({
+        onSubmit,
+        loadChosen: true,
+        sources: [history(["foo bar"])],
+      });
+      box.type("foo");
+      box.key("ArrowDown");
+      box.key("ArrowDown");
+      if (how === "submit") {
+        fireEvent.submit(box.form);
+        expect(onSubmit).toHaveBeenCalledWith("foo", { q: "foo bar" });
+        expect(box.input.value).toBe("foo bar");
+      } else {
+        box.key("Escape");
+      }
+      act(() => box.input.blur());
+      act(() => box.input.focus());
+      expect(box.listbox()).not.toBeNull();
+      expect(box.input.getAttribute("aria-activedescendant")).toBeNull();
+      expect(
+        box.options().map((o) => o.getAttribute("aria-selected")),
+      ).not.toContain("true");
+    },
+  );
+
+  it("keeps the highlight on its row when a search answer lands above it", async () => {
+    vi.useFakeTimers();
+    try {
+      let answer: (rows: { value: string }[]) => void = () => {};
+      const search = vi.fn(
+        () =>
+          new Promise<{ value: string }[]>((resolve) => {
+            answer = resolve;
+          }),
+      );
+      const onSubmit = vi.fn();
+      const box = mount({ onSubmit, providers: { member: { search } } });
+      box.type("assignee:");
+      const submitRow = () =>
+        box.container.querySelector('[data-row="submit"]')?.id;
+      box.key("End");
+      expect(box.input.getAttribute("aria-activedescendant")).toBe(submitRow());
+      await act(() => vi.advanceTimersByTimeAsync(150));
+      expect(search).toHaveBeenCalledOnce();
+      await act(async () => answer([{ value: "alice" }]));
+      expect(box.texts()).toContain("alice");
+      expect(box.input.getAttribute("aria-activedescendant")).toBe(submitRow());
+      fireEvent.submit(box.form);
+      expect(onSubmit).toHaveBeenCalledWith("assignee:", undefined);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("returns to nothing highlighted when ArrowUp leaves the first row", () => {
@@ -422,6 +489,15 @@ describe("QueryBox · the panel", () => {
   });
 });
 
+describe("QueryBox · inputProps", () => {
+  it("calls the app's own click handler on the input", () => {
+    const onClick = vi.fn();
+    const box = mount({ onClick });
+    fireEvent.click(box.input);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+});
+
 describe("QueryBox · onOpenChange", () => {
   it("reports each transition once", () => {
     const onOpenChange = vi.fn();
@@ -459,6 +535,21 @@ describe("QueryBox · IME", () => {
     box.key("Enter");
     fireEvent.submit(box.form);
     expect(onSubmit).toHaveBeenCalledWith("bu", undefined);
+  });
+
+  it("leaves every key to the IME while it composes", () => {
+    const onEscape = vi.fn();
+    const box = mount({ onEscape });
+    box.type("plain");
+    box.key("Escape", { isComposing: true });
+    box.key("Escape", { isComposing: true });
+    expect(box.listbox()).not.toBeNull();
+    expect(onEscape).not.toHaveBeenCalled();
+    box.type("har");
+    box.key("Tab", { isComposing: true });
+    expect(box.input.value).toBe("har");
+    box.key("ArrowDown", { keyCode: 229 });
+    expect(box.input.getAttribute("aria-activedescendant")).toBeNull();
   });
 
   it("shows the input's own text while composing", () => {

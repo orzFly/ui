@@ -547,6 +547,48 @@ describe("value checks before compile", () => {
     );
   });
 
+  it("break a line whose open quote swallowed required arguments", () => {
+    const compile = vi.fn(() => ({ type: "pair" as const }));
+    const strict = createCommandRegistry<Action>([
+      {
+        name: "two",
+        detail: "two required arguments",
+        args: [
+          { name: "a", value: { kind: "free" } },
+          { name: "b", value: { kind: "free" } },
+        ],
+        summarize: () => "two",
+        compile,
+      },
+      {
+        name: "note",
+        detail: "a required argument and a rest",
+        args: [
+          { name: "who", value: { kind: "free" } },
+          { name: "text", value: { kind: "free" }, rest: true },
+        ],
+        summarize: () => "note",
+        compile,
+      },
+    ]);
+    for (const [line, name] of [
+      ["/two 'In Progress alice", "two"],
+      ["/note 'alice", "note"],
+    ] as const) {
+      const parsed = recognizeCommandLine(line, strict);
+      expect(parsed?.compiled).toBeNull();
+      expect(parsed?.reason).toBe(`/${name}: unclosed quote`);
+      const draft = parseCommandLines(line, strict);
+      expect(draft.body).toBe("");
+      expect(draft.invalid).toEqual([
+        { line, reason: `/${name}: unclosed quote` },
+      ]);
+    }
+    expect(compile).not.toHaveBeenCalled();
+    // Too many words is still prose, open quote or not.
+    expect(recognize("/pair a b 'c")).toBeNull();
+  });
+
   it("hand the parsed lists to summarize", () => {
     expect(
       parseCommandLines("/assign {alice,bot-one}", positional, PROVIDERS)

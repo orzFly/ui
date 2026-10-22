@@ -91,6 +91,8 @@ export function useQueryCompletion({
   useEffect(() => {
     if (wanted === null || cache.current.has(wanted.cacheKey)) return;
     const { cacheKey: key, source, typed } = wanted;
+    // Asking again, so the old failure no longer speaks for this prefix.
+    setFailed((f) => (f === key ? null : f));
     const controller = new AbortController();
     const timer = setTimeout(() => {
       const current = latest.current[source];

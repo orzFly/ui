@@ -1,5 +1,5 @@
 import { fireEvent, render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { HighlightedInput } from "../src/components/highlighted-input.tsx";
 
 /** The mirror renders whatever it is handed; these tests only need spans. */
@@ -22,6 +22,32 @@ function mount(value = "harness:codex") {
 }
 
 describe("HighlightedInput", () => {
+  it("still calls the caller's own caret-moving handlers", () => {
+    const handlers = {
+      onClick: vi.fn(),
+      onKeyUp: vi.fn(),
+      onSelect: vi.fn(),
+      onScroll: vi.fn(),
+    };
+    const utils = render(
+      <HighlightedInput
+        value="x"
+        onValueChange={() => {}}
+        render={render1}
+        aria-label="Search"
+        {...handlers}
+      />,
+    );
+    const input = utils.getByLabelText("Search");
+    fireEvent.click(input);
+    fireEvent.keyUp(input, { key: "a" });
+    fireEvent.select(input);
+    fireEvent.scroll(input);
+    for (const handler of Object.values(handlers)) {
+      expect(handler).toHaveBeenCalled();
+    }
+  });
+
   it("paints the string through the mirror and keeps the input transparent", () => {
     const { input, mirror } = mount();
     expect(mirror.textContent).toBe("harness:codex");

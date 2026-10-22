@@ -81,6 +81,13 @@ describe("canonicalValue", () => {
   it("does not treat a special as a member of the set", () => {
     expect(canonicalValue(is, "none")).toBeNull();
   });
+
+  it("does not read aliases through the prototype chain", () => {
+    for (const key of ["constructor", "__proto__", "hasOwnProperty"]) {
+      expect(canonicalValue(state, key)).toBeNull();
+      expect(valueVerdict(state, key)).toBe("invalid");
+    }
+  });
 });
 
 describe("specialValue", () => {

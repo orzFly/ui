@@ -213,19 +213,51 @@ describe("braces in values", () => {
     }
   });
 
-  it("does not let a group span a space or, in plain mode, a quote", () => {
+  it("does not let a group span a space or, in plain mode, a stray quote", () => {
     expect(filtersIn(plainBraces)("label:{a, b}")).toEqual([
       { key: "label", negated: false, values: ["{a"] },
     ]);
-    expect(filtersIn(plainBraces)('label:{a,"b"}')).toEqual([
-      { key: "label", negated: false, values: ["{a", "b"] },
+    expect(filtersIn(plainBraces)('label:{a"b",c}')).toEqual([
+      { key: "label", negated: false, values: ["{a"] },
     ]);
-    expect(termsIn(plainBraces)('label:{a,"b"}')).toEqual(["}"]);
+  });
+
+  it("reads a quoted alternative in plain mode as one, spaces and all", () => {
+    expect(filtersIn(plainBraces)('label:{a,"b c"}')).toEqual([
+      { key: "label", negated: false, values: ["a", "b c"] },
+    ]);
+    expect(termsIn(plainBraces)('label:{a,"b c"}')).toEqual([]);
+    expect(filtersIn(plainBraces)('label:{"x,}",y}')).toEqual([
+      { key: "label", negated: false, values: ["x,}", "y"] },
+    ]);
+    expect(filtersIn(plainBraces)('label:"a b",{x,y}')).toEqual([
+      { key: "label", negated: false, values: ["a b", "x", "y"] },
+    ]);
+    // Unclosed, the group does not close and the quote is a value of its own.
+    expect(filtersIn(plainBraces)('label:{a,"b c')).toEqual([
+      { key: "label", negated: false, values: ["{a", "b c"] },
+    ]);
+  });
+
+  it("matches long brace runs in linear time", () => {
+    const begin = performance.now();
+    filtersIn(plainBraces)(`label:${"{".repeat(20000)}`);
+    filtersIn(plainBraces)(`label:${"{,".repeat(20000)}`);
+    filtersIn(shellBraces)(`label:${"{".repeat(20000)}${"}".repeat(20000)}`);
+    expect(performance.now() - begin).toBeLessThan(1000);
   });
 
   it("leaves braces in free text alone in both modes", () => {
     expect(termsIn(plainBraces)("{a,b} fn(){x}")).toEqual(["{a,b}", "fn(){x}"]);
     expect(termsIn(shellBraces)("{a,b} fn(){x}")).toEqual(["{a,b}", "fn(){x}"]);
+  });
+
+  it("does not throw on deeply nested groups", () => {
+    const value = `${"{a,".repeat(3000)}b${"}".repeat(3000)}`;
+    for (const schema of [plainBraces, shellBraces]) {
+      const part = filterPart(schema, `label:${value}`);
+      expect(part.values[0]?.error).toMatch(/more than 64/);
+    }
   });
 
   it("fails an expansion over the limit with a reason, keeping the value", () => {

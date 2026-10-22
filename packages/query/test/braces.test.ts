@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expandBraces } from "../src/braces.ts";
+import { BRACE_LIMIT, expandBraces } from "../src/braces.ts";
 import { shellWords } from "../src/shell-words.ts";
 
 function words(input: string): string[] {
@@ -17,6 +17,13 @@ function wordsOfShell(input: string): string[] {
 }
 
 describe("expandBraces", () => {
+  it("fails nesting deeper than the limit instead of overflowing the stack", () => {
+    const deep = (n: number) => `${"{a,".repeat(n)}b${"}".repeat(n)}`;
+    expect(expandBraces(deep(BRACE_LIMIT + 1)).ok).toBe(false);
+    expect(expandBraces(deep(5000)).ok).toBe(false);
+    expect(words(deep(3))).toEqual(["a", "a", "a", "b"]);
+  });
+
   it("expands a comma group", () => {
     expect(words("{a,b}")).toEqual(["a", "b"]);
     expect(words("{a,b,c}")).toEqual(["a", "b", "c"]);

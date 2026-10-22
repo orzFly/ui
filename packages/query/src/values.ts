@@ -71,7 +71,10 @@ export function canonicalValue(spec: ValueSpec, value: string): string | null {
   const lower = value.toLowerCase();
   const canonical = spec.values.find((v) => v.toLowerCase() === lower);
   if (canonical !== undefined) return canonical;
-  return spec.aliases?.[lower] ?? null;
+  // An own-key check: a plain lookup would answer `constructor` from the prototype.
+  return spec.aliases !== undefined && Object.hasOwn(spec.aliases, lower)
+    ? (spec.aliases[lower] as string)
+    : null;
 }
 
 /**
