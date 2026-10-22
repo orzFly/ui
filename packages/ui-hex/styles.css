@@ -87,13 +87,14 @@
 .orz-hex-spacer {
   position: relative;
   width: max-content;
-  /* The layer's spare row must not grow the scroll extent, but a selected
-     cell's 1px contour may overhang the edge. */
+  /* A selected cell's 1px contour may overhang the edge. */
   overflow: clip;
   overflow-clip-margin: 1px;
 }
+/* Pinned under the header while the spacer scrolls: the scroll position only
+   picks the top row, so the view moves by whole rows like the reference. */
 .orz-hex-layer {
-  will-change: transform;
+  position: sticky;
 }
 
 .orz-hex-row {

@@ -317,6 +317,12 @@ export function HexGrid({
     FALLBACK_ROW_HEIGHT;
   const headerHeight = showColumnLabels ? rowHeight : 0;
   const scrollerHeight = useElementSize(scrollerRef, (el) => el.clientHeight);
+  // A horizontal scrollbar takes its height out of the rows; a fixed `rows`
+  // height grows by it so that all of them still show.
+  const scrollbarHeight = useElementSize(
+    scrollerRef,
+    (el) => el.offsetHeight - el.clientHeight,
+  );
   const viewportHeight =
     scrollerHeight > headerHeight
       ? scrollerHeight - headerHeight
@@ -336,6 +342,7 @@ export function HexGrid({
   const topRow = clampTopRow(topRowState, geometry);
   const topRowRef = useLatest(topRow);
   const lastWritten = useRef(-1);
+  const wheelRows = useRef(0);
 
   const setTop = useCallback(
     (row: number) => {
@@ -381,9 +388,13 @@ export function HexGrid({
         event.deltaMode === 1
           ? g.rowHeight
           : event.deltaMode === 2
-            ? g.viewportHeight
+            ? g.viewportRows * g.rowHeight
             : 1;
-      setTop(topRowRef.current + (event.deltaY * unit) / g.rowHeight);
+      // Trackpads send a few pixels at a time; they add up to whole rows.
+      wheelRows.current += (event.deltaY * unit) / g.rowHeight;
+      const step = Math.trunc(wheelRows.current);
+      wheelRows.current -= step;
+      if (step) setTop(topRowRef.current + step);
       if (event.deltaX) el.scrollLeft += event.deltaX * unit;
     };
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -395,28 +406,23 @@ export function HexGrid({
   useLayoutEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
+    if (topRowFromScroll(el.scrollTop, geometry) === topRowRef.current) return;
     const scrollTop = scrollFromTopRow(topRowRef.current, geometry);
-    if (Math.abs(el.scrollTop - scrollTop) > 1) {
-      lastWritten.current = scrollTop;
-      el.scrollTop = scrollTop;
-    }
+    lastWritten.current = scrollTop;
+    el.scrollTop = scrollTop;
   }, [geometry, topRowRef]);
 
-  const visibleCount = Math.ceil(viewportHeight / rowHeight) + 1;
-  const firstRow = Math.floor(topRow);
-  const lastRow = Math.min(totalRows - 1, firstRow + visibleCount - 1);
-  const layerTop =
-    scrollFromTopRow(topRow, geometry) - (topRow - firstRow) * rowHeight;
+  const lastRow = Math.min(totalRows - 1, topRow + geometry.viewportRows - 1);
 
   const { lookbehind, lookahead } = decoding;
   const firstPage = Math.floor(
-    Math.max(0, firstRow * columns - lookbehind) / cache.pageSize,
+    Math.max(0, topRow * columns - lookbehind) / cache.pageSize,
   );
   const lastPage = Math.floor(
     Math.max(0, Math.min(size, (lastRow + 1) * columns + lookahead) - 1) /
       cache.pageSize,
   );
-  const hasRows = lastRow >= firstRow;
+  const hasRows = lastRow >= topRow;
   // Keyed on pages, not rows: a failed page is retried when it comes back
   // into view, not on every row scrolled.
   useEffect(() => {
@@ -429,10 +435,11 @@ export function HexGrid({
     (offset: number, align: "nearest" | "start" | "center" = "nearest") => {
       const g = geometryRef.current;
       const row = Math.floor(Math.max(0, offset) / columns);
-      const visibleRows = g.viewportHeight / g.rowHeight;
+      const visibleRows = g.viewportRows;
       const top = topRowRef.current;
       if (align === "start") setTop(row);
-      else if (align === "center") setTop(row - (visibleRows - 1) / 2);
+      else if (align === "center")
+        setTop(row - Math.floor((visibleRows - 1) / 2));
       else if (row < top) setTop(row);
       else if (row + 1 > top + visibleRows) setTop(row + 1 - visibleRows);
     },
@@ -505,7 +512,8 @@ export function HexGrid({
     const rect = grid.getBoundingClientRect();
     const top =
       rect.top + (showColumnLabels ? geometryRef.current.rowHeight : 0);
-    const bottom = top + geometryRef.current.viewportHeight;
+    const bottom =
+      top + geometryRef.current.viewportRows * geometryRef.current.rowHeight;
     const outside =
       state.y < top ? state.y - top : state.y > bottom ? state.y - bottom : 0;
     if (outside === 0) {
@@ -654,7 +662,7 @@ export function HexGrid({
     if (editing?.onKey(event, context)) return;
     const current = selectionRef.current;
     const g = geometryRef.current;
-    const pageRows = Math.max(1, Math.floor(g.viewportHeight / g.rowHeight));
+    const pageRows = g.viewportRows;
     const next = navigate(
       current,
       {
@@ -667,10 +675,7 @@ export function HexGrid({
         size,
         pageRows,
         maxOffset,
-        firstVisible: Math.min(
-          maxOffset,
-          Math.ceil(topRowRef.current) * columns,
-        ),
+        firstVisible: Math.min(maxOffset, topRowRef.current * columns),
         pane: current?.pane ?? "hex",
       },
     );
@@ -834,7 +839,7 @@ export function HexGrid({
   const hover = hoverOffset >= 0 ? glyphRange(hoverOffset) : null;
 
   const rowElements = [];
-  for (let row = firstRow; row <= lastRow; row++) {
+  for (let row = topRow; row <= lastRow; row++) {
     const rowStart = row * columns;
     const length = Math.min(columns, size - rowStart);
     const windowStart = Math.max(0, rowStart - lookbehind);
@@ -936,7 +941,7 @@ export function HexGrid({
           rows === undefined
             ? undefined
             : {
-                height: `calc(var(--hex-row-height) * ${rows + (showColumnLabels ? 1 : 0)})`,
+                height: `calc(var(--hex-row-height) * ${rows + (showColumnLabels ? 1 : 0)} + ${scrollbarHeight}px)`,
               }
         }
         onPointerDown={onPointerDown}
@@ -994,10 +999,7 @@ export function HexGrid({
           className="orz-hex-spacer"
           style={{ height: `${geometry.spacerHeight}px` }}
         >
-          <div
-            className="orz-hex-layer"
-            style={{ transform: `translateY(${layerTop}px)` }}
-          >
+          <div className="orz-hex-layer" style={{ top: headerHeight }}>
             {rowElements}
           </div>
         </div>

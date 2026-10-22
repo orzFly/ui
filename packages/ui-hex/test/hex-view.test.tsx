@@ -44,8 +44,8 @@ describe("HexView", () => {
     const addresses = [
       ...root.querySelectorAll(".orz-hex-layer .orz-hex-addr"),
     ].map((el) => el.textContent);
-    // Four visible rows plus the one below that scrolls in.
-    expect(addresses).toEqual(["0000", "0010", "0020", "0030", "0040"]);
+    // Exactly the four rows asked for: no half row scrolls in below.
+    expect(addresses).toEqual(["0000", "0010", "0020", "0030"]);
   });
 
   it("shifts displayed addresses by baseAddress", () => {
@@ -246,6 +246,58 @@ describe("HexView", () => {
     act(() => handle?.scrollToOffset(0x20, "start"));
     const first = root.querySelector(".orz-hex-layer .orz-hex-addr");
     expect(first?.textContent).toBe("0020");
+  });
+
+  it("centres on a whole row", () => {
+    let handle: HexViewHandle | null = null;
+    const { root } = setup({
+      ref: (h: HexViewHandle | null) => {
+        handle = h;
+      },
+    });
+    act(() => handle?.scrollToOffset(0x40, "center"));
+    const first = root.querySelector(".orz-hex-layer .orz-hex-addr");
+    expect(first?.textContent).toBe("0030");
+  });
+
+  it("keeps rows aligned under a fractional rows prop", () => {
+    const { root } = setup({
+      rows: 4.5,
+      defaultSelection: { anchor: 0, focus: 0, pane: "hex" },
+    });
+    fireEvent.keyDown(root, { key: "End", ctrlKey: true });
+    const addresses = [
+      ...root.querySelectorAll(".orz-hex-layer .orz-hex-addr"),
+    ].map((el) => el.textContent);
+    expect(addresses).toEqual(["0030", "0040", "0050", "0060"]);
+  });
+
+  it("shows whole rows from a scroll position between rows", () => {
+    const { root } = setup();
+    const scroller = root.querySelector(".orz-hex-scroller") as HTMLElement;
+    // 1.4 rows at the fallback 22px row height.
+    scroller.scrollTop = 31;
+    fireEvent.scroll(scroller);
+    const addresses = [
+      ...root.querySelectorAll(".orz-hex-layer .orz-hex-addr"),
+    ].map((el) => el.textContent);
+    expect(addresses).toEqual(["0010", "0020", "0030", "0040"]);
+  });
+
+  it("adds small wheel steps up to whole rows when scaled", () => {
+    const huge: ByteSource = {
+      size: 2 ** 32,
+      read: (_offset, length) => new Uint8Array(length),
+    };
+    const { root } = setup({ source: huge });
+    const scroller = root.querySelector(".orz-hex-scroller") as HTMLElement;
+    const first = () =>
+      root.querySelector(".orz-hex-layer .orz-hex-addr")?.textContent;
+    fireEvent.wheel(scroller, { deltaY: 8 });
+    fireEvent.wheel(scroller, { deltaY: 8 });
+    expect(first()).toBe("00000000");
+    fireEvent.wheel(scroller, { deltaY: 8 });
+    expect(first()).toBe("00000010");
   });
 
   it("survives a source whose read throws synchronously", async () => {
