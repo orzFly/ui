@@ -255,6 +255,7 @@ export function createPageCache(
         unsubscribeSource?.();
         unsubscribeSource = undefined;
         for (const [page, flight] of [...flights]) {
+          flight.requested = false;
           if (flight.waiters === 0) abort(page);
         }
       };
@@ -294,7 +295,11 @@ export function createPageCache(
           if (done) return;
           finish();
           reject(abortError(signal as AbortSignal));
-          if (shared.waiters === 0 && !shared.requested) {
+          if (
+            flights.get(page) === shared &&
+            shared.waiters === 0 &&
+            !shared.requested
+          ) {
             abort(page);
             notify();
           }

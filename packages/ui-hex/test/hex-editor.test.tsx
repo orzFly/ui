@@ -355,6 +355,28 @@ describe("HexEditor undo", () => {
     expect(bytes().slice(0, 3)).toEqual([0x11, 0x20, 0x30]);
   });
 
+  it("keeps the caret where it is when the app saves after an undo", () => {
+    const { click, type, doc, selection } = setup();
+    click(1);
+    type("a", "b");
+    click(3);
+    type("c");
+    act(() => doc.undo());
+    click(6);
+    act(() => doc.markSaved());
+    expect(selection()?.focus).toBe(6);
+  });
+
+  it("ends the typing run when the app switches the mode prop", () => {
+    const { click, type, doc, bytes, rerender } = setup({ mode: "overwrite" });
+    click(2);
+    type("4", "1");
+    rerender(<HexEditor document={doc} rows={4} mode="insert" />);
+    type("5");
+    act(() => doc.undo());
+    expect(bytes()).toEqual([0x10, 0x20, 0x41, 0x40, 0x50, 0x60, 0x70, 0x80]);
+  });
+
   it("clamps the selection when the app shrinks the document", () => {
     const { click, doc, selection } = setup();
     click(7);

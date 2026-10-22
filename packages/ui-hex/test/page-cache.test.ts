@@ -252,6 +252,33 @@ describe("createPageCache", () => {
     expect((await loaded)[0]).toBe(44);
   });
 
+  it("lets a caller of an invalidated load abort without touching the newer read", async () => {
+    const { source, calls } = fakeSource(1000);
+    const cache = createPageCache(source, { pageSize: 100 });
+    const stale = new AbortController();
+    const first = cache.load(0, stale.signal);
+    first.catch(() => {});
+    cache.invalidate();
+    const second = cache.load(0, new AbortController().signal);
+    stale.abort();
+    expect(calls[1]?.signal?.aborted).toBe(false);
+    calls[1]?.resolve();
+    expect((await second)[0]).toBe(0);
+  });
+
+  it("aborts a load once its caller gives up after the last view left", async () => {
+    const { source, calls } = fakeSource(1000);
+    const cache = createPageCache(source, { pageSize: 100 });
+    const unsubscribe = cache.subscribe(() => {});
+    cache.request(0, 0);
+    const controller = new AbortController();
+    cache.load(0, controller.signal).catch(() => {});
+    unsubscribe();
+    expect(calls[0]?.signal?.aborted).toBe(false);
+    controller.abort();
+    expect(calls[0]?.signal?.aborted).toBe(true);
+  });
+
   it("rejects a load whose read fails and marks the page failed", async () => {
     const { source, calls } = fakeSource(1000);
     const cache = createPageCache(source, { pageSize: 100 });

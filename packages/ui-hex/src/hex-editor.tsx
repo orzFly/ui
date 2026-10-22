@@ -120,6 +120,13 @@ export function HexEditor({
   );
   const mode: HexEditMode = doc.resizable ? modeValue : "overwrite";
   const modeRef = useLatest(mode);
+  // A mode the app switches through the prop ends the typing run too.
+  const lastMode = useRef(mode);
+  useEffect(() => {
+    if (lastMode.current === mode) return;
+    lastMode.current = mode;
+    breakRun(doc);
+  }, [doc, mode]);
   const readOnlyRef = useLatest(readOnly);
   const onPasteRef = useLatest(onPaste);
 
@@ -142,7 +149,8 @@ export function HexEditor({
         const change = lastChange(doc);
         const current = selectionRef.current;
         const next =
-          change.kind !== "edit" && change.selection !== undefined
+          (change.kind === "undo" || change.kind === "redo") &&
+          change.selection !== undefined
             ? clampSelection(change.selection, maxOffset())
             : clampSelection(current, maxOffset());
         if (next === current) return;

@@ -682,7 +682,13 @@ export function HexGrid({
   // The append cell takes the caret but is never part of the highlighted range.
   const selLast = Math.min(selEnd, size - 1);
   const caret = selection ? selection.focus : -1;
-  const caretNibble = editing ? (selection?.nibble ?? 0) : undefined;
+  // The nibble counts only in the hex pane; from the text pane the hex twin
+  // keeps the whole-byte underline.
+  const caretNibble = editing
+    ? selection?.pane === "text"
+      ? undefined
+      : (selection?.nibble ?? 0)
+    : undefined;
   const digits = addressDigits(
     baseAddress + Math.max(0, (totalRows - 1) * columns),
   );

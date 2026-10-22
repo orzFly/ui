@@ -122,6 +122,17 @@ describe("HexGrid with editing", () => {
     expect(caret().getAttribute("data-caret")).toBe("0");
   });
 
+  it("keeps the whole-byte twin caret when the caret is in the text pane", () => {
+    const { root } = setup(40, stubEditing(), {
+      selection: { anchor: 5, focus: 5, pane: "text" },
+    });
+    const twin = root.querySelector(
+      '[data-pane="hex"][data-caret]',
+    ) as HTMLElement;
+    expect(twin.getAttribute("data-caret")).toBe("");
+    expect(twin.querySelector(".orz-hex-nibble")).toBeNull();
+  });
+
   it("never highlights the append cell as selected", () => {
     const { root } = setup(20, stubEditing(), {
       selection: { anchor: 18, focus: 20, pane: "hex" },

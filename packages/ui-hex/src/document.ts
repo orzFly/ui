@@ -69,6 +69,8 @@ interface Step {
 
 export type HexDocumentChange =
   | { kind: "edit" }
+  /** Saved, or the source changed underneath: nothing to restore. */
+  | { kind: "other" }
   | { kind: "undo" | "redo"; selection: HexSelection | null | undefined };
 
 export interface DocumentEdit {
@@ -499,6 +501,7 @@ export function createHexDocument(
       if (listeners.size === 1) {
         unsubscribeSource = source.subscribe?.(() => {
           cache?.invalidate();
+          state.lastChange = { kind: "other" };
           notify();
         });
       }
@@ -552,6 +555,7 @@ export function createHexDocument(
       state.breakRun();
       if (savedId === currentId()) return;
       savedId = currentId();
+      state.lastChange = { kind: "other" };
       notify();
     },
 
