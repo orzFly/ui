@@ -1,0 +1,279 @@
+@layer components {
+  /* GitHub-flavoured markdown typography (T-32). One plain-CSS block —
+     theme tokens make it track light/dark for free, and element swaps in
+     the renderer (react-markdown `components`) don't need class surgery.
+     Sizes follow github.com issue comments (14px base). */
+  .markdown-body {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+  }
+  .markdown-body > :first-child {
+    margin-top: 0;
+  }
+  .markdown-body > :last-child {
+    margin-bottom: 0;
+  }
+
+  /* .markdown-paragraph is a <p> stand-in for paragraphs carrying a
+     block-level embed — block content HTML forbids inside real <p>. */
+  .markdown-body p,
+  .markdown-body .markdown-paragraph,
+  .markdown-body blockquote,
+  .markdown-body ul,
+  .markdown-body ol,
+  .markdown-body table,
+  .markdown-body details,
+  .markdown-body .markdown-fence,
+  .markdown-body pre {
+    margin-block: 0 1rem;
+  }
+
+  /* No JS toggle anywhere: native <summary> brings Enter/Space, the `open`
+     state and the screen-reader semantics with it. */
+  .markdown-body summary {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+  }
+  .markdown-body summary::-webkit-details-marker {
+    display: none;
+  }
+  /* lucide's `chevron-right`, painted through a mask so it follows the text
+     colour into dark mode. */
+  .markdown-body summary::before {
+    content: "";
+    flex: none;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    mask:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    transition: rotate 120ms ease;
+  }
+  .markdown-body details[open] > summary::before {
+    rotate: 90deg;
+  }
+  .markdown-body summary > :last-child {
+    margin-bottom: 0;
+  }
+  .markdown-body details > :last-child {
+    margin-bottom: 0;
+  }
+
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4,
+  .markdown-body h5,
+  .markdown-body h6 {
+    margin-block: 1.5rem 1rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .markdown-body h1,
+  .markdown-body h2 {
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid var(--border);
+  }
+  .markdown-body h1 {
+    font-size: 2em;
+  }
+  .markdown-body h2 {
+    font-size: 1.5em;
+  }
+  .markdown-body h3 {
+    font-size: 1.25em;
+  }
+  .markdown-body h4 {
+    font-size: 1em;
+  }
+  .markdown-body h5 {
+    font-size: 0.875em;
+  }
+  .markdown-body h6 {
+    font-size: 0.85em;
+    color: var(--muted-foreground);
+  }
+
+  .markdown-body a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .markdown-body ul,
+  .markdown-body ol {
+    padding-left: 2em;
+  }
+  .markdown-body ul {
+    list-style-type: disc;
+  }
+  .markdown-body ol {
+    list-style-type: decimal;
+  }
+  /* Nested lists sit tight under their parent item instead of taking the
+     block gap; declared ahead of the deeper marker rules only to keep
+     specificity ascending. */
+  .markdown-body ul ul,
+  .markdown-body ul ol,
+  .markdown-body ol ul,
+  .markdown-body ol ol {
+    margin-block: 0.25em 0;
+  }
+  .markdown-body ul ul,
+  .markdown-body ol ul {
+    list-style-type: circle;
+  }
+  .markdown-body ul ul ul,
+  .markdown-body ol ul ul {
+    list-style-type: square;
+  }
+  .markdown-body li + li {
+    margin-top: 0.25em;
+  }
+  /* remark-gfm task lists: the checkbox replaces the marker. */
+  .markdown-body li.task-list-item {
+    list-style-type: none;
+  }
+  .markdown-body ul.contains-task-list {
+    padding-left: 1.25em;
+  }
+  .markdown-body .task-list-item input[type="checkbox"] {
+    margin-right: 0.4em;
+    vertical-align: middle;
+  }
+
+  .markdown-body blockquote {
+    padding: 0 1em;
+    border-left: 0.25em solid var(--border);
+    color: var(--muted-foreground);
+  }
+
+  .markdown-body hr {
+    height: 0.25em;
+    margin: 1.5rem 0;
+    border: 0;
+    background-color: var(--border);
+  }
+
+  /* Tables scroll horizontally when wider than their container —
+     GitHub's own mechanism (block table, max-content width), which
+     needs no wrapper element around the <table>. */
+  .markdown-body table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+  .markdown-body th,
+  .markdown-body td {
+    padding: 6px 13px;
+    border: 1px solid var(--border);
+  }
+  .markdown-body th {
+    font-weight: 600;
+    background-color: var(--muted);
+  }
+  .markdown-body tbody tr:nth-child(2n) {
+    background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+  }
+
+  /* A document's frontmatter, as a metadata grid (T-240). It is a `<table>`
+     so that anything reading the tree as tables gets one, and it must not
+     look like one: the keys are syntax, not a header row, so they get mono at
+     small size in the muted tone while the values keep body typography.
+
+     Grid rather than table layout for one concrete reason: `.markdown-body
+     table` above is `width: max-content`, which would let a long value push
+     the grid into its own horizontal scrollbar. `minmax(0, 1fr)` on the value
+     column caps it at the container instead, and `subgrid` is what still
+     aligns every key against every other. */
+  .markdown-body table.markdown-frontmatter {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    width: 100%;
+    overflow-x: visible;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: color-mix(in oklab, var(--muted) 45%, transparent);
+    font-size: 0.9375em;
+  }
+  .markdown-body table.markdown-frontmatter tbody,
+  .markdown-body table.markdown-frontmatter tr {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+  /* The striping above counts rows; here every row is a field and reads better
+     separated by a hairline than by alternating fills. */
+  .markdown-body table.markdown-frontmatter tbody tr {
+    background-color: transparent;
+  }
+  .markdown-body table.markdown-frontmatter tr + tr {
+    border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  }
+  .markdown-body table.markdown-frontmatter th,
+  .markdown-body table.markdown-frontmatter td {
+    border: 0;
+    padding: 0.2rem 0.6rem;
+    text-align: left;
+    font-weight: 400;
+    background-color: transparent;
+  }
+  /* `--font-mono` is Tailwind's theme default rather than an @orz/ui token,
+     and Tailwind only emits it when something uses it — hence the fallback. */
+  .markdown-body table.markdown-frontmatter th {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.8125em;
+    line-height: 1.7;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+  /* Indentation and line breaks are the whole of what a nested map or a block
+     scalar shows, since the value is never parsed (T-240). */
+  .markdown-body table.markdown-frontmatter td {
+    white-space: pre-wrap;
+  }
+  /* A field with no key at all — TOML's `[section]`, or a line ahead of the
+     first field. Its key cell exists so a reader of the table still sees two
+     columns, and spans away here so the row reads as the full-width line it
+     is. */
+  .markdown-body table.markdown-frontmatter th:empty {
+    display: none;
+  }
+  .markdown-body table.markdown-frontmatter th:empty + td {
+    grid-column: 1 / -1;
+  }
+
+  .markdown-body img {
+    max-width: 100%;
+  }
+
+  /* Code styling stays intentionally shallow: a registered renderer usually
+     replaces the <pre>, so these rules only carry the unrendered fallback
+     (T-31). */
+  .markdown-body code {
+    padding: 0.2em 0.4em;
+    border-radius: var(--radius-sm);
+    background-color: var(--muted);
+    font-size: 0.85em;
+  }
+  .markdown-body pre {
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    background-color: var(--muted);
+    overflow-x: auto;
+    line-height: 1.45;
+  }
+  .markdown-body pre code {
+    padding: 0;
+    border-radius: 0;
+    background-color: transparent;
+  }
+}
