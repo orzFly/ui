@@ -4,7 +4,12 @@ import { useContentDepth, useContentMaxDepth } from "../registry.tsx";
 import type { ContentProps, ContentRenderer } from "../types.ts";
 import { DocumentCard } from "./document-card.tsx";
 import { AttachmentLink } from "./link.tsx";
-import { TEXT_PREVIEW_MAX_BYTES, useAttachmentViewer } from "./viewer.tsx";
+import {
+  type FileSource,
+  TEXT_PREVIEW_MAX_BYTES,
+  useAttachmentViewer,
+  useCanPreview,
+} from "./viewer.tsx";
 
 export type AttachmentCardOptions = {
   /** Text files above this draw a note instead of their contents. Default 1 MiB. */
@@ -38,6 +43,7 @@ export function attachmentCard(
     const depth = useContentDepth();
     const providerMaxDepth = useContentMaxDepth();
     const viewer = useAttachmentViewer();
+    const canPreview = useCanPreview(source as FileSource);
     if (source.kind !== "file") return null;
     const maxDepth = options.maxDepth ?? providerMaxDepth ?? 1;
     // A document inside a document card shows its own documents as links,
@@ -67,7 +73,11 @@ export function attachmentCard(
         name={source.name}
         meta={meta}
         downloadUrl={source.url}
-        onExpand={viewer === null ? undefined : () => viewer.show(source)}
+        // Only when the viewer would draw it: a text file of unknown size
+        // would open on the download pane.
+        onExpand={
+          viewer !== null && canPreview ? () => viewer.show(source) : undefined
+        }
         className={className}
         collapsedClassName={options.collapsedClassName}
       >

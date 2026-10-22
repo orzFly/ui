@@ -164,3 +164,20 @@ describe("formatSize", () => {
     expect(formatSize(5 * 1024 ** 4)).toBe("5120 GB");
   });
 });
+
+describe("declared types", () => {
+  it("are read without parameters and case", () => {
+    expect(isHtmlFile(file("page", "Text/HTML; charset=utf-8"))).toBe(true);
+    expect(isMarkdownFile(file("notes", "text/markdown; charset=utf-8"))).toBe(
+      true,
+    );
+    expect(isImageFile(file("shot", "IMAGE/PNG"))).toBe(true);
+    expect(isTextFile(file("data", "application/json; charset=utf-8"))).toBe(
+      true,
+    );
+    // Still generic once its parameters are gone.
+    expect(isImageFile(file("shot.png", "application/octet-stream; x=1"))).toBe(
+      true,
+    );
+  });
+});

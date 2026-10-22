@@ -20,7 +20,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { formatSize, isTextFile } from "../file-kind.ts";
+import { formatSize, isHtmlFile, isTextFile } from "../file-kind.ts";
 import { Content, useContentDisplay } from "../registry.tsx";
 import type { ContentSource } from "../types.ts";
 
@@ -119,14 +119,18 @@ export function useViewHref(file: FileSource): string {
  * Whether the viewer has something to draw for this file, which is what
  * decides if a plain click on it is hijacked into the viewer. Text needs a
  * known in-limit size — a file whose size the app does not know yet stays a
- * link until it does.
+ * link until it does. HTML has no size cap: the browser streams it into the
+ * iframe instead of this tab highlighting it.
  */
 export function useCanPreview(file: FileSource): boolean {
   const viewer = useContext(AttachmentViewerContext);
   const max = viewer?.textPreviewMaxBytes ?? TEXT_PREVIEW_MAX_BYTES;
   const display = useContentDisplay(file, "viewer");
-  if (isTextFile(file)) return file.size !== undefined && file.size <= max;
-  return display !== null;
+  if (display === null) return false;
+  if (isTextFile(file) && !isHtmlFile(file)) {
+    return file.size !== undefined && file.size <= max;
+  }
+  return true;
 }
 
 /** Paging can land on types that only download — say so instead of a blank pane. */
@@ -221,8 +225,16 @@ function ViewerFooter({ file }: { file: FileSource }) {
   );
 }
 
+function keepsArrowKeys(target: EventTarget): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      target.closest("input, textarea, select, video, audio") !== null)
+  );
+}
+
 export type AttachmentViewerProps = {
-  /** null: closed. */
+  /** null, or an index outside `items`: closed. */
   state: AttachmentViewerState | null;
   onNavigate(index: number): void;
   onClose(): void;
@@ -253,7 +265,7 @@ export function AttachmentViewer({
 
   return (
     <Dialog
-      open={state !== null}
+      open={file !== undefined}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
@@ -261,6 +273,9 @@ export function AttachmentViewer({
       <DialogContent
         aria-describedby={undefined}
         onKeyDown={(e) => {
+          // A focused video seeks, and a field moves its caret, on the same
+          // keys: those belong to whatever the body drew.
+          if (e.defaultPrevented || keepsArrowKeys(e.target)) return;
           if (e.key === "ArrowLeft") step(-1);
           if (e.key === "ArrowRight") step(1);
         }}
@@ -312,8 +327,12 @@ export function AttachmentViewer({
                 {maximized ? <MinimizeIcon /> : <MaximizeIcon />}
               </Button>
             </div>
-            {/* Keyed by position, so paging starts the next file scrolled to its top. */}
-            <ViewerBody key={state?.index} file={file} maximized={maximized} />
+            {/* Keyed by file, so paging starts the next one scrolled to its top. */}
+            <ViewerBody
+              key={`${state?.index}:${file.url ?? file.name}`}
+              file={file}
+              maximized={maximized}
+            />
             <ViewerFooter file={file} />
           </>
         )}

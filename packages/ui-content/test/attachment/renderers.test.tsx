@@ -126,6 +126,13 @@ describe("attachmentCard", () => {
     expect(screen.getByRole("dialog").textContent).toContain("stub:notes.txt");
   });
 
+  it("draws no expand control for text of unknown size", () => {
+    // The viewer would open it on the download pane.
+    draw(file("notes.txt"));
+    expect(screen.getByTestId("stub")).toBeTruthy();
+    expect(screen.queryByLabelText("expand notes.txt")).toBeNull();
+  });
+
   it("draws no expand controls outside a provider", () => {
     draw(file("notes.txt", { size: 5 }), "document", { provider: false });
     expect(screen.queryByLabelText("expand notes.txt")).toBeNull();

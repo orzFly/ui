@@ -69,6 +69,12 @@ describe("AttachmentLink", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("draws no href for a file with nowhere to point", () => {
+    render(<AttachmentLink file={{ kind: "file", name: "gone.txt" }} />);
+    const anchor = screen.getByText("gone.txt").closest("a");
+    expect(anchor?.hasAttribute("href")).toBe(false);
+  });
+
   it("wears the skin only when boxed", () => {
     const skin = RICH_CHIP_SKIN.split(" ")[0] as string;
     expect(renderLink(NOTES, true).classList.contains(skin)).toBe(true);

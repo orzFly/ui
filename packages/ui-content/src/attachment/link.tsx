@@ -91,7 +91,7 @@ export function AttachmentLink({
 
   return (
     <a
-      href={href}
+      href={href === "" ? undefined : href}
       // The label shares the chip's truncating child, so a long filename is
       // cut where it used to wrap and stay whole.
       title={file.name}

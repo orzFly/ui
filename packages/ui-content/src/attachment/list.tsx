@@ -57,7 +57,7 @@ function AttachmentRow({
   return (
     <li className="flex items-center hover:bg-muted/40">
       <a
-        href={href}
+        href={href === "" ? undefined : href}
         className="flex min-w-0 flex-1 items-center gap-2 py-2 pl-3 text-sm"
         onClick={(e) => {
           if (viewer !== null && canPreview && isPlainLeftClick(e)) {

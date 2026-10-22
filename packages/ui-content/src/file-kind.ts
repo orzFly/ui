@@ -31,12 +31,17 @@ const TEXT_APPLICATION_TYPES = new Set([
 const TEXT_EXTENSION =
   /\.(txt|log|md|markdown|csv|tsv|json|jsonc|json5|jsonl|ndjson|ya?ml|toml|ini|cfg|conf|env|xml|html?|css|scss|less|diff|patch|ts|tsx|mts|cts|js|jsx|mjs|cjs|py|rb|rs|go|java|kt|kts|c|h|cpp|hpp|cc|hh|cs|php|swift|scala|clj|ex|exs|erl|hs|ml|lua|pl|r|jl|nix|zig|sql|graphql|proto|sh|bash|zsh|fish|ps1|bat|cmd|vue|svelte|astro|tex|lock|mmd|mermaid)$/i;
 
+/** The bare type: `Text/HTML; charset=utf-8` and `text/html` are one type. */
+function mimeOf(file: FileLike): string {
+  return (file.mime ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
+}
+
 function hasGenericType(mime: string): boolean {
   return mime === "" || mime === "application/octet-stream";
 }
 
 export function isImageFile(file: FileLike): boolean {
-  const type = file.mime ?? "";
+  const type = mimeOf(file);
   if (type.startsWith("image/")) return true;
   // Uploads that arrived without a real content type (the CLI sent
   // application/octet-stream until T-27's hotfix) fall back to the filename.
@@ -45,7 +50,7 @@ export function isImageFile(file: FileLike): boolean {
 
 /** Text by declared type, or by filename when the type is generic. */
 export function isTextFile(file: FileLike): boolean {
-  const type = file.mime ?? "";
+  const type = mimeOf(file);
   if (type.startsWith("text/")) return true;
   if (TEXT_APPLICATION_TYPES.has(type)) return true;
   return hasGenericType(type) && TEXT_EXTENSION.test(file.name);
@@ -60,18 +65,20 @@ export function isTextEmbed(file: FileLike): boolean {
 }
 
 export function isMarkdownFile(file: FileLike): boolean {
-  return file.mime === "text/markdown" || /\.(md|markdown)$/i.test(file.name);
+  return (
+    mimeOf(file) === "text/markdown" || /\.(md|markdown)$/i.test(file.name)
+  );
 }
 
 export function isHtmlFile(file: FileLike): boolean {
-  const type = file.mime ?? "";
+  const type = mimeOf(file);
   if (type === "text/html" || type === "application/xhtml+xml") return true;
   return hasGenericType(type) && /\.(html?|xhtml)$/i.test(file.name);
 }
 
 /** PDF by declared type, or by filename when the type is generic. */
 export function isPdfFile(file: FileLike): boolean {
-  const type = file.mime ?? "";
+  const type = mimeOf(file);
   if (type === "application/pdf") return true;
   return hasGenericType(type) && /\.pdf$/i.test(file.name);
 }
@@ -106,21 +113,21 @@ const VIDEO_EXTENSION = /\.(mp4|m4v|webm|mov|mkv|avi|wmv|flv|mpg|mpeg)$/i;
 
 /** Archive by declared type, or by filename when the type is generic. */
 export function isArchiveFile(file: FileLike): boolean {
-  const type = file.mime ?? "";
+  const type = mimeOf(file);
   if (ARCHIVE_TYPES.has(type)) return true;
   return hasGenericType(type) && ARCHIVE_EXTENSION.test(file.name);
 }
 
 /** Audio by declared type, or by filename when the type is generic. */
 export function isAudioFile(file: FileLike): boolean {
-  const type = file.mime ?? "";
+  const type = mimeOf(file);
   if (type.startsWith("audio/")) return true;
   return hasGenericType(type) && AUDIO_EXTENSION.test(file.name);
 }
 
 /** Video by declared type, or by filename when the type is generic. */
 export function isVideoFile(file: FileLike): boolean {
-  const type = file.mime ?? "";
+  const type = mimeOf(file);
   if (type.startsWith("video/")) return true;
   return hasGenericType(type) && VIDEO_EXTENSION.test(file.name);
 }

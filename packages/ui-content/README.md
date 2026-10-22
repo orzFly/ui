@@ -149,7 +149,8 @@ formatSize(bytes) // "512 B", "1.5 KB", "20 KB"
 Each predicate takes `{ name, mime? }`, so a file `ContentSource` passes straight in. A declared
 type outranks the filename: the extension only counts when `mime` is missing, empty or
 `application/octet-stream`. A `.png` declared `text/plain` is text, and a `.ts` uploaded as
-octet-stream is TypeScript, never an MPEG transport stream.
+octet-stream is TypeScript, never an MPEG transport stream. `mime` is read without its parameters
+or case, so `Text/HTML; charset=utf-8` is `text/html`.
 
 Renderers use these in `accepts` rather than matching extensions of their own, so that every
 package draws the same file as the same kind.
@@ -265,8 +266,10 @@ the outer one, so a surface can page through its own set.
   returns undefined, "Open in new tab" is left out.
 - **`group`** lets a click on one file page through the set it belongs to, positioned on it. A file
   it returns null for opens alone.
-- **`useCanPreview`** is true for a text file with a known size within the cap, and for any other
-  file some registered renderer accepts in `"viewer"` placement.
+- **`useCanPreview`** is true when some registered renderer accepts the file in `"viewer"`
+  placement and, for a text file, its size is known and within the cap. HTML is not capped: the
+  browser streams it into the frame rather than this tab drawing it as text. `attachmentCard` draws
+  its expand button only when this holds.
 
 The dialog shows the name, ‹ n / m › for a set (← and → page, wrapping), and a maximize toggle that
 fills the window and stays a modal. Its body is `<Content placement="viewer">`, or a download pane

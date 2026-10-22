@@ -1,19 +1,23 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   AttachmentViewer,
   AttachmentViewerProvider,
   type AttachmentViewerProviderProps,
   type AttachmentViewerState,
   type FileSource,
+  htmlContent,
   TEXT_PREVIEW_MAX_BYTES,
   useAttachmentViewer,
+  videoContent,
 } from "../../src/attachment/index.ts";
 import { ContentRenderers } from "../../src/index.ts";
 import { file, stubText } from "./fixtures.tsx";
 
 const RENDERERS = [stubText];
+const HTML = [htmlContent()];
+const MEDIA = [videoContent(), stubText];
 
 const ITEMS = [
   file("a.txt", { size: 10 }),
@@ -191,5 +195,71 @@ describe("AttachmentViewerProvider", () => {
       textPreviewMaxBytes: 99,
     });
     expect(within(dialog).queryByTestId("stub")).toBeNull();
+  });
+});
+
+describe("AttachmentViewer edges", () => {
+  it("draws HTML of unknown or large size in its frame", () => {
+    for (const size of [undefined, TEXT_PREVIEW_MAX_BYTES * 10]) {
+      const html = file("demo.html", { mime: "text/html", size });
+      const { unmount } = render(
+        <ContentRenderers renderers={HTML}>
+          <AttachmentViewer
+            state={{ items: [html], index: 0 }}
+            onNavigate={() => {}}
+            onClose={() => {}}
+          />
+        </ContentRenderers>,
+      );
+      expect(
+        screen.getByRole("dialog").querySelector("iframe[sandbox]"),
+      ).not.toBeNull();
+      unmount();
+    }
+  });
+
+  it("shows the download pane for text no registered renderer draws", () => {
+    render(
+      <AttachmentViewer
+        state={{ items: [file("notes.txt", { size: 5 })], index: 0 }}
+        onNavigate={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    expect(
+      screen.getByText("No inline preview for this file type."),
+    ).toBeTruthy();
+  });
+
+  it("leaves arrow keys to a focused media element", () => {
+    const onNavigate = vi.fn();
+    render(
+      <ContentRenderers renderers={MEDIA}>
+        <AttachmentViewer
+          state={{
+            items: [file("clip.webm"), ITEMS[0] as FileSource],
+            index: 0,
+          }}
+          onNavigate={onNavigate}
+          onClose={() => {}}
+        />
+      </ContentRenderers>,
+    );
+    const video = screen.getByRole("dialog").querySelector("video");
+    fireEvent.keyDown(video as HTMLVideoElement, { key: "ArrowRight" });
+    expect(onNavigate).not.toHaveBeenCalled();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+    expect(onNavigate).toHaveBeenCalledWith(1);
+  });
+
+  it("stays closed for an index outside the set", () => {
+    render(
+      <AttachmentViewer
+        state={{ items: ITEMS, index: 3 }}
+        onNavigate={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
