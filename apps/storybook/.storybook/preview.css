@@ -3,9 +3,12 @@
 @import "overlayscrollbars/overlayscrollbars.css";
 @import "@orz/ui/styles.css";
 @import "@orz/ui-code/styles.css";
+@import "@orz/ui-codemirror/styles.css";
 @import "@orz/ui-markdown/styles.css";
 
-/* The packages' stylesheets register their dist/; stories run on src/. */
-@source "../../../packages/ui/src";
-@source "../../../packages/ui-code/src";
+/* The packages' stylesheets register their dist/; stories run on src/. The
+   glob also reaches packages that ship no stylesheet, and new ones before
+   anyone remembers to add a line here. A glob ending in a directory
+   scans nothing, so this one spells out the files. */
+@source "../../../packages/*/src/**/*.{ts,tsx}";
 @source "../src";
