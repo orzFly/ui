@@ -98,6 +98,14 @@ export function islandCss(): string {
    when ThemeMenu starts rendering another component. */
 @source "${components}/{theme-menu,filter-menu,popover,button}.tsx";
 @source "${at("./island.tsx")}";
+/* The menu opens across the sidebar's edge, where Storybook's resize handle
+   sits at z-index 100 and would take its clicks; PopoverContent's z-50 is a
+   page's scale. This is Storybook's own popovers' z-index. Radix copies the
+   content's computed z-index onto its popper wrapper. After the utilities
+   import, so it beats .z-50 at equal specificity. */
+[data-slot="popover-content"] {
+  z-index: 100000;
+}
 @layer base {
   ${SCOPE} {
 ${scopeRules(preflight)}
