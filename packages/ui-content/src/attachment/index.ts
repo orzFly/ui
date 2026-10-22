@@ -13,6 +13,11 @@ export {
   RICH_CHIP_STRUCTURE,
 } from "./link.tsx";
 export {
+  type AttachmentItem,
+  AttachmentList,
+  type AttachmentListProps,
+} from "./list.tsx";
+export {
   audioContent,
   type FrameContentOptions,
   htmlContent,
