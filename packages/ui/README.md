@@ -127,7 +127,8 @@ Whatever is highlighted previews on the whole page after resting 80 ms, and a pi
 - `slot` is `"ui"` (default) or `"terminal"`. A picker whose slot the store lacks renders nothing.
   The terminal picker adds a "Same as UI" row and a Terminal only group.
 - `onCustomize` adds a "Custom themes…" row, which calls it with no id, and an edit button on each
-  custom theme's row, which calls it with that theme's id. The app brings the editor.
+  custom theme's row, which calls it with that theme's id. The app brings the editor, such as
+  `ThemeEditor` below.
 
 ### Custom themes
 
@@ -151,6 +152,41 @@ setCustomThemes([...customThemes, draft]);
 - `persistCustomThemes: false` keeps the store away from that key altogether. The app then loads its
   list with `setCustomThemes` and saves it from `subscribe` and `getCustomThemes`, for example to its
   server.
+
+### Custom theme editor
+
+`<ThemeEditor />` from `@orz/ui/components/theme-editor` is the editor `ThemeMenu`'s
+`onCustomize` opens: a panel docked to the right, with the page left visible and repainted with the
+draft as it changes. Each side of a theme is based on a theme from the store's lists with
+overrides, fully custom, or absent; its terminal colours follow the base or are edited the same
+way.
+
+```tsx
+const [editing, setEditing] = useState<{ id?: string } | null>(null);
+
+<ThemeMenu onCustomize={(id) => setEditing({ id })} />
+<ThemeEditor
+  open={editing !== null}
+  themeId={editing?.id}
+  onOpenChange={(open) => { if (!open) setEditing(null); }}
+/>
+```
+
+- `themeId` opens that custom theme; without one, or with an id the store does not hold, the editor
+  starts a new theme from what the page shows.
+- It reads and writes the store's custom list (`customThemes` / `setCustomThemes`), so the themes
+  are stored wherever the store keeps that list: under `customStorageKey`, or wherever the app saves
+  it with `persistCustomThemes: false`. Save also makes the theme the UI pick.
+- `onOpenChange(false)` comes after Save, or after the unsaved-changes prompt resolves to Discard.
+  While the draft has unsaved edits it is registered with `@orz/ui/lib/unsaved-guard`, so the app's
+  leave-page guard covers it.
+- In a store with no UI slot it renders nothing.
+
+Import… and Export carry themes as JSON files (`format: "orz-themes"`, `version: 1`). An entry is a
+`CustomTheme` without its id, and every based side or terminal also carries the colours it showed
+at export, so a theme whose base the importing app lacks arrives as fully custom instead of being
+lost. `serializeThemeFile`, `parseThemeFile` and `uniqueLabel` in `@orz/ui/lib/theme-file` read and
+write the format with no React or DOM, for example to validate uploads on a server.
 
 ### Preview
 
@@ -357,9 +393,9 @@ modes the picker uses); nothing else in `@orz/ui` does.
 | Import | Contents |
 |---|---|
 | `@orz/ui` | `cn` |
-| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
+| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `sheet`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-editor`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
 | `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut` |
-| `@orz/ui/lib/<name>` | `clipboard`, `color`, `text-metrics`, `unsaved-guard`, `utils` |
+| `@orz/ui/lib/<name>` | `clipboard`, `color`, `text-metrics`, `theme-file`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
 
