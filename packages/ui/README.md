@@ -350,7 +350,9 @@ Rows can carry a submenu: `getSubmenu(row)` returns its rows (ids unique across 
 pointer or keys, but not for the highlight resting on `selectedId` or on the query's first hit. →
 with the caret at the end of the query enters it, ← and Escape come back, and `onHighlight` and
 `onSelect` receive its rows like any other. The pointer can cut across other rows on its way to the
-submenu without moving the highlight. `submenuLabel(row)` names the submenu's listbox.
+submenu without moving the highlight. A row with a submenu is a split button: clicking the row picks
+it, and clicking its chevron, past the divider, opens the submenu instead. `submenuLabel(row)` names
+the submenu's listbox.
 
 ## Colour picker
 

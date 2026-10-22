@@ -288,6 +288,9 @@ export function FilterMenu<R extends FilterMenuRow>({
   } | null>(null);
   const graceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pointerIn = useRef<"list" | "submenu" | null>(null);
+  // A row's leave fires at the same point as the move that crossed out of it,
+  // so the direction it left in is only known from the sample before.
+  const lastX = useRef<number | null>(null);
   /**
    * Who placed the highlight: resting on the committed row, on the query's
    * first hit, or by the user. The first two follow the list as it changes.
@@ -548,6 +551,7 @@ export function FilterMenu<R extends FilterMenuRow>({
     if (!rect) return;
     const right = rect.left >= event.clientX;
     const near = right ? rect.left : rect.right;
+    const from = lastX.current ?? event.clientX;
     grace.current = {
       polygon: [
         { x: event.clientX + (right ? -5 : 5), y: event.clientY },
@@ -557,7 +561,7 @@ export function FilterMenu<R extends FilterMenuRow>({
       until: Date.now() + GRACE_MS,
       right,
       x: event.clientX,
-      towards: false,
+      towards: event.clientX !== from && right === event.clientX > from,
     };
   };
 
@@ -651,8 +655,12 @@ export function FilterMenu<R extends FilterMenuRow>({
           role="listbox"
           aria-label={listLabel}
           className="min-h-0 flex-1 overflow-y-auto p-1"
-          onPointerEnter={() => {
+          onPointerEnter={(event) => {
             pointerIn.current = "list";
+            lastX.current = event.clientX;
+          }}
+          onPointerMove={(event) => {
+            lastX.current = event.clientX;
           }}
           onPointerLeave={(event) => {
             pointerIn.current = null;
@@ -730,9 +738,27 @@ export function FilterMenu<R extends FilterMenuRow>({
                     </Mark>
                   )}
                   {hasSubmenu && (
-                    <Mark className="right-2 text-muted-foreground">
+                    <span
+                      aria-hidden
+                      data-slot="submenu-trigger"
+                      className="absolute inset-y-0 right-0 flex w-6.5 items-center justify-end pr-2 text-muted-foreground"
+                      // A split button's other half: it opens the submenu,
+                      // where the rest of the row picks the row. A touch
+                      // has no hover to open it any other way.
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (row.disabled || (highlighted && submenuOpen))
+                          return;
+                        clearGrace();
+                        move(row);
+                      }}
+                    >
+                      <span
+                        data-slot="submenu-divider"
+                        className="absolute inset-y-1.5 left-0 w-px bg-current opacity-20"
+                      />
                       <ChevronRightIcon aria-hidden />
-                    </Mark>
+                    </span>
                   )}
                 </div>
               );

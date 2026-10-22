@@ -289,7 +289,7 @@ describe("FilterMenu submenus", () => {
     open();
     const apple = screen.getByRole("option", { name: "Apple" });
     const pear = screen.getByRole("option", { name: "Pear" });
-    fireEvent.pointerMove(apple);
+    fireEvent.pointerMove(apple, { clientX: 100, clientY: 18 });
     const surface = screen
       .getByRole("listbox", { name: "Apple varieties" })
       .closest('[data-slot="popover-content"]') as HTMLElement;
@@ -302,6 +302,52 @@ describe("FilterMenu submenus", () => {
       relatedTarget: pear,
     });
     // Inside the triangle's lower edge, but not heading for the submenu.
+    fireEvent.pointerMove(pear, { clientX: 100, clientY: 22 });
+    expect(highlighted()).toBe("Pear");
+  });
+
+  it("takes the direction a row was left in from the move before the leave", () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    open();
+    const apple = screen.getByRole("option", { name: "Apple" });
+    const pear = screen.getByRole("option", { name: "Pear" });
+    fireEvent.pointerMove(apple, { clientX: 98, clientY: 8 });
+    const surface = screen
+      .getByRole("listbox", { name: "Apple varieties" })
+      .closest('[data-slot="popover-content"]') as HTMLElement;
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 200, y: 0, width: 150, height: 200 }),
+    );
+    // A browser fires the leave at the point of the move that crossed out,
+    // and that move follows it with the same coordinates.
+    fireEvent.pointerLeave(apple, {
+      clientX: 100,
+      clientY: 10,
+      relatedTarget: pear,
+    });
+    fireEvent.pointerMove(pear, { clientX: 100, clientY: 10 });
+    expect(highlighted()).toBe("Apple");
+  });
+
+  it("lets the crossed row take a pointer that left the row moving away from the submenu", () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    open();
+    const apple = screen.getByRole("option", { name: "Apple" });
+    const pear = screen.getByRole("option", { name: "Pear" });
+    fireEvent.pointerMove(apple, { clientX: 102, clientY: 18 });
+    const surface = screen
+      .getByRole("listbox", { name: "Apple varieties" })
+      .closest('[data-slot="popover-content"]') as HTMLElement;
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 200, y: 0, width: 150, height: 200 }),
+    );
+    fireEvent.pointerLeave(apple, {
+      clientX: 100,
+      clientY: 20,
+      relatedTarget: pear,
+    });
     fireEvent.pointerMove(pear, { clientX: 100, clientY: 22 });
     expect(highlighted()).toBe("Pear");
   });
@@ -327,6 +373,36 @@ describe("FilterMenu submenus", () => {
     fireEvent.pointerMove(pear, { clientX: 140, clientY: 30 });
     fireEvent.pointerMove(pear, { clientX: 140, clientY: 32 });
     expect(highlighted()).toBe("Apple");
+  });
+
+  it("opens the submenu from the chevron, past the divider, without picking the row", () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    open();
+    const chevron = (name: string) =>
+      screen
+        .getByRole("option", { name })
+        .querySelector('[data-slot="submenu-trigger"]') as HTMLElement | null;
+    expect(chevron("Pear")).toBeNull();
+    const apple = chevron("Apple") as HTMLElement;
+    expect(apple.querySelector('[data-slot="submenu-divider"]')).not.toBeNull();
+    // A tap: no hover moved the highlight first.
+    fireEvent.click(apple);
+    expect(highlighted()).toBe("Apple");
+    expect(
+      screen.getByRole("listbox", { name: "Apple varieties" }),
+    ).toBeTruthy();
+    fireEvent.click(apple);
+    expect(
+      screen.getByRole("listbox", { name: "Apple varieties" }),
+    ).toBeTruthy();
+    fireEvent.click(chevron("Plum") as HTMLElement);
+    expect(
+      screen.getByRole("listbox", { name: "Plum varieties" }),
+    ).toBeTruthy();
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("option", { name: "Plum" }));
+    expect(onSelect).toHaveBeenCalledWith(ROWS[2]);
   });
 
   it("opens a submenu only for a highlight the user moved", () => {
