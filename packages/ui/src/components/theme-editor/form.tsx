@@ -29,7 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../tabs.tsx";
 import {
   type BasedSide,
   type BasedTerminal,
-  canFollowBase,
+  canFollow,
   type DraftAction,
   fallbackBase,
   overrideCount,
@@ -168,7 +168,14 @@ interface ModeOption<M extends string> {
   disabled?: boolean;
 }
 
-/** A segmented radio group. */
+const NEXT_KEYS: Record<string, number> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1,
+};
+
+/** A segmented radio group: one Tab stop, arrow keys move and select. */
 function ModeControl<M extends string>({
   label,
   value,
@@ -180,11 +187,29 @@ function ModeControl<M extends string>({
   options: ModeOption<M>[];
   onChange: (value: M) => void;
 }) {
+  const enabled = options.filter((o) => !o.disabled);
+  const tabStop =
+    enabled.find((o) => o.value === value)?.value ?? enabled[0]?.value;
   return (
     <div
       role="radiogroup"
       aria-label={label}
       className="flex rounded-lg bg-muted p-0.5"
+      onKeyDown={(event) => {
+        const step = NEXT_KEYS[event.key];
+        if (step === undefined || enabled.length === 0) return;
+        event.preventDefault();
+        const at = enabled.findIndex(
+          (o) => o.value === (event.target as HTMLElement).dataset.value,
+        );
+        const next =
+          enabled[(Math.max(at, 0) + step + enabled.length) % enabled.length];
+        if (next === undefined) return;
+        event.currentTarget
+          .querySelector<HTMLElement>(`[data-value="${next.value}"]`)
+          ?.focus();
+        if (next.value !== value) onChange(next.value);
+      }}
     >
       {options.map((option) => (
         // biome-ignore lint/a11y/useSemanticElements: a segmented control, not a list of native radios
@@ -192,7 +217,9 @@ function ModeControl<M extends string>({
           key={option.value}
           type="button"
           role="radio"
+          data-value={option.value}
           aria-checked={option.value === value}
+          tabIndex={option.value === tabStop ? 0 : -1}
           disabled={option.disabled}
           onClick={() => {
             if (option.value !== value) onChange(option.value);
@@ -560,9 +587,8 @@ function TerminalTab({
       : first;
   // A shared terminal is equal on both sides, so the first one answers.
   const source: ColorScheme = target === "both" ? first : target;
-  const targets = target === "both" ? sides : [target];
   const mode = terminalMode(draft, source);
-  const followable = targets.every((s) => canFollowBase(draft, s));
+  const followable = canFollow(draft, target);
   const values = composed?.[source]?.terminal;
 
   const fallback = (): TerminalBaseRef | undefined => {

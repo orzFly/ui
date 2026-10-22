@@ -248,6 +248,20 @@ describe("ThemeEditor: import", () => {
     fireEvent.click(button("Back to the theme"));
     expect(nameField().value).toBe("Sunrise");
   });
+
+  it("moves focus into the panel it shows", () => {
+    setup({ customs: [sunrise], themeId: sunrise.id });
+    fireEvent.click(button("Import…"));
+    expect(document.activeElement).toBe(
+      screen.getByRole("textbox", { name: "Theme file" }),
+    );
+    fireEvent.click(button("Back to the theme"));
+    expect(document.activeElement).toBe(nameField());
+    fireEvent.click(button("Export"));
+    expect(document.activeElement).toBe(
+      screen.getByRole("textbox", { name: "Theme file" }),
+    );
+  });
 });
 
 describe("ThemeEditor: export", () => {

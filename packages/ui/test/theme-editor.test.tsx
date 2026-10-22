@@ -257,6 +257,74 @@ describe("ThemeEditor: unsaved changes", () => {
     expect((nameField() as HTMLInputElement).value).toBe("Inkwell");
   });
 
+  it("does not reopen the prompt while the panel animates out", async () => {
+    // With an exit animation the sheet keeps its content mounted after close.
+    const style = document.createElement("style");
+    style.textContent =
+      "[data-state=closed] { animation-name: slide; animation-duration: 1s; }";
+    document.head.append(style);
+    try {
+      stubDarkQuery(false);
+      const themes = store();
+      themes.setCustomThemes([sunrise, inkwell]);
+      function App() {
+        const [editing, setEditing] = useState<{ id?: string } | null>({
+          id: inkwell.id,
+        });
+        return (
+          <ThemeProvider store={themes}>
+            <button
+              type="button"
+              onClick={() => setEditing({ id: sunrise.id })}
+            >
+              reopen
+            </button>
+            <ThemeEditor
+              open={editing !== null}
+              themeId={editing?.id}
+              onOpenChange={(open) => {
+                if (!open) setEditing(null);
+              }}
+            />
+          </ThemeProvider>
+        );
+      }
+      render(<App />);
+      rename("Inkwell 2");
+      fireEvent.click(button("Cancel"));
+      await act(async () => {
+        fireEvent.click(button("Discard and leave"));
+      });
+      // The old prompt may still be animating out; a new one would be open.
+      expect(
+        screen
+          .queryAllByRole("alertdialog", {
+            name: "Leave with unsaved changes?",
+            hidden: true,
+          })
+          .concat(
+            screen.queryAllByRole("dialog", {
+              name: "Leave with unsaved changes?",
+              hidden: true,
+            }),
+          )
+          .map((d) => d.getAttribute("data-state")),
+      ).not.toContain("open");
+      expect(themes.getPreview()).toBeNull();
+
+      // Reopened before the animation ends: a fresh session that previews.
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: "reopen", hidden: true }),
+        );
+      });
+      expect((nameField() as HTMLInputElement).value).toBe("Sunrise");
+      expect(themes.getPreview()).not.toBeNull();
+    } finally {
+      style.remove();
+    }
+  });
+
   it("reports the draft to the unsaved-changes guard while dirty", () => {
     setup({ customs: [sunrise], themeId: sunrise.id });
     expect(hasUnsavedWork()).toBe(false);
@@ -314,7 +382,25 @@ describe("ThemeEditor: saving and deleting", () => {
     expect(themes.getCustomThemes()).toHaveLength(2);
     fireEvent.click(within(confirm).getByRole("button", { name: "Delete" }));
     expect(themes.getCustomThemes()).toEqual([inkwell]);
-    expect(onOpenChange).toHaveBeenCalledWith(false);
+    // The editor stays open on the next theme.
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect((nameField() as HTMLInputElement).value).toBe("Inkwell");
+    expect(screen.queryByText(/deleted elsewhere/)).toBeNull();
+  });
+
+  it("opens a new theme after deleting the last one", () => {
+    const { themes, onOpenChange } = setup({
+      customs: [sunrise],
+      themeId: sunrise.id,
+    });
+    fireEvent.click(button("Delete"));
+    const confirm = screen.getByRole("dialog", { name: "Delete Sunrise?" });
+    fireEvent.click(within(confirm).getByRole("button", { name: "Delete" }));
+    expect(themes.getCustomThemes()).toEqual([]);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect((nameField() as HTMLInputElement).value).toBe("Custom theme");
+    expect((button("Delete") as HTMLButtonElement).disabled).toBe(true);
+    expect(unsavedPrompt()).toBeNull();
   });
 
   it("cannot delete a theme that was never saved", () => {
@@ -432,7 +518,7 @@ describe("ThemeEditor: sides", () => {
   it("edits both terminals from one control until split", () => {
     const shared: CustomTheme = {
       ...sunrise,
-      dark: { base: { theme: "dracula" } },
+      dark: { base: { theme: "solarized" } },
       light: { base: { theme: "solarized" } },
     };
     const { themes } = setup({ customs: [shared], themeId: shared.id });
@@ -451,6 +537,41 @@ describe("ThemeEditor: sides", () => {
     const saved = themes.getCustomThemes()[0];
     expect(saved?.light?.terminal).toEqual({ base: { theme: "nord" } });
     expect(saved?.dark?.terminal).toBeUndefined();
+  });
+
+  it("starts split when the sides follow different bases", () => {
+    const apart: CustomTheme = {
+      ...sunrise,
+      light: { base: { theme: "solarized" } },
+      dark: { base: { theme: "dracula" } },
+    };
+    setup({ customs: [apart], themeId: apart.id });
+    showTab("Terminal");
+    expect(
+      screen
+        .getByRole("switch", { name: "Same terminal for both sides" })
+        .getAttribute("aria-checked"),
+    ).toBe("false");
+    expect(radio("Terminal of", "Light side")).toBeTruthy();
+  });
+
+  it("moves through a mode control with the arrow keys", () => {
+    setup({ customs: [sunrise], themeId: sunrise.id });
+    const radios = within(
+      screen.getByRole("radiogroup", { name: "Light side" }),
+    ).getAllByRole("radio");
+    expect(radios.map((r) => r.tabIndex)).toEqual([-1, 0, -1]);
+    const based = radio("Light side", "Based on a theme");
+    based.focus();
+    fireEvent.keyDown(based, { key: "ArrowRight" });
+    const custom = radio("Light side", "Fully custom");
+    expect(custom.getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(custom);
+    expect(custom.tabIndex).toBe(0);
+    fireEvent.keyDown(custom, { key: "ArrowLeft" });
+    expect(
+      radio("Light side", "Based on a theme").getAttribute("aria-checked"),
+    ).toBe("true");
   });
 
   it("offers to keep a side whose base disappeared as fully custom", () => {
@@ -496,6 +617,20 @@ describe("ThemeEditor: token list", () => {
     fireEvent.click(screen.getByRole("switch", { name: "Only overridden" }));
     expect(button(/\(primary\)$/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /\(secondary\)$/ })).toBeNull();
+  });
+
+  it("clears the filter on Esc without closing", () => {
+    const { onOpenChange } = setup({ customs: [sunrise], themeId: sunrise.id });
+    const filter = screen.getByRole("searchbox", { name: "Find a colour" });
+    fireEvent.change(filter, { target: { value: "chart" } });
+    fireEvent.keyDown(filter, { key: "Escape" });
+    expect((filter as HTMLInputElement).value).toBe("");
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Custom themes" })).toBeTruthy();
+
+    // Empty, Esc closes as anywhere else.
+    fireEvent.keyDown(filter, { key: "Escape" });
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it("keeps a group's open state per tab", () => {

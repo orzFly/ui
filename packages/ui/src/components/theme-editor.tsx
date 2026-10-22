@@ -6,7 +6,14 @@ import {
   type Theme,
 } from "@orz/themes";
 import { XIcon } from "lucide-react";
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { serializeThemeFile } from "../lib/theme-file.ts";
 import { useDirtySource } from "../lib/unsaved-guard.ts";
 import { useTerminalTheme, useTheme, useThemeSlots } from "../theme/index.ts";
@@ -75,6 +82,15 @@ export function ThemeEditor(props: ThemeEditorProps) {
   // Esc, the outside click and ✕ all arrive here; the session decides
   // whether to ask first.
   const requestClose = useRef(() => props.onOpenChange(false));
+  // The sheet keeps its content through the exit animation, so a reopening
+  // in that window would otherwise get the closing session back.
+  const [opening, setOpening] = useState({ open: props.open, count: 0 });
+  if (opening.open !== props.open) {
+    setOpening({
+      open: props.open,
+      count: opening.count + (props.open ? 1 : 0),
+    });
+  }
   if (!slots.ui) return null;
   return (
     <Sheet
@@ -88,8 +104,22 @@ export function ThemeEditor(props: ThemeEditorProps) {
         overlay="clear"
         showCloseButton={false}
         className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[460px]"
+        onEscapeKeyDown={(event) => {
+          // An Esc that clears the colour filter or ends an IME composition is not a close.
+          const { target } = event;
+          if (
+            event.isComposing ||
+            (target instanceof Element && target.closest("[data-keeps-escape]"))
+          ) {
+            event.preventDefault();
+          }
+        }}
       >
-        <EditorSession {...props} requestClose={requestClose} />
+        <EditorSession
+          key={opening.count}
+          {...props}
+          requestClose={requestClose}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -100,7 +130,12 @@ interface SessionProps extends ThemeEditorProps {
 }
 
 /** One opening of the editor; mounted while the sheet is open. */
-function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
+function EditorSession({
+  open,
+  themeId,
+  onOpenChange,
+  requestClose,
+}: SessionProps) {
   const ui = useTheme();
   const terminal = useTerminalTheme();
   const slots = useThemeSlots();
@@ -242,7 +277,7 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
   const closing = useRef(false);
   useEffect(() => {
     if (closing.current) return;
-    if (shownTheme === null) {
+    if (!open || shownTheme === null) {
       preview(null);
       return;
     }
@@ -253,7 +288,7 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
         ? { terminal: "follow" as const }
         : {}),
     });
-  }, [shownTheme, tab, slots.terminal, preview]);
+  }, [open, shownTheme, tab, slots.terminal, preview]);
   useEffect(
     () => () => {
       cancelAnimationFrame(frame.current);
@@ -291,6 +326,8 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
 
   const seenThemeId = useRef(themeId);
   useEffect(() => {
+    // On the way out the app clears the id; that is not a new selection.
+    if (!open || closing.current) return;
     if (themeId === seenThemeId.current) return;
     seenThemeId.current = themeId;
     if (themeId !== undefined && themeId === draft.id) return;
@@ -352,8 +389,19 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
     finish();
   };
 
+  // After Delete the editor stays open on a neighbour of the deleted theme,
+  // or a new one; loaded once the store's list and pick reflect the delete.
+  const [afterDelete, setAfterDelete] = useState<{ id?: string } | null>(null);
+  useLayoutEffect(() => {
+    if (afterDelete === null) return;
+    setAfterDelete(null);
+    load(start(afterDelete.id));
+  });
+
   const remove = () => {
     setConfirmingDelete(false);
+    const at = customs.findIndex((c) => c.id === draft.id);
+    const next = customs[at + 1] ?? customs[at - 1];
     try {
       ui.setCustomThemes(customs.filter((c) => c.id !== draft.id));
     } catch (error) {
@@ -362,7 +410,7 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
       );
       return;
     }
-    finish();
+    setAfterDelete({ id: next?.id });
   };
 
   const copy = () =>
@@ -413,6 +461,16 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
     };
   }, [panel, customs, composeList, draft]);
 
+  // The button that switched panels is gone with the old panel; without
+  // this, focus would fall back to the sheet itself.
+  const body = useRef<HTMLDivElement>(null);
+  const shownPanel = useRef(panel);
+  useEffect(() => {
+    if (shownPanel.current === panel) return;
+    shownPanel.current = panel;
+    body.current?.querySelector<HTMLElement>("input, textarea")?.focus();
+  }, [panel]);
+
   const changeTab = (next: EditorTab) => {
     setTab(next);
     if (next !== "terminal") setUiScheme(next);
@@ -451,7 +509,7 @@ function EditorSession({ themeId, onOpenChange, requestClose }: SessionProps) {
           onExportAll={() => setPanel({ kind: "export", scope: "all" })}
         />
       </SheetHeader>
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+      <div ref={body} className="min-h-0 flex-1 overflow-y-auto p-4">
         {panel.kind === "form" ? (
           <>
             {deletedElsewhere && (

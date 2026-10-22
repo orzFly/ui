@@ -13,7 +13,7 @@ import {
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import {
-  canFollowBase,
+  canFollow,
   composeDraft,
   type DraftAction,
   type DraftState,
@@ -261,9 +261,87 @@ describe("overrides", () => {
 });
 
 describe("terminal", () => {
+  it("counts following terminals as shared only on the same base", () => {
+    expect(sameTerminal(based)).toBe(false);
+    const solar = { base: { theme: "solarized" } };
+    expect(sameTerminal({ ...based, light: solar, dark: solar })).toBe(true);
+    expect(
+      sameTerminal({
+        ...based,
+        light: solar,
+        dark: { base: { theme: "solarized", variant: "amoled" } },
+      }),
+    ).toBe(false);
+    expect(canFollow({ ...based, light: solar, dark: solar }, "both")).toBe(
+      true,
+    );
+    expect(canFollow(based, "both")).toBe(false);
+  });
+
+  it("a pin through the shared control keeps one terminal", () => {
+    const solar = { base: { theme: "solarized" } };
+    const state = run(start({ ...based, light: solar, dark: solar }), {
+      type: "setTerminalToken",
+      target: "both",
+      name: "ansi-red",
+      value: "#ff0000",
+    });
+    expect(state.draft.light?.terminal).toEqual({
+      base: { theme: "solarized" },
+      tokens: { "ansi-red": "#ff0000" },
+    });
+    expect(sameTerminal(state.draft)).toBe(true);
+  });
+
+  it("sharing terminals that follow different bases names the source's base", () => {
+    const state = run(start(based), { type: "shareTerminal", from: "dark" });
+    expect(state.draft.light?.terminal).toEqual({ base: { theme: "nord" } });
+    expect(state.draft.dark?.terminal).toEqual({ base: { theme: "nord" } });
+    expect(sameTerminal(state.draft)).toBe(true);
+  });
+
+  it("a mode switch for both writes the first side's terminal to each", () => {
+    let state = start(based);
+    for (const [scheme, colour] of [
+      ["light", "#111111"],
+      ["dark", "#222222"],
+    ] as const) {
+      state = run(
+        state,
+        {
+          type: "setTerminalMode",
+          target: scheme,
+          mode: "detached",
+          resolved: shown(state, scheme).terminal,
+        },
+        {
+          type: "setTerminalToken",
+          target: scheme,
+          name: "ansi-red",
+          value: colour,
+        },
+        {
+          type: "setTerminalMode",
+          target: scheme,
+          mode: "based",
+          base: { theme: "ink" },
+        },
+      );
+    }
+    expect(sameTerminal(state.draft)).toBe(true);
+    state = run(state, {
+      type: "setTerminalMode",
+      target: "both",
+      mode: "detached",
+    });
+    expect(state.draft.light?.terminal).toEqual(state.draft.dark?.terminal);
+    expect(state.draft.dark?.terminal).toMatchObject({
+      tokens: { "ansi-red": "#111111" },
+    });
+  });
+
   it("same terminal for both sides writes both", () => {
     let state = start(based);
-    expect(sameTerminal(state.draft)).toBe(true);
     state = run(
       state,
       {
@@ -323,8 +401,8 @@ describe("terminal", () => {
       mode: "detached",
       resolved: shown(state, "dark"),
     });
-    expect(canFollowBase(state.draft, "dark")).toBe(false);
-    expect(canFollowBase(state.draft, "light")).toBe(true);
+    expect(canFollow(state.draft, "dark")).toBe(false);
+    expect(canFollow(state.draft, "light")).toBe(true);
     expect(
       run(state, { type: "setTerminalMode", target: "dark", mode: "follow" }),
     ).toBe(state);

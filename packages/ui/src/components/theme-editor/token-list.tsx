@@ -335,6 +335,10 @@ function TokenListView<N extends string>({
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && query !== "") setQuery("");
+          }}
+          data-keeps-escape={query !== "" ? "" : undefined}
           placeholder="Find a colour…"
           aria-label="Find a colour"
           className="h-7 flex-1"

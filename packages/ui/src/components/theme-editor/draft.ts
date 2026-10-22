@@ -104,7 +104,8 @@ export type DraftAction =
   /**
    * Turning "Same terminal for both sides" on: the other side takes `from`'s
    * terminal. When `from` follows its base and the other side is detached
-   * (which cannot follow), both take `resolved`, `from`'s colours, detached.
+   * (which cannot follow), both take `resolved`, `from`'s colours, detached;
+   * when it follows another base, both name `from`'s base.
    */
   | { type: "shareTerminal"; from: ColorScheme; resolved?: TerminalTokens };
 
@@ -164,14 +165,6 @@ export function terminalMode(
 function terminalModeOf(side: CustomSide): TerminalMode {
   if (side.terminal === undefined) return "follow";
   return isBasedTerminal(side.terminal) ? "based" : "detached";
-}
-
-/** Only a based UI side can leave its terminal to its base. */
-export function canFollowBase(
-  draft: CustomTheme,
-  scheme: ColorScheme,
-): boolean {
-  return sideMode(draft, scheme) === "based";
 }
 
 /** True only on a based side that pins `name`. */
@@ -235,13 +228,34 @@ export function terminalOverrideCount(
   return names ? keys.filter((k) => names.includes(k)).length : keys.length;
 }
 
-/** Both sides exist and carry equal terminals (both following counts). */
+/**
+ * Both sides exist and carry equal terminals. Two following terminals count
+ * only on the same base and variant: following different bases shows
+ * different colours, and a pin would give each side a different reference.
+ */
 export function sameTerminal(draft: CustomTheme): boolean {
+  const { light, dark } = draft;
+  if (light === undefined || dark === undefined) return false;
+  if (!deepEqual(light.terminal, dark.terminal)) return false;
+  return light.terminal !== undefined || followSameBase(light, dark);
+}
+
+function followSameBase(a: CustomSide, b: CustomSide): boolean {
   return (
-    draft.light !== undefined &&
-    draft.dark !== undefined &&
-    deepEqual(draft.light.terminal, draft.dark.terminal)
+    isBased(a) && isBased(b) && deepEqual(baseRef(a.base), baseRef(b.base))
   );
+}
+
+/**
+ * Only a based UI side can leave its terminal to its base; both sides at
+ * once only when they are based on the same base.
+ */
+export function canFollow(draft: CustomTheme, target: TerminalTarget): boolean {
+  if (target !== "both") return sideMode(draft, target) === "based";
+  const { light, dark } = draft;
+  return light !== undefined && dark !== undefined
+    ? followSameBase(light, dark)
+    : SCHEMES.some((s) => sideMode(draft, s) === "based");
 }
 
 /** Structural equality on JSON-like values; an undefined property counts as absent. */
@@ -391,25 +405,33 @@ function setTerminalMode(
   state: DraftState,
   action: Extract<DraftAction, { type: "setTerminalMode" }>,
 ): Patch | null {
-  return editSides(state, action.target, (side, sideMemory) => {
-    if (terminalModeOf(side) === action.mode) return undefined;
-    const memory = rememberTerminal(sideMemory, side);
-    let terminal: CustomTerminal | undefined;
-    if (action.mode === "follow") {
-      if (!isBased(side)) return undefined;
-    } else if (action.mode === "based") {
-      terminal =
-        memory.terminalBased ??
-        (action.base ? { base: baseRef(action.base) } : undefined);
-      if (terminal === undefined) return undefined;
-    } else {
-      terminal =
-        memory.terminalDetached ??
-        (action.resolved ? { tokens: { ...action.resolved } } : undefined);
-      if (terminal === undefined) return undefined;
-    }
-    return { side: setTerminal(side, terminal), memory };
-  });
+  const { target, mode } = action;
+  // For both sides, the first side's choice is written to each, so a shared
+  // terminal stays one terminal even when the sides remember different ones.
+  const source =
+    target === "both" ? SCHEMES.find((s) => state.draft[s]) : target;
+  const side = source && state.draft[source];
+  if (source === undefined || side === undefined) return null;
+  if (terminalModeOf(side) === mode) return null;
+  const memory = rememberTerminal(state.memory[source] ?? {}, side);
+  let terminal: CustomTerminal | undefined;
+  if (mode === "follow") {
+    if (!canFollow(state.draft, target)) return null;
+  } else if (mode === "based") {
+    terminal =
+      memory.terminalBased ??
+      (action.base ? { base: baseRef(action.base) } : undefined);
+    if (terminal === undefined) return null;
+  } else {
+    terminal =
+      memory.terminalDetached ??
+      (action.resolved ? { tokens: { ...action.resolved } } : undefined);
+    if (terminal === undefined) return null;
+  }
+  return editSides(state, target, (each, eachMemory) => ({
+    side: setTerminal(each, terminal),
+    memory: rememberTerminal(eachMemory, each),
+  }));
 }
 
 function shareTerminal(
@@ -420,7 +442,25 @@ function shareTerminal(
   const source = state.draft[from];
   const target = state.draft[other(from)];
   if (source === undefined || target === undefined) return null;
-  if (deepEqual(source.terminal, target.terminal)) return null;
+  if (sameTerminal(state.draft)) return null;
+  if (
+    source.terminal === undefined &&
+    isBased(source) &&
+    isBased(target) &&
+    !followSameBase(source, target)
+  ) {
+    // Following two different bases is not one terminal; both name the
+    // source's base, which shows what following it did.
+    const terminal = { base: baseRef({ ...source.base }) };
+    return {
+      draft: {
+        ...state.draft,
+        [from]: setTerminal(source, terminal),
+        [other(from)]: setTerminal(target, terminal),
+      },
+      memory: state.memory,
+    };
+  }
   if (source.terminal === undefined && !isBased(target)) {
     if (resolved === undefined) return null;
     const terminal = { tokens: { ...resolved } };
