@@ -13,6 +13,7 @@ const DECLARED =
 const LISTED = /^export\s+(?:type\s+)?\{([^}]*)\}/gm;
 const IMPORT = /\b(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
 const TEST_DIR = /(?:^|\/)test\//;
+const PREVIEW_API = /^import\s+\{([^}]*)\}\s+from\s+"storybook\/preview-api"/gm;
 
 const packages = readdirSync(PACKAGES, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
@@ -160,6 +161,21 @@ describe("stories", () => {
           .map((p) => `${f}: ${p}`),
       );
     expect(imports).toEqual([]);
+  });
+
+  // React re-renders a render that holds React state on its own, after
+  // Storybook has dropped the story's context, and `useArgs` throws there.
+  it("call no Storybook hook: args go back through argsUpdater", () => {
+    const hooks = files
+      .filter((f) => /\.tsx?$/.test(f))
+      .flatMap((f) =>
+        [...readFileSync(new URL(f, SRC), "utf8").matchAll(PREVIEW_API)]
+          .flatMap(([, list = ""]) => list.split(","))
+          .map((name) => name.trim())
+          .filter((name) => HOOK.test(name))
+          .map((name) => `${f}: ${name}`),
+      );
+    expect(hooks).toEqual([]);
   });
 
   it("keep edge stories off the docs page", () => {

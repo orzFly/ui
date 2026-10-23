@@ -12,7 +12,7 @@ import {
   useViewHref,
 } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useArgs } from "storybook/preview-api";
+import { argsUpdater } from "./args.ts";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
 import { file, group, MIXED } from "./fixtures/files.ts";
 import { ATTACHMENT_RENDERERS } from "./fixtures/renderers.ts";
@@ -208,8 +208,8 @@ export const UseViewHref: Story = {
 export const AttachmentViewer: StoryObj<typeof AttachmentViewerView> = {
   args: { state: null },
   argTypes: { state: { control: false } },
-  render: function Render(args) {
-    const [, updateArgs] = useArgs<typeof args>();
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
     return (
       <div className="flex flex-wrap gap-2">
         {MIXED.map((f, index) => (

@@ -4,8 +4,8 @@ import { ThemeEditor } from "@orz/ui/components/theme-editor";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { PaletteIcon } from "lucide-react";
-import { useArgs } from "storybook/preview-api";
 import { fn } from "storybook/test";
+import { argsUpdater } from "./args.ts";
 import { withOwnStore } from "./decorators.tsx";
 import {
   ember,
@@ -18,8 +18,8 @@ import {
 } from "./fixtures/themes.tsx";
 
 /** A page with both menus and a button, each opening the editor through the args. */
-const editorPage: Decorator = (Story) => {
-  const [, updateArgs] = useArgs();
+const editorPage: Decorator = (Story, context) => {
+  const updateArgs = argsUpdater(context);
   const customize = (themeId: string | undefined, kind: "ui" | "terminal") =>
     updateArgs({ open: true, themeId, kind });
   return (
@@ -45,8 +45,8 @@ const editorPage: Decorator = (Story) => {
 };
 
 /** The same page with a terminal pane alone, for a store with no UI slot. */
-const terminalPage: Decorator = (Story) => {
-  const [, updateArgs] = useArgs();
+const terminalPage: Decorator = (Story, context) => {
+  const updateArgs = argsUpdater(context);
   const customize = (themeId: string | undefined, kind: "ui" | "terminal") =>
     updateArgs({ open: true, themeId, kind });
   return (
@@ -98,8 +98,8 @@ const meta = {
     // they would repaint each other.
     docs: { story: { inline: false, iframeHeight: 720 } },
   },
-  render: function Render(args) {
-    const [, updateArgs] = useArgs<typeof args>();
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
     return (
       <ThemeEditor
         {...args}

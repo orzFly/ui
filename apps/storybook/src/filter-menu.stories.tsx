@@ -8,8 +8,8 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ChevronDownIcon } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useArgs } from "storybook/preview-api";
 import { fn } from "storybook/test";
+import { argsUpdater } from "./args.ts";
 
 interface Place {
   id: string;
@@ -148,8 +148,8 @@ const meta = {
     submenuFilter: { control: false },
     submenuLabel: { control: false },
   },
-  render: function Render(args) {
-    const [, updateArgs] = useArgs<typeof args>();
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
     const [query, setQuery] = useState("");
     // The menu takes its sections already filtered for the query.
     const sections = useMemo(

@@ -1,7 +1,7 @@
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useArgs } from "storybook/preview-api";
 import { fn } from "storybook/test";
+import { argsUpdater } from "./args.ts";
 import { withOpener } from "./decorators.tsx";
 
 const meta = {
@@ -18,8 +18,8 @@ const meta = {
     pending: false,
   },
   decorators: [withOpener("Delete…")],
-  render: function Render(args) {
-    const [, updateArgs] = useArgs<typeof args>();
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
     return (
       <ConfirmDialog
         {...args}

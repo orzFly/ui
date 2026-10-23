@@ -9,8 +9,8 @@ import {
 } from "@orz/ui-hex";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useArgs } from "storybook/preview-api";
 import { fn } from "storybook/test";
+import { argsUpdater } from "./args.ts";
 import { withHeight } from "./decorators.tsx";
 import {
   ENCODING_SAMPLES,
@@ -82,10 +82,10 @@ const meta = {
     },
     selection: { control: "object" },
   },
-  render: function Render(args) {
+  render: function Render(args, context) {
     // The encoding arg makes the view controlled, so the picker has to write
     // back into the args or it could never change anything.
-    const [, updateArgs] = useArgs<typeof args>();
+    const updateArgs = argsUpdater(context);
     return (
       <HexView
         {...args}
@@ -106,8 +106,8 @@ export const Playground: Story = {
 export const Encodings: Story = {
   args: { encoding: "utf-8", rows: 6, "aria-label": "Encoding samples" },
   parameters: { docs: { source: { code: ENCODINGS, language: "tsx" } } },
-  render: function Render(args) {
-    const [, updateArgs] = useArgs<typeof args>();
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
     const source = useMemo(
       () =>
         bytesSource(
@@ -137,10 +137,10 @@ export const ControlledSelection: Story = {
   parameters: {
     docs: { source: { code: CONTROLLED_SELECTION, language: "tsx" } },
   },
-  render: function Render(args) {
+  render: function Render(args, context) {
     // The selection changes on every pointer move while dragging: a late
     // write-back into the args would reset the drag, so state holds it.
-    const [, updateArgs] = useArgs<typeof args>();
+    const updateArgs = argsUpdater(context);
     const [selection, setSelection] = useState(args.selection);
     useEffect(() => setSelection(args.selection), [args.selection]);
     return (
@@ -162,8 +162,8 @@ export const ScrollToOffset: Story = {
   parameters: {
     docs: { source: { code: SCROLL_TO_OFFSET, language: "tsx" } },
   },
-  render: function Render(args) {
-    const [, updateArgs] = useArgs<typeof args>();
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
     const view = useRef<HexViewHandle>(null);
     const [selection, setSelection] = useState<HexSelection | null>({
       anchor: 0x10,
@@ -252,7 +252,7 @@ export const PagedSource: Story = {
 export const ReadErrors: Story = {
   tags: ["edge", "!autodocs"],
   args: { rows: 8, onReadError: fn() },
-  render: function Render(args) {
+  render: function Render(args, context) {
     const view = useRef<HexViewHandle>(null);
     // The view reads 64 KiB pages: the second one fails, and the view opens on
     // the boundary so both sides show.
@@ -260,7 +260,7 @@ export const ReadErrors: Story = {
       () => syntheticSource({ size: 4 * 65536, latencyMs: 120, failPage: 1 }),
       [],
     );
-    const [, updateArgs] = useArgs<typeof args>();
+    const updateArgs = argsUpdater(context);
     useEffect(() => view.current?.scrollToOffset(0xffc0, "start"), []);
     return (
       <HexView

@@ -8,7 +8,7 @@ import {
 } from "@orz/ui-content/attachment";
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
-import { useArgs } from "storybook/preview-api";
+import { argsUpdater } from "./args.ts";
 import { OwnStore } from "./fixtures/themes.tsx";
 
 /** Caps the story's width: `withWidth("max-w-3xl")`. */
@@ -79,8 +79,8 @@ export function withViewer(options: ViewerOptions = {}): Decorator {
  * whose `open` is an arg starts closed on a docs page and opens on a click.
  */
 export function withOpener(label: string): Decorator {
-  return (Story) => {
-    const [, updateArgs] = useArgs();
+  return (Story, context) => {
+    const updateArgs = argsUpdater(context);
     return (
       <>
         <Button variant="outline" onClick={() => updateArgs({ open: true })}>

@@ -64,10 +64,15 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   `args`, and leaves the decorators out. So a render takes `args` and returns the real export at its
   root (biome's `noUnusedFunctionParameters` means it must use them; a render with nothing to pass
   takes none and gets the static snippet). State lives in hooks inside the render
-  (`render: function Render(args) { … }`). `useArgs` drives discrete controlled props (open,
-  checked, a selected value); text and continuous values (an input's text, a slider being dragged)
-  use `useState(args.x)` plus an effect that follows `args.x`, because a late `updateArgs` makes the
-  caret jump and resets a drag. A story file defines no components of its own; the one exception is
+  (`render: function Render(args) { … }`). Discrete controlled props (open, checked, a selected
+  value) are written back into the args by `argsUpdater(context)` from `apps/storybook/src/args.ts`,
+  in a render (`function Render(args, context)`) or a decorator (`(Story, context) =>`); text and
+  continuous values (an input's text, a slider being dragged) use `useState(args.x)` plus an effect
+  that follows `args.x`, because a late args update makes the caret jump and resets a drag. No file
+  calls a Storybook hook (`useArgs`, or `useState` from `storybook/preview-api`): React re-renders a
+  render that holds React state on its own, after Storybook has dropped the story's context, and
+  `useArgs` throws there; Storybook's `useState` re-renders the whole story late, as an args update
+  does. A story file defines no components of its own; the one exception is
   a presentational reader inside a story whose `docs.source.code` is hand-written. A layout element
   sits at a render's root only to lay out several instances side by side, to pair the export with
   the control it labels or anchors to (`Label` with `Switch`, a `Popover` anchor), or in a story

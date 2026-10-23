@@ -4,8 +4,8 @@ import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog"
 import { hasUnsavedWork, useDirtySource } from "@orz/ui/lib/unsaved-guard";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { useArgs } from "storybook/preview-api";
 import { fn } from "storybook/test";
+import { argsUpdater } from "./args.ts";
 import { withOpener, withWidth } from "./decorators.tsx";
 
 const REGISTRY_SOURCE = `import { Button } from "@orz/ui/components/button";
@@ -33,8 +33,8 @@ const meta = {
   title: "ui/UnsavedChangesDialog",
   component: UnsavedChangesDialog,
   args: { open: false, onProceed: fn(), onStay: fn() },
-  render: function Render(args) {
-    const [, updateArgs] = useArgs<typeof args>();
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
     return (
       <UnsavedChangesDialog
         {...args}
