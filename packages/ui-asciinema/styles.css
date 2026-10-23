@@ -22,8 +22,6 @@
   [data-orz-cast]:fullscreen {
     display: flex;
     flex-direction: column;
-    border: 0;
-    border-radius: 0;
   }
   [data-orz-cast]:fullscreen > [data-slot="cast-screen"] {
     flex: 1;

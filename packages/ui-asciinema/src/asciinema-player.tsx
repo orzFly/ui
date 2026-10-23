@@ -281,7 +281,7 @@ function CastPlayer({
       ref={frameRef}
       data-orz-cast={id}
       className={cn(
-        "overflow-hidden rounded-lg border bg-terminal-background",
+        "overflow-hidden rounded-lg border bg-terminal-background [&:fullscreen]:rounded-none [&:fullscreen]:border-0",
         className,
       )}
       onKeyDownCapture={onKeyDownCapture}
