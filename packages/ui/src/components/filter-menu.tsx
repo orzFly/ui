@@ -485,6 +485,30 @@ export function FilterMenu<R extends FilterMenuRow>({
       ? -1
       : subRows.findIndex((row) => row.id === subHighlight);
 
+  // Radix only flips a side submenu to the other side and never shifts it
+  // sideways, so where neither side has room it opens below the row instead.
+  const [subBelow, setSubBelow] = useState(false);
+  const placeSubmenu = useCallback(() => {
+    const surface = content.current?.getBoundingClientRect();
+    const width = submenu.current?.offsetWidth;
+    if (!surface || !width) return;
+    const room = document.documentElement.clientWidth;
+    setSubBelow(surface.right + width > room && surface.left - width < 0);
+  }, []);
+  // Not an effect on opening: the portal mounts the submenu a commit later.
+  const submenuRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      submenu.current = el;
+      if (el) placeSubmenu();
+    },
+    [placeSubmenu],
+  );
+  useEffect(() => {
+    if (!submenuOpen) return;
+    window.addEventListener("resize", placeSubmenu);
+    return () => window.removeEventListener("resize", placeSubmenu);
+  }, [submenuOpen, placeSubmenu]);
+
   // Typing puts the highlight on the best hit, so Enter takes it; clearing the
   // query puts it back on the committed row. Until the user moves it, it keeps
   // following those as the list changes (a late load, a filter that lags the
@@ -1024,8 +1048,8 @@ export function FilterMenu<R extends FilterMenuRow>({
         <Popover open={submenuOpen}>
           <PopoverAnchor virtualRef={anchor} />
           <PopoverContent
-            ref={submenu}
-            side="right"
+            ref={submenuRef}
+            side={subBelow ? "bottom" : "right"}
             align="start"
             sideOffset={0}
             className="flex max-h-[min(24rem,var(--radix-popover-content-available-height))] w-60 flex-col overflow-hidden p-0"
