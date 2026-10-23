@@ -85,11 +85,12 @@ parsed lines, so a wrapped line copies as one line and a hidden line is never pa
 ## Logs
 
 `logContent` accepts inline sources whose `lang` is `log` (any case), and files named `*.log` or
-typed `text/x-log`. Its claims do not overlap `ansiContent`'s, so the two go in either order, but
-both go before `codeContent`: it claims the same sources, draws them with a syntax grammar, and
-stops at 1 MiB. Files get everything `ansiContent`'s files get, including the 64 MiB cap. A fence
-draws the pane, coloured by level but with no toolbar: fences are short, mount every row, and keep
-the browser's find.
+typed `text/x-log`. A file whose name and type disagree, such as `build.log` typed `text/x-ansi`,
+goes to whichever of `logContent` and `ansiContent` is registered first. Both go before
+`codeContent`: it claims the same sources, draws them with a syntax grammar, and stops at 1 MiB.
+Files get everything `ansiContent`'s files get, including the 64 MiB cap. A fence draws the pane,
+coloured by level but with no toolbar: fences are short, mount every row, and keep the browser's
+find.
 
 With `levels`, each line's level is read from its text, escapes stripped. A function in its place
 replaces the detector for logs of a shape the rules below miss. Keep its identity across renders,
@@ -186,7 +187,7 @@ import { createLevelTracker, detectLevel } from "@orz/ui-ansi/parse";
 detectLevel("2026-10-23 09:14:03 WARN pool exhausted"); // { level: "warn", from: 20, to: 24 }
 
 const tracker = createLevelTracker(); // or createLevelTracker(detect)
-tracker.push(lines, 0, lines.length); // then push(lines, lines.length, more) as lines arrive
+tracker.push(lines, 0, lines.length); // then push(lines, tracker.count, lines.length) as lines arrive
 tracker.levels; // one code per line, continuation lines included
 tracker.counts; // { fatal, error, warn, info, debug, trace, other }
 ```
