@@ -32,6 +32,7 @@ const create = vi.hoisted(() =>
     const el = document.createElement("div");
     el.className = "ap-wrapper";
     const term = document.createElement("pre");
+    term.className = "ap-term-text";
     term.tabIndex = 0;
     el.append(term);
     host.append(el);
@@ -197,7 +198,15 @@ describe("AsciinemaPlayer", () => {
     fireEvent.keyDown(screen.getByRole("slider", { name: "Seek" }), {
       key: "End",
     });
-    expect(player.seek).toHaveBeenLastCalledWith(7);
+    // Past the end, which the player clamps to its own last frame.
+    expect(player.seek).toHaveBeenLastCalledWith(8);
+    await waitFor(() => expect(screen.getByText("0:07 / 0:07")).toBeTruthy());
+
+    // A whole step back from the end is a time like any other.
+    fireEvent.keyDown(screen.getByRole("slider", { name: "Seek" }), {
+      key: "ArrowLeft",
+    });
+    expect(player.seek).toHaveBeenLastCalledWith(6.9);
   });
 
   it("draws one tick per marker, and none for a cast without them", async () => {
@@ -292,6 +301,50 @@ describe("AsciinemaPlayer", () => {
     expect(second.seek).not.toHaveBeenCalled();
   });
 
+  it("leaves the poster through 0 before its first seek", async () => {
+    mount(<AsciinemaPlayer cast={CAST} />);
+    const player = await built();
+    await act(async () => {
+      fireEvent.click(
+        await screen.findByRole("button", { name: "tests at 0:04" }),
+      );
+    });
+    expect(vi.mocked(player.seek).mock.calls).toEqual([[0], [4]]);
+    expect(screen.queryByRole("button", { name: "Play recording" })).toBeNull();
+    // A key the player seeks with, too, but only the first time.
+    await act(async () => {
+      fireEvent.keyDown(player.el.querySelector("pre") as HTMLElement, {
+        key: "]",
+      });
+    });
+    expect(player.seek).toHaveBeenCalledTimes(2);
+  });
+
+  it("puts focus back on the terminal after a rebuild", async () => {
+    const view = mount(<AsciinemaPlayer cast={CAST} />);
+    const first = await built();
+    (first.el.querySelector("pre") as HTMLElement).focus();
+    view.rerender(
+      <ThemeProvider store={store}>
+        <AsciinemaPlayer cast={CAST} speed={2} />
+      </ThemeProvider>,
+    );
+    const second = await built(2);
+    expect(document.activeElement).toBe(second.el.querySelector("pre"));
+  });
+
+  it("hands a v1 cast to the player as its object", async () => {
+    const v1 = JSON.stringify({
+      version: 1,
+      width: 80,
+      height: 24,
+      stdout: [[1, "x"]],
+    });
+    mount(<AsciinemaPlayer cast={v1} />);
+    await built();
+    expect(create.mock.calls[0]?.[0]).toEqual({ data: JSON.parse(v1) });
+  });
+
   describe("fullscreen", () => {
     let fullscreenElement: Element | null;
 
@@ -365,9 +418,16 @@ describe("AsciinemaPlayer", () => {
 
   it("hides the fullscreen button where fullscreen is not available", async () => {
     stubFullscreenEnabled(false);
+    const requestFullscreen = vi.fn(async () => {});
+    HTMLElement.prototype.requestFullscreen = requestFullscreen;
     mount(<AsciinemaPlayer cast={CAST} />);
-    await built();
+    const player = await built();
     expect(screen.queryByRole("button", { name: "Fullscreen" })).toBeNull();
+    fireEvent.keyDown(player.el.querySelector("pre") as HTMLElement, {
+      key: "f",
+    });
+    expect(requestFullscreen).not.toHaveBeenCalled();
+    expect(player.keys).toEqual([]);
   });
 
   it("disposes the player on unmount", async () => {

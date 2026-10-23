@@ -19,6 +19,9 @@ import type { CastInfo } from "./cast.ts";
 
 export const SPEEDS = [0.5, 1, 1.5, 2, 4] as const;
 
+/** Seconds per step of the seek track, an arrow key's worth. */
+const STEP = 0.1;
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /** `m:ss`, or `h:mm:ss` when `long` — the duration reaches an hour — so both sides line up. */
@@ -90,13 +93,16 @@ export function ControlBar({
             aria-label="Seek"
             min={0}
             max={Math.max(duration, 0.1)}
-            step={0.1}
+            step={STEP}
             value={[shown]}
             disabled={disabled}
             onValueChange={([value]) => setDragged(value ?? null)}
             onValueCommit={([value]) => {
               setDragged(null);
-              if (value !== undefined) onSeek(value);
+              if (value === undefined) return;
+              // The track rounds to its step, so the end itself is a step
+              // short of the last frame unless snapped to.
+              onSeek(value > duration - STEP ? duration : value);
             }}
           />
           {duration > 0 &&

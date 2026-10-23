@@ -33,13 +33,20 @@ export type AsciinemaPlayerProps = {
 };
 
 /** Where a rebuilt player picks up from. */
-type Resume = { time: number; playing: boolean; started: boolean };
+type Resume = {
+  time: number;
+  playing: boolean;
+  started: boolean;
+  /** Focus was on the old terminal, which disposing it takes out of the page. */
+  focused: boolean;
+};
 
 /** Keys the player's own handler acts on; after one, the bar reads the position again. */
 const PLAYER_KEYS = /^(?: |,|\.|\[|\]|[0-9]|ArrowLeft|ArrowRight)$/;
 
-/** Character width over line height, for a placeholder the size the terminal will be. */
-const CHAR_ASPECT = 0.6;
+/** A cell's width and height in em, for a placeholder the size the terminal will be. */
+const CELL_WIDTH = 0.6;
+const LINE_HEIGHT = 4 / 3;
 
 /**
  * An asciinema recording, played by asciinema-player under a control bar of @orz/ui components,
@@ -129,7 +136,10 @@ function CastPlayer({
         if (!live) return;
         const fresh = resume === null || !resume.started;
         const probe = probeRef.current;
-        const built = create({ data: cast }, host, {
+        // A v1 cast is one JSON object; the player reads it from text only
+        // when it is pretty-printed, and from the object either way.
+        const data = info.version === 1 ? JSON.parse(cast) : cast;
+        const built = create({ data }, host, {
           controls: false,
           preload: true,
           fit: fullscreen ? "both" : "width",
@@ -170,6 +180,11 @@ function CastPlayer({
           if (resume.time > 0) void built.seek(resume.time).then(sync);
           if (resume.playing) void built.play();
         }
+        if (resume?.focused) {
+          built.el
+            .querySelector<HTMLElement>(".ap-term-text")
+            ?.focus({ preventScroll: true });
+        }
       },
       (error: unknown) => {
         if (!live) return;
@@ -183,6 +198,7 @@ function CastPlayer({
         time: player.getCurrentTime(),
         playing: playingRef.current,
         started: startedRef.current,
+        focused: player.el.contains(document.activeElement),
       };
       player.dispose();
       if (playerRef.current === player) playerRef.current = null;
@@ -197,6 +213,7 @@ function CastPlayer({
     loop,
     autoPlay,
     info.duration,
+    info.version,
     markStarted,
     sync,
   ]);
@@ -221,10 +238,26 @@ function CastPlayer({
 
   const toggleFullscreen = useCallback(() => {
     const frame = frameRef.current;
-    if (frame === null) return;
-    if (document.fullscreenElement === frame) void document.exitFullscreen();
-    else void frame.requestFullscreen();
+    if (frame === null || !document.fullscreenEnabled) return;
+    // Refused when the call lacks a user gesture, say; the frame just stays as
+    // it is.
+    const ignore = () => {};
+    if (document.fullscreenElement === frame) {
+      document.exitFullscreen().catch(ignore);
+    } else {
+      frame.requestFullscreen().catch(ignore);
+    }
   }, []);
+
+  // The poster is drawn past the last event, and the player seeks from there
+  // incrementally after clearing it: a seek to the end would leave the screen
+  // blank. From 0, where the bar says it is, every seek redraws. The player
+  // queues its commands, so a seek a key goes on to make runs after this one.
+  const leavePoster = (player: Player) => {
+    if (startedRef.current) return;
+    markStarted();
+    void player.seek(0);
+  };
 
   const toggle = () => {
     const player = playerRef.current;
@@ -237,9 +270,12 @@ function CastPlayer({
   const seek = (to: number) => {
     const player = playerRef.current;
     if (player === null) return;
-    markStarted();
+    leavePoster(player);
     setTime(to);
-    void player.seek(to).then(sync);
+    // Past the end for the end: the player clamps that to its own duration,
+    // where a scanned one a float's breadth short would leave out the last
+    // frame.
+    void player.seek(to >= duration ? duration + 1 : to).then(sync);
   };
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -257,14 +293,14 @@ function CastPlayer({
       event.stopPropagation();
       return;
     }
-    const el = playerRef.current?.el;
+    const player = playerRef.current;
     if (
       PLAYER_KEYS.test(event.key) &&
-      el !== undefined &&
+      player !== null &&
       event.target instanceof Node &&
-      el.contains(event.target)
+      player.el.contains(event.target)
     ) {
-      markStarted();
+      leavePoster(player);
       // Its seek and step resolve after the key; while paused nothing else
       // would read the new position.
       setTimeout(sync, 100);
@@ -293,7 +329,9 @@ function CastPlayer({
         {!ready && (
           <div
             className="grid w-full place-items-center text-terminal-foreground text-sm"
-            style={{ aspectRatio: `${info.cols * CHAR_ASPECT} / ${info.rows}` }}
+            style={{
+              aspectRatio: `${info.cols * CELL_WIDTH} / ${info.rows * LINE_HEIGHT}`,
+            }}
           >
             {load instanceof Error && (
               <div className="grid justify-items-center gap-2 p-4 text-center">
