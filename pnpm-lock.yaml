@@ -53,6 +53,9 @@ importers:
       '@orz/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@orz/ui-asciinema':
+        specifier: workspace:*
+        version: link:../../packages/ui-asciinema
       '@orz/ui-code':
         specifier: workspace:*
         version: link:../../packages/ui-code
