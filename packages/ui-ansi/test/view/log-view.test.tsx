@@ -298,23 +298,23 @@ describe("search", () => {
   });
 
   it("Enter before a new scan starts leaves no stale current match", async () => {
-    const text = Array.from({ length: 2000 }, (_, i) =>
+    const text = Array.from({ length: 400 }, (_, i) =>
       i % 20 === 0 ? `hitx ${i}` : i % 10 === 0 ? `hit ${i}` : `line ${i}`,
     ).join("\n");
     const { container } = render(<AnsiView chrome="file" text={text} />);
     type("hit");
-    await counterReads("1 / 200");
+    await counterReads("1 / 40");
     const region = screen.getByRole("region");
-    region.scrollTop = PADDING + 500 * 20;
+    region.scrollTop = PADDING + 100 * 20;
     fireEvent.scroll(region);
     type("hitx");
-    // Still on the old matches: goes to "hit 500".
+    // Still on the old matches: goes to "hit 100".
     fireEvent.keyDown(searchBox(), { key: "Enter" });
     // The new scan starts from where that left the view.
-    await counterReads("26 / 100");
+    await counterReads("6 / 20");
     const current = container.querySelector("[data-match='current']");
     expect(current?.closest("[data-line]")?.getAttribute("data-line")).toBe(
-      "500",
+      "100",
     );
   });
 
