@@ -73,6 +73,7 @@ import {
   SheetTitle,
 } from "../src/components/sheet.tsx";
 import { Skeleton } from "../src/components/skeleton.tsx";
+import { Slider } from "../src/components/slider.tsx";
 import { Toaster } from "../src/components/sonner.tsx";
 import { Switch } from "../src/components/switch.tsx";
 import {
@@ -222,6 +223,11 @@ const CASES: [file: string, slot: string, tree: ReactElement][] = [
     </Sheet>,
   ],
   ["skeleton", "skeleton", <Skeleton key="a" />],
+  [
+    "slider",
+    "slider-thumb",
+    <Slider key="a" defaultValue={[40]} aria-label="Volume" />,
+  ],
   ["switch", "switch-thumb", <Switch key="a" />],
   [
     "table",
@@ -301,6 +307,39 @@ describe("every primitive renders", () => {
     expect(overlay).not.toBeNull();
     expect(overlay?.className).not.toMatch(/\bbg-/);
     expect(overlay?.className).not.toMatch(/backdrop-blur/);
+  });
+
+  it("slider is a slider carrying its value", () => {
+    render(<Slider value={[30]} max={120} aria-label="Seek" />);
+    const thumb = screen.getByRole("slider", { name: "Seek" });
+    expect(thumb.getAttribute("aria-valuenow")).toBe("30");
+    expect(thumb.getAttribute("aria-valuemax")).toBe("120");
+  });
+
+  it("select and tooltip portal into a given container", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    render(
+      <>
+        <Select open defaultValue="a">
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent container={host}>
+            <SelectItem value="a">A</SelectItem>
+          </SelectContent>
+        </Select>
+        <TooltipProvider>
+          <Tooltip open>
+            <TooltipTrigger>Hint</TooltipTrigger>
+            <TooltipContent container={host}>Tip</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </>,
+    );
+    expect(host.querySelector('[data-slot="select-content"]')).not.toBeNull();
+    expect(host.querySelector('[data-slot="tooltip-content"]')).not.toBeNull();
+    host.remove();
   });
 
   it("sonner", () => {

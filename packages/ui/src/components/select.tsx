@@ -61,10 +61,14 @@ function SelectContent({
   children,
   position = "item-aligned",
   align = "center",
+  container,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: React.ComponentProps<typeof SelectPrimitive.Content> & {
+  /** Where the list is portalled. Default `document.body`; an element in fullscreen needs its own. */
+  container?: React.ComponentProps<typeof SelectPrimitive.Portal>["container"];
+}) {
   return (
-    <SelectPrimitive.Portal>
+    <SelectPrimitive.Portal container={container}>
       <SelectPrimitive.Content
         data-slot="select-content"
         data-align-trigger={position === "item-aligned"}

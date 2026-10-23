@@ -1,0 +1,36 @@
+/* Into the components layer: unlayered, the player's rules would beat every
+   override below and every utility, whatever their specificity. */
+@import "asciinema-player/dist/bundle/asciinema-player.css" layer(components);
+
+/* Tailwind resolves an imported file's @source against that file, so a
+   consumer importing this stylesheet scans the classes in the package's
+   shipped JS without writing an @source of its own. */
+@source "./dist";
+
+@layer components {
+  /* The frame draws the corners and the play overlay. */
+  [data-orz-cast] div.ap-wrapper div.ap-player {
+    border-radius: 0;
+    max-width: none;
+  }
+  [data-orz-cast] .ap-player .ap-overlay-start {
+    display: none;
+  }
+
+  /* Fullscreen keeps the bar: the terminal takes what is left and the player
+     fits it both ways. */
+  [data-orz-cast]:fullscreen {
+    display: flex;
+    flex-direction: column;
+  }
+  [data-orz-cast]:fullscreen > [data-slot="cast-screen"] {
+    flex: 1;
+    min-height: 0;
+  }
+  [data-orz-cast]:fullscreen [data-slot="cast-host"] {
+    height: 100%;
+  }
+  [data-orz-cast]:fullscreen div.ap-wrapper {
+    align-items: center;
+  }
+}

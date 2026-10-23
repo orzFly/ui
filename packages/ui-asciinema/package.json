@@ -1,0 +1,55 @@
+{
+  "name": "@orz/ui-asciinema",
+  "version": "0.0.0",
+  "description": "asciinema recordings played in the active @orz/ui terminal theme, contributed to the @orz/ui-content registry",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "github:orzFly/orzui",
+    "directory": "packages/ui-asciinema"
+  },
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "@orz/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./styles.css"
+  },
+  "files": [
+    "dist",
+    "styles.css"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@orz/ui": "workspace:^",
+    "@orz/ui-content": "workspace:^",
+    "lucide-react": "^1",
+    "react": "^19"
+  },
+  "dependencies": {
+    "asciinema-player": "^3.17.0"
+  },
+  "devDependencies": {
+    "@orz/themes": "workspace:*",
+    "@orz/ui": "workspace:*",
+    "@orz/ui-content": "workspace:*",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "happy-dom": "^21.0.3",
+    "lucide-react": "^1.31.0",
+    "radix-ui": "^1.6.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vitest": "^5.0.5"
+  }
+}
