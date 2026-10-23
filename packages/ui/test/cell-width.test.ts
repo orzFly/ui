@@ -46,6 +46,16 @@ describe("cellWidth", () => {
     expect(cellWidth(0xd7a4)).toBe(1);
   });
 
+  it("answers the same for a code point asked again", () => {
+    const first: number[] = [];
+    for (let code = 0; code <= 0xffff; code++) first.push(cellWidth(code));
+    for (let code = 0; code <= 0xffff; code++) {
+      if (cellWidth(code) !== first[code]) expect(code).toBe(-1);
+    }
+    expect(first[0x4e2d]).toBe(2);
+    expect(first[0x301]).toBe(0);
+  });
+
   it("checks every range edge against the table", () => {
     for (let i = 0; i < WIDE.length; i += 2) {
       for (const code of [WIDE[i], WIDE[i + 1]]) {
