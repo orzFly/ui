@@ -8,7 +8,7 @@ import {
 import { Slider as SliderPrimitive } from "radix-ui";
 import type * as React from "react";
 import type { ReactElement, ReactNode } from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   type ColorFormat,
   contrastRatio,
@@ -290,29 +290,15 @@ function imageFor(canvas: HTMLCanvasElement, wantP3: boolean) {
   return { ctx, p3, w, h, image, show, put };
 }
 
-function strokeEdge(
-  ctx: CanvasRenderingContext2D,
-  edge: number[],
-  dash: number[],
-) {
-  ctx.save();
-  ctx.setLineDash(dash);
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-  ctx.beginPath();
-  edge.forEach((x, y) => {
-    if (y === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  ctx.restore();
-}
+// Pixels are sampled at their centres, so the painted surface agrees with the thumb and the edge
+// lines, which put L = 1 on the top border and C = 0 on the left one.
+const rowLightness = (y: number, rows: number) => 1 - (y + 0.5) / rows;
+const columnShare = (x: number, columns: number) => (x + 0.5) / columns;
 
 /**
  * Paints lightness × relative chroma at one hue: each row runs from grey to the gamut's edge at
  * that lightness, so every pixel is a colour the gamut holds. With a P3 gamut, the band past sRGB
- * is the real P3 colour on a P3 canvas, else the row's sRGB edge colour, and a line marks sRGB's
- * edge.
+ * is the real P3 colour on a P3 canvas, else the row's sRGB edge colour.
  */
 function paintRelative(
   canvas: HTMLCanvasElement,
@@ -323,33 +309,26 @@ function paintRelative(
   const target = imageFor(canvas, wantP3);
   if (target === null) return;
   const { ctx, p3, w, h, image, show, put } = target;
-  const srgbEdge = new Array<number>(h).fill(0);
   const pixel = { mode: "oklch" as const, l: 0, c: 0, h: hue };
   for (let y = 0; y < h; y++) {
-    pixel.l = 1 - y / (h - 1);
+    pixel.l = rowLightness(y, h);
     const span = maxChroma(pixel.l, hue, gamut);
     const cs = gamut === "srgb" ? span : maxChroma(pixel.l, hue, "srgb");
-    srgbEdge[y] = span > 0 ? (cs / span) * (w - 1) : -1;
     pixel.c = cs;
     const edge = channels(toRgb(pixel));
     for (let x = 0; x < w; x++) {
-      pixel.c = (x / (w - 1)) * span;
+      pixel.c = columnShare(x, w) * span;
       const i = (y * w + x) * 4;
       put(i, pixel.c <= cs || p3 ? show(pixel) : edge);
     }
   }
   ctx.putImageData(image, 0, 0);
-  // At L = 0 and 1 both edges are 0 and the ratio has no value; those rows take their neighbour's.
-  if (srgbEdge[0] < 0) srgbEdge[0] = srgbEdge[1];
-  if (srgbEdge[h - 1] < 0) srgbEdge[h - 1] = srgbEdge[h - 2];
-  if (gamut === "p3") strokeEdge(ctx, srgbEdge, []);
 }
 
 /**
  * Paints lightness × chroma at one hue, the chroma axis fitted to the hue's P3 wedge. Inside sRGB
  * is the colour itself; between sRGB and P3 is the real P3 colour on a P3 canvas, else the row's
  * sRGB edge colour, which is the same chroma reduction mapToSrgb performs; past P3 is a faded veil.
- * Lines mark the two edges.
  */
 function paintAbsolute(
   canvas: HTMLCanvasElement,
@@ -360,15 +339,11 @@ function paintAbsolute(
   if (target === null) return;
   const { ctx, p3, w, h, image, show, put } = target;
   const span = axisMax(hue);
-  const srgbEdge = new Array<number>(h).fill(0);
-  const p3Edge = new Array<number>(h).fill(0);
   const pixel = { mode: "oklch" as const, l: 0, c: 0, h: hue };
   for (let y = 0; y < h; y++) {
-    const l = 1 - y / (h - 1);
+    const l = rowLightness(y, h);
     const cs = maxChroma(l, hue, "srgb");
     const cp = maxChroma(l, hue, "p3");
-    srgbEdge[y] = (cs / span) * (w - 1);
-    p3Edge[y] = (cp / span) * (w - 1);
     pixel.l = l;
     pixel.c = cs;
     const edge = channels(toRgb(pixel));
@@ -379,7 +354,7 @@ function paintAbsolute(
       h: hue,
     });
     for (let x = 0; x < w; x++) {
-      pixel.c = (x / (w - 1)) * span;
+      pixel.c = columnShare(x, w) * span;
       const i = (y * w + x) * 4;
       if (pixel.c <= cs) put(i, show(pixel));
       else if (pixel.c <= cp) put(i, p3 ? show(pixel) : edge);
@@ -387,8 +362,57 @@ function paintAbsolute(
     }
   }
   ctx.putImageData(image, 0, 0);
-  strokeEdge(ctx, p3Edge, [3, 2]);
-  strokeEdge(ctx, srgbEdge, []);
+}
+
+interface EdgeLine {
+  gamut: DisplayGamut;
+  dashed: boolean;
+  /** x and y as shares of the surface's width and height, top to bottom. */
+  points: (readonly [number, number])[];
+}
+
+/**
+ * The gamut edges a surface marks: sRGB's on a P3 oklch surface, sRGB's and P3's on the absolute
+ * one. Sampled at the canvas's row centres so a line follows the painted boundary, and drawn over
+ * the canvas rather than into it: the canvas is painted at half size and scaled up, and a line in
+ * it is scaled up into a blur.
+ */
+function edgeLines(
+  surface: ColorSurface,
+  hue: number,
+  gamut: DisplayGamut,
+  rows: number,
+): EdgeLine[] {
+  if (surface === "hsv" || rows < 2) return [];
+  const ys = [
+    0,
+    ...Array.from({ length: rows }, (_, y) => (y + 0.5) / rows),
+    1,
+  ];
+  if (surface === "oklch") {
+    if (gamut === "srgb") return [];
+    const xs = ys.map((y) => {
+      const span = maxChroma(1 - y, hue, "p3");
+      return span > 0 ? maxChroma(1 - y, hue, "srgb") / span : 0;
+    });
+    // At L = 0 and 1 both edges are 0 and the share has no value; the ends take their neighbour's.
+    xs[0] = xs[1];
+    xs[xs.length - 1] = xs[xs.length - 2];
+    return [
+      {
+        gamut: "srgb",
+        dashed: false,
+        points: ys.map((y, i) => [xs[i], y] as const),
+      },
+    ];
+  }
+  const span = axisMax(hue);
+  const line = (edge: DisplayGamut, dashed: boolean): EdgeLine => ({
+    gamut: edge,
+    dashed,
+    points: ys.map((y) => [maxChroma(1 - y, hue, edge) / span, y] as const),
+  });
+  return [line("p3", true), line("srgb", false)];
 }
 
 function channels(c: { r: number; g: number; b: number }) {
@@ -725,26 +749,36 @@ export function ColorPicker({
     if (el === null || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
-      setAreaSize({ w: Math.round(width / 2), h: Math.round(height / 2) });
+      setAreaSize({ w: width, h: height });
     });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
+  // The colour field is painted at half size: a smooth gradient survives the upscale, and the
+  // per-pixel paint costs a quarter.
+  const raster = {
+    w: Math.round(areaSize.w / 2),
+    h: Math.round(areaSize.h / 2),
+  };
   const areaHue = color.h;
   useEffect(() => {
     if (shown === "hsv") return;
     const canvas = areaCanvas.current;
-    if (canvas === null || areaSize.w < 2 || areaSize.h < 2) return;
+    if (canvas === null || raster.w < 2 || raster.h < 2) return;
     // Hue drags arrive faster than a raster can paint; one draw per frame is enough.
     const frame = requestAnimationFrame(() => {
-      canvas.width = areaSize.w;
-      canvas.height = areaSize.h;
+      canvas.width = raster.w;
+      canvas.height = raster.h;
       if (shown === "oklch") paintRelative(canvas, areaHue, gamut, p3);
       else paintAbsolute(canvas, areaHue, p3);
     });
     return () => cancelAnimationFrame(frame);
-  }, [shown, areaHue, areaSize, gamut, p3]);
+  }, [shown, areaHue, raster.w, raster.h, gamut, p3]);
+  const edges = useMemo(
+    () => edgeLines(shown, areaHue, gamut, raster.h),
+    [shown, areaHue, gamut, raster.h],
+  );
 
   const { l: lightness, c: chroma } = color;
   useEffect(() => {
@@ -1005,6 +1039,33 @@ export function ColorPicker({
       >
         {shown !== "hsv" && (
           <canvas ref={areaCanvas} className="block size-full" />
+        )}
+        {edges.length > 0 && (
+          <svg
+            aria-hidden
+            data-gamut-edges
+            width={areaSize.w}
+            height={areaSize.h}
+            className="pointer-events-none absolute inset-0"
+          >
+            {edges.map((edge) => (
+              <polyline
+                key={edge.gamut}
+                data-edge={edge.gamut}
+                points={edge.points
+                  .map(
+                    ([x, y]) =>
+                      `${round(x * areaSize.w, 2)},${round(y * areaSize.h, 2)}`,
+                  )
+                  .join(" ")}
+                fill="none"
+                stroke="rgb(255 255 255 / 0.9)"
+                strokeWidth={1}
+                strokeLinejoin="round"
+                strokeDasharray={edge.dashed ? "6 4" : undefined}
+              />
+            ))}
+          </svg>
         )}
         <span
           aria-hidden

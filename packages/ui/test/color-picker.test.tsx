@@ -589,6 +589,85 @@ describe("ColorPicker surfaces", () => {
   });
 });
 
+describe("ColorPicker gamut edges", () => {
+  const W = 256;
+  const H = 168;
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** happy-dom lays nothing out; this observer reports the surface at W × H CSS px. */
+  function sized(props: Partial<ColorPickerProps> & { value: string }) {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        readonly report: (entries: { contentRect: DOMRectReadOnly }[]) => void;
+        constructor(
+          report: (entries: { contentRect: DOMRectReadOnly }[]) => void,
+        ) {
+          this.report = report;
+        }
+        observe() {
+          this.report([{ contentRect: new DOMRectReadOnly(0, 0, W, H) }]);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    return renderPicker(props);
+  }
+  const edges = () =>
+    [...area().querySelectorAll("polyline")].map((line) => ({
+      edge: line.getAttribute("data-edge"),
+      dashed: line.getAttribute("stroke-dasharray"),
+      points: (line.getAttribute("points") ?? "")
+        .split(" ")
+        .map((p) => p.split(",").map(Number)),
+    }));
+
+  it("draws them over the canvas at the surface's CSS size", () => {
+    sized({ value: "oklch(0.7 0.1 25)", surfaces: ["absolute"] });
+    const svg = area().querySelector("svg");
+    expect(svg?.getAttribute("width")).toBe(String(W));
+    expect(svg?.getAttribute("height")).toBe(String(H));
+    const [p3, srgb] = edges();
+    expect([p3.edge, p3.dashed]).toEqual(["p3", "6 4"]);
+    expect([srgb.edge, srgb.dashed]).toEqual(["srgb", null]);
+    for (const { points } of [p3, srgb]) {
+      // One point per canvas row, painted at half size, and one on each border.
+      expect(points).toHaveLength(H / 2 + 2);
+      expect(points[0]).toEqual([0, 0]);
+      expect(points.at(-1)).toEqual([0, H]);
+    }
+    // The chroma axis ends a little past the P3 wedge's tip.
+    const tip = Math.max(...p3.points.map(([x]) => x));
+    expect(tip).toBeGreaterThan(W * 0.9);
+    expect(tip).toBeLessThan(W);
+  });
+
+  it("marks sRGB's edge on a P3 oklch surface, and nothing on an sRGB one", () => {
+    const { unmount } = sized({
+      value: "oklch(0.7 0.1 25)",
+      surfaces: ["oklch"],
+      gamut: "p3",
+    });
+    const [srgb] = edges();
+    expect(srgb.edge).toBe("srgb");
+    for (const [x] of srgb.points) {
+      expect(x).toBeGreaterThan(0);
+      expect(x).toBeLessThanOrEqual(W);
+    }
+    unmount();
+    sized({ value: "oklch(0.7 0.1 25)", surfaces: ["oklch"] });
+    expect(area().querySelector("svg")).toBeNull();
+  });
+
+  it("draws none on the HSV surface", () => {
+    sized({ value: "#3b82f6", surfaces: ["hsv"] });
+    expect(area().querySelector("svg")).toBeNull();
+  });
+});
+
 describe("ColorPicker swatches", () => {
   it("shows flat swatches, skipping what does not parse", () => {
     renderPicker({
