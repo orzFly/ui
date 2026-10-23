@@ -297,18 +297,21 @@ describe("buildRowIndex", () => {
     expect([...buildRowIndex([], 20)]).toEqual([0]);
   });
 
-  it("indexes a million lines quickly", () => {
+  it("indexes a million lines", () => {
     const long = line("x".repeat(130));
     const lines = Array.from({ length: 1_000_000 }, (_, i) =>
       i % 10 ? line("short") : long,
     );
-    // The first call pays for JIT and string flattening, which a re-wrap does not.
-    buildRowIndex(lines, 80);
-    const start = performance.now();
     const index = buildRowIndex(lines, 80);
-    const elapsed = performance.now() - start;
     expect(index[lines.length]).toBe(1_100_000);
-    expect(elapsed).toBeLessThan(100);
+  });
+
+  // Walking the code points makes a million lines several times slower. Cells
+  // that disagree with the text tell the two counts apart without a clock,
+  // which under load measures the machine rather than the code.
+  it("counts a wrapped line with no wide character from its cells alone", () => {
+    const narrow = { text: "x".repeat(130), cells: 200 };
+    expect([...buildRowIndex([narrow], 80)]).toEqual([0, 3]);
   });
 });
 

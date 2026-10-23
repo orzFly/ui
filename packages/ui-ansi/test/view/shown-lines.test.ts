@@ -96,14 +96,17 @@ describe("buildShownLines", () => {
     expect(ids(buildShownLines(4, null, 0x7f, matches))).toEqual([0, 1]);
   });
 
-  it("builds over a million lines quickly", () => {
+  // No clock: under load a wall-clock bound measures the machine, not the
+  // code. A quadratic build still fails here, on the test timeout.
+  it("builds over a million lines into one buffer", () => {
     const lv = randomLevels(1_000_000);
     const mask = levelMask(new Set(["debug", "trace"]));
-    buildShownLines(lv.length, lv, mask, null);
-    const start = performance.now();
     const shown = buildShownLines(lv.length, lv, mask, null);
-    expect(performance.now() - start).toBeLessThan(100);
-    expect(shown?.length).toBeGreaterThan(500_000);
+    // Debug is 5 and trace 6, so the rest are the codes up to info's 4.
+    const expected = lv.filter((code) => (code & 0x7f) <= 4).length;
+    expect(expected).toBeGreaterThan(500_000);
+    expect(shown?.length).toBe(expected);
+    expect(shown?.buffer.byteLength).toBe(lv.length * 4);
   });
 });
 
