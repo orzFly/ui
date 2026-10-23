@@ -1,4 +1,9 @@
 export {
+  createLevelTracker,
+  type LevelCounts,
+  type LevelTracker,
+} from "./level-tracker.ts";
+export {
   detectLevel,
   LEVEL_INHERITED,
   LEVELS,
