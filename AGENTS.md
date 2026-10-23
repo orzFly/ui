@@ -85,8 +85,12 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   without a `component`; a story whose point is wiring several exports (`Toaster` with `toast`,
   `HexEditor` with `HexInspector`); and a story whose props include a value the dynamic printer
   cannot write as source (a `ByteSource`, a `HexDocument`, a CodeMirror `Extension`, `Language` or
-  `KeyBinding[]`, a markdown `MarkdownPlugin[]`). Nothing else. A long string prop needs nothing:
-  the preview cuts every literal over 160 characters to its first line.
+  `KeyBinding[]`, a markdown `MarkdownPlugin[]`), or a function whose body is the story's point
+  (`AnsiView`'s `levels` detector). Nothing else. The preview writes the rest as source itself
+  (`apps/storybook/.storybook/jsx-source.ts`): a component passed as a prop prints as its name, a
+  ref as the prop's name, an `Error` as `new Error(…)`, any other function as `() => {}`, and a
+  shared fragment inlines into its parent. A long string prop needs nothing either: the preview
+  cuts every literal over 160 characters to its first line.
 - A story never opens a modal on load on a docs page. An open-on-load variant is an edge story, or
   renders in an iframe (`parameters.docs.story.inline: false`).
 - Edge, performance and regression stories stay in their component's file, tagged

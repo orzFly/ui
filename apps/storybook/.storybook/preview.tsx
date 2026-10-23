@@ -38,6 +38,7 @@ import {
   urlGlobals,
   withUrlGlobals,
 } from "./globals.ts";
+import { jsxSourceOptions } from "./jsx-source.ts";
 import { storybookTheme } from "./storybook-theme.ts";
 import {
   CUSTOMIZE_EVENT,
@@ -346,6 +347,7 @@ const preview: Preview = {
       // Storybook prints a string prop in full: a 2 KB document as 2 KB of code.
       source: { transform: collapseLongLiterals },
     },
+    jsx: jsxSourceOptions,
     options: {
       // Storybook lifts this function out of the source and evals it on its
       // own: it cannot reach anything outside its body, and a type

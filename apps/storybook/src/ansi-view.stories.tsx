@@ -86,6 +86,19 @@ const CUSTOM = [
   "sync stopped",
 ].join("\n");
 
+const DETECTOR_SOURCE = `import { AnsiView, type LevelDetector, type LogLevel } from "@orz/ui-ansi";
+
+const LVL: readonly LogLevel[] = ["fatal", "error", "warn", "info", "debug", "trace"];
+
+// Reads an app's own \`lvl:<0–5>\` prefix, 0 being fatal.
+const lvlPrefix: LevelDetector = (text) => {
+  const m = /^lvl:([0-5])\\b/.exec(text);
+  if (!m) return null;
+  return { level: LVL[Number(m[1])], from: 0, to: m[0].length };
+};
+
+<AnsiView text={log} chrome="file" filename="sync.log" levels={lvlPrefix} />`;
+
 const LARGE = largeLog(200_000);
 
 /**
@@ -130,6 +143,7 @@ export const CustomDetector: Story = {
     filename: "sync.log",
     levels: lvlPrefix,
   },
+  parameters: { docs: { source: { code: DETECTOR_SOURCE, language: "tsx" } } },
 };
 
 /** Bold text in palette colours 0–7 drawn in 8–15, as many terminals do. */
