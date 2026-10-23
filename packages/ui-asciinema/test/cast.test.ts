@@ -76,6 +76,28 @@ describe("scanCast", () => {
     expect(scanCast(v2)).toMatchObject({ duration: 1 });
   });
 
+  it("reads idle_time_limit as the player coerces it", () => {
+    const cast = (limit: unknown) =>
+      lines(
+        { version: 2, width: 80, height: 24, idle_time_limit: limit },
+        [1, "o", "a"],
+        [9, "o", "b"],
+      );
+    expect(scanCast(cast("2"))).toMatchObject({ duration: 3 });
+    expect(scanCast(cast(null))).toMatchObject({ duration: 0 });
+    expect(scanCast(cast("soon"))).toMatchObject({ duration: 9 });
+  });
+
+  it("reads a v1 cast written on one line", () => {
+    const v1 = JSON.stringify({
+      version: 1,
+      width: 80,
+      height: 24,
+      stdout: [[1, "x"]],
+    });
+    expect(scanCast(v1)).toMatchObject({ version: 1, duration: 1 });
+  });
+
   it("leaves a v2 cast without idle_time_limit uncapped", () => {
     const v2 = lines(
       { version: 2, width: 80, height: 24 },

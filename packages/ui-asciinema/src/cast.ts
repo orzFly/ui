@@ -55,10 +55,11 @@ function timeline(limit: number | undefined) {
 }
 
 function idleLimit(header: Header): number | undefined {
-  const limit = header.idle_time_limit;
-  return typeof limit === "number" && Number.isFinite(limit) && limit >= 0
-    ? limit
-    : undefined;
+  // Coerced the way the player multiplies it into milliseconds: null caps every
+  // gap to 0 and "2" to 2 s there, and anything NaN caps none.
+  if (header.idle_time_limit === undefined) return undefined;
+  const limit = Number(header.idle_time_limit);
+  return Number.isNaN(limit) ? undefined : limit;
 }
 
 function scanV1(header: Header): CastInfo | CastError {

@@ -61,7 +61,10 @@ function CastHeader({ source, title }: { source: FileSource; title?: string }) {
 function LoadedCast({ source, placement, className, Next }: CastProps) {
   const text = useSourceText(source);
   const scan = useMemo(
-    () => (text.status === "ready" ? scanCast(text.text) : undefined),
+    () =>
+      text.status === "ready" && text.text.length <= CAST_MAX_BYTES
+        ? scanCast(text.text)
+        : undefined,
     [text.status, text.text],
   );
   if (text.status === "loading") {
