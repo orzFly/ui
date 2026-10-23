@@ -1,10 +1,12 @@
 import {
   clampTopRow,
+  type ScrollGeometry,
   scrollFromTopRow,
   scrollGeometry,
   topRowFromScroll,
 } from "@orz/ui/lib/scroll-map";
 import {
+  type CSSProperties,
   Fragment,
   type ReactNode,
   type RefObject,
@@ -31,6 +33,29 @@ export interface VirtualRowsProps<L> {
   layout: L;
   /** Where the content at `row` of layout `from` sits in layout `to`. */
   carryRow: (row: number, from: L, to: L) => number;
+  /** Empty space above the first row and below the last, in px. */
+  padding?: number;
+  /** Merged into the spacer's style, e.g. a background drawn along the rows. */
+  style?: CSSProperties;
+}
+
+/**
+ * `scroll-map` knows only the rows; the padding sits outside them, so the
+ * scroll position is shifted by the top padding before it is mapped.
+ */
+function rowFromScroll(scrollTop: number, g: ScrollGeometry, padding: number) {
+  return topRowFromScroll(scrollTop - padding, g);
+}
+
+/**
+ * The first and last rows map to the very ends, so reaching either shows its
+ * padding too.
+ */
+function scrollFromRow(row: number, g: ScrollGeometry, padding: number) {
+  const top = clampTopRow(row, g);
+  if (top === 0) return 0;
+  const scrollTop = scrollFromTopRow(top, g);
+  return top === g.maxTopRow ? scrollTop + 2 * padding : scrollTop + padding;
 }
 
 /**
@@ -47,6 +72,8 @@ export function VirtualRows<L>({
   renderRow,
   layout,
   carryRow,
+  padding = 0,
+  style,
 }: VirtualRowsProps<L>) {
   const geometry = useMemo(
     () => scrollGeometry(totalRows, rowHeight, viewportHeight),
@@ -56,12 +83,17 @@ export function VirtualRows<L>({
   geometryRef.current = geometry;
   const layoutRef = useRef(layout);
   layoutRef.current = layout;
+  const paddingRef = useRef(padding);
+  paddingRef.current = padding;
   // The top row is kept with the layout it was read in, so a re-wrap keeps
   // the reader on the same line rather than the same row number. Mounted once
   // a streamed log passes the threshold, it keeps the place already scrolled to.
   const [top, setTop] = useState(() => {
     const el = scrollRef.current;
-    return { row: el ? topRowFromScroll(el.scrollTop, geometry) : 0, layout };
+    return {
+      row: el ? rowFromScroll(el.scrollTop, geometry, padding) : 0,
+      layout,
+    };
   });
   const topRow = clampTopRow(
     top.layout === layout ? top.row : carryRow(top.row, top.layout, layout),
@@ -82,7 +114,7 @@ export function VirtualRows<L>({
       const scrollTop = el.scrollTop;
       if (g.scaled && Math.abs(scrollTop - lastWritten.current) <= 1) return;
       lastWritten.current = scrollTop;
-      const next = topRowFromScroll(scrollTop, g);
+      const next = rowFromScroll(scrollTop, g, paddingRef.current);
       topRowRef.current = next;
       setTop({ row: next, layout: layoutRef.current });
     };
@@ -112,7 +144,7 @@ export function VirtualRows<L>({
         const next = clampTopRow(topRowRef.current + step, g);
         topRowRef.current = next;
         setTop({ row: next, layout: layoutRef.current });
-        const scrollTop = scrollFromTopRow(next, g);
+        const scrollTop = scrollFromRow(next, g, paddingRef.current);
         lastWritten.current = scrollTop;
         el.scrollTop = scrollTop;
       }
@@ -127,18 +159,28 @@ export function VirtualRows<L>({
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    if (topRowFromScroll(el.scrollTop, geometry) === topRow) return;
-    const scrollTop = scrollFromTopRow(topRow, geometry);
+    const current = el.scrollTop;
+    if (rowFromScroll(current, geometry, padding) === topRow) return;
+    // 1:1 the rows never move in the spacer. Left at the old bottom, where
+    // the top row sits a padding higher than its mapped place, the view stays
+    // put rather than jump when more rows extend the range.
+    if (
+      !geometry.scaled &&
+      Math.abs(current - scrollFromTopRow(topRow, geometry) - 2 * padding) < 1
+    ) {
+      return;
+    }
+    const scrollTop = scrollFromRow(topRow, geometry, padding);
     lastWritten.current = scrollTop;
     el.scrollTop = scrollTop;
-  }, [geometry, topRow, scrollRef]);
+  }, [geometry, topRow, scrollRef, padding]);
 
   const first = Math.max(0, topRow - OVERSCAN);
   const end = Math.min(totalRows, topRow + geometry.viewportRows + OVERSCAN);
-  // 1:1 this is first × rowHeight, so the browser scrolls the rows smoothly;
-  // scaled, the top row is pinned to the viewport's top edge.
+  // 1:1 this is padding + first × rowHeight, so the browser scrolls the rows
+  // smoothly; scaled, the top row is pinned to the viewport's top edge.
   const offset =
-    scrollFromTopRow(topRow, geometry) - (topRow - first) * rowHeight;
+    padding + scrollFromTopRow(topRow, geometry) - (topRow - first) * rowHeight;
 
   const rows: ReactNode[] = [];
   for (let row = first; row < end; row++) {
@@ -148,7 +190,8 @@ export function VirtualRows<L>({
     <div
       className="relative min-w-full"
       style={{
-        height: geometry.spacerHeight,
+        ...style,
+        height: geometry.spacerHeight + 2 * padding,
         width,
         // The overscan below the last rows must not extend the scroll range.
         overflowY: "clip",

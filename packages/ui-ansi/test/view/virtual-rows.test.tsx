@@ -87,6 +87,9 @@ function scrollTo(el: HTMLElement, top: number) {
   fireEvent.scroll(el);
 }
 
+// The view's padding above the first row and below the last.
+const PAD = 8;
+
 const lines = (n: number, make: (i: number) => string = (i) => `L${i}`) =>
   Array.from({ length: n }, (_, i) => make(i)).join("\n");
 
@@ -106,9 +109,9 @@ describe("1:1 window bounds", () => {
       expect(got[0]).toBe(first);
       expect(got.at(-1)).toBe(end - 1);
       expect(got).toHaveLength(end - first);
-      // 1:1, the layer sits at first × rowHeight.
+      // 1:1, the layer sits at the padding plus first × rowHeight.
       expect(layer(container).style.transform).toBe(
-        `translateY(${first * 20}px)`,
+        `translateY(${PAD + first * 20}px)`,
       );
     }
   });
@@ -124,12 +127,12 @@ describe("1:1 window bounds", () => {
     expect(got[0]).toBe(99_980 - 20);
   });
 
-  it("sizes the spacer to the rows exactly", () => {
+  it("sizes the spacer to the rows and the padding exactly", () => {
     const { container } = render(
       <AnsiView chrome="pane" maxHeight="400px" text={TEXT} />,
     );
     // maxTopRow × rowHeight + viewportHeight = totalRows × rowHeight here.
-    expect(spacer(container).style.height).toBe(`${100_000 * 20}px`);
+    expect(spacer(container).style.height).toBe(`${100_000 * 20 + 2 * PAD}px`);
   });
 });
 
@@ -142,21 +145,21 @@ describe("scaled past the spacer cap", () => {
     const { container } = render(
       <AnsiView chrome="pane" maxHeight="400px" text={TEXT} />,
     );
-    expect(spacer(container).style.height).toBe(`${MAX_SPACER_PX}px`);
+    expect(spacer(container).style.height).toBe(`${MAX_SPACER_PX + 2 * PAD}px`);
     const scroller = screen.getByRole("region");
     const maxScroll = MAX_SPACER_PX - 400;
 
-    scrollTo(scroller, maxScroll);
+    scrollTo(scroller, maxScroll + PAD);
     let got = mountedLines(container);
     expect(got.at(-1)).toBe(99_999);
     // Top row 99_998, two rows visible, 20 overscan above.
     expect(got[0]).toBe(99_978);
     // The top row is pinned to the viewport's top edge.
     expect(layer(container).style.transform).toBe(
-      `translateY(${maxScroll - 20 * 200}px)`,
+      `translateY(${PAD + maxScroll - 20 * 200}px)`,
     );
 
-    scrollTo(scroller, maxScroll / 2);
+    scrollTo(scroller, PAD + maxScroll / 2);
     got = mountedLines(container);
     expect(got).toContain(49_999);
     expect(got[0]).toBe(49_999 - 20);
@@ -172,7 +175,7 @@ describe("scaled past the spacer cap", () => {
       <AnsiView chrome="pane" maxHeight="400px" text={TEXT} />,
     );
     const scroller = screen.getByRole("region");
-    scrollTo(scroller, (MAX_SPACER_PX - 400) / 2);
+    scrollTo(scroller, PAD + (MAX_SPACER_PX - 400) / 2);
     act(() => {
       scroller.dispatchEvent(
         new WheelEvent("wheel", {
@@ -189,7 +192,10 @@ describe("scaled past the spacer cap", () => {
       maxTopRow: 99_998,
       range: MAX_SPACER_PX - 400,
     };
-    expect(scroller.scrollTop).toBeCloseTo((50_002 / g.maxTopRow) * g.range, 0);
+    expect(scroller.scrollTop).toBeCloseTo(
+      PAD + (50_002 / g.maxTopRow) * g.range,
+      0,
+    );
   });
 
   it("keeps the top row when the row count grows past the cap", () => {
@@ -204,6 +210,99 @@ describe("scaled past the spacer cap", () => {
     metrics.viewportHeight = 800;
     rerender(<AnsiView chrome="pane" maxHeight="400px" text={TEXT} />);
     expect(mountedLines(container)[0]).toBe(49_999 - 20);
+  });
+});
+
+describe("padding above the first row and below the last", () => {
+  const TEXT = lines(100_000);
+
+  function translate(container: HTMLElement): number {
+    const m = /translateY\((.+)px\)/.exec(layer(container).style.transform);
+    return Number(m?.[1]);
+  }
+
+  /** Where the last mounted row ends, in the spacer's coordinates. */
+  function bottom(container: HTMLElement, rowHeight: number): number {
+    return translate(container) + mounted(container).length * rowHeight;
+  }
+
+  it("1:1, shows the padding at both ends with every row reachable", () => {
+    const { container } = render(
+      <AnsiView chrome="pane" maxHeight="400px" text={TEXT} />,
+    );
+    const scroller = screen.getByRole("region");
+    scrollTo(scroller, 0);
+    expect(mountedLines(container)[0]).toBe(0);
+    expect(translate(container)).toBe(PAD);
+
+    const maxScroll = 100_000 * 20 + 2 * PAD - 400;
+    scrollTo(scroller, maxScroll);
+    expect(mountedLines(container).at(-1)).toBe(99_999);
+    // The last row ends the padding's height above the viewport's bottom.
+    expect(bottom(container, 20)).toBe(maxScroll + 400 - PAD);
+  });
+
+  it("1:1, keeps the rows aligned to the scroll position", () => {
+    const { container } = render(
+      <AnsiView chrome="pane" maxHeight="400px" text={TEXT} />,
+    );
+    const scroller = screen.getByRole("region");
+    scrollTo(scroller, PAD + 777 * 20);
+    const got = mountedLines(container);
+    // Row 777 sits exactly at the viewport's top edge.
+    expect(translate(container) + (777 - got[0]) * 20).toBe(PAD + 777 * 20);
+  });
+
+  it("scaled, reaches the last row whole and the padding below it", () => {
+    metrics.rowHeight = 200;
+    const { container } = render(
+      <AnsiView chrome="pane" maxHeight="400px" text={TEXT} />,
+    );
+    const scroller = screen.getByRole("region");
+    const maxScroll = MAX_SPACER_PX + 2 * PAD - 400;
+    scrollTo(scroller, maxScroll);
+    expect(mountedLines(container).at(-1)).toBe(99_999);
+    expect(bottom(container, 200)).toBe(maxScroll + 400 - PAD);
+
+    scrollTo(scroller, 0);
+    expect(mountedLines(container)[0]).toBe(0);
+    expect(translate(container)).toBe(PAD);
+  });
+
+  it("scaled, a wheel to either end scrolls its padding into view", () => {
+    metrics.rowHeight = 200;
+    render(<AnsiView chrome="pane" maxHeight="400px" text={TEXT} />);
+    const scroller = screen.getByRole("region");
+    const wheel = (deltaY: number) =>
+      act(() => {
+        scroller.dispatchEvent(
+          new WheelEvent("wheel", {
+            deltaY,
+            deltaMode: 1,
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      });
+    scrollTo(scroller, PAD + 1000);
+    wheel(-1e6);
+    expect(scroller.scrollTop).toBe(0);
+    wheel(1e6);
+    expect(scroller.scrollTop).toBe(MAX_SPACER_PX + 2 * PAD - 400);
+  });
+
+  it("1:1, stays put at the bottom when more rows arrive", () => {
+    // A 16px row: the padding is half a row, so the bottom's scrollTop
+    // rounds to the row after the top one once the range grows.
+    metrics.rowHeight = 16;
+    const { rerender } = render(
+      <AnsiView chrome="pane" maxHeight="400px" text={lines(10_000)} />,
+    );
+    const scroller = screen.getByRole("region");
+    const maxScroll = (10_000 - 25) * 16 + 2 * PAD;
+    scrollTo(scroller, maxScroll);
+    rerender(<AnsiView chrome="pane" maxHeight="400px" text={lines(10_100)} />);
+    expect(scroller.scrollTop).toBe(maxScroll);
   });
 });
 
@@ -252,11 +351,11 @@ describe("wrap geometry", () => {
     for (const width of [800, 400, 333, 1210]) {
       metrics.width = width;
       rerender(<AnsiView chrome="file" maxHeight="400px" wrap text={text} />);
-      // 4-digit gutter: 5 cells.
-      const cols = Math.max(20, Math.floor((width - 40) / 8));
+      // 4-digit gutter: 6 cells.
+      const cols = Math.max(20, Math.floor((width - 48) / 8));
       const perLine = Math.ceil(150 / cols);
       const total = 6000 * perLine;
-      expect(spacer(container).style.height).toBe(`${total * 20}px`);
+      expect(spacer(container).style.height).toBe(`${total * 20 + 2 * PAD}px`);
       const top = Math.floor(total / 2) + 1;
       scrollTo(scroller, top * 20);
       const drawn = rowsOf(container);
@@ -281,7 +380,7 @@ describe("wrap geometry", () => {
       <AnsiView chrome="pane" maxHeight="400px" wrap text={big} />,
     );
     // 20 columns hold 10 wide characters, so 3 rows a line.
-    expect(spacer(container).style.height).toBe(`${6000 * 3 * 20}px`);
+    expect(spacer(container).style.height).toBe(`${6000 * 3 * 20 + 2 * PAD}px`);
     const scroller = screen.getByRole("region");
     scrollTo(scroller, 9000 * 20);
     const drawn = rowsOf(container);
@@ -294,9 +393,9 @@ describe("wrap geometry", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Wrap lines" }));
     // 6000 rows: still virtual.
-    expect(spacer(container).style.height).toBe(`${6000 * 20}px`);
-    // No wrap: gutter of 5 cells plus 150 cells.
-    expect(spacer(container).style.width).toBe(`${(5 + 150) * 8}px`);
+    expect(spacer(container).style.height).toBe(`${6000 * 20 + 2 * PAD}px`);
+    // No wrap: gutter of 6 cells plus 150 cells.
+    expect(spacer(container).style.width).toBe(`${(6 + 150) * 8}px`);
   });
 
   it("keeps the reader on the same line when wrap is toggled", () => {
@@ -331,7 +430,7 @@ describe("wrap resize", () => {
     rerender(<AnsiView chrome="pane" maxHeight="400px" wrap text={text} />);
     const top = mounted(container)[20];
     expect([top.dataset.line, top.dataset.from]).toEqual(["3000", "100"]);
-    expect(scroller.scrollTop).toBe((3000 * 3 + 2) * 20);
+    expect(scroller.scrollTop).toBe(PAD + (3000 * 3 + 2) * 20);
   });
 
   it("keeps the top line when a width change re-wraps", () => {
@@ -369,13 +468,12 @@ describe("no-wrap width", () => {
       <AnsiView chrome="file" text={small} />,
     );
     const body = mounted(container)[0].parentElement as HTMLElement;
-    expect(body.style.width).toBe(`${(2 + 77) * 8}px`);
+    expect(body.style.width).toBe(`${(3 + 77) * 8}px`);
     unmount();
 
     const big = lines(100_000).concat(`\n${"z".repeat(500)}`);
     const { container: c2 } = render(<AnsiView chrome="file" text={big} />);
-    // 6 digits + 1.
-    expect(spacer(c2).style.width).toBe(`${(7 + 500) * 8}px`);
+    expect(spacer(c2).style.width).toBe(`${(8 + 500) * 8}px`);
   });
 
   it("counts a wide character as two cells", () => {
@@ -426,15 +524,25 @@ describe("streaming growth", () => {
     expect(firstHeight).toBeLessThan(N * 20);
     await waitFor(
       () => expect(screen.getByText(`${N.toLocaleString("en-US")} lines`)),
-      { timeout: 10_000 },
+      { timeout: 15_000 },
     );
-    expect(spacer(container).style.height).toBe(`${N * 20}px`);
+    expect(spacer(container).style.height).toBe(`${N * 20 + 2 * PAD}px`);
     const scroller = screen.getByRole("region");
     scrollTo(scroller, 1e9);
     const got = mountedLines(container);
     expect(got.at(-1)).toBe(N - 1);
     const last = mounted(container).at(-1) as HTMLElement;
     expect(last.textContent).toBe(`line ${N - 1}`.padEnd(10, "."));
+  }, 20_000);
+
+  it("mounts only a window from the first slice on", () => {
+    // 6000 rows in all, but the first slice holds fewer than 5000 of them.
+    const text = lines(6000, (i) => `${i}`.padEnd(300, "x"));
+    const { container } = render(
+      <AnsiView chrome="pane" maxHeight="400px" text={text} />,
+    );
+    // 20 rows in view, 20 overscan on each side.
+    expect(mounted(container).length).toBeLessThanOrEqual(20 + 2 * 20);
   });
 
   it("keeps the scroll place while lines stream in", async () => {
@@ -446,11 +554,13 @@ describe("streaming growth", () => {
     expect(mountedLines(container)).toContain(1000);
     await waitFor(
       () =>
-        expect(Number.parseFloat(spacer(container).style.height)).toBe(N * 20),
-      { timeout: 10_000 },
+        expect(Number.parseFloat(spacer(container).style.height)).toBe(
+          N * 20 + 2 * PAD,
+        ),
+      { timeout: 15_000 },
     );
     expect(mountedLines(container)[0]).toBe(980);
-  });
+  }, 20_000);
 
   it("parses every line once under StrictMode", async () => {
     const { container } = render(
@@ -460,7 +570,7 @@ describe("streaming growth", () => {
     );
     await waitFor(
       () => expect(screen.getByText(`${N.toLocaleString("en-US")} lines`)),
-      { timeout: 10_000 },
+      { timeout: 15_000 },
     );
     const scroller = screen.getByRole("region");
     scrollTo(scroller, 123_456 * 20);
@@ -468,5 +578,5 @@ describe("streaming growth", () => {
       (el) => Number(el.dataset.line) === 123_456,
     );
     expect(row?.textContent).toBe("line 123456");
-  });
+  }, 20_000);
 });

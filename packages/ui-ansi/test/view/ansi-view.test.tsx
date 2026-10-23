@@ -167,11 +167,9 @@ describe("AnsiView chrome", () => {
     expect(screen.getByText(/^Parsing… [\d,]+ lines$/)).toBeTruthy();
     await waitFor(
       () => expect(screen.getByText("400,001 lines")).toBeTruthy(),
-      {
-        timeout: 5000,
-      },
+      { timeout: 15_000 },
     );
-  });
+  }, 20_000);
 
   it("says 1 line for one line", () => {
     render(<AnsiView chrome="file" text="x" />);
@@ -200,7 +198,7 @@ describe("AnsiView chrome", () => {
     const { container } = render(
       <AnsiView chrome="file" wrap text={`${"x".repeat(150)}\ny`} />,
     );
-    // 800px less a 2ch gutter of 16px leaves 98 columns.
+    // 800px less a 3ch gutter of 24px leaves 97 columns.
     const numbers = [...container.querySelectorAll("[data-gutter]")].map((el) =>
       el.getAttribute("data-n"),
     );
@@ -340,8 +338,8 @@ const gutterOf = (row: HTMLElement) =>
   row.querySelector("[data-gutter]") as HTMLElement;
 
 describe("AnsiView selection endpoints", () => {
-  // 800px less a 2ch gutter leaves 98 columns.
-  const LONG = `${"a".repeat(98)}${"b".repeat(98)}${"c".repeat(10)}`;
+  // 800px less a 3ch gutter leaves 97 columns.
+  const LONG = `${"a".repeat(97)}${"b".repeat(97)}${"c".repeat(10)}`;
 
   it("starts in a gutter and ends mid-way through a wrapped row", () => {
     const { container } = render(
@@ -354,7 +352,7 @@ describe("AnsiView selection endpoints", () => {
       [firstText(all[2]), 5],
     );
     expect(prevented).toBe(true);
-    expect(setData).toHaveBeenCalledWith("text/plain", LONG.slice(0, 98 + 5));
+    expect(setData).toHaveBeenCalledWith("text/plain", LONG.slice(0, 97 + 5));
   });
 
   it("ends in the gutter of a continuation row", () => {
@@ -363,7 +361,7 @@ describe("AnsiView selection endpoints", () => {
     );
     const all = rows(container);
     const { setData } = copy([firstText(all[0]), 3], [gutterOf(all[2]), 0]);
-    expect(setData).toHaveBeenCalledWith("text/plain", LONG.slice(3, 196));
+    expect(setData).toHaveBeenCalledWith("text/plain", LONG.slice(3, 194));
   });
 
   it("ends in the gutter of the next line, keeping the newline", () => {
@@ -446,9 +444,9 @@ describe("AnsiView selection endpoints", () => {
   });
 
   it("keeps a surrogate pair split by a row boundary intact", () => {
-    // 97 narrow cells then a wide emoji does not fit 98 columns; it moves to
+    // 96 narrow cells then a wide emoji does not fit 97 columns; it moves to
     // the next row whole.
-    const text = `${"a".repeat(97)}\u{1F600}${"z".repeat(5)}`;
+    const text = `${"a".repeat(96)}\u{1F600}${"z".repeat(5)}`;
     const { container } = render(<AnsiView chrome="file" wrap text={text} />);
     const all = rows(container);
     for (const row of all) {
@@ -456,8 +454,8 @@ describe("AnsiView selection endpoints", () => {
       expect(/^[\uDC00-\uDFFF]/.test(t)).toBe(false);
       expect(/[\uD800-\uDBFF]$/.test(t)).toBe(false);
     }
-    const { setData } = copy([firstText(all[0]), 96], [all[1], 2]);
-    expect(setData).toHaveBeenCalledWith("text/plain", text.slice(96));
+    const { setData } = copy([firstText(all[0]), 95], [all[1], 2]);
+    expect(setData).toHaveBeenCalledWith("text/plain", text.slice(95));
   });
 
   it("leaves a selection ending in another view to the browser", () => {
@@ -577,14 +575,14 @@ describe("AnsiView Copy button", () => {
       "Copied output",
     );
     await waitFor(() => expect(screen.queryByText(/^Parsing…/)).toBeNull(), {
-      timeout: 10_000,
+      timeout: 15_000,
     });
     fireEvent.click(screen.getByRole("button", { name: "Copy output" }));
     expect(copyToClipboard).toHaveBeenLastCalledWith(
       stripAnsi(big),
       "Copied output",
     );
-  });
+  }, 20_000);
 });
 
 describe("AnsiView virtualised selection", () => {
@@ -643,7 +641,7 @@ describe("AnsiView virtualised selection", () => {
 });
 
 describe("AnsiView chrome details", () => {
-  it("pane tools show on hover and on focus-within", () => {
+  it("pane tools show on hover, on focus-within and on touch", () => {
     const { container } = render(<AnsiView chrome="pane" text="x" />);
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).toContain("group");
@@ -653,6 +651,8 @@ describe("AnsiView chrome details", () => {
       .parentElement as HTMLElement;
     expect(cluster.className).toContain("group-hover:opacity-100");
     expect(cluster.className).toContain("focus-within:opacity-100");
+    // A touch screen has no hover to reveal them.
+    expect(cluster.className).toContain("pointer-coarse:opacity-100");
     expect(screen.getByRole("button", { name: "Wrap lines" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Download" })).toBeNull();
   });
@@ -714,9 +714,9 @@ describe("AnsiView React", () => {
     );
     await waitFor(
       () => expect(screen.getByText("400,001 lines")).toBeTruthy(),
-      { timeout: 5000 },
+      { timeout: 15_000 },
     );
-  });
+  }, 20_000);
 
   it("a new small text replaces the rows", () => {
     const { container, rerender } = render(

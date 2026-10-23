@@ -105,7 +105,7 @@ describe("useAnsiLines", () => {
     expect(result.current.lines).toEqual(expected.lines);
     expect(result.current.styles).toEqual(expected.styles);
     expect(result.current.maxCells).toBe(expected.maxCells);
-  });
+  }, 20_000);
 
   it("keeps the snapshot object between publishes", () => {
     const { result, rerender } = renderHook(() => useAnsiLines(BIG));

@@ -22,7 +22,7 @@ import {
   VIRTUALIZE_ABOVE,
 } from "./geometry.ts";
 import { useCellMetrics } from "./metrics.ts";
-import { AnsiRow } from "./row.tsx";
+import { AnsiRow, GUTTER_TEXT_GAP, gutterCells } from "./row.tsx";
 import { createStyleCache } from "./run-style.ts";
 import { useAnsiLines } from "./use-ansi-lines.ts";
 import { VirtualRows } from "./virtual-rows.tsx";
@@ -46,6 +46,24 @@ export interface AnsiViewProps {
 
 /** A virtualised view needs a bounded height even when none was given. */
 const VIRTUAL_HEIGHT = "32rem";
+
+const CONTENT_PADDING = 8;
+
+/**
+ * The line between the gutter and the text, as a background of the rows'
+ * container: it spans the padding too, and adds no node a selection could
+ * land in.
+ */
+function gutterRule(gutterCells: number): CSSProperties | undefined {
+  if (gutterCells === 0) return undefined;
+  return {
+    backgroundImage:
+      "linear-gradient(var(--color-border), var(--color-border))",
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "1px 100%",
+    backgroundPosition: `calc(${gutterCells - GUTTER_TEXT_GAP}ch - 1px) 0`,
+  };
+}
 
 type RowRange = readonly [from: number, to: number, fromCell: number];
 
@@ -202,7 +220,7 @@ export function AnsiView({
 
   const gutterDigits =
     chrome === "file" ? String(Math.max(1, lines.length)).length : 0;
-  const gutterWidth = gutterDigits > 0 ? (gutterDigits + 1) * cellWidth : 0;
+  const gutterWidth = gutterCells(gutterDigits) * cellWidth;
   const cols = wrap ? columnsFor(width - gutterWidth, cellWidth) : null;
   // `lines` grows in place while a large text streams in: each published
   // snapshot extends the last index, and its length is the line count drawn.
@@ -224,7 +242,12 @@ export function AnsiView({
   const { index } = layout;
   const lineCount = index.length - 1;
   const totalRows = index[lineCount];
-  const virtual = totalRows > VIRTUALIZE_ABOVE;
+  // While a large text streams in, its rows so far undercount it; judged by
+  // them alone, the first slices would mount thousands of rows only to drop
+  // them a tick later.
+  const virtual =
+    (parse.parsed > 0 ? totalRows / parse.parsed : totalRows) >
+    VIRTUALIZE_ABOVE;
 
   const rowsOfLine = useMemo(() => {
     const cache = new WeakMap<AnsiLine, readonly RowRange[]>();
@@ -281,6 +304,8 @@ export function AnsiView({
         renderRow={renderVirtualRow}
         layout={layout}
         carryRow={carryRow}
+        padding={CONTENT_PADDING}
+        style={gutterRule(gutterCells(gutterDigits))}
       />
     );
   } else {
@@ -289,7 +314,14 @@ export function AnsiView({
       for (const range of rowsOfLine(lines[i])) rows.push(renderRow(i, range));
     }
     body = (
-      <div className="min-w-full" style={{ width: contentWidth }}>
+      <div
+        className="min-w-full"
+        style={{
+          ...gutterRule(gutterCells(gutterDigits)),
+          width: contentWidth,
+          paddingBlock: CONTENT_PADDING,
+        }}
+      >
         {rows}
       </div>
     );
@@ -427,7 +459,7 @@ export function AnsiView({
         )}
         style={rootStyle}
       >
-        <div className="absolute top-1 right-1 z-10 flex gap-0.5 rounded-md bg-terminal-background opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        <div className="absolute top-1 right-1 z-10 flex gap-0.5 rounded-md bg-terminal-background opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
           {tools}
         </div>
         {scroller}

@@ -15,6 +15,14 @@ export interface AnsiRowProps {
   gutterDigits: number;
 }
 
+/** Cells between the gutter's rule and the text. */
+export const GUTTER_TEXT_GAP = 1;
+
+/** Cells the gutter takes: the digits, a cell on each side of the rule. */
+export function gutterCells(gutterDigits: number): number {
+  return gutterDigits > 0 ? gutterDigits + 1 + GUTTER_TEXT_GAP : 0;
+}
+
 /**
  * One visual row. Its text is exactly `line.text.slice(from, to)`, in
  * `[data-text]`, which the view's copy handler relies on to map a selection
@@ -70,7 +78,10 @@ export const AnsiRow = memo(function AnsiRow({
           data-gutter=""
           data-n={from === 0 ? lineIndex + 1 : undefined}
           className="shrink-0 pr-[1ch] text-right text-ansi-bright-black select-none before:content-[attr(data-n)]"
-          style={{ width: `${gutterDigits + 1}ch` }}
+          style={{
+            width: `${gutterCells(gutterDigits) - GUTTER_TEXT_GAP}ch`,
+            marginRight: `${GUTTER_TEXT_GAP}ch`,
+          }}
         />
       )}
       <span data-text="">{spans}</span>

@@ -12,6 +12,8 @@ export interface AnsiLines extends AnsiParse {
   readonly done: boolean;
   /** Bumped on every publish; `lines` itself grows in place. */
   readonly version: number;
+  /** The share of the text parsed so far, from 0 to 1. */
+  readonly parsed: number;
 }
 
 interface LinesStore {
@@ -47,6 +49,7 @@ function slicedStore(text: string): LinesStore {
       maxCells: parser.maxCells,
       done,
       version: version++,
+      parsed: Math.min(1, offset / text.length),
     };
   }
 
@@ -107,7 +110,12 @@ export function useAnsiLines(text: string): AnsiLines {
     () =>
       text.length > SYNC_PARSE_MAX
         ? slicedStore(text)
-        : staticStore({ ...parseAnsi(text), done: true, version: 0 }),
+        : staticStore({
+            ...parseAnsi(text),
+            done: true,
+            version: 0,
+            parsed: 1,
+          }),
     [text],
   );
   useEffect(() => store.start(), [store]);
