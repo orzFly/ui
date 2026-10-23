@@ -1,8 +1,11 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createLevelTracker } from "../../src/parse/level-tracker.ts";
+import { detectLevel, type LevelDetector } from "../../src/parse/levels.ts";
 import { parseAnsi } from "../../src/parse/parser.ts";
 import { SYNC_PARSE_MAX, useAnsiLines } from "../../src/view/use-ansi-lines.ts";
+import { LOG_SAMPLE } from "../parse/log-sample.ts";
 
 // Ticks queue here and run only when a test flushes them, so a test can stop
 // a parse midway.
@@ -73,6 +76,29 @@ function fixture(bytes: number, seed: string): string {
 }
 
 const BIG = fixture(3 * 1024 * 1024, "first");
+
+// The mockup's sample over and over, some of it ANSI-coloured, so slices cut
+// stack traces and escapes at every kind of place.
+function logFixture(bytes: number): string {
+  const parts: string[] = [];
+  let size = 0;
+  for (let i = 0; size < bytes; i++) {
+    const [line] = LOG_SAMPLE[i % LOG_SAMPLE.length];
+    const part = i % 13 === 0 ? `\x1b[33m${line}\x1b[0m\n` : `${line}\n`;
+    parts.push(part);
+    size += part.length;
+  }
+  return parts.join("");
+}
+
+const LOG = logFixture(3 * 1024 * 1024);
+
+function oneShot(text: string, detect: LevelDetector = detectLevel) {
+  const { lines } = parseAnsi(text);
+  const tracker = createLevelTracker(detect);
+  tracker.push(lines, 0, lines.length);
+  return tracker;
+}
 
 describe("useAnsiLines", () => {
   it("parses a small text at once", () => {
@@ -154,4 +180,74 @@ describe("useAnsiLines", () => {
     flush();
     expect(result.current.lines.map((line) => line.text)).toEqual(["short"]);
   });
+});
+
+describe("useAnsiLines with levels", () => {
+  it("leaves levels null when they are off", () => {
+    const small = renderHook(() => useAnsiLines("ERROR boom"));
+    expect(small.result.current.levels).toBeNull();
+    expect(small.result.current.levelCounts).toBeNull();
+
+    const big = renderHook(() => useAnsiLines(LOG, false));
+    flush();
+    expect(big.result.current.done).toBe(true);
+    expect(big.result.current.levels).toBeNull();
+    expect(big.result.current.levelCounts).toBeNull();
+  });
+
+  it("classifies a small text with the parse", () => {
+    const text = LOG_SAMPLE.map(([line]) => line).join("\n");
+    const { result } = renderHook(() => useAnsiLines(text, detectLevel));
+    const expected = oneShot(text);
+    expect(result.current.levels).toEqual(expected.levels);
+    expect(result.current.levelCounts).toEqual(expected.counts);
+    expect(result.current.levels?.length).toBe(result.current.lines.length);
+  });
+
+  it("classifies a large text slice by slice, ending as one pass does", () => {
+    expect(LOG.length).toBeGreaterThan(SYNC_PARSE_MAX);
+    const { result } = renderHook(() => useAnsiLines(LOG, detectLevel));
+    let previous = 0;
+    for (;;) {
+      const snapshot = result.current;
+      expect(snapshot.levels?.length).toBe(snapshot.lines.length);
+      const counts = snapshot.levelCounts;
+      if (!counts) throw new Error("levelCounts missing");
+      const total = Object.values(counts).reduce((a, b) => a + b, 0);
+      expect(total).toBe(snapshot.lines.length);
+      expect(snapshot.lines.length).toBeGreaterThanOrEqual(previous);
+      previous = snapshot.lines.length;
+      if (snapshot.done) break;
+      expect(flush(1)).toBe(1);
+    }
+    const expected = oneShot(LOG);
+    expect(result.current.levels).toEqual(expected.levels);
+    expect(result.current.levelCounts).toEqual(expected.counts);
+    expect(expected.counts.error).toBeGreaterThan(0);
+    expect(expected.levels.some((code) => code & 0x80)).toBe(true);
+  }, 20_000);
+
+  it("classifies the last line, flushed by end()", () => {
+    const text = `${LOG}WARN no newline at the end`;
+    const { result } = renderHook(() => useAnsiLines(text, detectLevel));
+    flush();
+    const levels = result.current.levels;
+    expect(levels?.length).toBe(result.current.lines.length);
+    expect(levels?.[levels.length - 1]).toBe(3);
+  }, 20_000);
+
+  it("restarts the parse when the detector changes", () => {
+    const allTrace: LevelDetector = () => ({ level: "trace" });
+    const { result, rerender } = renderHook(
+      ({ detect }) => useAnsiLines(LOG, detect),
+      { initialProps: { detect: detectLevel as LevelDetector } },
+    );
+    flush(2);
+    rerender({ detect: allTrace });
+    expect(result.current.done).toBe(false);
+    flush();
+    expect(result.current.done).toBe(true);
+    expect(result.current.levelCounts?.trace).toBe(result.current.lines.length);
+    expect(result.current.levels).toEqual(oneShot(LOG, allTrace).levels);
+  }, 20_000);
 });

@@ -75,14 +75,16 @@ function exactRows(text: string, cols: number): number {
  * The first visual row of each line, then the total row count at index
  * `lines.length`. `cols` of `null` means no wrap: one row per line. `prev`, an
  * index built with the same `cols` over a prefix of `lines`, is extended
- * rather than rebuilt.
+ * rather than rebuilt. With `shown`, the index runs over `lines[shown[i]]`
+ * only, and `prev` must cover a prefix of `shown`.
  */
 export function buildRowIndex(
   lines: readonly Pick<AnsiLine, "text" | "cells">[],
   cols: number | null,
   prev?: Uint32Array,
+  shown?: Uint32Array | null,
 ): Uint32Array {
-  const n = lines.length;
+  const n = shown ? shown.length : lines.length;
   let start = 0;
   let index: Uint32Array;
   if (prev && prev.length > 0 && prev.length <= n + 1) {
@@ -106,7 +108,7 @@ export function buildRowIndex(
   let row = index[start];
   for (let i = start; i < n; i++) {
     index[i] = row;
-    const line = lines[i];
+    const line = lines[shown ? shown[i] : i];
     const cells = line.cells;
     if (cells <= cols) row += 1;
     // Only a wide character can leave a cell unused at a cut, so the ceil
@@ -131,4 +133,9 @@ export function lineAtRow(index: Uint32Array, row: number): number {
     else hi = mid - 1;
   }
   return lo;
+}
+
+/** The line id at `pos` in a shown list, or `pos` itself when all are shown. */
+export function lineIdAt(shown: Uint32Array | null, pos: number): number {
+  return shown ? shown[pos] : pos;
 }

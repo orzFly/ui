@@ -1,31 +1,45 @@
 import { Button } from "@orz/ui/components/button";
+import { cellWidth as codePointCells } from "@orz/ui/lib/cell-width";
 import { copyToClipboard } from "@orz/ui/lib/clipboard";
+import { rowsInViewport } from "@orz/ui/lib/scroll-map";
 import { cn } from "@orz/ui/lib/utils";
 import { CopyIcon, DownloadIcon, WrapTextIcon } from "lucide-react";
 import {
   type ClipboardEvent,
   type CSSProperties,
+  type KeyboardEvent,
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import {
+  detectLevel,
+  LEVEL_INHERITED,
+  type LevelDetector,
+  type LevelMatch,
+} from "../parse/levels.ts";
 import { stripAnsi } from "../parse/parser.ts";
 import type { AnsiLine } from "../parse/types.ts";
 import {
   buildRowIndex,
   columnsFor,
   lineAtRow,
+  lineIdAt,
   splitRows,
   VIRTUALIZE_ABOVE,
 } from "./geometry.ts";
 import { useCellMetrics } from "./metrics.ts";
-import { AnsiRow, GUTTER_TEXT_GAP, gutterCells } from "./row.tsx";
+import { AnsiRow, GUTTER_TEXT_GAP, gutterCells, type RowMark } from "./row.tsx";
 import { createStyleCache } from "./run-style.ts";
+import { appendShownLines, buildShownLines, levelMask } from "./shown-lines.ts";
+import { LevelChips, type LevelKey, SearchBox } from "./toolbar.tsx";
 import { useAnsiLines } from "./use-ansi-lines.ts";
-import { VirtualRows } from "./virtual-rows.tsx";
+import { useSearch } from "./use-search.ts";
+import { VirtualRows, type VirtualRowsHandle } from "./virtual-rows.tsx";
 
 export interface AnsiViewProps {
   text: string;
@@ -41,6 +55,13 @@ export interface AnsiViewProps {
   wrap?: boolean;
   /** How tall the view may grow before it scrolls. Default: grows to fit. */
   maxHeight?: string;
+  /**
+   * Detects each line's log level, colours rows by it and, with
+   * chrome="file", offers a filter by level. `true` uses `detectLevel`; a
+   * function replaces it, and should keep its identity across renders, since
+   * a new one parses the text again. Default false.
+   */
+  levels?: boolean | LevelDetector;
   className?: string;
 }
 
@@ -70,6 +91,70 @@ type RowRange = readonly [from: number, to: number, fromCell: number];
 function lineCountLabel(count: number): string {
   return `${count.toLocaleString("en-US")} ${count === 1 ? "line" : "lines"}`;
 }
+
+/** The first position in `shown` holding line `id` or a later one; `id` itself with every line shown. */
+function positionOf(shown: Uint32Array | null, id: number): number {
+  if (!shown) return id;
+  let lo = 0;
+  let hi = shown.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (shown[mid] < id) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/** The first of `count` match triples on line `id` or a later one. */
+function firstMatchFrom(matches: Uint32Array, count: number, id: number) {
+  let lo = 0;
+  let hi = count;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (matches[3 * mid] < id) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/** Cells taken by `text` before UTF-16 offset `to`. */
+function cellsBefore(text: string, to: number): number {
+  let cells = 0;
+  for (let i = 0; i < to; ) {
+    const cp = text.codePointAt(i) as number;
+    cells += codePointCells(cp);
+    i += cp > 0xffff ? 2 : 1;
+  }
+  return cells;
+}
+
+/**
+ * Each shown list made by appending to another, mapped to that one: their
+ * common positions hold the same lines, so a row index over the older one
+ * can be extended.
+ */
+const grownFrom = new WeakMap<Uint32Array, Uint32Array>();
+
+function grow(prev: Uint32Array | null, next: Uint32Array | null) {
+  if (prev && next && next !== prev) grownFrom.set(next, prev);
+  return next;
+}
+
+function extendsShown(prev: Uint32Array | null, next: Uint32Array | null) {
+  return prev === next || (next !== null && grownFrom.get(next) === prev);
+}
+
+/** A shown list, and what it was built over, so the next can extend it. */
+interface ShownState<T extends Uint32Array | null> {
+  lines: readonly AnsiLine[];
+  mask: number;
+  /** Lines `[0, upTo)` have been considered. */
+  upTo: number;
+  matchLines: Uint8Array | null;
+  ids: T;
+}
+
+const NO_LEVELS: ReadonlySet<LevelKey> = new Set();
 
 /**
  * The UTF-16 offset of the DOM point (`node`, `offset`) within the text of
@@ -172,7 +257,14 @@ function selectionPoint(
 interface Layout {
   lines: readonly AnsiLine[];
   cols: number | null;
+  /** The line ids the index runs over; null for every line. */
+  shown: Uint32Array | null;
   index: Uint32Array;
+  /**
+   * The line that was at the top when the filter changed into this layout,
+   * to be kept there once it is drawn.
+   */
+  anchor?: number;
 }
 
 function rangesOf(line: AnsiLine, cols: number | null): readonly RowRange[] {
@@ -181,17 +273,39 @@ function rangesOf(line: AnsiLine, cols: number | null): readonly RowRange[] {
     : splitRows(line, cols);
 }
 
-/** The row of layout `to` that holds the text at `row` of layout `from`. */
+/**
+ * The row of layout `to` that holds the text at `row` of layout `from`. A line
+ * the filter now hides gives way to the next shown line.
+ */
 function carryRow(row: number, from: Layout, to: Layout): number {
-  if (from.cols === to.cols || from.lines !== to.lines) return row;
-  const lineIndex = lineAtRow(from.index, row);
-  const line = to.lines[lineIndex];
-  if (!line || lineIndex >= to.index.length - 1) return row;
-  const at = rangesOf(line, from.cols)[row - from.index[lineIndex]]?.[0] ?? 0;
+  if (from.lines !== to.lines) return row;
+  if (from.cols === to.cols && from.shown === to.shown) return row;
+  const pos = lineAtRow(from.index, row);
+  if (pos >= from.index.length - 1) return row;
+  const id = lineIdAt(from.shown, pos);
+  const toPos = from.shown === to.shown ? pos : positionOf(to.shown, id);
+  const end = to.index.length - 1;
+  if (toPos >= end) return to.index[end];
+  if (lineIdAt(to.shown, toPos) !== id) return to.index[toPos];
+  const within = row - from.index[pos];
+  if (from.cols === to.cols) return to.index[toPos] + within;
+  const line = to.lines[id];
+  const at = rangesOf(line, from.cols)[within]?.[0] ?? 0;
   const ranges = rangesOf(line, to.cols);
   let k = 0;
   while (k + 1 < ranges.length && ranges[k + 1][0] <= at) k++;
-  return to.index[lineIndex] + k;
+  return to.index[toPos] + k;
+}
+
+interface Nav {
+  /** The current match, or -1. */
+  index: number;
+  /**
+   * The scan `index` counts in. A scan that starts over is a new search, whose
+   * first match the view goes to; until then there is no current match.
+   */
+  generation: number;
+  lines: readonly AnsiLine[];
 }
 
 interface SelectionPoints {
@@ -209,45 +323,167 @@ export function AnsiView({
   boldIsBright = false,
   wrap: initialWrap = false,
   maxHeight,
+  levels = false,
   className,
 }: AnsiViewProps) {
-  const parse = useAnsiLines(text);
+  const detector = levels === true ? detectLevel : levels || false;
+  const parse = useAnsiLines(text, detector);
   const { lines, styles, maxCells, done } = parse;
+  const levelCodes = parse.levels;
   const [wrap, setWrap] = useState(initialWrap);
   const scrollRef = useRef<HTMLElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const virtualRef = useRef<VirtualRowsHandle>(null);
   const { rowHeight, cellWidth, width, viewportHeight } =
     useCellMetrics(scrollRef);
+  // Fences are short and keep the browser's find-in-page.
+  const searchable = chrome === "file";
+
+  const [hidden, setHidden] = useState<ReadonlySet<LevelKey>>(NO_LEVELS);
+  const [query, setQuery] = useState("");
+  const [caseSensitive, setCaseSensitive] = useState(false);
+  const [regex, setRegex] = useState(false);
+  const [onlyMatching, setOnlyMatching] = useState(false);
+  // A pane has no chips to undo a filter set before a switch to it.
+  const mask = levelMask(levelCodes && searchable ? hidden : NO_LEVELS);
+
+  // `lines` grows in place while a large text streams in; the shown lists
+  // and the row index extend the last ones rather than start over.
+  const levelShownRef = useRef<ShownState<Uint32Array | null> | null>(null);
+  const levelShown = useMemo(() => {
+    const upTo = levelCodes ? levelCodes.length : lines.length;
+    const last = levelShownRef.current;
+    const ids =
+      last && last.lines === lines && last.mask === mask && last.upTo <= upTo
+        ? last.upTo === upTo
+          ? last.ids
+          : grow(
+              last.ids,
+              appendShownLines(
+                last.ids,
+                last.upTo,
+                upTo,
+                levelCodes,
+                mask,
+                null,
+              ),
+            )
+        : buildShownLines(upTo, levelCodes, mask, null);
+    levelShownRef.current = { lines, mask, upTo, matchLines: null, ids };
+    return ids;
+  }, [lines, levelCodes, mask]);
+
+  // "Only matching lines" filters after the search, which reads the level
+  // filter's list: the search must not depend on its own results.
+  const search = useSearch({
+    query: searchable ? query : "",
+    caseSensitive,
+    regex,
+    lines,
+    count: lines.length,
+    done,
+    shown: levelShown,
+  });
+  const matchFilter =
+    searchable && onlyMatching && query !== "" && search.error === null;
+  const matchShownRef = useRef<ShownState<Uint32Array> | null>(null);
+  const shown = useMemo(() => {
+    if (!matchFilter) return levelShown;
+    const { matches, count, matchLines } = search;
+    // A scan walks the lines in order, so no match will come before its last.
+    const upTo = count > 0 ? matches[3 * (count - 1)] + 1 : 0;
+    const last = matchShownRef.current;
+    const ids =
+      last &&
+      last.lines === lines &&
+      last.mask === mask &&
+      last.matchLines === matchLines &&
+      last.upTo <= upTo
+        ? last.upTo === upTo
+          ? last.ids
+          : (grow(
+              last.ids,
+              appendShownLines(
+                last.ids,
+                last.upTo,
+                upTo,
+                levelCodes,
+                mask,
+                matchLines,
+              ),
+            ) as Uint32Array)
+        : (appendShownLines(
+            null,
+            0,
+            upTo,
+            levelCodes,
+            mask,
+            matchLines,
+          ) as Uint32Array);
+    matchShownRef.current = { lines, mask, upTo, matchLines, ids };
+    return ids;
+  }, [matchFilter, levelShown, search, lines, levelCodes, mask]);
 
   const gutterDigits =
     chrome === "file" ? String(Math.max(1, lines.length)).length : 0;
   const gutterWidth = gutterCells(gutterDigits) * cellWidth;
   const cols = wrap ? columnsFor(width - gutterWidth, cellWidth) : null;
-  // `lines` grows in place while a large text streams in: each published
-  // snapshot extends the last index, and its length is the line count drawn.
+
+  const topRowNow = (): number => {
+    const handle = virtualRef.current;
+    if (handle) return handle.topRow();
+    const el = scrollRef.current;
+    if (!el) return 0;
+    return Math.max(
+      0,
+      Math.round((el.scrollTop - CONTENT_PADDING) / rowHeight),
+    );
+  };
+  const topRowNowRef = useRef(topRowNow);
+  topRowNowRef.current = topRowNow;
+
   const lastLayout = useRef<Layout | null>(null);
   const layout = useMemo((): Layout => {
     const last = lastLayout.current;
-    const prev =
-      last && last.lines === parse.lines && last.cols === cols
-        ? last.index
-        : undefined;
-    const next = {
+    const sameLines = last !== null && last.lines === parse.lines;
+    const extended = sameLines && extendsShown(last.shown, shown);
+    const prev = extended && last.cols === cols ? last.index : undefined;
+    const next: Layout = {
       lines: parse.lines,
       cols,
-      index: buildRowIndex(parse.lines, cols, prev),
+      shown,
+      index: buildRowIndex(parse.lines, cols, prev, shown),
     };
+    // Read before the new rows are committed, which may clamp scrollTop. A
+    // pending anchor wins: the rows drawn meanwhile did not reach it.
+    if (sameLines && !extended) {
+      next.anchor =
+        last.anchor ??
+        (last.index.length > 1
+          ? lineIdAt(last.shown, lineAtRow(last.index, topRowNowRef.current()))
+          : undefined);
+    } else if (extended) {
+      // Still pending when a render was not committed, or StrictMode built
+      // this layout twice.
+      next.anchor = last.anchor;
+    }
     lastLayout.current = next;
     return next;
-  }, [parse, cols]);
+  }, [parse, cols, shown]);
   const { index } = layout;
   const lineCount = index.length - 1;
   const totalRows = index[lineCount];
   // While a large text streams in, its rows so far undercount it; judged by
   // them alone, the first slices would mount thousands of rows only to drop
   // them a tick later.
+  // "Only matching lines" refills from nothing as a scan restarts: a list
+  // that was virtual stays so until the scan is done.
+  const wasVirtual = useRef(false);
   const virtual =
     (parse.parsed > 0 ? totalRows / parse.parsed : totalRows) >
-    VIRTUALIZE_ABOVE;
+      VIRTUALIZE_ABOVE ||
+    (wasVirtual.current && matchFilter && search.scanning);
+  wasVirtual.current = virtual;
 
   const rowsOfLine = useMemo(() => {
     const cache = new WeakMap<AnsiLine, readonly RowRange[]>();
@@ -267,27 +503,107 @@ export function AnsiView({
     [styleCache, boldIsBright],
   );
 
-  const renderRow = (lineIndex: number, range: RowRange | undefined) => {
-    const line = lines[lineIndex];
+  const levelMatchOf = useMemo(() => {
+    const cache = new WeakMap<AnsiLine, LevelMatch | null>();
+    return (line: AnsiLine, code: number): LevelMatch | null => {
+      // An inherited level has no word of its own on the line.
+      if (!detector || code === 0 || code & LEVEL_INHERITED) return null;
+      let match = cache.get(line);
+      if (match === undefined) {
+        try {
+          match = detector(line.text);
+        } catch {
+          // The level tracker has already reported it.
+          match = null;
+        }
+        cache.set(line, match);
+      }
+      return match;
+    };
+  }, [detector]);
+
+  const [nav, setNav] = useState<Nav>(() => ({
+    index: -1,
+    generation: search.generation,
+    lines,
+  }));
+  if (nav.lines !== lines) {
+    setNav({ index: -1, generation: search.generation, lines });
+  }
+  const current =
+    nav.lines === lines &&
+    nav.generation === search.generation &&
+    nav.index < search.count
+      ? nav.index
+      : -1;
+  const resetNav = () =>
+    setNav({ index: -1, generation: search.generation, lines });
+
+  // A row is memoised on its marks, so each line keeps its array until its
+  // matches or the current match change. Matches only append within one
+  // buffer; a new buffer is a new scan, or a grown one.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new buffer starts a new cache
+  const markCache = useMemo(
+    () => ({
+      byLine: new Map<number, readonly RowMark[] | undefined>(),
+      current: -1,
+    }),
+    [search.matches.buffer],
+  );
+  if (markCache.current !== current) {
+    for (const k of [markCache.current, current]) {
+      if (k >= 0) markCache.byLine.delete(search.matches[3 * k]);
+    }
+    markCache.current = current;
+  }
+  const marksOf = (id: number): readonly RowMark[] | undefined => {
+    const { matches, count } = search;
+    if (count === 0) return undefined;
+    const { byLine } = markCache;
+    if (byLine.has(id)) return byLine.get(id);
+    let marks: RowMark[] | undefined;
+    for (
+      let k = firstMatchFrom(matches, count, id);
+      k < count && matches[3 * k] === id;
+      k++
+    ) {
+      marks ??= [];
+      marks.push([matches[3 * k + 1], matches[3 * k + 2], k === current]);
+    }
+    // A scan finishes a line before it moves on, so lines up to the last
+    // match's are final; later ones may still be found.
+    if (id <= matches[3 * (count - 1)]) byLine.set(id, marks);
+    return marks;
+  };
+
+  const renderRow = (pos: number, range: RowRange | undefined) => {
+    const id = lineIdAt(shown, pos);
+    const line = lines[id];
     const [from, to] = range ?? [line.text.length, line.text.length];
+    const code = levelCodes ? levelCodes[id] : 0;
     return (
       <AnsiRow
-        key={`${lineIndex}:${from}`}
-        lineIndex={lineIndex}
+        key={`${id}:${from}`}
+        lineIndex={id}
         line={line}
         from={from}
         to={to}
         styles={styles}
         styleOf={styleOf}
         gutterDigits={gutterDigits}
+        level={code}
+        levelMatch={levelMatchOf(line, code)}
+        marks={marksOf(id)}
+        // The first shown line has no previous one to be apart from.
+        gap={shown !== null && pos > 0 && shown[pos - 1] + 1 !== id}
       />
     );
   };
 
   const renderVirtualRow = (row: number) => {
-    const lineIndex = lineAtRow(index, row);
-    const ranges = rowsOfLine(lines[lineIndex]);
-    return renderRow(lineIndex, ranges[row - index[lineIndex]]);
+    const pos = lineAtRow(index, row);
+    const ranges = rowsOfLine(lines[lineIdAt(shown, pos)]);
+    return renderRow(pos, ranges[row - index[pos]]);
   };
 
   const contentWidth = wrap ? undefined : gutterWidth + maxCells * cellWidth;
@@ -306,12 +622,15 @@ export function AnsiView({
         carryRow={carryRow}
         padding={CONTENT_PADDING}
         style={gutterRule(gutterCells(gutterDigits))}
+        handle={virtualRef}
       />
     );
   } else {
     const rows: ReactNode[] = [];
-    for (let i = 0; i < lineCount; i++) {
-      for (const range of rowsOfLine(lines[i])) rows.push(renderRow(i, range));
+    for (let pos = 0; pos < lineCount; pos++) {
+      for (const range of rowsOfLine(lines[lineIdAt(shown, pos)])) {
+        rows.push(renderRow(pos, range));
+      }
     }
     body = (
       <div
@@ -384,7 +703,16 @@ export function AnsiView({
       copied = lines[start.line].text.slice(start.at, end.at);
     } else {
       const parts = [lines[start.line].text.slice(start.at)];
-      for (let i = start.line + 1; i < end.line; i++) parts.push(lines[i].text);
+      // Lines the filter hides are not pasted.
+      for (
+        let pos = positionOf(shown, start.line + 1);
+        pos < lineCount;
+        pos++
+      ) {
+        const id = lineIdAt(shown, pos);
+        if (id >= end.line) break;
+        parts.push(lines[id].text);
+      }
       parts.push(lines[end.line].text.slice(0, end.at));
       copied = parts.join("\n");
     }
@@ -393,12 +721,130 @@ export function AnsiView({
   };
 
   const copyAll = () => {
+    if (shown) {
+      const parts = new Array<string>(shown.length);
+      for (let pos = 0; pos < shown.length; pos++) {
+        parts[pos] = lines[shown[pos]].text;
+      }
+      void copyToClipboard(parts.join("\n"), "Copied output");
+      return;
+    }
     // Once parsed, the lines already are the stripped text; parsing a large
     // log again would block for as long as the first parse took.
     const plain = done
       ? lines.map((line) => line.text).join("\n")
       : stripAnsi(text);
     void copyToClipboard(plain, "Copied output");
+  };
+
+  const scrollToRow = (row: number, align: "top" | "center") => {
+    const handle = virtualRef.current;
+    if (handle) {
+      handle.scrollToRow(row, align);
+      return;
+    }
+    const el = scrollRef.current;
+    if (!el) return;
+    const y = CONTENT_PADDING + row * rowHeight;
+    el.scrollTop =
+      align === "top"
+        ? row === 0
+          ? 0
+          : y
+        : Math.max(0, y - (viewportHeight - rowHeight) / 2);
+  };
+
+  const topLineNow = () =>
+    lineCount > 0 ? lineIdAt(shown, lineAtRow(index, topRowNow())) : 0;
+
+  /** Makes match `k` current and scrolls to it; `reveal` leaves a visible one where it is. */
+  const goTo = (k: number, reveal: boolean) => {
+    const { matches } = search;
+    setNav({ index: k, generation: search.generation, lines });
+    const id = matches[3 * k];
+    const pos = positionOf(shown, id);
+    const line = lines[id];
+    if (!line || pos >= lineCount || lineIdAt(shown, pos) !== id) return;
+    const from = matches[3 * k + 1];
+    let row = index[pos];
+    if (cols !== null) {
+      const ranges = rowsOfLine(line);
+      let r = 0;
+      while (r + 1 < ranges.length && ranges[r + 1][0] <= from) r++;
+      row += r;
+    }
+    const top = topRowNow();
+    if (
+      !reveal ||
+      row < top ||
+      row >= top + rowsInViewport(viewportHeight, rowHeight)
+    ) {
+      scrollToRow(row, "center");
+    }
+    const el = scrollRef.current;
+    if (!el || cols !== null) return;
+    const before = cellsBefore(line.text, from);
+    const start = gutterWidth + before * cellWidth;
+    const end =
+      start + (cellsBefore(line.text, matches[3 * k + 2]) - before) * cellWidth;
+    if (start >= el.scrollLeft && end <= el.scrollLeft + width) return;
+    el.scrollLeft = end <= width ? 0 : Math.max(0, (start + end - width) / 2);
+  };
+
+  const stepMatch = (back: boolean) => {
+    const { matches, count } = search;
+    if (count === 0) return;
+    let k = current;
+    if (k < 0) {
+      k = firstMatchFrom(matches, count, topLineNow());
+      if (back) k--;
+    } else {
+      k += back ? -1 : 1;
+    }
+    goTo((k + count) % count, false);
+  };
+
+  // More lines may still join the shown list, past those it holds.
+  const growing = !done || (matchFilter && search.scanning);
+
+  // The filter changed: keep the line that was at the top, or the next one
+  // still shown. A list refilling from nothing waits until it reaches that
+  // line, or can grow no more.
+  useLayoutEffect(() => {
+    const { anchor, index: rows, shown: ids } = layout;
+    if (anchor === undefined) return;
+    const end = rows.length - 1;
+    if (end === 0) return;
+    if (growing && lineIdAt(ids, end - 1) < anchor) return;
+    layout.anchor = undefined;
+    const pos = Math.min(positionOf(ids, anchor), end - 1);
+    if (lineAtRow(rows, topRowNowRef.current()) === pos) return;
+    scrollToRow(rows[pos], "top");
+  });
+
+  // A new search goes to its first match at or below the top line, so typing
+  // does not jump back to the start of the log.
+  useLayoutEffect(() => {
+    if (nav.generation === search.generation || search.count === 0) return;
+    // A pending anchor is where the reader is; the scroll has yet to follow.
+    const k = firstMatchFrom(
+      search.matches,
+      search.count,
+      layout.anchor ?? topLineNow(),
+    );
+    // The scan has not reached the top line yet.
+    if (k === search.count && search.scanning) return;
+    goTo(k < search.count ? k : 0, true);
+  });
+
+  const onRootKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+    if (event.key.toLowerCase() !== "f") return;
+    const input = searchRef.current;
+    if (!input) return;
+    event.preventDefault();
+    input.focus();
+    input.select();
   };
 
   const tools = (
@@ -467,36 +913,81 @@ export function AnsiView({
     );
   }
 
-  const count = text === "" ? 0 : lineCount;
+  const count = text === "" ? 0 : lines.length;
+  const countLabel = shown
+    ? `${shown.length.toLocaleString("en-US")} of ${lineCountLabel(count)}`
+    : lineCountLabel(count);
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: Ctrl+F from anywhere inside the view goes to its search box
     <div
       className={cn(
         "ansi-view flex flex-col overflow-hidden rounded-lg border border-border bg-terminal-background font-mono text-terminal-foreground",
         className,
       )}
       style={rootStyle}
+      onKeyDown={onRootKeyDown}
     >
-      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card py-1 pr-1 pl-3 font-sans text-card-foreground text-xs">
-        {filename !== undefined && (
-          <span className="min-w-0 truncate font-medium">{filename}</span>
-        )}
-        <span className="shrink-0 text-muted-foreground">
-          {done ? lineCountLabel(count) : `Parsing… ${lineCountLabel(count)}`}
-        </span>
-        <div className="ml-auto flex shrink-0 gap-0.5">
-          {tools}
-          {downloadUrl !== undefined && (
-            <Button asChild size="xs" variant="ghost">
-              <a
-                href={downloadUrl}
-                download={filename ?? ""}
-                aria-label="Download"
-                title="Download"
-              >
-                <DownloadIcon />
-              </a>
-            </Button>
+      {/* One child before the scroller, as in a pane, so that switching
+          chrome keeps the scroller mounted and measured. */}
+      <div className="shrink-0 border-b border-border bg-card font-sans text-card-foreground text-xs">
+        <div className="flex items-center gap-2 py-1 pr-1 pl-3">
+          {filename !== undefined && (
+            <span className="min-w-0 truncate font-medium">{filename}</span>
           )}
+          <span className="shrink-0 text-muted-foreground">
+            {done ? countLabel : `Parsing… ${countLabel}`}
+          </span>
+          <div className="ml-auto flex shrink-0 gap-0.5">
+            {tools}
+            {downloadUrl !== undefined && (
+              <Button asChild size="xs" variant="ghost">
+                <a
+                  href={downloadUrl}
+                  download={filename ?? ""}
+                  aria-label="Download"
+                  title="Download"
+                >
+                  <DownloadIcon />
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border border-dashed py-1 pr-1 pl-3">
+          {parse.levelCounts && text !== "" && (
+            <LevelChips
+              counts={parse.levelCounts}
+              hidden={hidden}
+              onChange={(next) => {
+                setHidden(next);
+                resetNav();
+              }}
+            />
+          )}
+          <SearchBox
+            className="ml-auto"
+            inputRef={searchRef}
+            query={query}
+            onQuery={(next) => {
+              setQuery(next);
+              resetNav();
+            }}
+            counter={{ ...search, current }}
+            caseSensitive={caseSensitive}
+            onCaseSensitive={(on) => {
+              setCaseSensitive(on);
+              resetNav();
+            }}
+            regex={regex}
+            onRegex={(on) => {
+              setRegex(on);
+              resetNav();
+            }}
+            onlyMatching={onlyMatching}
+            onOnlyMatching={setOnlyMatching}
+            onStep={stepMatch}
+            onLeave={() => scrollRef.current?.focus()}
+          />
         </div>
       </div>
       {scroller}

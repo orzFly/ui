@@ -7,4 +7,104 @@
   .ansi-view ::selection {
     background: var(--terminal-selection);
   }
+
+  .ansi-view [data-level="fatal"] {
+    --log-level: var(--ansi-bright-red);
+  }
+  .ansi-view [data-level="error"] {
+    --log-level: var(--ansi-red);
+  }
+  .ansi-view [data-level="warn"] {
+    --log-level: var(--ansi-yellow);
+  }
+  .ansi-view [data-level="info"] {
+    --log-level: var(--ansi-green);
+  }
+  .ansi-view [data-level="debug"] {
+    --log-level: var(--ansi-blue);
+  }
+  .ansi-view [data-level="trace"] {
+    --log-level: var(--ansi-bright-black);
+  }
+
+  /* A background, so the text and run backgrounds paint over it. */
+  .ansi-view
+  [data-line]:is(
+    [data-level="fatal"],
+    [data-level="error"],
+    [data-level="warn"]
+  ) {
+    --log-stripe: var(--log-level);
+    background-color: color-mix(in srgb, var(--log-level) 12%, transparent);
+  }
+  /* In the scroll container's left padding (its px-3): on the row itself it
+     would cover the first glyph of a pane, or of a one-digit gutter. */
+  .ansi-view
+  [data-line]:is(
+    [data-level="fatal"],
+    [data-level="error"],
+    [data-level="warn"]
+  )::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: -0.75rem;
+    width: 3px;
+    background: var(--log-stripe);
+    pointer-events: none;
+  }
+  .ansi-view [data-line][data-level="warn"] {
+    background-color: color-mix(in srgb, var(--log-level) 10%, transparent);
+  }
+  .ansi-view [data-line][data-inherited] {
+    --log-stripe: color-mix(in srgb, var(--log-level) 50%, transparent);
+  }
+
+  /* On the row, so that only runs without a colour of their own take it. */
+  .ansi-view
+  [data-line]:is([data-level="debug"], [data-level="trace"]):not(
+    [data-coloured]
+  ) {
+    color: color-mix(
+      in oklab,
+      var(--terminal-foreground) 60%,
+      var(--terminal-background)
+    );
+  }
+
+  .ansi-view [data-level-word] {
+    color: var(--log-level);
+    font-weight: 600;
+  }
+  .ansi-view [data-level="fatal"] [data-level-word] {
+    background-color: var(--log-level);
+    color: var(--terminal-background);
+  }
+
+  /* biome-ignore-start lint/complexity/noImportantStyles: run colours are inline styles, which only !important overrides */
+  .ansi-view [data-match] {
+    background-color: color-mix(
+      in srgb,
+      var(--ansi-yellow) 40%,
+      transparent
+    ) !important;
+  }
+  .ansi-view [data-match][data-level-word] {
+    color: inherit;
+  }
+  .ansi-view [data-match="current"] {
+    background-color: var(--ansi-yellow) !important;
+    color: var(--terminal-background) !important;
+  }
+  /* biome-ignore-end lint/complexity/noImportantStyles: run colours are inline styles */
+
+  /* A pseudo-element, so the fixed row height is unchanged. */
+  .ansi-view [data-gap]::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    border-top: 1px dashed var(--ansi-bright-black);
+    pointer-events: none;
+  }
 }
