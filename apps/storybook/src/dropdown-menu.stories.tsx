@@ -20,7 +20,7 @@ import { CopyIcon, PencilIcon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 
 const meta = {
-  title: "Primitives/DropdownMenu",
+  title: "ui/Primitives/DropdownMenu",
   component: DropdownMenu,
 } satisfies Meta<typeof DropdownMenu>;
 

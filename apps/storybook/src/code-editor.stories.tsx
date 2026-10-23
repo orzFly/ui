@@ -10,7 +10,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useReducer, useRef } from "react";
 
 const meta = {
-  title: "Editors/CodeEditor",
+  title: "ui-codemirror/CodeEditor",
   component: CodeEditor,
   args: {
     ariaLabel: "Notes",

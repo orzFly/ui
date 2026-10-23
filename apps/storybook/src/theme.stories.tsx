@@ -9,7 +9,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 /** Pick a theme from the toolbar, or click a swatch below; this page follows it. */
 const meta = {
-  title: "Foundations/Theme",
+  title: "ui/Foundations/Theme",
   parameters: { layout: "padded" },
 } satisfies Meta;
 

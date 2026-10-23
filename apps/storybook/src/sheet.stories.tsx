@@ -14,7 +14,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Primitives/Sheet",
+  title: "ui/Primitives/Sheet",
   component: Sheet,
 } satisfies Meta<typeof Sheet>;
 

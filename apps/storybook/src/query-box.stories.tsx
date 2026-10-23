@@ -165,7 +165,7 @@ function QueryBoxDemo({ escapes }: { escapes: Escapes }) {
 }
 
 const meta = {
-  title: "Patterns/QueryBox",
+  title: "ui/Patterns/QueryBox",
   args: { escapes: "plain" as Escapes },
   argTypes: {
     escapes: {

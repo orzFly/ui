@@ -2,7 +2,7 @@ import { useOverlayScrollbars } from "@orz/ui/hooks/use-overlay-scrollbars";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Hooks/useOverlayScrollbars",
+  title: "ui/Hooks/useOverlayScrollbars",
 } satisfies Meta;
 
 export default meta;

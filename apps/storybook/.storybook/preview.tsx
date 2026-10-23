@@ -345,13 +345,21 @@ const preview: Preview = {
       // annotation inside it is a syntax error there.
       // Equal titles compare as 0, and the sort is stable, which keeps a file's
       // docs entry and stories in their written order.
+      // A title's first segment is its package, so packages sort by name,
+      // which puts `ui` first. A package's groups take this order, and its
+      // flat entries follow them.
       storySort: (a, b) => {
-        const order = ["Foundations", "Primitives", "Patterns", "Hooks", "Hex"];
-        const [ra, rb] = [a.title, b.title].map((title) => {
-          const i = order.indexOf(title.split("/")[0]);
-          return i === -1 ? order.length : i;
+        const groups = ["Foundations", "Primitives", "Patterns", "Hooks"];
+        const [ka, kb] = [a.title, b.title].map((title) => {
+          const [pkg, group] = title.split("/");
+          const i = groups.indexOf(group);
+          return { pkg, rank: i === -1 ? groups.length : i };
         });
-        return ra - rb || a.title.localeCompare(b.title);
+        return (
+          ka.pkg.localeCompare(kb.pkg) ||
+          ka.rank - kb.rank ||
+          a.title.localeCompare(b.title)
+        );
       },
     },
   },

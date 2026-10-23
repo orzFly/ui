@@ -8,7 +8,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Primitives/Tooltip",
+  title: "ui/Primitives/Tooltip",
   component: Tooltip,
   decorators: [
     (Story) => (

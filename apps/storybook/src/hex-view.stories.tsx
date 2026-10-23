@@ -23,7 +23,7 @@ import {
 const PNG = bytesSource(SAMPLE_PNG);
 
 const meta = {
-  title: "Hex/HexView",
+  title: "ui-hex/HexView",
   component: HexView,
   decorators: [
     (Story) => (

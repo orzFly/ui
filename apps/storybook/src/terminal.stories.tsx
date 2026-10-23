@@ -8,7 +8,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
  * following the page's theme.
  */
 const meta = {
-  title: "Foundations/Terminal",
+  title: "ui/Foundations/Terminal",
   parameters: { layout: "padded" },
 } satisfies Meta;
 

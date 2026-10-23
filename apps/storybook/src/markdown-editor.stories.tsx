@@ -21,7 +21,7 @@ import { useState } from "react";
 import { fn } from "storybook/test";
 
 const meta = {
-  title: "Editors/MarkdownEditor",
+  title: "ui-codemirror/MarkdownEditor",
   component: MarkdownEditor,
   args: {
     ariaLabel: "Comment",

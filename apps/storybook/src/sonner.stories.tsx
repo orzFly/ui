@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 /** The `<Toaster />` itself is mounted once by the preview decorator. */
 const meta = {
-  title: "Primitives/Toaster",
+  title: "ui/Primitives/Toaster",
 } satisfies Meta;
 
 export default meta;

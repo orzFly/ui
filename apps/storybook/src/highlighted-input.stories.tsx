@@ -43,7 +43,7 @@ function Demo({ initial, label }: { initial: string; label: string }) {
 }
 
 const meta = {
-  title: "Primitives/HighlightedInput",
+  title: "ui/Primitives/HighlightedInput",
 } satisfies Meta;
 
 export default meta;

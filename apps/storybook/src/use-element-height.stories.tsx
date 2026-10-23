@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef, useState } from "react";
 
 const meta = {
-  title: "Hooks/useElementHeight",
+  title: "ui/Hooks/useElementHeight",
 } satisfies Meta;
 
 export default meta;

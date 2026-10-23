@@ -75,7 +75,7 @@ function FencesDemo({ source }: { source: string }) {
  * package imports the other; the registry connects them.
  */
 const meta = {
-  title: "Markdown/Code fences",
+  title: "ui-markdown/Code fences",
   component: FencesDemo,
   args: { source: SAMPLE },
 } satisfies Meta<typeof FencesDemo>;

@@ -74,7 +74,7 @@ function Registry({ registered }: { registered: boolean }) {
 }
 
 const meta = {
-  title: "Content/Registry",
+  title: "ui-content/Registry",
   component: Registry,
   args: { registered: true },
 } satisfies Meta<typeof Registry>;

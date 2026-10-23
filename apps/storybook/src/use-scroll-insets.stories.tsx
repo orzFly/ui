@@ -7,7 +7,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef, useState } from "react";
 
 const meta = {
-  title: "Hooks/useScrollInsets",
+  title: "ui/Hooks/useScrollInsets",
   parameters: {
     layout: "fullscreen",
     // The overlays are position: fixed and the insets land on <html>; drawn

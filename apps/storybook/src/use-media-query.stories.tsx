@@ -7,7 +7,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Hooks/useMediaQuery",
+  title: "ui/Hooks/useMediaQuery",
 } satisfies Meta;
 
 export default meta;

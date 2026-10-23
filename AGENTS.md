@@ -30,6 +30,12 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   (`customConditions`) and `vitest.config.ts` (`resolve.conditions`), so its typecheck and tests
   run on source. Its `tsconfig.build.json` resets `customConditions` to `[]`: the build checks
   against the dependency's `dist/`, which `pnpm -r build` builds first.
+- A story's `title` starts with the package its component comes from, by directory name:
+  `ui-hex/HexView`, `ui-content/Attachment`. A package with many stories groups them one level
+  further — `@orz/ui` uses `ui/Foundations`, `ui/Primitives`, `ui/Patterns` and `ui/Hooks` — and a
+  package with a handful stays flat. The `storySort` in `apps/storybook/.storybook/preview.tsx`
+  sorts packages by name and a package's groups in that order, so a new package needs no edit
+  there.
 - Shipped CSS lives at the package root (`styles.css`, `vendor/`), not in `src/`. `tsc` never
   touches it, `files` lists it, and `exports` points straight at it.
 - New shadcn primitives arrive with `shadcn add` run inside `packages/ui`. It writes `@/…` imports

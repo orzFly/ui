@@ -11,7 +11,7 @@ import { HexFrame, SAMPLE_PNG } from "./hex-fixtures.tsx";
 const PNG = bytesSource(SAMPLE_PNG);
 
 const meta = {
-  title: "Hex/HexInspector",
+  title: "ui-hex/HexInspector",
   component: HexInspector,
   args: { source: PNG, selection: null },
   argTypes: { source: { control: false }, selection: { control: false } },

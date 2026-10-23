@@ -25,7 +25,7 @@ import {
  * alone.
  */
 const meta = {
-  title: "Patterns/ThemeEditor",
+  title: "ui/Patterns/ThemeEditor",
   component: ThemeEditor,
   args: { open: false, onOpenChange: fn() },
   argTypes: {

@@ -244,7 +244,7 @@ function MarkdownDemo({ source }: { source: string }) {
 }
 
 const meta = {
-  title: "Markdown/Markdown",
+  title: "ui-markdown/Markdown",
   component: MarkdownDemo,
   args: { source: GFM },
 } satisfies Meta<typeof MarkdownDemo>;

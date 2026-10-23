@@ -2,7 +2,7 @@ import { Separator } from "@orz/ui/components/separator";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
-  title: "Primitives/Separator",
+  title: "ui/Primitives/Separator",
   component: Separator,
 } satisfies Meta<typeof Separator>;
 

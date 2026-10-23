@@ -60,7 +60,7 @@ const FENCES = [
 ];
 
 const meta = {
-  title: "Code/CodeBlock",
+  title: "ui-code/CodeBlock",
   component: CodeBlock,
   args: { filename: "snippet.ts", contents: SNIPPET },
 } satisfies Meta<typeof CodeBlock>;

@@ -13,7 +13,7 @@ const SIZES = ["sm", "default", "lg"] as const;
 const SHAPES = ["circle", "square"] as const;
 
 const meta = {
-  title: "Primitives/Avatar",
+  title: "ui/Primitives/Avatar",
   component: Avatar,
   args: { size: "default", shape: "circle" },
   argTypes: {

@@ -98,7 +98,7 @@ function WordDiffDemo(props: { before: string; after: string }) {
 }
 
 const meta = {
-  title: "Code/Word diff",
+  title: "ui-code/Word diff",
   component: WordDiffDemo,
   // The args only seed the textareas, so a Controls edit has to remount them.
   render: (args) => (

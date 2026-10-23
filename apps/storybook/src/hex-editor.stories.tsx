@@ -142,7 +142,7 @@ function BasicDemo(args: EditorArgs) {
 }
 
 const meta = {
-  title: "Hex/HexEditor",
+  title: "ui-hex/HexEditor",
   component: BasicDemo,
   decorators: [
     (Story) => (

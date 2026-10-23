@@ -118,7 +118,7 @@ function FencesDemo({ source }: { source: string }) {
  * message, with a file list and a *raw* toggle back to the text as written.
  */
 const meta = {
-  title: "Code/Patch",
+  title: "ui-code/Patch",
   component: FencesDemo,
   args: { source: FENCES },
 } satisfies Meta<typeof FencesDemo>;

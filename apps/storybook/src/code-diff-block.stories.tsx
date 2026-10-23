@@ -38,7 +38,7 @@ const REWRITE = BEFORE.replace(
 );
 
 const meta = {
-  title: "Code/CodeDiffBlock",
+  title: "ui-code/CodeDiffBlock",
   component: CodeDiffBlock,
   args: { filename: "retry.ts", before: BEFORE, after: ONE_LINE_EDIT },
 } satisfies Meta<typeof CodeDiffBlock>;

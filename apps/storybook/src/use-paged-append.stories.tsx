@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 
 const meta = {
-  title: "Hooks/usePagedAppend",
+  title: "ui/Hooks/usePagedAppend",
 } satisfies Meta;
 
 export default meta;

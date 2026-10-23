@@ -177,7 +177,7 @@ function ViewerDemo() {
 }
 
 const meta = {
-  title: "Attachment",
+  title: "ui-content/Attachment",
   component: ViewerDemo,
 } satisfies Meta<typeof ViewerDemo>;
 

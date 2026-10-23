@@ -129,7 +129,7 @@ function Gallery() {
 }
 
 const meta = {
-  title: "Mermaid/Diagram",
+  title: "ui-mermaid/Diagram",
   component: Gallery,
 } satisfies Meta<typeof Gallery>;
 

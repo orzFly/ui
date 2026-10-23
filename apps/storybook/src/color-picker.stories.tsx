@@ -22,7 +22,7 @@ const PRESETS = [
 ];
 
 const meta = {
-  title: "Patterns/ColorPicker",
+  title: "ui/Patterns/ColorPicker",
   component: ColorPicker,
   args: { value: "oklch(0.623 0.214 259.815)" },
 } satisfies Meta<typeof ColorPicker>;
