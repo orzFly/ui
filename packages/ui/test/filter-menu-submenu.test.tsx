@@ -187,6 +187,42 @@ describe("FilterMenu submenus", () => {
     expect(wrapper.style.transform).toBe("translate(272px, 80px)");
   });
 
+  it("drops the submenu below its row on a narrowing resize, though PopoverContent caps its width to the room beside", async () => {
+    const root = document.documentElement;
+    const width = vi.spyOn(root, "clientWidth", "get").mockReturnValue(1000);
+    vi.spyOn(root, "clientHeight", "get").mockReturnValue(800);
+    // happy-dom applies no CSS, so stand in for PopoverContent's max-width:
+    // the room right of the menu, less the 8px collision padding.
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains("max-w-none")
+          ? 240
+          : Math.min(240, root.clientWidth - 272 - 8);
+      },
+    );
+    render(<Harness />);
+    const box = open();
+    const surface = box.closest('[data-slot="popover-content"]') as HTMLElement;
+    const apple = screen.getByRole("option", { name: "Apple" });
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 16, y: 20, width: 256, height: 300 }),
+    );
+    vi.spyOn(apple, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 21, y: 80, width: 246, height: 28 }),
+    );
+    key(box, "ArrowUp");
+    const sub = screen
+      .getByRole("listbox", { name: "Apple varieties" })
+      .closest('[data-slot="popover-content"]') as HTMLElement;
+    await waitFor(() => expect(sub.dataset.side).toBe("right"));
+
+    width.mockReturnValue(450);
+    await act(async () => {
+      window.dispatchEvent(new Event("resize"));
+    });
+    await waitFor(() => expect(sub.dataset.side).toBe("bottom"));
+  });
+
   it("enters with → only at the end of the query, and walks within the submenu", () => {
     const onHighlight = vi.fn();
     render(<Harness onHighlight={onHighlight} />);

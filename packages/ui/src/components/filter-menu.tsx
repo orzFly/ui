@@ -1052,7 +1052,13 @@ export function FilterMenu<R extends FilterMenuRow>({
             side={subBelow ? "bottom" : "right"}
             align="start"
             sideOffset={0}
-            className="flex max-h-[min(24rem,var(--radix-popover-content-available-height))] w-60 flex-col overflow-hidden p-0"
+            className={cn(
+              "flex max-h-[min(24rem,var(--radix-popover-content-available-height))] w-60 flex-col overflow-hidden p-0",
+              // placeSubmenu measures this width to decide whether it fits
+              // beside the menu. Capped to the room beside it, it would
+              // always fit, and stay there ever narrower instead of dropping.
+              !subBelow && "max-w-none",
+            )}
             style={
               ownQuery
                 ? {
