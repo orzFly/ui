@@ -27,6 +27,7 @@ import {
   UPDATE_GLOBALS,
 } from "storybook/internal/core-events";
 import { addons } from "storybook/preview-api";
+import { DocsRenderer } from "./docs-renderer.tsx";
 import {
   changedGlobals,
   INITIAL_GLOBALS,
@@ -338,7 +339,10 @@ const preview: Preview = {
   },
   initialGlobals: INITIAL_GLOBALS,
   parameters: {
-    docs: { container: ThemedDocsContainer },
+    docs: {
+      container: ThemedDocsContainer,
+      renderer: async () => new DocsRenderer(),
+    },
     options: {
       // Storybook lifts this function out of the source and evals it on its
       // own: it cannot reach anything outside its body, and a type
