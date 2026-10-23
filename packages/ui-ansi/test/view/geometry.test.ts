@@ -6,6 +6,7 @@ import {
   buildRowIndex,
   columnsFor,
   lineAtRow,
+  lineIdAt,
   rowsForLine,
   splitRows,
   VIRTUALIZE_ABOVE,
@@ -240,6 +241,58 @@ describe("buildRowIndex", () => {
     }
   });
 
+  it("sums rows over the shown lines only", () => {
+    const lines = [
+      line("a".repeat(45)),
+      line("hidden"),
+      line(`${"a".repeat(19)}中b`),
+      line(""),
+      line("a".repeat(21)),
+    ];
+    const shown = Uint32Array.from([0, 2, 4]);
+    expect([...buildRowIndex(lines, 20, undefined, shown)]).toEqual([
+      0, 3, 5, 7,
+    ]);
+    expect([...buildRowIndex(lines, null, undefined, shown)]).toEqual([
+      0, 1, 2, 3,
+    ]);
+    expect([
+      ...buildRowIndex(lines, 20, undefined, new Uint32Array(0)),
+    ]).toEqual([0]);
+  });
+
+  it("over every line, equals the index without a shown list", () => {
+    const lines = Array.from({ length: 50 }, (_, i) => line("a".repeat(i * 3)));
+    const all = Uint32Array.from(lines.keys());
+    for (const cols of [null, 20]) {
+      expect([...buildRowIndex(lines, cols, undefined, all)]).toEqual([
+        ...buildRowIndex(lines, cols),
+      ]);
+    }
+  });
+
+  it("extends an index over a prefix of a shown list", () => {
+    const lines = Array.from({ length: 600 }, (_, i) =>
+      line(i % 4 ? "a".repeat(i % 90) : `${"a".repeat(19)}中`.repeat(3)),
+    );
+    const shown = Uint32Array.from(
+      Array.from(lines.keys()).filter((i) => i % 3 !== 1),
+    );
+    for (const cols of [null, 20, 33]) {
+      let index = buildRowIndex(lines, cols, undefined, shown.subarray(0, 1));
+      for (const n of [1, 2, 50, 51, 200, shown.length]) {
+        const prev = index;
+        const prevCopy = [...prev];
+        const part = shown.subarray(0, n);
+        index = buildRowIndex(lines, cols, prev, part);
+        expect([...index]).toEqual([
+          ...buildRowIndex(lines, cols, undefined, part),
+        ]);
+        expect([...prev]).toEqual(prevCopy);
+      }
+    }
+  });
+
   it("is empty but for the total when there are no lines", () => {
     expect([...buildRowIndex([], 20)]).toEqual([0]);
   });
@@ -280,6 +333,32 @@ describe("lineAtRow", () => {
 
   it("returns 0 for an empty index", () => {
     expect(lineAtRow(Uint32Array.from([0]), 3)).toBe(0);
+  });
+});
+
+describe("lineIdAt", () => {
+  it("is the position itself when every line is shown", () => {
+    expect(lineIdAt(null, 0)).toBe(0);
+    expect(lineIdAt(null, 41)).toBe(41);
+  });
+
+  it("maps a row's position through the shown list at the boundaries", () => {
+    const lines = [
+      line("a".repeat(45)),
+      line("hidden"),
+      line("x"),
+      line("hidden"),
+      line("hidden"),
+      line("a".repeat(30)),
+    ];
+    const shown = Uint32Array.from([0, 2, 5]);
+    // Rows: line 0 is 0–2, line 2 is 3, line 5 is 4–5.
+    const index = buildRowIndex(lines, 20, undefined, shown);
+    expect([...index]).toEqual([0, 3, 4, 6]);
+    const at = (row: number) => lineIdAt(shown, lineAtRow(index, row));
+    expect([0, 2, 3, 4, 5].map(at)).toEqual([0, 0, 2, 5, 5]);
+    expect(at(-1)).toBe(0);
+    expect(at(99)).toBe(5);
   });
 });
 
