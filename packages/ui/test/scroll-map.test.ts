@@ -7,7 +7,7 @@ import {
   scrollFromTopRow,
   scrollGeometry,
   topRowFromScroll,
-} from "../src/scroll-map.ts";
+} from "../src/lib/scroll-map.ts";
 
 describe("scroll-map", () => {
   it("maps one row height to one row below the cap", () => {

@@ -1,4 +1,10 @@
 import {
+  clampTopRow,
+  scrollFromTopRow,
+  scrollGeometry,
+  topRowFromScroll,
+} from "@orz/ui/lib/scroll-map";
+import {
   type CSSProperties,
   memo,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -35,12 +41,6 @@ import {
 import { HEX_BYTES_TYPE, type HexClipboard, hexDigits } from "./hex-paste.ts";
 import { navigate } from "./navigation.ts";
 import { createPageCache, type PageCache } from "./page-cache.ts";
-import {
-  clampTopRow,
-  scrollFromTopRow,
-  scrollGeometry,
-  topRowFromScroll,
-} from "./scroll-map.ts";
 import type { ByteSource } from "./source.ts";
 import {
   glyphCells,
