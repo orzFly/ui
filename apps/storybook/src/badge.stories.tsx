@@ -24,10 +24,10 @@ type Story = StoryObj<typeof meta>;
 export const Playground: Story = {};
 
 export const Variants: Story = {
-  render: () => (
+  render: (args) => (
     <div className="flex flex-wrap gap-2">
       {VARIANTS.map((variant) => (
-        <Badge key={variant} variant={variant}>
+        <Badge {...args} key={variant} variant={variant}>
           {variant}
         </Badge>
       ))}
@@ -36,10 +36,10 @@ export const Variants: Story = {
 };
 
 export const WithIcon: Story = {
-  render: () => (
+  render: (args) => (
     <div className="flex flex-wrap gap-2">
       {VARIANTS.map((variant) => (
-        <Badge key={variant} variant={variant}>
+        <Badge {...args} key={variant} variant={variant}>
           <CircleDotIcon data-icon="inline-start" />
           {variant}
         </Badge>
@@ -49,8 +49,9 @@ export const WithIcon: Story = {
 };
 
 export const AsLink: Story = {
-  render: () => (
-    <Badge asChild variant="outline">
+  args: { asChild: true, variant: "outline" },
+  render: (args) => (
+    <Badge {...args}>
       <a href="#badge">A link styled as a badge</a>
     </Badge>
   ),

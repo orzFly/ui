@@ -9,14 +9,16 @@ import {
   CardTitle,
 } from "@orz/ui/components/card";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { withWidth } from "./decorators.tsx";
 
 const meta = {
   title: "ui/Primitives/Card",
   component: Card,
   args: { size: "default" },
   argTypes: { size: { control: "inline-radio", options: ["default", "sm"] } },
+  decorators: [withWidth("max-w-sm")],
   render: (args) => (
-    <Card {...args} className="max-w-sm">
+    <Card {...args}>
       <CardHeader>
         <CardTitle>Release notes</CardTitle>
         <CardDescription>What changed in this version.</CardDescription>
@@ -42,13 +44,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Playground: Story = {};
 
 export const Small: Story = { args: { size: "sm" } };
 
 export const ContentOnly: Story = {
   render: (args) => (
-    <Card {...args} className="max-w-sm">
+    <Card {...args}>
       <CardContent>A card with nothing but content.</CardContent>
     </Card>
   ),

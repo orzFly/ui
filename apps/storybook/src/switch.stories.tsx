@@ -5,16 +5,17 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 const meta = {
   title: "ui/Primitives/Switch",
   component: Switch,
-  args: { "aria-label": "Toggle" },
 } satisfies Meta<typeof Switch>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Playground: Story = {};
+export const Playground: Story = {
+  args: { "aria-label": "Toggle" },
+};
 
 export const States: Story = {
-  render: () => (
+  render: (args) => (
     <div className="grid gap-3">
       {(
         [
@@ -29,7 +30,7 @@ export const States: Story = {
         ] as const
       ).map(([id, label, props]) => (
         <div key={id} className="flex items-center gap-2">
-          <Switch id={id} {...props} />
+          <Switch {...args} id={id} {...props} />
           <Label htmlFor={id}>{label}</Label>
         </div>
       ))}

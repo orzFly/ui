@@ -1,6 +1,7 @@
 import { LinkChip } from "@orz/ui/components/link-chip";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CircleDotIcon, FileTextIcon, GlobeIcon } from "lucide-react";
+import { withWidth } from "./decorators.tsx";
 
 const meta = {
   title: "ui/Primitives/LinkChip",
@@ -21,8 +22,9 @@ export const Playground: Story = {};
 
 /** Inside running text and a heading, plain and boxed: the label stays on the line's baseline. */
 export const InText: Story = {
-  render: () => (
-    <div className="markdown-body flex max-w-xl flex-col gap-3">
+  decorators: [withWidth("max-w-xl")],
+  render: (args) => (
+    <div className="markdown-body flex flex-col gap-3">
       {[false, true].map((boxed) => (
         <div key={String(boxed)}>
           <h3>
@@ -32,11 +34,7 @@ export const InText: Story = {
             </LinkChip>
           </h3>
           <p>
-            See{" "}
-            <LinkChip href="#" icon={FileTextIcon} boxed={boxed}>
-              the release guide
-            </LinkChip>
-            , the{" "}
+            See <LinkChip {...args} boxed={boxed} />, the{" "}
             <LinkChip href="#" icon={GlobeIcon} boxed={boxed}>
               project site
             </LinkChip>{" "}
@@ -54,11 +52,19 @@ export const InText: Story = {
 
 /** A long label is cut, not wrapped. */
 export const Truncated: Story = {
-  render: () => (
-    <p className="max-w-56">
-      <LinkChip href="#" icon={FileTextIcon} boxed>
-        a-file-with-a-very-long-name-that-cannot-fit.md
-      </LinkChip>
-    </p>
+  args: {
+    boxed: true,
+    href: "#",
+    children: "a-file-with-a-very-long-name-that-cannot-fit.md",
+  },
+  decorators: [withWidth("max-w-56")],
+};
+
+/** A router's link as the chip. */
+export const AsChild: Story = {
+  render: (args) => (
+    <LinkChip {...args} asChild>
+      <a href="/docs/release">Release guide</a>
+    </LinkChip>
   ),
 };

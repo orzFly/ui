@@ -12,18 +12,16 @@ import {
   SheetTrigger,
 } from "@orz/ui/components/sheet";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { fn } from "storybook/test";
+
+const SIDES = ["top", "right", "bottom", "left"] as const;
 
 const meta = {
   title: "ui/Primitives/Sheet",
   component: Sheet,
-} satisfies Meta<typeof Sheet>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  render: () => (
-    <Sheet>
+  args: { onOpenChange: fn() },
+  render: (args) => (
+    <Sheet {...args}>
       <SheetTrigger asChild>
         <Button variant="outline">Edit profile</Button>
       </SheetTrigger>
@@ -47,11 +45,16 @@ export const Default: Story = {
       </SheetContent>
     </Sheet>
   ),
-};
+} satisfies Meta<typeof Sheet>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Playground: Story = {};
 
 export const ClearOverlay: Story = {
-  render: () => (
-    <Sheet>
+  render: (args) => (
+    <Sheet {...args}>
       <SheetTrigger asChild>
         <Button variant="outline">Open side panel</Button>
       </SheetTrigger>
@@ -68,18 +71,21 @@ export const ClearOverlay: Story = {
   ),
 };
 
-export const Left: Story = {
-  render: () => (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline">Open from the left</Button>
-      </SheetTrigger>
-      <SheetContent side="left">
-        <SheetHeader>
-          <SheetTitle>Navigation</SheetTitle>
-          <SheetDescription>Slides in from the start edge.</SheetDescription>
-        </SheetHeader>
-      </SheetContent>
-    </Sheet>
+export const Sides: Story = {
+  render: (args) => (
+    <div className="flex flex-wrap gap-2">
+      {SIDES.map((side) => (
+        <Sheet {...args} key={side}>
+          <SheetTrigger asChild>
+            <Button variant="outline">{side}</Button>
+          </SheetTrigger>
+          <SheetContent side={side}>
+            <SheetHeader>
+              <SheetTitle>Slides in from the {side}</SheetTitle>
+            </SheetHeader>
+          </SheetContent>
+        </Sheet>
+      ))}
+    </div>
   ),
 };

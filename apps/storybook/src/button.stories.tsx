@@ -29,10 +29,10 @@ type Story = StoryObj<typeof meta>;
 export const Playground: Story = {};
 
 export const Variants: Story = {
-  render: () => (
+  render: (args) => (
     <div className="flex flex-wrap gap-2">
       {VARIANTS.map((variant) => (
-        <Button key={variant} variant={variant}>
+        <Button {...args} key={variant} variant={variant}>
           {variant}
         </Button>
       ))}
@@ -41,17 +41,18 @@ export const Variants: Story = {
 };
 
 export const Sizes: Story = {
-  render: () => (
+  render: (args) => (
     <div className="flex flex-col gap-3">
       {VARIANTS.map((variant) => (
         <div key={variant} className="flex flex-wrap items-center gap-2">
           {TEXT_SIZES.map((size) => (
-            <Button key={size} variant={variant} size={size}>
+            <Button {...args} key={size} variant={variant} size={size}>
               {size}
             </Button>
           ))}
           {ICON_SIZES.map((size) => (
             <Button
+              {...args}
               key={size}
               variant={variant}
               size={size}
@@ -67,15 +68,17 @@ export const Sizes: Story = {
 };
 
 export const WithIcon: Story = {
-  render: () => (
+  render: (args) => (
     <div className="flex gap-2">
-      <Button>
+      <Button {...args}>
         <PlusIcon data-icon="inline-start" /> New
       </Button>
-      <Button variant="outline">
+      <Button {...args} variant="outline">
         Next <ArrowRightIcon data-icon="inline-end" />
       </Button>
-      <Button disabled>Disabled</Button>
+      <Button {...args} disabled>
+        Disabled
+      </Button>
     </div>
   ),
 };

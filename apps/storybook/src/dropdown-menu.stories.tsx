@@ -18,21 +18,23 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CopyIcon, PencilIcon, TrashIcon } from "lucide-react";
 import { useState } from "react";
+import { fn } from "storybook/test";
 
 const meta = {
   title: "ui/Primitives/DropdownMenu",
   component: DropdownMenu,
+  args: { onOpenChange: fn() },
 } satisfies Meta<typeof DropdownMenu>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  render: function Render() {
+export const Playground: Story = {
+  render: function Render(args) {
     const [wrap, setWrap] = useState(true);
     const [sort, setSort] = useState("updated");
     return (
-      <DropdownMenu>
+      <DropdownMenu {...args}>
         <DropdownMenuTrigger asChild>
           <Button variant="outline">Actions</Button>
         </DropdownMenuTrigger>
@@ -80,8 +82,8 @@ export const Default: Story = {
 };
 
 export const Inset: Story = {
-  render: () => (
-    <DropdownMenu>
+  render: (args) => (
+    <DropdownMenu {...args}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline">Inset items</Button>
       </DropdownMenuTrigger>

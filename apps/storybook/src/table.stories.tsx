@@ -20,14 +20,8 @@ const ROWS = [
 const meta = {
   title: "ui/Primitives/Table",
   component: Table,
-} satisfies Meta<typeof Table>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  render: () => (
-    <Table>
+  render: (args) => (
+    <Table {...args}>
       <TableCaption>Packages in this workspace.</TableCaption>
       <TableHeader>
         <TableRow>
@@ -60,4 +54,9 @@ export const Default: Story = {
       </TableFooter>
     </Table>
   ),
-};
+} satisfies Meta<typeof Table>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Playground: Story = {};

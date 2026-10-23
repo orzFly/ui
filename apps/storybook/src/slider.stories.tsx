@@ -1,37 +1,37 @@
-import { Label } from "@orz/ui/components/label";
 import { Slider } from "@orz/ui/components/slider";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { withWidth } from "./decorators.tsx";
 
 const meta = {
   title: "ui/Primitives/Slider",
   component: Slider,
-  args: { "aria-label": "Volume", defaultValue: [40], className: "w-64" },
+  args: { "aria-label": "Volume" },
+  decorators: [withWidth("w-64")],
 } satisfies Meta<typeof Slider>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Playground: Story = {
+  args: { defaultValue: [40] },
+};
 
-function SteppedSlider() {
-  const [value, setValue] = useState([2]);
-  return (
-    <div className="grid w-64 gap-3">
-      <Label htmlFor="slider-stepped">Speed: {value[0]}×</Label>
-      <Slider
-        id="slider-stepped"
-        aria-label="Speed"
-        min={0.5}
-        max={4}
-        step={0.5}
-        value={value}
-        onValueChange={setValue}
-      />
-    </div>
-  );
-}
+/** A controlled slider on half steps; the `value` control moves the thumb. */
+export const Stepped: Story = {
+  args: { "aria-label": "Speed", value: [2], min: 0.5, max: 4, step: 0.5 },
+  // Local state, not `updateArgs`: a drag must not wait on the round trip.
+  render: function Render(args) {
+    const [value, setValue] = useState(args.value);
+    useEffect(() => setValue(args.value), [args.value]);
+    return <Slider {...args} value={value} onValueChange={setValue} />;
+  },
+};
 
-export const Stepped: Story = { render: () => <SteppedSlider /> };
+export const Range: Story = {
+  args: { "aria-label": "Range", defaultValue: [20, 80] },
+};
 
-export const Disabled: Story = { args: { disabled: true } };
+export const Disabled: Story = {
+  args: { defaultValue: [40], disabled: true },
+};

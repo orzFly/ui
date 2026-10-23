@@ -12,18 +12,14 @@ import {
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { fn } from "storybook/test";
 
 const meta = {
   title: "ui/Primitives/Dialog",
   component: Dialog,
-} satisfies Meta<typeof Dialog>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  render: () => (
-    <Dialog>
+  args: { onOpenChange: fn() },
+  render: (args) => (
+    <Dialog {...args}>
       <DialogTrigger asChild>
         <Button variant="outline">Rename</Button>
       </DialogTrigger>
@@ -47,14 +43,22 @@ export const Default: Story = {
       </DialogContent>
     </Dialog>
   ),
-};
+} satisfies Meta<typeof Dialog>;
 
-export const Open: Story = {
-  render: () => (
-    <Dialog defaultOpen>
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Playground: Story = {};
+
+export const FooterCloseButton: Story = {
+  render: (args) => (
+    <Dialog {...args}>
+      <DialogTrigger asChild>
+        <Button variant="outline">Open</Button>
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Open on load</DialogTitle>
+          <DialogTitle>A footer close button</DialogTitle>
           <DialogDescription>
             The footer's own close button comes from `showCloseButton`.
           </DialogDescription>
@@ -66,8 +70,8 @@ export const Open: Story = {
 };
 
 export const NoCloseButton: Story = {
-  render: () => (
-    <Dialog>
+  render: (args) => (
+    <Dialog {...args}>
       <DialogTrigger asChild>
         <Button variant="outline">Open</Button>
       </DialogTrigger>
@@ -84,8 +88,8 @@ export const NoCloseButton: Story = {
 };
 
 export const ScrollingBody: Story = {
-  render: () => (
-    <Dialog>
+  render: (args) => (
+    <Dialog {...args}>
       <DialogTrigger asChild>
         <Button variant="outline">Long content</Button>
       </DialogTrigger>

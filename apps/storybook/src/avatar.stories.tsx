@@ -33,12 +33,12 @@ type Story = StoryObj<typeof meta>;
 export const Playground: Story = {};
 
 export const SizesAndShapes: Story = {
-  render: () => (
+  render: (args) => (
     <div className="flex flex-col gap-3">
       {SHAPES.map((shape) => (
         <div key={shape} className="flex items-center gap-3">
           {SIZES.map((size) => (
-            <Avatar key={size} size={size} shape={shape}>
+            <Avatar {...args} key={size} size={size} shape={shape}>
               <AvatarFallback>{size === "sm" ? "A" : "AL"}</AvatarFallback>
               <AvatarBadge>
                 <CheckIcon />
@@ -52,8 +52,9 @@ export const SizesAndShapes: Story = {
 };
 
 export const WithImage: Story = {
-  render: () => (
-    <Avatar size="lg">
+  args: { size: "lg" },
+  render: (args) => (
+    <Avatar {...args}>
       {/* An unreachable image, so the fallback is what renders offline. */}
       <AvatarImage src="https://avatar.example/alice.png" alt="alice" />
       <AvatarFallback>AL</AvatarFallback>
@@ -62,12 +63,12 @@ export const WithImage: Story = {
 };
 
 export const Group: Story = {
-  render: () => (
+  render: (args) => (
     <div className="flex flex-col gap-3">
       {SIZES.map((size) => (
         <AvatarGroup key={size}>
           {["AL", "BO", "NE"].map((initials) => (
-            <Avatar key={initials} size={size}>
+            <Avatar {...args} key={initials} size={size}>
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
           ))}

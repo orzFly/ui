@@ -1,6 +1,22 @@
 import { useOverlayScrollbars } from "@orz/ui/hooks/use-overlay-scrollbars";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
+const USAGE = `import "overlayscrollbars/overlayscrollbars.css";
+import { useOverlayScrollbars } from "@orz/ui/hooks/use-overlay-scrollbars";
+
+const NO_SIDEWAYS = { overflow: { x: "hidden" } } as const;
+
+function List({ items }: { items: string[] }) {
+  const { slot, viewport } = useOverlayScrollbars(true, NO_SIDEWAYS);
+  return (
+    <div ref={slot} className="relative">
+      <div ref={viewport} className="h-64 overflow-y-auto">
+        {items.map((item) => <div key={item}>{item}</div>)}
+      </div>
+    </div>
+  );
+}`;
+
 const meta = {
   title: "ui/Hooks/useOverlayScrollbars",
 } satisfies Meta;
@@ -10,7 +26,8 @@ type Story = StoryObj<typeof meta>;
 
 const NO_SIDEWAYS = { overflow: { x: "hidden" } } as const;
 
-export const ScrollingList: Story = {
+export const Usage: Story = {
+  parameters: { docs: { source: { code: USAGE, language: "tsx" } } },
   render: function Render() {
     const { slot, viewport } = useOverlayScrollbars(true, NO_SIDEWAYS);
     return (

@@ -3,75 +3,32 @@ import {
   defineQuerySchema,
   diagnoseQuery,
   parseQuery,
-  type QuerySchema,
   queryFilters,
   queryTerms,
-  type ValueOption,
-  type ValueProviders,
 } from "@orz/query";
 import { QueryBox, type RowSource } from "@orz/ui/components/query-box";
 import { highlightQuery } from "@orz/ui/components/query-highlight";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ClockIcon, SearchIcon } from "lucide-react";
 import { useState } from "react";
+import { PROVIDERS, QUALIFIERS } from "./fixtures/query.ts";
 
 type Escapes = "plain" | "shell";
-
-const qualifiers = {
-  is: {
-    value: { kind: "enum", values: ["open", "closed"] },
-    hint: "open or closed",
-  },
-  label: { value: { kind: "named", source: "label" }, hint: "a label name" },
-  assignee: {
-    value: { kind: "named", source: "member", special: ["@me"] },
-    hint: "a login, or @me",
-  },
-} satisfies QuerySchema["qualifiers"];
 
 // Compiled once per mode at module load, as an app would: the schema is a
 // static table, and a new object per render would defeat memoised parsing.
 const SCHEMAS: Record<Escapes, CompiledQuerySchema> = {
-  plain: defineQuerySchema({ qualifiers, braces: true, maxFilters: 8 }),
+  plain: defineQuerySchema({
+    qualifiers: QUALIFIERS,
+    braces: true,
+    maxFilters: 8,
+  }),
   shell: defineQuerySchema({
-    qualifiers,
+    qualifiers: QUALIFIERS,
     braces: true,
     maxFilters: 8,
     escapes: "shell",
   }),
-};
-
-const MEMBERS: readonly ValueOption[] = [
-  { value: "alice", hint: "Alice" },
-  { value: "bot-one", hint: "a bot" },
-  { value: "claude-agent", hint: "an agent" },
-  { value: "newcomer", hint: "joined this week" },
-];
-
-/** Stands in for a server round trip, slow enough to see the wait. */
-const searchMembers = (prefix: string, signal: AbortSignal) =>
-  new Promise<readonly ValueOption[]>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      const lower = prefix.toLowerCase();
-      resolve(MEMBERS.filter((m) => m.value.startsWith(lower)));
-    }, 400);
-    signal.addEventListener("abort", () => {
-      clearTimeout(timer);
-      reject(signal.reason);
-    });
-  });
-
-const PROVIDERS: ValueProviders = {
-  label: {
-    options: [
-      { value: "kind:bug" },
-      { value: "kind:feature" },
-      { value: "area:web" },
-      { value: "area:ui" },
-      { value: "In Progress", hint: "has a space" },
-    ],
-  },
-  member: { search: searchMembers },
 };
 
 type Past = { q: string };

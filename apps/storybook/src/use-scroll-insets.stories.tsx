@@ -6,6 +6,27 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef, useState } from "react";
 
+const USAGE = `import { revealBlock, useScrollInsets } from "@orz/ui/hooks/scroll-insets";
+import { useRef } from "react";
+
+function Page() {
+  const toolbar = useRef<HTMLDivElement>(null);
+  const composer = useRef<HTMLDivElement>(null);
+  useScrollInsets({ top: [toolbar], bottom: [composer] });
+
+  const reveal = (id: string) => {
+    const el = document.getElementById(id);
+    if (el !== null) revealBlock(el, { mode: "auto", behavior: "smooth" });
+  };
+  return (
+    <>
+      <div ref={toolbar} className="fixed inset-x-0 top-0">…</div>
+      <main>…</main>
+      <div ref={composer} className="fixed inset-x-0 bottom-0">…</div>
+    </>
+  );
+}`;
+
 const meta = {
   title: "ui/Hooks/useScrollInsets",
   parameters: {
@@ -27,7 +48,8 @@ const FOLDED = 30;
  * Section 30 sits in a closed fold, which opens on the way. Open the composer
  * and reveal again: it is measured the moment it mounts.
  */
-export const RevealUnderOverlays: Story = {
+export const Usage: Story = {
+  parameters: { docs: { source: { code: USAGE, language: "tsx" } } },
   render: function Render() {
     const toolbar = useRef<HTMLDivElement>(null);
     const composer = useRef<HTMLDivElement>(null);
