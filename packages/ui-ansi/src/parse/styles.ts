@@ -43,6 +43,19 @@ function compact(style: AnsiStyle): AnsiStyle {
 export class StyleTable {
   readonly styles: AnsiStyle[] = [{}];
   private readonly ids = new Map<string, number>([[keyOf({}), 0]]);
+  private readonly states = new Map<string, AnsiStyle>();
+
+  /**
+   * One shared object per distinct SGR state, so a state can key a cache by
+   * identity rather than by a key built on every lookup.
+   */
+  canonical(style: AnsiStyle): AnsiStyle {
+    const key = keyOf(style);
+    const known = this.states.get(key);
+    if (known) return known;
+    this.states.set(key, style);
+    return style;
+  }
 
   /** The id of the SGR state `style` with the open link, if any, folded in. */
   intern(style: AnsiStyle, href?: string): number {

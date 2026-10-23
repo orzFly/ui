@@ -189,6 +189,19 @@ describe("SGR in the parser", () => {
     expect(parse.lines[0]?.text).toBe("xxx");
   });
 
+  it("applies a repeated sequence to the state it meets", () => {
+    const parse = parseAnsi(
+      "\x1b[1ma\x1b[0m\x1b[31m\x1b[1mb\x1b[0m\x1b[1mc\x1b]8;;https://example.com\x07\x1b[1md",
+    );
+    expect(parse.styles).toEqual([
+      {},
+      { bold: true },
+      { fg: palette(1), bold: true },
+      { bold: true, href: "https://example.com" },
+    ]);
+    expect([...(parse.lines[0]?.runs ?? [])]).toEqual([0, 1, 1, 2, 2, 1, 3, 3]);
+  });
+
   it("resets with ESC[m and ESC[;31m", () => {
     const parse = parseAnsi("\x1b[1ma\x1b[mb\x1b[4m\x1b[;31mc");
     expect(parse.styles).toEqual([{}, { bold: true }, { fg: palette(1) }]);

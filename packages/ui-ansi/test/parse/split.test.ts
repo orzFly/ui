@@ -1,3 +1,4 @@
+import { cellWidth } from "@orz/ui/lib/cell-width";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -174,6 +175,125 @@ describe("the fixtures parse as expected", () => {
     expect(parseAnsi(FIXTURES.unterminatedEnd as string).lines[0]?.text).toBe(
       "text redx",
     );
+  });
+});
+
+/** A seeded generator, so a failing input can be reproduced. */
+function random(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 2 ** 32;
+  };
+}
+
+const ATOMS = [
+  "a",
+  "b",
+  " ",
+  "中",
+  "\u{1f600}",
+  "\u0301",
+  "\u200d",
+  "\ufe0f",
+  "\r",
+  "\n",
+  "\r\n",
+  "\b",
+  "\t",
+  `${E}[31m`,
+  `${E}[0m`,
+  `${E}[1;4:3m`,
+  `${E}[2D`,
+  `${E}[3C`,
+  `${E}[2G`,
+  `${E}[K`,
+  `${E}[1K`,
+  `${E}[2K`,
+  `${E}]8;;https://example.com${E}\\`,
+  `${E}]8;;\x07`,
+  E,
+  "\ud83d",
+  "\ude00",
+];
+
+function generate(next: () => number, atoms: string[], count: number): string {
+  let text = "";
+  for (let i = 0; i < count; i++) {
+    text += atoms[Math.floor(next() * atoms.length)];
+  }
+  return text;
+}
+
+function cellsOf(text: string): number {
+  let cells = 0;
+  for (const char of text) cells += cellWidth(char.codePointAt(0) as number);
+  return cells;
+}
+
+describe("random input", () => {
+  it("parses the same split at any point as whole", () => {
+    const next = random(1);
+    for (let k = 0; k < 400; k++) {
+      const text = generate(next, ATOMS, 30);
+      const whole = snapshot(parseAnsi(text));
+      for (let cut = 0; cut <= text.length; cut++) {
+        const got = feed([text.slice(0, cut), text.slice(cut)]);
+        // Compared as strings first: a failing toEqual names the input.
+        if (got !== whole)
+          expect({ text, cut, got }).toEqual({ text, cut, got: whole });
+      }
+    }
+  });
+
+  it("counts each line's cells as the row geometry measures its text", () => {
+    const next = random(2);
+    for (let k = 0; k < 2000; k++) {
+      for (const line of parseAnsi(generate(next, ATOMS, 30)).lines) {
+        expect(line.cells, JSON.stringify(line.text)).toBe(cellsOf(line.text));
+      }
+    }
+  });
+
+  it("keeps runs ascending, from 0, inside the text", () => {
+    const next = random(3);
+    for (let k = 0; k < 2000; k++) {
+      for (const line of parseAnsi(generate(next, ATOMS, 30)).lines) {
+        if (line.text === "") continue;
+        const runs = [...line.runs];
+        expect(runs[0]).toBe(0);
+        for (let i = 2; i < runs.length; i += 2) {
+          expect(runs[i]).toBeGreaterThan(runs[i - 2] as number);
+          expect(runs[i]).toBeLessThan(line.text.length);
+        }
+      }
+    }
+  });
+
+  it("draws the same line through the fast path and the cell buffer", () => {
+    const moves = new Set([
+      "\r",
+      "\b",
+      `${E}[2D`,
+      `${E}[2G`,
+      `${E}[1K`,
+      `${E}[2K`,
+    ]);
+    const ends = new Set(["\n", "\r\n", E, "\ud83d", "\ude00"]);
+    const atoms = ATOMS.filter((a) => !moves.has(a) && !ends.has(a));
+    const lines = (text: string) =>
+      JSON.stringify(
+        parseAnsi(text).lines.map((l) => [l.text, [...l.runs], l.cells]),
+      );
+    const next = random(4);
+    for (let k = 0; k < 2000; k++) {
+      const text = `a${generate(next, atoms, 20)}`;
+      // "Z\b" switches the line to the cell buffer from its first cell, and
+      // the "a" then overwrites the Z.
+      const slow = lines(`Z\b${text}`);
+      const fast = lines(text);
+      if (slow !== fast) expect({ text, slow }).toEqual({ text, slow: fast });
+    }
   });
 });
 

@@ -179,7 +179,7 @@ export class Tokenizer {
             this.body = "";
             i++;
           } else {
-            // Over the limit: give up on it and read what follows as text.
+            // Past STRING_MAX: a stray `ESC ]` must not swallow the rest of a log.
             this.state = State.Ground;
             this.body = "";
           }

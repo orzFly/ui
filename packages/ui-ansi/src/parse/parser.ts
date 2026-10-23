@@ -14,6 +14,12 @@ export const CURSOR_MOVE_MAX = 1024;
 
 const LINK_SCHEME = /^(?:https?|mailto):/i;
 
+/**
+ * Cached SGR transitions per state. Truecolor gradients can make every
+ * parameter string distinct; past this many the rest are applied uncached.
+ */
+const TRANSITIONS_MAX = 256;
+
 function firstParam(params: string, fallback: number): number {
   const n = Number.parseInt(params, 10);
   return Number.isNaN(n) ? fallback : n;
@@ -24,7 +30,11 @@ class Parser implements AnsiParser, TokenSink {
   private readonly table = new StyleTable();
   private readonly line = new LineBuilder();
   private readonly tokenizer = new Tokenizer(this);
-  private sgr: AnsiStyle = {};
+  private sgr: AnsiStyle = this.table.canonical({});
+  // A log repeats a handful of SGR sequences; splitting, applying and
+  // interning each one again was most of the parse time.
+  private readonly transitions = new Map<AnsiStyle, Map<string, AnsiStyle>>();
+  private readonly plainIds = new Map<AnsiStyle, number>();
   private href: string | undefined;
   // -1 until the next write needs the current style interned.
   private id = 0;
@@ -74,13 +84,28 @@ class Parser implements AnsiParser, TokenSink {
 
   csi(params: string, final: number): void {
     switch (final) {
-      case 0x6d:
-        this.sgr = applySgr(
-          this.sgr,
-          params.split(";").map((param) => param.split(":")),
-        );
-        this.id = -1;
+      case 0x6d: {
+        let cached = this.transitions.get(this.sgr);
+        if (!cached) {
+          cached = new Map();
+          this.transitions.set(this.sgr, cached);
+        }
+        let next = cached.get(params);
+        if (!next) {
+          next = this.table.canonical(
+            applySgr(
+              this.sgr,
+              params.split(";").map((param) => param.split(":")),
+            ),
+          );
+          if (cached.size < TRANSITIONS_MAX) cached.set(params, next);
+        }
+        if (next !== this.sgr) {
+          this.sgr = next;
+          this.id = -1;
+        }
         break;
+      }
       case 0x43:
         this.line.forward(this.count(params));
         break;
@@ -120,7 +145,17 @@ class Parser implements AnsiParser, TokenSink {
   }
 
   private styleId(): number {
-    if (this.id < 0) this.id = this.table.intern(this.sgr, this.href);
+    if (this.id >= 0) return this.id;
+    if (this.href !== undefined) {
+      this.id = this.table.intern(this.sgr, this.href);
+    } else {
+      let id = this.plainIds.get(this.sgr);
+      if (id === undefined) {
+        id = this.table.intern(this.sgr);
+        this.plainIds.set(this.sgr, id);
+      }
+      this.id = id;
+    }
     return this.id;
   }
 
