@@ -1,0 +1,10 @@
+/* Tailwind resolves an imported file's @source against that file, so a
+   consumer importing this stylesheet scans the classes in the package's
+   shipped JS without writing an @source of its own. */
+@source "./dist";
+
+@layer components {
+  .ansi-view ::selection {
+    background: var(--terminal-selection);
+  }
+}
