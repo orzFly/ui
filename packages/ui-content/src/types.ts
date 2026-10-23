@@ -7,7 +7,7 @@ export type ContentSource =
       name: string;
       mime?: string;
       size?: number;
-      /** Where the bytes live; what an <img>, an <iframe> or the download link uses. */
+      /** Where the bytes live; what an `<img>`, an `<iframe>` or the download link uses. */
       url?: string;
       /** The text, for renderers that need it; useSourceText falls back to fetching url. */
       load?: (signal: AbortSignal) => Promise<string>;
@@ -21,7 +21,7 @@ export type ContentProps = {
   placement: Placement;
   /**
    * Put on the renderer's root element. Decoration passes mark the element a source was
-   * written as (an embedded <img>), and the class has to survive the swap to a renderer.
+   * written as (an embedded `<img>`), and the class has to survive the swap to a renderer.
    */
   className?: string;
 };
@@ -32,11 +32,11 @@ export type ContentRenderer = {
   name: string;
   /**
    * Synchronous and pure: decided from the descriptor alone. Layout decisions upstream
-   * (a paragraph becoming a <div>) are made from it during render and must not flip
+   * (a paragraph becoming a `<div>`) are made from it during render and must not flip
    * when data arrives later.
    */
   accepts(source: ContentSource, placement: Placement): boolean;
-  /** "block" content cannot sit inside a <p>. Default "block". */
+  /** "block" content cannot sit inside a `<p>`. Default "block". */
   display?: ContentDisplay;
   /** `Next` draws the same source with the renderers after this one. */
   Component: ComponentType<

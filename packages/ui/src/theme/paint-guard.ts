@@ -3,7 +3,7 @@ import type { ColorScheme } from "@orz/themes";
 /**
  * The guard's own: the canvas has the theme's background before the
  * stylesheet does. The store's rule leaves it out, because a background on
- * <html> stops body's from reaching the canvas.
+ * `<html>` stops body's from reaching the canvas.
  */
 const PAGE_BACKGROUND = "background-color: var(--background);";
 
@@ -71,7 +71,7 @@ export function themePaintCookieStyle(
   return light || dark;
 }
 
-/** Inside a <script>, so `<` is escaped: a key holding `</script>` would end it. */
+/** Inside a `<script>`, so `<` is escaped: a key holding `</script>` would end it. */
 function literal(value: string): string {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }

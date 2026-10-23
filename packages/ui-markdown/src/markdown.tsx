@@ -34,9 +34,9 @@ export const MarkdownPluginsContext = createContext<
 >(undefined);
 
 /**
- * Pull the code text and fence tag out of a <pre> element's hast node.
+ * Pull the code text and fence tag out of a `<pre>` element's hast node.
  * Returns null for shapes that aren't a plain fenced block, which then
- * keep the default <pre> rendering.
+ * keep the default `<pre>` rendering.
  */
 function parseFence(
   pre: Element | undefined,

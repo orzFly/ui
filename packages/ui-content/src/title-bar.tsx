@@ -11,7 +11,7 @@ const TitleBarContext = createContext<Slot | null>(null);
  *
  * Keyed by the source object rather than by nesting: a renderer hands a nested source a new
  * object (a markdown fence, an embedded file), so only the one drawing `source` itself sees the
- * spot, and a ```diff fence inside a markdown card never takes over the card's bar.
+ * spot, and a `diff` fence inside a markdown card never takes over the card's bar.
  */
 export function ContentTitleBar({
   source,

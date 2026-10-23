@@ -239,7 +239,7 @@ export type PatchViewProps = {
   lineNumbers?: boolean;
   /**
    * Say so when the text is not a patch. A file named .patch promised one; a
-   * ```diff fence holding a bare +/- snippet never did.
+   * fence tagged `diff` holding a bare +/- snippet never did.
    */
   invalidNote?: boolean;
   /**

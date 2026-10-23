@@ -26,7 +26,7 @@ import {
 } from "./values.ts";
 
 export type ArgSpec = {
-  /** Shown in the panel: "<label>". */
+  /** Shown in the panel: `<label>`. */
   name: string;
   value: ValueSpec;
   /** Only trailing arguments may be optional. */

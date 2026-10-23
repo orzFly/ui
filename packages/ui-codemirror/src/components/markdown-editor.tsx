@@ -45,7 +45,7 @@ export type MarkdownEditorHandle = CodeEditorHandle;
 
 /**
  * Native-event shape shared by React's synthetic events and the DOM's own, so
- * one file-staging handler can serve both a <textarea> and CodeMirror's raw
+ * one file-staging handler can serve both a `<textarea>` and CodeMirror's raw
  * listeners.
  */
 export type FileClipboardEvent = {

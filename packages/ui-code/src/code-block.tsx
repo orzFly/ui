@@ -181,7 +181,7 @@ function handlePostRender(container: HTMLElement): void {
  * Oniguruma patterns into native RegExp through oniguruma-to-es. That
  * transpiler is a recursive-descent pass over patterns, and the TypeScript
  * grammar's giant lookaheads overflow SpiderMonkey's much shallower stack:
- * Firefox rendered `too much recursion` in place of every ```ts block
+ * Firefox rendered `too much recursion` in place of every `ts` fence
  * (T-177). The wasm build is real Oniguruma and never runs that pass.
  *
  * pierre's highlighter is a module singleton whose engine is fixed by
@@ -370,7 +370,7 @@ export function fenceFilename(tag: string | undefined): string {
 /**
  * Read-only code rendering through pierre CodeView: syntax highlighting
  * from the filename, dark/light theme in step with the revision diffs.
- * Until pierre renders its first line a plain <pre> shows the same text, so
+ * Until pierre renders its first line a plain `<pre>` shows the same text, so
  * content stays readable through both chunk loading and highlighter startup.
  *
  * pierre's virtualization scaffold declares `contain: inline-size`, so this
