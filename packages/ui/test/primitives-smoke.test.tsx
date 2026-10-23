@@ -311,7 +311,7 @@ describe("every primitive renders", () => {
 
   it("slider is a slider carrying its value", () => {
     render(<Slider value={[30]} max={120} aria-label="Seek" />);
-    const thumb = screen.getByRole("slider");
+    const thumb = screen.getByRole("slider", { name: "Seek" });
     expect(thumb.getAttribute("aria-valuenow")).toBe("30");
     expect(thumb.getAttribute("aria-valuemax")).toBe("120");
   });
