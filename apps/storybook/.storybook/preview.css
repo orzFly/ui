@@ -2,6 +2,7 @@
 @import "@fontsource-variable/geist";
 @import "overlayscrollbars/overlayscrollbars.css";
 @import "@orz/ui/styles.css";
+@import "@orz/ui-ansi/styles.css";
 @import "@orz/ui-asciinema/styles.css";
 @import "@orz/ui-code/styles.css";
 @import "@orz/ui-content/styles.css";

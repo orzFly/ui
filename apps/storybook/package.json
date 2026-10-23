@@ -23,6 +23,7 @@
     "@orz/query": "workspace:*",
     "@orz/themes": "workspace:*",
     "@orz/ui": "workspace:*",
+    "@orz/ui-ansi": "workspace:*",
     "@orz/ui-asciinema": "workspace:*",
     "@orz/ui-code": "workspace:*",
     "@orz/ui-codemirror": "workspace:*",
