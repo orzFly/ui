@@ -6,7 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { createRef, useMemo, useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   FilterMenu,
   type FilterMenuHandle,
@@ -94,6 +94,38 @@ function highlighted() {
 
 function key(el: HTMLElement, k: string, init: KeyboardEventInit = {}) {
   fireEvent.keyDown(el, { key: k, ...init });
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+/** ResizeObservers by the element they watch, to fire one by hand. */
+function stubResizeObserver() {
+  const watching = new Map<Element, ResizeObserverCallback>();
+  const disconnected: Element[] = [];
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      #callback: ResizeObserverCallback;
+      #targets: Element[] = [];
+      constructor(callback: ResizeObserverCallback) {
+        this.#callback = callback;
+      }
+      observe(target: Element) {
+        this.#targets.push(target);
+        watching.set(target, this.#callback);
+      }
+      unobserve() {}
+      disconnect() {
+        disconnected.push(...this.#targets);
+      }
+    },
+  );
+  const resize = (target: Element) =>
+    act(() => watching.get(target)?.([], {} as ResizeObserver));
+  return { resize, disconnected };
 }
 
 describe("matchText", () => {
@@ -361,6 +393,31 @@ describe("FilterMenu", () => {
       </FilterMenu>,
     );
     expect(highlighted()).toBe("Pear");
+  });
+
+  it("scrolls the committed row into view once the list takes its size", () => {
+    const { resize, disconnected } = stubResizeObserver();
+    const scrolled: (string | null)[] = [];
+    vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(
+      function (this: HTMLElement) {
+        scrolled.push(this.textContent);
+      },
+    );
+    render(<Harness selectedId="pecan" />);
+    open();
+    const list = screen.getByRole("listbox", { name: "Fruit" });
+    scrolled.length = 0;
+    // Mounted, then placed: the list gets its height a step after opening.
+    resize(list);
+    expect(scrolled).toEqual(["Pecan"]);
+
+    // Once the user scrolls the list, a page scroll's resize leaves it be.
+    fireEvent.wheel(list);
+    resize(list);
+    expect(scrolled).toEqual(["Pecan"]);
+
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
+    expect(disconnected).toContain(list);
   });
 
   it("follows a filter that lags the query to its new first hit", () => {

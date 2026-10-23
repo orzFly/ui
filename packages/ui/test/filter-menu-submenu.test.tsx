@@ -127,6 +127,31 @@ describe("FilterMenu submenus", () => {
     expect(highlighted()).toBe("Apple");
   });
 
+  it("puts the submenu against the surface's border, beside its row", async () => {
+    // happy-dom lays nothing out, so floating-ui would clamp into a 0×0 viewport.
+    const root = document.documentElement;
+    vi.spyOn(root, "clientWidth", "get").mockReturnValue(1000);
+    vi.spyOn(root, "clientHeight", "get").mockReturnValue(800);
+    render(<Harness />);
+    const box = open();
+    const surface = box.closest('[data-slot="popover-content"]') as HTMLElement;
+    const apple = screen.getByRole("option", { name: "Apple" });
+    // The row is inset by the list's padding and, here, a 15px scrollbar.
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 10, y: 20, width: 200, height: 300 }),
+    );
+    vi.spyOn(apple, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 15, y: 80, width: 175, height: 28 }),
+    );
+    key(box, "ArrowUp");
+    const wrapper = screen
+      .getByRole("listbox", { name: "Apple varieties" })
+      .closest("[data-radix-popper-content-wrapper]") as HTMLElement;
+    await waitFor(() =>
+      expect(wrapper.style.transform).toBe("translate(210px, 80px)"),
+    );
+  });
+
   it("enters with → only at the end of the query, and walks within the submenu", () => {
     const onHighlight = vi.fn();
     render(<Harness onHighlight={onHighlight} />);
@@ -281,6 +306,66 @@ describe("FilterMenu submenus", () => {
     fireEvent.pointerMove(pear, { clientX: 150, clientY: 30 });
     expect(highlighted()).toBe("Pear");
     expect(ids(onHighlight)).toEqual(["apple", "pear", "apple", "pear"]);
+  });
+
+  it("keeps the submenu across the menu's border it sits flush against, either way", () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    const onHighlight = vi.fn();
+    render(<Harness onHighlight={onHighlight} />);
+    const box = open();
+    const menu = box.closest('[data-slot="popover-content"]') as HTMLElement;
+    const list = screen.getByRole("listbox", { name: "Fruit" });
+    const apple = screen.getByRole("option", { name: "Apple" });
+    fireEvent.pointerEnter(list, { clientX: 100, clientY: 10 });
+    fireEvent.pointerMove(apple, { clientX: 100, clientY: 10 });
+    const sub = screen.getByRole("listbox", { name: "Apple varieties" });
+    const surface = sub.closest('[data-slot="popover-content"]') as HTMLElement;
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 200, y: 0, width: 150, height: 200 }),
+    );
+    const gala = screen.getByRole("option", { name: "Gala" });
+
+    // Out over the scrollbar, slower than the grace, then over the border.
+    fireEvent.pointerLeave(apple, {
+      clientX: 185,
+      clientY: 10,
+      relatedTarget: list,
+    });
+    vi.advanceTimersByTime(400);
+    fireEvent.pointerLeave(list, {
+      clientX: 199.5,
+      clientY: 10,
+      relatedTarget: menu,
+    });
+    fireEvent.pointerEnter(surface, { clientX: 200, clientY: 10 });
+    fireEvent.pointerMove(gala, { clientX: 210, clientY: 10 });
+    vi.advanceTimersByTime(400);
+    expect(highlighted()).toBe("Gala");
+
+    // Back over the border to the parent row.
+    fireEvent.pointerLeave(surface, {
+      clientX: 199.5,
+      clientY: 10,
+      relatedTarget: menu,
+    });
+    expect(highlighted()).toBe("Gala");
+    fireEvent.pointerEnter(list, { clientX: 195, clientY: 10 });
+    fireEvent.pointerMove(apple, { clientX: 195, clientY: 10 });
+    vi.advanceTimersByTime(400);
+    expect(highlighted()).toBe("Apple");
+    expect(screen.getByRole("listbox", { name: "Apple varieties" })).toBe(sub);
+
+    // Off the border to nowhere: the highlight goes once the grace is up.
+    fireEvent.pointerLeave(list, {
+      clientX: 199.5,
+      clientY: 10,
+      relatedTarget: menu,
+    });
+    act(() => vi.advanceTimersByTime(299));
+    expect(highlighted()).toBe("Apple");
+    act(() => vi.advanceTimersByTime(2));
+    expect(highlighted()).toBeUndefined();
+    expect(ids(onHighlight)).toEqual(["apple", "apple:gala", "apple", null]);
   });
 
   it("lets a pointer moving straight down the list take the next row", () => {

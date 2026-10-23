@@ -6,7 +6,6 @@ import type {
   ReactElement,
   ReactNode,
   Ref,
-  RefObject,
 } from "react";
 import {
   Fragment,
@@ -365,7 +364,10 @@ export function FilterMenu<R extends FilterMenuRow>({
   const content = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const submenu = useRef<HTMLDivElement>(null);
-  const anchor = useRef<HTMLDivElement | null>(null);
+  const anchor = useRef<{
+    contextElement: Element;
+    getBoundingClientRect: () => DOMRect;
+  } | null>(null);
   const tabbing = useRef<"forward" | "backward" | null>(null);
   const grace = useRef<{
     polygon: Point[];
@@ -560,7 +562,8 @@ export function FilterMenu<R extends FilterMenuRow>({
     if (el && inSubBoxRef.current) el.focus({ preventScroll: true });
   }, []);
 
-  useLayoutEffect(() => {
+  const revealHighlight = useRef(() => {});
+  revealHighlight.current = () => {
     if (!open) return;
     const id =
       subIndex >= 0
@@ -569,7 +572,30 @@ export function FilterMenu<R extends FilterMenuRow>({
           ? optionId(highlightIndex)
           : null;
     if (id) document.getElementById(id)?.scrollIntoView?.({ block: "nearest" });
-  });
+  };
+  useLayoutEffect(() => revealHighlight.current());
+  // The effect above runs before the portal has mounted the list on open, and
+  // the list only gets its height once the surface is placed, so the
+  // committed row is revealed again as the list takes a size. Only until the
+  // user scrolls it: a page scroll or a window resize resizes it as well.
+  const revealOnResize = useRef(false);
+  const stopRevealOnResize = () => {
+    revealOnResize.current = false;
+  };
+  const listRef = useCallback((el: HTMLDivElement | null) => {
+    list.current = el;
+    if (el === null || typeof ResizeObserver === "undefined") return;
+    revealOnResize.current = true;
+    const observer = new ResizeObserver(() => {
+      if (revealOnResize.current) revealHighlight.current();
+    });
+    observer.observe(el);
+    // With a cleanup returned, React no longer calls the ref with null.
+    return () => {
+      observer.disconnect();
+      list.current = null;
+    };
+  }, []);
 
   const clearGrace = useCallback(() => {
     grace.current = null;
@@ -596,6 +622,30 @@ export function FilterMenu<R extends FilterMenuRow>({
       (area.towards || !heading) &&
       insidePolygon({ x: event.clientX, y: event.clientY }, area.polygon)
     );
+  };
+
+  /**
+   * On the menu's own border where a submenu sits flush against it: the one
+   * pixel between the list and the submenu, crossed either way.
+   */
+  const onSeam = (event: PointerEvent) => {
+    const rect = submenu.current?.getBoundingClientRect();
+    if (!rect || event.relatedTarget !== content.current) return false;
+    const { clientX: x, clientY: y } = event;
+    return (
+      y >= rect.top &&
+      y <= rect.bottom &&
+      Math.min(Math.abs(x - rect.left), Math.abs(x - rect.right)) <= 2
+    );
+  };
+
+  /** The highlight goes after `ms` unless the pointer is back in the list or the submenu. */
+  const closeUnlessBack = (ms: number) => {
+    if (graceTimer.current !== null) clearTimeout(graceTimer.current);
+    graceTimer.current = setTimeout(() => {
+      graceTimer.current = null;
+      if (pointerIn.current === null) move(null);
+    }, ms);
   };
 
   const choose = (row: R) => {
@@ -697,6 +747,25 @@ export function FilterMenu<R extends FilterMenuRow>({
     else move(next);
   };
 
+  // The row's height and the surface's sides: the submenu sits against the
+  // surface's border whatever the list's padding and scrollbar take.
+  const anchorRow = useCallback((row: HTMLDivElement | null) => {
+    anchor.current = row && {
+      // Through it, floating-ui follows the row's scrolling and resizing.
+      contextElement: row,
+      getBoundingClientRect: () => {
+        const own = row.getBoundingClientRect();
+        const surface = content.current?.getBoundingClientRect() ?? own;
+        return DOMRect.fromRect({
+          x: surface.x,
+          y: own.y,
+          width: surface.width,
+          height: own.height,
+        });
+      },
+    };
+  }, []);
+
   /** Leaving the parent row: the triangle toward the submenu's near edge. */
   const onParentLeave = (event: PointerEvent) => {
     const rect = submenu.current?.getBoundingClientRect();
@@ -793,11 +862,15 @@ export function FilterMenu<R extends FilterMenuRow>({
         />
         {header}
         <div
-          ref={list}
+          ref={listRef}
           id={listId}
           role="listbox"
           aria-label={listLabel}
           className="min-h-0 flex-1 overflow-y-auto p-1"
+          onWheel={stopRevealOnResize}
+          onTouchMove={stopRevealOnResize}
+          // Where a drag of the scrollbar starts, too.
+          onPointerDown={stopRevealOnResize}
           onPointerEnter={(event) => {
             pointerIn.current = "list";
             lastX.current = event.clientX;
@@ -809,15 +882,15 @@ export function FilterMenu<R extends FilterMenuRow>({
             pointerIn.current = null;
             const to = event.relatedTarget;
             if (to instanceof Node && submenu.current?.contains(to)) return;
+            if (onSeam(event)) {
+              // However long the pointer lingered on the scrollbar on its way.
+              closeUnlessBack(GRACE_MS);
+              return;
+            }
             if (inGrace(event, false)) {
               // Crossing the gap toward the submenu; if the pointer never
               // arrives, the highlight still goes when the grace runs out.
-              const left = (grace.current?.until ?? 0) - Date.now();
-              if (graceTimer.current !== null) clearTimeout(graceTimer.current);
-              graceTimer.current = setTimeout(() => {
-                graceTimer.current = null;
-                if (pointerIn.current === null) move(null);
-              }, left);
+              closeUnlessBack((grace.current?.until ?? 0) - Date.now());
               return;
             }
             if (highlight !== null) move(null);
@@ -862,7 +935,7 @@ export function FilterMenu<R extends FilterMenuRow>({
                 // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-expanded marks the option that owns a submenu listbox
                 <div
                   key={row.id}
-                  ref={highlighted ? anchor : undefined}
+                  ref={highlighted ? anchorRow : undefined}
                   id={optionId(index)}
                   role="option"
                   tabIndex={-1}
@@ -949,12 +1022,12 @@ export function FilterMenu<R extends FilterMenuRow>({
         {/* Inside the parent's content, so Radix counts it as a child layer:
             pressing in it is not "outside" the menu. */}
         <Popover open={submenuOpen}>
-          <PopoverAnchor virtualRef={anchor as RefObject<HTMLDivElement>} />
+          <PopoverAnchor virtualRef={anchor} />
           <PopoverContent
             ref={submenu}
             side="right"
             align="start"
-            sideOffset={4}
+            sideOffset={0}
             className="flex max-h-[min(24rem,var(--radix-popover-content-available-height))] w-60 flex-col overflow-hidden p-0"
             style={
               ownQuery
@@ -997,7 +1070,8 @@ export function FilterMenu<R extends FilterMenuRow>({
               pointerIn.current = null;
               const to = event.relatedTarget;
               if (to instanceof Node && list.current?.contains(to)) return;
-              move(null);
+              if (onSeam(event)) closeUnlessBack(GRACE_MS);
+              else move(null);
             }}
           >
             {subBox && parent && (
