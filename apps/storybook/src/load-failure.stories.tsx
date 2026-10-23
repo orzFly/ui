@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 
 const meta = {
-  title: "ui/Patterns/LoadFailure",
+  title: "ui/LoadFailure",
   component: LoadFailure,
   args: {
     message: "Couldn't load the list.",

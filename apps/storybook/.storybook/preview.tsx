@@ -353,7 +353,7 @@ const preview: Preview = {
       // which puts `ui` first. A package's groups take this order, and its
       // flat entries follow them.
       storySort: (a, b) => {
-        const groups = ["Foundations", "Primitives", "Patterns", "Hooks"];
+        const groups = ["Foundations", "Primitives", "Hooks"];
         const [ka, kb] = [a.title, b.title].map((title) => {
           const [pkg, group] = title.split("/");
           const i = groups.indexOf(group);

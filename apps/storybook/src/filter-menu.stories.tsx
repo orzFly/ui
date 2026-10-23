@@ -10,7 +10,7 @@ import { ChevronDownIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const meta = {
-  title: "ui/Patterns/FilterMenu",
+  title: "ui/FilterMenu",
 } satisfies Meta;
 
 export default meta;

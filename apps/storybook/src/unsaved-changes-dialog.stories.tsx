@@ -7,7 +7,7 @@ import { useState } from "react";
 import { fn } from "storybook/test";
 
 const meta = {
-  title: "ui/Patterns/UnsavedChangesDialog",
+  title: "ui/UnsavedChangesDialog",
   component: UnsavedChangesDialog,
   args: { open: true, onProceed: fn(), onStay: fn() },
 } satisfies Meta<typeof UnsavedChangesDialog>;

@@ -19,7 +19,7 @@ import {
  * each theme's variants in a submenu. Hovering a row previews it on the page.
  */
 const meta = {
-  title: "ui/Patterns/ThemeMenu",
+  title: "ui/ThemeMenu",
   component: ThemeMenu,
   parameters: {
     // Each story but Default paints the page from a store of its own; in one
