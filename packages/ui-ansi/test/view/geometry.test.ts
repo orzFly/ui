@@ -1,6 +1,7 @@
 import { cellWidth } from "@orz/ui/lib/cell-width";
 import { describe, expect, it } from "vitest";
 
+import { parseAnsi } from "../../src/parse/parser.ts";
 import {
   buildRowIndex,
   columnsFor,
@@ -222,6 +223,23 @@ describe("buildRowIndex", () => {
     }
   });
 
+  it("extends an index over a prefix to the same result", () => {
+    const lines = Array.from({ length: 300 }, (_, i) =>
+      line(i % 3 ? "a".repeat(i % 70) : `${"a".repeat(19)}中`.repeat(3)),
+    );
+    for (const cols of [null, 20, 33]) {
+      let index = buildRowIndex(lines.slice(0, 1), cols);
+      for (const n of [1, 2, 50, 51, 200, 300]) {
+        const prev = index;
+        const prevCopy = [...prev];
+        index = buildRowIndex(lines.slice(0, n), cols, prev);
+        expect([...index]).toEqual([...buildRowIndex(lines.slice(0, n), cols)]);
+        // The earlier index still reads as it did.
+        expect([...prev]).toEqual(prevCopy);
+      }
+    }
+  });
+
   it("is empty but for the total when there are no lines", () => {
     expect([...buildRowIndex([], 20)]).toEqual([0]);
   });
@@ -267,4 +285,50 @@ describe("lineAtRow", () => {
 
 it("virtualises above 5,000 rows", () => {
   expect(VIRTUALIZE_ABOVE).toBe(5000);
+});
+
+describe("geometry agrees with the parse", () => {
+  const samples = [
+    "ab\x1b[10Cx",
+    "a\tb",
+    "中\x1b[5G文",
+    "éx",
+    "\x00\x01abc\x7f",
+    "a​b",
+    "x\x1b[3D中",
+    "\u{1F600}a",
+    "a\x85b\x90c",
+    "abc\x1b[1K",
+    "中文\b\bx",
+    "abc\x1b[2Dd",
+    "中文\x1b[3D\x1b[K",
+    "abcdef\x1b[3Gx\x1b[0K",
+    "é́x",
+    "\x1b[30C中",
+  ];
+
+  it("a line's cells are the sum of its code points' widths", () => {
+    for (const s of samples) {
+      for (const line of parseAnsi(s).lines) {
+        let sum = 0;
+        for (const ch of line.text) sum += cellWidth(ch.codePointAt(0) ?? 0);
+        expect([s, line.text, sum]).toEqual([s, line.text, line.cells]);
+      }
+    }
+  });
+
+  it("the row index counts the rows splitRows makes", () => {
+    for (const s of samples) {
+      const long = `${s}${"中".repeat(15)}${s}${"y".repeat(9)}${s}`;
+      const { lines } = parseAnsi(long);
+      for (const cols of [20, 21, 33]) {
+        const index = buildRowIndex(lines, cols);
+        const split = lines.reduce(
+          (n, l) => n + (l.cells <= cols ? 1 : splitRows(l, cols).length),
+          0,
+        );
+        expect([long, cols, index[lines.length]]).toEqual([long, cols, split]);
+      }
+    }
+  });
 });

@@ -73,20 +73,38 @@ function exactRows(text: string, cols: number): number {
 
 /**
  * The first visual row of each line, then the total row count at index
- * `lines.length`. `cols` of `null` means no wrap: one row per line.
+ * `lines.length`. `cols` of `null` means no wrap: one row per line. `prev`, an
+ * index built with the same `cols` over a prefix of `lines`, is extended
+ * rather than rebuilt.
  */
 export function buildRowIndex(
   lines: readonly Pick<AnsiLine, "text" | "cells">[],
   cols: number | null,
+  prev?: Uint32Array,
 ): Uint32Array {
   const n = lines.length;
-  const index = new Uint32Array(n + 1);
+  let start = 0;
+  let index: Uint32Array;
+  if (prev && prev.length > 0 && prev.length <= n + 1) {
+    start = prev.length - 1;
+    // A streamed log extends its index on every publish; spare capacity
+    // keeps that from copying the whole index each time.
+    if (prev.byteOffset === 0 && prev.buffer.byteLength >= (n + 1) * 4) {
+      index = new Uint32Array(prev.buffer, 0, n + 1);
+    } else {
+      const grown = new Uint32Array(Math.max(n + 1, 2 * prev.length));
+      grown.set(prev);
+      index = grown.subarray(0, n + 1);
+    }
+  } else {
+    index = new Uint32Array(n + 1);
+  }
   if (cols === null) {
-    for (let i = 0; i <= n; i++) index[i] = i;
+    for (let i = start; i <= n; i++) index[i] = i;
     return index;
   }
-  let row = 0;
-  for (let i = 0; i < n; i++) {
+  let row = index[start];
+  for (let i = start; i < n; i++) {
     index[i] = row;
     const line = lines[i];
     const cells = line.cells;
@@ -97,7 +115,7 @@ export function buildRowIndex(
     else if (!MAYBE_WIDE.test(line.text)) row += Math.ceil(cells / cols);
     else row += exactRows(line.text, cols);
   }
-  index[lines.length] = row;
+  index[n] = row;
   return index;
 }
 
