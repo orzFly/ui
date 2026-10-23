@@ -6,7 +6,7 @@ import {
 } from "@orz/ui-hex";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { HexFrame, SAMPLE_PNG } from "./hex-fixtures.tsx";
+import { SAMPLE_PNG } from "./fixtures/hex.ts";
 
 const PNG = bytesSource(SAMPLE_PNG);
 
@@ -27,17 +27,15 @@ function WithInspectorDemo() {
     pane: "hex",
   });
   return (
-    <HexFrame>
-      <div className="flex flex-wrap items-start gap-6">
-        <HexView
-          source={PNG}
-          rows={16}
-          selection={selection}
-          onSelectionChange={setSelection}
-        />
-        <HexInspector className="w-72" source={PNG} selection={selection} />
-      </div>
-    </HexFrame>
+    <div className="flex flex-wrap items-start gap-6">
+      <HexView
+        source={PNG}
+        rows={16}
+        selection={selection}
+        onSelectionChange={setSelection}
+      />
+      <HexInspector className="w-72" source={PNG} selection={selection} />
+    </div>
   );
 }
 

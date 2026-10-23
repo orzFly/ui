@@ -1,10 +1,9 @@
 import { Button } from "@orz/ui/components/button";
 import { codeContent, PatchView, patchContent } from "@orz/ui-code";
-import { ContentRenderers, type ContentSource } from "@orz/ui-content";
+import { ContentRenderers } from "@orz/ui-content";
 import {
   AttachmentViewerProvider,
   attachmentCard,
-  type FileSource,
   useAttachmentViewer,
 } from "@orz/ui-content/attachment";
 import {
@@ -15,49 +14,8 @@ import {
 } from "@orz/ui-markdown";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactNode } from "react";
+import { file, PATCHES, PLAIN_DIFF, resolve } from "./fixtures/files.ts";
 import seriesText from "./fixtures/patch/series.patch?raw";
-
-function textFile(name: string, mime: string, text: string): FileSource {
-  const blob = new Blob([text], { type: mime });
-  return {
-    kind: "file",
-    name,
-    mime,
-    size: blob.size,
-    url: URL.createObjectURL(blob),
-    load: async () => text,
-  };
-}
-
-const PLAIN_DIFF = `diff --git a/src/retry.ts b/src/retry.ts
-index d1e5c0a..e2f6a1b 100644
---- a/src/retry.ts
-+++ b/src/retry.ts
-@@ -1,4 +1,4 @@
--const PAUSE_MS = 250;
-+const PAUSE_MS = 500;
- 
- /** Runs \`attempt\`, and once more after a pause if it throws. */
- export async function retryOnce<T>(attempt: () => Promise<T>): Promise<T> {
-`;
-
-const FILES: Record<string, FileSource> = {
-  "series.patch": textFile("series.patch", "text/x-patch", seriesText),
-  // The CLI uploads code under a generic type; the name makes it a patch.
-  "pause.diff": textFile("pause.diff", "application/octet-stream", PLAIN_DIFF),
-  "notes.patch": textFile(
-    "notes.patch",
-    "text/x-patch",
-    "Not a diff at all, just notes\nsomeone saved as .patch.\n",
-  ),
-};
-
-const file = (name: string) => FILES[name] as FileSource;
-
-function resolve(href: string): ContentSource | null {
-  if (!href.startsWith("files/")) return null;
-  return FILES[href.slice("files/".length)] ?? null;
-}
 
 const RENDERERS = [
   attachmentCard(),
@@ -133,15 +91,14 @@ export const AttachmentCards: Story = { args: { source: EMBEDS } };
 
 function ViewerButtons() {
   const viewer = useAttachmentViewer();
-  const items = Object.values(FILES);
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map((f, index) => (
+      {PATCHES.map((f, index) => (
         <Button
           key={f.name}
           variant="outline"
           size="sm"
-          onClick={() => viewer?.open(items, index)}
+          onClick={() => viewer?.open(PATCHES, index)}
         >
           {f.name}
         </Button>

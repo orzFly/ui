@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@fontsource-variable/geist";
+@import "@fontsource-variable/jetbrains-mono";
 @import "overlayscrollbars/overlayscrollbars.css";
 @import "@orz/ui/styles.css";
 @import "@orz/ui-ansi/styles.css";
@@ -7,6 +8,7 @@
 @import "@orz/ui-code/styles.css";
 @import "@orz/ui-content/styles.css";
 @import "@orz/ui-codemirror/styles.css";
+@import "@orz/ui-hex/styles.css";
 @import "@orz/ui-markdown/styles.css";
 @import "@orz/ui-mermaid/styles.css";
 
@@ -16,3 +18,9 @@
    scans nothing, so this one spells out the files. */
 @source "../../../packages/*/src/**/*.{ts,tsx}";
 @source "../src";
+
+/* The --hex-* defaults sit on .orz-hex itself, so an override has to reach
+   that element; :root lifts it above the package's own rule. */
+:root :is(.orz-hex, .orz-hex-inspector) {
+  --hex-font: "JetBrains Mono Variable", monospace;
+}

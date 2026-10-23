@@ -27,6 +27,7 @@ import {
   UPDATE_GLOBALS,
 } from "storybook/internal/core-events";
 import { addons } from "storybook/preview-api";
+import { collapseLongLiterals } from "./collapse-literals.ts";
 import { DocsRenderer } from "./docs-renderer.tsx";
 import {
   changedGlobals,
@@ -342,6 +343,8 @@ const preview: Preview = {
     docs: {
       container: ThemedDocsContainer,
       renderer: async () => new DocsRenderer(),
+      // Storybook prints a string prop in full: a 2 KB document as 2 KB of code.
+      source: { transform: collapseLongLiterals },
     },
     options: {
       // Storybook lifts this function out of the source and evals it on its

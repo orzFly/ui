@@ -12,7 +12,7 @@ import {
   PageSample,
   sampleCustomThemes,
   TerminalPane,
-} from "./theme-fixtures.tsx";
+} from "./fixtures/themes.tsx";
 
 /**
  * Picks a theme for one slot of the store: filter, Auto / Light / Dark, and

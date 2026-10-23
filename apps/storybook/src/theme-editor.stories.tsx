@@ -15,7 +15,7 @@ import {
   sampleCustomThemes,
   sampleTerminalThemes,
   TerminalPane,
-} from "./theme-fixtures.tsx";
+} from "./fixtures/themes.tsx";
 
 /**
  * Edits the store's custom themes in a panel docked to the right, while the

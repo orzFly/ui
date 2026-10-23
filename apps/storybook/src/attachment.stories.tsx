@@ -1,6 +1,6 @@
 import { Button } from "@orz/ui/components/button";
 import { codeContent } from "@orz/ui-code";
-import { ContentRenderers, type ContentSource } from "@orz/ui-content";
+import { ContentRenderers } from "@orz/ui-content";
 import {
   type AttachmentItem,
   AttachmentLink,
@@ -8,7 +8,6 @@ import {
   AttachmentViewerProvider,
   attachmentCard,
   audioContent,
-  type FileSource,
   htmlContent,
   imageContent,
   pdfContent,
@@ -24,95 +23,8 @@ import {
 } from "@orz/ui-markdown";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ReactNode } from "react";
-import appendixText from "./fixtures/attachment/appendix.md?raw";
-import zipUrl from "./fixtures/attachment/bundle.zip?url&no-inline";
-import chapterText from "./fixtures/attachment/chapter.md?raw";
-import webmUrl from "./fixtures/attachment/clip.webm?url&no-inline";
-import htmlText from "./fixtures/attachment/demo.html?raw";
-import tsText from "./fixtures/attachment/fetch-task.ts?raw";
-import pngUrl from "./fixtures/attachment/gradient.png?url&no-inline";
 import guideText from "./fixtures/attachment/guide.md?raw";
-import svgText from "./fixtures/attachment/logo.svg?raw";
-import svgUrl from "./fixtures/attachment/logo.svg?url&no-inline";
-import pdfUrl from "./fixtures/attachment/paper.pdf?url&no-inline";
-import spriteUrl from "./fixtures/attachment/sprite.png?url&no-inline";
-import oggUrl from "./fixtures/attachment/tone.ogg?url&no-inline";
-
-/**
- * A text file as an app would describe one: a `url` to download (a blob, here) and a `load` for
- * the renderers that need the text.
- */
-function textFile(name: string, mime: string, text: string): FileSource {
-  const blob = new Blob([text], { type: mime });
-  return {
-    kind: "file",
-    name,
-    mime,
-    size: blob.size,
-    url: URL.createObjectURL(blob),
-    load: async () => text,
-  };
-}
-
-const binary = (
-  name: string,
-  mime: string,
-  url: string,
-  size: number,
-): FileSource => ({ kind: "file", name, mime, size, url });
-
-const FILES: Record<string, FileSource> = {
-  "gradient.png": binary("gradient.png", "image/png", pngUrl, 1510),
-  // Tiny and transparent: zoomed in, it shows the checkerboard and pixelated scaling.
-  "sprite.png": binary("sprite.png", "image/png", spriteUrl, 232),
-  "logo.svg": {
-    ...textFile("logo.svg", "image/svg+xml", svgText),
-    url: svgUrl,
-  },
-  // A blob, not a served asset: Vite's dev server answers an .html asset URL
-  // with a 404. The sandboxed frame still runs it on an opaque origin.
-  "demo.html": textFile("demo.html", "text/html", htmlText),
-  "paper.pdf": binary("paper.pdf", "application/pdf", pdfUrl, 689),
-  "clip.webm": binary("clip.webm", "video/webm", webmUrl, 10556),
-  "tone.ogg": binary("tone.ogg", "audio/ogg", oggUrl, 4649),
-  "guide.md": textFile("guide.md", "text/markdown", guideText),
-  "chapter.md": textFile("chapter.md", "text/markdown", chapterText),
-  "appendix.md": textFile("appendix.md", "text/markdown", appendixText),
-  // Uploaded with a generic type: the name alone makes it text.
-  "fetch-task.ts": textFile(
-    "fetch-task.ts",
-    "application/octet-stream",
-    tsText,
-  ),
-  "bundle.zip": binary("bundle.zip", "application/zip", zipUrl, 182),
-};
-
-const file = (name: string) => FILES[name] as FileSource;
-
-/** Every kind the viewer knows, plus one it does not. */
-const MIXED = [
-  "gradient.png",
-  "sprite.png",
-  "logo.svg",
-  "demo.html",
-  "paper.pdf",
-  "clip.webm",
-  "tone.ogg",
-  "guide.md",
-  "fetch-task.ts",
-  "bundle.zip",
-].map(file);
-
-function resolve(href: string): ContentSource | null {
-  if (!href.startsWith("files/")) return null;
-  return FILES[href.slice("files/".length)] ?? null;
-}
-
-/** Pages a file opened on its own through the mixed set, when it is in it. */
-function group(target: FileSource) {
-  const index = MIXED.findIndex((f) => f.name === target.name);
-  return index === -1 ? null : { items: MIXED, index };
-}
+import { file, group, MIXED, resolve } from "./fixtures/files.ts";
 
 const RENDERERS = [
   attachmentCard(),

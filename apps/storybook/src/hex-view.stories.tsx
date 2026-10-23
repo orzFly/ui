@@ -14,24 +14,16 @@ import { toast } from "sonner";
 import { useArgs } from "storybook/preview-api";
 import {
   ENCODING_SAMPLES,
-  HexFrame,
   SAMPLE_PNG,
   syntheticBytes,
   syntheticSource,
-} from "./hex-fixtures.tsx";
+} from "./fixtures/hex.ts";
 
 const PNG = bytesSource(SAMPLE_PNG);
 
 const meta = {
   title: "ui-hex/HexView",
   component: HexView,
-  decorators: [
-    (Story) => (
-      <HexFrame>
-        <Story />
-      </HexFrame>
-    ),
-  ],
   args: {
     source: PNG,
     rows: 16,
@@ -109,9 +101,9 @@ function LargeInMemoryDemo() {
   // 64 MiB at 16 columns is past the 1:1 spacer cap, so this scrolls scaled.
   const source = useMemo(() => bytesSource(syntheticBytes(64 * 2 ** 20)), []);
   return (
-    <HexFrame height={420}>
+    <div style={{ height: 420 }}>
       <HexView source={source} aria-label="64 MiB in memory" />
-    </HexFrame>
+    </div>
   );
 }
 
@@ -125,9 +117,9 @@ function PagedSourceDemo() {
     [],
   );
   return (
-    <HexFrame height={420}>
+    <div style={{ height: 420 }}>
       <HexView source={source} aria-label="4 GiB paged" />
-    </HexFrame>
+    </div>
   );
 }
 

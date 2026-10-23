@@ -17,7 +17,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Download, Redo2, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { HexFrame, SAMPLE_PNG, syntheticSource } from "./hex-fixtures.tsx";
+import { SAMPLE_PNG, syntheticSource } from "./fixtures/hex.ts";
 
 function reportPaste(result: HexPasteResult) {
   if (result.ok) {
@@ -144,13 +144,6 @@ function BasicDemo(args: EditorArgs) {
 const meta = {
   title: "ui-hex/HexEditor",
   component: BasicDemo,
-  decorators: [
-    (Story) => (
-      <HexFrame>
-        <Story />
-      </HexFrame>
-    ),
-  ],
   args: {
     rows: 16,
     columns: 16,
@@ -179,7 +172,7 @@ function LargePagedDemo() {
     [],
   );
   return (
-    <HexFrame height={460}>
+    <div style={{ height: 460 }}>
       <EditorDemo
         doc={doc}
         fileName="synthetic.bin"
@@ -187,7 +180,7 @@ function LargePagedDemo() {
         // A fixed height: the toolbar sits above it inside the frame.
         rows={16}
       />
-    </HexFrame>
+    </div>
   );
 }
 
