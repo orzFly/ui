@@ -1,3 +1,4 @@
+import { cellWidth } from "@orz/ui/lib/cell-width";
 import type { ControlCodes } from "./types.ts";
 
 export interface TextCell {
@@ -66,35 +67,9 @@ export function classify(text: string, controlCodes: ControlCodes): TextCell {
   return { kind: "char", text };
 }
 
-// East Asian Wide and Fullwidth, a subset of EastAsianWidth.txt.
-const WIDE: ReadonlyArray<readonly [number, number]> = [
-  [0x1100, 0x115f],
-  [0x2e80, 0x303e],
-  [0x3041, 0x33ff],
-  [0x3400, 0x4dbf],
-  [0x4e00, 0x9fff],
-  [0xa000, 0xa4cf],
-  [0xa960, 0xa97f],
-  [0xac00, 0xd7a3],
-  [0xf900, 0xfaff],
-  [0xfe10, 0xfe19],
-  [0xfe30, 0xfe6f],
-  [0xff00, 0xff60],
-  [0xffe0, 0xffe6],
-  [0x1b000, 0x1b2ff],
-  [0x20000, 0x3fffd],
-];
-const EMOJI = /\p{Emoji_Presentation}/u;
-
-/** How many text cells a glyph is drawn across, without measuring it. */
+/** How many text cells a glyph is drawn across, without measuring it; never fewer than one. */
 export function glyphCells(text: string): number {
-  if (EMOJI.test(text)) return 2;
-  const code = text.codePointAt(0) ?? 0;
-  for (const [from, to] of WIDE) {
-    if (code < from) return 1;
-    if (code <= to) return 2;
-  }
-  return 1;
+  return Math.max(1, cellWidth(text.codePointAt(0) ?? 0));
 }
 
 const LONE_SURROGATE = /\p{Cs}/u;
