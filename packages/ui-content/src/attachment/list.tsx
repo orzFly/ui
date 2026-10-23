@@ -1,3 +1,4 @@
+import { isPlainLeftClick } from "@orz/ui/components/link-chip";
 import { cn } from "@orz/ui/lib/utils";
 import {
   ChevronDownIcon,
@@ -8,7 +9,6 @@ import {
 import { type ReactNode, useState } from "react";
 import { formatSize } from "../file-kind.ts";
 import { fileIcon } from "./icon.ts";
-import { isPlainLeftClick } from "./link.tsx";
 import {
   type FileSource,
   useAttachmentViewer,

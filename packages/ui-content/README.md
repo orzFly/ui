@@ -337,9 +337,8 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
 
 - **`<AttachmentLink file boxed? className?>`** is an inline link wearing the file's type icon. It is
   a real anchor to `useViewHref(file)`, so copy-link and middle-click work; a plain left click on a
-  file `useCanPreview` accepts opens the viewer. `boxed` draws it as a bordered chip. The chip's
-  classes are exported as `RICH_CHIP_STRUCTURE`, `RICH_CHIP_SKIN`, `RICH_CHIP_ICON` and
-  `RICH_CHIP_LABEL`.
+  file `useCanPreview` accepts opens the viewer. `boxed` draws it as a bordered chip. It is a
+  `LinkChip` from `@orz/ui/components/link-chip`, which also exports the chip's classes.
 - **`<AttachmentList items title? id? className?>`** lists files (`FileSource` plus a `key` and an
   optional ISO `createdAt`) with their icon, size, time and a download button. A list of eight or
   more keeps its newest five rows and folds the rest behind a toggle. A plain click on a row opens

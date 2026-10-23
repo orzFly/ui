@@ -11,14 +11,7 @@ export {
   parseImageLook,
   useStoredImageLook,
 } from "./image-look.ts";
-export {
-  AttachmentLink,
-  type AttachmentLinkProps,
-  RICH_CHIP_ICON,
-  RICH_CHIP_LABEL,
-  RICH_CHIP_SKIN,
-  RICH_CHIP_STRUCTURE,
-} from "./link.tsx";
+export { AttachmentLink, type AttachmentLinkProps } from "./link.tsx";
 export {
   type AttachmentItem,
   AttachmentList,

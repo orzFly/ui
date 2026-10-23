@@ -1,10 +1,10 @@
+import { RICH_CHIP_SKIN } from "@orz/ui/components/link-chip";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   AttachmentLink,
   AttachmentViewerProvider,
   type FileSource,
-  RICH_CHIP_SKIN,
 } from "../../src/attachment/index.ts";
 import { ContentRenderers } from "../../src/index.ts";
 import { file, stubText } from "./fixtures.tsx";

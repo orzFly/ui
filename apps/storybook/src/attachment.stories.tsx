@@ -227,8 +227,12 @@ export const List: Story = {
   ),
 };
 
-/** The inline link, plain and boxed. A plain click opens the viewer; a modifier click is the browser's. */
-export const LinkChip: Story = {
+/**
+ * The inline link, plain and boxed: a LinkChip wearing the file's type icon. A plain click opens
+ * the viewer; a modifier click is the browser's.
+ */
+export const Link: Story = {
+  name: "AttachmentLink",
   render: () => (
     <Surface>
       <div className="markdown-body flex max-w-xl flex-col gap-3">
