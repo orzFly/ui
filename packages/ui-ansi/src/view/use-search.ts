@@ -38,6 +38,8 @@ export interface SearchState {
   /** 1 at each line id with a match; at least `count` lines long. Replaced as it grows. */
   readonly matchLines: Uint8Array;
   readonly error: "invalid" | null;
+  /** Changes whenever the scan starts over, so a match index is only good within one. */
+  readonly generation: number;
 }
 
 /**
@@ -71,6 +73,7 @@ class SearchStore {
   private cursor = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private stopSlices: (() => void) | null = null;
+  private generation = 0;
   private snapshot: SearchState = {
     matches: new Uint32Array(0),
     count: 0,
@@ -78,6 +81,7 @@ class SearchStore {
     scanning: false,
     matchLines: this.sink.matchLines,
     error: null,
+    generation: 0,
   };
 
   subscribe = (listener: () => void) => {
@@ -146,6 +150,7 @@ class SearchStore {
   }
 
   private drop(next: SearchInput): void {
+    this.generation++;
     this.sink = createMatchSink(next.count);
     this.lines = next.lines;
     this.shown = next.shown;
@@ -162,6 +167,7 @@ class SearchStore {
     this.halt();
     const re = compileQuery(input.query, input);
     this.re = re instanceof RegExp ? re : null;
+    this.generation++;
     this.error = re === "invalid" ? "invalid" : null;
     this.sink = createMatchSink(input.count);
     this.lines = input.lines;
@@ -206,6 +212,7 @@ class SearchStore {
       prev.scanning === scanning &&
       prev.matchLines === sink.matchLines &&
       prev.error === this.error &&
+      prev.generation === this.generation &&
       prev.matches.buffer === sink.matches.buffer
     ) {
       return;
@@ -217,6 +224,7 @@ class SearchStore {
       scanning,
       matchLines: sink.matchLines,
       error: this.error,
+      generation: this.generation,
     };
     for (const listener of this.listeners) listener();
   }

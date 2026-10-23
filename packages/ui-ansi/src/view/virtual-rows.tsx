@@ -11,6 +11,7 @@ import {
   type ReactNode,
   type RefObject,
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -19,6 +20,14 @@ import {
 
 /** Rows mounted beyond each edge of the viewport. */
 export const OVERSCAN = 20;
+
+/** Scrolling driven from outside, e.g. going to a search match. */
+export interface VirtualRowsHandle {
+  /** The row at the top of the viewport. */
+  topRow(): number;
+  /** Scrolls so that `row` sits at the top of the viewport, or mid-way down it. */
+  scrollToRow(row: number, align: "top" | "center"): void;
+}
 
 export interface VirtualRowsProps<L> {
   /** The element that scrolls; the rows mount inside it. */
@@ -37,6 +46,7 @@ export interface VirtualRowsProps<L> {
   padding?: number;
   /** Merged into the spacer's style, e.g. a background drawn along the rows. */
   style?: CSSProperties;
+  handle?: RefObject<VirtualRowsHandle | null>;
 }
 
 /**
@@ -74,6 +84,7 @@ export function VirtualRows<L>({
   carryRow,
   padding = 0,
   style,
+  handle,
 }: VirtualRowsProps<L>) {
   const geometry = useMemo(
     () => scrollGeometry(totalRows, rowHeight, viewportHeight),
@@ -153,6 +164,28 @@ export function VirtualRows<L>({
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [geometry.scaled, scrollRef]);
+
+  useImperativeHandle(
+    handle,
+    () => ({
+      topRow: () => topRowRef.current,
+      scrollToRow(row, align) {
+        const el = scrollRef.current;
+        const g = geometryRef.current;
+        const next = clampTopRow(
+          align === "top" ? row : row - Math.floor((g.viewportRows - 1) / 2),
+          g,
+        );
+        topRowRef.current = next;
+        setTop({ row: next, layout: layoutRef.current });
+        if (!el) return;
+        const scrollTop = scrollFromRow(next, g, paddingRef.current);
+        lastWritten.current = scrollTop;
+        el.scrollTop = scrollTop;
+      },
+    }),
+    [scrollRef],
+  );
 
   // A resize, more rows, a re-wrap or a switch between 1:1 and scaled moves
   // the mapping under the top row; the element keeps its old scrollTop.

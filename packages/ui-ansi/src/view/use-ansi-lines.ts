@@ -7,11 +7,11 @@ import {
 import type { LevelDetector } from "../parse/levels.ts";
 import { createAnsiParser, parseAnsi } from "../parse/parser.ts";
 import type { AnsiParse, AnsiParser } from "../parse/types.ts";
+import { runSlices, SLICE_BUDGET_MS } from "./time-slices.ts";
 
 /** Text up to this many UTF-16 units is parsed in one go during render. */
 export const SYNC_PARSE_MAX = 1 << 20;
 const SLICE = 1 << 16;
-const SLICE_BUDGET_MS = 8;
 
 export interface AnsiLines extends AnsiParse {
   /** False while a large text is still being parsed in the background. */
@@ -68,9 +68,6 @@ function slicedStore(text: string, detect: LevelDetector | false): LinesStore {
   const listeners = new Set<() => void>();
   let offset = 0;
   let version = 0;
-  // Each start gets a token, so a tick queued before a stop is ignored even if
-  // the store is started again (StrictMode mounts effects twice).
-  let token = 0;
 
   function take(done: boolean): AnsiLines {
     return {
@@ -89,8 +86,7 @@ function slicedStore(text: string, detect: LevelDetector | false): LinesStore {
     tracker?.push(parser.lines, tracker.count, parser.lines.length);
   }
 
-  function step(): boolean {
-    const deadline = performance.now() + SLICE_BUDGET_MS;
+  function step(deadline: number): boolean {
     do {
       parser.push(text.slice(offset, offset + SLICE));
       offset += SLICE;
@@ -105,7 +101,7 @@ function slicedStore(text: string, detect: LevelDetector | false): LinesStore {
   }
 
   // The first batch runs at once so the first paint already has lines.
-  let snapshot = take(step());
+  let snapshot = take(step(performance.now() + SLICE_BUDGET_MS));
 
   return {
     subscribe(listener) {
@@ -115,26 +111,17 @@ function slicedStore(text: string, detect: LevelDetector | false): LinesStore {
     getSnapshot: () => snapshot,
     start() {
       if (snapshot.done) return noop;
-      const mine = ++token;
-      const channel = new MessageChannel();
-      const port = channel.port2;
-      const close = () => {
-        channel.port1.close();
-        port.close();
-      };
-      channel.port1.onmessage = () => {
-        if (mine !== token) return;
-        const done = step();
-        snapshot = take(done);
-        for (const listener of listeners) listener();
-        if (done) close();
-        else port.postMessage(null);
-      };
-      port.postMessage(null);
-      return () => {
-        if (mine === token) token++;
-        close();
-      };
+      let done = false;
+      return runSlices(
+        (deadline) => {
+          done = step(deadline);
+          return done;
+        },
+        () => {
+          snapshot = take(done);
+          for (const listener of listeners) listener();
+        },
+      );
     },
   };
 }

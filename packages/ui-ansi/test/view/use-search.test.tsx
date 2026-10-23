@@ -371,4 +371,31 @@ describe("useSearch", () => {
     expect(ids.length).toBeGreaterThan(0);
     expect(ids.every((id) => id % 10 === 0)).toBe(true);
   });
+
+  it("changes the generation when a scan starts over, not as it goes on", () => {
+    const lines: AnsiLine[] = LINES.slice(0, 1000);
+    const at = (more: Partial<SearchInput>) =>
+      input({ lines, count: lines.length, ...more });
+    const { result, rerender } = setup(at({ query: "error", done: false }));
+    const idle = result.current.generation;
+    wait();
+    const first = result.current.generation;
+    expect(first).not.toBe(idle);
+    flush();
+    lines.push(...LINES.slice(1000));
+    rerender(at({ query: "error", done: true }));
+    flush();
+    expect(result.current.count).toBe(ERROR_IDS.length);
+    expect(result.current.generation).toBe(first);
+
+    // Old matches stay up through the wait, under the old generation.
+    rerender(at({ query: "error 1", done: true }));
+    expect(result.current.generation).toBe(first);
+    wait();
+    expect(result.current.generation).not.toBe(first);
+
+    const restarted = result.current.generation;
+    rerender(at({ query: "error 1", shown: Uint32Array.of(10, 20) }));
+    expect(result.current.generation).not.toBe(restarted);
+  });
 });
