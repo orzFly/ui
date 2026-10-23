@@ -316,6 +316,32 @@ describe("every primitive renders", () => {
     expect(thumb.getAttribute("aria-valuemax")).toBe("120");
   });
 
+  it("select and tooltip portal into a given container", () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    render(
+      <>
+        <Select open defaultValue="a">
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent container={host}>
+            <SelectItem value="a">A</SelectItem>
+          </SelectContent>
+        </Select>
+        <TooltipProvider>
+          <Tooltip open>
+            <TooltipTrigger>Hint</TooltipTrigger>
+            <TooltipContent container={host}>Tip</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </>,
+    );
+    expect(host.querySelector('[data-slot="select-content"]')).not.toBeNull();
+    expect(host.querySelector('[data-slot="tooltip-content"]')).not.toBeNull();
+    host.remove();
+  });
+
   it("sonner", () => {
     render(<Toaster />);
     expect(screen.getByRole("region")).toBeTruthy();
