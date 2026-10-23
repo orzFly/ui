@@ -7,6 +7,7 @@ import {
 } from "@orz/ui-code/word-diff";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ReactNode, useEffect, useState } from "react";
+import { withWidth } from "./decorators.tsx";
 
 const USAGE = `import { coalescedWordDiff, wordDiff } from "@orz/ui-code/word-diff";
 
@@ -65,6 +66,7 @@ const meta = {
     before: "The quick brown fox jumps over the lazy dog.",
     after: "The quick red fox leaps over the lazy dog.",
   },
+  decorators: [withWidth("max-w-2xl")],
   parameters: { docs: { source: { code: USAGE, language: "ts" } } },
   // Text stays in local state: a late updateArgs would make the caret jump. The effects let
   // the Controls panel still drive the textareas.
@@ -74,7 +76,7 @@ const meta = {
     useEffect(() => setBefore(args.before), [args.before]);
     useEffect(() => setAfter(args.after), [args.after]);
     return (
-      <div className="grid max-w-2xl gap-4">
+      <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="word-diff-before">Before</Label>
           <Textarea

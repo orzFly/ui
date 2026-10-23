@@ -5,16 +5,6 @@ import { describe, expect, it } from "vitest";
 const SRC = new URL("../src/", import.meta.url);
 const PACKAGES = new URL("../../../packages/", import.meta.url);
 
-// Story files not yet rewritten to the convention (UI-56). Each step of the
-// rewrite takes out the files it converts; the last one deletes the set.
-const PENDING = new Set([
-  "code-editor.stories.tsx",
-  "hex-editor.stories.tsx",
-  "hex-inspector.stories.tsx",
-  "hex-view.stories.tsx",
-  "markdown-editor.stories.tsx",
-]);
-
 const GROUPS = new Set(["Foundations", "Primitives", "Hooks"]);
 const TITLE = /^([a-z0-9-]+)\/(?:([A-Z][A-Za-z]*)\/)?([A-Za-z][A-Za-z0-9]*)$/;
 const HOOK = /^use[A-Z]/;
@@ -65,7 +55,6 @@ const stories = files
     return { file, text, csf: csf.parse() };
   });
 type StoryFile = (typeof stories)[number];
-const converted = stories.filter(({ file }) => !PENDING.has(file));
 
 const titleOf = ({ csf }: StoryFile) => csf.meta?.title ?? "";
 const tagsOf = ({ csf }: StoryFile, name: string) => [
@@ -130,13 +119,12 @@ function openingProblem(story: StoryFile): string | null {
 }
 
 describe("stories", () => {
-  it("finds the story files, and every pending one exists", () => {
+  it("finds the story files", () => {
     expect(stories.length).toBeGreaterThan(0);
-    expect([...PENDING].filter((file) => !files.includes(file))).toEqual([]);
   });
 
   it("title their pages <pkg-dir>/[Group/]<Export>", () => {
-    const problems = converted.flatMap((s) => {
+    const problems = stories.flatMap((s) => {
       const p = titleProblem(titleOf(s));
       return p ? [`${s.file}: ${titleOf(s)} ${p}`] : [];
     });
@@ -155,7 +143,7 @@ describe("stories", () => {
   });
 
   it("open with Playground, Usage where there is no component, or a renderer story", () => {
-    const problems = converted.flatMap((s) => {
+    const problems = stories.flatMap((s) => {
       const p = openingProblem(s);
       return p ? [`${s.file}: ${p}`] : [];
     });

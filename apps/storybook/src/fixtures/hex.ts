@@ -1,4 +1,10 @@
-import type { ByteSource, HexEncoding } from "@orz/ui-hex";
+import type {
+  ByteSource,
+  HexCopyResult,
+  HexEncoding,
+  HexPasteResult,
+} from "@orz/ui-hex";
+import { toast } from "sonner";
 
 /** A 24×24 RGB PNG with sRGB, gAMA, pHYs and tEXt chunks before its IDAT. */
 export const SAMPLE_PNG = Uint8Array.from(
@@ -106,6 +112,23 @@ export function syntheticSource({
       });
     },
   };
+}
+
+/** Toasts how a paste went: the editor's `onPaste`. */
+export function reportPaste(result: HexPasteResult) {
+  if (result.ok) {
+    toast.success(
+      `Pasted ${result.bytes} bytes${result.truncated ? ", truncated at the end" : ""}`,
+    );
+  } else {
+    toast.error(`Paste refused: ${result.reason}`);
+  }
+}
+
+/** Toasts how a copy went: the view's and editor's `onCopy`. */
+export function reportCopy(result: HexCopyResult) {
+  if (result.ok) toast.success(`Copied ${result.bytes} bytes`);
+  else toast.error(`Copy failed: ${result.reason}`);
 }
 
 // A copy of ui-hex's encoding test samples, not an import: a story wants a
