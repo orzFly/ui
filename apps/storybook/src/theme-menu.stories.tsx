@@ -1,18 +1,31 @@
 import { builtinThemes } from "@orz/themes";
 import { ThemeEditor } from "@orz/ui/components/theme-editor";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { fn } from "storybook/test";
+import { withOwnStore } from "./decorators.tsx";
 import {
   ember,
   glacier,
   Header,
-  OwnStore,
   PageSample,
   sampleCustomThemes,
   TerminalPane,
 } from "./fixtures/themes.tsx";
+
+/** The story in a page header over a sample page, with a terminal pane if asked. */
+function menuPage(terminal: boolean): Decorator {
+  return (Story) => (
+    <div className="grid max-w-2xl gap-4">
+      <Header>
+        <Story />
+      </Header>
+      <PageSample />
+      {terminal && <TerminalPane />}
+    </div>
+  );
+}
 
 /**
  * Picks a theme for one slot of the store: filter, Auto / Light / Dark, and
@@ -21,9 +34,13 @@ import {
 const meta = {
   title: "ui/ThemeMenu",
   component: ThemeMenu,
+  argTypes: {
+    slot: { control: "inline-radio", options: ["ui", "terminal"] },
+    trigger: { control: false },
+  },
   parameters: {
-    // Each story but Default paints the page from a store of its own; in one
-    // docs page they would repaint each other.
+    // Each story but Playground paints the page from a store of its own; in
+    // one docs page they would repaint each other.
     docs: { story: { inline: false, iframeHeight: 520 } },
   },
 } satisfies Meta<typeof ThemeMenu>;
@@ -32,7 +49,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** Drives the toolbar's store, so a pick here changes the whole preview. */
-export const Default: Story = {};
+export const Playground: Story = {};
 
 /**
  * Both slots: the UI picker in the header, and a terminal pane with a picker
@@ -40,52 +57,15 @@ export const Default: Story = {};
  */
 export const UiAndTerminal: Story = {
   parameters: { layout: "padded" },
-  render: () => (
-    <OwnStore
-      options={{
-        storageKey: "orz-storybook-theme-menu-slots",
-        themes: builtinThemes,
-        terminalThemes: [...builtinThemes, ember, glacier],
-      }}
-    >
-      <div className="grid max-w-2xl gap-4">
-        <Header>
-          <ThemeMenu />
-        </Header>
-        <PageSample />
-        <TerminalPane />
-      </div>
-    </OwnStore>
-  ),
+  decorators: [
+    menuPage(true),
+    withOwnStore({
+      storageKey: "orz-storybook-theme-menu-slots",
+      themes: builtinThemes,
+      terminalThemes: [...builtinThemes, ember, glacier],
+    }),
+  ],
 };
-
-function MenuWithEditor({
-  onCustomize,
-}: {
-  onCustomize?: (id: string | undefined, slot: "ui" | "terminal") => void;
-}) {
-  const [editing, setEditing] = useState<{ id?: string } | null>(null);
-  return (
-    <div className="grid max-w-2xl gap-4">
-      <Header>
-        <ThemeMenu
-          onCustomize={(id, slot) => {
-            onCustomize?.(id, slot);
-            setEditing({ id });
-          }}
-        />
-      </Header>
-      <PageSample />
-      <ThemeEditor
-        open={editing !== null}
-        themeId={editing?.id}
-        onOpenChange={(open) => {
-          if (!open) setEditing(null);
-        }}
-      />
-    </div>
-  );
-}
 
 /**
  * Custom themes lead the list. "Custom themes…" opens the editor on a new
@@ -95,16 +75,36 @@ function MenuWithEditor({
 export const CustomThemes: Story = {
   parameters: { layout: "padded" },
   args: { onCustomize: fn() },
-  render: (args) => (
-    <OwnStore
-      options={{
+  decorators: [
+    menuPage(false),
+    withOwnStore(
+      {
         storageKey: "orz-storybook-theme-menu-custom",
         themes: builtinThemes,
         persistCustomThemes: false,
-      }}
-      setup={(store) => store.setCustomThemes(sampleCustomThemes)}
-    >
-      <MenuWithEditor onCustomize={args.onCustomize} />
-    </OwnStore>
-  ),
+      },
+      (s) => s.setCustomThemes(sampleCustomThemes),
+    ),
+  ],
+  render: function Render(args) {
+    const [editing, setEditing] = useState<{ id?: string } | null>(null);
+    return (
+      <>
+        <ThemeMenu
+          {...args}
+          onCustomize={(id, slot) => {
+            args.onCustomize?.(id, slot);
+            setEditing({ id });
+          }}
+        />
+        <ThemeEditor
+          open={editing !== null}
+          themeId={editing?.id}
+          onOpenChange={(open) => {
+            if (!open) setEditing(null);
+          }}
+        />
+      </>
+    );
+  },
 };

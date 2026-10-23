@@ -17,7 +17,17 @@ type Story = StoryObj<typeof meta>;
 
 const ANSI = TERMINAL_TOKEN_NAMES.filter((name) => name.startsWith("ansi-"));
 
-export const Overview: Story = {
+const USE_TERMINAL_THEME = `import { xtermTheme } from "@orz/themes";
+import { useTerminalTheme } from "@orz/ui/theme";
+
+const { theme, colorScheme, variant, following, tokens } = useTerminalTheme();
+// following: the terminal shows the UI's theme; tokens["ansi-red"], tokens["terminal-background"], …
+const xterm = xtermTheme(tokens);`;
+
+export const Usage: Story = {
+  parameters: {
+    docs: { source: { code: USE_TERMINAL_THEME, language: "tsx" } },
+  },
   render: function Render() {
     const terminal = useTerminalTheme();
     return (

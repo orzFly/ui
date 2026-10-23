@@ -1,11 +1,46 @@
 import {
+  builtinThemes,
   type ColorScheme,
   schemesOf,
   TOKEN_NAMES,
   variantsOf,
 } from "@orz/themes";
-import { useTerminalTheme, useTheme } from "@orz/ui/theme";
+import { ThemeMenu } from "@orz/ui/components/theme-menu";
+import {
+  createThemeStore,
+  ThemeProvider as ThemeProviderView,
+  type ThemeStore,
+  useTerminalTheme,
+  useTheme,
+  useThemeSlots,
+} from "@orz/ui/theme";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Header, PageSample } from "./fixtures/themes.tsx";
+
+const USE_THEME = `import { useTheme } from "@orz/ui/theme";
+
+const { theme, colorScheme, variant, pref, themes, setPref, preview } = useTheme();
+// theme.label, colorScheme ("light" | "dark"), variant: what is shown, a preview included; pref is the committed pick
+setPref({ ...pref, ui: { theme: "dracula", mode: "dark" } });`;
+
+const THEME_PROVIDER = `import { builtinThemes } from "@orz/themes";
+import { ThemeMenu } from "@orz/ui/components/theme-menu";
+import { createThemeStore, ThemeProvider } from "@orz/ui/theme";
+
+// Once, at module load: the store paints <html> (or \`root\`) as soon as it exists.
+const store = createThemeStore({ storageKey: "app-theme", themes: builtinThemes, terminalThemes: builtinThemes });
+
+export function App() {
+  return <ThemeProvider store={store}><ThemeMenu />…</ThemeProvider>;
+}`;
+
+const USE_THEME_SLOTS = `import { useThemeSlots } from "@orz/ui/theme";
+
+const { ui, terminal } = useThemeSlots();
+// createThemeStore({ themes }) → { ui: true, terminal: false }
+// createThemeStore({ terminalThemes }) → { ui: false, terminal: true }
+// outside any ThemeProvider → { ui: true, terminal: false }`;
 
 /** Pick a theme from the toolbar, or click a swatch below; this page follows it. */
 const meta = {
@@ -28,7 +63,8 @@ function Swatch({ surface, accent }: { surface: string; accent: string }) {
   );
 }
 
-export const Overview: Story = {
+export const Usage: Story = {
+  parameters: { docs: { source: { code: USE_THEME, language: "tsx" } } },
   render: function Render() {
     const { pref, themes, theme, colorScheme, variant, setPref } = useTheme();
     const terminal = useTerminalTheme();
@@ -128,6 +164,105 @@ export const Overview: Story = {
           </div>
         </section>
       </div>
+    );
+  },
+};
+
+/**
+ * Every story here already sits under the toolbar's `ThemeProvider`
+ * (`preview.tsx`); this one nests a provider over a store of its own, and the
+ * nearest provider wins. `root` scopes the store's painting to this box.
+ */
+export const ThemeProvider: Story = {
+  parameters: { docs: { source: { code: THEME_PROVIDER, language: "tsx" } } },
+  render: function Render() {
+    const ref = useRef<HTMLDivElement>(null);
+    const [store, setStore] = useState<ThemeStore | null>(null);
+    // A layout effect, so the box's first paint is already in its theme.
+    useLayoutEffect(() => {
+      const own = createThemeStore({
+        storageKey: "orz-storybook-theme-provider",
+        persistPref: false,
+        persistCustomThemes: false,
+        root: ref.current ?? undefined,
+        themes: builtinThemes,
+      });
+      own.setPref({ ui: { theme: "dracula", mode: "dark" } });
+      setStore(own);
+      return () => own.dispose();
+    }, []);
+    return (
+      <div
+        ref={ref}
+        className="grid gap-4 rounded-lg border bg-background p-4 text-foreground"
+      >
+        {store && (
+          <ThemeProviderView store={store}>
+            <Header>
+              <ThemeMenu />
+            </Header>
+            <PageSample />
+          </ThemeProviderView>
+        )}
+      </div>
+    );
+  },
+};
+
+/** Reads `useThemeSlots()` where it is rendered, as a definition-list row. */
+function Slots({ label }: { label: string }) {
+  const s = useThemeSlots();
+  return (
+    <>
+      <dt>{label}</dt>
+      <dd>
+        <code>{JSON.stringify(s)}</code>
+      </dd>
+    </>
+  );
+}
+
+/** Which slots the nearest store has, so a component can hide what it lacks. */
+export const UseThemeSlots: Story = {
+  name: "useThemeSlots",
+  parameters: {
+    docs: { source: { code: USE_THEME_SLOTS, language: "tsx" } },
+  },
+  render: function Render() {
+    // Detached roots: neither store paints anything visible.
+    const [stores] = useState(() => ({
+      ui: createThemeStore({
+        storageKey: "orz-storybook-slots-ui",
+        persistPref: false,
+        persistCustomThemes: false,
+        root: document.createElement("div"),
+        themes: builtinThemes,
+      }),
+      terminal: createThemeStore({
+        storageKey: "orz-storybook-slots-terminal",
+        persistPref: false,
+        persistCustomThemes: false,
+        root: document.createElement("div"),
+        terminalThemes: builtinThemes,
+      }),
+    }));
+    useEffect(
+      () => () => {
+        stores.ui.dispose();
+        stores.terminal.dispose();
+      },
+      [stores],
+    );
+    return (
+      <dl className="grid w-fit grid-cols-[auto_auto] gap-x-6 gap-y-1 text-sm">
+        <Slots label="The toolbar's store" />
+        <ThemeProviderView store={stores.ui}>
+          <Slots label="createThemeStore({ themes })" />
+        </ThemeProviderView>
+        <ThemeProviderView store={stores.terminal}>
+          <Slots label="createThemeStore({ terminalThemes })" />
+        </ThemeProviderView>
+      </dl>
     );
   },
 };

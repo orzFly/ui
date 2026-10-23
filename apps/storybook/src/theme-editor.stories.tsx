@@ -2,20 +2,79 @@ import { builtinThemes } from "@orz/themes";
 import { Button } from "@orz/ui/components/button";
 import { ThemeEditor } from "@orz/ui/components/theme-editor";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { PaletteIcon } from "lucide-react";
-import { useState } from "react";
+import { useArgs } from "storybook/preview-api";
 import { fn } from "storybook/test";
+import { withOwnStore } from "./decorators.tsx";
 import {
   ember,
   glacier,
   Header,
-  OwnStore,
   PageSample,
   sampleCustomThemes,
   sampleTerminalThemes,
   TerminalPane,
 } from "./fixtures/themes.tsx";
+
+/** A page with both menus and a button, each opening the editor through the args. */
+const editorPage: Decorator = (Story) => {
+  const [, updateArgs] = useArgs();
+  const customize = (themeId: string | undefined, kind: "ui" | "terminal") =>
+    updateArgs({ open: true, themeId, kind });
+  return (
+    <div className="grid max-w-2xl gap-4">
+      <Header>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            updateArgs({ open: true, themeId: undefined, kind: undefined })
+          }
+        >
+          <PaletteIcon />
+          Custom themes
+        </Button>
+        <ThemeMenu onCustomize={customize} />
+      </Header>
+      <PageSample />
+      <TerminalPane onCustomize={customize} />
+      <Story />
+    </div>
+  );
+};
+
+/** The same page with a terminal pane alone, for a store with no UI slot. */
+const terminalPage: Decorator = (Story) => {
+  const [, updateArgs] = useArgs();
+  const customize = (themeId: string | undefined, kind: "ui" | "terminal") =>
+    updateArgs({ open: true, themeId, kind });
+  return (
+    <div className="grid max-w-2xl gap-4">
+      <TerminalPane onCustomize={customize} />
+      <Story />
+    </div>
+  );
+};
+
+/**
+ * Both slots, seeded with custom themes of both kinds that are not
+ * persisted, so a reload starts over; the pick is kept under a storage key
+ * of the story's own. Each menu opens the editor on its own slot's kind.
+ */
+const BOTH = {
+  storageKey: "orz-storybook-theme-editor",
+  themes: builtinThemes,
+  terminalThemes: [...builtinThemes, ember, glacier],
+  persistCustomThemes: false,
+};
+// The page inside the store, so its menus read the story's own store.
+const bothSlots = [
+  editorPage,
+  withOwnStore(BOTH, (s) =>
+    s.setCustomThemes([...sampleCustomThemes, ...sampleTerminalThemes]),
+  ),
+];
 
 /**
  * Edits the store's custom themes in a panel docked to the right, while the
@@ -29,9 +88,9 @@ const meta = {
   component: ThemeEditor,
   args: { open: false, onOpenChange: fn() },
   argTypes: {
-    open: { control: false },
-    themeId: { control: false },
-    kind: { control: false },
+    open: { control: "boolean" },
+    themeId: { control: "text" },
+    kind: { control: "inline-radio", options: ["ui", "terminal"] },
   },
   parameters: {
     layout: "padded",
@@ -39,80 +98,36 @@ const meta = {
     // they would repaint each other.
     docs: { story: { inline: false, iframeHeight: 720 } },
   },
+  render: function Render(args) {
+    const [, updateArgs] = useArgs<typeof args>();
+    return (
+      <ThemeEditor
+        {...args}
+        onOpenChange={(open) => {
+          args.onOpenChange(open);
+          if (!open)
+            updateArgs({ open: false, themeId: undefined, kind: undefined });
+        }}
+      />
+    );
+  },
 } satisfies Meta<typeof ThemeEditor>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-type Editing = { id?: string; slot?: "ui" | "terminal" };
-
-/**
- * Both slots, seeded with custom themes of both kinds that are not
- * persisted, so a reload starts over; the pick is kept under a storage key
- * of the story's own. Each menu opens the editor on its own slot's kind.
- */
-function EditorDemo({
-  initial,
-  onOpenChange,
-}: {
-  initial?: Editing;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const [editing, setEditing] = useState<Editing | null>(initial ?? null);
-  const customize = (id: string | undefined, slot: "ui" | "terminal") =>
-    setEditing({ id, slot });
-  return (
-    <OwnStore
-      options={{
-        storageKey: "orz-storybook-theme-editor",
-        themes: builtinThemes,
-        terminalThemes: [...builtinThemes, ember, glacier],
-        persistCustomThemes: false,
-      }}
-      setup={(store) =>
-        store.setCustomThemes([...sampleCustomThemes, ...sampleTerminalThemes])
-      }
-    >
-      <div className="grid max-w-2xl gap-4">
-        <Header>
-          <Button variant="outline" size="sm" onClick={() => setEditing({})}>
-            <PaletteIcon />
-            Custom themes
-          </Button>
-          <ThemeMenu onCustomize={customize} />
-        </Header>
-        <PageSample />
-        <TerminalPane onCustomize={customize} />
-      </div>
-      <ThemeEditor
-        open={editing !== null}
-        themeId={editing?.id}
-        kind={editing?.slot}
-        onOpenChange={(open) => {
-          onOpenChange(open);
-          if (!open) setEditing(null);
-        }}
-      />
-    </OwnStore>
-  );
-}
-
 /**
  * Closed until "Custom themes" or a `ThemeMenu`'s "Custom themes…" and edit
  * buttons open it.
  */
-export const Default: Story = {
-  render: (args) => <EditorDemo onOpenChange={args.onOpenChange} />,
+export const Playground: Story = {
+  decorators: bothSlots,
 };
 
 /** Open on Paper & Ink: Solarized and Dracula AMOLED with a few overrides. */
 export const EditingTheme: Story = {
-  render: (args) => (
-    <EditorDemo
-      initial={{ id: "custom-paper-ink" }}
-      onOpenChange={args.onOpenChange}
-    />
-  ),
+  args: { open: true, themeId: "custom-paper-ink" },
+  decorators: bothSlots,
 };
 
 /**
@@ -120,12 +135,8 @@ export const EditingTheme: Story = {
  * out of the menus, and the editor offers to repair it.
  */
 export const MissingBase: Story = {
-  render: (args) => (
-    <EditorDemo
-      initial={{ id: "custom-driftwood" }}
-      onOpenChange={args.onOpenChange}
-    />
-  ),
+  args: { open: true, themeId: "custom-driftwood" },
+  decorators: bothSlots,
 };
 
 /**
@@ -134,12 +145,8 @@ export const MissingBase: Story = {
  * two kinds, and + New asks which one to make.
  */
 export const BothSlots: Story = {
-  render: (args) => (
-    <EditorDemo
-      initial={{ slot: "terminal" }}
-      onOpenChange={args.onOpenChange}
-    />
-  ),
+  args: { open: true, kind: "terminal" },
+  decorators: bothSlots,
 };
 
 /**
@@ -148,36 +155,15 @@ export const BothSlots: Story = {
  * Ember with two colours changed; Moss is fully custom.
  */
 export const TerminalOnly: Story = {
-  render: (args) => <TerminalOnlyDemo onOpenChange={args.onOpenChange} />,
-};
-
-function TerminalOnlyDemo({
-  onOpenChange,
-}: {
-  onOpenChange: (open: boolean) => void;
-}) {
-  const [editing, setEditing] = useState<Editing | null>(null);
-  return (
-    <OwnStore
-      options={{
+  decorators: [
+    terminalPage,
+    withOwnStore(
+      {
         storageKey: "orz-storybook-theme-editor-terminal",
         terminalThemes: [...builtinThemes, ember, glacier],
         persistCustomThemes: false,
-      }}
-      setup={(store) => store.setCustomThemes(sampleTerminalThemes)}
-    >
-      <div className="grid max-w-2xl gap-4">
-        <TerminalPane onCustomize={(id, slot) => setEditing({ id, slot })} />
-      </div>
-      <ThemeEditor
-        open={editing !== null}
-        themeId={editing?.id}
-        kind={editing?.slot}
-        onOpenChange={(open) => {
-          onOpenChange(open);
-          if (!open) setEditing(null);
-        }}
-      />
-    </OwnStore>
-  );
-}
+      },
+      (s) => s.setCustomThemes(sampleTerminalThemes),
+    ),
+  ],
+};
