@@ -49,19 +49,6 @@ A bare +/- snippet is not a patch, and stays highlighted text without a complain
 \`\`\`
 `;
 
-const EMBEDS = `A \`git format-patch\` series, embedded. The file list and *raw* sit in the card's title bar:
-
-![](files/series.patch)
-
-A plain diff uploaded as \`application/octet-stream\`, recognised by its name:
-
-![](files/pause.diff)
-
-A \`.patch\` that is not one says so:
-
-![](files/notes.patch)
-`;
-
 function FencesDemo({ source }: { source: string }) {
   return (
     <Surface>
@@ -85,9 +72,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Fences: Story = {};
-
-/** Patch files in attachment cards, which lend their title bar to the patch's controls. */
-export const AttachmentCards: Story = { args: { source: EMBEDS } };
 
 function ViewerButtons() {
   const viewer = useAttachmentViewer();
