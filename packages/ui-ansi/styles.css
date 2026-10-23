@@ -27,8 +27,7 @@
     --log-level: var(--ansi-bright-black);
   }
 
-  /* An inset shadow and a background, so the marking adds no width or height
-     and the text and run backgrounds paint over it. */
+  /* A background, so the text and run backgrounds paint over it. */
   .ansi-view
   [data-line]:is(
     [data-level="fatal"],
@@ -36,8 +35,23 @@
     [data-level="warn"]
   ) {
     --log-stripe: var(--log-level);
-    box-shadow: inset 3px 0 var(--log-stripe);
     background-color: color-mix(in srgb, var(--log-level) 12%, transparent);
+  }
+  /* In the scroll container's left padding (its px-3): on the row itself it
+     would cover the first glyph of a pane, or of a one-digit gutter. */
+  .ansi-view
+  [data-line]:is(
+    [data-level="fatal"],
+    [data-level="error"],
+    [data-level="warn"]
+  )::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: -0.75rem;
+    width: 3px;
+    background: var(--log-stripe);
+    pointer-events: none;
   }
   .ansi-view [data-line][data-level="warn"] {
     background-color: color-mix(in srgb, var(--log-level) 10%, transparent);
