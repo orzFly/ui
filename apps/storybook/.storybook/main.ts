@@ -18,6 +18,9 @@ const config: Config = {
   stories: ["../src/**/*.stories.tsx"],
   addons: ["@storybook/addon-docs", "@storybook/addon-a11y"],
   core: { disableTelemetry: true },
+  // Edge, perf and regression stories: out of the sidebar until its tag
+  // filter selects them; their own "!autodocs" keeps them off the docs page.
+  tags: { edge: { defaultFilterSelection: "exclude" } },
   // First, so the island has set globalThis.__ORZ_TOOLBAR__ by the time
   // manager.ts, the last entry, reads it.
   managerEntries: async (entries = [], options) => [

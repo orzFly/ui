@@ -1,5 +1,6 @@
 import { CodeBlock, fenceFilename } from "@orz/ui-code";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { withWidth } from "./decorators.tsx";
 
 const SNIPPET = `/** 取消当前操作，返回上一层。 */
 export function cancel(reason?: string): void {
@@ -68,21 +69,22 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Snippet: Story = {};
+export const Playground: Story = {};
 
-export const WholeFile: Story = {
+export const LineNumbers: Story = {
   args: { filename: "tasks.ts", contents: WHOLE_FILE, lineNumbers: true },
 };
 
 export const FenceTags: Story = {
-  render: () => (
-    <div className="grid max-w-xl gap-4">
+  decorators: [withWidth("max-w-xl")],
+  render: (args) => (
+    <div className="grid gap-4">
       {FENCES.map(({ tag, code }) => (
         <div key={tag} className="grid gap-1">
           <p className="text-muted-foreground text-sm">
             <code>{tag}</code> → <code>{fenceFilename(tag)}</code>
           </p>
-          <CodeBlock filename={fenceFilename(tag)} contents={code} />
+          <CodeBlock {...args} filename={fenceFilename(tag)} contents={code} />
         </div>
       ))}
     </div>
@@ -90,5 +92,6 @@ export const FenceTags: Story = {
 };
 
 export const Empty: Story = {
+  tags: ["edge", "!autodocs"],
   args: { filename: "empty.txt", contents: "" },
 };

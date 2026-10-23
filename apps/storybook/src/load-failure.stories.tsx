@@ -1,4 +1,7 @@
-import { LoadFailure, RefreshFailure } from "@orz/ui/components/load-failure";
+import {
+  LoadFailure,
+  RefreshFailure as RefreshFailureView,
+} from "@orz/ui/components/load-failure";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 
@@ -24,11 +27,11 @@ export const ExtraSmall: Story = { args: { size: "xs" } };
 
 export const Retrying: Story = { args: { retrying: true } };
 
-export const Refresh: Story = {
+export const RefreshFailure: Story = {
   render: (args) => (
     <div className="grid gap-3">
       {(["sm", "xs"] as const).map((size) => (
-        <RefreshFailure
+        <RefreshFailureView
           key={size}
           what="the inbox"
           detail="503 Service Unavailable"

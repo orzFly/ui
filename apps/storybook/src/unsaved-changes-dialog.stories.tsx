@@ -4,21 +4,66 @@ import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog"
 import { hasUnsavedWork, useDirtySource } from "@orz/ui/lib/unsaved-guard";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { useArgs } from "storybook/preview-api";
 import { fn } from "storybook/test";
+import { withOpener, withWidth } from "./decorators.tsx";
+
+const REGISTRY_SOURCE = `import { Button } from "@orz/ui/components/button";
+import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog";
+import { hasUnsavedWork, useDirtySource } from "@orz/ui/lib/unsaved-guard";
+
+// In an editor: registered while mounted, dirty while there is a draft.
+useDirtySource(() => draft !== "");
+
+// Where the app leaves the page (a router's blocker, a "Back" button):
+const [asking, setAsking] = useState(false);
+<>
+  <Button onClick={() => (hasUnsavedWork() ? setAsking(true) : leave())}>Leave</Button>
+  <UnsavedChangesDialog
+    open={asking}
+    onProceed={() => {
+      setAsking(false);
+      leave();
+    }}
+    onStay={() => setAsking(false)}
+  />
+</>`;
 
 const meta = {
   title: "ui/UnsavedChangesDialog",
   component: UnsavedChangesDialog,
-  args: { open: true, onProceed: fn(), onStay: fn() },
+  args: { open: false, onProceed: fn(), onStay: fn() },
+  render: function Render(args) {
+    const [, updateArgs] = useArgs<typeof args>();
+    return (
+      <UnsavedChangesDialog
+        {...args}
+        onProceed={() => {
+          args.onProceed();
+          updateArgs({ open: false });
+        }}
+        onStay={() => {
+          args.onStay();
+          updateArgs({ open: false });
+        }}
+      />
+    );
+  },
 } satisfies Meta<typeof UnsavedChangesDialog>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Open: Story = {};
+export const Playground: Story = {
+  decorators: [withOpener("Leave…")],
+};
 
 /** A stand-in for a router: "Leave" asks the dirty-source registry first. */
 export const WithRegistry: Story = {
+  decorators: [withWidth("max-w-sm")],
+  parameters: {
+    docs: { source: { code: REGISTRY_SOURCE, language: "tsx" } },
+  },
   render: function Render(args) {
     const [draft, setDraft] = useState("");
     const [asking, setAsking] = useState(false);
@@ -35,7 +80,7 @@ export const WithRegistry: Story = {
         </Button>
       );
     return (
-      <div className="grid max-w-sm gap-2">
+      <div className="grid gap-2">
         <Textarea
           aria-label="Draft"
           placeholder="Type, then leave"

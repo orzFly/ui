@@ -4,8 +4,7 @@ import type { HexEncoding } from "../../src/encodings.ts";
  * One sample buffer per multi-byte encoding, plus three table-built ones:
  * a 16-byte binary header, ASCII, multi-byte text, then one invalid sequence.
  * In each multi-byte sample the first multi-byte glyph crosses offset 0x20,
- * the end of row 1 at 16 columns. The tests and the Storybook `Encodings`
- * story share these bytes.
+ * the end of row 1 at 16 columns.
  */
 export interface EncodingSample {
   bytes: Uint8Array;

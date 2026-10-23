@@ -1,77 +1,31 @@
 import {
   type CompiledQuerySchema,
   defineQuerySchema,
-  diagnoseQuery,
   parseQuery,
-  type QuerySchema,
-  queryFilters,
-  queryTerms,
-  type ValueOption,
-  type ValueProviders,
 } from "@orz/query";
 import { QueryBox, type RowSource } from "@orz/ui/components/query-box";
 import { highlightQuery } from "@orz/ui/components/query-highlight";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ClockIcon, SearchIcon } from "lucide-react";
-import { useState } from "react";
-
-type Escapes = "plain" | "shell";
-
-const qualifiers = {
-  is: {
-    value: { kind: "enum", values: ["open", "closed"] },
-    hint: "open or closed",
-  },
-  label: { value: { kind: "named", source: "label" }, hint: "a label name" },
-  assignee: {
-    value: { kind: "named", source: "member", special: ["@me"] },
-    hint: "a login, or @me",
-  },
-} satisfies QuerySchema["qualifiers"];
+import { useEffect, useState } from "react";
+import { fn } from "storybook/test";
+import { withWidth } from "./decorators.tsx";
+import { PROVIDERS, QUALIFIERS } from "./fixtures/query.ts";
 
 // Compiled once per mode at module load, as an app would: the schema is a
 // static table, and a new object per render would defeat memoised parsing.
-const SCHEMAS: Record<Escapes, CompiledQuerySchema> = {
-  plain: defineQuerySchema({ qualifiers, braces: true, maxFilters: 8 }),
+const SCHEMAS: Record<"plain" | "shell", CompiledQuerySchema> = {
+  plain: defineQuerySchema({
+    qualifiers: QUALIFIERS,
+    braces: true,
+    maxFilters: 8,
+  }),
   shell: defineQuerySchema({
-    qualifiers,
+    qualifiers: QUALIFIERS,
     braces: true,
     maxFilters: 8,
     escapes: "shell",
   }),
-};
-
-const MEMBERS: readonly ValueOption[] = [
-  { value: "alice", hint: "Alice" },
-  { value: "bot-one", hint: "a bot" },
-  { value: "claude-agent", hint: "an agent" },
-  { value: "newcomer", hint: "joined this week" },
-];
-
-/** Stands in for a server round trip, slow enough to see the wait. */
-const searchMembers = (prefix: string, signal: AbortSignal) =>
-  new Promise<readonly ValueOption[]>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      const lower = prefix.toLowerCase();
-      resolve(MEMBERS.filter((m) => m.value.startsWith(lower)));
-    }, 400);
-    signal.addEventListener("abort", () => {
-      clearTimeout(timer);
-      reject(signal.reason);
-    });
-  });
-
-const PROVIDERS: ValueProviders = {
-  label: {
-    options: [
-      { value: "kind:bug" },
-      { value: "kind:feature" },
-      { value: "area:web" },
-      { value: "area:ui" },
-      { value: "In Progress", hint: "has a space" },
-    ],
-  },
-  member: { search: searchMembers },
 };
 
 type Past = { q: string };
@@ -82,101 +36,136 @@ const INITIAL_HISTORY: readonly Past[] = [
   { q: "flaky test" },
 ];
 
-function QueryBoxDemo({ escapes }: { escapes: Escapes }) {
-  const schema = SCHEMAS[escapes];
-  const [value, setValue] = useState("");
-  const [past, setPast] = useState<readonly Past[]>(INITIAL_HISTORY);
-  const [submitted, setSubmitted] = useState<string | null>(null);
+// Written by hand: the story wires a schema, providers, a history source and
+// highlightQuery into the box, and the generated snippet would print the
+// compiled schema, Map and all.
+const querySource = (
+  shell: boolean,
+) => `import { defineQuerySchema, parseQuery, type ValueProviders } from "@orz/query";
+import { QueryBox, type RowSource } from "@orz/ui/components/query-box";
+import { highlightQuery } from "@orz/ui/components/query-highlight";
 
-  const record = (q: string) => {
-    setSubmitted(q);
-    setPast((entries) => [{ q }, ...entries.filter((e) => e.q !== q)]);
-  };
+// Once, at module load: parsing is memoised per schema.
+const schema = defineQuerySchema({ qualifiers: { is, label, assignee }, braces: true, maxFilters: 8${shell ? ', escapes: "shell"' : ""} });
 
-  const needle = value.trim().toLowerCase();
-  const history: RowSource<Past> = {
-    id: "history",
-    matched: false,
-    yields: true,
-    rows: past.filter((e) => e.q.toLowerCase().includes(needle)),
-    key: (row) => row.q,
-    render: (row, option) => (
-      <div {...option}>
-        <ClockIcon
-          className="size-3.5 shrink-0 text-muted-foreground"
-          aria-hidden
-        />
-        <span className="truncate">
-          {highlightQuery(row.q, parseQuery(schema, row.q), schema, PROVIDERS)}
-        </span>
-      </div>
-    ),
-    apply: (row) => ({ value: row.q, caret: row.q.length }),
-    remove: (row) => setPast((entries) => entries.filter((e) => e !== row)),
-  };
+const providers: ValueProviders = {
+  label: { options: [{ value: "kind:bug" }, { value: "area:web" }] },
+  member: { search: (prefix, signal) => searchMembers(prefix, signal) },
+};
 
-  const parts = parseQuery(schema, value);
+type Past = { q: string };
 
-  return (
-    <div className="grid max-w-xl gap-3">
-      <QueryBox<Past>
-        schema={schema}
-        providers={PROVIDERS}
-        value={value}
-        onValueChange={setValue}
-        onSubmit={(query, chosen) => {
-          const q = chosen?.q ?? query;
-          setValue(q);
-          record(q);
-        }}
-        sources={[history]}
-        renderSubmitRow={(query, option) => (
-          <div {...option}>
-            <SearchIcon
-              className="size-3.5 shrink-0 text-muted-foreground"
-              aria-hidden
-            />
-            <span className="truncate">Search for “{query}”</span>
-          </div>
-        )}
-        listAlign="start"
-        leading={
-          <SearchIcon className="size-3.5 text-muted-foreground" aria-hidden />
-        }
-        inputProps={{ "aria-label": "Search", placeholder: "Search…" }}
-      />
-      <p className="text-muted-foreground text-sm">
-        Last submitted: <code>{submitted ?? "nothing yet"}</code>
-      </p>
-      <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs">
-        {JSON.stringify(
-          {
-            terms: queryTerms(parts),
-            filters: queryFilters(parts),
-            diagnostics: diagnoseQuery(schema, parts, PROVIDERS),
-            parts,
-          },
-          null,
-          2,
-        )}
-      </pre>
-    </div>
-  );
-}
+const [value, setValue] = useState("");
+const history: RowSource<Past> = {
+  id: "history",
+  matched: false,
+  yields: true,
+  rows: past.filter((e) => e.q.includes(value.trim())),
+  key: (row) => row.q,
+  render: (row, option) => (
+    <div {...option}>{highlightQuery(row.q, parseQuery(schema, row.q), schema, providers)}</div>
+  ),
+  apply: (row) => ({ value: row.q, caret: row.q.length }),
+  remove: (row) => forget(row),
+};
+
+<QueryBox
+  schema={schema}
+  providers={providers}
+  value={value}
+  onValueChange={setValue}
+  onSubmit={(query, chosen) => search(chosen?.q ?? query)}
+  sources={[history]}
+  renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
+  inputProps={{ "aria-label": "Search" }}
+/>`;
 
 const meta = {
   title: "ui/QueryBox",
-  args: { escapes: "plain" as Escapes },
-  argTypes: {
-    escapes: {
-      control: "inline-radio",
-      options: ["plain", "shell"],
-      description:
-        "How quotes and backslashes read: `plain` is todou's grammar, `shell` reads words as a POSIX shell would.",
-    },
+  component: QueryBox,
+  args: {
+    schema: SCHEMAS.plain,
+    providers: PROVIDERS,
+    value: "",
+    onValueChange: fn(),
+    onSubmit: fn(),
+    renderSubmitRow: (query, option) => (
+      <div {...option}>
+        <SearchIcon
+          className="size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden
+        />
+        <span className="truncate">Search for “{query}”</span>
+      </div>
+    ),
+    listAlign: "start",
+    leading: (
+      <SearchIcon className="size-3.5 text-muted-foreground" aria-hidden />
+    ),
+    inputProps: { "aria-label": "Search", placeholder: "Search…" },
   },
-  render: ({ escapes }) => <QueryBoxDemo key={escapes} escapes={escapes} />,
-} satisfies Meta<{ escapes: Escapes }>;
+  argTypes: {
+    schema: { control: false },
+    providers: { control: false },
+    sources: { control: false },
+    renderSubmitRow: { control: false },
+    leading: { control: false },
+  },
+  parameters: {
+    docs: { source: { code: querySource(false), language: "tsx" } },
+  },
+  decorators: [withWidth("max-w-xl")],
+  // The text lives in state, not in the args: a late `updateArgs` would make
+  // the caret jump. The effect still lets the `value` control drive it.
+  render: function Render(args) {
+    const [value, setValue] = useState(args.value);
+    useEffect(() => setValue(args.value), [args.value]);
+    const [past, setPast] = useState<readonly Past[]>(INITIAL_HISTORY);
+    const needle = value.trim().toLowerCase();
+    const history: RowSource<Past> = {
+      id: "history",
+      matched: false,
+      yields: true,
+      rows: past.filter((e) => e.q.toLowerCase().includes(needle)),
+      key: (row) => row.q,
+      render: (row, option) => (
+        <div {...option}>
+          <ClockIcon
+            className="size-3.5 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
+          <span className="truncate">
+            {highlightQuery(
+              row.q,
+              parseQuery(args.schema, row.q),
+              args.schema,
+              args.providers,
+            )}
+          </span>
+        </div>
+      ),
+      apply: (row) => ({ value: row.q, caret: row.q.length }),
+      remove: (row) => setPast((e) => e.filter((x) => x !== row)),
+    };
+    return (
+      <QueryBox<Past>
+        {...args}
+        value={value}
+        sources={[history]}
+        onValueChange={(next) => {
+          setValue(next);
+          args.onValueChange(next);
+        }}
+        onSubmit={(query, chosen) => {
+          const q = chosen?.q ?? query;
+          setValue(q);
+          setPast((e) => [{ q }, ...e.filter((x) => x.q !== q)]);
+          args.onSubmit(query, chosen);
+        }}
+      />
+    );
+  },
+} satisfies Meta<typeof QueryBox<Past>>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -185,20 +174,26 @@ type Story = StoryObj<typeof meta>;
  * Type `label:` for the label list, Tab to take the first offer, or arrow
  * down and press Enter. `assignee:` asks a slow search provider, so its rows
  * arrive after a short wait. Braces are on: `label:{kind:bug,area:` completes
- * inside the group, and the parse below shows the expansion. A value the
- * schema does not know (`is:opne`, `label:nope`) is underlined and reported
- * under `diagnostics`.
+ * inside the group. A value the schema does not know (`is:opne`,
+ * `label:nope`) is underlined.
  *
  * Past queries form the history source: they fill whatever room the
  * completions leave, Tab loads one into the box, and Shift+Delete on a
  * highlighted one forgets it. Escape closes the panel.
  *
- * Switch `escapes` to `shell` to quote inside values: `label:'In Progress'`
+ * Switch to `ShellEscapes` to quote inside values: `label:'In Progress'`
  * or `label:a\,b` hold one value each.
  */
 export const Playground: Story = {};
 
-/** Shell escaping, where quotes and backslashes inside a value are muted. */
+/**
+ * Shell escaping, where quotes and backslashes inside a value are muted.
+ * `escapes` sets how quotes and backslashes read: `plain` is todou's grammar,
+ * `shell` reads words as a POSIX shell would.
+ */
 export const ShellEscapes: Story = {
-  args: { escapes: "shell" },
+  args: { schema: SCHEMAS.shell },
+  parameters: {
+    docs: { source: { code: querySource(true), language: "tsx" } },
+  },
 };

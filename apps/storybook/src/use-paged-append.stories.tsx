@@ -1,9 +1,27 @@
 import { usePagedAppend } from "@orz/ui/hooks/use-paged-append";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { withWidth } from "./decorators.tsx";
+
+const USAGE = `import { usePagedAppend } from "@orz/ui/hooks/use-paged-append";
+
+function Items({ list }: { list: string }) {
+  // Pages start over when the list changes; a late answer for the old list is dropped.
+  const { pages, pending, error, append } = usePagedAppend<Item[]>(list);
+  return (
+    <>
+      <ul>{pages.flat().map((item) => <li key={item.id}>{item.name}</li>)}</ul>
+      <Button disabled={pending} onClick={() => append(() => fetchPage(list, pages.length))}>
+        Load more
+      </Button>
+      {error && <p>{error.message}</p>}
+    </>
+  );
+}`;
 
 const meta = {
   title: "ui/Hooks/usePagedAppend",
+  decorators: [withWidth("max-w-sm")],
 } satisfies Meta;
 
 export default meta;
@@ -28,14 +46,15 @@ function fetchPage(list: List, page: number, fail: boolean) {
  * Switch the list while a page is loading: the reset key changes, the pages
  * start over, and the answer for the old list is dropped when it arrives.
  */
-export const SwitchingLists: Story = {
+export const Usage: Story = {
+  parameters: { docs: { source: { code: USAGE, language: "tsx" } } },
   render: function Render() {
     const [list, setList] = useState<List>("fruit");
     const [fail, setFail] = useState(false);
     const { pages, pending, error, append } = usePagedAppend<string[]>(list);
     const exhausted = pages.length * 2 >= LISTS[list].length;
     return (
-      <div className="grid max-w-sm gap-3">
+      <div className="grid gap-3">
         <div className="flex items-center gap-2">
           {(Object.keys(LISTS) as List[]).map((name) => (
             <button

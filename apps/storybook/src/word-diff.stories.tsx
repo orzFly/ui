@@ -6,18 +6,22 @@ import {
   wordDiff,
 } from "@orz/ui-code/word-diff";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { withWidth } from "./decorators.tsx";
+
+const USAGE = `import { coalescedWordDiff, wordDiff } from "@orz/ui-code/word-diff";
+
+const exact = wordDiff(before, after);           // the bare word-level diff
+const { ins, del } = coalescedWordDiff(before, after); // what a reader should see
+// ins: [start, end) ranges in \`after\`
+// del: { at, from, to }: a caret in \`after\` and the deleted range in \`before\``;
 
 /** The new text with insertions marked, and each deletion quoted from the old text at its caret. */
-function Marked({
-  oldText,
-  newText,
-  result,
-}: {
-  oldText: string;
-  newText: string;
-  result: WordDiffResult;
-}) {
+function marks(
+  oldText: string,
+  newText: string,
+  result: WordDiffResult,
+): ReactNode[] {
   const parts: ReactNode[] = [];
   const dels = [...result.del];
   const inss = [...result.ins];
@@ -53,61 +57,63 @@ function Marked({
     }
   }
   if (pos < newText.length) parts.push(newText.slice(pos));
-  return <p className="whitespace-pre-wrap leading-relaxed">{parts}</p>;
-}
-
-function WordDiffDemo(props: { before: string; after: string }) {
-  const [before, setBefore] = useState(props.before);
-  const [after, setAfter] = useState(props.after);
-  return (
-    <div className="grid max-w-2xl gap-4">
-      <div className="grid gap-2">
-        <Label htmlFor="word-diff-before">Before</Label>
-        <Textarea
-          id="word-diff-before"
-          value={before}
-          onChange={(event) => setBefore(event.target.value)}
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor="word-diff-after">After</Label>
-        <Textarea
-          id="word-diff-after"
-          value={after}
-          onChange={(event) => setAfter(event.target.value)}
-        />
-      </div>
-      <section className="grid gap-1">
-        <h3 className="font-medium text-sm">wordDiff</h3>
-        <Marked
-          oldText={before}
-          newText={after}
-          result={wordDiff(before, after)}
-        />
-      </section>
-      <section className="grid gap-1">
-        <h3 className="font-medium text-sm">coalescedWordDiff</h3>
-        <Marked
-          oldText={before}
-          newText={after}
-          result={coalescedWordDiff(before, after)}
-        />
-      </section>
-    </div>
-  );
+  return parts;
 }
 
 const meta = {
-  title: "ui-code/Word diff",
-  component: WordDiffDemo,
-  // The args only seed the textareas, so a Controls edit has to remount them.
-  render: (args) => (
-    <WordDiffDemo key={`${args.before}\u0000${args.after}`} {...args} />
-  ),
-} satisfies Meta<typeof WordDiffDemo>;
+  title: "ui-code/wordDiff",
+  args: {
+    before: "The quick brown fox jumps over the lazy dog.",
+    after: "The quick red fox leaps over the lazy dog.",
+  },
+  decorators: [withWidth("max-w-2xl")],
+  parameters: { docs: { source: { code: USAGE, language: "ts" } } },
+  // Text stays in local state: a late updateArgs would make the caret jump. The effects let
+  // the Controls panel still drive the textareas.
+  render: function Render(args) {
+    const [before, setBefore] = useState(args.before);
+    const [after, setAfter] = useState(args.after);
+    useEffect(() => setBefore(args.before), [args.before]);
+    useEffect(() => setAfter(args.after), [args.after]);
+    return (
+      <div className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="word-diff-before">Before</Label>
+          <Textarea
+            id="word-diff-before"
+            value={before}
+            onChange={(event) => setBefore(event.target.value)}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="word-diff-after">After</Label>
+          <Textarea
+            id="word-diff-after"
+            value={after}
+            onChange={(event) => setAfter(event.target.value)}
+          />
+        </div>
+        <section className="grid gap-1">
+          <h3 className="font-medium text-sm">wordDiff</h3>
+          <p className="whitespace-pre-wrap leading-relaxed">
+            {marks(before, after, wordDiff(before, after))}
+          </p>
+        </section>
+        <section className="grid gap-1">
+          <h3 className="font-medium text-sm">coalescedWordDiff</h3>
+          <p className="whitespace-pre-wrap leading-relaxed">
+            {marks(before, after, coalescedWordDiff(before, after))}
+          </p>
+        </section>
+      </div>
+    );
+  },
+} satisfies Meta<{ before: string; after: string }>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const Usage: Story = {};
 
 export const Cjk: Story = {
   args: {
@@ -122,12 +128,5 @@ export const HeavyRewrite: Story = {
       "parser.ts 手写了一个递归下降解析器（不支持注释，也不引依赖），format() 改用它输出。表格的列宽从「经常错位」变成对齐可读——这是这次改动的目的。",
     after:
       "引入一个成熟的解析库（支持注释、容错恢复，无 native 依赖），format() 的 padding 改按它计算。注释、空行和长字符串都由库处理，比手写解析器可靠。表格的列宽从「经常错位」变成对齐可读——这是这次改动的目的。",
-  },
-};
-
-export const SmallEdit: Story = {
-  args: {
-    before: "The quick brown fox jumps over the lazy dog.",
-    after: "The quick red fox leaps over the lazy dog.",
   },
 };

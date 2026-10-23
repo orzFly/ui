@@ -1,10 +1,11 @@
-import { ansiContent } from "@orz/ui-ansi";
+import { ansiContent, logContent } from "@orz/ui-ansi";
 import { codeContent } from "@orz/ui-code";
-import { ContentRenderers } from "@orz/ui-content";
 import { Markdown } from "@orz/ui-markdown";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { withRenderers, withWidth } from "./decorators.tsx";
+import { registrationSnippet } from "./snippets.ts";
 
-const SAMPLE = `The \`ansi\` fence draws its escapes; the \`sh\` fence below it goes on to the code renderer.
+const ANSI_FENCE = `The \`ansi\` fence draws its escapes; the \`sh\` fence below it goes on to the code renderer.
 
 \`\`\`ansi
 \x1b[1m$ pnpm test\x1b[0m
@@ -19,29 +20,74 @@ pnpm test
 \`\`\`
 `;
 
-const RENDERERS = [ansiContent, codeContent];
+const LOG_FENCE = `The \`log\` fence is coloured by level; a fence has no level filter or search box.
 
-function FencesDemo({ source }: { source: string }) {
-  return (
-    <ContentRenderers renderers={RENDERERS}>
-      <div className="max-w-3xl">
-        <Markdown>{source}</Markdown>
-      </div>
-    </ContentRenderers>
-  );
-}
+\`\`\`log
+2026-10-23 09:14:02.118 INFO  [main] c.e.app.Server - Starting server on port 8080
+2026-10-23 09:14:02.240 DEBUG [main] c.e.app.Config - loaded 42 keys from config.yaml
+2026-10-23 09:14:03.007 WARN  [pool-1] c.e.db.Pool - connection slow: 812 ms to db.example
+2026-10-23 09:14:04.101 ERROR [req-81] c.e.api.Handler - request failed: GET /api/items/7
+java.lang.IllegalStateException: item 7 has no owner
+\tat com.example.api.Handler.load(Handler.java:88)
+\t... 23 more
+Done in 3.2s.
+\`\`\`
+`;
+
+/** `@orz/ui-ansi`'s renderers, registered with `@orz/ui-content`. */
+const meta = {
+  title: "ui-ansi/Content",
+  decorators: [withWidth("max-w-3xl")],
+} satisfies Meta;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
 
 /**
  * An `ansi` fence in `<Markdown>`, drawn by registering `@orz/ui-ansi`'s `ansiContent` before
  * `codeContent`, which takes every other fence.
  */
-const meta = {
-  title: "ui-ansi/In markdown",
-  component: FencesDemo,
-  args: { source: SAMPLE },
-} satisfies Meta<typeof FencesDemo>;
+export const Ansi: Story = {
+  render: () => <Markdown>{ANSI_FENCE}</Markdown>,
+  decorators: [withRenderers(ansiContent, codeContent)],
+  parameters: {
+    docs: {
+      source: {
+        code: registrationSnippet({
+          renderers: [
+            ["@orz/ui-ansi", "ansiContent"],
+            ["@orz/ui-code", "codeContent"],
+          ],
+          uses: [["@orz/ui-markdown", "Markdown"]],
+          body: "<Markdown>{source}</Markdown>",
+        }),
+        language: "tsx",
+      },
+    },
+  },
+};
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const AnsiFence: Story = { name: "ansi fence" };
+/**
+ * A `log` fence in `<Markdown>`, drawn by registering `@orz/ui-ansi`'s `logContent` before
+ * `codeContent`, which would otherwise draw it with its `log` grammar.
+ */
+export const Log: Story = {
+  render: () => <Markdown>{LOG_FENCE}</Markdown>,
+  decorators: [withRenderers(logContent, ansiContent, codeContent)],
+  parameters: {
+    docs: {
+      source: {
+        code: registrationSnippet({
+          renderers: [
+            ["@orz/ui-ansi", "logContent"],
+            ["@orz/ui-ansi", "ansiContent"],
+            ["@orz/ui-code", "codeContent"],
+          ],
+          uses: [["@orz/ui-markdown", "Markdown"]],
+          body: "<Markdown>{source}</Markdown>",
+        }),
+        language: "tsx",
+      },
+    },
+  },
+};

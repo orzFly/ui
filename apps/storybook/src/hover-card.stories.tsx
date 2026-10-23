@@ -5,18 +5,14 @@ import {
   HoverCardTrigger,
 } from "@orz/ui/components/hover-card";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { fn } from "storybook/test";
 
 const meta = {
   title: "ui/Primitives/HoverCard",
   component: HoverCard,
-} satisfies Meta<typeof HoverCard>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  render: () => (
-    <HoverCard>
+  args: { onOpenChange: fn() },
+  render: (args) => (
+    <HoverCard {...args}>
       <HoverCardTrigger asChild>
         <a href="#alice" className="underline underline-offset-4">
           @alice
@@ -37,4 +33,9 @@ export const Default: Story = {
       </HoverCardContent>
     </HoverCard>
   ),
-};
+} satisfies Meta<typeof HoverCard>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Playground: Story = {};

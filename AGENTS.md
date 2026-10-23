@@ -30,14 +30,68 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   (`customConditions`) and `vitest.config.ts` (`resolve.conditions`), so its typecheck and tests
   run on source. Its `tsconfig.build.json` resets `customConditions` to `[]`: the build checks
   against the dependency's `dist/`, which `pnpm -r build` builds first.
-- A story's `title` starts with the package its component comes from, by directory name:
-  `ui-hex/HexView`, `ui-content/Attachment`. A package with many stories groups them one level
-  further — `@orz/ui` uses `ui/Foundations`, `ui/Primitives` and `ui/Hooks` — and a package with a
-  handful stays flat. The exception is `@orz/ui`'s patterns (`ui/ConfirmDialog`, `ui/QueryBox`):
-  they are the components a visitor most likely came for, so they sit directly under `ui`, after
-  its groups, rather than in a collapsed `ui/Patterns`. The `storySort` in
-  `apps/storybook/.storybook/preview.tsx` sorts packages by name, then a package's groups in that
-  order, then its flat entries, so a new package needs no edit there.
+- Stories live in `apps/storybook/src`, one file and one docs page per export family: a component
+  with its parts and the hooks or helpers that only make sense with it. Two pages never document the
+  same export. A page's `title` is `<pkg-dir>/[Group/]<Export>`, the last segment being the
+  family's main export spelled as exported (`ui-hex/HexView`, `ui-code/wordDiff`), never a sentence;
+  only `ui/Foundations/*` pages, which are not one export, are exempt. A package with many stories
+  groups them one level further — `@orz/ui` uses `ui/Foundations`, `ui/Primitives` and `ui/Hooks` —
+  and a package with a handful stays flat. The exception is `@orz/ui`'s patterns
+  (`ui/ConfirmDialog`, `ui/QueryBox`): they are the components a visitor most likely came for, so
+  they sit directly under `ui`, after its groups, rather than in a collapsed `ui/Patterns`. The
+  `storySort` in `apps/storybook/.storybook/preview.tsx` sorts packages by name, then a package's
+  groups in that order, then its flat entries, so a new package needs no edit there.
+- A story file is named after its title's last segment in kebab-case (`ansi-view.stories.tsx`,
+  `patch-view.stories.tsx`); a `<pkg>/Content` page lives in `<pkg-without-ui->-content.stories.tsx`
+  (`ansi-content.stories.tsx`), except `ui-content/Content`, which is `content.stories.tsx`.
+- A package's `ContentRenderer`s share one `<pkg-dir>/Content` page. It sets no `component`, and
+  each story is named after a renderer export without its `Content` suffix (`ansiContent` is
+  `Ansi`). In `ui-content` that page is the `Content` component's own, with `component: Content`. A
+  CodeMirror extension gets a story on the page of the editor it extends, named after its file in
+  PascalCase (`extensions/tag-completion` is `TagCompletion`); `markdownLanguage` and
+  `markdownHighlightStyle` share `MarkdownLanguage`. A markdown plugin gets a story on the
+  `Markdown` page, named after the export (`MarkdownEmbeds`). Plain functions and constants get no
+  page; `wordDiff`, whose output is visual, is the exception.
+- A page whose meta sets `component` — the real export, never a local helper — opens with
+  `Playground`: `args` cover its props, and there is no `render` unless the story needs state. A
+  meta-level `render(args)` that returns the export at its root counts as no render. A page without
+  a `component` — a hook, a foundation, a function such as `wordDiff` — opens with `Usage`.
+  Variants follow, named for the prop or behaviour they show. The export name is the sidebar name:
+  `name:` is used only to spell a hook story as the hook (`export const UseThemeSlots` with
+  `name: "useThemeSlots"`). A story named after a part that the file also imports aliases the
+  import (`AttachmentViewer as AttachmentViewerView`).
+- Storybook builds "Show code" from the element a story's render returns, when the render takes
+  `args`, and leaves the decorators out. So a render takes `args` and returns the real export at its
+  root (biome's `noUnusedFunctionParameters` means it must use them; a render with nothing to pass
+  takes none and gets the static snippet). State lives in hooks inside the render
+  (`render: function Render(args) { … }`). `useArgs` drives discrete controlled props (open,
+  checked, a selected value); text and continuous values (an input's text, a slider being dragged)
+  use `useState(args.x)` plus an effect that follows `args.x`, because a late `updateArgs` makes the
+  caret jump and resets a drag. A story file defines no components of its own; the one exception is
+  a presentational reader inside a story whose `docs.source.code` is hand-written. A layout element
+  sits at a render's root only to lay out several instances side by side, to pair the export with
+  the control it labels or anchors to (`Label` with `Switch`, a `Popover` anchor), or in a story
+  whose `docs.source.code` is hand-written. Other wrappers are decorators: one used by two or more
+  files lives in `apps/storybook/src/decorators.tsx` (`withWidth`, `withHeight`, `withRenderers`,
+  `withViewer`, `withOpener`, `withOwnStore`), and one used by a single file stays in that file.
+- `parameters.docs.source.code` is written by hand exactly for: a story on a `Content` page, whose
+  registration `registrationSnippet` from `apps/storybook/src/snippets.ts` builds (a story that
+  registers a renderer defined in its own file writes the whole snippet); the stories of a page
+  without a `component`; a story whose point is wiring several exports (`Toaster` with `toast`,
+  `HexEditor` with `HexInspector`); and a story whose props include a value the dynamic printer
+  cannot write as source (a `ByteSource`, a `HexDocument`, a CodeMirror `Extension`, `Language` or
+  `KeyBinding[]`, a markdown `MarkdownPlugin[]`). Nothing else. A long string prop needs nothing:
+  the preview cuts every literal over 160 characters to its first line.
+- A story never opens a modal on load on a docs page. An open-on-load variant is an edge story, or
+  renders in an iframe (`parameters.docs.story.inline: false`).
+- Edge, performance and regression stories stay in their component's file, tagged
+  `tags: ["edge", "!autodocs"]`, which keeps them off the docs page and out of the sidebar until its
+  tag filter selects `edge`. A story that only repeats another under a fixed theme is not kept; the
+  toolbar picks the theme.
+- Shared fixtures live in `apps/storybook/src/fixtures/`. Stories never import from a package's
+  `test/`: a story wants a showcase and a test wants exact cases, and each is free to change without
+  the other. `apps/storybook/test/stories.test.ts` holds every story file to the title, opening-story
+  and edge-tag rules; the file-name rule is not tested.
 - Shipped CSS lives at the package root (`styles.css`, `vendor/`), not in `src/`. `tsc` never
   touches it, `files` lists it, and `exports` points straight at it.
 - New shadcn primitives arrive with `shadcn add` run inside `packages/ui`. It writes `@/…` imports

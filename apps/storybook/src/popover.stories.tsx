@@ -3,23 +3,22 @@ import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import {
   Popover,
+  PopoverAnchor,
   PopoverClose,
   PopoverContent,
   PopoverTrigger,
 } from "@orz/ui/components/popover";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useState } from "react";
+import { fn } from "storybook/test";
+import { withWidth } from "./decorators.tsx";
 
 const meta = {
   title: "ui/Primitives/Popover",
   component: Popover,
-} satisfies Meta<typeof Popover>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  render: () => (
-    <Popover>
+  args: { onOpenChange: fn() },
+  render: (args) => (
+    <Popover {...args}>
       <PopoverTrigger asChild>
         <Button variant="outline">Set width</Button>
       </PopoverTrigger>
@@ -34,11 +33,16 @@ export const Default: Story = {
       </PopoverContent>
     </Popover>
   ),
-};
+} satisfies Meta<typeof Popover>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Playground: Story = {};
 
 export const LongList: Story = {
-  render: () => (
-    <Popover>
+  render: (args) => (
+    <Popover {...args}>
       <PopoverTrigger asChild>
         <Button variant="outline">Pick a label</Button>
       </PopoverTrigger>
@@ -56,4 +60,33 @@ export const LongList: Story = {
       </PopoverContent>
     </Popover>
   ),
+};
+
+/** Opens against an element that is not its trigger: here, an input on focus. */
+export const Anchor: Story = {
+  decorators: [withWidth("max-w-sm")],
+  render: function Render(args) {
+    const [open, setOpen] = useState(false);
+    return (
+      <Popover
+        {...args}
+        open={open}
+        onOpenChange={(o) => {
+          args.onOpenChange?.(o);
+          setOpen(o);
+        }}
+      >
+        <PopoverAnchor asChild>
+          <Input
+            aria-label="Label"
+            placeholder="Focus to open"
+            onFocus={() => setOpen(true)}
+          />
+        </PopoverAnchor>
+        <PopoverContent onOpenAutoFocus={(e) => e.preventDefault()}>
+          Positioned against the input, with no trigger.
+        </PopoverContent>
+      </Popover>
+    );
+  },
 };

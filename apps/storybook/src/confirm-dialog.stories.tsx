@@ -1,8 +1,8 @@
-import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
+import { useArgs } from "storybook/preview-api";
 import { fn } from "storybook/test";
+import { withOpener } from "./decorators.tsx";
 
 const meta = {
   title: "ui/ConfirmDialog",
@@ -17,26 +17,21 @@ const meta = {
     destructive: true,
     pending: false,
   },
+  decorators: [withOpener("Delete…")],
   render: function Render(args) {
-    const [open, setOpen] = useState(args.open);
+    const [, updateArgs] = useArgs<typeof args>();
     return (
-      <>
-        <Button variant="outline" onClick={() => setOpen(true)}>
-          Delete…
-        </Button>
-        <ConfirmDialog
-          {...args}
-          open={open}
-          onOpenChange={(next) => {
-            setOpen(next);
-            args.onOpenChange(next);
-          }}
-          onConfirm={() => {
-            args.onConfirm();
-            setOpen(false);
-          }}
-        />
-      </>
+      <ConfirmDialog
+        {...args}
+        onOpenChange={(open) => {
+          updateArgs({ open });
+          args.onOpenChange(open);
+        }}
+        onConfirm={() => {
+          args.onConfirm();
+          updateArgs({ open: false });
+        }}
+      />
     );
   },
 } satisfies Meta<typeof ConfirmDialog>;
@@ -44,7 +39,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Destructive: Story = {};
+export const Playground: Story = {};
 
 export const Neutral: Story = {
   args: {
@@ -55,4 +50,8 @@ export const Neutral: Story = {
   },
 };
 
-export const Pending: Story = { args: { open: true, pending: true } };
+export const Pending: Story = {
+  args: { open: true, pending: true },
+  // In an iframe of its own, so the open dialog does not cover the docs page.
+  parameters: { docs: { story: { inline: false, iframeHeight: 360 } } },
+};
