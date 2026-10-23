@@ -1,7 +1,8 @@
-import { codeContent } from "@orz/ui-code";
+import { codeContent, patchContent } from "@orz/ui-code";
 import { Markdown } from "@orz/ui-markdown";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRenderers, withWidth } from "./decorators.tsx";
+import { PLAIN_DIFF } from "./fixtures/files.ts";
 import { registrationSnippet } from "./snippets.ts";
 
 const SAMPLE = `## Fetching a task
@@ -59,6 +60,19 @@ No tag at all.
 \`\`\`
 `;
 
+const PATCH_FENCES = `A fence tagged \`diff\` holding a patch is drawn as its files, in a frame with the controls:
+
+\`\`\`diff
+${PLAIN_DIFF}\`\`\`
+
+A bare +/- snippet is not a patch, and stays highlighted text without a complaint:
+
+\`\`\`diff
+-const PAUSE_MS = 250;
++const PAUSE_MS = 500;
+\`\`\`
+`;
+
 /**
  * `@orz/ui-code`'s renderers, registered with `@orz/ui-content`. Neither `@orz/ui-markdown` nor
  * `@orz/ui-code` imports the other; the registry connects them.
@@ -80,6 +94,31 @@ export const Code: Story = {
       source: {
         code: registrationSnippet({
           renderers: [["@orz/ui-code", "codeContent"]],
+          uses: [["@orz/ui-markdown", "Markdown"]],
+          body: "<Markdown>{source}</Markdown>",
+        }),
+        language: "tsx",
+      },
+    },
+  },
+};
+
+/**
+ * `patchContent` draws a unified diff, from a ```` ```diff ```` / ```` ```patch ```` fence or a
+ * `.patch` / `.diff` file, as one diff per file under each commit's subject and message, with a
+ * file list and a *raw* toggle back to the text as written.
+ */
+export const Patch: Story = {
+  render: () => <Markdown>{PATCH_FENCES}</Markdown>,
+  decorators: [withRenderers(patchContent, codeContent)],
+  parameters: {
+    docs: {
+      source: {
+        code: registrationSnippet({
+          renderers: [
+            ["@orz/ui-code", "patchContent"],
+            ["@orz/ui-code", "codeContent"],
+          ],
           uses: [["@orz/ui-markdown", "Markdown"]],
           body: "<Markdown>{source}</Markdown>",
         }),

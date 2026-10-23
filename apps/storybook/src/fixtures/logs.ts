@@ -13,6 +13,11 @@ export function mulberry32(seed: number) {
   };
 }
 
+/** An OSC 8 hyperlink: `text` that opens `url`. */
+export function link(url: string, text: string): string {
+  return `\x1b]8;;${url}\x1b\\${text}\x1b]8;;\x1b\\`;
+}
+
 export const WORDS =
   "fetch resolve module chunk worker cache build emit bundle asset graph queue upload retry 依赖 构建 缓存 タスク".split(
     " ",
@@ -80,6 +85,10 @@ const ANSI_COLOUR: Record<LogLevel, string> = {
   trace: "90",
 };
 
+/**
+ * `count` lines in every format the default level detector reads, with Java and Python traces,
+ * `\r` progress bars, OSC 8 links and a few lines that contain `needle`.
+ */
 export function largeLog(count: number): string {
   const random = mulberry32(49);
   const pick = <T>(items: readonly T[]) =>
@@ -96,6 +105,24 @@ export function largeLog(count: number): string {
   let ms = 0;
   while (out.length < count) {
     const i = out.length;
+    const roll = needles.has(i) ? 1 : random();
+    if (roll < 0.03) {
+      out.push(
+        [10, 40, 70, 100]
+          .map((p) => {
+            const done = Math.round(p / 5);
+            return `${E}36m[${"#".repeat(done)}${" ".repeat(20 - done)}]${E}0m ${p}%`;
+          })
+          .join("\r"),
+      );
+      continue;
+    }
+    if (roll < 0.04) {
+      out.push(
+        `see ${link(`https://example.com/run/${i}`, `https://example.com/run/${i}`)}`,
+      );
+      continue;
+    }
     ms += Math.floor(random() * 40);
     const date = new Date(Date.UTC(2026, 9, 23, 9) + ms);
     const iso = date.toISOString();

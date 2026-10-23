@@ -1,5 +1,6 @@
 import { AsciinemaPlayer } from "@orz/ui-asciinema";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { withWidth } from "./decorators.tsx";
 import session from "./fixtures/asciinema/session.cast?raw";
 import sessionV3 from "./fixtures/asciinema/session-v3.cast?raw";
 
@@ -13,18 +14,18 @@ const meta = {
   title: "ui-asciinema/AsciinemaPlayer",
   component: AsciinemaPlayer,
   parameters: { layout: "padded" },
-  args: { cast: session, className: "max-w-3xl" },
+  args: { cast: session },
   argTypes: { cast: { control: false } },
+  decorators: [withWidth("max-w-3xl")],
 } satisfies Meta<typeof AsciinemaPlayer>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** asciicast v2, with an idle gap the cast caps at 2 s and two markers. */
-export const Default: Story = {};
+export const Playground: Story = {};
 
 export const Speed2x: Story = {
-  name: "Speed 2×",
   args: { speed: 2 },
 };
 

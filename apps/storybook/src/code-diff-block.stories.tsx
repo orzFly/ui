@@ -46,12 +46,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const OneLineEdit: Story = {};
+export const Playground: Story = {};
 
 export const Rewrite: Story = {
   args: { after: REWRITE },
 };
 
 export const Identical: Story = {
+  tags: ["edge", "!autodocs"],
   args: { after: BEFORE },
 };

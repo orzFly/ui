@@ -1,11 +1,12 @@
 import { asciinemaContent, CAST_MAX_BYTES } from "@orz/ui-asciinema";
-import { Content, ContentRenderers, type ContentSource } from "@orz/ui-content";
+import { Content } from "@orz/ui-content";
+import type { FileSource } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { withRenderers, withWidth } from "./decorators.tsx";
 import broken from "./fixtures/asciinema/broken.cast?raw";
 import session from "./fixtures/asciinema/session.cast?raw";
-import sessionUrl from "./fixtures/asciinema/session.cast?url&no-inline";
-
-type FileSource = Extract<ContentSource, { kind: "file" }>;
+import { textFile } from "./fixtures/files.ts";
+import { registrationSnippet } from "./snippets.ts";
 
 /**
  * `asciinemaContent` in the registry: a `.cast` file plays under a strip with
@@ -15,56 +16,45 @@ type FileSource = Extract<ContentSource, { kind: "file" }>;
  */
 const meta = {
   title: "ui-asciinema/Content",
-  parameters: { layout: "padded" },
-  render: (args: { source: FileSource }) => (
-    <div className="max-w-3xl">
-      <ContentRenderers renderers={[asciinemaContent]}>
-        <Content source={args.source} placement="document" />
-      </ContentRenderers>
-    </div>
-  ),
+  parameters: {
+    layout: "padded",
+    docs: {
+      source: {
+        code: registrationSnippet({
+          renderers: [["@orz/ui-asciinema", "asciinemaContent"]],
+          uses: [["@orz/ui-content", "Content"]],
+          body: '<Content source={file} placement="document" />',
+        }),
+        language: "tsx",
+      },
+    },
+  },
+  decorators: [withWidth("max-w-3xl"), withRenderers(asciinemaContent)],
+  render: (args) => <Content source={args.source} placement="document" />,
 } satisfies Meta<{ source: FileSource }>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const PlayingFile: Story = {
-  name: "File",
+export const Asciinema: Story = {
   args: {
-    source: {
-      kind: "file",
-      name: "session.cast",
-      mime: "application/x-asciicast",
-      size: session.length,
-      url: sessionUrl,
-      load: async () => session,
-    },
+    source: textFile("session.cast", "application/x-asciicast", session),
   },
 };
 
 export const TooLarge: Story = {
-  name: "Over the cap",
+  tags: ["edge", "!autodocs"],
   args: {
     source: {
-      kind: "file",
-      name: "huge-session.cast",
+      ...textFile("huge-session.cast", "application/x-asciicast", session),
       size: CAST_MAX_BYTES + 1,
-      url: sessionUrl,
-      load: async () => session,
     },
   },
 };
 
 export const Broken: Story = {
+  tags: ["edge", "!autodocs"],
   args: {
-    source: {
-      kind: "file",
-      name: "broken.cast",
-      size: broken.length,
-      url: URL.createObjectURL(
-        new Blob([broken], { type: "application/x-asciicast" }),
-      ),
-      load: async () => broken,
-    },
+    source: textFile("broken.cast", "application/x-asciicast", broken),
   },
 };

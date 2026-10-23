@@ -8,22 +8,11 @@ const PACKAGES = new URL("../../../packages/", import.meta.url);
 // Story files not yet rewritten to the convention (UI-56). Each step of the
 // rewrite takes out the files it converts; the last one deletes the set.
 const PENDING = new Set([
-  "ansi-content.stories.tsx",
-  "ansi.stories.tsx",
-  "asciinema-content.stories.tsx",
-  "asciinema-player.stories.tsx",
-  "code-block.stories.tsx",
-  "code-diff-block.stories.tsx",
   "code-editor.stories.tsx",
-  "code-patch.stories.tsx",
   "hex-editor.stories.tsx",
   "hex-inspector.stories.tsx",
   "hex-view.stories.tsx",
-  "log-content.stories.tsx",
-  "log.stories.tsx",
   "markdown-editor.stories.tsx",
-  "mermaid.stories.tsx",
-  "word-diff.stories.tsx",
 ]);
 
 const GROUPS = new Set(["Foundations", "Primitives", "Hooks"]);
