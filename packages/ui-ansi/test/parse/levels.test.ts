@@ -152,6 +152,8 @@ describe("detectLevel", () => {
       ["«F»/libc( 1234): Fatal signal 11", "fatal"],
       ["«A»/libc( 1234): abort", "fatal"],
       ["«I»/Tag: tag format, without a pid", "info"],
+      ["«D»/Tag     ( 1234): msg", "debug"],
+      ["«W»/Foo     (  612): retry", "warn"],
       ["10-23 09:14:11.123  1234  5678 «V» Tag: x", "trace"],
       ["10-23 09:14:11.123  1234  5678 «D» Tag: x", "debug"],
       ["10-23 09:14:11.123  1234  5678 «I» Tag: x", "info"],

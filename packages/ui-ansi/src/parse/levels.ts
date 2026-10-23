@@ -56,8 +56,9 @@ const LOGFMT_LEVEL = /(?:^|\s)(?:level|lvl|severity)=(?:"(\w+)"|(\w+))/dgi;
 const SYSLOG = /^<(\d{1,3})>/;
 const KLOG = /^([IWEF])[01]\d[0-3]\d [0-2]\d:[0-5]\d:[0-5]\d/;
 // The brief form wants a tag and a colon, so that a line opening with
-// "I/O error" is not read as info.
-const LOGCAT_BRIEF = /^([VDIWEFA])\/[^\s(:]+(?:\(\s*\d+\))?:(?:\s|$)/;
+// "I/O error" is not read as info. logcat pads a short tag to eight cells
+// before the pid.
+const LOGCAT_BRIEF = /^([VDIWEFA])\/[^\s(:]+(?:\s*\(\s*\d+\))?:(?:\s|$)/;
 const LOGCAT_THREADTIME =
   /^\d\d-\d\d \d\d:\d\d:\d\d\.\d{3}\s+\d+\s+\d+ ([VDIWEFA]) /d;
 const TRACEBACK = /^Traceback \(most recent call last\):/;
