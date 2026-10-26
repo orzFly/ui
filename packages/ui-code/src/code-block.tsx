@@ -660,6 +660,7 @@ export function PatchFiles({
   text,
   className,
   viewRef,
+  collapsedFiles,
   renderHeader,
 }: {
   patches: ParsedPatch[];
@@ -674,6 +675,8 @@ export function PatchFiles({
   className: string;
   /** For scrolling to an item by `patchFileId`. */
   viewRef?: Ref<CodeViewHandle<undefined, undefined>>;
+  /** Files, by position across the patch, drawn as their header row only. */
+  collapsedFiles?: ReadonlySet<number>;
   /**
    * Every item's header row, `PATCH_HEADER_HEIGHT` tall: pierre reserves that
    * height for it without measuring.
@@ -685,13 +688,17 @@ export function PatchFiles({
   const items = useMemo(() => {
     let position = 0;
     return patches.flatMap((patch, index): CodeViewItem<undefined>[] => {
-      const files = patch.files.map(
-        (fileDiff): CodeViewItem<undefined> => ({
+      const files = patch.files.map((fileDiff): CodeViewItem<undefined> => {
+        const collapsed = collapsedFiles?.has(position) ?? false;
+        return {
           id: patchFileId(position++),
           type: "diff",
           fileDiff,
-        }),
-      );
+          collapsed,
+          // CodeView only takes a changed item from a changed version.
+          version: collapsed ? 0 : 1,
+        };
+      });
       const message = messages[index];
       if (message == null) return files;
       return [
@@ -708,7 +715,7 @@ export function PatchFiles({
         ...files,
       ];
     });
-  }, [patches, messages]);
+  }, [patches, messages, collapsedFiles]);
   const [degraded, setDegraded] = useState(false);
   const warned = useRef(false);
   const containerRef = useCallback((node: HTMLDivElement | null) => {

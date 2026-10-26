@@ -151,7 +151,11 @@ const RENDERERS = [attachmentCard(), markdownContent(), patchContent, codeConten
   collapsed body hides its overflow, they do not scroll and the file list does not jump; the card
   expands instead. That assumes the card's `collapsedClassName` caps it below one screen: past it,
   the patch is cut at one screen.
-- A file is loaded and capped as `codeContent` caps it.
+- A file diff over `LARGE_DIFF_LINES` (2,000) changed lines is drawn as its header row with a
+  *Load diff* button, unless it is the patch's only file: not for speed (a 40,000-line file drew in
+  0.1 s) but so a generated file does not bury the files around it.
+- A file is loaded and capped as `codeContent` caps it, except that a patch up to 10 MiB is never
+  asked about: its view is virtualized per file, and a 20 MiB one held the tab for 0.6 s at most.
 
 `PatchView` is the same view on its own, for a surface outside the registry:
 
