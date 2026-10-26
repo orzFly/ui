@@ -137,7 +137,11 @@ function Doc({ source }: { source: string }) {
   `<Markdown>` (else `options.plugins`). In `"document"` placement, a document deeper than `maxDepth`
   (else the provider's `maxDepth`, else 1) is a link: a document inside a document shows its own
   documents as links, which is what stops a document that embeds itself. A `"viewer"` placement is
-  never limited.
+  never limited. A "source" toggle in the title bar a surface lends (the viewer, `attachmentCard`)
+  swaps the rendered document for its source, drawn by the renderers after this one
+  (`codeContent`). A document over `MARKDOWN_RENDER_MAX_CHARS` (128K characters) opens as source,
+  with "Too large to render automatically.", since rendering it would hold the tab for seconds;
+  with no title bar lent, such a document gets the toggle above it.
 - **`attachmentLinks({ resolve, boxed? })`** draws a link whose address `resolve` turns into a
   file as an `AttachmentLink` chip from `@orz/ui-content/attachment`, which opens the nearest
   `AttachmentViewerProvider`'s viewer on a plain click. Every other link goes on to the next
@@ -158,7 +162,7 @@ refuses is drawn as source text before `resolve` sees it: use relative addresses
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `markdownContent`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
+| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `markdownContent`, `MARKDOWN_RENDER_MAX_CHARS`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
 | `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `parseMarkdown` |
 | `@orz/ui-markdown/lib/remark-frontmatter-table` | `remarkFrontmatterTable`, `frontmatterFields`, `FRONTMATTER_FLAVOURS`, node types |
 | `@orz/ui-markdown/lib/remark-rejected-urls` | `remarkRejectedUrlsAsText` |

@@ -3,6 +3,7 @@ import {
   type ContentRenderer,
   ContentRenderers,
   type ContentSource,
+  TEXT_PREVIEW_HARD_MAX_BYTES,
   TEXT_PREVIEW_MAX_BYTES,
   useContentDisplay,
 } from "@orz/ui-content";
@@ -19,15 +20,21 @@ vi.mock("../src/code-block.tsx", async (importOriginal) => ({
     filename,
     contents,
     lineNumbers,
+    plain,
+    className,
   }: {
     filename: string;
     contents: string;
     lineNumbers?: boolean;
+    plain?: boolean;
+    className?: string;
   }) => (
     <pre
       data-testid="code-block"
       data-filename={filename}
       data-line-numbers={String(lineNumbers ?? false)}
+      data-plain={String(plain ?? false)}
+      className={className}
     >
       {contents}
     </pre>
@@ -235,13 +242,41 @@ describe("files", () => {
 describe("size cap", () => {
   const huge = "x".repeat(TEXT_PREVIEW_MAX_BYTES + 1);
 
-  it("does not load a file declared over the cap", () => {
+  it("does not load a file declared over the hard cap", () => {
     const load = vi.fn(async () => "print(1)");
-    draw(file("big.py", { size: TEXT_PREVIEW_MAX_BYTES + 1, load }));
+    draw(file("big.py", { size: TEXT_PREVIEW_HARD_MAX_BYTES + 1, load }));
     expect(load).not.toHaveBeenCalled();
     expect(screen.getByRole("link", { name: "big.py" })).toBeTruthy();
-    expect(screen.getByText(/Too large to preview/)).toBeTruthy();
+    expect(screen.getByText("This file is too large to preview.")).toBeTruthy();
     expect(screen.queryByTestId("code-block")).toBeNull();
+  });
+
+  it("loads a file declared over the cap, and draws it plain in a capped box", async () => {
+    draw(
+      file("big.py", {
+        size: TEXT_PREVIEW_MAX_BYTES + 1,
+        load: async () => huge,
+      }),
+    );
+    const block = await screen.findByTestId("code-block");
+    expect(block.dataset.plain).toBe("true");
+    expect(block.dataset.lineNumbers).toBe("true");
+    expect(block.className).toBe("max-h-80 overflow-hidden");
+  });
+
+  it("caps a plain file to the viewer's pane", async () => {
+    render(
+      <ContentRenderers renderers={[codeContent]}>
+        <Content
+          source={file("big.py", { load: async () => huge })}
+          placement="viewer"
+        />
+      </ContentRenderers>,
+    );
+    const block = await screen.findByTestId("code-block");
+    expect(block.className).toBe(
+      "max-h-(--attachment-pane-height) overflow-auto",
+    );
   });
 
   it("loads a file declared at the cap", async () => {
@@ -251,22 +286,24 @@ describe("size cap", () => {
         load: async () => "print(1)",
       }),
     );
-    expect((await screen.findByTestId("code-block")).textContent).toBe(
-      "print(1)",
-    );
+    const block = await screen.findByTestId("code-block");
+    expect(block.textContent).toBe("print(1)");
+    expect(block.dataset.plain).toBe("false");
+    expect(block.className).toBe("");
   });
 
   it("draws a file of unknown size plain once it loads over the cap", async () => {
-    const { container } = draw(file("big.py", { load: async () => huge }));
-    await vi.waitFor(() => expect(container.querySelector("pre")).toBeTruthy());
-    expect(screen.queryByTestId("code-block")).toBeNull();
-    expect(container.querySelector("pre code")?.textContent).toBe(huge);
+    draw(file("big.py", { load: async () => huge }));
+    const block = await screen.findByTestId("code-block");
+    expect(block.dataset.plain).toBe("true");
+    expect(block.textContent).toBe(huge);
   });
 
   it("draws an inline source over the cap plain", () => {
-    const { container } = draw(inline(huge, "ts"));
-    expect(screen.queryByTestId("code-block")).toBeNull();
-    expect(container.querySelector("pre code")?.textContent).toBe(huge);
+    draw(inline(huge, "ts"));
+    const block = screen.getByTestId("code-block");
+    expect(block.dataset.plain).toBe("true");
+    expect(block.textContent).toBe(huge);
   });
 });
 

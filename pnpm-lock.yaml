@@ -536,6 +536,9 @@ importers:
       happy-dom:
         specifier: ^21.0.3
         version: 21.0.3
+      lucide-react:
+        specifier: ^1.31.0
+        version: 1.59.0(@types/react@19.3.0)(react@19.3.1)
       react:
         specifier: ^19.2.8
         version: 19.3.1

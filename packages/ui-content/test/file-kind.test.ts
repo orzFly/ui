@@ -11,6 +11,9 @@ import {
   isTextEmbed,
   isTextFile,
   isVideoFile,
+  TEXT_PREVIEW_HARD_MAX_BYTES,
+  TEXT_PREVIEW_MAX_BYTES,
+  textPreviewGate,
 } from "../src/index.ts";
 
 const file = (name: string, mime: string) => ({ name, mime });
@@ -197,5 +200,48 @@ describe("declared types", () => {
     expect(isImageFile(file("shot.png", "application/octet-stream; x=1"))).toBe(
       true,
     );
+  });
+});
+
+describe("textPreviewGate", () => {
+  const gate = (name: string, mime: string, size: number) =>
+    textPreviewGate({ name, mime, size });
+
+  it("previews up to the limit, asks past it", () => {
+    expect(gate("edge.log", "text/plain", TEXT_PREVIEW_MAX_BYTES)).toBe("auto");
+    expect(gate("huge.log", "text/plain", TEXT_PREVIEW_MAX_BYTES + 1)).toBe(
+      "ask",
+    );
+    expect(gate("notes.md", "text/markdown", TEXT_PREVIEW_MAX_BYTES + 1)).toBe(
+      "ask",
+    );
+  });
+
+  it("never previews past the hard limit", () => {
+    expect(gate("edge.log", "text/plain", TEXT_PREVIEW_HARD_MAX_BYTES)).toBe(
+      "ask",
+    );
+    expect(
+      gate("huge.log", "text/plain", TEXT_PREVIEW_HARD_MAX_BYTES + 1),
+    ).toBe("refuse");
+    expect(
+      gate("huge.patch", "text/x-patch", TEXT_PREVIEW_HARD_MAX_BYTES + 1),
+    ).toBe("refuse");
+  });
+
+  it("lets a patch through without asking, up to the hard limit", () => {
+    expect(gate("big.patch", "text/x-patch", TEXT_PREVIEW_HARD_MAX_BYTES)).toBe(
+      "auto",
+    );
+    expect(
+      gate("big.diff", "application/octet-stream", TEXT_PREVIEW_MAX_BYTES + 1),
+    ).toBe("auto");
+  });
+
+  it("takes its limits from the caller", () => {
+    const limits = { max: 10, hardMax: 20 };
+    expect(textPreviewGate({ name: "a.txt", size: 10 }, limits)).toBe("auto");
+    expect(textPreviewGate({ name: "a.txt", size: 11 }, limits)).toBe("ask");
+    expect(textPreviewGate({ name: "a.txt", size: 21 }, limits)).toBe("refuse");
   });
 });

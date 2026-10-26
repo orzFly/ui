@@ -78,7 +78,7 @@ describe("attachmentCard", () => {
     ).toBe("download notes.txt");
   });
 
-  it("draws the too-large note instead of the file over maxBytes", () => {
+  it("asks before drawing a file over maxBytes", () => {
     render(
       <ContentRenderers
         renderers={[attachmentCard({ maxBytes: 10 }), stubText]}
@@ -87,10 +87,28 @@ describe("attachmentCard", () => {
       </ContentRenderers>,
     );
     expect(
-      screen.getByText("Too large to preview — download to view."),
+      screen.getByText(/Large files aren't previewed automatically\./),
     ).toBeTruthy();
     expect(screen.queryByTestId("stub")).toBeNull();
     expect(screen.queryByLabelText("expand big.txt")).toBeNull();
+    fireEvent.click(screen.getByText("Preview anyway"));
+    expect(screen.getByTestId("stub").textContent).toBe("stub:big.txt");
+  });
+
+  it("draws the too-large note instead of the file over hardMaxBytes", () => {
+    render(
+      <ContentRenderers
+        renderers={[
+          attachmentCard({ maxBytes: 10, hardMaxBytes: 20 }),
+          stubText,
+        ]}
+      >
+        <Content source={file("big.txt", { size: 21 })} placement="document" />
+      </ContentRenderers>,
+    );
+    expect(screen.getByText("This file is too large to preview.")).toBeTruthy();
+    expect(screen.queryByText("Preview anyway")).toBeNull();
+    expect(screen.queryByTestId("stub")).toBeNull();
   });
 
   it("does not cap a file of unknown size", () => {

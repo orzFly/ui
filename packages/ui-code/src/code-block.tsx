@@ -384,12 +384,20 @@ export function CodeBlock({
   filename,
   contents,
   lineNumbers = false,
+  plain = false,
   className,
 }: {
   filename: string;
   contents: string;
   /** Line numbers suit whole files; snippets read better without. */
   lineNumbers?: boolean;
+  /**
+   * No highlighting. Tokenizing is what costs: virtualized lines spare the
+   * DOM, but pierre tokenizes the whole file regardless, 11 s for 1 MiB of
+   * log where plain text took 0.16 s.
+   */
+  plain?: boolean;
+  /** Caps the height for a long file: CodeView virtualizes against its box. */
   className?: string;
 }) {
   const items = useMemo(
@@ -397,10 +405,12 @@ export function CodeBlock({
       {
         id: filename,
         type: "file" as const,
-        file: { name: filename, contents },
+        file: plain
+          ? { name: filename, contents, lang: "text" as const }
+          : { name: filename, contents },
       },
     ],
-    [filename, contents],
+    [filename, contents, plain],
   );
   const syntaxTheme = useSyntaxTheme();
   const options = useMemo(

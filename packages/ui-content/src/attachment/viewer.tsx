@@ -31,7 +31,9 @@ import {
   isHtmlFile,
   isImageFile,
   isTextFile,
+  TEXT_PREVIEW_HARD_MAX_BYTES,
   TEXT_PREVIEW_MAX_BYTES,
+  textPreviewGate,
 } from "../file-kind.ts";
 import { Content, useContentDisplay } from "../registry.tsx";
 import { ContentTitleBar } from "../title-bar.tsx";
@@ -58,6 +60,7 @@ export type AttachmentViewerControls = {
 type ViewerContext = AttachmentViewerControls & {
   viewHref: ((file: FileSource) => string | undefined) | undefined;
   textPreviewMaxBytes: number;
+  textPreviewHardMaxBytes: number;
 };
 
 const AttachmentViewerContext = createContext<ViewerContext | null>(null);
@@ -92,8 +95,13 @@ export type AttachmentViewerProviderProps = {
   viewHref?: (file: FileSource) => string | undefined;
   /** The set paging covers when a single file is opened; null pages nothing. */
   group?: (file: FileSource) => AttachmentViewerState | null;
-  /** Text files above this, or of unknown size, open the download pane. Default 1 MiB. */
+  /**
+   * Text files above this wait for "Preview anyway" and then draw plain. Default 1 MiB. A text
+   * file of unknown size stays a link until its size is known.
+   */
   textPreviewMaxBytes?: number;
+  /** Text files above this never preview; the viewer says so. Default 10 MiB. */
+  textPreviewHardMaxBytes?: number;
   children?: ReactNode;
 } & ImageLookProps;
 
@@ -106,6 +114,7 @@ export function AttachmentViewerProvider({
   viewHref,
   group,
   textPreviewMaxBytes = TEXT_PREVIEW_MAX_BYTES,
+  textPreviewHardMaxBytes = TEXT_PREVIEW_HARD_MAX_BYTES,
   imageLook,
   onImageLookChange,
   children,
@@ -126,8 +135,14 @@ export function AttachmentViewerProvider({
     [],
   );
   const value = useMemo(
-    () => ({ open, show, viewHref, textPreviewMaxBytes }),
-    [open, show, viewHref, textPreviewMaxBytes],
+    () => ({
+      open,
+      show,
+      viewHref,
+      textPreviewMaxBytes,
+      textPreviewHardMaxBytes,
+    }),
+    [open, show, viewHref, textPreviewMaxBytes, textPreviewHardMaxBytes],
   );
 
   return (
@@ -160,19 +175,69 @@ export function useViewHref(file: FileSource): string {
 /**
  * Whether the viewer has something to draw for this file, which is what
  * decides if a plain click on it is hijacked into the viewer. Text needs a
- * known in-limit size — a file whose size the app does not know yet stays a
- * link until it does. HTML has no size cap: the browser streams it into the
- * iframe instead of this tab highlighting it.
+ * known size — a file whose size the app does not know yet stays a link
+ * until it does; a size past the limits still opens the viewer, which says
+ * why it shows nothing. HTML has no size cap: the browser streams it into
+ * the iframe instead of this tab highlighting it.
  */
 export function useCanPreview(file: FileSource): boolean {
-  const viewer = useContext(AttachmentViewerContext);
-  const max = viewer?.textPreviewMaxBytes ?? TEXT_PREVIEW_MAX_BYTES;
   const display = useContentDisplay(file, "viewer");
   if (display === null) return false;
-  if (isTextFile(file) && !isHtmlFile(file)) {
-    return file.size !== undefined && file.size <= max;
-  }
+  if (isTextFile(file) && !isHtmlFile(file)) return file.size !== undefined;
   return true;
+}
+
+function useGate(file: FileSource): "auto" | "ask" | "refuse" {
+  const viewer = useContext(AttachmentViewerContext);
+  if (!isTextFile(file) || isHtmlFile(file) || file.size === undefined) {
+    return "auto";
+  }
+  return textPreviewGate(
+    { ...file, size: file.size },
+    {
+      max: viewer?.textPreviewMaxBytes,
+      hardMax: viewer?.textPreviewHardMaxBytes,
+    },
+  );
+}
+
+/**
+ * A text file past the auto-preview size waits to be asked, and is then
+ * drawn: the code renderer draws text that large plain. Past the hard limit
+ * it never previews.
+ */
+function LargeTextPane({
+  gate,
+  onPreview,
+}: {
+  gate: "ask" | "refuse";
+  onPreview(): void;
+}) {
+  const viewer = useContext(AttachmentViewerContext);
+  const hardMax =
+    viewer?.textPreviewHardMaxBytes ?? TEXT_PREVIEW_HARD_MAX_BYTES;
+  return (
+    <div className="flex flex-col items-center gap-3 py-16 text-sm text-muted-foreground">
+      <FileIcon className="size-8" />
+      {gate === "refuse" ? (
+        <>
+          <span className="font-medium text-foreground">
+            This file is too large to preview.
+          </span>
+          <span>Previews stop at {formatSize(hardMax)}.</span>
+        </>
+      ) : (
+        <>
+          <span className="font-medium text-foreground">
+            Large files aren't previewed automatically.
+          </span>
+          <Button variant="outline" size="sm" onClick={onPreview}>
+            Preview anyway
+          </Button>
+        </>
+      )}
+    </div>
+  );
 }
 
 /** Paging can land on types that only download — say so instead of a blank pane. */
@@ -206,6 +271,9 @@ function ViewerBody({
   titleBar: HTMLElement | null;
 }) {
   const canPreview = useCanPreview(file);
+  const gate = useGate(file);
+  // For this opening only: the body is keyed by file.
+  const [asked, setAsked] = useState(false);
   return (
     <div
       className={cn(
@@ -220,12 +288,14 @@ function ViewerBody({
         } as CSSProperties
       }
     >
-      {canPreview ? (
+      {!canPreview ? (
+        <DownloadOnlyPane file={file} />
+      ) : gate === "refuse" || (gate === "ask" && !asked) ? (
+        <LargeTextPane gate={gate} onPreview={() => setAsked(true)} />
+      ) : (
         <ContentTitleBar source={file} target={titleBar}>
           <Content source={file} placement="viewer" />
         </ContentTitleBar>
-      ) : (
-        <DownloadOnlyPane file={file} />
       )}
     </div>
   );

@@ -11,7 +11,10 @@ export {
   isTextEmbed,
   isTextFile,
   isVideoFile,
+  TEXT_PREVIEW_HARD_MAX_BYTES,
   TEXT_PREVIEW_MAX_BYTES,
+  type TextPreviewLimits,
+  textPreviewGate,
 } from "./file-kind.ts";
 export {
   Content,

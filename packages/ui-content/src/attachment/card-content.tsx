@@ -1,9 +1,5 @@
-import type { ComponentType } from "react";
-import {
-  formatSize,
-  isTextEmbed,
-  TEXT_PREVIEW_MAX_BYTES,
-} from "../file-kind.ts";
+import { type ComponentType, useState } from "react";
+import { formatSize, isTextEmbed, textPreviewGate } from "../file-kind.ts";
 import { useContentDepth, useContentMaxDepth } from "../registry.tsx";
 import type { ContentProps, ContentRenderer } from "../types.ts";
 import { DocumentCard } from "./document-card.tsx";
@@ -15,8 +11,13 @@ import {
 } from "./viewer.tsx";
 
 export type AttachmentCardOptions = {
-  /** Text files above this draw a note instead of their contents. Default 1 MiB. */
+  /**
+   * Text files above this wait for "Preview anyway", and the renderer then draws them plain.
+   * Default 1 MiB.
+   */
   maxBytes?: number;
+  /** Text files above this draw a note instead of their contents. Default 10 MiB. */
+  hardMaxBytes?: number;
   /**
    * How many embedded files deep a card is still drawn; past it, the file is a link chip.
    * Defaults to the provider's `maxDepth`, else 1, as `markdownContent` counts it, so the two
@@ -36,7 +37,7 @@ export type AttachmentCardOptions = {
 export function attachmentCard(
   options: AttachmentCardOptions = {},
 ): ContentRenderer {
-  const maxBytes = options.maxBytes ?? TEXT_PREVIEW_MAX_BYTES;
+  const limits = { max: options.maxBytes, hardMax: options.hardMaxBytes };
 
   function AttachmentCard({
     source,
@@ -47,6 +48,7 @@ export function attachmentCard(
     const providerMaxDepth = useContentMaxDepth();
     const viewer = useAttachmentViewer();
     const canPreview = useCanPreview(source as FileSource);
+    const [asked, setAsked] = useState(false);
     if (source.kind !== "file") return null;
     const maxDepth = options.maxDepth ?? providerMaxDepth ?? 1;
     // A document inside a document card shows its own documents as links,
@@ -56,7 +58,11 @@ export function attachmentCard(
     }
     const meta =
       source.size === undefined ? undefined : formatSize(source.size);
-    if (source.size !== undefined && source.size > maxBytes) {
+    const gate =
+      source.size === undefined
+        ? "auto"
+        : textPreviewGate({ ...source, size: source.size }, limits);
+    if (gate === "refuse" || (gate === "ask" && !asked)) {
       return (
         <DocumentCard
           name={source.name}
@@ -66,7 +72,20 @@ export function attachmentCard(
           collapsedClassName={options.collapsedClassName}
         >
           <p className="text-sm text-muted-foreground">
-            Too large to preview — download to view.
+            {gate === "refuse" ? (
+              "This file is too large to preview."
+            ) : (
+              <>
+                Large files aren't previewed automatically.{" "}
+                <button
+                  type="button"
+                  onClick={() => setAsked(true)}
+                  className="cursor-pointer font-medium text-foreground hover:underline"
+                >
+                  Preview anyway
+                </button>
+              </>
+            )}
           </p>
         </DocumentCard>
       );

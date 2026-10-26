@@ -3,14 +3,14 @@ import {
   ContentFallback,
   type ContentProps,
   type ContentSource,
-  TEXT_PREVIEW_MAX_BYTES,
+  TEXT_PREVIEW_HARD_MAX_BYTES,
   useSourceText,
 } from "@orz/ui-content";
 import type { ReactNode } from "react";
 
 export type FileSource = Extract<ContentSource, { kind: "file" }>;
 
-/** A file declared over the cap is not loaded at all. */
+/** A file declared over the hard cap is not loaded at all. */
 function TooLargeFile({
   source,
   placement,
@@ -19,7 +19,7 @@ function TooLargeFile({
   return (
     <div className={className}>
       <ContentFallback source={source} placement={placement} />{" "}
-      <span>Too large to preview — download to view.</span>
+      <span>This file is too large to preview.</span>
     </div>
   );
 }
@@ -70,8 +70,9 @@ function LoadedText({
 
 /**
  * A text file's contents, once loaded and without its final newline, drawn by `children`; while
- * it loads, or when it fails or is declared over `TEXT_PREVIEW_MAX_BYTES`, the registry's fallback
- * with a note.
+ * it loads, or when it fails or is declared over `TEXT_PREVIEW_HARD_MAX_BYTES`, the registry's
+ * fallback with a note. Between that and `TEXT_PREVIEW_MAX_BYTES` it loads: the viewer and the
+ * embed card ask first, and `children` draws text that large plain.
  */
 export function FileText(
   props: ContentProps & {
@@ -80,7 +81,7 @@ export function FileText(
   },
 ) {
   const { source, placement, className } = props;
-  if (source.size !== undefined && source.size > TEXT_PREVIEW_MAX_BYTES) {
+  if (source.size !== undefined && source.size > TEXT_PREVIEW_HARD_MAX_BYTES) {
     return (
       <TooLargeFile
         source={source}

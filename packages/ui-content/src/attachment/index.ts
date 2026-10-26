@@ -1,4 +1,7 @@
-export { TEXT_PREVIEW_MAX_BYTES } from "../file-kind.ts";
+export {
+  TEXT_PREVIEW_HARD_MAX_BYTES,
+  TEXT_PREVIEW_MAX_BYTES,
+} from "../file-kind.ts";
 export {
   type AttachmentCardOptions,
   attachmentCard,

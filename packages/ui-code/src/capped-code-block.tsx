@@ -1,6 +1,6 @@
 import { TEXT_PREVIEW_MAX_BYTES } from "@orz/ui-content";
 import { useMemo } from "react";
-import { CodeBlock, PlainCodeFallback } from "./code-block.tsx";
+import { CodeBlock } from "./code-block.tsx";
 
 /**
  * Whether `text` takes more than `max` bytes as UTF-8, counted without encoding it, and stopping
@@ -28,26 +28,32 @@ export function exceedsBytes(text: string, max: number): boolean {
 /**
  * Highlights `contents` when it is within the cap, and draws it as plain text otherwise: pierre
  * over a multi-megabyte text would freeze the tab (T-31), where plain text costs next to nothing.
+ * Plain text is still a virtualized code view, so it needs `capClassName` to bound its height:
+ * laying out every line of a large file is a cost of its own.
  */
 export function CappedCodeBlock({
   filename,
   contents,
   lineNumbers,
+  capClassName,
 }: {
   filename: string;
   contents: string;
   lineNumbers?: boolean;
+  /** The box a text over the cap is drawn in; a height cap with its own overflow. */
+  capClassName?: string;
 }) {
   const tooLarge = useMemo(
     () => exceedsBytes(contents, TEXT_PREVIEW_MAX_BYTES),
     [contents],
   );
-  if (tooLarge) return <PlainCodeFallback contents={contents} />;
   return (
     <CodeBlock
       filename={filename}
       contents={contents}
       lineNumbers={lineNumbers}
+      plain={tooLarge}
+      className={tooLarge ? capClassName : undefined}
     />
   );
 }

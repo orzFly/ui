@@ -65,6 +65,9 @@ import { CodeBlock, CodeDiffBlock, fenceFilename } from "@orz/ui-code";
 <CodeDiffBlock filename="main.ts" before={previous} after={current} />
 ```
 
+`CodeBlock` takes `plain` to skip highlighting, and a `className` that caps a long file's height:
+the code view virtualizes against its own box.
+
 `CodeDiffBlock` is a unified line diff of one block; with identical sides it renders a `CodeBlock`.
 
 ### `codeContent`
@@ -95,10 +98,12 @@ const RENDERERS = [mermaidContent, markdownContent(), codeContent];
 It highlights at most `TEXT_PREVIEW_MAX_BYTES` (1 MiB, from `@orz/ui-content`), so a path that
 reaches it with a large file cannot freeze the tab:
 
-- A file whose `size` is over the cap is not loaded: it draws the registry's fallback and a "too
-  large to preview" note.
-- Text found over the cap once loaded (a file of unknown size, or an inline source) is drawn as
-  plain text, with no highlighting and no line numbers.
+- A file whose `size` is over `TEXT_PREVIEW_HARD_MAX_BYTES` (10 MiB) is not loaded: it draws the
+  registry's fallback and "This file is too large to preview."
+- Text over 1 MiB, declared or found once loaded, is drawn plain: still a virtualized code view
+  with line numbers for a file, but with no highlighting, which is what costs. A file's plain view
+  is capped at the viewer's pane height, or at a card's collapsed height in a document. The viewer
+  and `attachmentCard` ask before they draw a file that large.
 
 ### `patchContent`
 

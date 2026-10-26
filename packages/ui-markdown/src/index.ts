@@ -3,6 +3,7 @@ export {
   attachmentLinks,
 } from "./attachment-links.tsx";
 export {
+  MARKDOWN_RENDER_MAX_CHARS,
   type MarkdownContentOptions,
   markdownContent,
 } from "./content.tsx";
