@@ -10,6 +10,12 @@ import {
   parseCommandLines,
   type ValueProviders,
 } from "@orz/query";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@orz/ui/components/dialog";
 import { MarkdownEditor } from "@orz/ui-codemirror/components/markdown-editor";
 import {
   inCodeContext,
@@ -161,6 +167,33 @@ export const Completion: Story = {
     initialValue: "Thanks ",
     extensions: completion,
   },
+  parameters: { docs: { source: { code: COMPLETION, language: "tsx" } } },
+};
+
+/**
+ * The popup inside a centred dialog, whose transform makes CodeMirror place it
+ * `absolute`: type `@` on the last line, and it flips above the line, or
+ * shortens, to stay inside the dialog instead of being cut by the editor or by
+ * the dialog's own box.
+ */
+export const CompletionInDialog: Story = {
+  tags: ["edge", "!autodocs"],
+  args: {
+    initialValue: "Thanks\n\n\n\n",
+    extensions: completion,
+    className: "min-h-32",
+  },
+  decorators: [
+    (Story) => (
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Finish review</DialogTitle>
+          <DialogDescription>A summary for the review.</DialogDescription>
+          <Story />
+        </DialogContent>
+      </Dialog>
+    ),
+  ],
   parameters: { docs: { source: { code: COMPLETION, language: "tsx" } } },
 };
 
