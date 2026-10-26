@@ -175,8 +175,12 @@ Verification artifacts — packed tarballs, screenshots, logs — go in `.tmp/` 
 `origin` is the private remote that work is merged into; `github` is the public mirror,
 `github.com/orzFly/ui`. Every push of master to `origin` is followed by the same push to `github`.
 npm publishing runs only on the mirror, in `.github/workflows/publish.yml`, signed in through npm's
-trusted publishing (OIDC): no npm token exists anywhere.
+trusted publishing (OIDC): no npm token exists anywhere. The same workflow deploys master's Storybook
+to GitHub Pages, `https://orzfly.github.io/ui/`, with no `gh-pages` branch.
 
+- `publish.yml` first runs `ci.yml` as a reusable workflow; npm publishing and the Pages deploy both
+  wait for it, so nothing ships from a push whose checks fail. `ci.yml` triggers on its own only for
+  pull requests, so a master push is checked once.
 - Every package shares one version, set with `node scripts/version.mjs set <version>`.
 - Each master push publishes a snapshot, `<next patch>-master.<commit time>.g<hash>`, under the
   `master` dist-tag, so `latest` and ordinary ranges never pick it up.

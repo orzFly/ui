@@ -1,9 +1,15 @@
 name: CI
 
 on:
-  push:
-    branches: [master]
   pull_request:
+  # publish.yml runs this as its first job on every master push and release tag, so a push is
+  # checked once and nothing is published unless the checks pass.
+  workflow_call:
+    inputs:
+      pages:
+        description: Upload the Storybook site as the Pages artifact once every check has passed.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -24,3 +30,9 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm build
       - run: pnpm test
+      # Storybook writes only relative URLs, so the site `pnpm build` made serves from the /ui/
+      # project-site path with no base set.
+      - if: inputs.pages
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: apps/storybook/storybook-static
