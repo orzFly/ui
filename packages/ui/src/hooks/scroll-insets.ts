@@ -1,4 +1,10 @@
-import { type RefObject, useLayoutEffect, useRef } from "react";
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import {
   VIEWPORT_CHROME_EVENT,
   visualViewportInsets,
@@ -118,6 +124,108 @@ export function revealBlock(
   );
   el.scrollIntoView({ block, behavior });
   if (highlight) flash(el);
+}
+
+/**
+ * The page's one hold. Two at once would each put the viewport back on its
+ * own target at every resize, so a newer landing retires the older one.
+ */
+let held: { release: () => void; onEnd: boolean } | null = null;
+
+/**
+ * Whether an untouched reader is being held on a particular element, as
+ * opposed to the end of the document or nothing at all. Following a new item
+ * at the end should not take the reader off a target they were sent to.
+ */
+export function isHoldingTarget(): boolean {
+  return held !== null && !held.onEnd;
+}
+
+/**
+ * Run `place` again every time `container` resizes, until the reader's first
+ * input. Returns the release, for when the landing stops mattering first.
+ *
+ * A landing is made against the page as it stands, and the page keeps
+ * arriving after it: images, diffs, attachment lists, each pushing the target
+ * away from where it was put. After the first input, re-placing would fight
+ * the reader. There is no settle timeout: late content lands with unbounded
+ * gaps, and a timer that fires inside one re-opens the race.
+ *
+ * Dragging the scrollbar counts as input: Chromium and Firefox both deliver
+ * its `pointerdown` to `<html>`.
+ */
+function hold(
+  container: Element,
+  place: (release: () => void) => void,
+  onEnd = false,
+) {
+  held?.release();
+  if (typeof ResizeObserver === "undefined") return () => {}; // happy-dom
+  const controller = new AbortController();
+  const observer = new ResizeObserver(() => place(release));
+  const release = () => {
+    observer.disconnect();
+    controller.abort();
+    if (held?.release === release) held = null;
+  };
+  observer.observe(container);
+  for (const type of ["wheel", "touchstart", "pointerdown", "keydown"]) {
+    window.addEventListener(type, release, {
+      capture: true,
+      passive: true,
+      signal: controller.signal,
+    });
+  }
+  held = { release, onEnd };
+  return release;
+}
+
+/**
+ * Hold `el` where `revealBlock` put it, re-revealing it without the flash
+ * every time `container` resizes; see `hold`.
+ */
+export function holdRevealed(
+  el: HTMLElement,
+  container: Element,
+  mode: RevealMode = "auto",
+  behavior?: ScrollBehavior,
+): () => void {
+  return hold(container, (release) => {
+    // Gone with a route change nobody touched the page for.
+    if (!el.isConnected) release();
+    else revealBlock(el, { mode, behavior, flash: false });
+  });
+}
+
+/**
+ * Bottom of the document, which sits below a sticky composer's in-flow spot.
+ *
+ * The largest offset there is, not `scrollHeight`: iOS Safari takes the
+ * overshoot literally for a frame, parking the visual viewport a whole screen
+ * past the end — one blank white frame on every landing.
+ */
+function scrollToEnd() {
+  const root = document.documentElement;
+  window.scrollTo(0, Math.max(0, root.scrollHeight - root.clientHeight));
+}
+
+/** Go to the end of the document and stay there; see `hold`. */
+export function landAtBottom(): () => void {
+  scrollToEnd();
+  return hold(document.body, scrollToEnd, true);
+}
+
+/**
+ * Keep the release of the last hold this component started, and call it on
+ * unmount: a page left without input would otherwise go on being held.
+ */
+export function useOwnHold(): (release: () => void) => void {
+  const own = useRef<() => void>(() => {});
+  useEffect(() => () => own.current(), []);
+  return useCallback((release: () => void) => {
+    own.current();
+    own.current = release;
+  }, []);
 }
 
 export type ScrollInsetSources = {
