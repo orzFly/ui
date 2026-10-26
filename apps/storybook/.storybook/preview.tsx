@@ -9,6 +9,8 @@ import {
   ThemeProvider,
   type ThemeStore,
 } from "@orz/ui/theme";
+import { CodeWorkerProvider } from "@orz/ui-code";
+import PierreWorker from "@pierre/diffs/worker/worker.js?worker";
 import { DocsContainer } from "@storybook/addon-docs/blocks";
 import type { Decorator, Preview } from "@storybook/react-vite";
 import {
@@ -321,6 +323,16 @@ const withTheme: Decorator = (Story, context) => {
   );
 };
 
+const newPierreWorker = () => new PierreWorker();
+
+// What an app does once at its root: code views that tokenize off the main
+// thread (codeContent's files) take pierre's worker from here.
+const withCodeWorker: Decorator = (Story) => (
+  <CodeWorkerProvider workerFactory={newPierreWorker}>
+    <Story />
+  </CodeWorkerProvider>
+);
+
 // The store has a UI slot, so it always resolves a UI theme.
 const resolvedTheme = () => themes.getResolved() as ResolvedTheme;
 
@@ -372,7 +384,7 @@ const preview: Preview = {
       },
     },
   },
-  decorators: [withTheme],
+  decorators: [withCodeWorker, withTheme],
   tags: ["autodocs"],
 };
 

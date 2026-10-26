@@ -13,10 +13,15 @@ import {
   type Ref,
   Suspense,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import {
+  type CodeWorkerFactory,
+  useCodeWorkerFactory,
+} from "./code-worker.tsx";
 
 // @pierre/diffs is the heaviest dependency in the web bundle (T-24). Every
 // value import goes through lazy() here so the library lands in its own
@@ -30,6 +35,57 @@ const LazyCodeView = lazy(() =>
       }
     >,
   })),
+);
+
+type CodeViewComponentProps = CodeViewProps<undefined, undefined> & {
+  ref?: Ref<CodeViewHandle<undefined, undefined>>;
+};
+
+/**
+ * CodeView with its tokenizing moved into pierre's worker pool, started from
+ * the factory a `CodeWorkerProvider` lends. pierre tokenizes the whole file
+ * even when only a screenful of lines is drawn: 1 MiB of log held the tab for
+ * 9.3 s on the main thread, 0.2 s with the worker. The lines show as plain
+ * text at once, and their colours follow.
+ */
+const LazyWorkerCodeView = lazy(() =>
+  import("@pierre/diffs/react").then((m) => {
+    const CodeView = m.CodeView as ComponentType<CodeViewComponentProps>;
+    // The pool keeps the theme it was created with and overrides each
+    // view's own; a theme switch while it lives has to reach it here.
+    function ThemeSync({ theme }: { theme: SyntaxTheme }) {
+      const pool = m.useWorkerPool();
+      useEffect(() => {
+        pool?.setRenderOptions({ theme }).catch(() => {});
+      }, [pool, theme]);
+      return null;
+    }
+    function WorkerCodeView({
+      workerFactory,
+      ...props
+    }: CodeViewComponentProps & { workerFactory: CodeWorkerFactory }) {
+      const theme = useSyntaxTheme();
+      const [poolOptions] = useState(() => ({
+        workerFactory,
+        // One file is open at a time; each worker loads its own highlighter.
+        poolSize: 2,
+      }));
+      const [highlighterOptions] = useState(() => ({
+        theme,
+        preferredHighlighter: PIERRE_HIGHLIGHTER,
+      }));
+      return (
+        <m.WorkerPoolContextProvider
+          poolOptions={poolOptions}
+          highlighterOptions={highlighterOptions}
+        >
+          <ThemeSync theme={theme} />
+          <CodeView {...props} />
+        </m.WorkerPoolContextProvider>
+      );
+    }
+    return { default: WorkerCodeView };
+  }),
 );
 
 export const LazyMultiFileDiff = lazy(() =>
@@ -385,6 +441,7 @@ export function CodeBlock({
   contents,
   lineNumbers = false,
   plain = false,
+  offThread = false,
   className,
 }: {
   filename: string;
@@ -397,6 +454,12 @@ export function CodeBlock({
    * log where plain text took 0.16 s.
    */
   plain?: boolean;
+  /**
+   * Tokenize in pierre's worker pool, when a `CodeWorkerProvider` lends one.
+   * Only pays off with `className` capping the height: uncapped, laying out
+   * every line of 1 MiB still held the main thread for 2.2 s.
+   */
+  offThread?: boolean;
   /** Caps the height for a long file: CodeView virtualizes against its box. */
   className?: string;
 }) {
@@ -418,6 +481,7 @@ export function CodeBlock({
       lineNumbers ? fileOptions(syntaxTheme) : snippetOptions(syntaxTheme),
     [lineNumbers, syntaxTheme],
   );
+  const workerFactory = useCodeWorkerFactory();
   const [degraded, setDegraded] = useState(false);
   const [ready, setReady] = useState(contents === "");
   const filenameRef = useRef(filename);
@@ -447,12 +511,23 @@ export function CodeBlock({
       {!ready && <PlainCodeFallback contents={contents} />}
       <div style={ready ? undefined : { visibility: "hidden" }}>
         <Suspense fallback={null}>
-          <LazyCodeView
-            items={items}
-            options={options}
-            className={className}
-            containerRef={containerRef}
-          />
+          {/* Plain text has nothing to tokenize, so no worker to start for it. */}
+          {offThread && !plain && workerFactory !== null ? (
+            <LazyWorkerCodeView
+              items={items}
+              options={options}
+              className={className}
+              containerRef={containerRef}
+              workerFactory={workerFactory}
+            />
+          ) : (
+            <LazyCodeView
+              items={items}
+              options={options}
+              className={className}
+              containerRef={containerRef}
+            />
+          )}
         </Suspense>
       </div>
     </CodeViewBoundary>

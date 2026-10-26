@@ -21,12 +21,14 @@ vi.mock("../src/code-block.tsx", async (importOriginal) => ({
     contents,
     lineNumbers,
     plain,
+    offThread,
     className,
   }: {
     filename: string;
     contents: string;
     lineNumbers?: boolean;
     plain?: boolean;
+    offThread?: boolean;
     className?: string;
   }) => (
     <pre
@@ -34,6 +36,7 @@ vi.mock("../src/code-block.tsx", async (importOriginal) => ({
       data-filename={filename}
       data-line-numbers={String(lineNumbers ?? false)}
       data-plain={String(plain ?? false)}
+      data-off-thread={String(offThread ?? false)}
       className={className}
     >
       {contents}
@@ -289,7 +292,9 @@ describe("size cap", () => {
     const block = await screen.findByTestId("code-block");
     expect(block.textContent).toBe("print(1)");
     expect(block.dataset.plain).toBe("false");
-    expect(block.className).toBe("");
+    // Highlighted off the main thread, inside the same cap plain text gets.
+    expect(block.dataset.offThread).toBe("true");
+    expect(block.className).toBe("max-h-80 overflow-hidden");
   });
 
   it("draws a file of unknown size plain once it loads over the cap", async () => {
@@ -303,6 +308,7 @@ describe("size cap", () => {
     draw(inline(huge, "ts"));
     const block = screen.getByTestId("code-block");
     expect(block.dataset.plain).toBe("true");
+    expect(block.dataset.offThread).toBe("false");
     expect(block.textContent).toBe(huge);
   });
 });

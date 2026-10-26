@@ -29,19 +29,22 @@ export function exceedsBytes(text: string, max: number): boolean {
  * Highlights `contents` when it is within the cap, and draws it as plain text otherwise: pierre
  * over a multi-megabyte text would freeze the tab (T-31), where plain text costs next to nothing.
  * Plain text is still a virtualized code view, so it needs `capClassName` to bound its height:
- * laying out every line of a large file is a cost of its own.
+ * laying out every line of a large file is a cost of its own. With `offThread`, highlighted text
+ * tokenizes in the worker a `CodeWorkerProvider` lends, inside that same cap.
  */
 export function CappedCodeBlock({
   filename,
   contents,
   lineNumbers,
   capClassName,
+  offThread = false,
 }: {
   filename: string;
   contents: string;
   lineNumbers?: boolean;
   /** The box a text over the cap is drawn in; a height cap with its own overflow. */
   capClassName?: string;
+  offThread?: boolean;
 }) {
   const tooLarge = useMemo(
     () => exceedsBytes(contents, TEXT_PREVIEW_MAX_BYTES),
@@ -53,7 +56,8 @@ export function CappedCodeBlock({
       contents={contents}
       lineNumbers={lineNumbers}
       plain={tooLarge}
-      className={tooLarge ? capClassName : undefined}
+      offThread={offThread}
+      className={tooLarge || offThread ? capClassName : undefined}
     />
   );
 }

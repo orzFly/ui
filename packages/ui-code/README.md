@@ -44,7 +44,7 @@ slots from the side on screen. Outside a provider, blocks use pierre's pair.
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `fenceFilename`, `codeContent`, `patchContent`, `PatchView`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
+| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `CodeWorkerProvider`, `useCodeWorkerFactory`, `fenceFilename`, `codeContent`, `patchContent`, `PatchView`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
 | `@orz/ui-code/word-diff` | `wordDiff`, `coalescedWordDiff`, `wordBag`, `bagWith`, types |
 | `@orz/ui-code/styles.css` | the `diffs-container` rules |
 
@@ -68,6 +68,26 @@ import { CodeBlock, CodeDiffBlock, fenceFilename } from "@orz/ui-code";
 `CodeBlock` takes `plain` to skip highlighting, and a `className` that caps a long file's height:
 the code view virtualizes against its own box.
 
+### Highlighting off the main thread
+
+pierre tokenizes a whole file even when it draws a screenful: 1 MiB of log held the tab for 9.3 s
+on the main thread, 0.2 s in pierre's worker. `CodeWorkerProvider` lends that worker to every
+`CodeBlock` below it that sets `offThread`, which `codeContent` does for files. The lines show as
+plain text at once and their colours follow. The worker script has to come from the app's bundler,
+so the app starts it:
+
+```tsx
+import { CodeWorkerProvider } from "@orz/ui-code";
+import PierreWorker from "@pierre/diffs/worker/worker.js?worker"; // Vite
+
+<CodeWorkerProvider workerFactory={() => new PierreWorker()}>{app}</CodeWorkerProvider>
+```
+
+Without a provider those blocks tokenize on the main thread, as every other block does. The pool
+is a page-wide singleton of two workers, created from the first factory and terminated when the
+last block using it unmounts. `offThread` only pays off with a height cap in `className`:
+uncapped, laying out every line of 1 MiB still held the main thread for 2.2 s.
+
 `CodeDiffBlock` is a unified line diff of one block; with identical sides it renders a `CodeBlock`.
 
 ### `codeContent`
@@ -78,7 +98,8 @@ placement:
 
 - An inline source, such as a markdown fence, is a `CodeBlock` named `fenceFilename(lang)`.
 - A file is loaded through `useSourceText` and drawn as a `CodeBlock` under its own name, with
-  line numbers and without its final newline. While it loads, it is the registry's fallback: a
+  line numbers and without its final newline, tokenized off the main thread when a
+  `CodeWorkerProvider` is mounted, and capped to the viewer's pane or a card's collapsed body. While it loads, it is the registry's fallback: a
   download link, or the bare name when there is no `url`. A failed load shows that fallback, the
   error and a Retry button.
 
