@@ -3,10 +3,14 @@ import { createElement, useRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   blockFor,
+  holdRevealed,
+  isHoldingTarget,
+  landAtBottom,
   restingScrollY,
   usableViewport,
   useScrollInsets,
 } from "../src/hooks/scroll-insets.ts";
+import { FakeResizeObserver, resizePage } from "./fake-resize-observer.ts";
 
 // Overlays measured on a 1280×800 screen: app header 57, floating title bar
 // 40, a composer 93 collapsed — 129, 167 and 385 as a draft grows.
@@ -138,8 +142,13 @@ function Harness({ composer }: { composer: "mounted" | "absent" }) {
     createElement("header", { ref: header, "data-h": "57" }),
     createElement("div", { ref: bar, "data-h": "40" }),
     composer === "mounted"
-      ? createElement("div", { ref: composerRef, "data-h": "93" })
+      ? createElement(
+          "div",
+          { ref: composerRef, "data-h": "93" },
+          createElement("textarea", { "aria-label": "draft" }),
+        )
       : null,
+    createElement("button", { type: "button" }, "elsewhere"),
   );
 }
 
@@ -151,6 +160,8 @@ const insets = () => ({
 describe("useScrollInsets (T-299)", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    document.documentElement.style.removeProperty("--header-hide");
     for (const header of document.querySelectorAll("header")) header.remove();
   });
 
@@ -172,6 +183,43 @@ describe("useScrollInsets (T-299)", () => {
     expect(insets()).toEqual({ top: "105px", bottom: "0px" });
   });
 
+  it("drops an overlay's inset while focus is inside it", () => {
+    stubHeights();
+    const view = render(createElement(Harness, { composer: "mounted" }));
+    expect(insets()).toEqual({ top: "105px", bottom: "93px" });
+
+    // The caret lives inside the sticky composer, so it always sits in the
+    // composer's own inset: Chrome's caret reveal scrolled on every keystroke.
+    view.getByLabelText("draft").focus();
+    expect(insets()).toEqual({ top: "105px", bottom: "0px" });
+
+    view.getByText("elsewhere").focus();
+    expect(insets()).toEqual({ top: "105px", bottom: "93px" });
+  });
+
+  it("keeps reveals clear of an on-screen keyboard", () => {
+    stubHeights();
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(714);
+    // The keyboard is up and the page has been panned 100px down the layout
+    // viewport: the top 100 and the bottom 237 are both out of sight.
+    const vv = new EventTarget();
+    Object.defineProperties(vv, {
+      offsetTop: { value: 100 },
+      height: { value: 377 },
+      scale: { value: 1 },
+    });
+    vi.stubGlobal("visualViewport", vv);
+    render(createElement(Harness, { composer: "mounted" }));
+    expect(insets()).toEqual({ top: "205px", bottom: "330px" });
+  });
+
+  it("takes a slid-away header's share off the top", () => {
+    stubHeights();
+    document.documentElement.style.setProperty("--header-hide", "57px");
+    render(createElement(Harness, { composer: "mounted" }));
+    expect(insets()).toEqual({ top: "48px", bottom: "93px" });
+  });
+
   it("adds no header it was not given", () => {
     // A <header> elsewhere on the page is no overlay of this one's.
     const stray = document.createElement("header");
@@ -181,5 +229,85 @@ describe("useScrollInsets (T-299)", () => {
 
     render(createElement(Harness, { composer: "mounted" }));
     expect(insets()).toEqual({ top: "105px", bottom: "93px" });
+  });
+});
+
+describe("one hold per page", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    FakeResizeObserver.instances = [];
+    document.body.replaceChildren();
+  });
+
+  function target(id: string) {
+    const el = document.createElement("div");
+    el.id = id;
+    document.body.append(el);
+    return el;
+  }
+
+  it("re-reveals the target on every resize until the reader's first input", () => {
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
+    const reveal = vi
+      .spyOn(Element.prototype, "scrollIntoView")
+      .mockImplementation(() => {});
+    holdRevealed(target("anchor"), document.body);
+    resizePage();
+    resizePage();
+    expect(reveal).toHaveBeenCalledTimes(2);
+
+    window.dispatchEvent(new Event("wheel"));
+    resizePage();
+    expect(reveal).toHaveBeenCalledTimes(2);
+    expect(isHoldingTarget()).toBe(false);
+  });
+
+  it("retires the older landing when a newer one is held", () => {
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
+    const reveals: string[] = [];
+    vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(function (
+      this: Element,
+    ) {
+      reveals.push(this.id);
+    });
+    const bottoms = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const releaseAnchor = holdRevealed(target("anchor"), document.body);
+    expect(isHoldingTarget()).toBe(true);
+    const releaseEnd = landAtBottom();
+    // The end is not a target an arriving item would be yanked off.
+    expect(isHoldingTarget()).toBe(false);
+    resizePage();
+    expect(reveals).toEqual([]);
+    expect(bottoms).toHaveBeenCalledTimes(2);
+    // The stale release must not drop the newer hold on its way out.
+    releaseAnchor();
+    resizePage();
+    expect(bottoms).toHaveBeenCalledTimes(3);
+    releaseEnd();
+    resizePage();
+    expect(bottoms).toHaveBeenCalledTimes(3);
+  });
+
+  it("lands on the largest offset, not past the end", () => {
+    const to = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const root = document.documentElement;
+    vi.spyOn(root, "scrollHeight", "get").mockReturnValue(5000);
+    vi.spyOn(root, "clientHeight", "get").mockReturnValue(714);
+    landAtBottom()();
+    expect(to).toHaveBeenCalledWith(0, 4286);
+  });
+
+  it("lets go of a target that has left the document", () => {
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
+    const reveal = vi
+      .spyOn(Element.prototype, "scrollIntoView")
+      .mockImplementation(() => {});
+    const el = target("gone");
+    holdRevealed(el, document.body);
+    el.remove();
+    resizePage();
+    expect(reveal).not.toHaveBeenCalled();
+    expect(isHoldingTarget()).toBe(false);
   });
 });

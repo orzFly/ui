@@ -1,4 +1,14 @@
-import { type RefObject, useLayoutEffect, useRef } from "react";
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
+import {
+  VIEWPORT_CHROME_EVENT,
+  visualViewportInsets,
+} from "./viewport-chrome.ts";
 
 /** Page coordinates of the thing to be revealed. */
 export type ScrollBlock = { top: number; height: number };
@@ -116,6 +126,108 @@ export function revealBlock(
   if (highlight) flash(el);
 }
 
+/**
+ * The page's one hold. Two at once would each put the viewport back on its
+ * own target at every resize, so a newer landing retires the older one.
+ */
+let held: { release: () => void; onEnd: boolean } | null = null;
+
+/**
+ * Whether an untouched reader is being held on a particular element, as
+ * opposed to the end of the document or nothing at all. Following a new item
+ * at the end should not take the reader off a target they were sent to.
+ */
+export function isHoldingTarget(): boolean {
+  return held !== null && !held.onEnd;
+}
+
+/**
+ * Run `place` again every time `container` resizes, until the reader's first
+ * input. Returns the release, for when the landing stops mattering first.
+ *
+ * A landing is made against the page as it stands, and the page keeps
+ * arriving after it: images, diffs, attachment lists, each pushing the target
+ * away from where it was put. After the first input, re-placing would fight
+ * the reader. There is no settle timeout: late content lands with unbounded
+ * gaps, and a timer that fires inside one re-opens the race.
+ *
+ * Dragging the scrollbar counts as input: Chromium and Firefox both deliver
+ * its `pointerdown` to `<html>`.
+ */
+function hold(
+  container: Element,
+  place: (release: () => void) => void,
+  onEnd = false,
+) {
+  held?.release();
+  if (typeof ResizeObserver === "undefined") return () => {}; // happy-dom
+  const controller = new AbortController();
+  const observer = new ResizeObserver(() => place(release));
+  const release = () => {
+    observer.disconnect();
+    controller.abort();
+    if (held?.release === release) held = null;
+  };
+  observer.observe(container);
+  for (const type of ["wheel", "touchstart", "pointerdown", "keydown"]) {
+    window.addEventListener(type, release, {
+      capture: true,
+      passive: true,
+      signal: controller.signal,
+    });
+  }
+  held = { release, onEnd };
+  return release;
+}
+
+/**
+ * Hold `el` where `revealBlock` put it, re-revealing it without the flash
+ * every time `container` resizes; see `hold`.
+ */
+export function holdRevealed(
+  el: HTMLElement,
+  container: Element,
+  mode: RevealMode = "auto",
+  behavior?: ScrollBehavior,
+): () => void {
+  return hold(container, (release) => {
+    // Gone with a route change nobody touched the page for.
+    if (!el.isConnected) release();
+    else revealBlock(el, { mode, behavior, flash: false });
+  });
+}
+
+/**
+ * Bottom of the document, which sits below a sticky composer's in-flow spot.
+ *
+ * The largest offset there is, not `scrollHeight`: iOS Safari takes the
+ * overshoot literally for a frame, parking the visual viewport a whole screen
+ * past the end — one blank white frame on every landing.
+ */
+function scrollToEnd() {
+  const root = document.documentElement;
+  window.scrollTo(0, Math.max(0, root.scrollHeight - root.clientHeight));
+}
+
+/** Go to the end of the document and stay there; see `hold`. */
+export function landAtBottom(): () => void {
+  scrollToEnd();
+  return hold(document.body, scrollToEnd, true);
+}
+
+/**
+ * Keep the release of the last hold this component started, and call it on
+ * unmount: a page left without input would otherwise go on being held.
+ */
+export function useOwnHold(): (release: () => void) => void {
+  const own = useRef<() => void>(() => {});
+  useEffect(() => () => own.current(), []);
+  return useCallback((release: () => void) => {
+    own.current();
+    own.current = release;
+  }, []);
+}
+
 export type ScrollInsetSources = {
   /** Overlays pinned to the viewport's top edge, a fixed app header included. */
   top?: ReadonlyArray<RefObject<HTMLElement | null>>;
@@ -135,8 +247,9 @@ export type ScrollInsetSources = {
  * whose state holds a fallback for one commit — 56 against a real 93 on a
  * narrow screen, exactly across the frame a hard refresh lands in.
  *
- * Nothing is added implicitly: a fixed header is one more ref in `top`. The
- * landing flash is `.anchor-flash` from `@orz/ui/styles.css`.
+ * No overlay is added implicitly: a fixed header is one more ref in `top`.
+ * What an on-screen keyboard covers is counted on its own, from the visual
+ * viewport. The landing flash is `.anchor-flash` from `@orz/ui/styles.css`.
  */
 export function useScrollInsets({
   top = [],
@@ -156,18 +269,37 @@ export function useScrollInsets({
       observer?.observe(el);
     };
     const measure = () => {
-      let topInset = BREATHING_ROOM;
+      // A caret inside a sticky overlay always sits within that overlay's own
+      // inset, and Chrome's caret reveal honours scroll-padding: it scrolled
+      // the page on every typed character, the overlay riding along, so the
+      // caret was never "revealed". Nothing inside an overlay can be hidden
+      // behind it, so the one holding focus stops counting.
+      const focused = document.activeElement;
+      const extent = (el: HTMLElement) =>
+        focused !== null && el.contains(focused)
+          ? 0
+          : el.getBoundingClientRect().height;
+      let overlays = 0;
       let bottomInset = 0;
       for (const el of sources.current.top.map((r) => r.current)) {
         if (el === null) continue;
-        topInset += el.getBoundingClientRect().height;
+        overlays += extent(el);
         watch(el);
       }
       for (const el of sources.current.bottom.map((r) => r.current)) {
         if (el === null) continue;
-        bottomInset += el.getBoundingClientRect().height;
+        bottomInset += extent(el);
         watch(el);
       }
+      // A keyboard covers the layout viewport's bottom and can pan its top
+      // out of view; sticky edges follow it, and so must the padding, or a
+      // reveal would centre its target behind the keyboard. A header
+      // useAutoHideHeader has slid partly away covers that much less.
+      const edges = visualViewportInsets();
+      const slid = pixelsOf(root.style.getPropertyValue("--header-hide"));
+      const topInset =
+        BREATHING_ROOM + edges.top + Math.max(0, overlays - slid);
+      bottomInset += edges.bottom;
       root.style.scrollPaddingTop = `${topInset}px`;
       root.style.scrollPaddingBottom = `${bottomInset}px`;
     };
@@ -179,8 +311,20 @@ export function useScrollInsets({
     remeasure.current = measure;
     measure();
     window.addEventListener("resize", measure);
+    window.addEventListener(VIEWPORT_CHROME_EVENT, measure);
+    // A keyboard opening resizes only the visual viewport, never the window.
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", measure);
+    vv?.addEventListener("scroll", measure);
+    document.addEventListener("focusin", measure);
+    document.addEventListener("focusout", measure);
     return () => {
       window.removeEventListener("resize", measure);
+      window.removeEventListener(VIEWPORT_CHROME_EVENT, measure);
+      vv?.removeEventListener("resize", measure);
+      vv?.removeEventListener("scroll", measure);
+      document.removeEventListener("focusin", measure);
+      document.removeEventListener("focusout", measure);
       observer?.disconnect();
       root.style.removeProperty("scroll-padding-top");
       root.style.removeProperty("scroll-padding-bottom");

@@ -1,6 +1,9 @@
 import {
+  holdRevealed,
+  landAtBottom,
   type RevealMode,
   revealBlock,
+  useOwnHold,
   useScrollInsets,
 } from "@orz/ui/hooks/scroll-insets";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -25,6 +28,21 @@ function Page() {
       <div ref={composer} className="fixed inset-x-0 bottom-0">…</div>
     </>
   );
+}`;
+
+const HELD = `import { holdRevealed, landAtBottom, revealBlock, useOwnHold } from "@orz/ui/hooks/scroll-insets";
+
+function Page() {
+  // Lets go of this page's hold when it unmounts.
+  const own = useOwnHold();
+
+  const land = (el: HTMLElement) => {
+    revealBlock(el);
+    // Reveals again as late content resizes the page, until the reader's first input.
+    own(holdRevealed(el, document.body));
+  };
+  const landAtEnd = () => own(landAtBottom());
+  …
 }`;
 
 const meta = {
@@ -135,6 +153,79 @@ export const Usage: Story = {
             />
           </div>
         )}
+      </>
+    );
+  },
+};
+
+/**
+ * Images arrive late and push a landing away from where it was put. Land on
+ * section 20 or on the end, then keep your hands off: every half second a
+ * block grows at the top, and the hold keeps the landing in place. The first
+ * wheel, touch, click or key lets go, and the page stops moving under you.
+ * Scroll anchoring is off here, as on a page that compensates for its own
+ * inserts; with it on, Chromium and Firefox would hide what the hold does.
+ */
+export const HeldLanding: Story = {
+  parameters: { docs: { source: { code: HELD, language: "tsx" } } },
+  render: function Render() {
+    const toolbar = useRef<HTMLDivElement>(null);
+    const [late, setLate] = useState(0);
+    const own = useOwnHold();
+    useScrollInsets({ top: [toolbar] });
+
+    const arrive = () => {
+      setLate(0);
+      for (let i = 1; i <= 6; i++) {
+        window.setTimeout(() => setLate(i), i * 500);
+      }
+    };
+    const landOn = (n: number) => {
+      const el = document.getElementById(`held-${n}`);
+      if (el === null) return;
+      revealBlock(el);
+      own(holdRevealed(el, document.body));
+      arrive();
+    };
+    const landAtEnd = () => {
+      own(landAtBottom());
+      arrive();
+    };
+
+    return (
+      <>
+        <div
+          ref={toolbar}
+          className="fixed inset-x-0 top-0 z-10 flex items-center gap-2 border-b bg-background p-2"
+        >
+          <button
+            type="button"
+            className="rounded-md border px-2"
+            onClick={() => landOn(20)}
+          >
+            Land on 20
+          </button>
+          <button
+            type="button"
+            className="rounded-md border px-2"
+            onClick={landAtEnd}
+          >
+            Land at the end
+          </button>
+          <span className="text-muted-foreground">{late} of 6 late images</span>
+        </div>
+        <main className="grid gap-2 px-4 pt-16 [overflow-anchor:none]">
+          <div
+            className="rounded-md bg-muted"
+            style={{ height: late * 120 }}
+            aria-hidden="true"
+          />
+          {SECTIONS.map((n) => (
+            <section key={n} id={`held-${n}`} className="rounded-md border p-3">
+              Section {n}
+            </section>
+          ))}
+        </main>
       </>
     );
   },
