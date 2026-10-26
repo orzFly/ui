@@ -138,8 +138,13 @@ function Harness({ composer }: { composer: "mounted" | "absent" }) {
     createElement("header", { ref: header, "data-h": "57" }),
     createElement("div", { ref: bar, "data-h": "40" }),
     composer === "mounted"
-      ? createElement("div", { ref: composerRef, "data-h": "93" })
+      ? createElement(
+          "div",
+          { ref: composerRef, "data-h": "93" },
+          createElement("textarea", { "aria-label": "draft" }),
+        )
       : null,
+    createElement("button", { type: "button" }, "elsewhere"),
   );
 }
 
@@ -170,6 +175,20 @@ describe("useScrollInsets (T-299)", () => {
     // reserve a strip for an overlay that is not there.
     render(createElement(Harness, { composer: "absent" }));
     expect(insets()).toEqual({ top: "105px", bottom: "0px" });
+  });
+
+  it("drops an overlay's inset while focus is inside it", () => {
+    stubHeights();
+    const view = render(createElement(Harness, { composer: "mounted" }));
+    expect(insets()).toEqual({ top: "105px", bottom: "93px" });
+
+    // The caret lives inside the sticky composer, so it always sits in the
+    // composer's own inset: Chrome's caret reveal scrolled on every keystroke.
+    view.getByLabelText("draft").focus();
+    expect(insets()).toEqual({ top: "105px", bottom: "0px" });
+
+    view.getByText("elsewhere").focus();
+    expect(insets()).toEqual({ top: "105px", bottom: "93px" });
   });
 
   it("adds no header it was not given", () => {
