@@ -66,6 +66,16 @@ describe("AttachmentViewer paging", () => {
     expect(title()).toBe("b.txt");
   });
 
+  it("lays its X out as the title row's last control", () => {
+    render(<Controlled initial={{ items: ITEMS, index: 0 }} />);
+    const row = screen.getByRole("heading").parentElement as HTMLElement;
+    const close = within(row).getByRole("button", { name: "Close" });
+    expect(row.lastElementChild).toBe(close);
+    expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1);
+    fireEvent.click(close);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("hides the counter and the paging buttons for one item", () => {
     render(
       <Controlled initial={{ items: [ITEMS[0] as FileSource], index: 0 }} />,
