@@ -308,8 +308,10 @@ describe("AttachmentViewer edges", () => {
         />
       </ContentRenderers>,
     );
-    const video = screen.getByRole("dialog").querySelector("video");
-    fireEvent.keyDown(video as HTMLVideoElement, { key: "ArrowRight" });
+    const picture = screen
+      .getByRole("dialog")
+      .querySelector('[data-slot="media-screen"]');
+    fireEvent.keyDown(picture as HTMLElement, { key: "ArrowRight" });
     expect(onNavigate).not.toHaveBeenCalled();
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
     expect(onNavigate).toHaveBeenCalledWith(1);

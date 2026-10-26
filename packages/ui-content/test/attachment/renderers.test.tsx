@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   AttachmentViewerProvider,
@@ -280,12 +280,51 @@ describe("video and audio", () => {
   it.each([
     ["video", "clip.webm"],
     ["audio", "take.ogg"],
-  ])("draws %s with native controls and metadata preload", (tag, name) => {
+  ])("draws %s under the shared bar, without native controls", (tag, name) => {
     const { container } = draw(file(name), "document", { className: "marked" });
     const media = container.querySelector(tag) as HTMLMediaElement;
-    expect(media.hasAttribute("controls")).toBe(true);
+    expect(media.hasAttribute("controls")).toBe(false);
     expect(media.getAttribute("preload")).toBe("metadata");
-    expect(media.classList).toContain("marked");
+    expect(
+      container.querySelector(`[data-slot="${tag}-player"]`)?.classList,
+    ).toContain("marked");
+    expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
+  });
+
+  it.each([
+    ["video", "clip.webm"],
+    ["audio", "take.ogg"],
+  ])("puts the name and Download over %s in a document", (_, name) => {
+    draw(file(name), "document");
+    expect(screen.getByText(name).getAttribute("title")).toBe(name);
+    const download = screen.getByRole("link", { name: "Download" });
+    expect(download.getAttribute("download")).toBe(name);
+  });
+
+  it.each([
+    ["video", "clip.webm"],
+    ["audio", "take.ogg"],
+  ])("draws %s with no header in the viewer", (_, name) => {
+    draw(file(name), "viewer");
+    expect(screen.queryByRole("link", { name: "Download" })).toBeNull();
+  });
+
+  it.each([
+    ["video", "clip.avi"],
+    ["audio", "take.wma"],
+  ])("falls through to the next renderer when %s can't play", (tag, name) => {
+    const { container } = draw(
+      file(name, {
+        mime: tag === "video" ? "video/x-msvideo" : "audio/x-ms-wma",
+      }),
+      "document",
+    );
+    const media = container.querySelector(tag) as HTMLMediaElement;
+    act(() => {
+      media.dispatchEvent(new Event("error"));
+    });
+    expect(container.querySelector(tag)).toBeNull();
+    expect(screen.getByText("This browser can't play this file.")).toBeTruthy();
   });
 });
 

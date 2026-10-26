@@ -1,4 +1,7 @@
+import { Button } from "@orz/ui/components/button";
 import { cn } from "@orz/ui/lib/utils";
+import { Download } from "lucide-react";
+import { type ComponentType, useState } from "react";
 import {
   type FileLike,
   isAudioFile,
@@ -14,7 +17,9 @@ import type {
   ContentSource,
   Placement,
 } from "../types.ts";
+import { fileIcon } from "./icon.ts";
 import { ImageCanvas } from "./image-canvas.tsx";
+import { AudioPlayer, VideoPlayer } from "./media-player.tsx";
 import {
   type FileSource,
   useAttachmentViewer,
@@ -169,21 +174,60 @@ export function pdfContent(options: FrameContentOptions = {}): ContentRenderer {
   };
 }
 
-/** Video with native controls, in either placement. */
+const UNPLAYABLE = "This browser can't play this file.";
+
+/** The name and Download over a player in a document; in the viewer the title bar has both. */
+function MediaHeader({ file, icon }: { file: FileSource; icon?: boolean }) {
+  const Icon = fileIcon(file);
+  return (
+    <div className="flex items-center gap-2 border-b bg-card py-1 pr-1 pl-3 text-card-foreground text-xs">
+      {icon && <Icon aria-hidden className="size-4 shrink-0" />}
+      <span className="min-w-0 flex-1 truncate" title={file.name}>
+        {file.name}
+      </span>
+      {file.url !== undefined && (
+        <Button asChild size="xs" variant="ghost">
+          <a href={file.url} download={file.name}>
+            <Download />
+            Download
+          </a>
+        </Button>
+      )}
+    </div>
+  );
+}
+
+type MediaFileProps = ContentProps & { Next: ComponentType<ContentProps> };
+
+/** A file the browser cannot play still gets what the renderers after this one make of it. */
+function Unplayable({ source, placement, className, Next }: MediaFileProps) {
+  return (
+    <div className={className}>
+      <Next source={source} placement={placement} />
+      <p className="text-muted-foreground text-xs">{UNPLAYABLE}</p>
+    </div>
+  );
+}
+
+/** Video under the shared control bar, in either placement. */
 export function videoContent(): ContentRenderer {
-  function VideoFile({ source, placement, className }: ContentProps) {
+  function VideoFile(props: MediaFileProps) {
+    const { source, placement, className } = props;
     const file = fileOf(source);
+    const [failed, setFailed] = useState(false);
+    if (failed) return <Unplayable {...props} />;
     return (
-      // preload="metadata": a page of embeds must not download every file.
-      // biome-ignore lint/a11y/useMediaCaption: an uploaded file carries no caption track to offer
-      <video
-        src={file.url}
-        controls
-        preload="metadata"
+      <VideoPlayer
+        src={file.url ?? ""}
         title={file.name}
+        header={
+          placement === "document" ? <MediaHeader file={file} /> : undefined
+        }
+        onError={() => setFailed(true)}
         className={cn(
-          "max-w-full rounded-md",
-          placement === "viewer" && "mx-auto max-h-(--attachment-pane-height)",
+          // The bar is 2.25rem tall; the picture takes the rest of the pane.
+          placement === "viewer" &&
+            "[&_video]:max-h-[calc(var(--attachment-pane-height)-2.25rem)]",
           className,
         )}
       />
@@ -198,21 +242,24 @@ export function videoContent(): ContentRenderer {
   };
 }
 
-/** Audio with native controls, in either placement. */
+/** Audio under the shared control bar, in either placement. */
 export function audioContent(): ContentRenderer {
-  function AudioFile({ source, placement, className }: ContentProps) {
+  function AudioFile(props: MediaFileProps) {
+    const { source, placement, className } = props;
     const file = fileOf(source);
+    const [failed, setFailed] = useState(false);
+    if (failed) return <Unplayable {...props} />;
     return (
-      // biome-ignore lint/a11y/useMediaCaption: an uploaded file carries no caption track to offer
-      <audio
-        src={file.url}
-        controls
-        preload="metadata"
+      <AudioPlayer
+        src={file.url ?? ""}
         title={file.name}
-        className={cn(
-          placement === "viewer" ? "w-full" : "my-2 block max-w-full",
-          className,
-        )}
+        header={
+          placement === "document" ? (
+            <MediaHeader file={file} icon />
+          ) : undefined
+        }
+        onError={() => setFailed(true)}
+        className={cn(placement === "viewer" && "w-full", className)}
       />
     );
   }
