@@ -186,3 +186,11 @@ describe("attachment list rows", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+describe("the attachment list's upload time", () => {
+  it("is a <time> carrying the instant it prints", () => {
+    const { container } = draw(shots(1));
+    const time = container.querySelector("li time");
+    expect(time?.getAttribute("dateTime")).toBe("2026-09-01T00:01:00Z");
+  });
+});

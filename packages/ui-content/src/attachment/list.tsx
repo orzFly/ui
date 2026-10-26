@@ -83,7 +83,9 @@ function AttachmentRow({
             className="hidden shrink-0 text-xs text-muted-foreground sm:inline"
             title={item.createdAt}
           >
-            {new Date(item.createdAt).toLocaleString()}
+            <time dateTime={item.createdAt}>
+              {new Date(item.createdAt).toLocaleString()}
+            </time>
           </span>
         )}
       </a>
