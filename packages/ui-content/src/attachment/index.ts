@@ -6,6 +6,7 @@ export {
   type AttachmentCardOptions,
   attachmentCard,
 } from "./card-content.tsx";
+export { DeletedAttachmentMark } from "./deleted.tsx";
 export { DocumentCard, type DocumentCardProps } from "./document-card.tsx";
 export { fileIcon } from "./icon.ts";
 export {

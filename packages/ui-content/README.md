@@ -27,6 +27,7 @@ type ContentSource =
       size?: number;
       url?: string; // where the bytes live: an <img>, an <iframe>, the download link
       load?: (signal: AbortSignal) => Promise<string>; // the text, for renderers that need it
+      deleted?: boolean; // links and embeds draw it struck through, as deleted
     };
 
 type Placement = "document" | "viewer"; // inside a flow of content, or owning the surface
@@ -356,11 +357,16 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
 - **`<AttachmentLink file boxed? className?>`** is an inline link wearing the file's type icon. It is
   a real anchor to `useViewHref(file)`, so copy-link and middle-click work; a plain left click on a
   file `useCanPreview` accepts opens the viewer. `boxed` draws it as a bordered chip. It is a
-  `LinkChip` from `@orz/ui/components/link-chip`, which also exports the chip's classes.
-- **`<AttachmentList items title? id? className?>`** lists files (`FileSource` plus a `key` and an
-  optional ISO `createdAt`) with their icon, size, time and a download button. A list of eight or
-  more keeps its newest five rows and folds the rest behind a toggle. A plain click on a row opens
-  the viewer on the whole list. An empty list renders nothing.
+  `LinkChip` from `@orz/ui/components/link-chip`, which also exports the chip's classes. A file
+  marked `deleted` is its name struck through, with no link.
+- **`<AttachmentList items actions? title? id? className?>`** lists files (`FileSource` plus a
+  `key` and an optional ISO `createdAt`) with their icon, size, time and a download button.
+  `actions(item)` draws the app's own controls at the end of a row, such as a delete button. A list
+  of eight or more keeps its newest five rows and folds the rest behind a toggle. A plain click on a
+  row opens the viewer on the whole list. An empty list renders nothing.
+- **`<DeletedAttachmentMark name className?>`** is what a document shows for a link or embed of a
+  deleted file: the name struck through, with the word "deleted". `@orz/ui-markdown`'s
+  `attachmentLinks` and `markdownEmbeds` draw it for a file their `resolve` marks `deleted`.
 - **`<DocumentCard name icon? meta? headerActions? titleBarFor? downloadUrl? onExpand? collapsedClassName?>`**
   is the frame `attachmentCard` draws, for anything else that wants it: a header with the name, a
   muted note, extra actions, download and expand, around a height-capped body that offers "Show full

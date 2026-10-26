@@ -3,6 +3,7 @@ import {
   type ContentSource,
   useContentDisplayOf,
 } from "@orz/ui-content";
+import { DeletedAttachmentMark } from "@orz/ui-content/attachment";
 import type { MarkdownPlugin } from "./plugin.ts";
 
 export type MarkdownEmbedsOptions = {
@@ -16,6 +17,7 @@ export type MarkdownEmbedsOptions = {
 /**
  * Draws a markdown image through `@orz/ui-content` when its address resolves to a source some
  * registered renderer accepts, such as `![spec](attachment-address)` resolving to a markdown file.
+ * A file `resolve` marks `deleted` is a `DeletedAttachmentMark` instead.
  *
  * Returns a new plugin on every call, so memoise the call along with the rest of the plugin list.
  */
@@ -31,6 +33,14 @@ export function markdownEmbeds({
       img: function EmbedImage({ Next, node, ...props }) {
         const displayOf = useContentDisplayOf();
         const source = sourceOf(props.src);
+        if (source?.kind === "file" && source.deleted) {
+          return (
+            <DeletedAttachmentMark
+              name={source.name}
+              className={props.className}
+            />
+          );
+        }
         if (source === null || displayOf(source, "document") === null) {
           return <Next node={node} {...props} />;
         }
@@ -56,7 +66,10 @@ export function markdownEmbeds({
         const carriesBlock = (node?.children ?? []).some((child) => {
           if (child.type !== "element" || child.tagName !== "img") return false;
           const source = sourceOf(child.properties.src);
-          return source !== null && displayOf(source, "document") === "block";
+          if (source === null) return false;
+          // A deleted file is an inline mark, whatever would draw it.
+          if (source.kind === "file" && source.deleted) return false;
+          return displayOf(source, "document") === "block";
         });
         if (!carriesBlock) return <Next node={node} {...props} />;
         const { children, className, ...rest } = props;

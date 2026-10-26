@@ -50,4 +50,24 @@ describe("attachmentLinks", () => {
     expect(link.getAttribute("title")).toBeNull();
     expect(link.querySelector("svg")).toBeNull();
   });
+
+  it("draws a link to a deleted file as the deleted mark", () => {
+    render(
+      <Markdown
+        plugins={[
+          attachmentLinks({
+            resolve: (href) => {
+              const file = resolve(href);
+              return file === null ? null : { ...file, deleted: true };
+            },
+          }),
+        ]}
+      >
+        {"See [the notes](files/notes.md)."}
+      </Markdown>,
+    );
+    expect(screen.queryByRole("link")).toBeNull();
+    const mark = document.querySelector("[data-attachment-deleted]");
+    expect(mark?.textContent).toBe("notes.mddeleted");
+  });
 });

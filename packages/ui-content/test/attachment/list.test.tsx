@@ -187,6 +187,27 @@ describe("attachment list rows", () => {
   });
 });
 
+describe("the attachment list's row actions", () => {
+  it("draws each row's actions after its download link", () => {
+    const { container } = render(
+      <ContentRenderers renderers={RENDERERS}>
+        <AttachmentViewerProvider>
+          <AttachmentList
+            items={shots(2)}
+            actions={(item) => (
+              <button type="button" aria-label={`delete ${item.name}`} />
+            )}
+          />
+        </AttachmentViewerProvider>
+      </ContentRenderers>,
+    );
+    const rows = [...container.querySelectorAll("li")];
+    expect(
+      rows.map((li) => li.lastElementChild?.getAttribute("aria-label")),
+    ).toEqual(["delete shot-1.png", "delete shot-2.png"]);
+  });
+});
+
 describe("the attachment list's upload time", () => {
   it("is a <time> carrying the instant it prints", () => {
     const { container } = draw(shots(1));

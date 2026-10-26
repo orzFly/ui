@@ -146,7 +146,9 @@ function Doc({ source }: { source: string }) {
   file as an `AttachmentLink` chip from `@orz/ui-content/attachment`, which opens the nearest
   `AttachmentViewerProvider`'s viewer on a plain click. Every other link goes on to the next
   plugin. `resolve` has `markdownEmbeds`' signature, so one function serves both:
-  `[markdownEmbeds({ resolve }), attachmentLinks({ resolve })]`. Using it means installing what
+  `[markdownEmbeds({ resolve }), attachmentLinks({ resolve })]`. A file `resolve` marks `deleted`
+  is a `DeletedAttachmentMark` in either plugin, inline in its paragraph, rather than a link to
+  nothing or a broken image. Using it means installing what
   `@orz/ui-content/attachment` needs (its README, "Attachments").
 - **`externalLinks({ origin? })`** opens a link to an http(s) address on another origin (default
   `window.location.origin`) in a new tab, with `rel="noopener noreferrer"`; `styles.css` draws a ↗

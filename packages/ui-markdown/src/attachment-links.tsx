@@ -1,5 +1,8 @@
 import type { ContentSource } from "@orz/ui-content";
-import { AttachmentLink } from "@orz/ui-content/attachment";
+import {
+  AttachmentLink,
+  DeletedAttachmentMark,
+} from "@orz/ui-content/attachment";
 import type { MarkdownPlugin } from "./plugin.ts";
 
 export type AttachmentLinksOptions = {
@@ -14,7 +17,8 @@ export type AttachmentLinksOptions = {
 
 /**
  * Draws a markdown link to a file as an `AttachmentLink` chip, which opens the nearest attachment
- * viewer on a plain click. Links that do not resolve to a file go on to the plugins after this one.
+ * viewer on a plain click, or as a `DeletedAttachmentMark` when `resolve` marks the file
+ * `deleted`. Links that do not resolve to a file go on to the plugins after this one.
  *
  * Returns a new plugin on every call, so memoise the call along with the rest of the plugin list.
  */
@@ -30,6 +34,14 @@ export function attachmentLinks({
           typeof props.href === "string" ? resolve(props.href) : null;
         if (source === null || source.kind !== "file") {
           return <Next node={node} {...props} />;
+        }
+        if (source.deleted) {
+          return (
+            <DeletedAttachmentMark
+              name={source.name}
+              className={props.className}
+            />
+          );
         }
         return (
           <AttachmentLink
