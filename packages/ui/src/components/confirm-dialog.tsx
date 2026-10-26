@@ -31,6 +31,7 @@ export function ConfirmDialog({
   destructive = false,
   pending = false,
   onConfirm,
+  children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,6 +42,8 @@ export function ConfirmDialog({
   destructive?: boolean;
   pending?: boolean;
   onConfirm: () => void;
+  /** Block content below the description, which is a paragraph. */
+  children?: ReactNode;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -49,6 +52,7 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
+        {children}
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" disabled={pending}>
