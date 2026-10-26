@@ -13,7 +13,7 @@ import {
   within,
 } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { codeContent } from "../src/content.tsx";
 import { patchContent } from "../src/patch-content.tsx";
 import { PatchView } from "../src/patch-view.tsx";
@@ -50,6 +50,10 @@ vi.mock("@pierre/diffs/react", () => ({
   ),
   MultiFileDiff: () => null,
 }));
+
+// The parser is a chunk of its own, loaded on the first parse: ~0.1 s idle,
+// ~0.7 s on a loaded machine. That is setup, not a test's to wait for.
+beforeAll(() => import("@pierre/diffs"));
 
 const TWO_FILES = `diff --git a/src/a.ts b/src/a.ts
 index 1111111..2222222 100644
@@ -131,7 +135,12 @@ const cardHeader = () => {
 describe("PatchView", () => {
   it("draws one diff per file, behind a height cap", async () => {
     render(<PatchView filename="x.patch" text={TWO_FILES} />);
-    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    // The file's first diff suspends on the lazy CodeView, and React holds
+    // back a revealed Suspense boundary for 300 ms; with the file's first
+    // render on a loaded machine, that comes to ~1 s, the default wait.
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]), {
+      timeout: 3000,
+    });
     // CodeView virtualizes against its own box; without the cap a 1 MB patch
     // laid out every line and froze the tab for 15 s.
     const cls = screen.getByTestId("codeview").getAttribute("data-class");
