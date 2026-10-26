@@ -11,6 +11,11 @@ export type ContentSource =
       url?: string;
       /** The text, for renderers that need it; useSourceText falls back to fetching url. */
       load?: (signal: AbortSignal) => Promise<string>;
+      /**
+       * The file was deleted. Links and embeds of it draw it struck through, as deleted, instead
+       * of a link to nothing or a broken image.
+       */
+      deleted?: boolean;
     };
 
 /** "document": inside a flow of other content (a fence, an embed). "viewer": owns the surface. */

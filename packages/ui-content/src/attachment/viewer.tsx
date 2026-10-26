@@ -1,5 +1,10 @@
 import { Button } from "@orz/ui/components/button";
-import { Dialog, DialogContent, DialogTitle } from "@orz/ui/components/dialog";
+import {
+  Dialog,
+  DialogCloseButton,
+  DialogContent,
+  DialogTitle,
+} from "@orz/ui/components/dialog";
 import { cn } from "@orz/ui/lib/utils";
 import {
   ChevronLeftIcon,
@@ -16,6 +21,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -23,8 +29,11 @@ import {
 import {
   formatSize,
   isHtmlFile,
+  isImageFile,
   isTextFile,
+  TEXT_PREVIEW_HARD_MAX_BYTES,
   TEXT_PREVIEW_MAX_BYTES,
+  textPreviewGate,
 } from "../file-kind.ts";
 import { Content, useContentDisplay } from "../registry.tsx";
 import { ContentTitleBar } from "../title-bar.tsx";
@@ -32,6 +41,11 @@ import type { ContentSource } from "../types.ts";
 import { DEFAULT_IMAGE_LOOK, type ImageLook } from "./image-look.ts";
 
 export type FileSource = Extract<ContentSource, { kind: "file" }>;
+
+// Long enough to cover a pointer crossing the image between two controls,
+// short enough that leaving for good does not read as the viewer lagging.
+const RELEASE_DELAY = 400;
+const RELEASE_NOW = ["keydown", "pointerdown", "wheel"] as const;
 
 /** What the viewer is showing: a set of files and a position in it. */
 export type AttachmentViewerState = { items: FileSource[]; index: number };
@@ -46,6 +60,7 @@ export type AttachmentViewerControls = {
 type ViewerContext = AttachmentViewerControls & {
   viewHref: ((file: FileSource) => string | undefined) | undefined;
   textPreviewMaxBytes: number;
+  textPreviewHardMaxBytes: number;
 };
 
 const AttachmentViewerContext = createContext<ViewerContext | null>(null);
@@ -55,6 +70,10 @@ type ViewerImage = {
   maximized: boolean;
   look: ImageLook;
   setLook(look: ImageLook): void;
+  /** The last image's canvas height, so the next one tweens from it. */
+  lastHeight: { current: number | null };
+  /** The height the canvas keeps while the pointer is on the title-bar controls. */
+  held: number | null;
 };
 
 const ViewerImageContext = createContext<ViewerImage | null>(null);
@@ -76,8 +95,13 @@ export type AttachmentViewerProviderProps = {
   viewHref?: (file: FileSource) => string | undefined;
   /** The set paging covers when a single file is opened; null pages nothing. */
   group?: (file: FileSource) => AttachmentViewerState | null;
-  /** Text files above this, or of unknown size, open the download pane. Default 1 MiB. */
+  /**
+   * Text files above this wait for "Preview anyway" and then draw plain. Default 1 MiB. A text
+   * file of unknown size stays a link until its size is known.
+   */
   textPreviewMaxBytes?: number;
+  /** Text files above this never preview; the viewer says so. Default 10 MiB. */
+  textPreviewHardMaxBytes?: number;
   children?: ReactNode;
 } & ImageLookProps;
 
@@ -90,6 +114,7 @@ export function AttachmentViewerProvider({
   viewHref,
   group,
   textPreviewMaxBytes = TEXT_PREVIEW_MAX_BYTES,
+  textPreviewHardMaxBytes = TEXT_PREVIEW_HARD_MAX_BYTES,
   imageLook,
   onImageLookChange,
   children,
@@ -110,8 +135,14 @@ export function AttachmentViewerProvider({
     [],
   );
   const value = useMemo(
-    () => ({ open, show, viewHref, textPreviewMaxBytes }),
-    [open, show, viewHref, textPreviewMaxBytes],
+    () => ({
+      open,
+      show,
+      viewHref,
+      textPreviewMaxBytes,
+      textPreviewHardMaxBytes,
+    }),
+    [open, show, viewHref, textPreviewMaxBytes, textPreviewHardMaxBytes],
   );
 
   return (
@@ -144,19 +175,69 @@ export function useViewHref(file: FileSource): string {
 /**
  * Whether the viewer has something to draw for this file, which is what
  * decides if a plain click on it is hijacked into the viewer. Text needs a
- * known in-limit size — a file whose size the app does not know yet stays a
- * link until it does. HTML has no size cap: the browser streams it into the
- * iframe instead of this tab highlighting it.
+ * known size — a file whose size the app does not know yet stays a link
+ * until it does; a size past the limits still opens the viewer, which says
+ * why it shows nothing. HTML has no size cap: the browser streams it into
+ * the iframe instead of this tab highlighting it.
  */
 export function useCanPreview(file: FileSource): boolean {
-  const viewer = useContext(AttachmentViewerContext);
-  const max = viewer?.textPreviewMaxBytes ?? TEXT_PREVIEW_MAX_BYTES;
   const display = useContentDisplay(file, "viewer");
   if (display === null) return false;
-  if (isTextFile(file) && !isHtmlFile(file)) {
-    return file.size !== undefined && file.size <= max;
-  }
+  if (isTextFile(file) && !isHtmlFile(file)) return file.size !== undefined;
   return true;
+}
+
+function useGate(file: FileSource): "auto" | "ask" | "refuse" {
+  const viewer = useContext(AttachmentViewerContext);
+  if (!isTextFile(file) || isHtmlFile(file) || file.size === undefined) {
+    return "auto";
+  }
+  return textPreviewGate(
+    { ...file, size: file.size },
+    {
+      max: viewer?.textPreviewMaxBytes,
+      hardMax: viewer?.textPreviewHardMaxBytes,
+    },
+  );
+}
+
+/**
+ * A text file past the auto-preview size waits to be asked, and is then
+ * drawn: the code renderer draws text that large plain. Past the hard limit
+ * it never previews.
+ */
+function LargeTextPane({
+  gate,
+  onPreview,
+}: {
+  gate: "ask" | "refuse";
+  onPreview(): void;
+}) {
+  const viewer = useContext(AttachmentViewerContext);
+  const hardMax =
+    viewer?.textPreviewHardMaxBytes ?? TEXT_PREVIEW_HARD_MAX_BYTES;
+  return (
+    <div className="flex flex-col items-center gap-3 py-16 text-sm text-muted-foreground">
+      <FileIcon className="size-8" />
+      {gate === "refuse" ? (
+        <>
+          <span className="font-medium text-foreground">
+            This file is too large to preview.
+          </span>
+          <span>Previews stop at {formatSize(hardMax)}.</span>
+        </>
+      ) : (
+        <>
+          <span className="font-medium text-foreground">
+            Large files aren't previewed automatically.
+          </span>
+          <Button variant="outline" size="sm" onClick={onPreview}>
+            Preview anyway
+          </Button>
+        </>
+      )}
+    </div>
+  );
 }
 
 /** Paging can land on types that only download — say so instead of a blank pane. */
@@ -190,6 +271,9 @@ function ViewerBody({
   titleBar: HTMLElement | null;
 }) {
   const canPreview = useCanPreview(file);
+  const gate = useGate(file);
+  // For this opening only: the body is keyed by file.
+  const [asked, setAsked] = useState(false);
   return (
     <div
       className={cn(
@@ -204,12 +288,14 @@ function ViewerBody({
         } as CSSProperties
       }
     >
-      {canPreview ? (
+      {!canPreview ? (
+        <DownloadOnlyPane file={file} />
+      ) : gate === "refuse" || (gate === "ask" && !asked) ? (
+        <LargeTextPane gate={gate} onPreview={() => setAsked(true)} />
+      ) : (
         <ContentTitleBar source={file} target={titleBar}>
           <Content source={file} placement="viewer" />
         </ContentTitleBar>
-      ) : (
-        <DownloadOnlyPane file={file} />
       )}
     </div>
   );
@@ -290,6 +376,75 @@ export function AttachmentViewer({
   // Held here rather than in the image, so paging and reopening keep it.
   const [ownLook, setOwnLook] = useState(DEFAULT_IMAGE_LOOK);
   const look = imageLook ?? ownLook;
+  const lastHeight = useRef<number | null>(null);
+
+  const file = state?.items[state.index];
+  const count = state?.items.length ?? 0;
+  const isImage = file !== undefined && isImageFile(file);
+  // Paging between images tweens from one's height to the next; from
+  // anything else, including a closed viewer, the image lands at once.
+  useEffect(() => {
+    if (!isImage) lastHeight.current = null;
+  }, [isImage]);
+
+  // While the pointer is over − 100%▾ + or ‹ ›, the image keeps the height
+  // it had when the pointer arrived, and takes its own once the pointer
+  // leaves: the dialog is centred, so a height change slides the title bar
+  // out from under the pointer, and the next click on + lands on the image
+  // and toggles back to fit, or the next click on › misses. One region for
+  // both groups, so crossing the gap between them is not a leave. Listened
+  // to on the DOM rather than through React: the zoom controls are
+  // portalled in by the image renderer, so in React's tree they sit outside
+  // this region, while the zoom menu's items, portalled out to the body, sit
+  // inside it — and choosing Fit or 100% there should not be held. Leaving
+  // lets go only after RELEASE_DELAY, so a trip from one control to another
+  // the long way round, over the image, is not a leave either; a key, a
+  // press or a wheel in the meantime lets go at once, since the pointer is
+  // no longer travelling.
+  const [holdRegion, setHoldRegion] = useState<HTMLElement | null>(null);
+  const [held, setHeld] = useState<number | null>(null);
+  useEffect(() => {
+    if (holdRegion === null) return;
+    let pending: number | undefined;
+    const cancel = () => {
+      window.clearTimeout(pending);
+      pending = undefined;
+      for (const type of RELEASE_NOW)
+        window.removeEventListener(type, release, true);
+    };
+    const release = () => {
+      cancel();
+      setHeld(null);
+    };
+    const enter = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      if (pending !== undefined) cancel();
+      else setHeld(lastHeight.current);
+    };
+    const leave = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || pending !== undefined) return;
+      pending = window.setTimeout(release, RELEASE_DELAY);
+      for (const type of RELEASE_NOW)
+        window.addEventListener(type, release, {
+          capture: true,
+          passive: true,
+        });
+    };
+    holdRegion.addEventListener("pointerenter", enter);
+    holdRegion.addEventListener("pointerleave", leave);
+    return () => {
+      cancel();
+      holdRegion.removeEventListener("pointerenter", enter);
+      holdRegion.removeEventListener("pointerleave", leave);
+    };
+  }, [holdRegion]);
+  // Closing unmounts the region under the pointer, which never reports
+  // leaving it.
+  const open = file !== undefined;
+  useEffect(() => {
+    if (!open) setHeld(null);
+  }, [open]);
+
   const image = useMemo(
     () => ({
       maximized,
@@ -298,12 +453,11 @@ export function AttachmentViewer({
         if (imageLook === undefined) setOwnLook(next);
         onImageLookChange?.(next);
       },
+      lastHeight,
+      held,
     }),
-    [maximized, look, imageLook, onImageLookChange],
+    [maximized, look, imageLook, onImageLookChange, held],
   );
-
-  const file = state?.items[state.index];
-  const count = state?.items.length ?? 0;
 
   const step = (delta: number) => {
     if (state === null || count < 2) return;
@@ -312,13 +466,14 @@ export function AttachmentViewer({
 
   return (
     <Dialog
-      open={file !== undefined}
+      open={open}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
     >
       <DialogContent
         aria-describedby={undefined}
+        showCloseButton={false}
         onKeyDown={(e) => {
           // A focused video seeks, and a field moves its caret, on the same
           // keys: those belong to whatever the body drew.
@@ -338,34 +493,44 @@ export function AttachmentViewer({
       >
         {file && (
           <>
-            <div className="flex items-center gap-1 pr-8">
+            <div className="flex items-center gap-1">
               <DialogTitle className="min-w-0 flex-1 truncate">
                 {file.name}
               </DialogTitle>
-              <span ref={setTitleBar} className="contents" />
-              {count > 1 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="previous attachment"
-                    onClick={() => step(-1)}
-                  >
-                    <ChevronLeftIcon />
-                  </Button>
-                  <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
-                    {(state?.index ?? 0) + 1} / {count}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="next attachment"
-                    onClick={() => step(1)}
-                  >
-                    <ChevronRightIcon />
-                  </Button>
-                </>
-              )}
+              <span
+                ref={setHoldRegion}
+                // Alone, the renderer's controls need no box; an empty one
+                // would add a gap beside a lone file that shows none.
+                className={cn(
+                  "items-center gap-1",
+                  count > 1 ? "flex" : "contents",
+                )}
+              >
+                <span ref={setTitleBar} className="contents" />
+                {count > 1 && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="previous attachment"
+                      onClick={() => step(-1)}
+                    >
+                      <ChevronLeftIcon />
+                    </Button>
+                    <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                      {(state?.index ?? 0) + 1} / {count}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="next attachment"
+                      onClick={() => step(1)}
+                    >
+                      <ChevronRightIcon />
+                    </Button>
+                  </>
+                )}
+              </span>
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -374,6 +539,7 @@ export function AttachmentViewer({
               >
                 {maximized ? <MinimizeIcon /> : <MaximizeIcon />}
               </Button>
+              <DialogCloseButton />
             </div>
             {/* Keyed by file, so paging starts the next one scrolled to its top. */}
             <ViewerImageContext.Provider value={image}>

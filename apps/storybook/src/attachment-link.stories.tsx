@@ -1,4 +1,7 @@
-import { AttachmentLink } from "@orz/ui-content/attachment";
+import {
+  AttachmentLink,
+  DeletedAttachmentMark as DeletedAttachmentMarkView,
+} from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
 import { file, group } from "./fixtures/files.ts";
@@ -43,4 +46,17 @@ export const InProse: Story = {
       <AttachmentLink file={file("bundle.zip")} />.
     </p>
   ),
+};
+
+/** A file the app marks `deleted`: its name struck through, and no link. */
+export const Deleted: Story = {
+  args: { file: { ...file("guide.md"), deleted: true } },
+};
+
+/**
+ * What `attachmentLinks` and `markdownEmbeds` draw in a document for a link or embed of a deleted
+ * file: the name it was linked under, struck through, and the word "deleted".
+ */
+export const DeletedAttachmentMark: Story = {
+  render: () => <DeletedAttachmentMarkView name="logo.svg" />,
 };

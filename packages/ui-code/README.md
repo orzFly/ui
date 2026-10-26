@@ -44,7 +44,7 @@ slots from the side on screen. Outside a provider, blocks use pierre's pair.
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `fenceFilename`, `codeContent`, `patchContent`, `PatchView`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
+| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `CodeWorkerProvider`, `useCodeWorkerFactory`, `fenceFilename`, `codeContent`, `patchContent`, `PatchView`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
 | `@orz/ui-code/word-diff` | `wordDiff`, `coalescedWordDiff`, `wordBag`, `bagWith`, types |
 | `@orz/ui-code/styles.css` | the `diffs-container` rules |
 
@@ -65,6 +65,29 @@ import { CodeBlock, CodeDiffBlock, fenceFilename } from "@orz/ui-code";
 <CodeDiffBlock filename="main.ts" before={previous} after={current} />
 ```
 
+`CodeBlock` takes `plain` to skip highlighting, and a `className` that caps a long file's height:
+the code view virtualizes against its own box.
+
+### Highlighting off the main thread
+
+pierre tokenizes a whole file even when it draws a screenful: 1 MiB of log held the tab for 9.3 s
+on the main thread, 0.2 s in pierre's worker. `CodeWorkerProvider` lends that worker to every
+`CodeBlock` below it that sets `offThread`, which `codeContent` does for files. The lines show as
+plain text at once and their colours follow. The worker script has to come from the app's bundler,
+so the app starts it:
+
+```tsx
+import { CodeWorkerProvider } from "@orz/ui-code";
+import PierreWorker from "@pierre/diffs/worker/worker.js?worker"; // Vite
+
+<CodeWorkerProvider workerFactory={() => new PierreWorker()}>{app}</CodeWorkerProvider>
+```
+
+Without a provider those blocks tokenize on the main thread, as every other block does. The pool
+is a page-wide singleton of two workers, created from the first factory and terminated when the
+last block using it unmounts. `offThread` only pays off with a height cap in `className`:
+uncapped, laying out every line of 1 MiB still held the main thread for 2.2 s.
+
 `CodeDiffBlock` is a unified line diff of one block; with identical sides it renders a `CodeBlock`.
 
 ### `codeContent`
@@ -75,7 +98,8 @@ placement:
 
 - An inline source, such as a markdown fence, is a `CodeBlock` named `fenceFilename(lang)`.
 - A file is loaded through `useSourceText` and drawn as a `CodeBlock` under its own name, with
-  line numbers and without its final newline. While it loads, it is the registry's fallback: a
+  line numbers and without its final newline, tokenized off the main thread when a
+  `CodeWorkerProvider` is mounted, and capped to the viewer's pane or a card's collapsed body. While it loads, it is the registry's fallback: a
   download link, or the bare name when there is no `url`. A failed load shows that fallback, the
   error and a Retry button.
 
@@ -95,10 +119,12 @@ const RENDERERS = [mermaidContent, markdownContent(), codeContent];
 It highlights at most `TEXT_PREVIEW_MAX_BYTES` (1 MiB, from `@orz/ui-content`), so a path that
 reaches it with a large file cannot freeze the tab:
 
-- A file whose `size` is over the cap is not loaded: it draws the registry's fallback and a "too
-  large to preview" note.
-- Text found over the cap once loaded (a file of unknown size, or an inline source) is drawn as
-  plain text, with no highlighting and no line numbers.
+- A file whose `size` is over `TEXT_PREVIEW_HARD_MAX_BYTES` (10 MiB) is not loaded: it draws the
+  registry's fallback and "This file is too large to preview."
+- Text over 1 MiB, declared or found once loaded, is drawn plain: still a virtualized code view
+  with line numbers for a file, but with no highlighting, which is what costs. A file's plain view
+  is capped at the viewer's pane height, or at a card's collapsed height in a document. The viewer
+  and `attachmentCard` ask before they draw a file that large.
 
 ### `patchContent`
 
@@ -125,7 +151,11 @@ const RENDERERS = [attachmentCard(), markdownContent(), patchContent, codeConten
   collapsed body hides its overflow, they do not scroll and the file list does not jump; the card
   expands instead. That assumes the card's `collapsedClassName` caps it below one screen: past it,
   the patch is cut at one screen.
-- A file is loaded and capped as `codeContent` caps it.
+- A file diff over `LARGE_DIFF_LINES` (2,000) changed lines is drawn as its header row with a
+  *Load diff* button, unless it is the patch's only file: not for speed (a 40,000-line file drew in
+  0.1 s) but so a generated file does not bury the files around it.
+- A file is loaded and capped as `codeContent` caps it, except that a patch up to 10 MiB is never
+  asked about: its view is virtualized per file, and a 20 MiB one held the tab for 0.6 s at most.
 
 `PatchView` is the same view on its own, for a surface outside the registry:
 

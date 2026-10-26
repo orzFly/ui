@@ -147,9 +147,41 @@ export function isVideoFile(file: FileLike): boolean {
 
 /**
  * Highlighting a multi-megabyte file would freeze the tab (T-31), so bigger
- * text files are download-only everywhere.
+ * text files only preview when asked, and then as plain text.
  */
 export const TEXT_PREVIEW_MAX_BYTES = 1024 * 1024;
+
+/**
+ * Past this nothing previews. Measured in Chromium under load: plain text at
+ * 10 MiB blocked the tab for 1.5 s in its longest task, at 20 MiB for 2.9 s,
+ * at 50 MiB for 6.9 s.
+ */
+export const TEXT_PREVIEW_HARD_MAX_BYTES = 10 * 1024 * 1024;
+
+export type TextPreviewLimits = {
+  /** Previews on its own up to this. Default `TEXT_PREVIEW_MAX_BYTES`. */
+  max?: number;
+  /** Never previews past this. Default `TEXT_PREVIEW_HARD_MAX_BYTES`. */
+  hardMax?: number;
+};
+
+/**
+ * Whether a text file of this size previews on its own, waits to be asked,
+ * or never previews. A patch skips the asking: its view is virtualized per
+ * file, and a 20 MiB one blocked the tab for 0.6 s at most where the code
+ * view took 10 s or more over 1 MiB of highlighted text.
+ */
+export function textPreviewGate(
+  file: FileLike & { size: number },
+  {
+    max = TEXT_PREVIEW_MAX_BYTES,
+    hardMax = TEXT_PREVIEW_HARD_MAX_BYTES,
+  }: TextPreviewLimits = {},
+): "auto" | "ask" | "refuse" {
+  if (file.size > hardMax) return "refuse";
+  if (file.size <= max || isPatchFile(file)) return "auto";
+  return "ask";
+}
 
 export function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

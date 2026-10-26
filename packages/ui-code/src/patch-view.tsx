@@ -72,12 +72,8 @@ function fileLabel(file: FileDiffMetadata): string {
 const HEADER_ROW = "flex min-w-0 items-center gap-2 px-3 text-sm";
 
 function CommitHeader({ commit }: { commit: PatchCommit }) {
-  const byline = [
-    commit.author,
-    commit.date === undefined ? undefined : formatCommitDate(commit.date),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const date =
+    commit.date === undefined ? undefined : formatCommitDate(commit.date);
   return (
     <div className={HEADER_ROW} style={{ height: PATCH_HEADER_HEIGHT }}>
       <GitCommitHorizontalIcon className="size-4 shrink-0 text-muted-foreground" />
@@ -90,7 +86,9 @@ function CommitHeader({ commit }: { commit: PatchCommit }) {
         {commit.subject === "" ? "Message" : commit.subject}
       </span>
       <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-        {byline}
+        {commit.author}
+        {commit.author && date ? " · " : null}
+        {date && <time>{date}</time>}
         {commit.hash !== undefined && (
           <span className="ml-2 font-mono">{commit.hash.slice(0, 7)}</span>
         )}
@@ -99,7 +97,23 @@ function CommitHeader({ commit }: { commit: PatchCommit }) {
   );
 }
 
-function FileHeader({ file, stat }: { file: FileDiffMetadata; stat: Stat }) {
+/**
+ * Changed lines past which a file's diff waits behind "Load diff". Not a speed
+ * limit — a 40,000-line file drew in 0.1 s — but a reading one: a generated
+ * file that size buries the files around it.
+ */
+export const LARGE_DIFF_LINES = 2000;
+
+function FileHeader({
+  file,
+  stat,
+  onLoad,
+}: {
+  file: FileDiffMetadata;
+  stat: Stat;
+  /** Present while the diff is held back. */
+  onLoad?: () => void;
+}) {
   const label = fileLabel(file);
   return (
     <div className={HEADER_ROW} style={{ height: PATCH_HEADER_HEIGHT }}>
@@ -107,7 +121,12 @@ function FileHeader({ file, stat }: { file: FileDiffMetadata; stat: Stat }) {
       <span className="min-w-0 truncate font-mono text-[0.8rem]" title={label}>
         {label}
       </span>
-      <span className="ml-auto">
+      <span className="ml-auto flex shrink-0 items-center gap-2">
+        {onLoad !== undefined && (
+          <Button type="button" size="xs" variant="outline" onClick={onLoad}>
+            Load diff
+          </Button>
+        )}
         <Counts {...stat} />
       </span>
     </div>
@@ -276,11 +295,13 @@ export function PatchView({
 }: PatchViewProps) {
   const [parsed, setParsed] = useState<Parsed>({ kind: "pending" });
   const [raw, setRaw] = useState(false);
+  const [loaded, setLoaded] = useState<ReadonlySet<number>>(() => new Set());
   const view = useRef<CodeViewHandle<undefined, undefined>>(null);
 
   useEffect(() => {
     let live = true;
     setParsed({ kind: "pending" });
+    setLoaded(new Set());
     // A fence body arrives without its last newline. The patch's own
     // "\ No newline at end of file" markers carry that fact, not this one.
     parsePatch(text.endsWith("\n") ? text : `${text}\n`).then(
@@ -309,20 +330,46 @@ export function PatchView({
       parsePatchCommit(patch.patchMetadata ?? ""),
     );
     const messages = commits.map((commit) => commit?.body ?? null);
-    const headers = new Map<string, ReactNode>();
-    commits.forEach((commit, index) => {
+    // A lone file is what the reader opened the patch for.
+    const large = new Set<number>();
+    if (files.length > 1) {
+      stats.forEach((stat, index) => {
+        if (stat.plus + stat.minus > LARGE_DIFF_LINES) large.add(index);
+      });
+    }
+    return { files, stats, commits, messages, large };
+  }, [patches]);
+  const collapsed = useMemo(() => {
+    const held = new Set<number>();
+    for (const index of drawn?.large ?? []) {
+      if (!loaded.has(index)) held.add(index);
+    }
+    return held;
+  }, [drawn, loaded]);
+  const headers = useMemo(() => {
+    const rows = new Map<string, ReactNode>();
+    if (drawn === null) return rows;
+    drawn.commits.forEach((commit, index) => {
       if (commit !== null) {
-        headers.set(patchCommitId(index), <CommitHeader commit={commit} />);
+        rows.set(patchCommitId(index), <CommitHeader commit={commit} />);
       }
     });
-    files.forEach((file, index) => {
-      headers.set(
+    drawn.files.forEach((file, index) => {
+      rows.set(
         patchFileId(index),
-        <FileHeader file={file} stat={stats[index] ?? { plus: 0, minus: 0 }} />,
+        <FileHeader
+          file={file}
+          stat={drawn.stats[index] ?? { plus: 0, minus: 0 }}
+          onLoad={
+            collapsed.has(index)
+              ? () => setLoaded((shown) => new Set(shown).add(index))
+              : undefined
+          }
+        />,
       );
     });
-    return { files, stats, messages, headers };
-  }, [patches]);
+    return rows;
+  }, [drawn, collapsed]);
 
   if (parsed.kind === "pending") return <PlainCodeFallback contents={text} />;
   if (patches === null || drawn === null) {
@@ -342,7 +389,7 @@ export function PatchView({
     );
   }
 
-  const { files, stats, messages, headers } = drawn;
+  const { files, stats, messages } = drawn;
   const controls = (
     <span className="inline-flex shrink-0 items-center gap-0.5">
       {files.length > 1 && !raw && (
@@ -388,6 +435,7 @@ export function PatchView({
     <PatchFiles
       patches={patches}
       messages={messages}
+      collapsedFiles={collapsed}
       text={text}
       viewRef={view}
       renderHeader={(item: CodeViewItem<undefined>) => headers.get(item.id)}

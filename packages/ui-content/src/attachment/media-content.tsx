@@ -72,6 +72,8 @@ export function imageContent(): ContentRenderer {
           toolbar={titleBar}
           look={viewerImage.look}
           onLookChange={viewerImage.setLook}
+          lastHeight={viewerImage.lastHeight}
+          held={viewerImage.held}
           className={className}
         />
       );

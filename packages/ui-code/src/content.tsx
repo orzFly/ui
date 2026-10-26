@@ -17,7 +17,19 @@ function Code({ source, placement, className }: ContentProps) {
     return (
       <FileText source={source} placement={placement} className={className}>
         {(text) => (
-          <CappedCodeBlock filename={source.name} contents={text} lineNumbers />
+          <CappedCodeBlock
+            filename={source.name}
+            contents={text}
+            lineNumbers
+            offThread
+            // A document's file sits in a card that clips its body; the
+            // viewer's pane hands down the height it may fill.
+            capClassName={
+              placement === "viewer"
+                ? "max-h-(--attachment-pane-height) overflow-auto"
+                : "max-h-80 overflow-hidden"
+            }
+          />
         )}
       </FileText>
     );
@@ -37,8 +49,9 @@ function Code({ source, placement, className }: ContentProps) {
  * every text file, in either placement. It takes everything a narrower renderer would, so register
  * it after them — markdown files, mermaid diagrams, patches.
  *
- * It highlights at most `TEXT_PREVIEW_MAX_BYTES`: a file declared larger is not loaded, and text
- * found larger once loaded is drawn plain.
+ * It highlights at most `TEXT_PREVIEW_MAX_BYTES`, and draws text found larger plain. A file
+ * declared over `TEXT_PREVIEW_HARD_MAX_BYTES` is not loaded. A file tokenizes in the worker a
+ * `CodeWorkerProvider` lends, inside a height cap.
  */
 export const codeContent: ContentRenderer = {
   name: "code",

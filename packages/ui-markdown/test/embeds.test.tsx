@@ -165,6 +165,25 @@ describe("paragraphs carrying embeds", () => {
     expect(container.querySelector(".markdown-paragraph")).toBeNull();
   });
 
+  it("draws a deleted file as the deleted mark, inside a <p>", () => {
+    const deleted = markdownEmbeds({
+      resolve: (href) => {
+        const file = resolve(href);
+        return file === null ? null : { ...file, deleted: true };
+      },
+    });
+    const { container } = render(
+      <ContentRenderers renderers={RENDERERS}>
+        <Markdown plugins={[deleted]}>
+          {"See ![outer](files/outer.md)"}
+        </Markdown>
+      </ContentRenderers>,
+    );
+    const mark = container.querySelector("p > [data-attachment-deleted]");
+    expect(mark?.textContent).toBe("outer.mddeleted");
+    expect(container.querySelector(".markdown-paragraph")).toBeNull();
+  });
+
   it("keeps a <p> when nothing registered accepts the embed", () => {
     const { container } = render(
       <Markdown plugins={PLUGINS}>{"See ![outer](files/outer.md)"}</Markdown>,

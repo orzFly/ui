@@ -16,11 +16,16 @@ import type { ReactNode } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { codeContent } from "../src/content.tsx";
 import { patchContent } from "../src/patch-content.tsx";
-import { PatchView } from "../src/patch-view.tsx";
+import { LARGE_DIFF_LINES, PatchView } from "../src/patch-view.tsx";
 
 type Item =
   | { id: string; type: "file"; file: { name: string; contents: string } }
-  | { id: string; type: "diff"; fileDiff: { name: string } };
+  | {
+      id: string;
+      type: "diff";
+      fileDiff: { name: string };
+      collapsed?: boolean;
+    };
 
 // The real parser runs (it is plain string work); only the renderer is a
 // stand-in that says what it was handed, header rows included. A code block
@@ -40,7 +45,12 @@ vi.mock("@pierre/diffs/react", () => ({
         <section key={item.id} data-item={item.id}>
           <header>{renderCustomHeader?.(item)}</header>
           {item.type === "diff" ? (
-            <div data-diff={item.fileDiff.name}>{item.id}</div>
+            <div
+              data-diff={item.fileDiff.name}
+              data-collapsed={item.collapsed ? "" : undefined}
+            >
+              {item.id}
+            </div>
           ) : (
             <pre data-file={item.file.name}>{item.file.contents}</pre>
           )}
@@ -98,6 +108,21 @@ const SHORT_HUNK = `--- a.txt
 
 const diffs = () =>
   [...document.querySelectorAll("[data-diff]")].map((el) =>
+    el.getAttribute("data-diff"),
+  );
+
+/** A new file with `lines` added lines. */
+const newFile = (name: string, lines: number) => `diff --git a/${name} b/${name}
+new file mode 100644
+index 0000000..4444444
+--- /dev/null
++++ b/${name}
+@@ -0,0 +1,${lines} @@
+${Array.from({ length: lines }, (_, i) => `+line ${i}`).join("\n")}
+`;
+
+const collapsedDiffs = () =>
+  [...document.querySelectorAll("[data-diff][data-collapsed]")].map((el) =>
     el.getAttribute("data-diff"),
   );
 
@@ -191,6 +216,20 @@ describe("PatchView", () => {
 });
 
 describe("the patch header", () => {
+  it("prints the commit date as a <time> after the author", async () => {
+    const dated = FORMAT_PATCH.replace(
+      "Subject:",
+      "Date: Tue, 1 Sep 2026 10:00:00 +0000\nSubject:",
+    );
+    render(<PatchView filename="x.patch" text={dated} />);
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts"]));
+    const commit = document.querySelector('[data-item="commit-0"]');
+    if (!(commit instanceof HTMLElement)) throw new Error("no commit item");
+    const time = commit.querySelector("header time");
+    expect(time?.textContent).toMatch(/2026/);
+    expect(time?.previousSibling?.textContent).toBe(" · ");
+  });
+
   it("draws a commit as one row over its message, mail headers and stat left to raw", async () => {
     render(<PatchView filename="x.patch" text={FORMAT_PATCH} />);
     await waitFor(() => expect(diffs()).toEqual(["src/a.ts"]));
@@ -302,5 +341,47 @@ describe("patchContent", () => {
     draw(patchFile("x.patch", "just notes\n"));
     await screen.findByText("Not a valid patch — showing the text.");
     expect(rawText()).toBe("just notes");
+  });
+});
+
+describe("PatchView large files", () => {
+  it("holds back a file past the line limit until asked", async () => {
+    render(
+      <PatchView
+        filename="x.patch"
+        text={`${TWO_FILES}${newFile("state.json", LARGE_DIFF_LINES + 1)}`}
+      />,
+    );
+    await waitFor(() =>
+      expect(diffs()).toEqual(["src/a.ts", "src/b.ts", "state.json"]),
+    );
+    expect(collapsedDiffs()).toEqual(["state.json"]);
+    fireEvent.click(screen.getByRole("button", { name: "Load diff" }));
+    expect(collapsedDiffs()).toEqual([]);
+    expect(screen.queryByRole("button", { name: "Load diff" })).toBeNull();
+  });
+
+  it("draws a file at the limit in full", async () => {
+    render(
+      <PatchView
+        filename="x.patch"
+        text={`${TWO_FILES}${newFile("state.json", LARGE_DIFF_LINES)}`}
+      />,
+    );
+    await waitFor(() =>
+      expect(diffs()).toEqual(["src/a.ts", "src/b.ts", "state.json"]),
+    );
+    expect(collapsedDiffs()).toEqual([]);
+  });
+
+  it("never holds back the only file", async () => {
+    render(
+      <PatchView
+        filename="x.patch"
+        text={newFile("state.json", LARGE_DIFF_LINES + 1)}
+      />,
+    );
+    await waitFor(() => expect(diffs()).toEqual(["state.json"]));
+    expect(collapsedDiffs()).toEqual([]);
   });
 });

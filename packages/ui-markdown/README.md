@@ -137,13 +137,24 @@ function Doc({ source }: { source: string }) {
   `<Markdown>` (else `options.plugins`). In `"document"` placement, a document deeper than `maxDepth`
   (else the provider's `maxDepth`, else 1) is a link: a document inside a document shows its own
   documents as links, which is what stops a document that embeds itself. A `"viewer"` placement is
-  never limited.
+  never limited. A "source" toggle in the title bar a surface lends (the viewer, `attachmentCard`)
+  swaps the rendered document for its source, drawn by the renderers after this one
+  (`codeContent`). A document over `MARKDOWN_RENDER_MAX_CHARS` (128K characters) opens as source,
+  with "Too large to render automatically.", since rendering it would hold the tab for seconds;
+  with no title bar lent, such a document gets the toggle above it.
 - **`attachmentLinks({ resolve, boxed? })`** draws a link whose address `resolve` turns into a
   file as an `AttachmentLink` chip from `@orz/ui-content/attachment`, which opens the nearest
   `AttachmentViewerProvider`'s viewer on a plain click. Every other link goes on to the next
   plugin. `resolve` has `markdownEmbeds`' signature, so one function serves both:
-  `[markdownEmbeds({ resolve }), attachmentLinks({ resolve })]`. Using it means installing what
+  `[markdownEmbeds({ resolve }), attachmentLinks({ resolve })]`. A file `resolve` marks `deleted`
+  is a `DeletedAttachmentMark` in either plugin, inline in its paragraph, rather than a link to
+  nothing or a broken image. Using it means installing what
   `@orz/ui-content/attachment` needs (its README, "Attachments").
+- **`externalLinks({ origin? })`** opens a link to an http(s) address on another origin (default
+  `window.location.origin`) in a new tab, with `rel="noopener noreferrer"`; `styles.css` draws a ↗
+  after it, except on an image link. Relative, same-origin, fragment and `mailto:` links are left
+  alone. Put it after `attachmentLinks`, so file links are claimed first, and leave it out of the
+  list to keep every link in this tab. `isExternalHref(href, origin?)` is the test it applies.
 
 Register `markdownContent` ahead of any renderer that takes every text file, since the first renderer
 that accepts wins. `react-markdown` refuses some URL schemes (`file:` among them), and an address it
@@ -153,7 +164,7 @@ refuses is drawn as source text before `resolve` sees it: use relative addresses
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `markdownContent`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
+| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `markdownContent`, `MARKDOWN_RENDER_MAX_CHARS`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
 | `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `parseMarkdown` |
 | `@orz/ui-markdown/lib/remark-frontmatter-table` | `remarkFrontmatterTable`, `frontmatterFields`, `FRONTMATTER_FLAVOURS`, node types |
 | `@orz/ui-markdown/lib/remark-rejected-urls` | `remarkRejectedUrlsAsText` |

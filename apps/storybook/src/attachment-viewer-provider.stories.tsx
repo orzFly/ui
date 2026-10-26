@@ -5,6 +5,7 @@ import {
   AttachmentList,
   AttachmentViewerProvider,
   AttachmentViewer as AttachmentViewerView,
+  TEXT_PREVIEW_HARD_MAX_BYTES,
   TEXT_PREVIEW_MAX_BYTES,
   useAttachmentViewer,
   useCanPreview,
@@ -19,12 +20,45 @@ import { ATTACHMENT_RENDERERS } from "./fixtures/renderers.ts";
 
 const MIXED_ITEMS: AttachmentItem[] = MIXED.map((f) => ({ ...f, key: f.name }));
 
-// Text over the 1 MB preview cap.
-const BIG_TS = {
+// Text whose size the app does not know yet.
+const UNSIZED_TS = {
   ...file("fetch-task.ts"),
   name: "generated.ts",
-  size: 2 * 1024 * 1024,
+  size: undefined,
 };
+
+/** About `bytes` of log lines, made on demand. */
+function logLines(bytes: number): string {
+  const line = (i: number) =>
+    `2026-09-01T00:00:00Z worker-${i % 8} INFO request ${i} served in ${i % 97} ms\n`;
+  const lines: string[] = [];
+  let size = 0;
+  for (let i = 0; size < bytes; i++) {
+    const next = line(i);
+    lines.push(next);
+    size += next.length;
+  }
+  return lines.join("");
+}
+
+const LARGE_ITEMS: AttachmentItem[] = [
+  {
+    kind: "file",
+    key: "server.log",
+    name: "server.log",
+    mime: "text/plain",
+    size: 3 * 1024 * 1024,
+    load: async () => logLines(3 * 1024 * 1024),
+  },
+  {
+    kind: "file",
+    key: "dump.log",
+    name: "dump.log",
+    mime: "text/plain",
+    size: 12 * 1024 * 1024,
+    load: async () => logLines(12 * 1024 * 1024),
+  },
+];
 
 const PLAYGROUND = `import { ContentRenderers } from "@orz/ui-content";
 import {
@@ -61,7 +95,7 @@ viewer?.show(file); // pages through group(file)`;
 
 const USE_CAN_PREVIEW = `import { useCanPreview } from "@orz/ui-content/attachment";
 
-// false for text over textPreviewMaxBytes or of unknown size, and for kinds no renderer draws in the viewer
+// false for text of unknown size, and for kinds no renderer draws in the viewer
 const canPreview = useCanPreview(file);`;
 
 const USE_VIEW_HREF = `import { AttachmentViewerProvider, useViewHref } from "@orz/ui-content/attachment";
@@ -86,7 +120,10 @@ const code = (snippet: string) => ({
 const meta = {
   title: "ui-content/AttachmentViewerProvider",
   component: AttachmentViewerProvider,
-  args: { textPreviewMaxBytes: TEXT_PREVIEW_MAX_BYTES },
+  args: {
+    textPreviewMaxBytes: TEXT_PREVIEW_MAX_BYTES,
+    textPreviewHardMaxBytes: TEXT_PREVIEW_HARD_MAX_BYTES,
+  },
   argTypes: {
     viewHref: { control: false },
     group: { control: false },
@@ -125,6 +162,18 @@ export const Playground: Story = {
   parameters: code(PLAYGROUND),
 };
 
+/**
+ * Text past `textPreviewMaxBytes` (3 MB of log) waits for Preview anyway and is then drawn plain;
+ * past `textPreviewHardMaxBytes` (12 MB) the viewer says it is too large and offers the download.
+ */
+export const TextPreviewLimits: Story = {
+  render: (args) => (
+    <AttachmentViewerProvider {...args}>
+      <AttachmentList items={LARGE_ITEMS} />
+    </AttachmentViewerProvider>
+  ),
+};
+
 /** The nearest provider's controls: `open` pages through a list, `show` through `group(file)`. */
 export const UseAttachmentViewer: Story = {
   name: "useAttachmentViewer",
@@ -161,15 +210,15 @@ export const UseCanPreview: Story = {
   render: function Render() {
     const png = useCanPreview(file("gradient.png"));
     const zip = useCanPreview(file("bundle.zip"));
-    const big = useCanPreview(BIG_TS);
+    const unsized = useCanPreview(UNSIZED_TS);
     return (
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         <dt>gradient.png</dt>
         <dd className="font-mono">{String(png)}</dd>
         <dt>bundle.zip</dt>
         <dd className="font-mono">{String(zip)}</dd>
-        <dt>generated.ts (2 MB)</dt>
-        <dd className="font-mono">{String(big)}</dd>
+        <dt>generated.ts (size unknown)</dt>
+        <dd className="font-mono">{String(unsized)}</dd>
       </dl>
     );
   },

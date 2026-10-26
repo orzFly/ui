@@ -24,6 +24,8 @@ export type AttachmentItem = FileSource & {
 
 export type AttachmentListProps = {
   items: AttachmentItem[];
+  /** Controls at the end of a row, after its download link: a delete button, say. */
+  actions?: (item: AttachmentItem) => ReactNode;
   /** Default "Attachments". */
   title?: ReactNode;
   /** The section's id, for links that jump to it. */
@@ -45,9 +47,11 @@ const MIN_HIDDEN = 3;
 function AttachmentRow({
   items,
   index,
+  actions,
 }: {
   items: AttachmentItem[];
   index: number;
+  actions: AttachmentListProps["actions"];
 }) {
   const item = items[index] as AttachmentItem;
   const viewer = useAttachmentViewer();
@@ -83,7 +87,9 @@ function AttachmentRow({
             className="hidden shrink-0 text-xs text-muted-foreground sm:inline"
             title={item.createdAt}
           >
-            {new Date(item.createdAt).toLocaleString()}
+            <time dateTime={item.createdAt}>
+              {new Date(item.createdAt).toLocaleString()}
+            </time>
           </span>
         )}
       </a>
@@ -97,6 +103,7 @@ function AttachmentRow({
           <DownloadIcon className="size-3.5" />
         </a>
       )}
+      {actions?.(item)}
     </li>
   );
 }
@@ -110,6 +117,7 @@ function AttachmentRow({
  */
 export function AttachmentList({
   items,
+  actions,
   title = "Attachments",
   id,
   className,
@@ -163,6 +171,7 @@ export function AttachmentList({
             key={item.key}
             items={items}
             index={shownIndex + hiddenBefore}
+            actions={actions}
           />
         ))}
       </ul>

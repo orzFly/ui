@@ -50,6 +50,19 @@ export const Neutral: Story = {
   },
 };
 
+export const Children: Story = {
+  args: {
+    title: "Delete report.pdf?",
+    description: "Two places still link it; they will show it as deleted.",
+    children: (
+      <ul className="list-disc pl-5 text-sm">
+        <li>The description</li>
+        <li>A comment from alice</li>
+      </ul>
+    ),
+  },
+};
+
 export const Pending: Story = {
   args: { open: true, pending: true },
   // In an iframe of its own, so the open dialog does not cover the docs page.

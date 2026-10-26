@@ -1,8 +1,12 @@
-export { TEXT_PREVIEW_MAX_BYTES } from "../file-kind.ts";
+export {
+  TEXT_PREVIEW_HARD_MAX_BYTES,
+  TEXT_PREVIEW_MAX_BYTES,
+} from "../file-kind.ts";
 export {
   type AttachmentCardOptions,
   attachmentCard,
 } from "./card-content.tsx";
+export { DeletedAttachmentMark } from "./deleted.tsx";
 export { DocumentCard, type DocumentCardProps } from "./document-card.tsx";
 export { fileIcon } from "./icon.ts";
 export {

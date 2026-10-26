@@ -95,6 +95,55 @@ describe("the viewer's image", () => {
     expect(screen.getByTestId("stub")).toBeTruthy();
     expect(screen.queryByLabelText("zoom in")).toBeNull();
   });
+
+  it("grows with the zoom, but holds its height while the pointer is on the title-bar controls", () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <Viewer items={[SHOT, file("other.png", { mime: "image/png" })]} />,
+      );
+      const el = canvas();
+      Object.defineProperty(el, "clientWidth", { value: 800 });
+      Object.defineProperty(el, "clientHeight", { value: 600 });
+      load(el.querySelector("img") as HTMLImageElement);
+      expect(el.style.height).toBe("600px");
+
+      const region = screen.getByLabelText("next attachment")
+        .parentElement as HTMLElement;
+      fireEvent.pointerEnter(region, { pointerType: "mouse" });
+      fireEvent.click(screen.getByLabelText("zoom in"));
+      expect(el.style.height).toBe("600px");
+
+      // Leaving lets go only after a delay, so a trip over the image
+      // between two controls is not a leave.
+      fireEvent.pointerLeave(region, { pointerType: "mouse" });
+      act(() => {
+        vi.advanceTimersByTime(399);
+      });
+      expect(el.style.height).toBe("600px");
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(el.style.height).toBe("750px");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("lets go of a held height at once on a key press", () => {
+    render(<Viewer items={[SHOT, file("other.png", { mime: "image/png" })]} />);
+    const el = canvas();
+    Object.defineProperty(el, "clientWidth", { value: 800 });
+    Object.defineProperty(el, "clientHeight", { value: 600 });
+    load(el.querySelector("img") as HTMLImageElement);
+    const region = screen.getByLabelText("next attachment")
+      .parentElement as HTMLElement;
+    fireEvent.pointerEnter(region, { pointerType: "mouse" });
+    fireEvent.click(screen.getByLabelText("zoom in"));
+    fireEvent.pointerLeave(region, { pointerType: "mouse" });
+    fireEvent.keyDown(window, { key: "Shift" });
+    expect(el.style.height).toBe("750px");
+  });
 });
 
 describe("image look", () => {

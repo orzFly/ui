@@ -2,6 +2,7 @@ import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
   DialogClose,
+  DialogCloseButton,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -82,6 +83,31 @@ export const NoCloseButton: Story = {
             Escape or the overlay closes it.
           </DialogDescription>
         </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  ),
+};
+
+export const TitleBarCloseButton: Story = {
+  render: (args) => (
+    <Dialog {...args}>
+      <DialogTrigger asChild>
+        <Button variant="outline">Open</Button>
+      </DialogTrigger>
+      <DialogContent showCloseButton={false}>
+        <div className="flex items-center gap-1">
+          <DialogTitle className="min-w-0 flex-1 truncate">
+            report.pdf
+          </DialogTitle>
+          <Button variant="ghost" size="sm">
+            Download
+          </Button>
+          <DialogCloseButton />
+        </div>
+        <DialogDescription>
+          The X is the last control of the title row, sharing its centre and
+          right edge, instead of pinned to the corner.
+        </DialogDescription>
       </DialogContent>
     </Dialog>
   ),

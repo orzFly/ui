@@ -44,6 +44,12 @@
   html {
     @apply font-sans;
   }
+  /* Stacked timestamps line up digit for digit. A date or time a component
+     renders is a <time>; a range that is not one instant carries
+     tabular-nums itself. */
+  time {
+    @apply tabular-nums;
+  }
 }
 
 /* revealBlock's landing highlight (T-38): a short flash that fades out. */

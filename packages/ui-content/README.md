@@ -27,6 +27,7 @@ type ContentSource =
       size?: number;
       url?: string; // where the bytes live: an <img>, an <iframe>, the download link
       load?: (signal: AbortSignal) => Promise<string>; // the text, for renderers that need it
+      deleted?: boolean; // links and embeds draw it struck through, as deleted
     };
 
 type Placement = "document" | "viewer"; // inside a flow of content, or owning the surface
@@ -171,8 +172,14 @@ isPdfFile(f)    isArchiveFile(f)  isAudioFile(f)     isVideoFile(f)
 isPatchFile(f)  // text/x-patch, text/x-diff, or .patch / .diff under a generic type
 isTextEmbed(f)  // a text file that is not also an image (.svg is both)
 formatSize(bytes) // "512 B", "1.5 KB", "20 KB"
-TEXT_PREVIEW_MAX_BYTES // 1 MiB: the text a surface draws at most, here and in `codeContent`
+TEXT_PREVIEW_MAX_BYTES      // 1 MiB: text past this previews only when asked, and plain
+TEXT_PREVIEW_HARD_MAX_BYTES // 10 MiB: text past this never previews
+textPreviewGate({ name, mime?, size }, { max?, hardMax? }) // "auto" | "ask" | "refuse"
 ```
+
+`textPreviewGate` is the rule the viewer and `attachmentCard` apply: a text file up to `max`
+previews on its own, one up to `hardMax` waits for "Preview anyway", and a larger one never
+previews. A patch skips the asking, since its view is drawn per file.
 
 Each predicate takes `{ name, mime? }`, so a file `ContentSource` passes straight in. A declared
 type outranks the filename: the extension only counts when `mime` is missing, empty or
@@ -267,9 +274,12 @@ to run in a sandboxed frame, so serve PDFs from a URL that cannot be mistaken fo
 - past the depth limit (`maxDepth`, else the provider's `maxDepth`, else 1, counted as
   `markdownContent` counts it) it draws an `AttachmentLink` chip instead of a frame, so a document
   inside a card shows its own documents as links;
-- over `maxBytes` (default `TEXT_PREVIEW_MAX_BYTES`, 1 MiB) it draws the frame with a note and no
-  body. A file of unknown size is not capped here; the renderer `Next` reaches
-  decides once the text is loaded (`codeContent` draws text over 1 MiB without highlighting);
+- over `maxBytes` (default `TEXT_PREVIEW_MAX_BYTES`, 1 MiB) it draws the frame with "Large files
+  aren't previewed automatically." and a Preview anyway button, then the body once asked (a patch
+  is not asked about); over `hardMaxBytes` (default `TEXT_PREVIEW_HARD_MAX_BYTES`, 10 MiB) it draws
+  the frame with a note and no body. A file of unknown size is not capped here; the renderer `Next`
+  reaches decides once the text is loaded (`codeContent` draws text over 1 MiB without
+  highlighting);
 - otherwise it draws the frame with the size, a download button and, inside a provider, an expand
   button that opens the viewer. Loading and load errors are drawn by the renderer `Next` reaches,
   which may also put controls in the frame's title bar (`useContentTitleBar`).
@@ -280,7 +290,8 @@ to run in a sandboxed frame, so serve PDFs from a URL that cannot be mistaken fo
 <AttachmentViewerProvider
   viewHref={(file) => string | undefined}   // where a browser tab shows the file
   group={(file) => ({ items, index }) | null} // the set paging covers when one file is opened
-  textPreviewMaxBytes={1024 * 1024}          // text above this, or of unknown size, downloads
+  textPreviewMaxBytes={1024 * 1024}          // text above this waits for "Preview anyway"
+  textPreviewHardMaxBytes={10 * 1024 * 1024} // text above this never previews
   imageLook={{ background, smoothing }}      // controlled image look; default: held in memory
   onImageLookChange={(look) => void}
 >
@@ -300,13 +311,16 @@ the outer one, so a surface can page through its own set.
 - **`group`** lets a click on one file page through the set it belongs to, positioned on it. A file
   it returns null for opens alone.
 - **`useCanPreview`** is true when some registered renderer accepts the file in `"viewer"`
-  placement and, for a text file, its size is known and within the cap. HTML is not capped: the
+  placement and, for a text file, its size is known. A text file over `textPreviewMaxBytes` opens
+  on "Large files aren't previewed automatically." with Preview anyway, which holds until the
+  viewer pages away; one over `textPreviewHardMaxBytes` opens on "This file is too large to
+  preview.", with the footer's Download. A patch is not asked about. HTML is not capped: the
   browser streams it into the frame rather than this tab drawing it as text. HTML that no frame
   takes (no `htmlContent`, or no `url`) reaches the text renderers, which apply their own cap. `attachmentCard` draws
   its expand button only when this holds.
 
-The dialog shows the name, ‹ n / m › for a set (← and → page, wrapping), and a maximize toggle that
-fills the window and stays a modal. Its body is `<Content placement="viewer">`, or a download pane
+The dialog shows the name, ‹ n / m › for a set (← and → page, wrapping), a maximize toggle that
+fills the window and stays a modal, and the close button, all in one row. Its body is `<Content placement="viewer">`, or a download pane
 for a file nothing can draw. The body sets `--attachment-pane-height` (`75vh`, or the remaining
 height when maximized); a renderer in `"viewer"` placement sizes to it, as in
 `max-h-(--attachment-pane-height)`. The title bar lends the renderer drawing the file a slot
@@ -320,6 +334,11 @@ zoomed; a click toggles between fit and actual pixels (or twice the fit, if that
 pointer. Zoom runs from fit, or 100% if that is smaller, to 8× natural pixels, and panning never
 pulls an image edge inside the canvas. Restored, fit never enlarges an image; maximized, it fills
 the window. Paging starts every image at fit; maximize keeps the zoom and the point at the centre.
+Restored, the canvas asks for the image's height at its zoom, so zooming in grows the dialog up to
+the pane's height before it pans, and the height tweens as it changes (not under
+`prefers-reduced-motion`). While the mouse is over the zoom controls or ‹ ›, the canvas keeps the
+height it had when the pointer arrived, so the controls do not slide out from under it; it lets go
+400 ms after the pointer leaves, or at once on a key, a press or a wheel.
 
 In the title bar, − and + step the zoom (hidden on a phone, where pinch does it), and the readout
 opens a menu: Fit (key `0`), 100% (key `1`), a black or checkerboard background, and smooth or
@@ -338,11 +357,16 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
 - **`<AttachmentLink file boxed? className?>`** is an inline link wearing the file's type icon. It is
   a real anchor to `useViewHref(file)`, so copy-link and middle-click work; a plain left click on a
   file `useCanPreview` accepts opens the viewer. `boxed` draws it as a bordered chip. It is a
-  `LinkChip` from `@orz/ui/components/link-chip`, which also exports the chip's classes.
-- **`<AttachmentList items title? id? className?>`** lists files (`FileSource` plus a `key` and an
-  optional ISO `createdAt`) with their icon, size, time and a download button. A list of eight or
-  more keeps its newest five rows and folds the rest behind a toggle. A plain click on a row opens
-  the viewer on the whole list. An empty list renders nothing.
+  `LinkChip` from `@orz/ui/components/link-chip`, which also exports the chip's classes. A file
+  marked `deleted` is its name struck through, with no link.
+- **`<AttachmentList items actions? title? id? className?>`** lists files (`FileSource` plus a
+  `key` and an optional ISO `createdAt`) with their icon, size, time and a download button.
+  `actions(item)` draws the app's own controls at the end of a row, such as a delete button. A list
+  of eight or more keeps its newest five rows and folds the rest behind a toggle. A plain click on a
+  row opens the viewer on the whole list. An empty list renders nothing.
+- **`<DeletedAttachmentMark name className?>`** is what a document shows for a link or embed of a
+  deleted file: the name struck through, with the word "deleted". `@orz/ui-markdown`'s
+  `attachmentLinks` and `markdownEmbeds` draw it for a file their `resolve` marks `deleted`.
 - **`<DocumentCard name icon? meta? headerActions? titleBarFor? downloadUrl? onExpand? collapsedClassName?>`**
   is the frame `attachmentCard` draws, for anything else that wants it: a header with the name, a
   muted note, extra actions, download and expand, around a height-capped body that offers "Show full

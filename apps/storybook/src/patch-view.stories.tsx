@@ -1,10 +1,38 @@
 import { Button } from "@orz/ui/components/button";
-import { codeContent, PatchView, patchContent } from "@orz/ui-code";
+import {
+  codeContent,
+  LARGE_DIFF_LINES,
+  PatchView,
+  patchContent,
+} from "@orz/ui-code";
 import { useAttachmentViewer } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
 import { PATCHES } from "./fixtures/files.ts";
 import seriesText from "./fixtures/patch/series.patch?raw";
+
+const LOCK_LINES = Array.from(
+  { length: LARGE_DIFF_LINES + 1 },
+  (_, i) => `+  "node_modules/pkg-${i}": { "version": "1.0.${i}" },`,
+).join("\n");
+
+const LARGE_PATCH = `diff --git a/package.json b/package.json
+index 1111111..2222222 100644
+--- a/package.json
++++ b/package.json
+@@ -1,3 +1,3 @@
+ {
+-  "version": "1.0.0"
++  "version": "1.1.0"
+ }
+diff --git a/package-lock.json b/package-lock.json
+new file mode 100644
+index 0000000..3333333
+--- /dev/null
++++ b/package-lock.json
+@@ -0,0 +1,${LARGE_DIFF_LINES + 1} @@
+${LOCK_LINES}
+`;
 
 const VIEWER = `import { codeContent, patchContent } from "@orz/ui-code";
 import { ContentRenderers } from "@orz/ui-content";
@@ -39,6 +67,14 @@ type Story = StoryObj<typeof meta>;
 
 /** `PatchView` on its own, with no surrounding title bar: it frames itself. */
 export const Playground: Story = {};
+
+/**
+ * A file diff past `LARGE_DIFF_LINES` changed lines, here a generated lockfile, waits behind
+ * Load diff so it does not bury the files around it.
+ */
+export const LargeFileDiff: Story = {
+  args: { filename: "bump.patch", text: LARGE_PATCH },
+};
 
 /** The files in the attachment viewer, where the diffs scroll within the pane. */
 export const Viewer: Story = {

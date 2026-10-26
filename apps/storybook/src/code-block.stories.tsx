@@ -1,4 +1,9 @@
-import { CodeBlock, fenceFilename } from "@orz/ui-code";
+import {
+  CodeBlock,
+  CodeWorkerProvider as CodeWorkerProviderView,
+  fenceFilename,
+} from "@orz/ui-code";
+import PierreWorker from "@pierre/diffs/worker/worker.js?worker";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withWidth } from "./decorators.tsx";
 
@@ -60,6 +65,23 @@ const FENCES = [
   { tag: "zzz", code: "An unknown tag falls back to plain text." },
 ];
 
+// About 1 MB of code: enough that tokenizing it on the main thread holds the tab for seconds.
+const LONG_FILE = Array.from({ length: 900 }, (_, i) =>
+  WHOLE_FILE.replaceAll("Task", `Task${i}`),
+).join("\n");
+
+const newPierreWorker = () => new PierreWorker();
+
+const WORKER_SNIPPET = `import { CodeBlock, CodeWorkerProvider } from "@orz/ui-code";
+// Vite's worker import; another bundler starts @pierre/diffs/worker/worker.js its own way.
+import PierreWorker from "@pierre/diffs/worker/worker.js?worker";
+
+// Once, at the app's root: codeContent's files tokenize off the main thread below it.
+<CodeWorkerProvider workerFactory={() => new PierreWorker()}>
+  {/* A CodeBlock asks for it with offThread, and caps its height: it virtualizes against its box. */}
+  <CodeBlock filename="tasks.ts" contents={text} lineNumbers offThread className="max-h-96 overflow-auto" />
+</CodeWorkerProvider>`;
+
 const meta = {
   title: "ui-code/CodeBlock",
   component: CodeBlock,
@@ -89,6 +111,26 @@ export const FenceTags: Story = {
       ))}
     </div>
   ),
+};
+
+/**
+ * Without the provider, these lines would hold the tab while they tokenize; with it, they show at
+ * once and their colours follow.
+ */
+export const CodeWorkerProvider: Story = {
+  args: {
+    filename: "tasks.ts",
+    contents: LONG_FILE,
+    lineNumbers: true,
+    offThread: true,
+    className: "max-h-96 overflow-auto",
+  },
+  render: (args) => (
+    <CodeWorkerProviderView workerFactory={newPierreWorker}>
+      <CodeBlock {...args} />
+    </CodeWorkerProviderView>
+  ),
+  parameters: { docs: { source: { code: WORKER_SNIPPET, language: "tsx" } } },
 };
 
 export const Empty: Story = {

@@ -27,6 +27,15 @@ function renderLink(target: FileSource, boxed?: boolean) {
 const NOTES = file("notes.txt", { size: 10 });
 
 describe("AttachmentLink", () => {
+  it("draws a deleted file struck through, as no link", () => {
+    render(<AttachmentLink file={{ ...NOTES, deleted: true }} />);
+    expect(screen.queryByRole("link")).toBeNull();
+    const mark = screen.getByText("notes.txt");
+    expect(mark.dataset.attachmentDeleted).toBe("");
+    expect(mark.className).toContain("line-through");
+    expect(mark.getAttribute("title")).toBe("notes.txt (deleted)");
+  });
+
   it("is an anchor to viewHref, labelled and titled with the name", () => {
     const link = renderLink(NOTES);
     expect(link.getAttribute("href")).toBe(

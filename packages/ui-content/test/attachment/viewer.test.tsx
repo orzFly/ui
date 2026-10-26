@@ -12,7 +12,10 @@ import {
   useAttachmentViewer,
   videoContent,
 } from "../../src/attachment/index.ts";
-import { ContentRenderers } from "../../src/index.ts";
+import {
+  ContentRenderers,
+  TEXT_PREVIEW_HARD_MAX_BYTES,
+} from "../../src/index.ts";
 import { file, stubText } from "./fixtures.tsx";
 
 const RENDERERS = [stubText];
@@ -66,6 +69,16 @@ describe("AttachmentViewer paging", () => {
     expect(title()).toBe("b.txt");
   });
 
+  it("lays its X out as the title row's last control", () => {
+    render(<Controlled initial={{ items: ITEMS, index: 0 }} />);
+    const row = screen.getByRole("heading").parentElement as HTMLElement;
+    const close = within(row).getByRole("button", { name: "Close" });
+    expect(row.lastElementChild).toBe(close);
+    expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1);
+    fireEvent.click(close);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("hides the counter and the paging buttons for one item", () => {
     render(
       <Controlled initial={{ items: [ITEMS[0] as FileSource], index: 0 }} />,
@@ -88,12 +101,50 @@ describe("AttachmentViewer body", () => {
     );
   });
 
+  it("asks before drawing an over-cap text file, then draws it", () => {
+    const dialog = body(file("big.txt", { size: TEXT_PREVIEW_MAX_BYTES + 1 }));
+    expect(within(dialog).queryByTestId("stub")).toBeNull();
+    expect(
+      within(dialog).getByText("Large files aren't previewed automatically."),
+    ).toBeTruthy();
+    fireEvent.click(within(dialog).getByText("Preview anyway"));
+    expect(within(dialog).getByTestId("stub").textContent).toBe("stub:big.txt");
+  });
+
+  it("asks again for the next over-cap file it pages to", () => {
+    render(
+      <Controlled
+        initial={{
+          items: [
+            file("a.txt", { size: TEXT_PREVIEW_MAX_BYTES + 1 }),
+            file("b.txt", { size: TEXT_PREVIEW_MAX_BYTES + 1 }),
+          ],
+          index: 0,
+        }}
+      />,
+    );
+    fireEvent.click(screen.getByText("Preview anyway"));
+    expect(screen.getByTestId("stub")).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("next attachment"));
+    expect(screen.queryByTestId("stub")).toBeNull();
+    expect(screen.getByText("Preview anyway")).toBeTruthy();
+  });
+
+  it("refuses a text file over the hard cap", () => {
+    const dialog = body(
+      file("huge.txt", { size: TEXT_PREVIEW_HARD_MAX_BYTES + 1 }),
+    );
+    expect(within(dialog).queryByTestId("stub")).toBeNull();
+    expect(within(dialog).queryByText("Preview anyway")).toBeNull();
+    expect(
+      within(dialog).getByText("This file is too large to preview."),
+    ).toBeTruthy();
+    expect(within(dialog).getByText("Previews stop at 10 MB.")).toBeTruthy();
+    expect(within(dialog).getByText("Download")).toBeTruthy();
+  });
+
   it.each([
     ["a .zip", file("bundle.zip", { size: 10 })],
-    [
-      "an over-cap .txt",
-      file("huge.txt", { size: TEXT_PREVIEW_MAX_BYTES + 1 }),
-    ],
     ["a size-less .txt", file("notes.txt")],
   ])("shows the download pane for %s", (_, f) => {
     const dialog = body(f);
@@ -190,11 +241,23 @@ describe("AttachmentViewerProvider", () => {
     expect(within(dialog).getByText("Download")).toBeTruthy();
   });
 
-  it("applies its own text cap", () => {
+  it("applies its own text caps", () => {
     const dialog = renderProvider(file("notes.txt", { size: 100 }), {
       textPreviewMaxBytes: 99,
     });
     expect(within(dialog).queryByTestId("stub")).toBeNull();
+    expect(within(dialog).getByText("Preview anyway")).toBeTruthy();
+  });
+
+  it("applies its own hard cap", () => {
+    const dialog = renderProvider(file("notes.txt", { size: 100 }), {
+      textPreviewMaxBytes: 10,
+      textPreviewHardMaxBytes: 99,
+    });
+    expect(
+      within(dialog).getByText("This file is too large to preview."),
+    ).toBeTruthy();
+    expect(within(dialog).getByText("Previews stop at 99 B.")).toBeTruthy();
   });
 });
 
