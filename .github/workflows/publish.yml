@@ -1,0 +1,53 @@
+# npm binds each package's trusted publisher to this file's name, one workflow per package, so
+# releases and master snapshots both publish from here. Renaming it breaks publishing until every
+# package's trusted publisher is updated on npmjs.com.
+name: Publish
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          # pnpm hands the packed tarball to npm, and npm signs in through OIDC from 11.5.1 on;
+          # Node 22 still ships npm 10.
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Set the version
+        id: version
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            node scripts/version.mjs check "${GITHUB_REF_NAME#v}"
+            echo "dist-tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            node scripts/version.mjs snapshot "$SHA" "$(git show -s --format=%ct HEAD)"
+            echo "dist-tag=master" >> "$GITHUB_OUTPUT"
+          fi
+      - run: pnpm build
+      - run: pnpm test
+      # A detached tag checkout and the snapshot's rewritten manifests both fail pnpm's git
+      # checks. Versions already on npm are skipped, so a rerun publishes only what is missing.
+      - run: pnpm -r publish --no-git-checks --tag "${{ steps.version.outputs.dist-tag }}"

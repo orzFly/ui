@@ -5,7 +5,7 @@
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
-    "url": "github:orzFly/orzui",
+    "url": "git+https://github.com/orzFly/ui.git",
     "directory": "packages/ui-mermaid"
   },
   "type": "module",
@@ -24,6 +24,9 @@
     "dist",
     "styles.css"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",

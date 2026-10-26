@@ -170,6 +170,24 @@ scratch directory and on the tracker; it never enters the repository, not even a
 Verification artifacts — packed tarballs, screenshots, logs — go in `.tmp/` at the repository root
 (gitignored), never in `/tmp`.
 
+## Publishing
+
+`origin` is the private remote that work is merged into; `github` is the public mirror,
+`github.com/orzFly/ui`. Every push of master to `origin` is followed by the same push to `github`.
+npm publishing runs only on the mirror, in `.github/workflows/publish.yml`, signed in through npm's
+trusted publishing (OIDC): no npm token exists anywhere.
+
+- Every package shares one version, set with `node scripts/version.mjs set <version>`.
+- Each master push publishes a snapshot, `<next patch>-master.<commit time>.g<hash>`, under the
+  `master` dist-tag, so `latest` and ordinary ranges never pick it up.
+- A release is a `chore: release <version>` commit that sets the version, merged and pushed like any
+  other, then a `v<version>` tag on it pushed to `github`. The workflow refuses a tag that does not
+  match every package's version, and publishes under `latest`.
+- npm binds each package to the workflow's file name and to the `npm` environment. Renaming either
+  stops publishing until every package's trusted publisher is changed on npmjs.com.
+- A new package's first version cannot come from the workflow: npm only trusts a package that
+  exists. A package owner publishes it by hand, then binds it with `scripts/npm-trust.sh <dir>`.
+
 ## Tracker
 
 Work is tracked in the todou project `orzui` (cards `UI-<number>`); the git remote has no binding,
@@ -180,7 +198,7 @@ so pass `-p orzui`. Follow `/todou-cli` for taking a card, asking questions and 
   publishing), `docs`.
 - Work on your own branch; when done, the card goes to Ready to Ship with a summary comment.
   Merging, pushing, deploying and publishing to npm are the orchestrator's.
-- Deploy: after a batch is merged to master and pushed, run `scripts/deploy-storybook.sh` from the
+- Deploy: after a batch is merged to master and pushed to both remotes, run `scripts/deploy-storybook.sh` from the
   main checkout on master. It builds the Storybook site and serves it at `http://127.0.0.1:6106/`
   through the `orzui-storybook` systemd user service; only then do the cards move to Shipped.
 - Code copied from todou names the todou commit it came from in the commit message.

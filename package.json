@@ -2,7 +2,7 @@
   "name": "orzui",
   "private": true,
   "license": "BSD-3-Clause",
-  "repository": "github:orzFly/orzui",
+  "repository": "github:orzFly/ui",
   "type": "module",
   "scripts": {
     "fmt": "biome check --write .",
