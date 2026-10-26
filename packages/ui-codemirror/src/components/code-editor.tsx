@@ -13,6 +13,7 @@ import { cn } from "@orz/ui";
 import { useDirtySource } from "@orz/ui/lib/unsaved-guard";
 import { useEffect, useImperativeHandle, useRef } from "react";
 import { parkedTooltip } from "../extensions/parked-tooltip.ts";
+import { tooltipSpace } from "../extensions/tooltip-space.ts";
 
 /**
  * The user event that marks a write as the program's rather than the
@@ -113,6 +114,7 @@ const editorTheme = EditorView.theme({
     // not the page, does the scrolling.
     flex: "1 1 auto",
     minHeight: "0",
+    borderRadius: "inherit",
   },
   "&.cm-focused": { outline: "none" },
   /**
@@ -147,6 +149,9 @@ const editorTheme = EditorView.theme({
     // Not `flex: 1`, which would zero the basis; the other two components of
     // the shorthand are already at their defaults.
     flexGrow: "1",
+    // The wrapper cannot clip to its rounded corners — that would clip an
+    // absolute completion popup too — so the scroller clips itself.
+    borderRadius: "inherit",
   },
   ".cm-line": { padding: "0" },
   ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--foreground)" },
@@ -281,6 +286,7 @@ export function CodeEditor({
           ...(highlightStyle ? [syntaxHighlighting(highlightStyle)] : []),
           editorTheme,
           parkedTooltip,
+          tooltipSpace,
           EditorView.contentAttributes.of({
             // CodeMirror's contenteditable opts out of the niceties a
             // <textarea> gets for free.
@@ -348,7 +354,7 @@ export function CodeEditor({
       className={cn(
         // text-base below md is not cosmetic: iOS auto-zooms a focused field
         // under 16px. Same rule `@orz/ui`'s Textarea follows.
-        "flex w-full flex-col overflow-hidden rounded-lg border border-input bg-transparent text-base transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 md:text-sm dark:bg-input/30",
+        "flex w-full flex-col rounded-lg border border-input bg-transparent text-base transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 md:text-sm dark:bg-input/30",
         readOnly && "opacity-50",
         className,
       )}
