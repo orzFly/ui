@@ -16,8 +16,14 @@ import type { Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { parser as commonmarkParser, GFM } from "@lezer/markdown";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
+import {
+  handlePaste,
+  pasteAs,
+  prefetchPasteConverter,
+} from "../extensions/paste-as.ts";
+import { toggleQuote } from "../extensions/quote-toggle.ts";
 import { trimTrailingSpaceOnEnter } from "../extensions/trim-trailing-space.ts";
 import { CodeEditor, type CodeEditorHandle } from "./code-editor.tsx";
 
@@ -107,6 +113,15 @@ const lineKeymap = [
 ];
 
 /**
+ * CodeMirror matches Shift+. by keyCode as `Mod-Shift-.`, but a layout whose
+ * Shift+. is `>` can arrive under that name instead.
+ */
+const quoteKeymap = [
+  { key: "Mod-Shift-.", run: toggleQuote },
+  { key: "Mod->", run: toggleQuote },
+];
+
+/**
  * Restrained markdown highlighting: enough structure to see the shape of a
  * document, never a rainbow. Colors come from theme variables only, so every
  * palette — and .dark — follows without a rebuild.
@@ -132,6 +147,10 @@ export const markdownHighlightStyle = HighlightStyle.define([
 
 /**
  * A markdown input surface: one editor for every place that takes markdown.
+ *
+ * A formatted paste becomes Markdown (`pasteAs`), Mod-Shift-V pastes plain
+ * text, Mod-Alt-V pastes as a quote, and Mod-Shift-. quotes or unquotes the
+ * selected lines; `EditorShortcutsHelp` lists these keys.
  *
  * The document is deliberately *not* React state — the EditorView owns it and
  * callers read through the ref at submit time. onChange exists only for
@@ -159,6 +178,16 @@ export function MarkdownEditor({
   // props, not the ones captured at mount.
   const handlers = useRef({ onSubmit, onCancel, onPaste, onDrop, onDragOver });
   handlers.current = { onSubmit, onCancel, onPaste, onDrop, onDragOver };
+
+  useEffect(() => {
+    const prefetch = () => void prefetchPasteConverter().catch(() => {});
+    if (typeof requestIdleCallback === "function") {
+      const handle = requestIdleCallback(prefetch);
+      return () => cancelIdleCallback(handle);
+    }
+    const handle = setTimeout(prefetch, 0);
+    return () => clearTimeout(handle);
+  }, []);
 
   return (
     <CodeEditor
@@ -199,15 +228,19 @@ export function MarkdownEditor({
           shift: trimTrailingSpaceOnEnter,
         },
         ...lineKeymap,
+        ...quoteKeymap,
       ]}
       language={markdownLanguage}
       highlightStyle={markdownHighlightStyle}
       onChange={onChange}
       extensions={[
+        pasteAs(),
         EditorView.domEventHandlers({
-          paste: (event) => {
+          // `onPaste` first: a paste it takes as files is default-prevented,
+          // and handlePaste then leaves it alone.
+          paste: (event, view) => {
             handlers.current.onPaste?.(event);
-            return false;
+            return handlePaste(view, event);
           },
           drop: (event) => {
             handlers.current.onDrop?.(event);

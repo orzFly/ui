@@ -107,6 +107,29 @@ export const Playground: Story = {
   },
 };
 
+/**
+ * Copy part of a web page or a document and paste it here: links, emphasis, lists, tables and
+ * code come through as Markdown, and a toolbar under the paste switches it to plain text or a
+ * quote (Mod-. reaches it from the keyboard). Mod-Shift-V pastes plain text, Mod-Alt-V a quote.
+ * Built into every MarkdownEditor.
+ */
+export const PasteAs: Story = {
+  args: {
+    placeholder: "Paste formatted text from a page here",
+  },
+};
+
+/**
+ * Mod-Shift-. quotes the lines a selection touches, under every cursor, and unquotes them when
+ * they are all quoted already. Built into every MarkdownEditor.
+ */
+export const QuoteToggle: Story = {
+  args: {
+    initialValue:
+      "Select these lines and press Mod-Shift-.\n\nThe blank line between them stays inside the quote.\n\n> Already quoted: press it here to unquote.\n",
+  },
+};
+
 const PEOPLE = ["alice", "bob"];
 
 const mentions: CompletionSource = (context) => {
