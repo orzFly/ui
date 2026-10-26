@@ -1,6 +1,6 @@
 {
   "name": "@orz/themes",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Theme palettes for @orz/ui and terminals as plain data, with light/dark palettes and variants",
   "license": "BSD-3-Clause",
   "repository": {

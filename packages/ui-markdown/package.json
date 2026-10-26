@@ -1,6 +1,6 @@
 {
   "name": "@orz/ui-markdown",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "GitHub-style markdown rendering on react-markdown, extended by markdown plugins and drawing code and embeds through @orz/ui-content",
   "license": "BSD-3-Clause",
   "repository": {

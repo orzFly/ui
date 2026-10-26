@@ -1,6 +1,6 @@
 {
   "name": "@orz/ui-asciinema",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "asciinema recordings played in the active @orz/ui terminal theme, contributed to the @orz/ui-content registry",
   "license": "BSD-3-Clause",
   "repository": {

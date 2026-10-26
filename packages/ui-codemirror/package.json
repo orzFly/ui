@@ -1,6 +1,6 @@
 {
   "name": "@orz/ui-codemirror",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "CodeMirror code and markdown editors, completion extensions and slash-command editing",
   "license": "BSD-3-Clause",
   "repository": {

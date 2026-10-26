@@ -1,6 +1,6 @@
 {
   "name": "@orz/ui-hex",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Virtualised hex viewer and data inspector over in-memory or paged byte sources",
   "license": "BSD-3-Clause",
   "repository": {
