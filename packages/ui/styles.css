@@ -70,3 +70,10 @@
     box-shadow: 0 0 0 2px transparent;
   }
 }
+
+/* useAutoHideHeader: once scrolling stops, the header (and whatever rides
+   under it) settles fully in or out. Only then — while a finger drives it, a
+   transition would trail the finger. */
+html[data-header-settling] [data-header-follow] {
+  transition: top 150ms ease-out;
+}

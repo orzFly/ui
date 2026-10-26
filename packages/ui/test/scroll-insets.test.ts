@@ -156,6 +156,8 @@ const insets = () => ({
 describe("useScrollInsets (T-299)", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    document.documentElement.style.removeProperty("--header-hide");
     for (const header of document.querySelectorAll("header")) header.remove();
   });
 
@@ -189,6 +191,29 @@ describe("useScrollInsets (T-299)", () => {
 
     view.getByText("elsewhere").focus();
     expect(insets()).toEqual({ top: "105px", bottom: "93px" });
+  });
+
+  it("keeps reveals clear of an on-screen keyboard", () => {
+    stubHeights();
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(714);
+    // The keyboard is up and the page has been panned 100px down the layout
+    // viewport: the top 100 and the bottom 237 are both out of sight.
+    const vv = new EventTarget();
+    Object.defineProperties(vv, {
+      offsetTop: { value: 100 },
+      height: { value: 377 },
+      scale: { value: 1 },
+    });
+    vi.stubGlobal("visualViewport", vv);
+    render(createElement(Harness, { composer: "mounted" }));
+    expect(insets()).toEqual({ top: "205px", bottom: "330px" });
+  });
+
+  it("takes a slid-away header's share off the top", () => {
+    stubHeights();
+    document.documentElement.style.setProperty("--header-hide", "57px");
+    render(createElement(Harness, { composer: "mounted" }));
+    expect(insets()).toEqual({ top: "48px", bottom: "93px" });
   });
 
   it("adds no header it was not given", () => {

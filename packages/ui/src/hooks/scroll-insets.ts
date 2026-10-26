@@ -1,4 +1,8 @@
 import { type RefObject, useLayoutEffect, useRef } from "react";
+import {
+  VIEWPORT_CHROME_EVENT,
+  visualViewportInsets,
+} from "./viewport-chrome.ts";
 
 /** Page coordinates of the thing to be revealed. */
 export type ScrollBlock = { top: number; height: number };
@@ -135,8 +139,9 @@ export type ScrollInsetSources = {
  * whose state holds a fallback for one commit — 56 against a real 93 on a
  * narrow screen, exactly across the frame a hard refresh lands in.
  *
- * Nothing is added implicitly: a fixed header is one more ref in `top`. The
- * landing flash is `.anchor-flash` from `@orz/ui/styles.css`.
+ * No overlay is added implicitly: a fixed header is one more ref in `top`.
+ * What an on-screen keyboard covers is counted on its own, from the visual
+ * viewport. The landing flash is `.anchor-flash` from `@orz/ui/styles.css`.
  */
 export function useScrollInsets({
   top = [],
@@ -166,11 +171,11 @@ export function useScrollInsets({
         focused !== null && el.contains(focused)
           ? 0
           : el.getBoundingClientRect().height;
-      let topInset = BREATHING_ROOM;
+      let overlays = 0;
       let bottomInset = 0;
       for (const el of sources.current.top.map((r) => r.current)) {
         if (el === null) continue;
-        topInset += extent(el);
+        overlays += extent(el);
         watch(el);
       }
       for (const el of sources.current.bottom.map((r) => r.current)) {
@@ -178,6 +183,15 @@ export function useScrollInsets({
         bottomInset += extent(el);
         watch(el);
       }
+      // A keyboard covers the layout viewport's bottom and can pan its top
+      // out of view; sticky edges follow it, and so must the padding, or a
+      // reveal would centre its target behind the keyboard. A header
+      // useAutoHideHeader has slid partly away covers that much less.
+      const edges = visualViewportInsets();
+      const slid = pixelsOf(root.style.getPropertyValue("--header-hide"));
+      const topInset =
+        BREATHING_ROOM + edges.top + Math.max(0, overlays - slid);
+      bottomInset += edges.bottom;
       root.style.scrollPaddingTop = `${topInset}px`;
       root.style.scrollPaddingBottom = `${bottomInset}px`;
     };
@@ -189,10 +203,18 @@ export function useScrollInsets({
     remeasure.current = measure;
     measure();
     window.addEventListener("resize", measure);
+    window.addEventListener(VIEWPORT_CHROME_EVENT, measure);
+    // A keyboard opening resizes only the visual viewport, never the window.
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", measure);
+    vv?.addEventListener("scroll", measure);
     document.addEventListener("focusin", measure);
     document.addEventListener("focusout", measure);
     return () => {
       window.removeEventListener("resize", measure);
+      window.removeEventListener(VIEWPORT_CHROME_EVENT, measure);
+      vv?.removeEventListener("resize", measure);
+      vv?.removeEventListener("scroll", measure);
       document.removeEventListener("focusin", measure);
       document.removeEventListener("focusout", measure);
       observer?.disconnect();
