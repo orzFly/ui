@@ -257,8 +257,8 @@ The order matters, because the first renderer that accepts a source draws it:
 | `imageContent()` | images with a `url` | both | `<img>`; in a document, a click opens the viewer; in the viewer, a zoomable canvas |
 | `htmlContent({ src? })` | HTML with a `url` | `viewer` | `<iframe sandbox="allow-scripts">` |
 | `pdfContent({ src? })` | PDF with a `url` | `viewer` | `<iframe>`, unsandboxed |
-| `videoContent()` | video with a `url` | both | `<video controls preload="metadata">` |
-| `audioContent()` | audio with a `url` | both | `<audio controls preload="metadata">` |
+| `videoContent()` | video with a `url` | both | `VideoPlayer`; in a document, under a header with the name and Download |
+| `audioContent()` | audio with a `url` | both | `AudioPlayer`; in a document, under a header with the file's icon, name and Download |
 
 A file with no `url` is never accepted by the binary renderers, and falls through to the
 registry's fallback. In a document an HTML file is text, so `attachmentCard` frames its source; a
@@ -268,6 +268,39 @@ PDF embed is the fallback's download link.
 then run scripts that call the app's API with the reader's cookies. `allow-scripts` alone keeps the
 document on an opaque origin. The PDF frame carries no sandbox because Chromium's PDF viewer refuses
 to run in a sandboxed frame, so serve PDFs from a URL that cannot be mistaken for the app.
+
+A video or audio file the browser cannot play (an `.avi`, a `.wma`) falls through to the renderers
+after `videoContent`/`audioContent`, usually the download link, with "This browser can't play this
+file." under it.
+
+### Video and audio players
+
+`VideoPlayer` and `AudioPlayer` are the players the renderers draw, for use on their own: a native
+`<video>`/`<audio>` without native controls, an optional `header` above, and `MediaControls` from
+`@orz/ui` underneath.
+
+```tsx
+import { VideoPlayer } from "@orz/ui-content/attachment";
+
+<VideoPlayer
+  src={url}
+  title="clip.webm"
+  header={<MyHeader />}
+  onError={() => setUnplayable(true)}
+/>;
+```
+
+- Props: `src`, `title` (the accessible name and the frame's `title`), `header`, `autoPlay`,
+  `loop`, `speed` (the initial speed) and `className`. The video preloads metadata only.
+- `onError` is called when the element cannot load or decode `src`, and the player then draws
+  nothing; without it, the player says "This browser can't play this file." in place of the
+  picture (for audio, the bar).
+- A video adds picture-in-picture and fullscreen where the document offers them. Fullscreen takes
+  the whole frame, so the bar stays.
+- Keys, anywhere in the frame unless the focused control uses the key itself (a slider its arrows,
+  a button Space): Space or `k` plays and pauses, ← → seek 5 s, `0`–`9` jump to tenths of the
+  duration, `m` mutes, `f` toggles fullscreen. A handled key is `preventDefault()`ed, so inside the
+  viewer an arrow key on the focused picture seeks rather than paging.
 
 `attachmentCard`:
 

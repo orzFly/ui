@@ -484,12 +484,53 @@ import { ColorPickerPopover } from "@orz/ui/components/color-picker";
 Importing either entry point brings in [culori](https://culorijs.org) (about 9 KB gzipped, only the
 modes the picker uses); nothing else in `@orz/ui` does.
 
+## Media controls
+
+`MediaControls`, from `@orz/ui/components/media-controls`, is the control bar under a media frame:
+play, time, seek, volume, speed, picture-in-picture and fullscreen, in that order. It plays nothing
+itself; the player passes the values in and acts on the callbacks. `@orz/ui-asciinema`'s cast
+player and `@orz/ui-content`'s `VideoPlayer` and `AudioPlayer` draw it.
+
+```tsx
+import { MediaControls } from "@orz/ui/components/media-controls";
+
+<MediaControls
+  playing={playing}
+  time={time}
+  duration={duration}
+  speed={speed}
+  onToggle={toggle}
+  onSeek={seek}
+  onSpeed={setSpeed}
+  buffered={[[0, 42]]}
+  volume={{ level, muted, onLevel: setLevel, onMute: toggleMute }}
+  fullscreen={{ active: fullscreen, onToggle: toggleFullscreen }}
+  portal={fullscreen ? frame : undefined}
+/>;
+```
+
+- `time` and `duration` are seconds. A `duration` that is not finite, as a recorded WebM reports
+  until it has been read to the end, disables the seek track and shows the time alone.
+- Dragging the seek track moves only the time shown; `onSeek` fires once, on release, and a value
+  within a step of the end snaps to the end.
+- `markers` are ticks over the track that seek to their time; `buffered` ranges are shaded behind
+  the played range.
+- `volume`, `fullscreen` and `pictureInPicture` are each one object of value and handler; leave one
+  out and its control is not drawn. `onLevel` only reports a level: whether dragging a muted
+  volume unmutes is the player's call.
+- From 24rem wide, volume is a mute button beside a level slider; below that, a single button opens
+  a popover with a vertical slider and the mute button. A container query makes the switch, so
+  nothing is measured.
+- `portal` is where the popover, the speed list and the tooltips render: the frame, while it is
+  fullscreen, or they would open outside it. `MEDIA_SPEEDS` lists the speeds offered, and a speed
+  outside it joins the list. `formatTime(seconds, long?)` writes `m:ss`, or `h:mm:ss`.
+
 ## Entry points
 
 | Import | Contents |
 |---|---|
 | `@orz/ui` | `cn` |
-| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `link-chip`, `load-failure`, `load-more`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `sheet`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-editor`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
+| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `link-chip`, `load-failure`, `load-more`, `media-controls`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `sheet`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-editor`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
 | `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut` |
 | `@orz/ui/lib/<name>` | `cell-width`, `clipboard`, `color`, `scroll-map`, `text-metrics`, `theme-file`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |

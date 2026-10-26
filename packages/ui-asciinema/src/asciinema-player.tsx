@@ -1,4 +1,5 @@
 import { Button } from "@orz/ui/components/button";
+import { MediaControls } from "@orz/ui/components/media-controls";
 import { cn } from "@orz/ui/lib/utils";
 import { useTerminalTheme } from "@orz/ui/theme";
 import type { Player } from "asciinema-player";
@@ -14,7 +15,6 @@ import {
   useState,
 } from "react";
 import { type CastInfo, isCastError, scanCast } from "./cast.ts";
-import { ControlBar } from "./control-bar.tsx";
 import { loadPlayer } from "./load-player.ts";
 import { playerThemeVars } from "./player-theme.ts";
 
@@ -367,20 +367,22 @@ function CastPlayer({
           </button>
         )}
       </div>
-      <ControlBar
+      <MediaControls
         playing={playing}
         time={time}
         duration={duration}
         markers={info.markers}
         speed={speed}
-        fullscreen={fullscreen}
-        fullscreenEnabled={fullscreenEnabled}
+        fullscreen={
+          fullscreenEnabled
+            ? { active: fullscreen, onToggle: toggleFullscreen }
+            : undefined
+        }
         disabled={!ready}
         portal={fullscreen ? frameRef.current : undefined}
         onToggle={toggle}
         onSeek={seek}
         onSpeed={setSpeed}
-        onFullscreen={toggleFullscreen}
       />
     </div>
   );

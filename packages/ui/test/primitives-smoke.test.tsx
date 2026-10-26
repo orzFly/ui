@@ -316,6 +316,22 @@ describe("every primitive renders", () => {
     expect(thumb.getAttribute("aria-valuemax")).toBe("120");
   });
 
+  it("slider draws trackChildren inside its track, before the range", () => {
+    render(
+      <Slider
+        value={[30]}
+        aria-label="Seek"
+        trackChildren={<span data-testid="buffered" />}
+      />,
+    );
+    const track = document.querySelector('[data-slot="slider-track"]');
+    const buffered = screen.getByTestId("buffered");
+    expect(buffered.parentElement).toBe(track);
+    expect(buffered.nextElementSibling?.getAttribute("data-slot")).toBe(
+      "slider-range",
+    );
+  });
+
   it("select and tooltip portal into a given container", () => {
     const host = document.createElement("div");
     document.body.append(host);

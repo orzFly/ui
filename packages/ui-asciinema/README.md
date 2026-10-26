@@ -4,7 +4,7 @@
 of `@orz/ui`'s terminal theme slot. The package contributes a renderer to `@orz/ui-content`'s
 registry, so a `.cast` file in a viewer or an attachment plays without importing this package from
 either. The engine is [asciinema-player](https://www.npmjs.com/package/asciinema-player) under a
-control bar built from `@orz/ui` components.
+`MediaControls`, the control bar from `@orz/ui`.
 
 ## Install
 

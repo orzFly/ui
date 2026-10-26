@@ -10,8 +10,12 @@ function Slider({
   max = 100,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
+  trackChildren,
   ...props
-}: React.ComponentProps<typeof SliderPrimitive.Root>) {
+}: React.ComponentProps<typeof SliderPrimitive.Root> & {
+  /** Drawn inside the track, under the range: a media bar's buffered ranges. */
+  trackChildren?: React.ReactNode;
+}) {
   const _values = React.useMemo(
     () =>
       Array.isArray(value)
@@ -39,6 +43,7 @@ function Slider({
         data-slot="slider-track"
         className="relative grow overflow-hidden rounded-full bg-muted data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
       >
+        {trackChildren}
         <SliderPrimitive.Range
           data-slot="slider-range"
           className="absolute bg-primary select-none data-horizontal:h-full data-vertical:w-full"
