@@ -213,7 +213,7 @@ describe("AsciinemaPlayer", () => {
     const { container, unmount } = mount(<AsciinemaPlayer cast={CAST} />);
     await built();
     const ticks = container.querySelectorAll<HTMLElement>(
-      '[data-slot="cast-marker"]',
+      '[data-slot="media-marker"]',
     );
     expect([...ticks].map((tick) => tick.getAttribute("aria-label"))).toEqual([
       "install at 0:01",
@@ -225,7 +225,7 @@ describe("AsciinemaPlayer", () => {
     const bare = mount(<AsciinemaPlayer cast={NO_MARKERS} />);
     await built(2);
     expect(
-      bare.container.querySelector('[data-slot="cast-marker"]'),
+      bare.container.querySelector('[data-slot="media-marker"]'),
     ).toBeNull();
   });
 
