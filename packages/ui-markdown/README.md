@@ -144,6 +144,11 @@ function Doc({ source }: { source: string }) {
   plugin. `resolve` has `markdownEmbeds`' signature, so one function serves both:
   `[markdownEmbeds({ resolve }), attachmentLinks({ resolve })]`. Using it means installing what
   `@orz/ui-content/attachment` needs (its README, "Attachments").
+- **`externalLinks({ origin? })`** opens a link to an http(s) address on another origin (default
+  `window.location.origin`) in a new tab, with `rel="noopener noreferrer"`; `styles.css` draws a ↗
+  after it, except on an image link. Relative, same-origin, fragment and `mailto:` links are left
+  alone. Put it after `attachmentLinks`, so file links are claimed first, and leave it out of the
+  list to keep every link in this tab. `isExternalHref(href, origin?)` is the test it applies.
 
 Register `markdownContent` ahead of any renderer that takes every text file, since the first renderer
 that accepts wins. `react-markdown` refuses some URL schemes (`file:` among them), and an address it
@@ -153,7 +158,7 @@ refuses is drawn as source text before `resolve` sees it: use relative addresses
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `markdownContent`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
+| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `markdownContent`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
 | `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `parseMarkdown` |
 | `@orz/ui-markdown/lib/remark-frontmatter-table` | `remarkFrontmatterTable`, `frontmatterFields`, `FRONTMATTER_FLAVOURS`, node types |
 | `@orz/ui-markdown/lib/remark-rejected-urls` | `remarkRejectedUrlsAsText` |

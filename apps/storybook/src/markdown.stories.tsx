@@ -2,6 +2,7 @@ import { codeContent } from "@orz/ui-code";
 import type { ContentRenderer, ContentSource } from "@orz/ui-content";
 import {
   attachmentLinks,
+  externalLinks,
   Markdown,
   type MarkdownPlugin,
   MarkdownPluginsContext as MarkdownPluginsContextView,
@@ -205,6 +206,11 @@ const EMBED_PLUGINS = [
   attachmentLinks({ resolve }),
 ];
 const LINK_PLUGINS = [attachmentLinks({ resolve })];
+const EXTERNAL_PLUGINS = [attachmentLinks({ resolve }), externalLinks()];
+
+const EXTERNAL_DOC = `Read [the guide](files/guide.md) here, or [the spec](https://example.com/spec)
+and the [GFM reference](https://github.github.com/gfm/) in a new tab. A [link to this
+page](#top) and [mail](mailto:noreply@example.com) stay where they are.`;
 const ATTACHMENTS = [
   withViewer({ group }),
   withRenderers(...ATTACHMENT_RENDERERS),
@@ -415,6 +421,13 @@ const plugins = [attachmentLinks({ resolve, boxed: false })];
 
 <Markdown plugins={plugins}>{source}</Markdown>`;
 
+const EXTERNAL_SNIPPET = `import { attachmentLinks, externalLinks, Markdown } from "@orz/ui-markdown";
+
+// Last, so attachment links are claimed first. Leave it out to keep every link in this tab.
+const plugins = [attachmentLinks({ resolve }), externalLinks()];
+
+<Markdown plugins={plugins}>{source}</Markdown>`;
+
 const CONTEXT_SNIPPET = `import { MarkdownPluginsContext } from "@orz/ui-markdown";
 import { useContext } from "react";
 
@@ -495,6 +508,14 @@ export const AttachmentLinks: Story = {
   render: (args) => <Markdown {...args} plugins={LINK_PLUGINS} />,
   decorators: ATTACHMENTS,
   parameters: code(LINKS_SNIPPET),
+};
+
+/** Links to another origin open in a new tab, marked ↗; file, same-page and mail links do not. */
+export const ExternalLinks: Story = {
+  args: { children: EXTERNAL_DOC },
+  render: (args) => <Markdown {...args} plugins={EXTERNAL_PLUGINS} />,
+  decorators: ATTACHMENTS,
+  parameters: code(EXTERNAL_SNIPPET),
 };
 
 /**

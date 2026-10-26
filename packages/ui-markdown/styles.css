@@ -104,6 +104,20 @@
     text-decoration: underline;
     text-underline-offset: 2px;
   }
+  /* What externalLinks sets a target on. Generated rather than written into
+     the DOM so a copy of the paragraph does not pick it up; the empty alt
+     keeps screen readers from announcing an arrow. Inline-block stops the
+     underline running under it. An image link is its own affordance and
+     gets no arrow. */
+  .markdown-body a[target="_blank"]:not(:has(img))::after {
+    content: "↗";
+    /* biome-ignore lint/suspicious/noDuplicateProperties: the line above is the fallback where content takes no alt text */
+    content: "↗" / "";
+    display: inline-block;
+    margin-left: 0.1em;
+    font-size: 0.8em;
+    text-decoration: none;
+  }
 
   .markdown-body ul,
   .markdown-body ol {
