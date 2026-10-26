@@ -30,6 +30,12 @@ export {
   videoContent,
 } from "./media-content.tsx";
 export {
+  AudioPlayer,
+  type AudioPlayerProps,
+  VideoPlayer,
+  type VideoPlayerProps,
+} from "./media-player.tsx";
+export {
   AttachmentViewer,
   type AttachmentViewerControls,
   type AttachmentViewerProps,
