@@ -12,6 +12,7 @@ import {
 import { cn } from "@orz/ui";
 import { useDirtySource } from "@orz/ui/lib/unsaved-guard";
 import { useEffect, useImperativeHandle, useRef } from "react";
+import { parkedTooltip } from "../extensions/parked-tooltip.ts";
 
 /**
  * The user event that marks a write as the program's rather than the
@@ -279,6 +280,7 @@ export function CodeEditor({
           ...(language ? [language] : []),
           ...(highlightStyle ? [syntaxHighlighting(highlightStyle)] : []),
           editorTheme,
+          parkedTooltip,
           EditorView.contentAttributes.of({
             // CodeMirror's contenteditable opts out of the niceties a
             // <textarea> gets for free.
