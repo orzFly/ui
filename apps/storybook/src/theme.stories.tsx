@@ -180,11 +180,16 @@ export const ThemeProvider: Story = {
     const [store, setStore] = useState<ThemeStore | null>(null);
     // A layout effect, so the box's first paint is already in its theme.
     useLayoutEffect(() => {
+      // Storybook's jsxDecorator also calls this render as a plain function
+      // and discards what it returns, so that copy's ref never attaches; a
+      // store with no root would paint the whole page.
+      const root = ref.current;
+      if (!root) return;
       const own = createThemeStore({
         storageKey: "orz-storybook-theme-provider",
         persistPref: false,
         persistCustomThemes: false,
-        root: ref.current ?? undefined,
+        root,
         themes: builtinThemes,
       });
       own.setPref({ ui: { theme: "dracula", mode: "dark" } });
