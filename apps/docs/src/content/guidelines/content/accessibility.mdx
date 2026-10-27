@@ -1,0 +1,168 @@
+export const meta = {
+  title: "Accessibility",
+  description:
+    "Contrast, focus, keyboard, target size and names: what every screen has to meet, with the WCAG 2.2 criterion behind each number.",
+  order: 42,
+  api: [
+    "ui/Primitives/Button",
+    "ui/Primitives/Tooltip",
+    "ui/Primitives/Label",
+    "ui/Primitives/Dialog",
+    "ui/ThemeEditor",
+    "ui/Hooks/useScrollInsets",
+    "ui/Hooks/useSlashShortcut",
+  ],
+};
+
+import { Button } from "@orz/ui/components/button";
+import { ContrastPairs } from "../../../examples/accessibility/contrast-pairs.tsx";
+import { NamedIconButtons } from "../../../examples/accessibility/named-icon-buttons.tsx";
+
+> **Every action works by keyboard, by touch and through a screen reader, and every word and edge is
+> readable in every theme.**
+
+The bar is [WCAG 2.2](https://www.w3.org/TR/WCAG22/) level AA. Each number below links the success
+criterion (SC) it comes from; where a page asks for more than AA, it says so and names the source.
+@orz/ui's components are built on Radix, which brings roles, keyboard handling and focus management
+with it. What they cannot do for an app is choose its words, its colours and what it puts on a
+screen, and most of this page is about that.
+
+## Contrast
+
+<Example of={ContrastPairs} />
+
+The table measures the theme you are reading this in; pick another from the theme menu and it
+follows.
+
+- **Text: 4.5:1** against what it sits on
+  ([SC 1.4.3](https://www.w3.org/TR/WCAG22/#contrast-minimum)). Large text, 24px or 18.66px bold
+  and up, needs 3:1.
+- **Edges and states: 3:1** — the edge that shows where a field is, the focus ring, the thumb of a
+  switch, an icon that carries meaning on its own
+  ([SC 1.4.11](https://www.w3.org/TR/WCAG22/#non-text-contrast)).
+- **Disabled controls are exempt.** They are drawn at half opacity on purpose; do not use the same
+  look for anything a reader is meant to read.
+- **Colour reads from the tokens, never a hard-coded value.** A token is held to these numbers in
+  every theme; a hex code is held to them in the one theme it was picked in.
+- **Never colour alone** ([SC 1.4.1](https://www.w3.org/TR/WCAG22/#use-of-color)). An invalid field
+  is red *and* says what is wrong; a diff line is green *and* starts with `+`; a failed run is red
+  *and* has a failed icon.
+
+A row that fails is a gap in that palette, not a licence to copy it. A custom theme is held to the
+same numbers, and the theme editor shows each token's ratio against the surface it is drawn on.
+
+## Focus
+
+<DoDont>
+  <Do show={<div><Button variant="outline" className="border-ring ring-3 ring-ring/50">Save changes</Button></div>}>
+    Keep the focus ring every @orz/ui control draws on `:focus-visible`, and give anything else that
+    takes focus the same one.
+  </Do>
+  <Dont show={<div><Button variant="outline" className="focus-visible:ring-0 focus-visible:border-border">Save changes</Button></div>}>
+    Remove the ring because it looks heavy after a click. `:focus-visible` already leaves it off for
+    a mouse click and shows it for the keyboard.
+  </Dont>
+</DoDont>
+
+- **Visible** ([SC 2.4.7](https://www.w3.org/TR/WCAG22/#focus-visible)): whatever has keyboard focus
+  shows it. A clickable surface that is not an @orz/ui control is a `<button>` or `<a>`, so it
+  takes focus at all, and borrows the `focus-visible:` classes from `Button`.
+- **Not hidden** ([SC 2.4.11](https://www.w3.org/TR/WCAG22/#focus-not-obscured-minimum), new in 2.2):
+  a sticky header, a toolbar or the on-screen keyboard never covers the focused element entirely.
+  Give a scroller with a sticky header `scroll-padding-top` of the header's height, so Tab lands
+  clear of it; `useScrollInsets` does the same for the page's own `scrollIntoView` calls, and
+  counts the on-screen keyboard.
+- **In reading order** ([SC 2.4.3](https://www.w3.org/TR/WCAG22/#focus-order)): Tab follows the
+  DOM, so the DOM follows the layout. No positive `tabIndex`.
+- **Returned.** A `Dialog`, `Sheet` or menu holds focus while open and gives it back to what opened
+  it on close. When that opener is gone — a menu item that removed its own row — send focus to the
+  next meaningful control yourself, as `LoadFailure`'s `retryRef` exists to.
+
+## Keyboard
+
+Everything a pointer can do, the keyboard can do
+([SC 2.1.1](https://www.w3.org/TR/WCAG22/#keyboard)), and nothing the keyboard enters it cannot
+leave ([SC 2.1.2](https://www.w3.org/TR/WCAG22/#no-keyboard-trap)). The components follow the WAI-ARIA
+patterns, so an app keeps to these keys and adds no competing ones:
+
+| Key | Does |
+|---|---|
+| Tab, Shift+Tab | Moves between controls, and into and out of a group as one stop |
+| Arrow keys | Move within a group: `RadioGroup`, `Tabs`, a menu, `Select`'s list, a `Slider` |
+| Enter | Activates a button or link, submits a form, picks a menu item |
+| Space | Activates a button, toggles a `Checkbox` or `Switch` |
+| Escape | Closes the innermost open overlay, and nothing else |
+| `/` | Focuses the page's search (`useSlashShortcut`); typed as itself inside a field |
+
+**A shortcut that is one character can be turned off**
+([SC 2.1.4](https://www.w3.org/TR/WCAG22/#character-key-shortcuts)): speech input types stray single
+keys. An app that binds `/` or any other single key offers a setting for keyboard shortcuts, and
+does not mount the component that binds them while it is off.
+
+## Target size
+
+- **24 × 24px at least** for anything clickable
+  ([SC 2.5.8](https://www.w3.org/TR/WCAG22/#target-size-minimum), AA, new in 2.2). A smaller target
+  passes only when a 24px circle on its centre touches no other target.
+- **44 × 44px on touch**, the size Apple's
+  [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/accessibility)
+  ask of every control and [SC 2.5.5](https://www.w3.org/TR/WCAG22/#target-size-enhanced) (AAA)
+  asks of every target.
+- **Drags have a click.** Anything done by dragging can also be done with single clicks or taps
+  ([SC 2.5.7](https://www.w3.org/TR/WCAG22/#dragging-movements), AA, new in 2.2): a `Slider` moves
+  to where its track is clicked, and with the arrow keys.
+
+On a mouse, @orz/ui's `Button` is 32px tall and its `xs` size 24px; a `Checkbox` and a
+`RadioGroup` item are 16px, and a `Switch` 20px tall. Those three pass by the spacing exception, so
+keep other targets out of the 24px around them, and pair each with its `Label`: the words then
+toggle it too. On a touch screen the controls grow; the **Pointer** and **Touch** buttons under any
+example on this site show both.
+
+## Names and roles
+
+<Example of={NamedIconButtons} />
+
+- **Every control has a name** a screen reader can announce
+  ([SC 4.1.2](https://www.w3.org/TR/WCAG22/#name-role-value)). A field gets a `Label` with
+  `htmlFor`; an icon-only button gets an `aria-label`, and the same words in a `Tooltip` for sighted
+  readers. A placeholder is not a name: it is gone once the reader types.
+- **The visible words start the name** ([SC 2.5.3](https://www.w3.org/TR/WCAG22/#label-in-name)): a
+  button that shows "Save" is not named "Submit form", or a speech user saying "click Save" misses
+  it.
+- **Status is announced** ([SC 4.1.3](https://www.w3.org/TR/WCAG22/#status-messages)) without moving
+  focus. `toast()` goes through the `Toaster`'s live region, and `LoadFailure` is a
+  `role="status"`; a message of your own that appears after an action needs one of the two.
+- **An error says what to fix** ([SC 3.3.1](https://www.w3.org/TR/WCAG22/#error-identification)), in
+  text beside the field, and the field gets `aria-invalid`, which @orz/ui's inputs draw in red.
+- **Structure is markup.** Headings are `h1`–`h3` in order, lists are lists, and a table of data is
+  a `Table`, so a screen reader's headings and table navigation work.
+
+## Motion and zoom
+
+- **Motion of your own stops on request.** An animation that slides, zooms or parallaxes is turned
+  off under `prefers-reduced-motion` (Tailwind's `motion-reduce:`); a fade may stay
+  ([SC 2.3.3](https://www.w3.org/TR/WCAG22/#animation-from-interactions), AAA, and Apple's HIG).
+- **Zoom is the reader's.** Never set `maximum-scale` or `user-scalable=no` in the viewport tag.
+  Text reaches 200% without loss ([SC 1.4.4](https://www.w3.org/TR/WCAG22/#resize-text)) and a page
+  works 320px wide without scrolling sideways
+  ([SC 1.4.10](https://www.w3.org/TR/WCAG22/#reflow)); a log, a diff or a table may scroll inside
+  its own box.
+
+## On each platform
+
+| | Pointer and keyboard | Touch and screen reader |
+|---|---|---|
+| Moving around | Tab and the arrow keys, with the focus ring showing where | VoiceOver or TalkBack swipes through the page in DOM order |
+| Hover | Tooltips appear on hover and on focus | There is no hover; a tooltip's words must also be the control's name |
+| Target | 24px, or the spacing around it | 44px |
+| Shortcuts | `/` and the menus' own keys | None; every shortcut has a visible control too |
+
+## Checking a screen
+
+1. Put the mouse away and do the screen's main task with the keyboard alone, watching the focus
+   ring.
+2. Go through the built-in themes, light and dark, and read every word; the contrast table above
+   follows each one.
+3. Zoom to 200%, then narrow the window to 320px.
+4. Turn on VoiceOver or TalkBack and find every control by its name.
+5. On a phone, or with **Touch** pressed under an example, reach every control with a thumb.

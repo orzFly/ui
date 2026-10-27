@@ -1,0 +1,135 @@
+export const meta = {
+  title: "Writing",
+  description:
+    "Voice, labels and capitalisation: the words on buttons, in dialogs and in messages, written the way a person would say them.",
+  order: 41,
+  api: [
+    "ui/Primitives/Button",
+    "ui/ConfirmDialog",
+    "ui/Primitives/Toaster",
+    "ui/LoadFailure",
+  ],
+};
+
+import { Button } from "@orz/ui/components/button";
+import { Label } from "@orz/ui/components/label";
+import { Switch } from "@orz/ui/components/switch";
+import { DeleteRun } from "../../../examples/writing/delete-run.tsx";
+
+> **Write what a person would say out loud: short, specific, in sentence case, and naming what
+> happens.**
+
+<Example of={DeleteRun} />
+
+The button names the action and ends in an ellipsis because it asks before it acts. The dialog's
+title is the question, its description says what goes with the run and that there is no way back,
+and the button that answers it repeats the verb. The toast afterwards says what happened, to what.
+
+## Voice
+
+The people using these tools are in the middle of something else. Words that get out of their way
+read as plain, calm and exact.
+
+- **Plain.** The everyday word over the technical one, unless the reader's own job uses the
+  technical one: a CI tool says *run* and *artifact*, not *execution* and *output object*.
+- **Calm.** No exclamation marks, no jokes in an error, no "Oops". A failure is reported, not
+  performed.
+- **About the thing, not about the app.** The app does not say *I* or *we*, and it does not thank
+  the reader for waiting. "Run 4182 deleted", not "We've successfully deleted your run!".
+- **Never blaming.** Say what is wrong with the input and how to fix it, not that the reader got it
+  wrong: "Use letters, digits and dashes", not "You entered an invalid name".
+- **The same word for the same thing.** If it is a *run* in the list, it is a *run* in the dialog,
+  the toast and the empty state, never a *build* or a *job*.
+
+## Labels
+
+A label is the shortest phrase that says what a control does. Buttons and menu items start with a
+verb; the rest name the setting or the thing.
+
+<DoDont>
+  <Do show={<div className="flex gap-2"><Button variant="outline">Cancel</Button><Button variant="destructive">Delete run</Button></div>}>
+    Answer a dialog with the verb its title asks about, and keep **Cancel** for the way out.
+  </Do>
+  <Dont show={<div className="flex gap-2"><Button variant="outline">No</Button><Button>Yes</Button></div>}>
+    Answer with **Yes**, **No** or **OK**. The reader has to go back to the title to find out what
+    they agreed to.
+  </Dont>
+</DoDont>
+
+- **Verb, then object** on a button or menu item: "Delete run", "Save changes", "Copy log". Drop the
+  object only when the surface already names it: a dialog titled "Rename branch" can end in
+  "Rename".
+- **An ellipsis (…) when the control asks for more before it acts**: it opens a dialog, a picker or
+  a form ("Delete run…", the theme menu's "Custom themes…"). Not on a control that just opens a
+  view, and not on the confirming button inside the dialog.
+- **A toggle names its on state.** A `Switch` or `Checkbox` says what is true when it is on: "Wrap
+  long lines", never "Don't wrap long lines". A negative label makes off a double negative.
+- **An icon-only button still has a label**, as its `aria-label`, and shows it in a tooltip. See
+  [Accessibility](/guidelines/content/accessibility/#names-and-roles).
+
+<DoDont>
+  <Do show={<div className="flex items-center gap-2"><Switch id="writing-wrap" defaultChecked /><Label htmlFor="writing-wrap">Wrap long lines</Label></div>}>
+    Name what is true when the switch is on.
+  </Do>
+  <Dont show={<div className="flex items-center gap-2"><Switch id="writing-nowrap" /><Label htmlFor="writing-nowrap">Disable line wrapping</Label></div>}>
+    Name the off state, so that turning it on turns something off.
+  </Dont>
+</DoDont>
+
+## Capitalisation
+
+**Sentence case everywhere**: capitalise the first word and proper nouns, and nothing else. That
+includes titles, buttons, menu items, tabs and column headers — "Terminal theme", "Exit fullscreen",
+"Load more", as @orz/ui's own labels are written. Product and brand names keep their own spelling:
+GitHub, Storybook, npm.
+
+This differs from both sources: Apple's HIG puts macOS buttons and menu items in title case, and
+GNOME's capitalises headers. One rule for every surface is easier to keep than a table of which
+surface gets which, and sentence case reads as speech, which title case does not.
+
+| Text | Case | Ends with | Example |
+|---|---|---|---|
+| Page and dialog title | Sentence | Nothing, or `?` when it asks | Delete run 4182? |
+| Button, menu item, tab | Sentence | Nothing, or `…` when it asks for more | Custom themes… |
+| Field label, setting, column header | Sentence | Nothing; no colon | Terminal theme |
+| Description, help, message of one sentence or more | Sentence | A full stop | Runs can't be restored. |
+| Toast | Sentence | Nothing | Run 4182 deleted |
+| Placeholder | Sentence | `…` when it asks to be typed into | Find a colour… |
+
+## Messages
+
+Loading, empty, failed and done each look different and say so. A message says what happened and,
+when the reader can do something about it, what that is.
+
+- **Done**: a toast in the past tense, naming the object: "Run 4182 deleted", "3 runs archived". No
+  "successfully": a toast that appears has already said that.
+- **Loading**: say what is loading when it takes more than a moment ("Loading runs…"); a skeleton
+  needs no words.
+- **Empty**: say what would be here and how it gets here: "No runs yet. A run starts when you push
+  to a branch."
+- **Failed**: what failed, in the reader's terms, then the way out. `LoadFailure` takes the message,
+  the raw error as its `detail` (shown on hover, not in the sentence) and a Retry. Never show a
+  stack trace or an HTTP status as the message.
+
+## Spelling, numbers and symbols
+
+- **One spelling per app.** @orz/ui's own labels use British spelling ("Find a colour"); its code
+  uses American, as CSS does (`color`). An app may pick either, and then holds to it.
+- **Numerals for numbers**, "3 runs", not "three runs", and the plural that matches: "1 run",
+  "2 runs". Build the plural with `Intl.PluralRules` rather than writing "run(s)".
+- **The right character, where it has a job**: `…` for an ellipsis, `–` for a range ("10–20"),
+  `×` for dimensions ("44 × 44"), `—` between two halves of a sentence.
+- **Dates and times** through `Intl.DateTimeFormat` in the reader's locale; a relative time ("3
+  minutes ago") carries the absolute one in its `title`.
+
+## On each platform
+
+The same words are read with a mouse and with a thumb, so they name what happens, not the gesture
+that makes it happen.
+
+| | Pointer | Touch |
+|---|---|---|
+| Instructions | "Select a run", "Open the menu"; never "Click" | The same words; never "Tap" |
+| Tooltips | Repeat a label or add a shortcut | Do not appear, so they never hold the only copy of anything |
+| Shortcuts | May appear in a tooltip or menu item | Left out; there is no keyboard to press them on |
+| Length | A label can be longer where the layout is wide | Write the label to fit a 390px screen first |
