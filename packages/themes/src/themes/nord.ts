@@ -19,7 +19,7 @@ const darkPalette: Palette = {
     "muted-foreground": "oklch(0.8 0.018 235)",
     accent: "oklch(0.4 0.05 225)",
     "accent-foreground": "oklch(0.84 0.07 210)",
-    destructive: "oklch(0.66 0.13 20)",
+    destructive: "oklch(0.72 0.13 20)",
     border: "oklch(0.4 0.022 248)",
     input: "oklch(0.4 0.022 248)",
     ring: "oklch(0.78 0.08 210)",

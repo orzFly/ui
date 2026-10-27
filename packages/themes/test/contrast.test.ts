@@ -45,6 +45,31 @@ describe("primary contrast", () => {
   });
 });
 
+// Secondary and error text on the surfaces it is drawn on: inactive tabs sit on
+// muted, an error line on the page, a destructive menu item in a popover.
+const TEXT = [
+  ["muted-foreground", "background"],
+  ["muted-foreground", "muted"],
+  ["destructive", "background"],
+  ["destructive", "popover"],
+] as const;
+
+describe("text contrast", () => {
+  it("clears AA for muted and destructive text on the surfaces it sits on", () => {
+    const rows = resolved.flatMap(({ name, tokens }) =>
+      TEXT.map(([text, surface]) => ({
+        name: `${name} ${text}/${surface}`,
+        ratio: contrast(rgbOf(tokens[text]), rgbOf(tokens[surface])),
+      })),
+    );
+    expect(
+      rows
+        .filter((r) => r.ratio < AA)
+        .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`),
+    ).toEqual([]);
+  });
+});
+
 // A highlight, fill or border on the surface it usually sits on; the first
 // is a menu row under the pointer.
 const STATES = [

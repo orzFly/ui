@@ -17,7 +17,7 @@ const lightPalette: Palette = {
     secondary: "oklch(0.93 0.008 280)",
     "secondary-foreground": "oklch(0.42 0.04 285)",
     muted: "oklch(0.93 0.008 280)",
-    "muted-foreground": "oklch(0.54 0.04 285)",
+    "muted-foreground": "oklch(0.51 0.04 285)",
     accent: "oklch(0.93 0.04 300)",
     "accent-foreground": "oklch(0.46 0.22 300)",
     destructive: "oklch(0.55 0.21 15)",

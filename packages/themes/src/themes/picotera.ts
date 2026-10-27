@@ -29,7 +29,7 @@ const lightPalette: Palette = {
     "muted-foreground": "oklch(0.48 0.02 255)",
     accent: "oklch(0.955 0.025 262)",
     "accent-foreground": "oklch(0.38 0.18 262)",
-    destructive: "oklch(0.6 0.2 25)",
+    destructive: "oklch(0.58 0.2 25)",
     border: "oklch(0.925 0.006 255)",
     input: "oklch(0.925 0.006 255)",
     ring: "oklch(0.54 0.19 262)",

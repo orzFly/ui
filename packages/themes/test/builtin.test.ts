@@ -138,11 +138,34 @@ describe("the port from @orz/ui's styles.css", () => {
     expect(Object.keys(PORTED).sort()).toEqual(Object.keys(legacy).sort());
   });
 
+  // Darkened or lightened after the port to clear AA as text; contrast.test.ts
+  // holds them instead. The fixture stays as scraped.
+  const RETUNED: Record<string, string[]> = {
+    light: ["muted-foreground"],
+    "pico-light": ["destructive"],
+    "solarized-light": ["muted-foreground", "destructive"],
+    "solarized-dark": ["muted-foreground", "destructive"],
+    "catppuccin-latte": ["muted-foreground"],
+    "gruvbox-light": ["muted-foreground"],
+    "gruvbox-dark": ["destructive"],
+    dracula: ["destructive"],
+    nord: ["destructive"],
+    "one-dark": ["muted-foreground"],
+    monokai: ["destructive"],
+  };
+  const without = (tokens: Record<string, string>, names: string[] = []) =>
+    Object.fromEntries(
+      Object.entries(tokens).filter(([name]) => !names.includes(name)),
+    );
+
   it.each(Object.entries(PORTED))(
     "changed no UI value of %s",
     (slug, [id, scheme]) => {
       const theme = builtinThemes.find((t) => t.id === id) as Theme;
-      expect(resolvePalette(theme, scheme)?.tokens).toEqual(legacy[slug]);
+      const tokens = resolvePalette(theme, scheme)?.tokens ?? {};
+      expect(without(tokens, RETUNED[slug])).toEqual(
+        without(legacy[slug], RETUNED[slug]),
+      );
     },
   );
 });
