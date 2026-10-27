@@ -77,3 +77,33 @@
 html[data-header-settling] [data-header-follow] {
   transition: top 150ms ease-out;
 }
+
+/* Reduced motion (SC 2.3.3): what moves across the screen stops, a fade
+   stays, so an overlay still reads as arriving rather than blinking in.
+   tw-animate-css draws every animate-in / animate-out from the variables its
+   slide, zoom, spin and blur utilities set, so putting those back to their
+   registered no-op values covers Dialog, Sheet, Popover, DropdownMenu, Select
+   and Tooltip at once, and any consumer markup using the same utilities.
+   Redefining the enter / exit keyframes instead loses: Tailwind emits the
+   @theme ones after this file, and the last @keyframes of a name wins.
+   !important because the utilities sit on the element itself. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    --tw-enter-translate-x: initial !important;
+    --tw-enter-translate-y: initial !important;
+    --tw-enter-scale: initial !important;
+    --tw-enter-rotate: initial !important;
+    --tw-enter-blur: initial !important;
+    --tw-exit-translate-x: initial !important;
+    --tw-exit-translate-y: initial !important;
+    --tw-exit-scale: initial !important;
+    --tw-exit-rotate: initial !important;
+    --tw-exit-blur: initial !important;
+  }
+
+  html[data-header-settling] [data-header-follow] {
+    transition: none;
+  }
+}
