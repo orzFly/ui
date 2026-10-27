@@ -56,7 +56,8 @@ jobs:
       # checks. Versions already on npm are skipped, so a rerun publishes only what is missing.
       - run: pnpm -r publish --no-git-checks --tag "${{ steps.version.outputs.dist-tag }}"
 
-  # Master's Storybook at https://orzfly.github.io/ui/, deployed from the site the check built.
+  # Master's docs site at https://orzfly.github.io/ui/, Storybook at …/ui/storybook/, deployed
+  # from the site the check built.
   pages:
     if: github.ref == 'refs/heads/master'
     needs: check

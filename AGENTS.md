@@ -20,8 +20,8 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   callback or a prop.
 - A dependency heavy enough to matter to a consumer's bundle (CodeMirror, unified, shiki) gets its own
   package rather than landing in `@orz/ui`.
-- `apps/<dir>` holds workspace apps, such as the Storybook demo site. They are `"private": true` and
-  never published.
+- `apps/<dir>` holds workspace apps: the Storybook demo site (`apps/storybook`) and the docs site
+  (`apps/docs`, see **Docs site**). They are `"private": true` and never published.
 - Every JS entry in a package's `exports` lists the `@orz/source` condition first, pointing at
   `src/`, then `types` and `default` pointing at `dist/`. Only workspace apps set that condition
   (Vite `resolve.conditions`, tsconfig `customConditions`), so they run on source with no watch
@@ -107,6 +107,33 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   through `components.json`'s aliases. Rewrite them to relative `.ts`/`.tsx` paths, because the build
   only rewrites relative imports and biome rejects `@/`.
 
+## Docs site
+
+`apps/docs` is the site visitors land on: guidelines, demos and a Start page, with the Storybook
+build copied under `storybook/`. It is a Vite + React app on @orz/ui itself, prerendered to one HTML
+file per route.
+
+- A page is an MDX file under `src/content/`, and its path is its URL:
+  `content/guidelines/patterns/forms.mdx` is `/guidelines/patterns/forms/`, an `index.mdx` is its
+  directory's. It opens with `export const meta = { title, description, order, api }`, a plain
+  literal followed by a blank line: the nav reads it without loading the page. `api` lists the
+  Storybook titles the page links to. The top bar, sidebar, phone nav, breadcrumb and previous/next
+  are built from `meta`; no page is listed by hand. A directory without an `index.mdx` is a nav
+  heading named after it.
+- A live example is a file under `src/examples/<page>/` exporting exactly one component
+  (`export function Name`); the page writes `<Example of={Name} />`, which shows the component and
+  that file as its source.
+- Links in a page are written from the site root (`[Start](/start/)`, `/storybook/`); `Link` and the
+  MDX `a` add the base. Nothing in `apps/docs` writes `/ui/`.
+- The site is served at `/` everywhere (`pnpm --filter @orz/docs dev`, the local deploy), and under
+  `/ui/` only on GitHub Pages, built with `DOCS_BASE=/ui/`. `test/build.test.ts` builds it under
+  `/ui/` and fails on any URL that escapes the prefix.
+- A page renders on the server first, so nothing reads `window` or `matchMedia` while it renders
+  outside `ClientOnly` (`src/hydrated.tsx`); the dev server renders on the server too, so a
+  hydration mismatch shows up in `dev`.
+- `pnpm build` builds the docs app after Storybook, which it copies. `?path=` links written for
+  Storybook when it sat at the site root are redirected to `storybook/`.
+
 ## Sanitization
 
 This repository is published publicly, and git history is permanent: a leak is not fixed by a
@@ -175,8 +202,9 @@ Verification artifacts — packed tarballs, screenshots, logs — go in `.tmp/` 
 `origin` is the private remote that work is merged into; `github` is the public mirror,
 `github.com/orzFly/ui`. Every push of master to `origin` is followed by the same push to `github`.
 npm publishing runs only on the mirror, in `.github/workflows/publish.yml`, signed in through npm's
-trusted publishing (OIDC): no npm token exists anywhere. The same workflow deploys master's Storybook
-to GitHub Pages, `https://orzfly.github.io/ui/`, with no `gh-pages` branch.
+trusted publishing (OIDC): no npm token exists anywhere. The same workflow deploys master's docs site
+to GitHub Pages, `https://orzfly.github.io/ui/`, Storybook at `https://orzfly.github.io/ui/storybook/`,
+with no `gh-pages` branch.
 
 - `publish.yml` first runs `ci.yml` as a reusable workflow; npm publishing and the Pages deploy both
   wait for it, so nothing ships from a push whose checks fail. `ci.yml` triggers on its own only for
@@ -202,7 +230,8 @@ so pass `-p orzui`. Follow `/todou-cli` for taking a card, asking questions and 
   publishing), `docs`.
 - Work on your own branch; when done, the card goes to Ready to Ship with a summary comment.
   Merging, pushing, deploying and publishing to npm are the orchestrator's.
-- Deploy: after a batch is merged to master and pushed to both remotes, run `scripts/deploy-storybook.sh` from the
-  main checkout on master. It builds the Storybook site and serves it at `http://127.0.0.1:6106/`
-  through the `orzui-storybook` systemd user service; only then do the cards move to Shipped.
+- Deploy: after a batch is merged to master and pushed to both remotes, run `scripts/deploy-site.sh` from the
+  main checkout on master. It builds the docs site, Storybook included, and serves it at
+  `http://127.0.0.1:6106/` (Storybook at `/storybook/`) through the `orzui-site` systemd user
+  service; only then do the cards move to Shipped.
 - Code copied from todou names the todou commit it came from in the commit message.

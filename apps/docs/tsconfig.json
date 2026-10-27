@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "customConditions": ["@orz/source"],
+    "types": ["vite/client", "node", "mdx"]
+  },
+  "include": ["src", "scripts", "test", "vite.config.ts", "vitest.config.ts"]
+}

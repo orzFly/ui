@@ -1,0 +1,46 @@
+export const meta = {
+  title: "@orz/ui",
+  description:
+    "React components, a theme store, and guidelines for tools people live in all day, on a desktop with a mouse and on a phone with a thumb.",
+  layout: "bare",
+};
+
+<section className="border-b">
+  <div className="mx-auto max-w-5xl px-5 py-14 md:px-10 md:py-20">
+    {/* Text on its own lines inside JSX would become a markdown paragraph, a <p> in the <p>. */}
+    <h1 className="max-w-3xl font-semibold text-4xl tracking-tight md:text-5xl">Components for tools people live in all day.</h1>
+    <p className="mt-5 max-w-2xl text-lg text-muted-foreground">React and Tailwind CSS v4 components, a theme store, and viewers for what tools produce: logs, diffs, terminal recordings, markdown, diagrams and binaries. Dense with a mouse, generous with a thumb.</p>
+    <div className="mt-8 flex flex-wrap items-center gap-3">
+      <LinkButton to="/start/">Get started</LinkButton>
+      <LinkButton to="/storybook/" variant="outline">Browse components</LinkButton>
+      <code className="rounded-lg bg-muted px-3 py-2 font-mono text-sm">pnpm add @orz/ui</code>
+    </div>
+  </div>
+</section>
+
+<section className="mx-auto max-w-5xl px-5 py-10 md:px-10">
+  <Doors />
+</section>
+
+<section className="mx-auto max-w-5xl px-5 pb-16 md:px-10">
+
+## Packages
+
+Every package shares one version and is published under the `@orz` scope on npm. `@orz/ui` is the
+core; the heavier pieces are packages of their own, so an app pays only for what it imports.
+
+| Package | What it is |
+|---|---|
+| `@orz/ui` | Primitives, patterns, hooks and the theme store |
+| `@orz/themes` | Theme palettes for the UI and for terminals, as plain data |
+| `@orz/query` | The grammar of a search box and a slash-command line |
+| `@orz/ui-content` | The registry through which content packages draw one another |
+| `@orz/ui-markdown` | GitHub-style markdown |
+| `@orz/ui-codemirror` | CodeMirror 6 editors: prose, markdown, completion |
+| `@orz/ui-code` | Highlighted code, diffs and a word differ |
+| `@orz/ui-ansi` | Text with ANSI escapes, and logs by level |
+| `@orz/ui-asciinema` | Terminal recordings played in the page |
+| `@orz/ui-hex` | A hex view, editor and data inspector |
+| `@orz/ui-mermaid` | Mermaid diagrams in the active theme |
+
+</section>

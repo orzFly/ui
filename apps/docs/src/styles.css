@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/jetbrains-mono";
+@import "@orz/ui/styles.css";
+@import "@orz/ui-code/styles.css";
+
+/* The packages' stylesheets register their dist/; the site runs on src/. */
+@source "../../../packages/*/src/**/*.{ts,tsx}";
+@source "./";
+
+@theme {
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+}

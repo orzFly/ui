@@ -1,0 +1,311 @@
+import { Button } from "@orz/ui/components/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetTrigger,
+} from "@orz/ui/components/sheet";
+import { ThemeMenu } from "@orz/ui/components/theme-menu";
+import { cn } from "@orz/ui/lib/utils";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpRightIcon,
+  MenuIcon,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { ClientOnly } from "./hydrated.tsx";
+import type { PageMeta, TocEntry } from "./page.ts";
+import { nav } from "./pages.ts";
+import { BASE, Link, useRouter } from "./router.tsx";
+import { type NavNode, pagesIn, storybookHref } from "./routes.ts";
+
+/** The top bar's sections: content/'s top-level pages and directories, Home aside. */
+const sections = nav.children;
+
+function Logo() {
+  return (
+    <Link to="/" className="font-semibold tracking-tight">
+      orz<span className="font-medium text-muted-foreground">/ui</span>
+    </Link>
+  );
+}
+
+/** ThemeMenu's own trigger reads matchMedia while rendering, which the server cannot. */
+function ThemeButton() {
+  return (
+    <ClientOnly
+      fallback={
+        <Button variant="ghost" size="icon" aria-label="Theme" disabled />
+      }
+    >
+      <ThemeMenu />
+    </ClientOnly>
+  );
+}
+
+const topLink =
+  "rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:text-foreground";
+
+export function SiteHeader({ section }: { section: NavNode | undefined }) {
+  return (
+    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-2 px-3 md:gap-6 md:px-5">
+        <MobileNav section={section} />
+        <Logo />
+        <nav aria-label="Site" className="hidden items-center gap-1 md:flex">
+          {sections.map((node) => (
+            <Link
+              key={node.route}
+              to={firstPage(node).route}
+              className={cn(
+                topLink,
+                node === section && "bg-accent text-foreground",
+              )}
+            >
+              {node.title}
+            </Link>
+          ))}
+          <a href={storybookHref(BASE)} className={topLink}>
+            Storybook
+            <ArrowUpRightIcon className="ml-0.5 inline size-3.5 align-[-2px]" />
+          </a>
+        </nav>
+        <div className="ml-auto">
+          <ThemeButton />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/** A section's own page, or its first one when the directory has no index. */
+function firstPage(node: NavNode): NavNode {
+  return pagesIn(node)[0] ?? node;
+}
+
+function MobileNav({ section }: { section: NavNode | undefined }) {
+  const [open, setOpen] = useState(false);
+  const { route } = useRouter();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a navigation closes the sheet.
+  useEffect(() => setOpen(false), [route]);
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-11 md:hidden"
+          aria-label="Menu"
+        >
+          <MenuIcon className="size-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="gap-0 overflow-y-auto p-2 pb-8">
+        <SheetTitle className="flex h-11 items-center px-3">
+          <Logo />
+        </SheetTitle>
+        <SheetDescription className="sr-only">Site navigation</SheetDescription>
+        <nav aria-label="Site" className="mt-2 text-base">
+          {sections.map((node) => (
+            <div key={node.route}>
+              <Link
+                to={firstPage(node).route}
+                className={cn(rowClass("touch"), "font-medium text-foreground")}
+              >
+                {node.title}
+              </Link>
+              {node === section && node.children.length > 0 && (
+                <div className="mb-2 ml-3 border-l pl-1">
+                  <NavTree node={node} size="touch" />
+                </div>
+              )}
+            </div>
+          ))}
+          <a
+            href={storybookHref(BASE)}
+            className={cn(rowClass("touch"), "font-medium text-foreground")}
+          >
+            Storybook
+            <ArrowUpRightIcon className="ml-1 size-4" />
+          </a>
+        </nav>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function rowClass(size: "pointer" | "touch") {
+  return cn(
+    "flex items-center rounded-md px-3 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:font-medium aria-[current=page]:text-foreground",
+    size === "touch" ? "min-h-11" : "min-h-8 pointer-coarse:min-h-11",
+  );
+}
+
+/** A section's pages; a directory is a heading over its own. */
+export function NavTree({
+  node,
+  size = "pointer",
+}: {
+  node: NavNode;
+  size?: "pointer" | "touch";
+}) {
+  return (
+    <ul>
+      {node.children.map((child) => (
+        <li key={child.route}>
+          {child.children.length === 0 ? (
+            <Link to={child.route} className={rowClass(size)}>
+              {child.title}
+            </Link>
+          ) : (
+            <>
+              <h3 className="mt-4 mb-1 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                {child.page ? (
+                  <Link to={child.route} className="hover:text-foreground">
+                    {child.title}
+                  </Link>
+                ) : (
+                  child.title
+                )}
+              </h3>
+              <NavTree node={child} size={size} />
+            </>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function Sidebar({ section }: { section: NavNode }) {
+  return (
+    <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-60 shrink-0 overflow-y-auto border-r bg-sidebar px-2 py-4 text-sm md:block">
+      <nav aria-label={section.title}>
+        <NavTree node={section} />
+      </nav>
+    </aside>
+  );
+}
+
+/** The heading the reader is in: the last one scrolled past the header. */
+function useActiveHeading(toc: TocEntry[]): string | undefined {
+  const [active, setActive] = useState<string>();
+  useEffect(() => {
+    const onScroll = () => {
+      let current: string | undefined;
+      for (const { id } of toc) {
+        const element = document.getElementById(id);
+        if (element && element.getBoundingClientRect().top < 96) current = id;
+      }
+      setActive(current ?? toc[0]?.id);
+    };
+    onScroll();
+    addEventListener("scroll", onScroll, { passive: true });
+    return () => removeEventListener("scroll", onScroll);
+  }, [toc]);
+  return active;
+}
+
+export function Toc({ toc, meta }: { toc: TocEntry[]; meta: PageMeta }) {
+  const active = useActiveHeading(toc);
+  const api = meta.api ?? [];
+  if (toc.length === 0 && api.length === 0) return null;
+  return (
+    <aside className="sticky top-14 hidden max-h-[calc(100dvh-3.5rem)] w-56 shrink-0 overflow-y-auto px-4 py-8 text-sm xl:block">
+      {toc.length > 0 && (
+        <nav aria-label="On this page">
+          <p className="mb-2 font-medium">On this page</p>
+          <ul className="border-l">
+            {toc.map((entry) => (
+              <li key={entry.id}>
+                <a
+                  href={`#${entry.id}`}
+                  className={cn(
+                    "-ml-px block border-l border-transparent py-1 text-muted-foreground transition-colors hover:text-foreground",
+                    entry.depth === 3 ? "pl-6" : "pl-3",
+                    entry.id === active && "border-foreground text-foreground",
+                  )}
+                >
+                  {entry.text}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+      {api.length > 0 && <ApiLinks titles={api} className="mt-6" />}
+    </aside>
+  );
+}
+
+/** The Storybook pages for the components a page is about. */
+export function ApiLinks({
+  titles,
+  className,
+}: {
+  titles: string[];
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-lg border p-3", className)}>
+      <p className="mb-1 font-medium">API</p>
+      <ul>
+        {titles.map((title) => (
+          <li key={title}>
+            <a
+              href={storybookHref(BASE, title)}
+              className="inline-flex items-center py-0.5 text-muted-foreground hover:text-foreground"
+            >
+              {title.split("/").at(-1)}
+              <ArrowUpRightIcon className="ml-0.5 size-3.5" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Previous and next within the section, in nav order. */
+export function PageFooter({
+  section,
+  route,
+}: {
+  section: NavNode;
+  route: string;
+}) {
+  const order = pagesIn(section);
+  const index = order.findIndex((node) => node.route === route);
+  if (index < 0 || order.length < 2) return null;
+  const previous = order[index - 1];
+  const next = order[index + 1];
+  const card =
+    "flex min-h-11 flex-col gap-0.5 rounded-lg border px-4 py-3 transition-colors hover:bg-accent";
+  return (
+    <nav
+      aria-label="Previous and next"
+      className="mt-16 grid gap-3 border-t pt-6 sm:grid-cols-2"
+    >
+      {previous ? (
+        <Link to={previous.route} className={card}>
+          <span className="flex items-center gap-1 text-muted-foreground text-xs">
+            <ArrowLeftIcon className="size-3.5" /> Previous
+          </span>
+          <span className="font-medium">{previous.title}</span>
+        </Link>
+      ) : (
+        <span />
+      )}
+      {next && (
+        <Link to={next.route} className={cn(card, "items-end text-right")}>
+          <span className="flex items-center gap-1 text-muted-foreground text-xs">
+            Next <ArrowRightIcon className="size-3.5" />
+          </span>
+          <span className="font-medium">{next.title}</span>
+        </Link>
+      )}
+    </nav>
+  );
+}

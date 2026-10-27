@@ -1,0 +1,94 @@
+export const meta = {
+  title: "Start",
+  description:
+    "Install @orz/ui, load its stylesheet, create a theme store, and render a first component.",
+  order: 1,
+};
+
+import { FirstControls } from "../examples/start/first-controls.tsx";
+
+## Install
+
+```bash
+pnpm add @orz/ui react react-dom radix-ui lucide-react sonner
+```
+
+`radix-ui`, `sonner`, `lucide-react` and React are peer dependencies, so they are your app's own
+copies. Radix's focus and dismiss stacks and sonner's toast store are module state: with a second
+copy beside yours, Escape would stop closing a menu opened over a dialog, and `toast()` would not
+reach `<Toaster />`.
+
+## CSS
+
+```css
+@import "tailwindcss";
+@import "@orz/ui/styles.css";
+```
+
+`styles.css` brings the baseline tokens, the base layer, `tw-animate-css` and shadcn's Tailwind
+variants, and registers the package's own files with Tailwind, so you add no `@source` line for it.
+
+It loads no font. The sans stack names Geist first and falls back to the system UI font; install
+`@fontsource-variable/geist` and import it to get Geist.
+
+A surface that shares its document with someone else's UI imports `@orz/ui/theme.css` instead: the
+tokens and variants, with nothing that styles the page around it.
+
+## Theme
+
+A theme store holds the user's pick, paints it, and follows the OS and other tabs. It takes the
+themes it may show, so your bundle carries only those.
+
+```tsx
+import { builtinThemes } from "@orz/themes";
+import { Toaster } from "@orz/ui/components/sonner";
+import { createThemeStore, ThemeProvider } from "@orz/ui/theme";
+import { createRoot } from "react-dom/client";
+
+const themes = createThemeStore({
+  storageKey: "app-theme",
+  themes: builtinThemes,
+});
+
+createRoot(document.getElementById("root")!).render(
+  <ThemeProvider store={themes}>
+    <App />
+    <Toaster />
+  </ThemeProvider>,
+);
+```
+
+`<ThemeMenu />` from `@orz/ui/components/theme-menu` is a ready-made picker; the one in this site's
+top bar is it. To keep a reload in a dark theme from flashing white, put
+`themePaintGuardScript({ storageKey: "app-theme" })` in an inline `<script>` in `<head>`, as every
+page of this site does.
+
+## A first component
+
+Components are imported one entry point each, so a bundler takes only those you use.
+
+<Example of={FirstControls} />
+
+**Pointer** and **Touch** under an example preview it at the sizes of either kind of pointer,
+whichever device you are reading on.
+
+## Packages
+
+Each package installs on its own, with its peers named in its README.
+
+| Package | Install |
+|---|---|
+| `@orz/themes` | `pnpm add @orz/themes` |
+| `@orz/query` | `pnpm add @orz/query` |
+| `@orz/ui-content` | `pnpm add @orz/ui-content react` |
+| `@orz/ui-markdown` | `pnpm add @orz/ui-markdown @orz/ui-content @orz/ui react` |
+| `@orz/ui-codemirror` | `pnpm add @orz/ui-codemirror @orz/ui react react-dom lucide-react sonner` and the `@codemirror/*` packages its README lists |
+| `@orz/ui-code` | `pnpm add @orz/ui-code @orz/ui @orz/ui-content @pierre/diffs lucide-react react react-dom` |
+| `@orz/ui-ansi` | `pnpm add @orz/ui-ansi @orz/ui-content @orz/ui react lucide-react` |
+| `@orz/ui-asciinema` | `pnpm add @orz/ui-asciinema @orz/ui-content @orz/ui react lucide-react` |
+| `@orz/ui-hex` | `pnpm add @orz/ui-hex @orz/ui react react-dom radix-ui lucide-react sonner` |
+| `@orz/ui-mermaid` | `pnpm add @orz/ui-mermaid @orz/ui-content @orz/ui react` |
+
+The READMEs are the full reference for each: [github.com/orzFly/ui](https://github.com/orzFly/ui),
+under `packages/`. Every component is also in <StorybookLink>Storybook</StorybookLink>, live, with
+its props.
