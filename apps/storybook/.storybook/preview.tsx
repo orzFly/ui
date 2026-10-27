@@ -323,6 +323,21 @@ const withTheme: Decorator = (Story, context) => {
   );
 };
 
+// On <html> rather than a wrapper: menus, selects and dialogs portal to
+// <body>, and they follow the toggle too.
+const withPointer: Decorator = (Story, context) => {
+  const { pointer } = context.globals;
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (pointer === "fine" || pointer === "coarse") {
+      root.dataset.pointer = pointer;
+    } else {
+      delete root.dataset.pointer;
+    }
+  }, [pointer]);
+  return <Story />;
+};
+
 const newPierreWorker = () => new PierreWorker();
 
 // What an app does once at its root: code views that tokenize off the main
@@ -345,13 +360,29 @@ function ThemedDocsContainer(props: ComponentProps<typeof DocsContainer>) {
 }
 
 const preview: Preview = {
-  // No `toolbar`: the pickers are the ThemeMenus manager.ts puts there.
-  // Storybook still takes both globals from the URL and from updateGlobals.
+  // No `toolbar` on the theme globals: their pickers are the ThemeMenus
+  // manager.ts puts there, and Storybook still takes both from the URL and
+  // from updateGlobals. The pointer global keeps Storybook's own toolbar.
   globalTypes: {
     theme: { description: "Theme" },
     terminal: { description: "Terminal theme" },
+    // What `touch:` sizes follow. "device" leaves it to the primary pointer;
+    // the other two set data-pointer, so a desktop previews touch sizing.
+    pointer: {
+      description: "Pointer",
+      toolbar: {
+        title: "Pointer",
+        icon: "mobile",
+        items: [
+          { value: "device", title: "Pointer: device" },
+          { value: "fine", title: "Pointer: fine (mouse)" },
+          { value: "coarse", title: "Pointer: coarse (touch)" },
+        ],
+        dynamicTitle: true,
+      },
+    },
   },
-  initialGlobals: INITIAL_GLOBALS,
+  initialGlobals: { ...INITIAL_GLOBALS, pointer: "device" },
   parameters: {
     docs: {
       container: ThemedDocsContainer,
@@ -384,7 +415,7 @@ const preview: Preview = {
       },
     },
   },
-  decorators: [withCodeWorker, withTheme],
+  decorators: [withCodeWorker, withTheme, withPointer],
   tags: ["autodocs"],
 };
 
