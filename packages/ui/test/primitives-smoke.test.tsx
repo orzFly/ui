@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { describe, expect, it } from "vitest";
 import {
@@ -57,6 +57,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../src/components/popover.tsx";
+import { RadioGroup, RadioGroupItem } from "../src/components/radio-group.tsx";
 import {
   Select,
   SelectContent,
@@ -203,6 +204,14 @@ const CASES: [file: string, slot: string, tree: ReactElement][] = [
     </Popover>,
   ],
   [
+    "radio-group",
+    "radio-group-indicator",
+    <RadioGroup key="a" defaultValue="b" aria-label="Pick">
+      <RadioGroupItem value="a" aria-label="A" />
+      <RadioGroupItem value="b" aria-label="B" />
+    </RadioGroup>,
+  ],
+  [
     "select",
     "select-trigger",
     <Select key="a">
@@ -342,6 +351,22 @@ describe("every primitive renders", () => {
     render(<Checkbox checked="indeterminate" aria-label="All ports" />);
     const box = screen.getByRole("checkbox", { name: "All ports" });
     expect(box.getAttribute("aria-checked")).toBe("mixed");
+  });
+
+  it("radio group checks exactly one item", () => {
+    render(
+      <RadioGroup defaultValue="b" aria-label="Density">
+        <RadioGroupItem value="a" aria-label="Compact" />
+        <RadioGroupItem value="b" aria-label="Comfortable" />
+      </RadioGroup>,
+    );
+    expect(screen.getByRole("radiogroup", { name: "Density" })).toBeTruthy();
+    const compact = screen.getByRole("radio", { name: "Compact" });
+    const comfortable = screen.getByRole("radio", { name: "Comfortable" });
+    expect(comfortable.getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(compact);
+    expect(compact.getAttribute("aria-checked")).toBe("true");
+    expect(comfortable.getAttribute("aria-checked")).toBe("false");
   });
 
   it("select and tooltip portal into a given container", () => {
