@@ -35,6 +35,19 @@ export default defineConfig({
       "sonner",
       "lucide-react",
       "@pierre/diffs",
+      "@codemirror/state",
+      "@codemirror/view",
+      "@lezer/highlight",
+      "@orz/ui-content",
+    ],
+  },
+  // The dev server prebundles @codemirror/commands and its siblings, each with
+  // its own copy of state and view unless those are prebundled beside them;
+  // the editor then fails its instanceof checks.
+  optimizeDeps: {
+    include: [
+      "@orz/ui-codemirror > @codemirror/state",
+      "@orz/ui-codemirror > @codemirror/view",
     ],
   },
   // shiki's larger grammars (C++, Emacs Lisp) pass 500 kB; each is its own

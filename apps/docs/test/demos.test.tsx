@@ -5,6 +5,8 @@ import type { Window as HappyWindow } from "happy-dom";
 import { act, type ComponentType } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Inbox } from "../src/demos/inbox/inbox.tsx";
+import { LATENCY_MS, PAGE_SIZE } from "../src/demos/inbox/mailbox.ts";
 import { LogViewer } from "../src/demos/log-viewer/log-viewer.tsx";
 import { Settings } from "../src/demos/settings/settings.tsx";
 
@@ -16,6 +18,7 @@ vi.mock("../../../packages/ui-asciinema/src/load-player.ts", () => ({
 
 /** Every page under content/demos/, by its file name, and the component it shows. */
 const DEMOS: Record<string, ComponentType> = {
+  inbox: Inbox,
   "log-viewer": LogViewer,
   settings: Settings,
 };
@@ -188,5 +191,81 @@ describe("settings", () => {
     await click(revoke());
     await click(button(dialog() ?? document, "Revoke"));
     expect(revoke()).toBeNull();
+  });
+});
+
+describe("inbox", () => {
+  afterEach(() => history.replaceState(null, "", "/demos/inbox/"));
+
+  const rows = (container: HTMLElement) => [
+    ...container.querySelectorAll<HTMLAnchorElement>(
+      "ul[aria-label=Conversations] a",
+    ),
+  ];
+  const wait = (ms: number) =>
+    act(() => new Promise((resolve) => setTimeout(resolve, ms)));
+
+  async function searchFor(container: HTMLElement, query: string) {
+    const input = container.querySelector<HTMLInputElement>(
+      "input[aria-label='Search mail']",
+    );
+    if (!input) throw new Error("no search box");
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set?.call(input, query);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => input.form?.requestSubmit());
+  }
+
+  it("lists a page, and the next one after a round trip", async () => {
+    const container = await draw(Inbox, WIDTHS.desktop);
+    expect(rows(container)).toHaveLength(PAGE_SIZE);
+    const more = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "Load more",
+    );
+    await act(async () => more?.click());
+    expect(container.textContent).toContain("Loading…");
+    await wait(LATENCY_MS + 50);
+    expect(rows(container)).toHaveLength(PAGE_SIZE * 2);
+  });
+
+  it("filters by the query, and says so when nothing matches", async () => {
+    const container = await draw(Inbox, WIDTHS.desktop);
+    await searchFor(container, "is:starred label:design");
+    expect(rows(container).map((row) => row.textContent)).toEqual([
+      expect.stringContaining("Touch sizes for the toolbar icons"),
+      expect.stringContaining("Contrast audit results"),
+    ]);
+    await searchFor(container, "nothing-has-this-word");
+    expect(rows(container)).toHaveLength(0);
+    expect(container.textContent).toContain("No conversations match");
+  });
+
+  it("opens a thread in the URL, marks it read, and goes back to the list", async () => {
+    const container = await draw(Inbox, WIDTHS.phone);
+    const list = container.querySelector("section[aria-label=Inbox]");
+    const row = rows(container)[0];
+    expect(row?.textContent).toContain("Unread");
+    await act(async () => row?.click());
+    expect(location.search).toBe("?thread=touch-sizes");
+    expect(container.querySelector("#inbox-subject")?.textContent).toBe(
+      "Touch sizes for the toolbar icons",
+    );
+    // On a phone the thread takes the list's place.
+    expect(list?.className).toContain("max-md:hidden");
+    expect(rows(container)[0]?.textContent).not.toContain("Unread");
+    expect(container.querySelector("form[aria-label=Reply]")).not.toBeNull();
+
+    const back = container.querySelector<HTMLButtonElement>(
+      "button[aria-label='Back to inbox']",
+    );
+    await act(async () => back?.click());
+    await wait(50);
+    expect(location.search).toBe("");
+    expect(container.querySelector("#inbox-subject")).toBeNull();
+    expect(list?.className).not.toContain("max-md:hidden");
   });
 });

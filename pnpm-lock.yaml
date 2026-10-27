@@ -26,6 +26,9 @@ importers:
       '@orz/fixtures':
         specifier: workspace:*
         version: link:../fixtures
+      '@orz/query':
+        specifier: workspace:*
+        version: link:../../packages/query
       '@orz/themes':
         specifier: workspace:*
         version: link:../../packages/themes
@@ -41,12 +44,18 @@ importers:
       '@orz/ui-code':
         specifier: workspace:*
         version: link:../../packages/ui-code
+      '@orz/ui-codemirror':
+        specifier: workspace:*
+        version: link:../../packages/ui-codemirror
       '@orz/ui-content':
         specifier: workspace:*
         version: link:../../packages/ui-content
       '@orz/ui-hex':
         specifier: workspace:*
         version: link:../../packages/ui-hex
+      '@orz/ui-markdown':
+        specifier: workspace:*
+        version: link:../../packages/ui-markdown
       '@pierre/diffs':
         specifier: ^1.6.1
         version: 1.6.1(@shikijs/themes@4.5.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
