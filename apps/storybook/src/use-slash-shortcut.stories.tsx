@@ -16,6 +16,7 @@ function Search() {
 const meta = {
   title: "ui/Hooks/useSlashShortcut",
   decorators: [withWidth("max-w-sm")],
+  parameters: { guidelines: "/guidelines/platforms/desktop-and-pointer/" },
 } satisfies Meta;
 
 export default meta;

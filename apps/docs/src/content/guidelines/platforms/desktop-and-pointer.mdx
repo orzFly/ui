@@ -1,0 +1,141 @@
+export const meta = {
+  title: "Desktop & pointer",
+  description:
+    "Hover hints, the keyboard reaches everything, and shortcuts speed up what is already on screen.",
+  order: 20,
+  api: [
+    "ui/Primitives/Tooltip",
+    "ui/Primitives/HoverCard",
+    "ui/Primitives/DropdownMenu",
+    "ui/Hooks/useSlashShortcut",
+    "ui/Hooks/useMediaQuery",
+    "ui-codemirror/EditorShortcutsHelp",
+  ],
+};
+
+import { HoverOnlyRowActions } from "../../../examples/desktop-and-pointer/hover-only-row-actions.tsx";
+import { RunList } from "../../../examples/desktop-and-pointer/run-list.tsx";
+import { VisibleRowActions } from "../../../examples/desktop-and-pointer/visible-row-actions.tsx";
+
+**With a mouse, hover may hint and a shortcut may hurry, but every action is on screen and every
+control is reached with Tab.** A desk is where these tools are used longest; it gets the density,
+and it gets nothing the keyboard or a thumb cannot also do.
+
+<Example of={RunList} />
+
+Hover over the toolbar's icons for their names, or Tab to them: the tooltip opens on focus too.
+Each run's **More actions** button is always drawn, quiet and small, and opens with Enter or Space
+as well as a click.
+
+## Hover
+
+Hover tells a person what they are about to press; it never holds the only way to press it.
+
+- The components draw their own hover states. Tailwind's `hover:` applies only where the primary
+  pointer can hover (`@media (hover: hover)`), so a style you add with it does not stick after a
+  tap on a phone.
+- A `Tooltip` names an icon button, and repeats the `aria-label` the button already has. It opens
+  on hover and on keyboard focus; on touch it does not open at all.
+- A `HoverCard` previews what a link points to. Whatever it shows is also on the page the link
+  opens.
+- Actions do not wait for hover to appear. A row's secondary actions sit behind a visible `⋯`
+  button; a keyboard user and a phone have no hover to bring them out.
+
+<DoDont>
+  <Do show={<VisibleRowActions />}>
+    Draw a row's action button all the time, `ghost` and `icon-xs`, so it is quiet but there for the
+    keyboard and the thumb.
+  </Do>
+  <Dont show={<HoverOnlyRowActions />}>
+    Hide it until the row is hovered. Tab still lands on a button nobody can see, and a phone cannot
+    hover at all. Hover over the row to find it.
+  </Dont>
+</DoDont>
+
+## Keyboard
+
+Every @orz/ui control is a native element or a Radix primitive, so the keys below work without
+code. What an app adds is the order: Tab follows reading order when the DOM does, so lay the page
+out in the DOM in the order it is read rather than reordering it with CSS.
+
+| Key | Does |
+|---|---|
+| Tab, Shift+Tab | Moves to the next or previous control, with the focus ring showing where |
+| Enter | Presses a button, follows a link, submits a single-line field's form |
+| Space | Presses a button, toggles a `Switch` or `Checkbox`, opens a `Select` |
+| Escape | Closes the open overlay, a menu, a `Popover`, a `Dialog`, and returns focus to its trigger |
+| Arrow keys | Move inside one control: a menu's items, `Tabs`, a `RadioGroup`, a `Slider` |
+| Home, End | The first and last item of a menu, a list box or the `QueryBox` suggestions |
+| A letter | In an open menu or `Select`, jumps to the first item that starts with it |
+
+A group that the arrow keys move through, `Tabs` or a `RadioGroup`, is one Tab stop: Tab enters it
+at the selected item and the next Tab leaves it. Do not make every item a Tab stop, and do not
+remove the focus ring ([Accessibility](/guidelines/content/accessibility/) has the contrast it
+needs).
+
+Focus where a person expects to type, and only there: a search page opens with its box focused, a
+dialog with its first field. On a phone that same focus raises the keyboard over the page, so
+an app that focuses something on arrival asks the pointer first:
+
+```tsx
+import { POINTER_FINE, useMediaQuery } from "@orz/ui/hooks/use-media-query";
+
+const fine = useMediaQuery(POINTER_FINE);
+<Input autoFocus={fine} … />
+```
+
+## Shortcuts
+
+A shortcut hurries an action that is already on screen. It is never the only way to an action, and
+it is shown where the action is: in the button's tooltip, or as `DropdownMenuShortcut` on the menu
+item.
+
+- **`/` reaches search** from anywhere on the page, through `useSlashShortcut`. It stands down
+  while the focus is in a field, so typing a `/` still types one.
+- **A single-character shortcut can be turned off.** Speech input and a stray key press fire them
+  by accident, so WCAG asks for a setting
+  ([2.1.4](https://www.w3.org/WAI/WCAG22/Understanding/character-key-shortcuts.html)); wire it to
+  `useSlashShortcut`'s `enabled`. A shortcut with Ctrl or ⌘ needs no setting.
+- **Use ⌘ on Apple platforms and Ctrl elsewhere**, and show the glyph each platform uses: ⌘ ⌥ ⇧ on a
+  Mac, Ctrl Alt Shift elsewhere. `EditorShortcutsHelp` in `@orz/ui-codemirror` already does both for
+  an editor.
+- **Leave the browser's and the system's keys alone.** ⌘/Ctrl with T, W, N, L, R, Tab and the
+  number keys belong to the browser; a tool that takes them strands people who reach for them.
+- **List them.** A tool with more than a handful of shortcuts shows them all in one place, a dialog
+  opened from the help menu or with `?`.
+
+<DoDont>
+  <Do>
+    Give the action people take over and over a shortcut, and print it next to the action's name so
+    it is learned by using the tool.
+  </Do>
+  <Dont>
+    Bind an action to a key with no button or menu item behind it: nobody finds it, and nobody on a
+    phone can use it.
+  </Dont>
+</DoDont>
+
+## Pointer and width are two questions
+
+Width decides the layout; the pointer decides the size and what hover may do. A narrow desktop
+window is still clicked, a tablet is wide and still touched. Ask `useMediaQuery(MD_UP)` to lay out,
+and `useMediaQuery(POINTER_FINE)` only for behaviour that depends on a mouse and a keyboard being
+there, as the autofocus above does. Sizes need neither: the components grow on a coarse pointer by
+themselves ([Touch & mobile](/guidelines/platforms/touch-and-mobile/)).
+
+`POINTER_FINE` asks about the primary pointer. A touchscreen laptop driven by its trackpad answers
+fine and keeps the desktop sizes, which is what the person using it is doing.
+
+## Dragging and right-click
+
+- Anything that can be dragged can also be done without a drag: a menu item, a pair of move buttons,
+  a field to type the value ([WCAG 2.5.7](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html)).
+- A right-click menu, where an app has one, repeats the `⋯` menu; it adds no action of its own.
+  Right-click does not exist on a phone and is not discoverable on a desk.
+
+## On each platform
+
+- **Pointer.** All of the above. Controls are drawn at their compact sizes, and a mouse lands on a
+  24px target reliably ([Density](/guidelines/foundations/density/)).
+- **Touch.** Nothing hovers, tooltips stay shut, and a keyboard, if any, is on screen and covers half
+  of it. [Touch & mobile](/guidelines/platforms/touch-and-mobile/) has the rest.

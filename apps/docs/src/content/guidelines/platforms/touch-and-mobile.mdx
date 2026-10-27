@@ -1,0 +1,206 @@
+export const meta = {
+  title: "Touch & mobile",
+  description:
+    "44px hit areas from the components, content clear of the notch and the on-screen keyboard, and no gesture as the only way.",
+  order: 21,
+  api: [
+    "ui/Primitives/Button",
+    "ui/Primitives/Sheet",
+    "ui/Hooks/useVisualViewportInsets",
+    "ui/Hooks/useScrollInsets",
+    "ui/Hooks/useAutoHideHeader",
+    "ui/Hooks/useMediaQuery",
+  ],
+};
+
+import { ThreadControls } from "../../../examples/touch-and-mobile/thread-controls.tsx";
+
+**On a coarse pointer every control is 44px to the finger, by itself; the app keeps its own controls
+the same size, its edges clear of the notch and the keyboard, and every gesture backed by
+something to tap.**
+
+<Example of={ThreadControls} />
+
+On a phone this is already the touch layout; on a desk, press **Touch** under the example. The text
+buttons, the select and the menu's rows grow; the icon buttons and the switch keep their drawn size
+and take a 44px hit area around it, so the header row does not grow at all.
+
+## Hit areas
+
+44 × 44 is Apple's minimum for a touch target
+([Apple HIG: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility));
+WCAG's floor is 24px ([2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)).
+@orz/ui meets the larger one on a coarse pointer through its `touch:` variant, in one of two ways:
+a control that has room is drawn larger, and a control that sits in a dense row keeps its drawn
+size and widens its hit area with a transparent `::after`.
+
+| Control | Pointer | Touch, drawn | Touch, hit area |
+|---|---|---|---|
+| `Button` default | 32 | 40 | 44 |
+| `Button` `lg` | 36 | 44 | 44 |
+| `Button` `xs`, `sm`, and the `icon` sizes | 24–36 | unchanged | 44 |
+| `Switch` (36 × 20), `Checkbox`, `RadioGroupItem` (16) | — | unchanged | 44 |
+| `Input` | 32 | 40, at 16px text | 40 |
+| `Select` trigger, default / `sm` | 32 / 28 | 40 / 28 | 44 |
+| `Tabs` trigger | 28 | 40 | 44 |
+| `DropdownMenu` items, `Select` items | 28 | 44 | 44 |
+| `RadioGroup` rows | 12 apart | 28 apart | rows 44 apart |
+
+Sizes are in CSS pixels. "Pointer" is what a mouse gets, and what the [Density](/guidelines/foundations/density/)
+page's sizes are.
+
+`touch:` follows the primary pointer, so a touchscreen laptop driven by its trackpad keeps the
+pointer sizes. `data-pointer="coarse"` or `"fine"` on an element forces either set on everything
+inside it, which is how the **Touch** button above previews a phone on a desk.
+
+### Your own controls
+
+A control you build yourself takes the same sizes the same way:
+
+- A row that is tapped grows with `touch:min-h-11` (44px).
+- A small control in a dense row keeps its size and adds the hit area: `relative touch:hit-area`.
+  The `::after` belongs to the positioned element, so `relative` (or any positioning) is required.
+
+### Spacing between targets
+
+A hit area wider than its control overlaps its neighbours. Where two overlap, the later one in the
+DOM takes the tap, so:
+
+- Leave 8px or more between two controls that do different things, and more between a control and
+  something destructive.
+- A link in text right next to a `Switch` or `Checkbox` loses the taps near the control. Keep the
+  link away from it, or make the whole row the control's label.
+- Inside a box with `overflow-hidden`, a hit area that crosses the box's edge is cut off there. Pad
+  the box, or move the control in from the edge.
+
+<DoDont>
+  <Do>
+    Keep the default sizes and let the coarse pointer grow them. One layout serves the mouse and the
+    thumb.
+  </Do>
+  <Dont>
+    Branch on screen width to make things bigger: a tablet is wide and touched, and a narrow desktop
+    window is still clicked.
+  </Dont>
+</DoDont>
+
+## Text fields
+
+- Fields are 16px text on touch at every width. Safari zooms the page into a field whose text is
+  smaller, and leaves it zoomed after.
+- Give a field the keyboard it needs: `type="email"`, `inputMode="numeric"`, `autoComplete`, and
+  `enterKeyHint` (`"search"`, `"send"`, `"next"`) for the label on the return key.
+- Do not focus a field on arrival on a phone; that raises the keyboard over a page the person came
+  to read. Ask `useMediaQuery(POINTER_FINE)` first, as
+  [Desktop & pointer](/guidelines/platforms/desktop-and-pointer/) shows.
+- Never turn off pinch zoom (`maximum-scale=1`, `user-scalable=no`): people who need larger text
+  zoom ([WCAG 1.4.4](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)).
+
+## Safe areas
+
+A phone's screen has a notch or an island at the top, rounded corners, and a home indicator at the
+bottom; in landscape the notch is on a side. With `viewport-fit=cover` in the viewport meta tag the
+page draws edge to edge, under all of them, and each edge that holds content pads itself by the
+matching inset:
+
+```tsx
+<header className="sticky top-0 pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
+<footer className="fixed inset-x-0 bottom-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+```
+
+`max()` keeps the usual padding where the inset is zero, which is everywhere but a phone. A
+background reaches the edge; only the content moves in.
+
+## The on-screen keyboard
+
+A keyboard opening shrinks only the visual viewport: the page keeps its height, and a sticky
+`bottom: 0` lands behind the keyboard. Two hooks keep the page in the strip that is left:
+
+- **`useVisualViewportInsets()`**, mounted once at the app's root, publishes `--vv-top` and
+  `--vv-bottom` on `<html>`. A sticky edge rides the keyboard with
+  `bottom: var(--vv-bottom, 0px)`, so a composer stays right above it.
+- **`useScrollInsets({ top, bottom })`** declares the page's sticky header and composer, so every
+  `scrollIntoView`, and the anchor and step landings of `revealBlock`, stop clear of them and of
+  the keyboard.
+
+```tsx
+import { useScrollInsets } from "@orz/ui/hooks/scroll-insets";
+import { useVisualViewportInsets } from "@orz/ui/hooks/viewport-chrome";
+
+function Thread() {
+  const header = useRef<HTMLElement>(null);
+  const composer = useRef<HTMLFormElement>(null);
+  useVisualViewportInsets();
+  useScrollInsets({ top: [header], bottom: [composer] });
+  return (
+    <>
+      <header ref={header} className="sticky top-0">…</header>
+      <main>…</main>
+      <form
+        ref={composer}
+        className="sticky"
+        style={{ bottom: "var(--vv-bottom, 0px)" }}
+      >
+        …
+      </form>
+    </>
+  );
+}
+```
+
+A `Dialog` sits mid-screen with the keyboard under it; keep one that takes input to a field or two,
+so its buttons stay above the keyboard. Anything longer is a page or a `Sheet`.
+
+## Auto-hiding header
+
+On a phone a sticky header is a large share of a small screen. On a long page that is read by
+scrolling, a thread or a log, `useAutoHideHeader(header, enabled)` slides it away as the reader
+scrolls down and back as they scroll up, the way Safari's toolbar does.
+
+```tsx
+import { SM_UP, useMediaQuery } from "@orz/ui/hooks/use-media-query";
+import { useAutoHideHeader } from "@orz/ui/hooks/viewport-chrome";
+
+const header = useRef<HTMLElement>(null);
+useAutoHideHeader(header, !useMediaQuery(SM_UP));
+
+<header
+  ref={header}
+  data-header-follow=""
+  className="sticky"
+  style={{ top: "calc(var(--vv-top, 0px) - var(--header-hide, 0px))" }}
+>
+```
+
+- Enable it on a phone only; on a wider screen the header costs little and moving it distracts.
+- Only the reader's own scrolling moves it. A jump to an anchor keeps it where it is, and it settles
+  fully in or out when scrolling stops.
+- Do not use it on a short page, a form, or a page whose header holds the action people came for:
+  that action then disappears under their thumb.
+
+## Gestures
+
+| Gesture | Who owns it | What the app does |
+|---|---|---|
+| Swipe from the left or right edge | The system: back and forward | Nothing within 20px or so of the edge, so the back swipe always works |
+| Pull down at the top | The browser: refresh | Leaves the page's overscroll alone; `overscroll-contain` on a panel that scrolls inside the page |
+| Pinch | The browser: zoom | Never disabled; a canvas that zooms its own content (an image viewer) takes it only inside itself |
+| Long press | The system: select text, preview a link | No app action of its own |
+| Swipe on a toast, a row | The app | Only as a shortcut: the toast also leaves on its own, the row's action is also in its menu, a delete still offers **Undo** |
+
+Every gesture an app adds has a control that does the same thing with one tap, and anything that
+follows a path or needs two fingers works with a single pointer too
+([WCAG 2.5.1](https://www.w3.org/WAI/WCAG22/Understanding/pointer-gestures.html)). A tap acts when
+the finger lifts, not when it lands, so a finger that lands on the wrong control can slide off;
+@orz/ui's buttons already do.
+
+`Dialog` and `Sheet` lock the page behind them while they are open, and let a scroller inside them,
+a code diff included, scroll on its own.
+
+## On each platform
+
+- **Pointer.** The compact sizes from [Density](/guidelines/foundations/density/), hover,
+  shortcuts: [Desktop & pointer](/guidelines/platforms/desktop-and-pointer/).
+- **Touch.** Everything on this page. Preview it on a desk with the **Touch** button under any
+  example, or Storybook's **Pointer** toolbar; check it on a real phone before shipping, because
+  neither emulates the keyboard, the notch or the system's gestures.

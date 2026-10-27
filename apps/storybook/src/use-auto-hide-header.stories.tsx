@@ -27,6 +27,7 @@ function Page() {
 const meta = {
   title: "ui/Hooks/useAutoHideHeader",
   parameters: {
+    guidelines: "/guidelines/platforms/touch-and-mobile/",
     layout: "fullscreen",
     // The header is sticky and its offset lands on <html>; drawn inline, it
     // would ride the docs page itself.

@@ -48,6 +48,7 @@ function Page() {
 const meta = {
   title: "ui/Hooks/useScrollInsets",
   parameters: {
+    guidelines: "/guidelines/platforms/touch-and-mobile/",
     layout: "fullscreen",
     // The overlays are position: fixed and the insets land on <html>; drawn
     // inline, they would cover the docs page itself.

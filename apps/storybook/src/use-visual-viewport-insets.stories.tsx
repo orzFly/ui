@@ -25,6 +25,7 @@ function App() {
 const meta = {
   title: "ui/Hooks/useVisualViewportInsets",
   parameters: {
+    guidelines: "/guidelines/platforms/touch-and-mobile/",
     layout: "fullscreen",
     // The edges are sticky and the offsets land on <html>; drawn inline,
     // they would ride the docs page itself.

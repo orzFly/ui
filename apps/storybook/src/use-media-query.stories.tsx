@@ -16,6 +16,7 @@ function Toolbar() {
 
 const meta = {
   title: "ui/Hooks/useMediaQuery",
+  parameters: { guidelines: "/guidelines/foundations/layout-and-spacing/" },
 } satisfies Meta;
 
 export default meta;
