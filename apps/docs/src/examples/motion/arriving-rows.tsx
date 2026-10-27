@@ -11,7 +11,7 @@ export function ArrivingRows() {
         {STEPS.slice(0, done).map((step) => (
           <li
             key={step}
-            className="rounded-md bg-muted px-3 py-1.5 animate-in fade-in duration-150 ease-out motion-safe:slide-in-from-top-1"
+            className="rounded-md bg-muted px-3 py-1.5 animate-in fade-in duration-150 ease-out slide-in-from-top-1"
           >
             {step}
           </li>

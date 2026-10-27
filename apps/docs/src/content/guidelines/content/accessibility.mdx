@@ -92,12 +92,13 @@ patterns, so an app keeps to these keys and adds no competing ones:
 | Enter | Activates a button or link, submits a form, picks a menu item |
 | Space | Activates a button, toggles a `Checkbox` or `Switch` |
 | Escape | Closes the innermost open overlay, and nothing else |
-| `/` | Focuses the page's search (`useSlashShortcut`); typed as itself inside a field |
+| `/` | Focuses the page's search (`useSlashShortcut`) unless shortcuts are turned off; typed as itself inside a field |
 
 **A shortcut that is one character can be turned off**
 ([SC 2.1.4](https://www.w3.org/TR/WCAG22/#character-key-shortcuts)): speech input types stray single
-keys. An app that binds `/` or any other single key offers a setting for keyboard shortcuts, and
-does not mount the component that binds them while it is off.
+keys. An app that binds `/` or any other single key offers a setting for keyboard shortcuts. For
+`/`, pass that setting to `useSlashShortcut(onSlash, { enabled })`, which binds nothing while it is
+`false`; a single-key binding of your own does the same, or is not mounted while the setting is off.
 
 ## Target size
 
@@ -139,9 +140,12 @@ example on this site show both.
 
 ## Motion and zoom
 
-- **Motion of your own stops on request.** An animation that slides, zooms or parallaxes is turned
-  off under `prefers-reduced-motion` (Tailwind's `motion-reduce:`); a fade may stay
-  ([SC 2.3.3](https://www.w3.org/TR/WCAG22/#animation-from-interactions), AAA, and Apple's HIG).
+- **Motion stops on request.** Under `prefers-reduced-motion`, a slide, zoom or parallax is
+  turned off and a fade may stay
+  ([SC 2.3.3](https://www.w3.org/TR/WCAG22/#animation-from-interactions), AAA, and Apple's
+  [HIG](https://developer.apple.com/design/human-interface-guidelines/motion)). @orz/ui's overlays
+  already do this; motion an app adds is gated as
+  [Motion](/guidelines/foundations/motion/#reduced-motion) describes.
 - **Zoom is the reader's.** Never set `maximum-scale` or `user-scalable=no` in the viewport tag.
   Text reaches 200% without loss ([SC 1.4.4](https://www.w3.org/TR/WCAG22/#resize-text)) and a page
   works 320px wide without scrolling sideways

@@ -15,7 +15,8 @@ anything is waiting time.
 <Example of={ArrivingRows} />
 
 Each new step fades and drops in from just above in 150ms, so the eye finds the row that changed.
-The drop carries `motion-safe:`, so with reduced motion turned on the row fades in where it stands.
+With reduced motion turned on, the row fades in where it stands: `@orz/ui`'s stylesheet takes the
+drop out, as it does for its own overlays.
 
 ## What moves, and how long
 
@@ -51,8 +52,9 @@ thing go.
 
 <DoDont>
   <Do>
-    Put the movement behind `motion-safe:`, as in `animate-in fade-in motion-safe:slide-in-from-top-1`,
-    so only people who have not asked for less see it.
+    Put movement of your own behind `motion-safe:`, as in
+    `motion-safe:transition-transform hover:translate-x-1`, so only people who have not asked for
+    less see it.
   </Do>
   <Dont>
     Animate layout (height, width, position of large areas) or loop an animation for attention. It
@@ -63,16 +65,23 @@ thing go.
 ## Reduced motion
 
 People who get motion sick, or who find movement distracting, turn on **Reduce motion** in their
-system settings, and the browser reports it as `prefers-reduced-motion: reduce`
-([WCAG 2.3.3](https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html);
-[Apple HIG: Motion](https://developer.apple.com/design/human-interface-guidelines/motion)).
-Tailwind's `motion-safe:` applies a class only without it, and `motion-reduce:` only with it.
+system settings, and the browser reports it as `prefers-reduced-motion: reduce`. Honouring it is
+one of the rules on [Accessibility](/guidelines/content/accessibility/#motion-and-zoom).
 
-- Put movement (slides, zooms, spins) behind `motion-safe:`.
-- A fade is not motion in this sense and can stay; a reduced variant replaces a slide with a fade
-  rather than with nothing, so the change is still noticed.
-- `@orz/ui`'s own overlays do not read the setting yet: menus, dialogs and sheets zoom and slide
-  regardless.
+- **`@orz/ui`'s overlays already honour it.** A menu, popover, select, tooltip, dialog or sheet
+  keeps its fade and drops its zoom and slide, and the auto-hiding header snaps instead of
+  settling. It comes with `@orz/ui/styles.css`, with nothing to turn on, and covers any markup of
+  your own drawn with the same `animate-in` / `animate-out` classes (`slide-in-from-*`, `zoom-in-*`,
+  `spin-in-*`, `blur-in-*`).
+- **Reduced means a fade, not nothing.** Opacity still changes, so something appearing reads as
+  arriving rather than blinking in; translation, scale, rotation, blur and parallax go.
+- **Motion you add any other way is yours to gate.** A transform transition, a keyframe of your
+  own or Tailwind's `animate-bounce` goes behind `motion-safe:` (or is undone with
+  `motion-reduce:`); motion driven from script checks
+  `matchMedia("(prefers-reduced-motion: reduce)")` first, as `@orz/ui-content`'s image viewer
+  does before it eases its pane to a new height.
+- **A spinner keeps spinning**, because the motion is the status, and a small transition that
+  answers the hand directly, such as a `Switch` thumb crossing its track, stays too.
 
 ## On each platform
 
