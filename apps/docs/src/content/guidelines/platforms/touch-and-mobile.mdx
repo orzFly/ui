@@ -111,6 +111,12 @@ matching inset:
 `max()` keeps the usual padding where the inset is zero, which is everywhere but a phone. A
 background reaches the edge; only the content moves in.
 
+`Sheet` and `Toaster` pad their own edges already. A `className` padding on `SheetContent` adds to
+the inset rather than replacing it; a `Toaster` given its own `offset` or `mobileOffset` replaces
+the inset with it, so add the inset there yourself. What is left to the app is its own fixed and
+sticky bars and its page gutters; anything that sticks under a header padded this way is offset by
+the same `env(safe-area-inset-top)`.
+
 ## The on-screen keyboard
 
 A keyboard opening shrinks only the visual viewport: the page keeps its height, and a sticky
