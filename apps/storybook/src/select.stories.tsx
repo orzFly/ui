@@ -32,6 +32,7 @@ const FRUIT_ITEMS = (
 const meta = {
   title: "ui/Primitives/Select",
   component: Select,
+  parameters: { guidelines: "/guidelines/patterns/choosing-a-control/" },
   args: { onValueChange: fn() },
   render: (args) => (
     <Select {...args}>

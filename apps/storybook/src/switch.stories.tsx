@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 const meta = {
   title: "ui/Primitives/Switch",
   component: Switch,
+  parameters: { guidelines: "/guidelines/patterns/choosing-a-control/" },
 } satisfies Meta<typeof Switch>;
 
 export default meta;

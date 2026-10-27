@@ -1,0 +1,93 @@
+export const meta = {
+  title: "Destructive actions",
+  description:
+    "Undo over confirm: make a destructive action reversible and offer Undo, and confirm only what cannot be taken back.",
+  order: 36,
+  api: [
+    "ui/ConfirmDialog",
+    "ui/Primitives/Button",
+    "ui/Primitives/Toaster",
+    "ui/Primitives/DropdownMenu",
+  ],
+};
+
+import { DeleteWithUndo } from "../../../examples/destructive-actions/delete-with-undo.tsx";
+import { NamedConfirmActions } from "../../../examples/destructive-actions/named-confirm-actions.tsx";
+import { VagueConfirmActions } from "../../../examples/destructive-actions/vague-confirm-actions.tsx";
+
+**Make a destructive action reversible and offer Undo afterwards, rather than asking first.
+Confirm only the step that cannot be undone, and say exactly what it destroys.**
+
+<Example of={DeleteWithUndo} />
+
+Moving a file to the trash happens at once, with **Undo** in the toast: nothing is lost yet, so
+nothing is asked. Emptying the trash cannot be undone, so it is the one step that asks, naming how
+many files go.
+
+## Do and don't
+
+<DoDont>
+  <Do show={<NamedConfirmActions />}>
+    Ask a question that names the thing and the count, and label the button with the same verb:
+    **Delete 3 files**.
+  </Do>
+  <Dont show={<VagueConfirmActions />}>
+    Ask "Are you sure?" with **OK**: people learn to press it without reading.
+  </Dont>
+</DoDont>
+
+<DoDont>
+  <Do>
+    Archive, move to the trash or hide, and toast with **Undo**. The fast path stays fast and a slip
+    costs one tap.
+  </Do>
+  <Dont>
+    Confirm every delete. A dialog on each one teaches people to click through it, so it no longer
+    protects the one delete that mattered.
+  </Dont>
+</DoDont>
+
+## Which safeguard
+
+| The action | Can it be reversed? | Safeguard |
+|---|---|---|
+| Archive, hide, move to the trash, remove from a list | Yes | Do it, toast with **Undo** |
+| Delete, where the app keeps a trash or history | Yes, from there | Do it, toast with **Undo** and say where it went |
+| Discard unsaved edits by leaving | No | `UnsavedChangesDialog`, see [Forms](/guidelines/patterns/forms/) |
+| Delete for good, empty the trash, revoke a token | No | `ConfirmDialog` with `destructive` |
+| Delete something large or shared that others rely on | No | `ConfirmDialog`, and say what else goes with it |
+
+`ConfirmDialog` asks no one to type a name back. It is sized for actions whose irreversible step
+has a reversible alternative the wording can point at ("Archive it instead to keep its history").
+An action with no such alternative, that destroys a lot, deserves more than this dialog.
+
+## Writing the confirmation
+
+- The title is the question, with the object: "Delete report.pdf?", "Revoke the token for
+  ci-runner?".
+- The description says what cannot be undone and, if there is one, the reversible alternative.
+- The confirm button repeats the verb: **Delete**, **Revoke**. The cancel button is **Cancel**.
+- The confirm button uses `destructive`. `ConfirmDialog` opens with focus on **Cancel**, so a stray
+  Enter cancels.
+
+## Placement
+
+- In a menu, a destructive item comes last, after a separator, with `variant="destructive"`.
+- In a toolbar or a row, a destructive action is a ghost or `destructive` button away from the
+  primary one, never the primary button itself.
+- Bulk actions say their count in the label: **Delete 3 files**.
+
+## On each platform
+
+### Desktop & pointer
+
+- Undo is also a shortcut where the app has one (Ctrl+Z or ⌘Z) for the last destructive action.
+- A row's delete button may appear on hover, but must also appear on keyboard focus within the row.
+
+### Touch
+
+- Nothing appears only on hover: a row's delete action is always visible, or lives in the row's
+  menu.
+- A toast sits at the screen's edge, away from the thumb. Keep it up long enough for **Undo** to be
+  reached, and offer the same undo where the item was, if the app has a place for it.
+- A swipe that deletes is still followed by **Undo**: a swipe is easy to make by accident.

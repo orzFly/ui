@@ -12,6 +12,7 @@ const DENSITIES = [
 const meta = {
   title: "ui/Primitives/RadioGroup",
   component: RadioGroup,
+  parameters: { guidelines: "/guidelines/patterns/choosing-a-control/" },
   args: {
     "aria-label": "Density",
     defaultValue: "comfortable",

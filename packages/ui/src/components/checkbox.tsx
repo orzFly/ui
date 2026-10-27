@@ -5,12 +5,8 @@ import type * as React from "react";
 import { cn } from "../lib/utils.ts";
 
 /**
- * Picks an item, or agrees to something, for an action that runs later: the
- * form's submit, the toolbar's bulk action, the filter's apply. Several in a
- * list may be checked at once, and `checked="indeterminate"` marks the parent
- * of a partly checked list.
- *
- * A setting that takes effect the moment it flips is a `Switch` instead.
+ * Picks an item, or agrees to something, for an action that runs later.
+ * `checked="indeterminate"` marks the parent of a partly checked list.
  */
 function Checkbox({
   className,

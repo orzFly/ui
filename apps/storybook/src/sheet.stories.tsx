@@ -19,6 +19,7 @@ const SIDES = ["top", "right", "bottom", "left"] as const;
 const meta = {
   title: "ui/Primitives/Sheet",
   component: Sheet,
+  parameters: { guidelines: "/guidelines/patterns/overlays/" },
   args: { onOpenChange: fn() },
   render: (args) => (
     <Sheet {...args}>

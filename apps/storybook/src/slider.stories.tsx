@@ -6,6 +6,7 @@ import { withWidth } from "./decorators.tsx";
 const meta = {
   title: "ui/Primitives/Slider",
   component: Slider,
+  parameters: { guidelines: "/guidelines/patterns/choosing-a-control/" },
   args: { "aria-label": "Volume" },
   decorators: [withWidth("w-64")],
 } satisfies Meta<typeof Slider>;

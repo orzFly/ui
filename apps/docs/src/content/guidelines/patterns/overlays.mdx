@@ -1,0 +1,88 @@
+export const meta = {
+  title: "Overlays",
+  description:
+    "Dialog, Sheet, Popover, DropdownMenu, HoverCard and Tooltip: how much each one interrupts, and what it becomes on a phone.",
+  order: 33,
+  api: [
+    "ui/Primitives/Dialog",
+    "ui/Primitives/Sheet",
+    "ui/Primitives/Popover",
+    "ui/Primitives/DropdownMenu",
+    "ui/Primitives/HoverCard",
+    "ui/Primitives/Tooltip",
+  ],
+};
+
+import { OverlayKinds } from "../../../examples/overlays/overlay-kinds.tsx";
+
+**Pick the overlay that interrupts least. A Popover or a menu keeps the page in reach; a Sheet sets
+it aside; a Dialog stops it until the question is answered.**
+
+<Example of={OverlayKinds} />
+
+## Which one
+
+| You need to | Use | Blocks the page | On a phone |
+|---|---|---|---|
+| Ask one question, or take one short input, before going on | `Dialog` | Yes | Centred, nearly full width; the footer buttons stack, primary on top |
+| Show a panel of settings, filters or a navigation list beside the work | `Sheet` (`side="right"` or `"left"`) | Yes, dimmed | Three quarters of the width, from the edge |
+| Offer a short list of actions or one choice from a few | `DropdownMenu` | Yes, until a pick or Escape | Opens under its trigger; rows grow to touch size |
+| Edit one value in place, where the trigger is | `Popover` | No | Opens under its trigger, never wider than the screen |
+| Preview what a link points to | `HoverCard` | No | Does not open: the link itself must be enough |
+| Name an icon button | `Tooltip` | No | Does not open: the `aria-label` names it, the icon must be clear |
+
+Open one overlay from another at most once: a menu or a Popover inside a dialog is fine. A dialog
+that opens another dialog is a flow; make it a page, or one dialog with steps.
+
+## Do and don't
+
+<DoDont>
+  <Do>
+    Title a dialog with its question, "Rename project", and put the action that answers it in the
+    footer, named with the same verb.
+  </Do>
+  <Dont>
+    Use a dialog to show information that needs no answer: a toast, an inline note or a Popover
+    interrupts less.
+  </Dont>
+</DoDont>
+
+<DoDont>
+  <Do>
+    Put anything a HoverCard or Tooltip shows somewhere reachable without hover too: the page the
+    link opens, or a visible label.
+  </Do>
+  <Dont>
+    Hide an action inside a HoverCard: a phone cannot hover, and a keyboard reaches the card only
+    through its trigger's focus.
+  </Dont>
+</DoDont>
+
+## Closing
+
+Every overlay closes on Escape, and a Dialog, Sheet, Popover and menu on a click or tap outside
+them. Focus returns to the trigger that opened them. A Dialog or Sheet also has its own close
+button in the corner, so it can be closed with one tap on a phone, where there is no Escape key.
+
+A click outside a Dialog that holds typed input should not throw the input away: keep it for the
+next opening, or ask first. The click most likely meant to look at the page behind.
+
+## On each platform
+
+### Desktop & pointer
+
+- A Popover, HoverCard or Tooltip opens beside its trigger and flips to the other side when there is
+  no room; nothing needs placing by hand.
+- A HoverCard opens after a short hover and stays open while the pointer is over the card, so its
+  links can be clicked.
+- Menus are fully keyboard-driven: arrows move, Enter picks, typing a letter jumps to an item.
+
+### Touch
+
+- Nothing opens on hover. A HoverCard and a Tooltip never appear, so neither may carry the only
+  copy of anything.
+- A Sheet is the phone's side panel: the site's own navigation on a phone is one. Prefer it over
+  a Popover for anything longer than a field or two, where the on-screen keyboard would cover a
+  Popover.
+- A Dialog sits in the middle of the screen with the keyboard below it. Keep it short enough to fit
+  above the keyboard: one or two fields.

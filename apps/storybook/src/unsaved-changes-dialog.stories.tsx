@@ -32,6 +32,7 @@ const [asking, setAsking] = useState(false);
 const meta = {
   title: "ui/UnsavedChangesDialog",
   component: UnsavedChangesDialog,
+  parameters: { guidelines: "/guidelines/patterns/forms/" },
   args: { open: false, onProceed: fn(), onStay: fn() },
   render: function Render(args, context) {
     const updateArgs = argsUpdater(context);

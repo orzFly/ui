@@ -18,6 +18,7 @@ import { fn } from "storybook/test";
 const meta = {
   title: "ui/Primitives/Dialog",
   component: Dialog,
+  parameters: { guidelines: "/guidelines/patterns/overlays/" },
   args: { onOpenChange: fn() },
   render: (args) => (
     <Dialog {...args}>

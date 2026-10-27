@@ -1,0 +1,79 @@
+export const meta = {
+  title: "Feedback",
+  description:
+    "Toast, inline message or dialog: where a result is said depends on whether people have to do something about it.",
+  order: 32,
+  api: ["ui/Primitives/Toaster", "ui/LoadFailure", "ui/Primitives/Dialog"],
+};
+
+import { FeedbackKinds } from "../../../examples/feedback/feedback-kinds.tsx";
+
+**Say a result where people will act on it. A toast for something done that needs nothing more,
+an inline message beside whatever needs fixing, and a dialog only when nothing may go on until
+it is answered.**
+
+<Example of={FeedbackKinds} />
+
+**Copy link** succeeds and asks for nothing, so a toast says so and goes away. An empty name is
+said under the field it belongs to, which keeps its message until the field is fixed. A refresh
+that failed sits above the data it could not update, with the one control that can fix it.
+
+## Do and don't
+
+<DoDont>
+  <Do>
+    Put a validation error under its field, mark the field `aria-invalid`, and point
+    `aria-describedby` at the message.
+  </Do>
+  <Dont>
+    Send a validation error as a toast: it disappears before the field is fixed, and never says
+    which field.
+  </Dont>
+</DoDont>
+
+<DoDont>
+  <Do>
+    Toast "Archived 3 issues" with an **Undo** action after a bulk change that can be reversed.
+  </Do>
+  <Dont>
+    Open a dialog to say that something worked. A dialog stops everything; success should not.
+  </Dont>
+</DoDont>
+
+## Which one
+
+| What happened | Needs people to | Use |
+|---|---|---|
+| An action finished as expected | Nothing; maybe undo it | `toast()`, `toast.success()`, with an `action` to undo |
+| Something finished in the background, out of view | Know, maybe open it | `toast()` with an action that opens it |
+| A field or a form is wrong | Fix that field | An inline message under the field |
+| A surface failed to load and has nothing to show | Retry | `LoadFailure` in its place |
+| A refresh failed but older data is still shown | Know the data is stale, retry | `RefreshFailure` above the data |
+| An action failed and the work is not saved | Decide what to do with it | `toast.error()` with a retry, or inline if the place is on screen |
+| Nothing may continue until a question is answered | Choose | `Dialog`, see [Overlays](/guidelines/patterns/overlays/) |
+
+A message that stays has to be removable by fixing its cause, not by a close button; one that
+leaves by itself must not carry the only copy of something people need to read.
+
+## Writing the message
+
+- Say what happened in the past tense, naming the thing: "Saved report.pdf", "Couldn't load the
+  list". Do not open with "Success!" or "Error:"; the icon already says which.
+- An error says what failed and, when it is known, the server's own words: `LoadFailure` takes
+  them as `detail`.
+- A message for one item names the item; a message for several counts them.
+
+## On each platform
+
+### Desktop & pointer
+
+- Toasts stack in a corner, out of the way of the work. Hovering one pauses its timer, so it can be
+  read and its action taken.
+- A toast's action is reachable from the keyboard; still, anything that matters is also reachable
+  where it happened, since a toast may be gone before focus reaches it.
+
+### Touch
+
+- A toast covers part of a small screen. Keep it to one line, and swipe it away to dismiss.
+- An inline error must stay visible above the on-screen keyboard: put it directly under the field,
+  not at the top of the form.

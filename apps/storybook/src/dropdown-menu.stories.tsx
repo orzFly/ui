@@ -23,6 +23,7 @@ import { fn } from "storybook/test";
 const meta = {
   title: "ui/Primitives/DropdownMenu",
   component: DropdownMenu,
+  parameters: { guidelines: "/guidelines/patterns/overlays/" },
   args: { onOpenChange: fn() },
 } satisfies Meta<typeof DropdownMenu>;
 

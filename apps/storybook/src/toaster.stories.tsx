@@ -22,6 +22,7 @@ toast.success("Published");`;
 const meta = {
   title: "ui/Primitives/Toaster",
   component: Toaster,
+  parameters: { guidelines: "/guidelines/patterns/feedback/" },
 } satisfies Meta<typeof Toaster>;
 
 export default meta;

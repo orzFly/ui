@@ -4,11 +4,8 @@ import type * as React from "react";
 import { cn } from "../lib/utils.ts";
 
 /**
- * Picks exactly one of two to five options, all of them in view at once so
- * they can be compared before choosing. The arrow keys move between options.
- *
- * More options than fit side by side are a `Select`. A single on/off choice is
- * a `Switch`, or a `Checkbox` when it waits for a submit.
+ * Picks exactly one of a few options, all of them in view at once. The arrow
+ * keys move between options.
  */
 function RadioGroup({
   className,

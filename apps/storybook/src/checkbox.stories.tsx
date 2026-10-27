@@ -6,6 +6,7 @@ import { useState } from "react";
 const meta = {
   title: "ui/Primitives/Checkbox",
   component: Checkbox,
+  parameters: { guidelines: "/guidelines/patterns/choosing-a-control/" },
 } satisfies Meta<typeof Checkbox>;
 
 export default meta;

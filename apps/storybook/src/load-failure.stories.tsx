@@ -8,6 +8,7 @@ import { fn } from "storybook/test";
 const meta = {
   title: "ui/LoadFailure",
   component: LoadFailure,
+  parameters: { guidelines: "/guidelines/patterns/loading-empty-and-error/" },
   args: {
     message: "Couldn't load the list.",
     detail: "503 Service Unavailable",

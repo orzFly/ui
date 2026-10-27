@@ -1,8 +1,15 @@
 import {
   AnchorMdx,
   CodeOrSourceMdx,
+  Controls,
+  Description,
   Docs,
   HeadersMdx,
+  Primary,
+  Stories,
+  Subtitle,
+  Title,
+  useOf,
 } from "@storybook/addon-docs/blocks";
 import { MDXProvider } from "@storybook/addon-docs/mdx-react-shim";
 import {
@@ -21,6 +28,36 @@ const defaultComponents = {
   a: AnchorMdx,
   ...HeadersMdx,
 };
+
+/**
+ * addon-docs' DocsPage (10.6.2), with a link under the title to the guideline
+ * page a story file names in `parameters.guidelines`, a path from the docs
+ * site's root. Storybook sits at the site's `storybook/`, so the path is one
+ * level up from the preview iframe, and the link leaves the manager's frame.
+ */
+function DocsPage() {
+  const { csfFile, preparedMeta } = useOf("meta", ["meta"]);
+  const single = Object.keys(csfFile.stories).length === 1;
+  const guidelines: unknown = preparedMeta.parameters.guidelines;
+  return (
+    <>
+      <Title />
+      <Subtitle />
+      {typeof guidelines === "string" && (
+        <p>
+          <a href={`..${guidelines}`} target="_top">
+            Usage guidelines →
+          </a>
+        </p>
+      )}
+      <Description of="meta" />
+      {single && <Description of="story" />}
+      <Primary />
+      <Controls />
+      {!single && <Stories />}
+    </>
+  );
+}
 
 class ErrorBoundary extends Component<
   { onError: (err: unknown) => void; children: ReactNode },
@@ -51,7 +88,8 @@ function Committed({
 }
 
 /**
- * addon-docs' DocsRenderer (10.6.2), with a key that keeps the page mounted.
+ * addon-docs' DocsRenderer (10.6.2), with a key that keeps the page mounted,
+ * and the DocsPage above as the default page.
  * Its own keys the page with Math.random(), so the re-render Storybook runs on
  * every globals change remounts it, tearing down each inline story while the
  * same change has that story's re-render pending; StoryRender.teardown then
@@ -88,7 +126,10 @@ export class DocsRenderer {
             }}
           >
             <MDXProvider components={components}>
-              <Docs context={context} docsParameter={docsParameter} />
+              <Docs
+                context={context}
+                docsParameter={{ page: DocsPage, ...docsParameter }}
+              />
             </MDXProvider>
           </ErrorBoundary>
         </Committed>,

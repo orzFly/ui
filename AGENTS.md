@@ -123,6 +123,12 @@ file per route.
 - A live example is a file under `src/examples/<page>/` exporting exactly one component
   (`export function Name`); the page writes `<Example of={Name} />`, which shows the component and
   that file as its source.
+- A rule about *when* to use a component lives on a guideline page under
+  `content/guidelines/`; its JSDoc and Storybook say *what it takes*, and do not restate the
+  rule. A card that adds or changes a component updates the guideline page that
+  mentions it, or adds one. The component's story file links back with
+  `parameters: { guidelines: "/guidelines/…/" }` in its meta, which its docs page shows as
+  **Usage guidelines →**; the page lists the story's title in its `meta.api`.
 - Links in a page are written from the site root (`[Start](/start/)`, `/storybook/`); `Link` and the
   MDX `a` add the base. Nothing in `apps/docs` writes `/ui/`.
 - The site is served at `/` everywhere (`pnpm --filter @orz/docs dev`, the local deploy), and under

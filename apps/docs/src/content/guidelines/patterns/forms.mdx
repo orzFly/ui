@@ -1,0 +1,97 @@
+export const meta = {
+  title: "Forms",
+  description:
+    "A form is a column of labelled fields with one submit. Labels stay visible, errors sit under their fields, and nothing is lost on the way out.",
+  order: 34,
+  api: [
+    "ui/Primitives/Label",
+    "ui/Primitives/Input",
+    "ui/Primitives/Textarea",
+    "ui/Primitives/Select",
+    "ui/Primitives/Checkbox",
+    "ui/UnsavedChangesDialog",
+  ],
+};
+
+import { LabelAboveField } from "../../../examples/forms/label-above-field.tsx";
+import { PlaceholderAsLabel } from "../../../examples/forms/placeholder-as-label.tsx";
+import { ProfileForm } from "../../../examples/forms/profile-form.tsx";
+
+**Lay a form out as one column: a visible label above each field, the error or hint under it, and
+one primary button at the end that names what it saves.**
+
+<Example of={ProfileForm} />
+
+Submit it with the email empty: the message lands under the field, the field is marked invalid,
+and the rest of the form keeps what was typed.
+
+## Do and don't
+
+<DoDont>
+  <Do show={<LabelAboveField />}>
+    Give every field a `Label` that stays visible, joined through `htmlFor`. A placeholder can show
+    an example value.
+  </Do>
+  <Dont show={<PlaceholderAsLabel />}>
+    Use the placeholder as the label: it disappears with the first keystroke, and with it what the
+    field was for.
+  </Dont>
+</DoDont>
+
+<DoDont>
+  <Do>
+    Check a field when the form is submitted, and again as it is corrected once it has been marked
+    wrong.
+  </Do>
+  <Dont>
+    Mark a field wrong while it is still being typed for the first time, or disable the submit
+    button without saying what is missing.
+  </Dont>
+</DoDont>
+
+## Fields
+
+| The value | Use |
+|---|---|
+| One line of text, a number, an email, a URL | `Input` with the matching `type` and `autoComplete` |
+| Several lines of text | `Textarea` |
+| One of a fixed list | `Select`, or a `RadioGroup` for two to five, see [Choosing a control](/guidelines/patterns/choosing-a-control/) |
+| Yes or no, applied on submit | `Checkbox` |
+| Text in a query language, with completion | `QueryBox` |
+
+Mark the optional fields "(optional)" in the label rather than every required one with an asterisk:
+most fields in a short form are required, and a reader should not have to decode a symbol.
+
+## Errors
+
+- The message goes in a paragraph under its field, the field gets `aria-invalid`, and
+  `aria-describedby` points at the message, so a screen reader reads it with the field.
+- After a failed submit, move focus to the first invalid field.
+- Say how to fix it: "Enter an email address, like alice@example.com", not "Invalid input".
+- An error from the server about the whole form, a lost connection or a conflict, sits above the
+  buttons, where people look before pressing them again.
+
+## Leaving with unsaved changes
+
+A form that holds typed work guards it. When people navigate away before saving, ask with
+`UnsavedChangesDialog`: **Keep editing** is its primary action, and **Discard and leave** is the
+alternative. The dialog takes no router; the app's own navigation blocker opens it.
+
+Settings that apply as they change (Switches, see [Choosing a control](/guidelines/patterns/choosing-a-control/))
+have nothing unsaved, so a settings page of Switches needs no guard and no Save button.
+
+## On each platform
+
+### Desktop & pointer
+
+- Enter in a single-line field submits the form; Tab moves through the fields in reading order.
+- Two short related fields, a first and last name, may share a row on a wide screen. Everything else
+  stays in one column.
+
+### Touch
+
+- The `type` and `inputMode` pick the on-screen keyboard: `email` gets an @ key, `numeric` a digit
+  pad. `autoComplete` lets the phone fill the field in.
+- Inputs use a 16px font on touch, so the phone does not zoom into the field on focus.
+- The on-screen keyboard covers the lower half of the screen. Keep the submit button in the flow
+  under the last field, not pinned to the bottom, where the keyboard hides it.

@@ -10,6 +10,7 @@ import { withWidth } from "./decorators.tsx";
 const meta = {
   title: "ui/Primitives/Tabs",
   component: Tabs,
+  parameters: { guidelines: "/guidelines/patterns/choosing-a-control/" },
   args: { defaultValue: "overview" },
   decorators: [withWidth("max-w-md")],
   render: (args) => (

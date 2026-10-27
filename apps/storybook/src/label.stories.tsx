@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 const meta = {
   title: "ui/Primitives/Label",
   component: Label,
+  parameters: { guidelines: "/guidelines/patterns/forms/" },
 } satisfies Meta<typeof Label>;
 
 export default meta;

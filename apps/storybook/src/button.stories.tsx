@@ -16,6 +16,7 @@ const ICON_SIZES = ["icon-xs", "icon-sm", "icon", "icon-lg"] as const;
 const meta = {
   title: "ui/Primitives/Button",
   component: Button,
+  parameters: { guidelines: "/guidelines/patterns/actions-and-buttons/" },
   args: { children: "Button" },
   argTypes: {
     variant: { control: "select", options: VARIANTS },

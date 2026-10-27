@@ -80,6 +80,15 @@ describe("stories", () => {
       }
     }
   });
+
+  it("are listed in the API of the guideline page they link back to", () => {
+    for (const { file, text, title } of stories) {
+      for (const [, path = ""] of text.matchAll(GUIDELINES)) {
+        const page = pages.find((p) => p.route === path);
+        expect(page?.meta.api ?? [], `${file}: ${path}`).toContain(title);
+      }
+    }
+  });
 });
 
 describe("examples", () => {

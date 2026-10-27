@@ -6,6 +6,7 @@ import { withWidth } from "./decorators.tsx";
 const meta = {
   title: "ui/Primitives/Textarea",
   component: Textarea,
+  parameters: { guidelines: "/guidelines/patterns/forms/" },
   decorators: [withWidth("max-w-sm")],
 } satisfies Meta<typeof Textarea>;
 

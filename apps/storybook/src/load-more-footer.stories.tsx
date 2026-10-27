@@ -29,6 +29,7 @@ const loadMore = () => {
 const meta = {
   title: "ui/LoadMoreFooter",
   component: LoadMoreFooter,
+  parameters: { guidelines: "/guidelines/patterns/loading-empty-and-error/" },
   args: {
     pending: false,
     error: null,

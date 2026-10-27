@@ -7,6 +7,7 @@ import { withOpener } from "./decorators.tsx";
 const meta = {
   title: "ui/ConfirmDialog",
   component: ConfirmDialog,
+  parameters: { guidelines: "/guidelines/patterns/destructive-actions/" },
   args: {
     open: false,
     onOpenChange: fn(),

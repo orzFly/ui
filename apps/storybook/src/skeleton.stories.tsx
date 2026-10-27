@@ -5,6 +5,7 @@ import { withWidth } from "./decorators.tsx";
 const meta = {
   title: "ui/Primitives/Skeleton",
   component: Skeleton,
+  parameters: { guidelines: "/guidelines/patterns/loading-empty-and-error/" },
 } satisfies Meta<typeof Skeleton>;
 
 export default meta;

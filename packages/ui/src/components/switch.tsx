@@ -4,11 +4,7 @@ import type * as React from "react";
 import { cn } from "../lib/utils.ts";
 
 /**
- * Turns a setting on or off, and the setting takes effect the moment it flips,
- * with no save or apply to follow. Each switch stands alone.
- *
- * A choice that waits for a submit or an apply, picks items from a list, or
- * agrees to terms is a `Checkbox` instead.
+ * Turns a setting on or off, taking effect the moment it flips.
  */
 function Switch({
   className,

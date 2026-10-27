@@ -10,6 +10,7 @@ import { fn } from "storybook/test";
 const meta = {
   title: "ui/Primitives/HoverCard",
   component: HoverCard,
+  parameters: { guidelines: "/guidelines/patterns/overlays/" },
   args: { onOpenChange: fn() },
   render: (args) => (
     <HoverCard {...args}>

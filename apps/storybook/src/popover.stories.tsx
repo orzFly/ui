@@ -16,6 +16,7 @@ import { withWidth } from "./decorators.tsx";
 const meta = {
   title: "ui/Primitives/Popover",
   component: Popover,
+  parameters: { guidelines: "/guidelines/patterns/overlays/" },
   args: { onOpenChange: fn() },
   render: (args) => (
     <Popover {...args}>

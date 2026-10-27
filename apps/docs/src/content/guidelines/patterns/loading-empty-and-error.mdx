@@ -1,0 +1,83 @@
+export const meta = {
+  title: "Loading, empty & error",
+  description:
+    "Loading, empty, failed and loaded each look different and say so. Nobody should have to guess which one a blank area is.",
+  order: 35,
+  api: [
+    "ui/Primitives/Skeleton",
+    "ui/LoadFailure",
+    "ui/LoadMoreFooter",
+    "ui/Hooks/usePagedAppend",
+  ],
+};
+
+import { BareEmptyState } from "../../../examples/loading-empty-and-error/bare-empty-state.tsx";
+import { ListStates } from "../../../examples/loading-empty-and-error/list-states.tsx";
+import { SkeletonShapedLikeContent } from "../../../examples/loading-empty-and-error/skeleton-shaped-like-content.tsx";
+
+**Every surface that loads has four states, and each one looks like itself: a skeleton while it
+loads, a sentence and a next step when it is empty, the error and a retry when it failed, and
+then the content.**
+
+<Example of={ListStates} />
+
+## Do and don't
+
+<DoDont>
+  <Do show={<SkeletonShapedLikeContent />}>
+    Draw a `Skeleton` in the shape of the content that is coming, so the page does not jump when it
+    arrives.
+  </Do>
+  <Dont>
+    Cover the whole page with a spinner while one list loads: everything else on it was already
+    usable.
+  </Dont>
+</DoDont>
+
+<DoDont>
+  <Do>
+    Say what would be here and how to get some: "No pipelines yet", a line on what a pipeline is,
+    and a **New pipeline** button.
+  </Do>
+  <Dont show={<BareEmptyState />}>
+    Leave "No data" in an empty box. It reads the same as a failed load or a filter that hides
+    everything.
+  </Dont>
+</DoDont>
+
+## The states
+
+| State | Show | Component |
+|---|---|---|
+| Loading, first time | Placeholders in the shape of the content | `Skeleton` |
+| Loading, short (under about half a second) | Nothing new; show the skeleton only after a short delay, so a fast load does not flash | `Skeleton` |
+| Loaded, nothing there | What would be here, why it is empty, and the action that fills it | Your own markup |
+| Loaded, nothing matches a filter | That the filter hid everything, and a way to clear it | Your own markup |
+| Failed, nothing to show | The error, the server's own words in `detail`, and **Retry** | `LoadFailure` |
+| Refresh failed, older data still shown | That the data is stale, and **Retry** | `RefreshFailure` |
+| Loading more of a list | A **Load more** button that turns into its own failure and retry | `LoadMoreFooter` with `usePagedAppend` |
+
+An empty state that comes from a filter is not the same as an empty list. "No pipelines yet"
+invites creating one; "No pipelines match *failed*" invites clearing the filter.
+
+## Retrying
+
+A failure does not recover by itself, so its way out is a control, not a promise to try again
+later. **Retry** reruns only the read that failed, and is disabled while it runs. When an overlay
+opened from a failed surface closes, send focus to its **Retry** through `LoadFailure`'s
+`retryRef`: the overlay's own trigger may be gone.
+
+## On each platform
+
+### Desktop & pointer
+
+- Keep what loaded already in place while the next page or a refresh loads; replace only what
+  changed.
+- A `LoadFailure` puts the raw error in its `title`, so hovering it shows the detail.
+
+### Touch
+
+- Hover shows nothing on a phone, so an error message names what failed in words, not only in a
+  tooltip.
+- Prefer a **Load more** button at the end of a list to loading on scroll alone: a thumb flicking
+  past the end should not start requests it did not ask for, and a failure needs a place to sit.

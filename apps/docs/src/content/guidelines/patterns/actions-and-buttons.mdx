@@ -1,0 +1,91 @@
+export const meta = {
+  title: "Actions & buttons",
+  description:
+    "One primary action per surface, the rest quieter, and the rare ones in a menu. A button's look says how much it matters.",
+  order: 31,
+  api: [
+    "ui/Primitives/Button",
+    "ui/Primitives/DropdownMenu",
+    "ui/Primitives/Tooltip",
+  ],
+};
+
+import { CompetingPrimaryActions } from "../../../examples/actions-and-buttons/competing-primary-actions.tsx";
+import { EditorActions } from "../../../examples/actions-and-buttons/editor-actions.tsx";
+import { OnePrimaryAction } from "../../../examples/actions-and-buttons/one-primary-action.tsx";
+
+**A surface has at most one primary button: the action most people came to take. Everything else
+steps down a variant, and actions used now and then move into a menu.**
+
+<Example of={EditorActions} />
+
+**Publish** is the one primary button. **Save draft** is outlined beside it. The formatting
+buttons are ghost icon buttons, each with a name and a tooltip, and the rare actions wait behind
+**More actions**.
+
+## Do and don't
+
+<DoDont>
+  <Do show={<OnePrimaryAction />}>
+    Make the action people came for the one primary button, and step the others down.
+  </Do>
+  <Dont show={<CompetingPrimaryActions />}>
+    Give every action the primary look: nothing stands out, so people read every label to find the
+    one they want.
+  </Dont>
+</DoDont>
+
+<DoDont>
+  <Do>
+    Label a button with a verb and its object, "Publish", "Delete 3 files", so it still reads right
+    out of context.
+  </Do>
+  <Dont>
+    Label it "OK", "Submit" or "Yes": the button then only makes sense after reading the question
+    above it.
+  </Dont>
+</DoDont>
+
+## Which variant
+
+| The action | `variant` |
+|---|---|
+| The one action the surface exists for: Save, Publish, Send | `default` |
+| A real alternative beside it: Cancel, Save draft, Back | `outline` or `secondary` |
+| A repeated or toolbar action, usually an icon: Bold, Copy, Close | `ghost` |
+| An action that deletes or discards | `destructive`, see [Destructive actions](/guidelines/patterns/destructive-actions/) |
+| A navigation that looks like a link inside prose or a table | `link`, or a real `<a>` through `asChild` |
+
+The size follows the surface rather than the action: `default` in forms and dialogs, `sm` in dense
+rows and table cells, and `lg` only for a call to action that stands alone.
+
+An action that leaves the page is a link (`<Button asChild><a href>…</a></Button>`), so it opens in
+a new tab and shows its address; an action that changes something is a button.
+
+## Overflow
+
+Put the actions a surface offers but people rarely take into a `DropdownMenu` behind a ghost icon
+button named "More actions". Keep the order stable: frequent first, destructive last behind a
+separator, each with `variant="destructive"`.
+
+Do not hide the primary action in a menu, and do not put a single action in one: a menu with one
+item is a button that costs two taps.
+
+## On each platform
+
+### Desktop & pointer
+
+- An icon-only button has an `aria-label`, and a `Tooltip` that shows the same name on hover and on
+  keyboard focus.
+- A frequent action gets a keyboard shortcut, shown in its tooltip or menu item
+  (`DropdownMenuShortcut`).
+- Enter submits a form's primary action; Escape cancels a dialog, so neither needs a mouse.
+
+### Touch
+
+- Tooltips do not open on touch. The `aria-label` still names the button for a screen reader, but
+  an icon whose meaning is not obvious needs a text label on a phone.
+- Buttons take their touch sizes by themselves. Keep a row of them from wrapping into a second row
+  that pushes content down: move the rare ones into the overflow menu instead.
+- In a dialog footer on a narrow screen the buttons stack full width, the primary one on top, within
+  reach of a thumb.

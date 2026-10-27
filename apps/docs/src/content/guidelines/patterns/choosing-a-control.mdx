@@ -1,0 +1,81 @@
+export const meta = {
+  title: "Choosing a control",
+  description:
+    "Switch, Checkbox, RadioGroup, Select: they all pick a value. The right one tells people when it takes effect and how many they may pick.",
+  order: 30,
+  api: [
+    "ui/Primitives/Switch",
+    "ui/Primitives/Checkbox",
+    "ui/Primitives/RadioGroup",
+    "ui/Primitives/Select",
+    "ui/Primitives/Slider",
+    "ui/Primitives/Tabs",
+  ],
+};
+
+import { ControlsCompared } from "../../../examples/choosing-a-control/controls-compared.tsx";
+import { SwitchesApplyNow } from "../../../examples/choosing-a-control/switches-apply-now.tsx";
+import { SwitchesInAForm } from "../../../examples/choosing-a-control/switches-in-a-form.tsx";
+
+**A Switch acts the moment it flips. A Checkbox waits for a submit, or picks items from a set.
+Exactly one of a few is a RadioGroup; exactly one of many is a Select.**
+
+<Example of={ControlsCompared} />
+
+The editor settings on the left apply as they change, so they are Switches, and the one with too
+many languages to show at once is a Select. The status filter on the right does nothing until
+**Apply**, so it is a list of Checkboxes.
+
+## Do and don't
+
+<DoDont>
+  <Do show={<SwitchesApplyNow />}>
+    Use a Switch for a setting that applies immediately, with no Save button after it.
+  </Do>
+  <Dont show={<SwitchesInAForm />}>
+    Put Switches in a form with a Save button: nobody can tell whether a flip already took effect.
+  </Dont>
+</DoDont>
+
+<DoDont>
+  <Do>
+    Show two to five options as a RadioGroup when people should compare them before choosing.
+  </Do>
+  <Dont>
+    Hide three options in a Select to save a few lines: the choice costs a tap to open and the
+    options cannot be read side by side.
+  </Dont>
+</DoDont>
+
+## Which one
+
+| The choice | Takes effect | Use |
+|---|---|---|
+| One setting, on or off | Immediately | `Switch` |
+| One yes or no in a form, or agreeing to terms | On submit | `Checkbox` |
+| Any number of items from a set: filters, facets, a bulk selection | On apply or submit | `Checkbox` list |
+| Exactly one of two to five, worth seeing together | Either | `RadioGroup` |
+| Exactly one of many, or of options with long names | Either | `Select` |
+| A value along a range, where the exact number matters less than the feel | Either | `Slider` |
+| One of a few views of the same thing | Immediately | `Tabs`: they switch what is shown, not a value that is saved |
+
+The parent of a partly checked list is a Checkbox with `checked="indeterminate"`. A Switch has no
+indeterminate state and no "applies later": if the setting only takes effect once
+something else happens, it is not a Switch.
+
+## On each platform
+
+### Desktop & pointer
+
+- The label is part of the hit area: pair every control with a `Label` through `htmlFor`, so a
+  click on the words toggles it.
+- Space toggles a Switch or Checkbox; the arrow keys move within a RadioGroup, and Tab leaves it.
+- Rows stay compact. A settings list reads as a column of labels with the controls on one edge.
+
+### Touch
+
+- The controls take their touch sizes on a coarse pointer by themselves; there is no prop to set.
+  The **Touch** button under an example previews them.
+- In a settings list, put the label on the leading edge and the Switch on the trailing edge, as the
+  phone's own settings do.
+- A Select opens a list the width of the trigger: keep option names short enough to read in it.
