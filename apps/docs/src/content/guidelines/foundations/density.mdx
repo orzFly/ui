@@ -1,0 +1,68 @@
+export const meta = {
+  title: "Density",
+  description:
+    "Compact by default for a mouse, larger by itself on touch. Step down a size only where many controls share a row.",
+  order: 13,
+  api: ["ui/Primitives/Button", "ui/Primitives/Select", "ui/Primitives/Card"],
+};
+
+import { FilePanel } from "../../../examples/density/file-panel.tsx";
+
+**Use the default size, step down only inside a dense row or toolbar, and leave touch to the
+components.** The default is drawn for a mouse, so a screen shows as much of the work as it can; on
+a coarse pointer the same controls grow their hit areas without the app asking.
+
+<Example of={FilePanel} />
+
+The panel's toolbar and each file's action are a size down, because they repeat and sit next to
+content; the two actions that close out the panel are the default size. Press **Touch** under the
+example to see the same tree sized for a thumb.
+
+## Sizes
+
+Every size of `Button` as drawn for a pointer:
+
+| Size | Height | Use |
+|---|---|---|
+| `lg` | 36px | The one action a page or empty state is for; a call to action on a landing page |
+| default | 32px | Forms, dialogs, a panel's own actions: anything a person reads before pressing |
+| `sm` | 28px | A toolbar of text buttons, a filter row, actions inside a card |
+| `xs` | 24px | An action repeated on every row of a list or table, inline with text |
+| `icon`, `icon-sm`, `icon-xs`, `icon-lg` | 32, 28, 24, 36px square | The icon-only counterparts of the four |
+
+`Input` and `Select`'s trigger are 32px, the default, so a field and its button line up on one row.
+`Select`'s trigger also comes in `sm` for a toolbar.
+
+<DoDont>
+  <Do>
+    Keep the default size and let a coarse pointer grow it. One layout serves the mouse and the
+    thumb.
+  </Do>
+  <Dont>
+    Pass `size="lg"` when the screen is narrow, or branch on width to make touch targets. A narrow
+    window on a desktop is still clicked, and a tablet is wide and still touched.
+  </Dont>
+</DoDont>
+
+## Information density
+
+- A row holds one primary line in `text-sm` and at most one secondary line in `text-xs`. More than
+  that belongs in the detail view.
+- Repeated per-row actions are small and quiet (`ghost`, `xs`); a single action for the whole view
+  is default size and stands apart.
+- On a pointer, a row's secondary actions can wait in a `DropdownMenu` behind a `⋯` button; they
+  are not hidden until hover, which leaves keyboard and touch users nothing to press.
+- Dense is not cramped: rows keep `gap-2` between their parts and a 32 to 36px row height with a
+  mouse, so a misclick lands on the right row.
+
+## On each platform
+
+- **Pointer.** The sizes above. Neighbouring controls can sit 4px apart; a mouse lands on a 24px
+  target reliably.
+- **Touch.** Controls grow on a coarse pointer through `@orz/ui`'s `touch:` variant, drawn larger
+  or given an invisible hit area around them, toward the 44pt Apple asks for
+  ([Apple HIG: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility))
+  and never below WCAG's 24px minimum
+  ([2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)). The Touch &
+  mobile page has the size of each control. A row you build yourself grows the same way:
+  `touch:min-h-11`.

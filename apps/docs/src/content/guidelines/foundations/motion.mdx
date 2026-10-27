@@ -1,0 +1,81 @@
+export const meta = {
+  title: "Motion",
+  description:
+    "Short, quiet and only where it explains a change: where something came from, or where it went.",
+  order: 14,
+  api: ["ui/Primitives/Dialog", "ui/Primitives/Sheet", "ui/Primitives/Skeleton", "ui/Hooks/useAutoHideHeader"],
+};
+
+import { ArrivingRows } from "../../../examples/motion/arriving-rows.tsx";
+
+**Animate only to show where something came from or went, keep it under 200ms, and leave it out for
+anyone who asked the system for less motion.** In a tool used all day, motion that does not explain
+anything is waiting time.
+
+<Example of={ArrivingRows} />
+
+Each new step fades and drops in from just above in 150ms, so the eye finds the row that changed.
+The drop carries `motion-safe:`, so with reduced motion turned on the row fades in where it stands.
+
+## What moves, and how long
+
+The components already animate, and an app adds little to them:
+
+| What | Motion | Duration |
+|---|---|---|
+| A menu, popover, select, tooltip or hover card | Fades in, zooms from 95% and slides 8px out of its trigger | 100ms |
+| A dialog and its overlay | Fades and zooms in place | 100ms |
+| A sheet | Slides in from its edge | 200ms |
+| An auto-hiding header, once scrolling stops | Settles fully in or out | 150ms |
+| A block a link jumps to (`revealBlock`) | A tint that fades out | 2s |
+| A `Skeleton` | Pulses until the content arrives | until then |
+
+Motion of your own stays in the same range: 100 to 150ms for something small appearing, up to 200 to
+250ms for something that crosses the screen. Something entering eases out (fast, then settling);
+something leaving eases in. Leaving is quicker than entering, because nobody needs to watch a
+thing go.
+
+## When not to
+
+- **Not while a finger drives it.** A sheet dragged by a thumb, a header pulled by a scroll, a
+  slider: the element follows the finger with no transition, and animates only to settle once the
+  finger lets go. A transition there trails the finger and feels broken.
+- **Not on what the user is reading.** A list that re-sorts, a log that appends, a value that
+  updates in place: change it, do not slide it. Motion draws the eye, and the eye was busy.
+- **Not to fill a wait.** A spinner or skeleton says something is coming; it does not make it
+  arrive sooner. A result that comes back within a few hundred milliseconds needs no loading state
+  at all.
+- **Not in a loop.** Anything that moves on its own for more than five seconds needs a way to stop
+  it ([WCAG 2.2.2](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html)); a
+  `Skeleton` stops by being replaced.
+
+<DoDont>
+  <Do>
+    Put the movement behind `motion-safe:`, as in `animate-in fade-in motion-safe:slide-in-from-top-1`,
+    so only people who have not asked for less see it.
+  </Do>
+  <Dont>
+    Animate layout (height, width, position of large areas) or loop an animation for attention. It
+    costs frames on a phone and makes some readers dizzy.
+  </Dont>
+</DoDont>
+
+## Reduced motion
+
+People who get motion sick, or who find movement distracting, turn on **Reduce motion** in their
+system settings, and the browser reports it as `prefers-reduced-motion: reduce`
+([WCAG 2.3.3](https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html);
+[Apple HIG: Motion](https://developer.apple.com/design/human-interface-guidelines/motion)).
+Tailwind's `motion-safe:` applies a class only without it, and `motion-reduce:` only with it.
+
+- Put movement (slides, zooms, spins) behind `motion-safe:`.
+- A fade is not motion in this sense and can stay; a reduced variant replaces a slide with a fade
+  rather than with nothing, so the change is still noticed.
+- `@orz/ui`'s own overlays do not read the setting yet: menus, dialogs and sheets zoom and slide
+  regardless.
+
+## On each platform
+
+- **Pointer.** Hover feedback is a colour change with `transition-colors`, never a movement.
+- **Touch.** A press shows at once, with no transition to wait for, and nothing moves under the
+  finger before it lifts.

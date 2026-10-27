@@ -1,0 +1,81 @@
+export const meta = {
+  title: "Theming",
+  description:
+    "The user picks the theme, the mode and the variant; the app offers the choice, remembers it, and never overrides it.",
+  order: 16,
+  api: ["ui/Foundations/Theme", "ui/ThemeMenu", "ui/ThemeEditor", "ui/Foundations/Terminal"],
+};
+
+import { ThemeControls } from "../../../examples/theming/theme-controls.tsx";
+
+**Put a `ThemeMenu` where the user can reach it from any screen, and let the store do the rest.**
+The theme is the user's: they pick it for their eyes, their room and their screen, and an app that
+fixes one, or quietly bends one, takes that away.
+
+<Example of={ThemeControls} clientOnly />
+
+This is the site's own theme store. A pick in the first menu repaints the whole page, this text
+included; the second picks a terminal theme of its own or lets the terminal follow. **Custom
+themes…** in either menu opens the `ThemeEditor`, which repaints the page with the draft as you
+edit it.
+
+## What the user chooses
+
+| Choice | Values | Where |
+|---|---|---|
+| Theme | The themes the app passes the store, such as `@orz/themes`' twelve built-ins | `ThemeMenu` |
+| Mode | Auto (follows the system), Light, Dark; one-palette themes have one | `ThemeMenu` |
+| Variant | Per theme, such as AMOLED on every built-in dark palette | A theme's submenu in `ThemeMenu` |
+| Terminal theme | Any theme, a terminal-only one, or following the UI | `ThemeMenu slot="terminal"` |
+| Custom themes | A theme based on another with overrides, or made from scratch | `ThemeEditor` |
+
+The store saves the pick under the app's `storageKey`, follows the system's light and dark when the
+mode is Auto, and follows a pick made in another tab.
+
+## Setting it up
+
+[Start](/start/#theme) creates the store. Three things make it feel native:
+
+- **Pass the themes you offer.** `createThemeStore({ themes })` takes the list, so the bundle
+  carries only those; the first is the default for a new user.
+- **Paint before the first frame.** `themePaintGuardScript({ storageKey })` in an inline
+  `<script>` in `<head>` paints the saved theme before the bundle loads, so a reload in a dark theme
+  never flashes white.
+- **Give a terminal its own slot** with `terminalThemes` when the app shows terminal output, so
+  someone who likes a light UI can keep a dark terminal.
+
+## What the app does not do
+
+<DoDont>
+  <Do>
+    Draw every colour from a token, and read `useTheme()` or `useTerminalTheme()` when a script needs
+    the colours, such as a canvas or xterm.js. Both re-render when the pick changes.
+  </Do>
+  <Dont>
+    Style by theme id with `[data-theme="dracula"]`, or read a colour from CSS once and keep it. The
+    first breaks in every theme you did not test; the second keeps the old colour after a switch.
+  </Dont>
+</DoDont>
+
+- **No fixed theme for a screen.** A dark-only editor or a light-only print view takes the choice
+  away in the place the user spends the most time.
+- **No `dark:` for colour.** A token already flips with the mode. Keep `dark:` for what a token
+  cannot say, such as swapping a screenshot for its dark twin, and know that it sees only light and
+  dark, not which theme.
+- **No brand override of the palette.** The store's rule has plain `:root` specificity, so a later
+  stylesheet can retune a token for every theme. Do that only to fix a token, and check it in every
+  theme the app offers, because it now applies to all of them.
+
+## A surface on someone else's page
+
+A widget or an extension that draws inside another site's page imports `@orz/ui/theme.css` rather
+than `styles.css`, so it brings the tokens without restyling the host, and creates its store with
+`root` set to its own element: the store then paints that element alone, and two stores on one page
+never repaint each other.
+
+## On each platform
+
+- **Pointer.** The menu sits in the top bar, at the trailing edge, as on this site.
+- **Touch.** Auto is the default mode, so a phone that switches to dark at sunset takes the app with
+  it. AMOLED variants make the background true black, which an OLED phone shows by turning those
+  pixels off.

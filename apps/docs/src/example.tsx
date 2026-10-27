@@ -8,6 +8,7 @@ import {
 import { type ComponentType, useState } from "react";
 import { Code } from "./code.tsx";
 import { exampleSource } from "./example-source.ts";
+import { ClientOnly } from "./hydrated.tsx";
 
 type Pointer = "fine" | "coarse";
 
@@ -20,8 +21,17 @@ const POINTERS: { value: Pointer; label: string }[] = [
  * A live example and the file it came from. Pointer and Touch force the
  * sizes of either pointer on the preview through `data-pointer`; with
  * neither pressed it follows the device.
+ *
+ * `clientOnly` keeps an example that reads the theme store or `matchMedia`
+ * while it renders out of the prerendered page, which cannot know either.
  */
-export function Example({ of: Component }: { of: ComponentType }) {
+export function Example({
+  of: Component,
+  clientOnly = false,
+}: {
+  of: ComponentType;
+  clientOnly?: boolean;
+}) {
   const source = exampleSource(Component);
   const [pointer, setPointer] = useState<Pointer>();
   if (source === undefined) {
@@ -41,7 +51,13 @@ export function Example({ of: Component }: { of: ComponentType }) {
         className="data-[state=inactive]:hidden"
       >
         <div data-pointer={pointer} className="grid gap-3 p-6">
-          <Component />
+          {clientOnly ? (
+            <ClientOnly fallback={<div className="min-h-9" />}>
+              <Component />
+            </ClientOnly>
+          ) : (
+            <Component />
+          )}
         </div>
       </TabsContent>
       <TabsContent value="code" className="max-h-[32rem] overflow-auto">

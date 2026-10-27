@@ -1,0 +1,94 @@
+export const meta = {
+  title: "Layout & spacing",
+  description:
+    "A 4px grid, space that grows with the distance between ideas, and one breakpoint between a phone and the rest.",
+  order: 12,
+  api: ["ui/Hooks/useMediaQuery"],
+};
+
+import { FilterBar } from "../../../examples/layout-and-spacing/filter-bar.tsx";
+
+**Space things by how closely they belong together, in steps of Tailwind's 4px scale, and lay the
+screen out for a phone first, then add `md:` for the rest.**
+
+<Example of={FilterBar} />
+
+Below 768px the filter takes the whole width and the status and the button share the row under it;
+from `md` up, all three sit on one line. One tree, laid out by CSS.
+
+## Spacing
+
+The more two things belong together, the closer they sit. A handful of steps cover nearly
+everything:
+
+| Between | Gap | |
+|---|---|---|
+| An icon and its label, inside a control | `gap-1.5` | 6px |
+| Controls that act together: a toolbar, a field and its button | `gap-2` | 8px |
+| The rows of a form, the items of a list with padding of their own | `gap-4` | 16px |
+| Groups: a form's sections, a card's header and body | `gap-6` | 24px |
+| Sections of a page | `gap-8` or more | 32px+ |
+
+Use `gap` on the parent rather than margins on the children: the space then belongs to the layout,
+and a child dropped in or taken out never leaves a double gap behind. Padding inside a panel
+matches the gap between its groups, so a card is `p-4` with `gap-4` inside.
+
+<DoDont>
+  <Do>
+    Separate two groups with space first, a line only when space is not enough.
+  </Do>
+  <Dont>
+    Box every group in its own bordered card, or put a rule between every row. Each line competes
+    with the content for attention.
+  </Dont>
+</DoDont>
+
+## Breakpoints
+
+Tailwind's breakpoints are the library's, and the line that matters is `md`, 768px: below it is a
+phone, at or above it is everything else.
+
+| Prefix | From | Use |
+|---|---|---|
+| — | 0 | The phone layout: one column, full-width fields, navigation in a `Sheet` |
+| `sm:` | 640px | Small adjustments: a dialog's buttons side by side |
+| `md:` | 768px | The desktop layout: side-by-side panes, a sidebar, a toolbar on one line |
+| `lg:`, `xl:` | 1024px, 1280px | Extra panes that only fit on a wide screen, such as a contents column |
+
+A layout change is CSS (`md:flex-row`) wherever the same elements can be rearranged. Branch in
+JavaScript only when the tree itself differs, such as a pane that becomes a pushed page, and then
+use the library's own query so CSS and script never disagree on where the line is:
+
+```tsx
+import { MD_UP, useMediaQuery } from "@orz/ui/hooks/use-media-query";
+
+const wide = useMediaQuery(MD_UP);
+```
+
+**Width decides the layout; the pointer decides the size.** A tablet is wide and touched, a narrow
+desktop window is small and clicked. Do not size controls by width, and do not lay out by pointer:
+the components already grow on a coarse pointer by themselves.
+
+## Width
+
+- Content reflows down to 320px wide with no sideways scrolling
+  ([WCAG 1.4.10](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html)); only something
+  two-dimensional by nature, a table, a log, a diff, scrolls inside its own box.
+- A row that holds a long label gives that label `min-w-0 flex-1` and `truncate`, so the label
+  shrinks and its neighbours keep their size.
+- Prose stops at a readable measure (`max-w-prose`, `max-w-3xl`); a tool's panes fill the window.
+
+## Corners
+
+`--radius` is the theme's corner, 10px by default, and the `rounded-*` steps scale from it:
+`rounded-lg` is `--radius` itself, `rounded-md` and `rounded-sm` are smaller, `rounded-xl` and up
+are larger. Use the steps rather than pixel values, so a theme that squares its corners squares
+yours too. A box inside a rounded box takes a smaller step than its parent, so the two curves stay
+concentric.
+
+## On each platform
+
+- **Pointer.** Panes sit side by side and the page pads `px-10` or so at the edges.
+- **Touch.** A phone pads `px-4` to `px-5`, enough to keep content off the screen's edge and off
+  the system's back gesture. Keep content out of the notch and the home indicator with the safe-area
+  insets; the Touch & mobile page covers them.

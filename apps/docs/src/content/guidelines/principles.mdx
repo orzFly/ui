@@ -1,0 +1,60 @@
+export const meta = {
+  title: "Principles",
+  description:
+    "Six rules the rest of the guidelines follow from. When a page is silent, these decide.",
+  order: 1,
+};
+
+## Content first, chrome quiet
+
+**People live in these tools all day; the interface recedes so the work stays in front.**
+
+A log, a diff, a list of cards is what someone opened the app for. Toolbars, borders and badges are
+there to serve it, so they take the muted colours, the small sizes and the edges of the screen.
+Give emphasis to one thing per view, the action most people came to take, and let everything else
+stay calm. Every extra border, shadow or colour competes with the content for the same attention.
+
+## Dense with a pointer, generous with a thumb
+
+**One component, two sizes, chosen by the pointer.**
+
+A mouse can hit a 32px button all day, and a dense screen shows more of the work at once. A thumb
+cannot, so on a coarse pointer the same components grow their hit areas by themselves. Write one
+layout and let the components size themselves; do not branch the app on screen width to pass bigger
+sizes. [Density](/guidelines/foundations/density/) has the sizes and when to step down from them.
+
+## Nothing only on hover
+
+**Every action is reachable by keyboard and by touch.**
+
+Hover is a hint, never the only way in. A row's actions that appear on hover also appear when the
+row has focus, and on a touchscreen they are always shown or sit in a menu. A tooltip repeats a
+label the control already carries; it never holds the only copy. Every control can be reached with
+Tab and used with the keys a native control would take.
+
+## Undo over confirm
+
+**Confirm only what cannot be undone.**
+
+A confirmation dialog asks a question people learn to answer without reading. For an action that
+can be taken back, act at once and offer **Undo** in a toast. Keep the dialog for the few that cannot:
+deleting what no one can restore, sending what cannot be unsent. Then name the thing and the
+consequence, and make the destructive button say what it does.
+
+## The theme is the user's
+
+**No hard-coded colours; every surface reads the tokens.**
+
+People pick a theme to read comfortably, in a dark room, in sunlight, with low vision. An app that
+writes `#fff` or `text-gray-500` breaks that choice in one place and nobody notices until a user in
+a dark theme does. Draw with the [colour tokens](/guidelines/foundations/color/), and let
+[theming](/guidelines/foundations/theming/) do the rest.
+
+## Say what happened
+
+**Loading, empty, failed and done each look different and say so.**
+
+A blank area could mean any of four things, and the user should never have to guess which. Loading
+shows the shape of what is coming; empty says there is nothing yet and how to add something; failed
+says what went wrong and offers a retry; done says so once, briefly, and gets out of the way. A
+state that cannot be told apart from another is a bug.

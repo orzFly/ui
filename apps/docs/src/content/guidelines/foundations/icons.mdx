@@ -1,0 +1,75 @@
+export const meta = {
+  title: "Icons",
+  description:
+    "Lucide, at the size of the text beside it, in the colour of that text. An icon alone always carries a name.",
+  order: 15,
+  api: ["ui/Primitives/Button", "ui/Primitives/Tooltip"],
+};
+
+import { EditorToolbar } from "../../../examples/icons/editor-toolbar.tsx";
+
+**Draw icons from [Lucide](https://lucide.dev/icons/), let the component size them, and give
+every icon-only control an `aria-label`.** An icon is shorthand for a word; the word still has to be
+there for the people and tools that cannot see the picture.
+
+<Example of={EditorToolbar} />
+
+The formatting buttons are icons alone, each named for a screen reader and shown its name in a
+tooltip on hover or focus. **Send** keeps its word, because it is the one action the toolbar is
+for.
+
+## One set
+
+`lucide-react` is a peer dependency of `@orz/ui`, and every icon in the components comes from it.
+Draw your own from the same set, imported by name with the `Icon` suffix (`SearchIcon`,
+`ChevronDownIcon`), so a bundler keeps only those you use and every icon shares one stroke and one
+grid. An icon from another set, even a better one, looks foreign beside the rest.
+
+## Size and colour
+
+| Where | Size |
+|---|---|
+| In a `Button`, `Badge` or menu item | Nothing to set: the component sizes it, `size-4` at the default size, smaller in `sm` and `xs` |
+| Beside `text-sm` | `size-4` (16px) |
+| Beside `text-xs` | `size-3.5` or `size-3` |
+| An empty state's or error's illustration | `size-8` to `size-10`, `text-muted-foreground` |
+
+Icons draw in `currentColor`, so they take the text colour around them. Set `text-muted-foreground`
+on an icon that is decoration beside a label; leave it alone on an icon that is the control.
+
+In a `Button`, mark an icon before or after the label with `data-icon="inline-start"` or
+`"inline-end"`, and the button trims its padding on that side so the icon sits optically centred.
+
+## Names
+
+- **An icon-only control** carries `aria-label`, named for what it does ("Refresh", "Close"),
+  never for what it shows ("Arrows").
+- **An icon beside a word** is decoration and stays out of the accessibility tree. Lucide renders
+  `aria-hidden="true"` by itself unless you pass a label, so there is nothing to add.
+- **An icon that carries meaning on its own**, such as a status in a table cell, gets a visible word
+  next to it or an `aria-label`, and never relies on colour alone.
+
+<DoDont>
+  <Do>
+    Give an icon button its name with `aria-label`, and add a `Tooltip` on a pointer so a sighted
+    user can read it too.
+  </Do>
+  <Dont>
+    Put the name only in a `title` or a tooltip. Neither shows on a touchscreen, and a screen
+    reader may never announce a tooltip that is not the control's label.
+  </Dont>
+</DoDont>
+
+| The action | Show |
+|---|---|
+| Universally recognised (close, search, menu, more, back) | Icon alone, with `aria-label` |
+| Frequent, in a toolbar people learn (bold, wrap, refresh) | Icon alone, with `aria-label` and a tooltip |
+| The main action of a view, or anything destructive | Icon and word, or the word alone |
+| Rare, or with no established icon | The word alone |
+
+## On each platform
+
+- **Pointer.** A tooltip names an icon button on hover and on keyboard focus.
+- **Touch.** There is no hover, so no tooltip: an icon whose meaning is not obvious needs its word
+  beside it on a phone, or moves into a menu where it has one. The button's hit area grows on a
+  coarse pointer; the icon inside keeps its size.

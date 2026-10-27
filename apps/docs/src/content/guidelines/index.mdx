@@ -1,0 +1,36 @@
+export const meta = {
+  title: "Guidelines",
+  description:
+    "Principles, foundations, desktop and touch, and which component to reach for.",
+  order: 2,
+};
+
+import { SectionPages } from "../../section-pages.tsx";
+
+These guidelines are for the apps built on @orz/ui: tools people keep open all day, used at a desk
+with a mouse and a keyboard, and on a phone with a thumb. Storybook says what each component takes;
+these pages say when to reach for it, how big it is on each kind of pointer, and what to do around
+it.
+
+## How a page reads
+
+Each page opens with its rule in one sentence. A live example follows, built from the real
+components, with the file it came from one tab away; **Pointer** and **Touch** under it preview
+either kind of pointer on any device. Then come Do and Don't pairs, a decision table where a choice
+has more than two branches, what changes **on each platform**, and the Storybook pages for the
+components the page is about. A page leaves out the parts it has nothing for.
+
+## Sources
+
+Where a page quotes a number, it links where the number comes from.
+
+- [Apple's Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/)
+  for how a platform behaves on iOS and macOS: hit targets, safe areas, sheets and popovers.
+- [GNOME's Human Interface Guidelines](https://developer.gnome.org/hig/) for desktop tools: design
+  for people's goals, avoid confirmations and offer undo, keep the interface quiet.
+- [WCAG 2.2](https://www.w3.org/TR/WCAG22/) for the numbers that are law somewhere: contrast,
+  target size, visible focus.
+
+## Pages
+
+<SectionPages route="/guidelines/" />

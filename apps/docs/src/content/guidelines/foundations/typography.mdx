@@ -1,0 +1,77 @@
+export const meta = {
+  title: "Typography",
+  description:
+    "One sans family at three sizes, a monospace for what is copied, and numbers that line up.",
+  order: 11,
+  api: ["ui/Primitives/Input", "ui/Primitives/Card", "ui/Primitives/Table"],
+};
+
+import { ReleasePanel } from "../../../examples/typography/release-panel.tsx";
+
+**Set the interface in `text-sm`, step down to `text-xs` for what is secondary, and up to
+`text-base` for a title.** Hierarchy comes from size, weight and the muted colour together, never
+from a fourth size.
+
+<Example of={ReleasePanel} />
+
+## The scale
+
+| Role | Classes | Size |
+|---|---|---|
+| Body, labels, menu items, button text | `text-sm` | 14px |
+| A title: a card, dialog, sheet or panel | `font-heading text-base font-medium` | 16px |
+| Secondary: a timestamp, a count, a hint, a column header | `text-xs text-muted-foreground` | 12px |
+| What a user copies or compares: ids, hashes, paths, code | `font-mono` at the size around it, or `text-xs` inline | — |
+
+A page heading in a document-like view can go larger (`text-2xl`, `text-3xl`), as these docs do;
+inside a tool, a panel's title is `text-base`. The components follow the same scale: `CardTitle`,
+`DialogTitle` and `SheetTitle` are `font-heading text-base font-medium`, a `Badge` is `text-xs`.
+
+## Family
+
+`--font-sans` names Geist first and falls back to the system UI font, so an app that installs
+`@fontsource-variable/geist` gets Geist and one that does not gets the platform's own.
+`--font-heading` is the same family; override it only if your app has a display face.
+`styles.css` sets no monospace: an app that wants one defines `--font-mono` in its `@theme`, as
+this site does with JetBrains Mono.
+
+## Weight
+
+`font-medium` marks a title or a label; `font-semibold` is for a page heading. Body text stays
+regular. Bold inside a paragraph is for the one phrase a skimming reader must not miss, at most once
+or twice per screen.
+
+## Numbers
+
+Numbers that sit in a column, tick in place, or are compared across rows take `tabular-nums`, so
+every digit is the same width and a column of sizes lines up on the decimal point. The base layer
+already gives every `<time>` element `tabular-nums`; a date or time you render belongs in one.
+
+<DoDont>
+  <Do show={<div className="grid w-24 text-right text-sm tabular-nums"><span>412.6</span><span>88.1</span><span>31.0</span></div>}>
+    Set compared numbers in `tabular-nums`, right-aligned, with the same number of decimals.
+  </Do>
+  <Dont show={<div className="grid w-24 text-right text-sm"><span>412.6</span><span>88.1</span><span>31</span></div>}>
+    Leave proportional digits in a column, or vary the decimals, so the eye has to read every value
+    to compare two.
+  </Dont>
+</DoDont>
+
+## Line length and truncation
+
+Prose sits in at most about 75 characters a line (`max-w-prose`, or `max-w-3xl` for a page).
+A single-line label that may be long takes `truncate` (or `min-w-0` on the flex child that holds it,
+or it never shrinks); the full text stays reachable somewhere other than a hover, because a
+`title` tooltip does not exist on a touchscreen. A long unbroken string in a block, such as a URL or
+a hash, takes `break-words` so it cannot push the layout sideways.
+
+## On each platform
+
+- **Pointer.** Inputs are `md:text-sm`, the body size.
+- **Touch.** Below `md`, an `Input`, `Textarea` and `HighlightedInput` are `text-base`. iOS Safari
+  zooms the page into any field whose text is under 16px when it takes focus, and does not zoom back
+  out. Keep that in any field you build: `text-base md:text-sm`.
+- **Both.** Sizes are in `rem`, so a reader who raises the browser's text size gets larger text
+  everywhere. Text must survive 200% without loss
+  ([WCAG 1.4.4](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)); do not set a fixed
+  height on a box that holds text.

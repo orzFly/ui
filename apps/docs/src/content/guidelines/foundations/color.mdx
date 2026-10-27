@@ -1,0 +1,164 @@
+export const meta = {
+  title: "Color",
+  description:
+    "A token names a role; the user's theme picks the colour. Every surface, line and text reads one.",
+  order: 10,
+  api: ["ui/Foundations/Theme", "ui/Foundations/Terminal", "ui/Primitives/Badge"],
+};
+
+import { Badge } from "@orz/ui/components/badge";
+import { CircleXIcon } from "lucide-react";
+import { RunList } from "../../../examples/color/run-list.tsx";
+import { TokenPairs, TokenSwatches } from "../../../token-swatches.tsx";
+
+**Draw with the tokens, never with a colour.** `bg-card`, `text-muted-foreground` and `border` say
+what a thing is; the theme the user picked says what colour that is, in light, in dark, and in each
+of a dozen palettes.
+
+<Example of={RunList} />
+
+Nothing in it names a colour. Pick another theme from the top bar and every swatch on this page
+follows, values and contrast included.
+
+## Surfaces and their text
+
+Each surface comes with the foreground meant for text on it. Put text on a surface in that
+surface's foreground, or in `muted-foreground` for the secondary line. The number on each swatch is
+the contrast of the pair in the theme you are looking at.
+
+<TokenPairs
+  pairs={[
+    ["background", "foreground"],
+    ["background", "muted-foreground"],
+    ["card", "card-foreground"],
+    ["popover", "popover-foreground"],
+    ["muted", "muted-foreground"],
+    ["sidebar", "sidebar-foreground"],
+    ["primary", "primary-foreground"],
+    ["secondary", "secondary-foreground"],
+    ["accent", "accent-foreground"],
+  ]}
+/>
+
+| The thing | Surface | Text |
+|---|---|---|
+| The page | `bg-background` | `text-foreground` |
+| A secondary line, a timestamp, a hint | — | `text-muted-foreground` |
+| A card, a panel set off from the page | `bg-card` | `text-card-foreground` |
+| A menu, popover, dialog or sheet | `bg-popover` | `text-popover-foreground` |
+| A well, a code span, a quiet fill | `bg-muted` | `text-muted-foreground` or `text-foreground` |
+| The app's side navigation | `bg-sidebar` | `text-sidebar-foreground` |
+| The one main action in view | `bg-primary` | `text-primary-foreground` |
+| A second action beside it | `bg-secondary` | `text-secondary-foreground` |
+| A hovered or selected row | `bg-accent` | `text-accent-foreground` |
+
+The components already make these choices: a `Card` is `bg-card`, a `Button` is `bg-primary`. Reach
+for the tokens yourself for the surfaces you build.
+
+## Lines and focus
+
+<TokenSwatches tokens={["border", "input", "ring"]} />
+
+`border` separates; `input` outlines a field; `ring` draws focus. The base layer gives every
+element `border-border`, so a bare `border` class is already the right colour. A line is the
+quietest way to separate two things, and space is quieter still: prefer a gap to a rule where the
+grouping reads without one.
+
+## Meaning
+
+`destructive` is for what deletes, removes or fails, and for nothing else; a red that means
+"important" teaches people to ignore the red that means "gone".
+
+<TokenSwatches
+  tokens={[
+    "destructive",
+    "diff-addition",
+    "diff-deletion",
+    "chart-1",
+    "chart-2",
+    "chart-3",
+    "chart-4",
+    "chart-5",
+  ]}
+/>
+
+- `diff-addition` and `diff-deletion` are the added and removed lines of a diff, the colours a
+  reader already knows from code review.
+- `chart-1` to `chart-5` are series in a chart, in order. They tell series apart; they carry no
+  meaning of their own.
+- There is no success, warning or info token. Say those states in words, with an icon, as the
+  example does with **Passed**.
+
+**Colour is never the only signal.** A state shown only as a red or green dot is invisible to a
+colour-blind reader and to anyone in a palette where the two are close
+([WCAG 1.4.1](https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html)). Pair it with a word,
+an icon, or both.
+
+<DoDont>
+  <Do show={<div className="flex gap-2"><Badge variant="destructive"><CircleXIcon /> Failed</Badge></div>}>
+    Say the state, and let the colour back it up.
+  </Do>
+  <Dont show={<div className="flex items-center gap-2 text-sm"><span className="size-2.5 rounded-full bg-red-500" /> Run 412</div>}>
+    Show a state as a colour alone, and in a hard-coded red that no theme can change.
+  </Dont>
+</DoDont>
+
+## Tints
+
+A token takes an opacity: `bg-primary/10`, `bg-destructive/20`. That is how a tint stays in the
+theme. Text on a tint of its own colour is where contrast fails first, so a component that sets
+`destructive` text on a `destructive` tint mixes the foreground in,
+`text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]`, as `Button` and `Badge` do.
+
+<DoDont>
+  <Do show={<p className="text-muted-foreground text-sm">Updated 3 min ago</p>}>
+    Write `text-muted-foreground` for the secondary line. It is tuned for every theme.
+  </Do>
+  <Dont show={<p className="text-gray-500 text-sm">Updated 3 min ago</p>}>
+    Write `text-gray-500`, `bg-white` or a hex value. It is right in one theme, and in the others
+    nobody checks.
+  </Dont>
+</DoDont>
+
+Do not reach for `dark:` to fix a colour either: a token already flips with the scheme, and `dark:`
+knows two schemes where the user has a dozen themes.
+
+## Contrast
+
+Text needs 4.5:1 against what it sits on, and 3:1 for large text, 24px or 18.7px bold
+([WCAG 1.4.3](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html)). A control's
+outline, a focus ring and an icon that carries meaning need 3:1
+([WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)). The pairs above
+show the ratio in the theme you are in; a pair marked **under 4.5** holds secondary text only in
+that theme, so keep what matters in the surface's own foreground.
+
+## Terminal colours
+
+A terminal, an ANSI log and a cast player draw from their own tokens: a background, foreground,
+cursor and selection, and the sixteen ANSI colours. They follow the UI theme unless the user picks
+a terminal theme of their own, so use them for terminal output only.
+
+<TokenSwatches
+  tokens={[
+    "terminal-background",
+    "terminal-foreground",
+    "terminal-cursor",
+    "terminal-selection",
+    "ansi-black",
+    "ansi-red",
+    "ansi-green",
+    "ansi-yellow",
+    "ansi-blue",
+    "ansi-magenta",
+    "ansi-cyan",
+    "ansi-white",
+    "ansi-bright-black",
+    "ansi-bright-red",
+    "ansi-bright-green",
+    "ansi-bright-yellow",
+    "ansi-bright-blue",
+    "ansi-bright-magenta",
+    "ansi-bright-cyan",
+    "ansi-bright-white",
+  ]}
+/>
