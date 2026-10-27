@@ -153,9 +153,13 @@ describe("the port from @orz/ui's styles.css", () => {
     "one-dark": ["muted-foreground"],
     monokai: ["destructive"],
   };
+  // Added after the port, so the scraped fixture has no value for them.
+  const ADDED = ["success", "warning"];
   const without = (tokens: Record<string, string>, names: string[] = []) =>
     Object.fromEntries(
-      Object.entries(tokens).filter(([name]) => !names.includes(name)),
+      Object.entries(tokens).filter(
+        ([name]) => !names.includes(name) && !ADDED.includes(name),
+      ),
     );
 
   it.each(Object.entries(PORTED))(

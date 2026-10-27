@@ -257,7 +257,7 @@ describe("TokenList rows", () => {
     expect(screen.queryByRole("button", { name: "Reset primary" })).toBeNull();
   });
 
-  it("shows a pair's ratio, amber below 4.5:1", () => {
+  it("shows a pair's ratio, in warning below 4.5:1", () => {
     render(
       <Harness
         initial={{
@@ -279,7 +279,7 @@ describe("TokenList rows", () => {
     expect(ratios[0]?.hasAttribute("data-low")).toBe(false);
     expect(ratios[1]?.textContent).toBe("2.84:1");
     expect(ratios[1]?.hasAttribute("data-low")).toBe(true);
-    expect(ratios[1]?.className).toContain("amber");
+    expect(ratios[1]?.className).toContain("text-warning");
   });
 });
 

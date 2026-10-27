@@ -27,6 +27,7 @@ export { tokyoNight } from "./themes/tokyo-night.ts";
 export { vs } from "./themes/vs.ts";
 export {
   DEFAULT_VARIANT,
+  LATE_TOKEN_NAMES,
   TERMINAL_TOKEN_NAMES,
   TOKEN_NAMES,
 } from "./tokens.ts";

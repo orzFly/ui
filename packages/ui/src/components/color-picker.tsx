@@ -1243,9 +1243,9 @@ export function ColorPicker({
             className={cn(
               "min-w-0 truncate rounded-full border px-1.5 py-px",
               colorGamut === "srgb"
-                ? "border-emerald-500/60 text-emerald-700 dark:text-emerald-300"
+                ? "border-success/60 text-success"
                 : colorGamut === "p3"
-                  ? "border-amber-500/70 text-amber-700 dark:text-amber-300"
+                  ? "border-warning/70 text-warning"
                   : "border-destructive/70 text-destructive",
             )}
           >
@@ -1280,9 +1280,9 @@ export function ColorPicker({
               className={cn(
                 "min-w-0 truncate rounded-full border px-1.5 py-px",
                 ratio >= 4.5
-                  ? "border-emerald-500/60 text-emerald-700 dark:text-emerald-300"
+                  ? "border-success/60 text-success"
                   : ratio >= 3
-                    ? "border-amber-500/70 text-amber-700 dark:text-amber-300"
+                    ? "border-warning/70 text-warning"
                     : "border-destructive/70 text-destructive",
               )}
             >

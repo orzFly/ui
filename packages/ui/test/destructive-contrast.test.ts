@@ -12,6 +12,7 @@ const source = (file: string) =>
   readFileSync(join(import.meta.dirname, "../src/components", file), "utf8");
 const BUTTON = source("button.tsx");
 const MENU = source("dropdown-menu.tsx");
+const BADGE = source("badge.tsx");
 
 /** WCAG AA for normal-size text, which every button, badge and menu label is. */
 const AA = 4.5;
@@ -180,3 +181,37 @@ describe("destructive menu item contrast", () => {
     expect(failures(rows, NON_TEXT)).toEqual([]);
   });
 });
+
+// Badge's success and warning variants copy the destructive recipe on their
+// own tokens, so each is measured on its own.
+describe.each(["success", "warning"] as const)(
+  "badge %s variant contrast",
+  (status) => {
+    const mixed = new RegExp(
+      `text-\\[color-mix\\(in_oklab,var\\(--${status}\\),var\\(--foreground\\)_(\\d+)%\\)\\]`,
+    ).exec(BADGE);
+
+    it("mixes --foreground into the label", () => {
+      expect(mixed).not.toBeNull();
+    });
+
+    it("clears AA in every palette and variant, on its resting and hover tints", () => {
+      const share = Number(mixed?.[1]) / 100;
+      const rows = PALETTES.flatMap(({ name, scheme, tokens }) => {
+        const colour = oklab(tokens[status]);
+        const label = srgb(mix(colour, oklab(tokens.foreground), share));
+        const page = srgb(oklab(tokens.background));
+        const tints = scheme === "dark" ? [0.2, 0.3] : [0.1, 0.2];
+        return tints.map((alpha) => ({
+          name: `${name}@${alpha}`,
+          ratio: contrast(label, over(srgb(colour), page, alpha)),
+        }));
+      });
+      expect(
+        rows
+          .filter((r) => r.ratio < AA)
+          .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`),
+      ).toEqual([]);
+    });
+  },
+);

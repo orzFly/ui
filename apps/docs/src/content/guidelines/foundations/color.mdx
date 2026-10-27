@@ -72,6 +72,8 @@ grouping reads without one.
 <TokenSwatches
   tokens={[
     "destructive",
+    "success",
+    "warning",
     "diff-addition",
     "diff-deletion",
     "chart-1",
@@ -82,12 +84,17 @@ grouping reads without one.
   ]}
 />
 
+- `success` is for what finished as it should: a passed run, a saved change, a check that holds.
+  `warning` is for what still works but needs a look: stale data, a value that passes only for large
+  text, an input the app guessed at. Like `destructive`, each is drawn as text, an icon or a border,
+  or as a tint of itself (`Badge variant="success"`), never as a solid fill.
 - `diff-addition` and `diff-deletion` are the added and removed lines of a diff, the colours a
-  reader already knows from code review.
+  reader already knows from code review. A diff uses them and nothing else does; a passed run is
+  `success`.
 - `chart-1` to `chart-5` are series in a chart, in order. They tell series apart; they carry no
   meaning of their own.
-- There is no success, warning or info token. Say those states in words, with an icon, as the
-  example does with **Passed**.
+- There is no info token. Neutral news needs no colour: write it in `foreground` or
+  `muted-foreground`, with an icon if it has to stand out.
 
 **Colour is never the only signal.** A state shown only as a red or green dot is invisible to a
 colour-blind reader and to anyone in a palette where the two are close

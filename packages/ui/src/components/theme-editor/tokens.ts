@@ -66,6 +66,8 @@ export const UI_TOKEN_GROUPS: readonly TokenGroup<TokenName>[] = [
       pair("accent", "Accent", "accent-foreground", "On accent"),
       pair("muted", "Muted", "muted-foreground", "Muted text"),
       single("destructive", "Destructive"),
+      single("success", "Success"),
+      single("warning", "Warning"),
     ],
   },
   {
@@ -177,6 +179,8 @@ export function groupTokens<N extends string>(group: TokenGroup<N>): N[] {
 export const UI_CONTRAST_WITH: Readonly<Partial<Record<TokenName, TokenName>>> =
   {
     destructive: "background",
+    success: "background",
+    warning: "background",
     border: "background",
     input: "background",
     ring: "background",

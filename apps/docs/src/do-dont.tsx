@@ -42,12 +42,7 @@ function Verdict({
  */
 export function Do(props: { show?: ReactNode; children: ReactNode }) {
   return (
-    <Verdict
-      label="Do"
-      // --diff-addition, not --chart-*, because it is the token meant to read as "good".
-      bar="border-t-(--diff-addition) [&>b]:text-(--diff-addition)"
-      {...props}
-    />
+    <Verdict label="Do" bar="border-t-success [&>b]:text-success" {...props} />
   );
 }
 

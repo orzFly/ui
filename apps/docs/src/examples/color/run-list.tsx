@@ -29,7 +29,7 @@ export function RunList() {
             </Badge>
           )}
           {run.state === "passed" && (
-            <Badge variant="outline">
+            <Badge variant="success">
               <CircleCheckIcon /> Passed
             </Badge>
           )}

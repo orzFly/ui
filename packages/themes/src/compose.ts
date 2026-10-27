@@ -11,7 +11,21 @@ import type {
   TerminalTheme,
   TerminalTokens,
   Theme,
+  Tokens,
 } from "./types.ts";
+
+/**
+ * A fully custom side's tokens, each of `LATE_TOKEN_NAMES` it was saved
+ * without taken from the nearest colour it already has, so it keeps its hues.
+ * The type says complete; a side stored before them is not.
+ */
+function withLateTokens(tokens: Tokens, terminal: TerminalTokens): Tokens {
+  return {
+    ...tokens,
+    success: tokens.success ?? tokens["diff-addition"],
+    warning: tokens.warning ?? terminal["ansi-yellow"],
+  };
+}
 
 function resolveCustomTerminal(
   custom: CustomTerminal,
@@ -41,7 +55,7 @@ function composeSide(
   if (!("base" in side)) {
     const terminal = resolveCustomTerminal(side.terminal, scheme, themes);
     if (terminal === null) return null;
-    return { tokens: { ...side.tokens }, terminal };
+    return { tokens: withLateTokens(side.tokens, terminal), terminal };
   }
   const base = themes.find((t) => t.id === side.base.theme);
   if (base === undefined || !isUiTheme(base)) return null;

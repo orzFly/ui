@@ -97,7 +97,7 @@ export function ThemeList({
           <span
             data-unavailable
             title="Its base themes are missing, so the theme menu does not show it."
-            className="text-amber-700 dark:text-amber-300"
+            className="text-warning"
           >
             <TriangleAlertIcon aria-hidden className="size-3.5" />
             <span className="sr-only">(base missing)</span>

@@ -91,6 +91,8 @@ export const sampleCustomThemes: CustomTheme[] = [
         accent: "oklch(0.34 0.05 220)",
         "accent-foreground": "oklch(0.95 0.02 220)",
         destructive: "oklch(0.66 0.19 25)",
+        success: "oklch(0.74 0.14 160)",
+        warning: "oklch(0.8 0.13 85)",
         border: "oklch(0.34 0.04 235)",
         input: "oklch(0.38 0.04 235)",
         ring: "oklch(0.76 0.12 200)",

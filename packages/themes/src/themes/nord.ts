@@ -20,6 +20,8 @@ const darkPalette: Palette = {
     accent: "oklch(0.4 0.05 225)",
     "accent-foreground": "oklch(0.84 0.07 210)",
     destructive: "oklch(0.72 0.13 20)",
+    success: "oklch(0.768 0.075 131.1)",
+    warning: "oklch(0.855 0.089 84.1)",
     border: "oklch(0.4 0.022 248)",
     input: "oklch(0.4 0.022 248)",
     ring: "oklch(0.78 0.08 210)",

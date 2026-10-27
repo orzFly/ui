@@ -586,6 +586,21 @@ describe("entry messages", () => {
     });
   });
 
+  it("takes a fully custom side written before success and warning", () => {
+    const { success: _, warning: __, ...tokens } = light.tokens;
+    const entry = only(
+      file({
+        label: "Older",
+        light: { tokens, terminal: { tokens: light.terminal } },
+      }),
+    );
+    expect(entry.status).toBe("ok");
+    expect(entry.theme).toEqual({
+      label: "Older",
+      light: { tokens, terminal: { tokens: light.terminal } },
+    });
+  });
+
   it("rejects a value that is not a colour", () => {
     const entry = only(
       file({

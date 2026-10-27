@@ -45,17 +45,22 @@ describe("primary contrast", () => {
   });
 });
 
-// Secondary and error text on the surfaces it is drawn on: inactive tabs sit on
-// muted, an error line on the page, a destructive menu item in a popover.
+// Secondary and status text on the surfaces it is drawn on: inactive tabs sit
+// on muted, an error line on the page, a destructive menu item in a popover.
 const TEXT = [
   ["muted-foreground", "background"],
   ["muted-foreground", "muted"],
-  ["destructive", "background"],
-  ["destructive", "popover"],
+  ...(["destructive", "success", "warning"] as const).flatMap(
+    (status) =>
+      [
+        [status, "background"],
+        [status, "popover"],
+      ] as const,
+  ),
 ] as const;
 
 describe("text contrast", () => {
-  it("clears AA for muted and destructive text on the surfaces it sits on", () => {
+  it("clears AA for muted and status text on the surfaces it sits on", () => {
     const rows = resolved.flatMap(({ name, tokens }) =>
       TEXT.map(([text, surface]) => ({
         name: `${name} ${text}/${surface}`,

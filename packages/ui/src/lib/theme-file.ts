@@ -9,6 +9,7 @@ import {
   DEFAULT_VARIANT,
   isCustomTerminalTheme,
   isUiTheme,
+  LATE_TOKEN_NAMES,
   resolveTerminal,
   TERMINAL_TOKEN_NAMES,
   type TerminalTheme,
@@ -334,15 +335,21 @@ function missingNames<N extends string>(
   return names.filter((name) => !Object.hasOwn(source, name));
 }
 
-/** All of `names`, each valid, or null. */
+/** Every name a file must carry; a file written before the late ones lacks them. */
+const REQUIRED_TOKEN_NAMES = TOKEN_NAMES.filter(
+  (name) => !LATE_TOKEN_NAMES.includes(name),
+);
+
+/** Those of `names` present, all of `required` among them, each valid; or null. */
 function complete<N extends string>(
   source: unknown,
   names: readonly N[],
   valid: (value: unknown) => boolean,
+  required: readonly N[] = names,
 ): Record<N, string> | null {
   if (!isObject(source)) return null;
   const out = pick(source, names);
-  if (missingNames(out, names).length > 0) return null;
+  if (missingNames(out, required).length > 0) return null;
   if (!Object.values(out).every(valid)) return null;
   return out as Record<N, string>;
 }
@@ -388,7 +395,7 @@ function checkSide(
   }
   const missing = [
     ...(raw.base === undefined && tokens
-      ? missingNames(tokens, TOKEN_NAMES)
+      ? missingNames(tokens, REQUIRED_TOKEN_NAMES)
       : []),
     ...(raw.terminal && raw.terminal.base === undefined && terminalTokens
       ? missingNames(terminalTokens, TERMINAL_TOKEN_NAMES)
@@ -441,7 +448,12 @@ function importSide(
     } else {
       const name = base?.label ?? raw.base.theme;
       const resolved = isObject(raw.resolved) ? raw.resolved : {};
-      const snapshotTokens = complete(resolved.tokens, TOKEN_NAMES, isColour);
+      const snapshotTokens = complete(
+        resolved.tokens,
+        TOKEN_NAMES,
+        isColour,
+        REQUIRED_TOKEN_NAMES,
+      );
       snapshotTerminal =
         complete(resolved.terminal, TERMINAL_TOKEN_NAMES, isHex) ?? undefined;
       if (snapshotTokens === null || snapshotTerminal === undefined) {

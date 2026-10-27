@@ -263,7 +263,7 @@ function Notice({ children }: { children: ReactNode }) {
   return (
     <div
       role="status"
-      className="flex flex-col gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs"
+      className="flex flex-col gap-2 rounded-lg border border-warning/40 bg-warning/10 p-2.5 text-xs"
     >
       {children}
     </div>

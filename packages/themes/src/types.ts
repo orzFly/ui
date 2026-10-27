@@ -1,6 +1,6 @@
 export type ColorScheme = "light" | "dark";
 
-/** The 33 UI custom properties, named as in CSS without the leading `--`. */
+/** The 35 UI custom properties, named as in CSS without the leading `--`. */
 export type TokenName =
   | "background"
   | "foreground"
@@ -17,6 +17,8 @@ export type TokenName =
   | "accent"
   | "accent-foreground"
   | "destructive"
+  | "success"
+  | "warning"
   | "border"
   | "input"
   | "ring"

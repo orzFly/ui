@@ -47,10 +47,7 @@ function StatusIcon({ status }: { status: CiJob["status"] }) {
   return status === "failed" ? (
     <CircleXIcon aria-label="failed" className="size-4 text-destructive" />
   ) : (
-    <CircleCheckIcon
-      aria-label="passed"
-      className="size-4 text-emerald-600 dark:text-emerald-400"
-    />
+    <CircleCheckIcon aria-label="passed" className="size-4 text-success" />
   );
 }
 
@@ -60,7 +57,7 @@ function RunHeader() {
   return (
     <header className="grid gap-2 border-b p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={failed ? "destructive" : "secondary"}>
+        <Badge variant={failed ? "destructive" : "success"}>
           <StatusIcon status={CI_RUN.status} />
           {failed ? "Failed" : "Passed"}
         </Badge>

@@ -6,6 +6,8 @@ const VARIANTS = [
   "default",
   "secondary",
   "destructive",
+  "success",
+  "warning",
   "outline",
   "ghost",
   "link",

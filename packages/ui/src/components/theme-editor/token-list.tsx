@@ -430,9 +430,7 @@ function PairSample({
           title={`WCAG 2 contrast of ${label}`}
           className={cn(
             "font-mono text-[11px] tabular-nums",
-            low
-              ? "text-amber-700 dark:text-amber-300"
-              : "text-muted-foreground",
+            low ? "text-warning" : "text-muted-foreground",
           )}
         >
           {/* Truncated as the picker does, so 4.4997 never reads 4.50. */}

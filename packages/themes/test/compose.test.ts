@@ -3,8 +3,11 @@ import {
   composeTerminalTheme,
   composeTheme,
   isCustomTerminalTheme,
+  LATE_TOKEN_NAMES,
   type Palette,
   resolvePalette,
+  type TokenName,
+  type Tokens,
 } from "../src/index.ts";
 import { duo, ink, night, term, terminal, tokens } from "./fixtures.ts";
 
@@ -65,6 +68,32 @@ describe("composeTheme", () => {
     expect(theme?.light).toEqual({
       tokens: tokens(0.7),
       terminal: terminal("#777777"),
+    });
+  });
+
+  it("gives a detached side saved before success and warning its own diff-addition and yellow", () => {
+    const saved = Object.fromEntries(
+      Object.entries(tokens(0.7, { "diff-addition": "#18a46c" })).filter(
+        ([name]) => !LATE_TOKEN_NAMES.includes(name as TokenName),
+      ),
+    ) as Tokens;
+    const theme = composeTheme(
+      {
+        id: "c",
+        label: "Custom",
+        dark: {
+          tokens: saved,
+          terminal: {
+            tokens: terminal("#777777", { "ansi-yellow": "#b58900" }),
+          },
+        },
+      },
+      themes,
+    );
+    expect(theme?.dark?.tokens).toEqual({
+      ...saved,
+      success: "#18a46c",
+      warning: "#b58900",
     });
   });
 

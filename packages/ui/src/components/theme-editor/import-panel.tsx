@@ -32,7 +32,8 @@ const TOO_LARGE = "This file is too large to be a theme file.";
 const STATUS: Record<ImportStatus, { label: string; className: string }> = {
   ok: {
     label: "OK",
-    className: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
+    className:
+      "bg-success/10 text-[color-mix(in_oklab,var(--success),var(--foreground)_65%)]",
   },
   renamed: {
     label: "Renamed",
@@ -40,7 +41,8 @@ const STATUS: Record<ImportStatus, { label: string; className: string }> = {
   },
   adjusted: {
     label: "Adjusted",
-    className: "bg-amber-500/15 text-amber-800 dark:text-amber-200",
+    className:
+      "bg-warning/10 text-[color-mix(in_oklab,var(--warning),var(--foreground)_65%)]",
   },
   rejected: {
     label: "Rejected",
