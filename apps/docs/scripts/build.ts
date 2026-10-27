@@ -10,6 +10,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build, type Manifest } from "vite";
 import { fillTemplate } from "./html.ts";
+import { closeSearch, type IndexedPage, searchIndex } from "./search.ts";
 
 const APP = fileURLToPath(new URL("..", import.meta.url));
 const STORYBOOK = resolve(APP, "../storybook/storybook-static");
@@ -35,7 +36,8 @@ function chunksOf(manifest: Manifest, key: string, into = new Set<string>()) {
 
 /**
  * The client build, then a server build of entry-server.tsx that renders
- * every route into `<route>/index.html` and a 404.html, then Storybook.
+ * every route into `<route>/index.html` and a 404.html, then the search
+ * index of those pages into pagefind/, then Storybook.
  */
 export async function buildSite({ base, outDir, storybook }: BuildOptions) {
   const out = resolve(APP, outDir);
@@ -79,6 +81,7 @@ export async function buildSite({ base, outDir, storybook }: BuildOptions) {
   const manifest = JSON.parse(readFileSync(manifestFile, "utf8")) as Manifest;
   const shared = chunksOf(manifest, "index.html");
   const template = readFileSync(join(out, "index.html"), "utf8");
+  const indexed: IndexedPage[] = [];
   for (const { route, file } of entry.routes()) {
     const page = await entry.render(base + route.slice(1));
     // The page's chunk is fetched with the entry rather than after it, since
@@ -89,21 +92,25 @@ export async function buildSite({ base, outDir, storybook }: BuildOptions) {
         (chunk) =>
           `<link rel="modulepreload" crossorigin href="${base}${chunk}">`,
       );
+    const html = fillTemplate(template, {
+      ...page,
+      head: [page.head, ...preload].join("\n    "),
+    });
     const dir = join(out, route);
     mkdirSync(dir, { recursive: true });
-    writeFileSync(
-      join(dir, "index.html"),
-      fillTemplate(template, {
-        ...page,
-        head: [page.head, ...preload].join("\n    "),
-      }),
-    );
+    writeFileSync(join(dir, "index.html"), html);
+    indexed.push({ route, html });
   }
   // GitHub Pages answers every unknown path with the root's 404.html.
   const missing = await entry.render(`${base}404/`);
   writeFileSync(join(out, "404.html"), fillTemplate(template, missing));
   rmSync(join(out, ".vite"), { recursive: true });
   rmSync(ssrDir, { recursive: true, force: true });
+
+  // Before Storybook lands in out/, so its pages are not indexed.
+  const index = await searchIndex(indexed);
+  await index.writeFiles({ outputPath: join(out, "pagefind") });
+  await closeSearch();
 
   if (storybook) {
     cpSync(STORYBOOK, join(out, "storybook"), { recursive: true });

@@ -47,6 +47,7 @@ function heading(Tag: "h2" | "h3", className: string) {
           <a
             href={`#${id}`}
             aria-label="Link to this section"
+            data-pagefind-ignore
             className="ml-2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:hidden"
           >
             #

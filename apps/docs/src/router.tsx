@@ -39,7 +39,10 @@ export function Router({
   initial: string;
   children: ReactNode;
 }) {
-  const [route, setRoute] = useState(initial);
+  // A navigation counts even to the route already shown: a link to one of
+  // its headings still has to scroll there.
+  const [visit, setVisit] = useState({ route: initial, count: 0 });
+  const { route } = visit;
   // Where to scroll once the next route has rendered; null after Back and
   // Forward, which the browser restores itself.
   const scrollTo = useRef<string | null>(null);
@@ -54,7 +57,7 @@ export function Router({
       history.pushState(null, "", hrefOf(next, BASE) + push);
       scrollTo.current = push;
     }
-    setRoute(next);
+    setVisit(({ count }) => ({ route: next, count: count + 1 }));
   }, []);
 
   useEffect(() => {
@@ -63,7 +66,7 @@ export function Router({
     return () => removeEventListener("popstate", onPop);
   }, [go]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs per route, after its render.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs per navigation, after its render.
   useLayoutEffect(() => {
     const hash = scrollTo.current;
     scrollTo.current = null;
@@ -71,7 +74,7 @@ export function Router({
     const target = hash && document.getElementById(hash.slice(1));
     if (target) target.scrollIntoView();
     else window.scrollTo(0, 0);
-  }, [route]);
+  }, [visit]);
 
   const value = useMemo(
     () => ({

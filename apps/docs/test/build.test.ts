@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gunzipSync } from "node:zlib";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildSite } from "../scripts/build.ts";
 import { routeOf } from "../src/routes.ts";
@@ -77,12 +78,31 @@ describe("a build under /ui/", () => {
     const sections = new Set(routes.map((route) => route.split("/")[1]));
     const anywhere = rootPath([...roots, "storybook"]);
     const inScripts = rootPath(roots.filter((name) => !sections.has(name)));
+    // Pagefind's scripts fall back to /pagefind/ only outside a browser; in
+    // one they find themselves from their own URL.
+    const pagefind = join(dist, "pagefind") + sep;
     for (const file of filesUnder(dist)) {
       if (!/\.(?:html|css|js)$/.test(file)) continue;
+      if (file.startsWith(pagefind)) continue;
       const pattern = file.endsWith(".js") ? inScripts : anywhere;
       const match = pattern.exec(readFileSync(file, "utf8"));
       expect(match?.[0], file).toBeUndefined();
     }
+  });
+
+  it("indexes every page for search, by route", () => {
+    const entry = JSON.parse(
+      readFileSync(join(dist, "pagefind/pagefind-entry.json"), "utf8"),
+    ) as { languages: Record<string, { page_count: number }> };
+    expect(entry.languages.en?.page_count).toBe(routes.length);
+    // A fragment is one page's record: gzipped JSON behind a signature.
+    const fragments = join(dist, "pagefind/fragment");
+    const urls = readdirSync(fragments).map((file) => {
+      const text = gunzipSync(readFileSync(join(fragments, file))).toString();
+      return (JSON.parse(text.slice(text.indexOf("{"))) as { url: string }).url;
+    });
+    // Base-less: pagefind.js adds the base it is told (search.ts).
+    expect(urls.sort()).toEqual([...routes].sort());
   });
 
   it("sends ?path= links to /ui/storybook/", () => {

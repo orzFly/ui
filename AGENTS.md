@@ -139,6 +139,10 @@ file per route.
   hydration mismatch shows up in `dev`.
 - `pnpm build` builds the docs app after Storybook, which it copies. `?path=` links written for
   Storybook when it sat at the site root are redirected to `storybook/`.
+- Search is Pagefind over the prerendered pages, written to `pagefind/` by the build and served
+  from memory by the dev server. It indexes a page's article (a bare page's `main`); text in there
+  that answers no search — a control's labels, an example, a demo's fixture data — is marked
+  `data-pagefind-ignore`, as `Example` is.
 
 ## Sanitization
 

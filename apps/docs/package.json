@@ -36,6 +36,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "happy-dom": "^21.0.3",
+    "pagefind": "^1.5.2",
     "remark-gfm": "^4.0.1",
     "storybook": "^10.6.2",
     "tailwindcss": "^4.3.3",

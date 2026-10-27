@@ -40,7 +40,13 @@ export function App() {
     body = <NotFound />;
   } else if (meta.layout === "bare") {
     body = (
-      <main className="flex-1">
+      <main
+        className="flex-1"
+        data-pagefind-body
+        // The bare page's own h1 is a headline, not its name.
+        data-pagefind-meta="title[data-title]"
+        data-title={meta.title}
+      >
         <page.default components={mdxComponents} />
       </main>
     );
@@ -52,9 +58,12 @@ export function App() {
           <Sidebar section={section} />
         )}
         <main className="min-w-0 flex-1 px-5 py-8 md:px-10 md:py-10">
-          <article className="mx-auto max-w-3xl">
+          <article className="mx-auto max-w-3xl" data-pagefind-body>
             {crumbs.length > 0 && (
-              <p className="mb-2 text-muted-foreground text-sm">
+              <p
+                className="mb-2 text-muted-foreground text-sm"
+                data-pagefind-ignore
+              >
                 {crumbs.map((node, i) => (
                   <span key={node.route}>
                     {i > 0 && " / "}

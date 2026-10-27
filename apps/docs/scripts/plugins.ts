@@ -3,6 +3,7 @@ import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin, ViteDevServer } from "vite";
 import { fillTemplate } from "./html.ts";
+import { closeSearch, searchIndex } from "./search.ts";
 
 const APP = fileURLToPath(new URL("..", import.meta.url));
 const EXAMPLES = join(APP, "src/examples/");
@@ -46,6 +47,10 @@ const TYPES: Record<string, string> = {
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".woff2": "font/woff2",
+  ".pagefind": "application/octet-stream",
+  ".pf_meta": "application/octet-stream",
+  ".pf_index": "application/octet-stream",
+  ".pf_fragment": "application/octet-stream",
 };
 
 /** Serves a built storybook-static under the base's storybook/, so its links work in dev. */
@@ -74,6 +79,57 @@ function serveStorybook(server: ViteDevServer) {
   });
 }
 
+type DevEntry = typeof import("../src/entry-server.tsx");
+
+/**
+ * The search index in dev, built in memory from the pages as rendered now,
+ * the first time a search asks for it after an edit.
+ */
+function serveSearch(server: ViteDevServer) {
+  const prefix = `${server.config.base}pagefind/`;
+  let files: Promise<Map<string, Uint8Array>> | undefined;
+  const build = async () => {
+    const template = readFileSync(join(APP, "index.html"), "utf8");
+    const entry = (await server.ssrLoadModule(
+      "/src/entry-server.tsx",
+    )) as DevEntry;
+    const pages = [];
+    for (const { route } of entry.routes()) {
+      const page = await entry.render(server.config.base + route.slice(1));
+      pages.push({ route, html: fillTemplate(template, page) });
+    }
+    const index = await searchIndex(pages);
+    const { files: written, errors } = await index.getFiles();
+    if (errors.length > 0) throw new Error(`pagefind: ${errors.join("; ")}`);
+    return new Map(written.map((file) => [file.path, file.content]));
+  };
+  server.watcher.on("all", () => {
+    files = undefined;
+  });
+  server.httpServer?.on("close", () => void closeSearch());
+  server.middlewares.use(async (req, res, next) => {
+    const path = (req.url ?? "").split("?")[0] ?? "";
+    if (!path.startsWith(prefix)) return next();
+    try {
+      files ??= build();
+      const content = (await files).get(path.slice(prefix.length));
+      if (!content) {
+        res.statusCode = 404;
+        res.end();
+        return;
+      }
+      res.setHeader(
+        "content-type",
+        TYPES[extname(path)] ?? "application/octet-stream",
+      );
+      res.end(content);
+    } catch (error) {
+      files = undefined;
+      next(error);
+    }
+  });
+}
+
 /** Renders each page on the server in dev too, so hydration is exercised before a build. */
 function serveRendered(server: ViteDevServer) {
   server.middlewares.use(async (req, res, next) => {
@@ -88,7 +144,7 @@ function serveRendered(server: ViteDevServer) {
       );
       const entry = (await server.ssrLoadModule(
         "/src/entry-server.tsx",
-      )) as typeof import("../src/entry-server.tsx");
+      )) as DevEntry;
       const page = await entry.render(new URL(url, "http://dev").pathname);
       res.statusCode = page.status;
       res.setHeader("content-type", "text/html");
@@ -133,6 +189,7 @@ __registerExampleSource(${name}, __exampleSource);
       config: () => ({ appType: "custom" }),
       configureServer(server) {
         serveStorybook(server);
+        serveSearch(server);
         return () => serveRendered(server);
       },
     },

@@ -42,6 +42,8 @@ export function Example({
   return (
     <Tabs
       defaultValue="preview"
+      // A demo's labels and its source would answer searches meant for the prose.
+      data-pagefind-ignore
       className="my-6 gap-0 overflow-hidden rounded-xl border"
     >
       {/* Mounted while hidden, so the preview keeps its state across a look at the code. */}

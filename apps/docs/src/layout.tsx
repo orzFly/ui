@@ -7,19 +7,22 @@ import {
   SheetTrigger,
 } from "@orz/ui/components/sheet";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
+import { useSlashShortcut } from "@orz/ui/hooks/use-slash-shortcut";
 import { cn } from "@orz/ui/lib/utils";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpRightIcon,
   MenuIcon,
+  SearchIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { ClientOnly } from "./hydrated.tsx";
 import type { PageMeta, TocEntry } from "./page.ts";
 import { nav } from "./pages.ts";
 import { BASE, Link, useRouter } from "./router.tsx";
 import { type NavNode, pagesIn, storybookHref } from "./routes.ts";
+import { SearchBox, SheetSearch } from "./search-box.tsx";
 
 /** The top bar's sections: content/'s top-level pages and directories, Home aside. */
 const sections = nav.children;
@@ -48,11 +51,27 @@ function ThemeButton() {
 const topLink =
   "rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:text-foreground";
 
+/** Whether the phone nav is open, and whether it opened to search. */
+type NavOpen = boolean | "search";
+
 export function SiteHeader({ section }: { section: NavNode | undefined }) {
+  const box = useRef<HTMLInputElement>(null);
+  const sheetBox = useRef<HTMLInputElement>(null);
+  const [nav, setNav] = useState<NavOpen>(false);
+  // The top bar's box is hidden on a phone; there the key opens the nav at its box.
+  useSlashShortcut(() => {
+    if (box.current?.checkVisibility()) box.current.focus();
+    else setNav("search");
+  });
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-2 px-3 md:gap-6 md:px-5">
-        <MobileNav section={section} />
+        <MobileNav
+          section={section}
+          open={nav}
+          onOpenChange={setNav}
+          searchRef={sheetBox}
+        />
         <Logo />
         <nav aria-label="Site" className="hidden items-center gap-1 md:flex">
           {sections.map((node) => (
@@ -72,7 +91,17 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
             <ArrowUpRightIcon className="ml-0.5 inline size-3.5 align-[-2px]" />
           </a>
         </nav>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1 md:gap-2">
+          <SearchBox inputRef={box} className="hidden w-56 md:block lg:w-64" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11 md:hidden"
+            aria-label="Search"
+            onClick={() => setNav("search")}
+          >
+            <SearchIcon className="size-5" />
+          </Button>
           <ThemeButton />
         </div>
       </div>
@@ -85,13 +114,22 @@ function firstPage(node: NavNode): NavNode {
   return pagesIn(node)[0] ?? node;
 }
 
-function MobileNav({ section }: { section: NavNode | undefined }) {
-  const [open, setOpen] = useState(false);
+function MobileNav({
+  section,
+  open,
+  onOpenChange,
+  searchRef,
+}: {
+  section: NavNode | undefined;
+  open: NavOpen;
+  onOpenChange: (open: NavOpen) => void;
+  searchRef: RefObject<HTMLInputElement | null>;
+}) {
   const { route } = useRouter();
   // biome-ignore lint/correctness/useExhaustiveDependencies: a navigation closes the sheet.
-  useEffect(() => setOpen(false), [route]);
+  useEffect(() => onOpenChange(false), [route]);
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open !== false} onOpenChange={onOpenChange}>
       <SheetTrigger asChild>
         <Button
           variant="ghost"
@@ -102,35 +140,50 @@ function MobileNav({ section }: { section: NavNode | undefined }) {
           <MenuIcon className="size-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="gap-0 overflow-y-auto p-2 pb-8">
+      <SheetContent
+        side="left"
+        className="gap-0 overflow-y-auto p-2 pb-8"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          // Focus on the box would raise a phone's keyboard over a nav the
+          // reader opened to browse.
+          if (open === "search") searchRef.current?.focus();
+          else (event.currentTarget as HTMLElement).focus();
+        }}
+      >
         <SheetTitle className="flex h-11 items-center px-3">
           <Logo />
         </SheetTitle>
         <SheetDescription className="sr-only">Site navigation</SheetDescription>
-        <nav aria-label="Site" className="mt-2 text-base">
-          {sections.map((node) => (
-            <div key={node.route}>
-              <Link
-                to={firstPage(node).route}
-                className={cn(rowClass("touch"), "font-medium text-foreground")}
-              >
-                {node.title}
-              </Link>
-              {node === section && node.children.length > 0 && (
-                <div className="mb-2 ml-3 border-l pl-1">
-                  <NavTree node={node} size="touch" />
-                </div>
-              )}
-            </div>
-          ))}
-          <a
-            href={storybookHref(BASE)}
-            className={cn(rowClass("touch"), "font-medium text-foreground")}
-          >
-            Storybook
-            <ArrowUpRightIcon className="ml-1 size-4" />
-          </a>
-        </nav>
+        <SheetSearch inputRef={searchRef} onPick={() => onOpenChange(false)}>
+          <nav aria-label="Site" className="mt-2 text-base">
+            {sections.map((node) => (
+              <div key={node.route}>
+                <Link
+                  to={firstPage(node).route}
+                  className={cn(
+                    rowClass("touch"),
+                    "font-medium text-foreground",
+                  )}
+                >
+                  {node.title}
+                </Link>
+                {node === section && node.children.length > 0 && (
+                  <div className="mb-2 ml-3 border-l pl-1">
+                    <NavTree node={node} size="touch" />
+                  </div>
+                )}
+              </div>
+            ))}
+            <a
+              href={storybookHref(BASE)}
+              className={cn(rowClass("touch"), "font-medium text-foreground")}
+            >
+              Storybook
+              <ArrowUpRightIcon className="ml-1 size-4" />
+            </a>
+          </nav>
+        </SheetSearch>
       </SheetContent>
     </Sheet>
   );
@@ -249,7 +302,10 @@ export function ApiLinks({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-lg border p-3", className)}>
+    <div
+      className={cn("rounded-lg border p-3", className)}
+      data-pagefind-ignore
+    >
       <p className="mb-1 font-medium">API</p>
       <ul>
         {titles.map((title) => (
@@ -286,6 +342,7 @@ export function PageFooter({
   return (
     <nav
       aria-label="Previous and next"
+      data-pagefind-ignore
       className="mt-16 grid gap-3 border-t pt-6 sm:grid-cols-2"
     >
       {previous ? (
