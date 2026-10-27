@@ -64,8 +64,8 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
     else setNav("search");
   });
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-2 px-3 md:gap-6 md:px-5">
+    <header className="sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-2 pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-6 md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))]">
         <MobileNav
           section={section}
           open={nav}
@@ -234,7 +234,7 @@ export function NavTree({
 
 export function Sidebar({ section }: { section: NavNode }) {
   return (
-    <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-60 shrink-0 overflow-y-auto border-r bg-sidebar px-2 py-4 text-sm md:block">
+    <aside className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] hidden h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] w-60 shrink-0 overflow-y-auto border-r bg-sidebar py-4 pr-2 pl-[max(0.5rem,env(safe-area-inset-left))] text-sm md:block">
       <nav aria-label={section.title}>
         <NavTree node={section} />
       </nav>
@@ -266,7 +266,7 @@ export function Toc({ toc, meta }: { toc: TocEntry[]; meta: PageMeta }) {
   const api = meta.api ?? [];
   if (toc.length === 0 && api.length === 0) return null;
   return (
-    <aside className="sticky top-14 hidden max-h-[calc(100dvh-3.5rem)] w-56 shrink-0 overflow-y-auto px-4 py-8 text-sm xl:block">
+    <aside className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] hidden max-h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] w-56 shrink-0 overflow-y-auto px-4 py-8 text-sm xl:block">
       {toc.length > 0 && (
         <nav aria-label="On this page">
           <p className="mb-2 font-medium">On this page</p>

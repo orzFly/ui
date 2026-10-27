@@ -1,4 +1,5 @@
 import { Toaster } from "@orz/ui/components/sonner";
+import { cn } from "@orz/ui/lib/utils";
 import { type ReactNode, useEffect } from "react";
 import { documentTitle } from "./head.ts";
 import { ClientOnly } from "./hydrated.tsx";
@@ -10,7 +11,7 @@ import { trail } from "./routes.ts";
 
 function NotFound() {
   return (
-    <main className="mx-auto max-w-3xl px-5 py-16 md:px-10">
+    <main className="mx-auto max-w-3xl py-16 pr-[max(1.25rem,env(safe-area-inset-right))] pl-[max(1.25rem,env(safe-area-inset-left))] md:px-10">
       <h1 className="font-semibold text-3xl tracking-tight">Page not found</h1>
       <p className="mt-3 text-muted-foreground">
         Nothing lives at this address.{" "}
@@ -41,7 +42,8 @@ export function App() {
   } else if (meta.layout === "bare") {
     body = (
       <main
-        className="flex-1"
+        // A bare page lays out its own padding; the safe area adds to it.
+        className="flex-1 pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]"
         data-pagefind-body
         // The bare page's own h1 is a headline, not its name.
         data-pagefind-meta="title[data-title]"
@@ -52,12 +54,19 @@ export function App() {
     );
   } else {
     const crumbs = chain.slice(1, -1);
+    const sidebar = section !== undefined && section.children.length > 0;
     body = (
       <div className="mx-auto flex w-full max-w-screen-2xl flex-1">
-        {section && section.children.length > 0 && (
-          <Sidebar section={section} />
-        )}
-        <main className="min-w-0 flex-1 px-5 py-8 md:px-10 md:py-10">
+        {sidebar && <Sidebar section={section} />}
+        <main
+          className={cn(
+            "min-w-0 flex-1 py-8 pr-[max(1.25rem,env(safe-area-inset-right))] pl-[max(1.25rem,env(safe-area-inset-left))] md:py-10 md:pr-[max(2.5rem,env(safe-area-inset-right))]",
+            // Past md the sidebar, not the page, meets the left edge.
+            sidebar
+              ? "md:pl-10"
+              : "md:pl-[max(2.5rem,env(safe-area-inset-left))]",
+          )}
+        >
           <article className="mx-auto max-w-3xl" data-pagefind-body>
             {crumbs.length > 0 && (
               <p

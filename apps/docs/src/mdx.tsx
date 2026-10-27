@@ -41,7 +41,13 @@ function Anchor({ href = "", children, ...props }: ComponentProps<"a">) {
 function heading(Tag: "h2" | "h3", className: string) {
   return function Heading({ id, children }: ComponentProps<"h2">) {
     return (
-      <Tag id={id} className={cn("group scroll-mt-20", className)}>
+      <Tag
+        id={id}
+        className={cn(
+          "group scroll-mt-[calc(5rem+env(safe-area-inset-top))]",
+          className,
+        )}
+      >
         {children}
         {id && (
           <a
