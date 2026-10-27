@@ -1,0 +1,30 @@
+{
+  "name": "@orz/fixtures",
+  "private": true,
+  "description": "Sample data shared by the Storybook and the docs site: logs, patches, casts, attachments, hex and themes",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@orz/query": "workspace:*",
+    "@orz/themes": "workspace:*",
+    "@orz/ui": "workspace:*",
+    "@orz/ui-ansi": "workspace:*",
+    "@orz/ui-code": "workspace:*",
+    "@orz/ui-content": "workspace:*",
+    "@orz/ui-hex": "workspace:*",
+    "@orz/ui-markdown": "workspace:*",
+    "react": "^19.3.1",
+    "sonner": "^2.0.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  }
+}

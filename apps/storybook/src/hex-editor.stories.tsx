@@ -1,3 +1,9 @@
+import {
+  reportCopy,
+  reportPaste,
+  SAMPLE_PNG,
+  syntheticSource,
+} from "@orz/fixtures/hex.ts";
 import { Button } from "@orz/ui/components/button";
 import {
   blobSource,
@@ -16,12 +22,6 @@ import { Download, Redo2, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { withHeight } from "./decorators.tsx";
-import {
-  reportCopy,
-  reportPaste,
-  SAMPLE_PNG,
-  syntheticSource,
-} from "./fixtures/hex.ts";
 
 async function download(doc: HexDocument, name: string) {
   const blob = await doc.toBlob("application/octet-stream");

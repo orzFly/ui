@@ -1,3 +1,4 @@
+import { Header, PageSample } from "@orz/fixtures/themes.tsx";
 import {
   builtinThemes,
   type ColorScheme,
@@ -16,7 +17,6 @@ import {
 } from "@orz/ui/theme";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Header, PageSample } from "./fixtures/themes.tsx";
 
 const USE_THEME = `import { useTheme } from "@orz/ui/theme";
 

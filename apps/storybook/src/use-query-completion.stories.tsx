@@ -1,3 +1,4 @@
+import { PROVIDERS, QUALIFIERS } from "@orz/fixtures/query.ts";
 import { defineQuerySchema } from "@orz/query";
 import { HighlightedInput } from "@orz/ui/components/highlighted-input";
 import { highlightQuery } from "@orz/ui/components/query-highlight";
@@ -5,7 +6,6 @@ import { useQueryCompletion } from "@orz/ui/hooks/use-query-completion";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef, useState } from "react";
 import { withWidth } from "./decorators.tsx";
-import { PROVIDERS, QUALIFIERS } from "./fixtures/query.ts";
 
 const USAGE = `import { defineQuerySchema, type ValueProviders } from "@orz/query";
 import { HighlightedInput } from "@orz/ui/components/highlighted-input";

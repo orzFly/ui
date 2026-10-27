@@ -1,7 +1,7 @@
+import { SAMPLE_PNG } from "@orz/fixtures/hex.ts";
 import { bytesSource, HexInspector } from "@orz/ui-hex";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withWidth } from "./decorators.tsx";
-import { SAMPLE_PNG } from "./fixtures/hex.ts";
 
 const PNG = bytesSource(SAMPLE_PNG);
 

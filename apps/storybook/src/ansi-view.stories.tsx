@@ -1,7 +1,7 @@
+import { largeLog, link } from "@orz/fixtures/logs.ts";
 import { AnsiView, type LevelMatch, type LogLevel } from "@orz/ui-ansi";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withWidth } from "./decorators.tsx";
-import { largeLog, link } from "./fixtures/logs.ts";
 
 const E = "\x1b[";
 

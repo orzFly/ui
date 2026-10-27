@@ -1,3 +1,4 @@
+import { OwnStore } from "@orz/fixtures/themes.tsx";
 import { Button } from "@orz/ui/components/button";
 import type { ThemeStore, ThemeStoreOptions } from "@orz/ui/theme";
 import { type ContentRenderer, ContentRenderers } from "@orz/ui-content";
@@ -9,7 +10,6 @@ import {
 import type { Decorator } from "@storybook/react-vite";
 import type { ReactNode } from "react";
 import { argsUpdater } from "./args.ts";
-import { OwnStore } from "./fixtures/themes.tsx";
 
 /** Caps the story's width: `withWidth("max-w-3xl")`. */
 export function withWidth(className: string): Decorator {

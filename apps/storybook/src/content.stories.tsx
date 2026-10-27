@@ -1,3 +1,5 @@
+import { file, PATCHES } from "@orz/fixtures/files.ts";
+import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
 import { codeContent } from "@orz/ui-code";
 import {
   Content,
@@ -20,8 +22,6 @@ import {
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import type { CSSProperties } from "react";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
-import { file, PATCHES } from "./fixtures/files.ts";
-import { ATTACHMENT_RENDERERS } from "./fixtures/renderers.ts";
 import { registrationSnippet } from "./snippets.ts";
 
 /** Accepts inline text tagged `shout` only: a narrow renderer, so it goes first. */

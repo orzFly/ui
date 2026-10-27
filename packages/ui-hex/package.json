@@ -18,6 +18,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./content": {
+      "@orz/source": "./src/content.tsx",
+      "types": "./dist/content.d.ts",
+      "default": "./dist/content.js"
+    },
     "./styles.css": "./styles.css"
   },
   "files": [
@@ -34,13 +39,20 @@
   },
   "peerDependencies": {
     "@orz/ui": "workspace:^",
+    "@orz/ui-content": "workspace:^",
     "lucide-react": "^1",
     "radix-ui": "^1",
     "react": "^19",
     "react-dom": "^19"
   },
+  "peerDependenciesMeta": {
+    "@orz/ui-content": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@orz/ui": "workspace:*",
+    "@orz/ui-content": "workspace:*",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^22.20.5",
     "@types/react": "^19.2.18",

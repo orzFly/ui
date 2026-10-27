@@ -1,11 +1,11 @@
+import broken from "@orz/fixtures/asciinema/broken.cast?raw";
+import session from "@orz/fixtures/asciinema/session.cast?raw";
+import { textFile } from "@orz/fixtures/files.ts";
 import { asciinemaContent, CAST_MAX_BYTES } from "@orz/ui-asciinema";
 import { Content } from "@orz/ui-content";
 import type { FileSource } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRenderers, withWidth } from "./decorators.tsx";
-import broken from "./fixtures/asciinema/broken.cast?raw";
-import session from "./fixtures/asciinema/session.cast?raw";
-import { textFile } from "./fixtures/files.ts";
 import { registrationSnippet } from "./snippets.ts";
 
 /**

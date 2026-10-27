@@ -1,3 +1,6 @@
+import guideText from "@orz/fixtures/attachment/guide.md?raw";
+import { group, resolve } from "@orz/fixtures/files.ts";
+import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
 import { codeContent } from "@orz/ui-code";
 import type { ContentRenderer, ContentSource } from "@orz/ui-content";
 import {
@@ -16,9 +19,6 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useContext } from "react";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
-import guideText from "./fixtures/attachment/guide.md?raw";
-import { group, resolve } from "./fixtures/files.ts";
-import { ATTACHMENT_RENDERERS } from "./fixtures/renderers.ts";
 
 const GFM = `# Release notes
 

@@ -1,10 +1,3 @@
-import { builtinThemes } from "@orz/themes";
-import { ThemeEditor } from "@orz/ui/components/theme-editor";
-import { ThemeMenu } from "@orz/ui/components/theme-menu";
-import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
-import { fn } from "storybook/test";
-import { withOwnStore } from "./decorators.tsx";
 import {
   ember,
   glacier,
@@ -12,7 +5,14 @@ import {
   PageSample,
   sampleCustomThemes,
   TerminalPane,
-} from "./fixtures/themes.tsx";
+} from "@orz/fixtures/themes.tsx";
+import { builtinThemes } from "@orz/themes";
+import { ThemeEditor } from "@orz/ui/components/theme-editor";
+import { ThemeMenu } from "@orz/ui/components/theme-menu";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
+import { useState } from "react";
+import { fn } from "storybook/test";
+import { withOwnStore } from "./decorators.tsx";
 
 /** The story in a page header over a sample page, with a terminal pane if asked. */
 function menuPage(terminal: boolean): Decorator {

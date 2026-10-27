@@ -1,7 +1,7 @@
+import toneUrl from "@orz/fixtures/attachment/tone.ogg?url&no-inline";
 import { AudioPlayer } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withWidth } from "./decorators.tsx";
-import toneUrl from "./fixtures/attachment/tone.ogg?url&no-inline";
 
 /**
  * An audio file as the shared control bar alone, or under a header. The keys

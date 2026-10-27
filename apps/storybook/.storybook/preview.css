@@ -18,6 +18,7 @@
    scans nothing, so this one spells out the files. */
 @source "../../../packages/*/src/**/*.{ts,tsx}";
 @source "../src";
+@source "../../fixtures/src";
 
 /* The --hex-* defaults sit on .orz-hex itself, so an override has to reach
    that element; :root lifts it above the package's own rule. */

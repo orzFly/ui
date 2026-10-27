@@ -1,3 +1,10 @@
+import {
+  ENCODING_SAMPLES,
+  reportCopy,
+  SAMPLE_PNG,
+  syntheticBytes,
+  syntheticSource,
+} from "@orz/fixtures/hex.ts";
 import { Button } from "@orz/ui/components/button";
 import { Input } from "@orz/ui/components/input";
 import {
@@ -12,13 +19,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fn } from "storybook/test";
 import { argsUpdater } from "./args.ts";
 import { withHeight } from "./decorators.tsx";
-import {
-  ENCODING_SAMPLES,
-  reportCopy,
-  SAMPLE_PNG,
-  syntheticBytes,
-  syntheticSource,
-} from "./fixtures/hex.ts";
 
 const PNG = bytesSource(SAMPLE_PNG);
 const EMPTY = new Uint8Array(0);

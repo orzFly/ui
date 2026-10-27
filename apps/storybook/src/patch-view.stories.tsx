@@ -1,3 +1,5 @@
+import { PATCHES } from "@orz/fixtures/files.ts";
+import seriesText from "@orz/fixtures/patch/series.patch?raw";
 import { Button } from "@orz/ui/components/button";
 import {
   codeContent,
@@ -8,8 +10,6 @@ import {
 import { useAttachmentViewer } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
-import { PATCHES } from "./fixtures/files.ts";
-import seriesText from "./fixtures/patch/series.patch?raw";
 
 const LOCK_LINES = Array.from(
   { length: LARGE_DIFF_LINES + 1 },

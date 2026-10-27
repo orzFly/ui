@@ -1,3 +1,4 @@
+import { file } from "@orz/fixtures/files.ts";
 import { Button } from "@orz/ui/components/button";
 import {
   Content,
@@ -11,7 +12,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { withRenderers, withWidth } from "./decorators.tsx";
-import { file } from "./fixtures/files.ts";
 
 /**
  * Draws any file's text, with a wrap toggle in the surface's title bar when one is lent for this

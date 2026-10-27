@@ -1,3 +1,5 @@
+import { file, group, MIXED } from "@orz/fixtures/files.ts";
+import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
 import { Button } from "@orz/ui/components/button";
 import { isTextFile } from "@orz/ui-content";
 import {
@@ -15,8 +17,6 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { argsUpdater } from "./args.ts";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
-import { file, group, MIXED } from "./fixtures/files.ts";
-import { ATTACHMENT_RENDERERS } from "./fixtures/renderers.ts";
 
 const MIXED_ITEMS: AttachmentItem[] = MIXED.map((f) => ({ ...f, key: f.name }));
 

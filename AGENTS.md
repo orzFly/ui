@@ -20,8 +20,9 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   callback or a prop.
 - A dependency heavy enough to matter to a consumer's bundle (CodeMirror, unified, shiki) gets its own
   package rather than landing in `@orz/ui`.
-- `apps/<dir>` holds workspace apps: the Storybook demo site (`apps/storybook`) and the docs site
-  (`apps/docs`, see **Docs site**). They are `"private": true` and never published.
+- `apps/<dir>` holds workspace apps: the Storybook demo site (`apps/storybook`), the docs site
+  (`apps/docs`, see **Docs site**), and the sample data both draw on (`apps/fixtures`, see
+  below). They are `"private": true` and never published.
 - Every JS entry in a package's `exports` lists the `@orz/source` condition first, pointing at
   `src/`, then `types` and `default` pointing at `dist/`. Only workspace apps set that condition
   (Vite `resolve.conditions`, tsconfig `customConditions`), so they run on source with no watch
@@ -97,9 +98,12 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   `tags: ["edge", "!autodocs"]`, which keeps them off the docs page and out of the sidebar until its
   tag filter selects `edge`. A story that only repeats another under a fixed theme is not kept; the
   toolbar picks the theme.
-- Shared fixtures live in `apps/storybook/src/fixtures/`. Stories never import from a package's
-  `test/`: a story wants a showcase and a test wants exact cases, and each is free to change without
-  the other. `apps/storybook/test/stories.test.ts` holds every story file to the title, opening-story
+- Shared fixtures live in `@orz/fixtures` (`apps/fixtures/src/`), which stories and the docs site's
+  demos both import by file (`@orz/fixtures/files.ts`, `@orz/fixtures/asciinema/session.cast?raw`).
+  It has no build: its `exports` point straight at `src/`, so only a Vite app can import it, and an
+  app that does adds `apps/fixtures/src` to its Tailwind `@source`. Stories never import from a
+  package's `test/`: a story wants a showcase and a test wants exact cases, and each is free to
+  change without the other. `apps/storybook/test/stories.test.ts` holds every story file to the title, opening-story
   and edge-tag rules; the file-name rule is not tested.
 - Shipped CSS lives at the package root (`styles.css`, `vendor/`), not in `src/`. `tsc` never
   touches it, `files` lists it, and `exports` points straight at it.

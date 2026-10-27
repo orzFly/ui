@@ -225,6 +225,36 @@ It reads up to 8 bytes at the selection start and shows them as binary, Int8 to 
 Uint64, Float16, Float32 and Float64. A row wider than the selection is dimmed but still shows the
 value read from the bytes after it; `—` marks a value that would run past the end of the source.
 
+## `hexContent`
+
+A renderer for the `@orz/ui-content` registry, from its own entry point so that an app with no
+registry never loads one. `@orz/ui-content` is an optional peer dependency, needed only for this
+import.
+
+```tsx
+import { ContentRenderers } from "@orz/ui-content";
+import { imageContent } from "@orz/ui-content/attachment";
+import { codeContent } from "@orz/ui-code";
+import { hexContent } from "@orz/ui-hex/content";
+
+// Last: it takes every binary file the renderers before it pass on.
+const RENDERERS = [imageContent(), codeContent, hexContent];
+
+<ContentRenderers renderers={RENDERERS}>{app}</ContentRenderers>;
+```
+
+It accepts a file with a `url` that is not text (by `isTextFile`) and is not `deleted`, in the
+`viewer` placement only: an attachment viewer then shows a `.bin` or a `.zip` as a `HexView`
+instead of a download pane, while a document keeps its link. The file is fetched once into a
+`Blob`, and the view pages through it. The view fills the pane, whose height is the viewer's
+`--attachment-pane-height`, with `columns="auto"`, so a phone gets fewer bytes per row rather than a
+sideways scroll. While it loads, the registry's fallback shows; a fetch that fails shows
+the message and a Retry button.
+
+`HEX_PREVIEW_MAX_BYTES` is 64 MiB. A file whose declared `size` is over it is never fetched, and one
+that turns out over it once fetched is not drawn: both show the fallback link and "Too large to
+preview — download to view."
+
 ## Keyboard and copy
 
 | Key | Moves the caret |
@@ -534,4 +564,5 @@ or `overwrite` itself, because the `paste` event carries no modifier keys.
 | Import | Contents |
 |---|---|
 | `@orz/ui-hex` | `HexView`, `HexEditor`, `HexInspector`, `createHexDocument`, `useHexDocumentState`, `HEX_ENCODINGS`, `bytesSource`, `blobSource`, `parseHexText`, `clipboardBytes`, `hexDigits`, `HEX_BYTES_TYPE`, `copyText`, `copyRange`, `hexByte`, `formatAddress`, `formatOffset`, `formatSize`, `addressDigits`, `MAX_COPY_BYTES`, types |
+| `@orz/ui-hex/content` | `hexContent`, `HEX_PREVIEW_MAX_BYTES` |
 | `@orz/ui-hex/styles.css` | the view, editor and inspector styles |

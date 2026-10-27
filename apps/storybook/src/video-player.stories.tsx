@@ -1,7 +1,7 @@
+import clipUrl from "@orz/fixtures/attachment/clip.webm?url&no-inline";
 import { VideoPlayer } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withWidth } from "./decorators.tsx";
-import clipUrl from "./fixtures/attachment/clip.webm?url&no-inline";
 
 /**
  * A video under the shared control bar. Focus the picture and use Space or

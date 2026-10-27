@@ -1,3 +1,12 @@
+import {
+  ember,
+  glacier,
+  Header,
+  PageSample,
+  sampleCustomThemes,
+  sampleTerminalThemes,
+  TerminalPane,
+} from "@orz/fixtures/themes.tsx";
 import { builtinThemes } from "@orz/themes";
 import { Button } from "@orz/ui/components/button";
 import { ThemeEditor } from "@orz/ui/components/theme-editor";
@@ -7,15 +16,6 @@ import { PaletteIcon } from "lucide-react";
 import { fn } from "storybook/test";
 import { argsUpdater } from "./args.ts";
 import { withOwnStore } from "./decorators.tsx";
-import {
-  ember,
-  glacier,
-  Header,
-  PageSample,
-  sampleCustomThemes,
-  sampleTerminalThemes,
-  TerminalPane,
-} from "./fixtures/themes.tsx";
 
 /** A page with both menus and a button, each opening the editor through the args. */
 const editorPage: Decorator = (Story, context) => {

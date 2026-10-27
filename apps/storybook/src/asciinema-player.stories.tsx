@@ -1,8 +1,8 @@
+import session from "@orz/fixtures/asciinema/session.cast?raw";
+import sessionV3 from "@orz/fixtures/asciinema/session-v3.cast?raw";
 import { AsciinemaPlayer } from "@orz/ui-asciinema";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withWidth } from "./decorators.tsx";
-import session from "./fixtures/asciinema/session.cast?raw";
-import sessionV3 from "./fixtures/asciinema/session-v3.cast?raw";
 
 /**
  * A recording played in the terminal slot's colours: pick a Terminal theme

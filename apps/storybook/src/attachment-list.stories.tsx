@@ -1,3 +1,5 @@
+import { file } from "@orz/fixtures/files.ts";
+import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
 import { Button } from "@orz/ui/components/button";
 import {
   type AttachmentItem,
@@ -6,8 +8,6 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Trash2Icon } from "lucide-react";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
-import { file } from "./fixtures/files.ts";
-import { ATTACHMENT_RENDERERS } from "./fixtures/renderers.ts";
 
 const LISTED: AttachmentItem[] = [
   "gradient.png",

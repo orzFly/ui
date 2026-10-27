@@ -1,0 +1,31 @@
+export const meta = {
+  title: "Log viewer",
+  description:
+    "A CI run: its logs, the change under test, a recording of the failing step and the run's artifacts, each drawn by the package Content picks for it.",
+  order: 3,
+  layout: "bare",
+  api: [
+    "ui-content/Content",
+    "ui-content/AttachmentList",
+    "ui-ansi/Content",
+    "ui-code/Content",
+    "ui-asciinema/Content",
+    "ui-hex/Content",
+  ],
+};
+
+import { DemoPage } from "../../demos/demo-page.tsx";
+import { LogViewer } from "../../demos/log-viewer/log-viewer.tsx";
+
+<DemoPage
+  guidelines={[
+    { route: "/guidelines/foundations/color/", title: "Color" },
+    { route: "/guidelines/foundations/layout-and-spacing/", title: "Layout & spacing" },
+    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
+    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
+    { route: "/guidelines/patterns/overlays/", title: "Overlays" },
+    { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
+  ]}
+>
+  <LogViewer />
+</DemoPage>

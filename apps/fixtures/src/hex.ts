@@ -64,7 +64,7 @@ export function syntheticByte(offset: number): number {
   return ((x >>> 0) + (offset & 15) * 0x3d) & 0xff;
 }
 
-export function syntheticBytes(size: number): Uint8Array {
+export function syntheticBytes(size: number): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(size);
   for (let i = 0; i < size; i++) bytes[i] = syntheticByte(i);
   return bytes;

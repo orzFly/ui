@@ -1,3 +1,4 @@
+import { PROVIDERS, QUALIFIERS } from "@orz/fixtures/query.ts";
 import {
   type CompiledQuerySchema,
   defineQuerySchema,
@@ -10,7 +11,6 @@ import { ClockIcon, SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fn } from "storybook/test";
 import { withWidth } from "./decorators.tsx";
-import { PROVIDERS, QUALIFIERS } from "./fixtures/query.ts";
 
 // Compiled once per mode at module load, as an app would: the schema is a
 // static table, and a new object per render would defeat memoised parsing.

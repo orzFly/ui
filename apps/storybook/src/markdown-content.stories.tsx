@@ -1,3 +1,5 @@
+import { file, group, resolve } from "@orz/fixtures/files.ts";
+import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
 import { Content } from "@orz/ui-content";
 import {
   attachmentLinks,
@@ -6,8 +8,6 @@ import {
 } from "@orz/ui-markdown";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
-import { file, group, resolve } from "./fixtures/files.ts";
-import { ATTACHMENT_RENDERERS } from "./fixtures/renderers.ts";
 import { registrationSnippet } from "./snippets.ts";
 
 // First, so it wins over the plain markdownContent() in the shared list.

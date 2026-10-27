@@ -23,15 +23,30 @@ importers:
       '@fontsource-variable/jetbrains-mono':
         specifier: ^5.3.0
         version: 5.3.0
+      '@orz/fixtures':
+        specifier: workspace:*
+        version: link:../fixtures
       '@orz/themes':
         specifier: workspace:*
         version: link:../../packages/themes
       '@orz/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@orz/ui-ansi':
+        specifier: workspace:*
+        version: link:../../packages/ui-ansi
+      '@orz/ui-asciinema':
+        specifier: workspace:*
+        version: link:../../packages/ui-asciinema
       '@orz/ui-code':
         specifier: workspace:*
         version: link:../../packages/ui-code
+      '@orz/ui-content':
+        specifier: workspace:*
+        version: link:../../packages/ui-content
+      '@orz/ui-hex':
+        specifier: workspace:*
+        version: link:../../packages/ui-hex
       '@pierre/diffs':
         specifier: ^1.6.1
         version: 1.6.1(@shikijs/themes@4.5.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -106,6 +121,49 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@22.20.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0))
 
+  apps/fixtures:
+    dependencies:
+      '@orz/query':
+        specifier: workspace:*
+        version: link:../../packages/query
+      '@orz/themes':
+        specifier: workspace:*
+        version: link:../../packages/themes
+      '@orz/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@orz/ui-ansi':
+        specifier: workspace:*
+        version: link:../../packages/ui-ansi
+      '@orz/ui-code':
+        specifier: workspace:*
+        version: link:../../packages/ui-code
+      '@orz/ui-content':
+        specifier: workspace:*
+        version: link:../../packages/ui-content
+      '@orz/ui-hex':
+        specifier: workspace:*
+        version: link:../../packages/ui-hex
+      '@orz/ui-markdown':
+        specifier: workspace:*
+        version: link:../../packages/ui-markdown
+      react:
+        specifier: ^19.3.1
+        version: 19.3.1
+      sonner:
+        specifier: ^2.0.8
+        version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)
+
   apps/storybook:
     dependencies:
       '@codemirror/autocomplete':
@@ -135,6 +193,9 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.5
+      '@orz/fixtures':
+        specifier: workspace:*
+        version: link:../fixtures
       '@orz/query':
         specifier: workspace:*
         version: link:../../packages/query
@@ -572,6 +633,9 @@ importers:
       '@orz/ui':
         specifier: workspace:*
         version: link:../ui
+      '@orz/ui-content':
+        specifier: workspace:*
+        version: link:../ui-content
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)

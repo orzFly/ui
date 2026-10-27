@@ -1,8 +1,8 @@
+import { PLAIN_DIFF } from "@orz/fixtures/files.ts";
 import { codeContent, patchContent } from "@orz/ui-code";
 import { Markdown } from "@orz/ui-markdown";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRenderers, withWidth } from "./decorators.tsx";
-import { PLAIN_DIFF } from "./fixtures/files.ts";
 import { registrationSnippet } from "./snippets.ts";
 
 const SAMPLE = `## Fetching a task

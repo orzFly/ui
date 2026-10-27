@@ -1,11 +1,11 @@
+import { file, group } from "@orz/fixtures/files.ts";
+import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
 import {
   AttachmentLink,
   DeletedAttachmentMark as DeletedAttachmentMarkView,
 } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
-import { file, group } from "./fixtures/files.ts";
-import { ATTACHMENT_RENDERERS } from "./fixtures/renderers.ts";
 
 /**
  * An inline link to a file: a LinkChip wearing the file's type icon. A plain click opens the
