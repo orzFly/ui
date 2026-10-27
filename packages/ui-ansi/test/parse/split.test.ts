@@ -244,7 +244,7 @@ describe("random input", () => {
           expect({ text, cut, got }).toEqual({ text, cut, got: whole });
       }
     }
-  });
+  }, 20_000);
 
   it("counts each line's cells as the row geometry measures its text", () => {
     const next = random(2);

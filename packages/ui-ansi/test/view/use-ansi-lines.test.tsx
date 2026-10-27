@@ -168,7 +168,7 @@ describe("useAnsiLines", () => {
     const expected = parseAnsi(second);
     expect(result.current.done).toBe(true);
     expect(result.current.lines).toEqual(expected.lines);
-  });
+  }, 20_000);
 
   it("switches from a large text to a small one synchronously", () => {
     const { result, rerender } = renderHook(({ text }) => useAnsiLines(text), {

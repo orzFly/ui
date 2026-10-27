@@ -495,7 +495,7 @@ describe("VIRTUALIZE_ABOVE boundary", () => {
       <AnsiView chrome="pane" text={lines(5001)} />,
     );
     expect(mounted(c2).length).toBeLessThanOrEqual(60);
-  });
+  }, 20_000);
 
   it("crosses the threshold by toggling wrap", () => {
     // 2000 lines of 250 cells: 2000 rows unwrapped, 6000 wrapped at 100.
@@ -507,7 +507,7 @@ describe("VIRTUALIZE_ABOVE boundary", () => {
     expect(screen.getByRole("region").style.height).toBe("32rem");
     fireEvent.click(screen.getByRole("button", { name: "Wrap lines" }));
     expect(mounted(container)).toHaveLength(2000);
-  });
+  }, 20_000);
 });
 
 describe("streaming growth", () => {

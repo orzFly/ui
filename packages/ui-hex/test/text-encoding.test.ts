@@ -111,7 +111,15 @@ describe("encode round trip", () => {
       const asymmetric = new Set(ASYMMETRIC[id]);
       for (const [code, packed] of map) {
         const sequence = unpack(packed);
-        expect(bytes(decoding, String.fromCodePoint(code))).toEqual(sequence);
+        const encoded = bytes(decoding, String.fromCodePoint(code));
+        // Compared as strings first: one expect per entry was most of the
+        // test's time over gb18030's 63,000 entries.
+        if (encoded?.join() !== sequence.join()) {
+          expect([code.toString(16), encoded]).toEqual([
+            code.toString(16),
+            sequence,
+          ]);
+        }
         if (asymmetric.has(code)) continue;
         const back = decoder.decode(Uint8Array.from(sequence));
         if (back !== String.fromCodePoint(code)) {
