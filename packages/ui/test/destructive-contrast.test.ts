@@ -8,13 +8,15 @@ import {
 } from "@orz/themes";
 import { describe, expect, it } from "vitest";
 
-const BUTTON = readFileSync(
-  join(import.meta.dirname, "../src/components/button.tsx"),
-  "utf8",
-);
+const source = (file: string) =>
+  readFileSync(join(import.meta.dirname, "../src/components", file), "utf8");
+const BUTTON = source("button.tsx");
+const MENU = source("dropdown-menu.tsx");
 
-/** WCAG AA for normal-size text, which every button and badge label is. */
+/** WCAG AA for normal-size text, which every button, badge and menu label is. */
 const AA = 4.5;
+/** WCAG 1.4.11's floor for a graphical object such as a menu item's icon. */
+const NON_TEXT = 3;
 
 type Rgb = [number, number, number];
 type Lab = [number, number, number];
@@ -81,12 +83,16 @@ function contrast(x: Rgb, y: Rgb): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-// Read off the variant rather than transcribed, so retuning the class without
+// Read off the class rather than transcribed, so retuning it without
 // re-measuring fails here instead of passing on a stale number.
-const MIX =
-  /text-\[color-mix\(in_oklab,var\(--destructive\),var\(--foreground\)_(\d+)%\)\]/.exec(
-    BUTTON,
-  );
+const MIX_CLASS =
+  /text-\[color-mix\(in_oklab,var\(--destructive\),var\(--foreground\)_(\d+)%\)\]/;
+const MIX = MIX_CLASS.exec(BUTTON);
+
+const failures = (rows: { name: string; ratio: number }[], floor: number) =>
+  rows
+    .filter((r) => r.ratio < floor)
+    .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`);
 
 describe("destructive variant contrast", () => {
   it("mixes --foreground into the label rather than using bare --destructive", () => {
@@ -106,10 +112,71 @@ describe("destructive variant contrast", () => {
         ratio: contrast(label, over(srgb(destructive), page, alpha)),
       }));
     });
-    expect(
-      rows
-        .filter((r) => r.ratio < AA)
-        .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`),
-    ).toEqual([]);
+    expect(failures(rows, AA)).toEqual([]);
+  });
+});
+
+describe("destructive menu item contrast", () => {
+  const share = (state: string) => {
+    const m = new RegExp(
+      `data-\\[variant=destructive\\]:${state}${MIX_CLASS.source}`,
+    ).exec(MENU);
+    return m ? Number(m[1]) / 100 : null;
+  };
+  const rest = share("");
+  const focus = share("focus:");
+
+  // Resting on the popover, and focused on bg-destructive/10 (dark: /20).
+  const surfaces = (scheme: string, tokens: Record<string, string>) => {
+    const popover = srgb(oklab(tokens.popover));
+    const tint = scheme === "dark" ? 0.2 : 0.1;
+    return [
+      { state: "rest", bg: popover },
+      {
+        state: "focus",
+        bg: over(srgb(oklab(tokens.destructive)), popover, tint),
+      },
+    ];
+  };
+
+  it("mixes --foreground into the label at rest and on focus", () => {
+    expect({ rest, focus }).toEqual({
+      rest: expect.any(Number),
+      focus: expect.any(Number),
+    });
+  });
+
+  it("clears AA in every palette and variant, at rest and on focus", () => {
+    const rows = PALETTES.flatMap(({ name, scheme, tokens }) => {
+      const destructive = oklab(tokens.destructive);
+      const foreground = oklab(tokens.foreground);
+      return surfaces(scheme, tokens).map(({ state, bg }) => ({
+        name: `${name} ${state}`,
+        ratio: contrast(
+          srgb(
+            mix(
+              destructive,
+              foreground,
+              (state === "rest" ? rest : focus) ?? 0,
+            ),
+          ),
+          bg,
+        ),
+      }));
+    });
+    expect(failures(rows, AA)).toEqual([]);
+  });
+
+  it("keeps the icon's bare --destructive above 3:1", () => {
+    expect(MENU).toContain(
+      "data-[variant=destructive]:*:[svg]:text-destructive",
+    );
+    const rows = PALETTES.flatMap(({ name, scheme, tokens }) =>
+      surfaces(scheme, tokens).map(({ state, bg }) => ({
+        name: `${name} ${state}`,
+        ratio: contrast(srgb(oklab(tokens.destructive)), bg),
+      })),
+    );
+    expect(failures(rows, NON_TEXT)).toEqual([]);
   });
 });
