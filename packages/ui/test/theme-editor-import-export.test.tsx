@@ -85,7 +85,7 @@ const rows = () =>
     "listitem",
   );
 const checkbox = (row: HTMLElement) =>
-  within(row).getByRole("checkbox") as HTMLInputElement;
+  within(row).getByRole("checkbox") as HTMLButtonElement;
 
 /**
  * Four entries, one per status: kept as is, renamed for a base theme's label,
@@ -135,9 +135,13 @@ describe("ThemeEditor: import", () => {
     );
 
     for (const row of [ok, renamed, adjusted]) {
-      expect(checkbox(row as HTMLElement).checked).toBe(true);
+      expect(checkbox(row as HTMLElement).getAttribute("aria-checked")).toBe(
+        "true",
+      );
     }
-    expect(checkbox(rejected as HTMLElement).checked).toBe(false);
+    expect(checkbox(rejected as HTMLElement).getAttribute("aria-checked")).toBe(
+      "false",
+    );
     expect(checkbox(rejected as HTMLElement).disabled).toBe(true);
     expect(themes.getCustomThemes()).toEqual([sunrise]);
     expect(button("Import 3")).toBeTruthy();

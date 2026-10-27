@@ -9,6 +9,7 @@ import {
 } from "../../lib/theme-file.ts";
 import { cn } from "../../lib/utils.ts";
 import { Button } from "../button.tsx";
+import { Checkbox } from "../checkbox.tsx";
 import { Textarea } from "../textarea.tsx";
 
 export interface ImportPanelProps {
@@ -251,13 +252,12 @@ function ImportRow({
       data-status={entry.status}
       className="flex items-start gap-2.5 rounded-lg border p-2.5"
     >
-      <input
+      <Checkbox
         id={id}
-        type="checkbox"
-        className="mt-0.5 size-4 shrink-0 accent-primary disabled:opacity-50"
+        className="mt-0.5"
         checked={checked}
         disabled={entry.theme === undefined}
-        onChange={(event) => onCheckedChange(event.target.checked)}
+        onCheckedChange={(next) => onCheckedChange(next === true)}
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center gap-2">

@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../src/components/card.tsx";
+import { Checkbox } from "../src/components/checkbox.tsx";
 import { ConfirmDialog } from "../src/components/confirm-dialog.tsx";
 import {
   Dialog,
@@ -128,6 +129,11 @@ const CASES: [file: string, slot: string, tree: ReactElement][] = [
       <CardContent>Body</CardContent>
       <CardFooter>Footer</CardFooter>
     </Card>,
+  ],
+  [
+    "checkbox",
+    "checkbox-indicator",
+    <Checkbox key="a" defaultChecked aria-label="Pick" />,
   ],
   [
     "confirm-dialog",
@@ -330,6 +336,12 @@ describe("every primitive renders", () => {
     expect(buffered.nextElementSibling?.getAttribute("data-slot")).toBe(
       "slider-range",
     );
+  });
+
+  it("checkbox is a checkbox that reports a mixed state", () => {
+    render(<Checkbox checked="indeterminate" aria-label="All ports" />);
+    const box = screen.getByRole("checkbox", { name: "All ports" });
+    expect(box.getAttribute("aria-checked")).toBe("mixed");
   });
 
   it("select and tooltip portal into a given container", () => {
