@@ -1,0 +1,33 @@
+export const meta = {
+  title: "Settings",
+  description:
+    "An app's settings: switches that apply as they flip, a profile form that guards its unsaved edits, the user's theme, and the one step that asks before it destroys.",
+  order: 1,
+  layout: "bare",
+  api: [
+    "ui/Primitives/Switch",
+    "ui/Primitives/Checkbox",
+    "ui/Primitives/RadioGroup",
+    "ui/Primitives/Select",
+    "ui/ThemeMenu",
+    "ui/ThemeEditor",
+    "ui/UnsavedChangesDialog",
+    "ui/ConfirmDialog",
+  ],
+};
+
+import { DemoPage } from "../../demos/demo-page.tsx";
+import { Settings } from "../../demos/settings/settings.tsx";
+
+<DemoPage
+  guidelines={[
+    { route: "/guidelines/patterns/choosing-a-control/", title: "Choosing a control" },
+    { route: "/guidelines/patterns/forms/", title: "Forms" },
+    { route: "/guidelines/patterns/destructive-actions/", title: "Destructive actions" },
+    { route: "/guidelines/patterns/feedback/", title: "Feedback" },
+    { route: "/guidelines/foundations/theming/", title: "Theming" },
+    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
+  ]}
+>
+  <Settings />
+</DemoPage>
