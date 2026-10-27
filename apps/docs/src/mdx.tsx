@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { Code } from "./code.tsx";
+import { Do, DoDont, Dont } from "./do-dont.tsx";
 import { Example } from "./example.tsx";
 import { nav } from "./pages.ts";
 import { BASE, Link } from "./router.tsx";
@@ -182,6 +183,9 @@ export const mdxComponents = {
   td: (props: ComponentProps<"td">) => (
     <td className="border-b px-3 py-2 align-top" {...props} />
   ),
+  Do,
+  DoDont,
+  Dont,
   Doors,
   Example,
   LinkButton,
