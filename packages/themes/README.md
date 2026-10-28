@@ -65,6 +65,8 @@ import { github } from "@orz/themes/themes/github";
 | `github` | ✓ | ✓ |
 | `catppuccin` | Latte | Mocha, Frappé, Macchiato |
 | `gruvbox` | ✓ | ✓ |
+| `proGraphite`, `proNord`, `proSand`, `proMatcha` (`pro-graphite`, …) | ✓ | ✓ |
+| `proSakura`, `proLavender`, `proLagoon`, `proCitrus` (`pro-sakura`, …) | ✓ | ✓ |
 | `dracula` | | ✓ |
 | `nord` | | ✓ |
 | `tokyoNight` (`tokyo-night`) | | ✓ |
@@ -78,6 +80,13 @@ variants pick the dark flavour: Mocha (the default), Frappé and Macchiato, then
 where every background and text colour is the neutral grey of the same OKLab lightness, Latte
 included. It paints the published palette with no value adjusted, so a few of its pairs sit below
 the contrast floors the tests hold every other theme to; `test/palettes.ts` lists them.
+
+The eight Pro themes are the colour schemes of [Prohibitorum](https://github.com/TundraWork/Prohibitorum)'s
+console, in its order: Graphite, Nord, Sand and Matcha, then Sakura, Lavender, Lagoon and Citrus.
+They paint its colours as the browser resolves them, with no value adjusted, so ProCitrus's yellow
+primary is a fill too light to read as text and ProGraphite keeps a light sidebar ring; the tests
+list both. Prohibitorum draws a field's edge with its border, so `input` is the border mixed toward
+the foreground until it clears 3:1. `src/prohibitorum.ts` holds the mapping and what it derives.
 
 To add a theme, write a module in `src/themes/` and add it to `builtinThemes` in `src/builtin.ts`
 and to the exports in `src/index.ts`. The tests check every palette's tokens, its contrast, its
@@ -133,4 +142,5 @@ where it sets no selection, the selection is VS Code's fallback.
 | Nord | [nordtheme/alacritty](https://github.com/nordtheme/alacritty) | MIT |
 | Tokyo Night | [folke/tokyonight.nvim](https://github.com/folke/tokyonight.nvim) "night" | MIT header on the generated extras; the repository is Apache-2.0 |
 | One Dark | [One Dark Pro](https://github.com/Binaryify/OneDark-Pro) | MIT |
+| ProGraphite … ProCitrus | none upstream; Tailwind CSS 4.3.3's palette, UI tokens from [Prohibitorum](https://github.com/TundraWork/Prohibitorum) `6d3bc42` (see `src/prohibitorum.ts`) | Apache-2.0, see `NOTICE`; Tailwind CSS is MIT |
 | Monokai | [VS Code's built-in Monokai](https://github.com/microsoft/vscode/tree/main/extensions/theme-monokai) | MIT |

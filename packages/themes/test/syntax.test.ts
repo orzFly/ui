@@ -110,10 +110,13 @@ describe("syntax themes", () => {
   });
 
   it("never maps two palettes on one side to the same syntax theme", () => {
-    // Not a correctness requirement of pierre's, but a duplicate is always
-    // a copy-paste slip in a table this repetitive.
+    // Not a correctness requirement of pierre's, but a duplicate is a
+    // copy-paste slip in a table this repetitive. ProNord and ProLavender
+    // are Nord and Catppuccin's colours, so they share those on purpose.
+    const SHARED = new Set(["pro-nord", "pro-lavender"]);
     for (const scheme of ["light", "dark"] as const) {
       const mapped = builtinThemes
+        .filter((theme) => !SHARED.has(theme.id))
         .map((theme) => theme[scheme]?.syntax)
         .filter((s): s is string => s !== undefined);
       expect(new Set(mapped).size, scheme).toBe(mapped.length);

@@ -1,0 +1,18 @@
+@orz/themes
+
+The Pro themes (src/themes/pro-*.ts, with src/prohibitorum.ts) contain colour
+values from Prohibitorum, https://github.com/TundraWork/Prohibitorum,
+dashboard/src/styles/theme.css and schemes.css at commit 6d3bc42, licensed
+under the Apache License, Version 2.0 (LICENSE-Apache-2.0 in this package).
+
+They were modified: each value was resolved as a browser resolves it and
+stored as opaque hex, mapped onto this package's tokens, and the field edge,
+chart, diff and terminal colours, which Prohibitorum does not define, were
+derived from them.
+
+Prohibitorum's NOTICE reads:
+
+--------------------------------------------------------------------------------
+Prohibitorum
+Copyright 2026 Prohibitorum Authors (Jesse Cheng et al.)
+--------------------------------------------------------------------------------

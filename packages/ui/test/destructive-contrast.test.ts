@@ -122,8 +122,10 @@ const MIX = MIX_CLASS.exec(BUTTON);
  * Rows kept below a floor on purpose, by test and row name, each holding the
  * lowest ratio it may fall to: the palette's own, rounded down, so a change
  * that makes one worse still fails. Catppuccin paints its published colours
- * unadjusted (@orz/themes' src/themes/catppuccin.ts). On its light side
- * "default" is Latte and "mocha-gray" is Latte Gray.
+ * unadjusted (@orz/themes' src/themes/catppuccin.ts), and so do the
+ * Prohibitorum themes (src/prohibitorum.ts there), whose ProMatcha foreground
+ * and ProLavender's Latte one pull the label toward the tint. On Catppuccin's
+ * light side "default" is Latte and "mocha-gray" is Latte Gray.
  */
 const EXEMPT: Record<string, Record<string, number>> = {
   button: {
@@ -131,12 +133,17 @@ const EXEMPT: Record<string, Record<string, number>> = {
     "catppuccin light mocha-gray@0.2": 4.38,
     "catppuccin dark frappe@0.3": 4.18,
     "catppuccin dark frappe-gray@0.3": 4.13,
+    "pro-matcha light default@0.2": 4.32,
+    "pro-matcha dark default@0.3": 4.1,
+    "pro-lavender light default@0.2": 4.46,
   },
   "badge success": {
     "catppuccin light default@0.2": 4.21,
     "catppuccin light mocha-gray@0.2": 4.19,
     "catppuccin dark frappe@0.3": 3.97,
     "catppuccin dark frappe-gray@0.3": 3.92,
+    "pro-matcha light default@0.2": 4.45,
+    "pro-matcha dark default@0.3": 4.16,
   },
   "badge warning": {
     "catppuccin light default@0.1": 4.27,
@@ -145,6 +152,8 @@ const EXEMPT: Record<string, Record<string, number>> = {
     "catppuccin light mocha-gray@0.2": 3.95,
     "catppuccin dark frappe@0.3": 3.97,
     "catppuccin dark frappe-gray@0.3": 3.91,
+    "pro-matcha light default@0.2": 4.38,
+    "pro-matcha dark default@0.3": 4.09,
   },
 };
 

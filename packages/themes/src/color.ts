@@ -34,6 +34,34 @@ export function oklchOf(hex: string): string {
   return `oklch(${round(l, 3)} ${round(chroma, 3)} ${round(hue, 3)})`;
 }
 
+const channels = (hex: string) =>
+  [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
+
+/** `#rrggbb` holding `amount` (0–1) of `to` over `from`, as `color-mix(in srgb, …)` mixes. */
+export function mixOf(from: string, to: string, amount: number): string {
+  const b = channels(to);
+  return `#${channels(from)
+    .map((v, i) =>
+      Math.round(v + (b[i] - v) * amount)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
+}
+
+/** WCAG 2.x contrast ratio between two `#rrggbb` colours. */
+export function contrastOf(x: string, y: string): number {
+  const luminance = (hex: string) => {
+    const [r, g, b] = channels(hex).map((v) => {
+      const c = v / 255;
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [high, low] = [luminance(x), luminance(y)].sort((a, b) => b - a);
+  return (high + 0.05) / (low + 0.05);
+}
+
 /** The neutral grey `#rrggbb` with the OKLab lightness of `hex`. */
 export function grayOf(hex: string): string {
   // With a = b = 0 the three cone responses are equal, so linear R = G = B = L³.

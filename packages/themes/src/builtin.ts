@@ -7,6 +7,14 @@ import { monokai } from "./themes/monokai.ts";
 import { nord } from "./themes/nord.ts";
 import { oneDark } from "./themes/one-dark.ts";
 import { picotera } from "./themes/picotera.ts";
+import { proCitrus } from "./themes/pro-citrus.ts";
+import { proGraphite } from "./themes/pro-graphite.ts";
+import { proLagoon } from "./themes/pro-lagoon.ts";
+import { proLavender } from "./themes/pro-lavender.ts";
+import { proMatcha } from "./themes/pro-matcha.ts";
+import { proNord } from "./themes/pro-nord.ts";
+import { proSakura } from "./themes/pro-sakura.ts";
+import { proSand } from "./themes/pro-sand.ts";
 import { solarized } from "./themes/solarized.ts";
 import { tokyoNight } from "./themes/tokyo-night.ts";
 import { vs } from "./themes/vs.ts";
@@ -21,6 +29,14 @@ export const builtinThemes: readonly Theme[] = [
   github,
   catppuccin,
   gruvbox,
+  proGraphite,
+  proNord,
+  proSand,
+  proMatcha,
+  proSakura,
+  proLavender,
+  proLagoon,
+  proCitrus,
   dracula,
   nord,
   tokyoNight,

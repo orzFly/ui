@@ -31,11 +31,16 @@ export const resolvedPalettes: { name: string; tokens: Tokens }[] =
  * Pairs kept below a test's floor on purpose, by test and row name, each
  * holding the lowest ratio it may fall to: the palette's own, rounded down, so
  * a change that makes one worse still fails. Catppuccin is used as published;
- * see src/themes/catppuccin.ts.
+ * see src/themes/catppuccin.ts. So are the Prohibitorum themes: ProCitrus's
+ * primary is a yellow fill that Prohibitorum never sets as text, and
+ * ProGraphite keeps Prohibitorum's lighter sidebar ring.
  */
 // On the light side "default" is Latte and "mocha-gray" is Latte Gray, which
 // every Gray variant paints; on the dark side each id is its own flavour.
 const EXEMPT: Record<string, Record<string, number>> = {
+  primary: {
+    "pro-citrus light default link": 1.32,
+  },
   text: {
     "catppuccin light default muted-foreground/background": 4.36,
     "catppuccin light default muted-foreground/muted": 3.19,
@@ -77,6 +82,7 @@ const EXEMPT: Record<string, Record<string, number>> = {
     "catppuccin light mocha-gray ring/popover": 2.81,
     "catppuccin light mocha-gray ring/muted": 2.05,
     "catppuccin light mocha-gray sidebar-ring/sidebar": 2.61,
+    "pro-graphite light default sidebar-ring/sidebar": 2.47,
   },
 };
 

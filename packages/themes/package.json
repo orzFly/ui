@@ -2,7 +2,7 @@
   "name": "@orz/themes",
   "version": "0.1.0",
   "description": "Theme palettes for @orz/ui and terminals as plain data, with light/dark palettes and variants",
-  "license": "BSD-3-Clause",
+  "license": "BSD-3-Clause AND Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/orzFly/ui.git",
@@ -23,7 +23,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE",
+    "LICENSE-Apache-2.0"
   ],
   "publishConfig": {
     "access": "public"
