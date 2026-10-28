@@ -6,13 +6,21 @@ export const meta = {
   api: ["ui/Primitives/Input", "ui/Primitives/Card", "ui/Primitives/Table"],
 };
 
-import { ReleasePanel } from "../../../examples/typography/release-panel.tsx";
+import { AlignedTestTimes } from "../../../examples/typography/aligned-test-times.tsx";
+import { RaggedTestTimes } from "../../../examples/typography/ragged-test-times.tsx";
+import { RunSummary } from "../../../examples/typography/run-summary.tsx";
+import { TruncatedSubjects } from "../../../examples/typography/truncated-subjects.tsx";
 
 **Set the interface in `text-sm`, step down to `text-xs` for what is secondary, and up to
 `text-base` for a title.** Hierarchy comes from size, weight and the muted colour together, never
 from a fourth size.
 
-<Example of={ReleasePanel} />
+<Example of={RunSummary} />
+
+The pull request demo's CI run, at every row of the scale below: the run is the card's title, the
+jobs and the review are body text, the column headers and the reviewer are secondary, and the branch,
+the commit and `retryOnce` are monospace. The times line up because they are `tabular-nums`, and
+the review stops at a readable width however wide the card grows.
 
 ## The scale
 
@@ -48,12 +56,12 @@ every digit is the same width and a column of sizes lines up on the decimal poin
 already gives every `<time>` element `tabular-nums`; a date or time you render belongs in one.
 
 <DoDont>
-  <Do show={<div className="grid w-24 text-right text-sm tabular-nums"><span>412.6</span><span>88.1</span><span>31.0</span></div>}>
+  <Do show={<AlignedTestTimes />}>
     Set compared numbers in `tabular-nums`, right-aligned, with the same number of decimals.
   </Do>
-  <Dont show={<div className="grid w-24 text-right text-sm"><span>412.6</span><span>88.1</span><span>31</span></div>}>
-    Leave proportional digits in a column, or vary the decimals, so the eye has to read every value
-    to compare two.
+  <Dont show={<RaggedTestTimes />}>
+    Leave proportional digits in a column, or vary the decimals or the units, so the eye has to read
+    every value to compare two.
   </Dont>
 </DoDont>
 
@@ -64,6 +72,11 @@ A single-line label that may be long takes `truncate` (or `min-w-0` on the flex 
 or it never shrinks); the full text stays reachable somewhere other than a hover, because a
 `title` tooltip does not exist on a touchscreen. A long unbroken string in a block, such as a URL or
 a hash, takes `break-words` so it cannot push the layout sideways.
+
+<Example of={TruncatedSubjects} />
+
+The Mail demo's subjects, cut to one line in the list. Pick one and the heading beside the list
+shows it whole, wrapping where it has to: the full text is a click or a tap away, not a hover.
 
 ## On each platform
 

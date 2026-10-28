@@ -73,6 +73,44 @@ describe("content", () => {
   });
 });
 
+describe("demos", () => {
+  const demos = pages.filter(
+    ({ route }) => route.startsWith("/demos/") && route !== "/demos/",
+  );
+  const guidelines = pages.filter(
+    ({ route }) => route.startsWith("/guidelines/") && route !== "/guidelines/",
+  );
+
+  it.each(demos)(
+    "$file names the guidelines it puts into practice",
+    ({ meta }) => {
+      expect(meta.guidelines ?? []).not.toHaveLength(0);
+    },
+  );
+
+  it("name guideline pages that exist, once each, with where to look", () => {
+    for (const { file, meta } of demos) {
+      const named = (meta.guidelines ?? []).map(({ route }) => route);
+      expect(new Set(named).size, file).toBe(named.length);
+      for (const { route, where } of meta.guidelines ?? []) {
+        expect(
+          guidelines.some((page) => page.route === route),
+          `${file}: ${route}`,
+        ).toBe(true);
+        expect(where, `${file}: ${route}`).toMatch(/^\S.*\.$/s);
+      }
+    }
+  });
+
+  it.each(guidelines)("$file is put into practice by a demo", ({ route }) => {
+    expect(
+      demos.some(({ meta }) =>
+        meta.guidelines?.some((guideline) => guideline.route === route),
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("stories", () => {
   const GUIDELINES = /\bguidelines:\s*["'`]([^"'`]+)["'`]/g;
 

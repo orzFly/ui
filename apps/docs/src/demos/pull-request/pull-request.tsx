@@ -81,9 +81,11 @@ function AppBar() {
         <span className="px-1 text-muted-foreground">/</span>
         <span className="font-semibold">{name}</span>
       </p>
-      <span className="ml-auto" title={`Signed in as ${PULL_REQUEST_ME}`}>
+      <p className="ml-auto flex items-center gap-2 text-muted-foreground text-sm">
+        <span className="sr-only">Signed in as</span>
+        <span className="max-sm:hidden">{PULL_REQUEST_ME}</span>
         <UserAvatar login={PULL_REQUEST_ME} size="default" />
-      </span>
+      </p>
     </header>
   );
 }

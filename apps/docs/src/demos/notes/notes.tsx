@@ -1,6 +1,19 @@
 import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
 import { Button } from "@orz/ui/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@orz/ui/components/dropdown-menu";
 import { Skeleton } from "@orz/ui/components/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@orz/ui/components/tooltip";
 import { cn } from "@orz/ui/lib/utils";
 import { EditorShortcutsHelp } from "@orz/ui-codemirror/components/editor-shortcuts-help";
 import { MarkdownEditor } from "@orz/ui-codemirror/components/markdown-editor";
@@ -8,8 +21,14 @@ import { ContentRenderers } from "@orz/ui-content";
 import { AttachmentViewerProvider } from "@orz/ui-content/attachment";
 import { attachmentLinks, Markdown, markdownEmbeds } from "@orz/ui-markdown";
 import { mermaidContent } from "@orz/ui-mermaid";
-import { ArrowLeftIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  EllipsisIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useDeferredValue, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
 import { noteCompletions } from "./completions.ts";
 import { type ListedNote, NoteList } from "./note-list.tsx";
@@ -167,6 +186,25 @@ export function Notes() {
     setFresh(id);
   };
 
+  // Nothing is asked first: the note comes back from the toast, where it was.
+  const remove = (id: string) => {
+    const at = notes.findIndex((each) => each.id === id);
+    const gone = notes[at];
+    if (!gone) return;
+    const rest = notes.filter((each) => each.id !== id);
+    setNotes(rest);
+    setView({ id: rest[Math.min(at, rest.length - 1)]?.id ?? "", open: false });
+    toast(`Deleted “${titleOf(gone.body)}”`, {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setNotes((list) => [...list.slice(0, at), gone, ...list.slice(at)]);
+          setView({ id, open: true });
+        },
+      },
+    });
+  };
+
   const edit = (id: string, body: string) =>
     setNotes((list) =>
       list.map((each) =>
@@ -177,153 +215,185 @@ export function Notes() {
     );
 
   return (
-    <ContentRenderers renderers={RENDERERS}>
-      <AttachmentViewerProvider>
-        <div className="flex h-full overflow-hidden">
-          <nav
-            aria-label="Notebook"
-            className={cn(
-              "flex min-w-0 flex-1 flex-col md:w-72 md:flex-none md:border-r",
-              view.open && "max-md:hidden",
-            )}
-          >
-            <NoteList
-              notes={shown}
-              selected={view.id}
-              query={query}
-              onQuery={setQuery}
-              tags={tags}
-              chosen={active}
-              onToggleTag={(tag) =>
-                setChosen((was) => {
-                  const next = new Set(was);
-                  if (!next.delete(tag)) next.add(tag);
-                  return next;
-                })
-              }
-              onClear={() => {
-                setQuery("");
-                setChosen(new Set());
-              }}
-              onOpen={open}
-              onNew={create}
-            />
-          </nav>
-          {note && (
-            <article
-              aria-labelledby="note-title"
+    <TooltipProvider>
+      <ContentRenderers renderers={RENDERERS}>
+        <AttachmentViewerProvider>
+          <div className="flex h-full overflow-hidden">
+            <nav
+              aria-label="Notebook"
               className={cn(
-                "flex min-w-0 flex-1 flex-col",
-                !view.open && "max-md:hidden",
+                "flex min-w-0 flex-1 flex-col md:w-72 md:flex-none md:border-r",
+                view.open && "max-md:hidden",
               )}
             >
-              <header className="flex shrink-0 items-center gap-2 border-b px-2 py-2 md:px-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="md:hidden"
-                  aria-label="Back to notes"
-                  onClick={() => setView((was) => ({ ...was, open: false }))}
-                >
-                  <ArrowLeftIcon />
-                </Button>
-                <div className="min-w-0 flex-1">
-                  <h2
-                    id="note-title"
-                    className="truncate font-semibold leading-snug"
+              <NoteList
+                notes={shown}
+                selected={view.id}
+                query={query}
+                onQuery={setQuery}
+                tags={tags}
+                chosen={active}
+                onToggleTag={(tag) =>
+                  setChosen((was) => {
+                    const next = new Set(was);
+                    if (!next.delete(tag)) next.add(tag);
+                    return next;
+                  })
+                }
+                onClear={() => {
+                  setQuery("");
+                  setChosen(new Set());
+                }}
+                onOpen={open}
+                onNew={create}
+              />
+            </nav>
+            {note && (
+              <article
+                aria-labelledby="note-title"
+                className={cn(
+                  "flex min-w-0 flex-1 flex-col",
+                  !view.open && "max-md:hidden",
+                )}
+              >
+                <header className="flex shrink-0 items-center gap-2 border-b px-2 py-2 md:px-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                    aria-label="Back to notes"
+                    onClick={() => setView((was) => ({ ...was, open: false }))}
                   >
-                    {titleOf(note.body)}
-                  </h2>
-                  <p className="truncate text-muted-foreground text-xs">
-                    {note.folder} · Edited{" "}
-                    <time dateTime={note.updated}>
-                      {STAMP.format(new Date(note.updated))} UTC
-                    </time>
-                  </p>
-                </div>
-                <Segmented
-                  label="View"
-                  options={MODES.map(({ mode: value, label }) => ({
-                    value,
-                    label,
-                  }))}
-                  pressed={mode}
-                  onPress={setMode}
-                  className="max-lg:hidden"
-                />
-                <Segmented
-                  label="View"
-                  options={[
-                    { value: "edit", label: "Edit" },
-                    { value: "preview", label: "Preview" },
-                  ]}
-                  pressed={phoneEditing ? "edit" : "preview"}
-                  onPress={(value) => setPhoneEditing(value === "edit")}
-                  className="lg:hidden"
-                />
-                <div
-                  className={cn(
-                    mode === "preview" && "lg:hidden",
-                    !phoneEditing && "max-lg:hidden",
-                  )}
-                >
-                  <EditorShortcutsHelp />
-                </div>
-              </header>
-              <div className="flex min-h-0 flex-1">
-                <section
-                  aria-label="Markdown"
-                  className={cn(
-                    "flex min-w-0 flex-1 flex-col",
-                    mode === "preview" && "lg:hidden",
-                    !phoneEditing && "max-lg:hidden",
-                    mode === "split" && "lg:border-r",
-                  )}
-                >
-                  <MarkdownEditor
-                    key={note.id}
-                    initialValue={note.body}
-                    ariaLabel="Note"
-                    placeholder="Start with a # heading. Type / at the start of a line for a block."
-                    autoFocus={fresh === note.id}
-                    onChange={(body) => edit(note.id, body)}
-                    extensions={extensions}
-                    className="h-full min-h-0 rounded-none border-0 px-2 py-2 focus-within:ring-0 md:px-3 dark:bg-transparent"
-                  />
-                </section>
-                <section
-                  aria-label="Preview"
-                  className={cn(
-                    "min-w-0 flex-1 overflow-y-auto px-4 py-4 md:px-6",
-                    mode === "edit" && "lg:hidden",
-                    phoneEditing && "max-lg:hidden",
-                  )}
-                >
-                  {preview.trim() === "" ? (
-                    <p className="text-muted-foreground text-sm">
-                      Nothing to preview yet.
+                    <ArrowLeftIcon />
+                  </Button>
+                  <div className="min-w-0 flex-1">
+                    <h2
+                      id="note-title"
+                      className="truncate font-semibold leading-snug"
+                    >
+                      {titleOf(note.body)}
+                    </h2>
+                    <p className="truncate text-muted-foreground text-xs">
+                      {note.folder} · Edited{" "}
+                      <time dateTime={note.updated}>
+                        {STAMP.format(new Date(note.updated))} UTC
+                      </time>
                     </p>
-                  ) : (
-                    // A file a note links or embeds is addressed by a blob: URL, which the
-                    // prerender cannot mint the same as the browser.
-                    <ClientOnly fallback={<PreviewSkeleton />}>
-                      <Markdown
-                        plugins={PLUGINS}
-                        className="mx-auto max-w-prose"
+                  </div>
+                  <Segmented
+                    label="View"
+                    options={MODES.map(({ mode: value, label }) => ({
+                      value,
+                      label,
+                    }))}
+                    pressed={mode}
+                    onPress={setMode}
+                    className="max-lg:hidden"
+                  />
+                  <Segmented
+                    label="View"
+                    options={[
+                      { value: "edit", label: "Edit" },
+                      { value: "preview", label: "Preview" },
+                    ]}
+                    pressed={phoneEditing ? "edit" : "preview"}
+                    onPress={(value) => setPhoneEditing(value === "edit")}
+                    className="lg:hidden"
+                  />
+                  <div
+                    className={cn(
+                      mode === "preview" && "lg:hidden",
+                      !phoneEditing && "max-lg:hidden",
+                    )}
+                  >
+                    <EditorShortcutsHelp />
+                  </div>
+                  <DropdownMenu>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="More actions"
+                          >
+                            <EllipsisIcon />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>More actions</TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem onSelect={create}>
+                        <PlusIcon />
+                        New note
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={() => remove(note.id)}
                       >
-                        {preview}
-                      </Markdown>
-                    </ClientOnly>
-                  )}
-                </section>
-              </div>
-              <footer className="shrink-0 border-t px-4 py-1.5 text-muted-foreground text-xs">
-                {wordCount(note.body)} words · Kept in this tab only
-              </footer>
-            </article>
-          )}
-        </div>
-      </AttachmentViewerProvider>
-    </ContentRenderers>
+                        <Trash2Icon />
+                        Delete note
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </header>
+                <div className="flex min-h-0 flex-1">
+                  <section
+                    aria-label="Markdown"
+                    className={cn(
+                      "flex min-w-0 flex-1 flex-col",
+                      mode === "preview" && "lg:hidden",
+                      !phoneEditing && "max-lg:hidden",
+                      mode === "split" && "lg:border-r",
+                    )}
+                  >
+                    <MarkdownEditor
+                      key={note.id}
+                      initialValue={note.body}
+                      ariaLabel="Note"
+                      placeholder="Start with a # heading. Type / at the start of a line for a block."
+                      autoFocus={fresh === note.id}
+                      onChange={(body) => edit(note.id, body)}
+                      extensions={extensions}
+                      className="h-full min-h-0 rounded-none border-0 px-2 py-2 focus-within:ring-0 md:px-3 dark:bg-transparent"
+                    />
+                  </section>
+                  <section
+                    aria-label="Preview"
+                    className={cn(
+                      "min-w-0 flex-1 overflow-y-auto px-4 py-4 md:px-6",
+                      mode === "edit" && "lg:hidden",
+                      phoneEditing && "max-lg:hidden",
+                    )}
+                  >
+                    {preview.trim() === "" ? (
+                      <p className="text-muted-foreground text-sm">
+                        Nothing to preview yet.
+                      </p>
+                    ) : (
+                      // A file a note links or embeds is addressed by a blob: URL, which the
+                      // prerender cannot mint the same as the browser.
+                      <ClientOnly fallback={<PreviewSkeleton />}>
+                        <Markdown
+                          plugins={PLUGINS}
+                          className="mx-auto max-w-prose"
+                        >
+                          {preview}
+                        </Markdown>
+                      </ClientOnly>
+                    )}
+                  </section>
+                </div>
+                <footer className="shrink-0 border-t px-4 py-1.5 text-muted-foreground text-xs">
+                  {wordCount(note.body)} words · Kept in this tab only
+                </footer>
+              </article>
+            )}
+          </div>
+        </AttachmentViewerProvider>
+      </ContentRenderers>
+    </TooltipProvider>
   );
 }

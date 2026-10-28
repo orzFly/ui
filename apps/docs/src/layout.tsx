@@ -17,8 +17,9 @@ import {
   SearchIcon,
   SettingsIcon,
 } from "lucide-react";
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { ClientOnly } from "./hydrated.tsx";
+import { inTheDemosToc } from "./in-the-demos.tsx";
 import type { PageMeta, TocEntry } from "./page.ts";
 import { nav } from "./pages.ts";
 import { BASE, Link, useRouter } from "./router.tsx";
@@ -276,7 +277,19 @@ function useActiveHeading(toc: TocEntry[]): string | undefined {
   return active;
 }
 
-export function Toc({ toc, meta }: { toc: TocEntry[]; meta: PageMeta }) {
+export function Toc({
+  toc: headings,
+  meta,
+  route,
+}: {
+  toc: TocEntry[];
+  meta: PageMeta;
+  route: string;
+}) {
+  const toc = useMemo(
+    () => [...headings, ...inTheDemosToc(route)],
+    [headings, route],
+  );
   const active = useActiveHeading(toc);
   const api = meta.api ?? [];
   if (toc.length === 0 && api.length === 0) return null;

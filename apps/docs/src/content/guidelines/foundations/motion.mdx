@@ -3,18 +3,30 @@ export const meta = {
   description:
     "Short, quiet and only where it explains a change: where something came from, or where it went.",
   order: 14,
-  api: ["ui/Primitives/Dialog", "ui/Primitives/Sheet", "ui/Primitives/Skeleton", "ui/Hooks/useAutoHideHeader"],
+  api: [
+    "ui/Primitives/Dialog",
+    "ui/Primitives/Sheet",
+    "ui/Primitives/Skeleton",
+    "ui/Primitives/DropdownMenu",
+    "ui/Primitives/Tooltip",
+    "ui/Hooks/useAutoHideHeader",
+    "ui/Hooks/useScrollInsets",
+  ],
 };
 
-import { ArrivingRows } from "../../../examples/motion/arriving-rows.tsx";
+import { ArrivingJobs } from "../../../examples/motion/arriving-jobs.tsx";
+import { OverlayMotion } from "../../../examples/motion/overlay-motion.tsx";
+import { SlidingHeight } from "../../../examples/motion/sliding-height.tsx";
+import { TurningChevron } from "../../../examples/motion/turning-chevron.tsx";
 
 **Animate only to show where something came from or went, keep it under 200ms, and leave it out for
 anyone who asked the system for less motion.** In a tool used all day, motion that does not explain
 anything is waiting time.
 
-<Example of={ArrivingRows} />
+<Example of={ArrivingJobs} />
 
-Each new step fades and drops in from just above in 150ms, so the eye finds the row that changed.
+Press **Re-run all jobs**. A `Skeleton` holds the place of the job that is running, and each job
+that finishes fades and drops in from just above in 150ms, so the eye finds the row that changed.
 With reduced motion turned on, the row fades in where it stands: `@orz/ui`'s stylesheet takes the
 drop out, as it does for its own overlays.
 
@@ -30,6 +42,13 @@ The components already animate, and an app adds little to them:
 | An auto-hiding header, once scrolling stops | Settles fully in or out | 150ms |
 | A block a link jumps to (`revealBlock`) | A tint that fades out | 2s |
 | A `Skeleton` | Pulses until the content arrives | until then |
+
+<Example of={OverlayMotion} />
+
+Mail's thread toolbar. Hover **Archive** for its tooltip, open **More actions** for the menu,
+**Keyboard shortcuts** for the dialog, and **Folders** for the sheet: each moves only as far as it
+takes to show where it came from. The `Skeleton` is in the run above; the auto-hiding header and
+`revealBlock` need a page that scrolls, and their Storybook pages show them.
 
 Motion of your own stays in the same range: 100 to 150ms for something small appearing, up to 200 to
 250ms for something that crosses the screen. Something entering eases out (fast, then settling);
@@ -51,12 +70,11 @@ thing go.
   `Skeleton` stops by being replaced.
 
 <DoDont>
-  <Do>
-    Put movement of your own behind `motion-safe:`, as in
-    `motion-safe:transition-transform hover:translate-x-1`, so only people who have not asked for
-    less see it.
+  <Do show={<TurningChevron />}>
+    Put movement of your own behind `motion-safe:`, as in a chevron that turns with
+    `motion-safe:transition-transform`, so only people who have not asked for less see it.
   </Do>
-  <Dont>
+  <Dont show={<SlidingHeight />}>
     Animate layout (height, width, position of large areas) or loop an animation for attention. It
     costs frames on a phone and makes some readers dizzy.
   </Dont>

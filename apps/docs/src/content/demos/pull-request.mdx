@@ -6,6 +6,7 @@ export const meta = {
   layout: "bare",
   api: [
     "ui/Primitives/Tabs",
+    "ui/Primitives/Toaster",
     "ui-markdown/Markdown",
     "ui-codemirror/MarkdownEditor",
     "ui-content/Content",
@@ -16,21 +17,58 @@ export const meta = {
     "ui-asciinema/Content",
     "ui-hex/Content",
   ],
+  guidelines: [
+    {
+      route: "/guidelines/foundations/color/",
+      where:
+        "A check's icon is a tick or a cross, named for a screen reader, so colour is never the only sign, and the open job says “failed in 7s” in words. The +/− counts take the diff colours, and the logs the terminal theme.",
+    },
+    {
+      route: "/guidelines/foundations/typography/",
+      where:
+        "Hashes, branches and logs are monospaced, durations and counts are tabular, and a commit subject truncates rather than wrapping its row.",
+    },
+    {
+      route: "/guidelines/foundations/layout-and-spacing/",
+      where:
+        "Below lg the details column drops under the conversation. On a phone the jobs become a row above the log, and the tabs scroll sideways.",
+    },
+    {
+      route: "/guidelines/patterns/feedback/",
+      where:
+        "Press Re-run failed jobs and move to Files changed: the run ends in a toast, and its Details leads back to the log.",
+    },
+    {
+      route: "/guidelines/patterns/forms/",
+      where:
+        "Merge pull request is disabled with the reason beside it, never without one. Comment stays pressable: with the box empty it says what is missing, and ⌘ or Ctrl and Enter posts too.",
+    },
+    {
+      route: "/guidelines/patterns/overlays/",
+      where:
+        "Recording, and each artifact on the Checks tab, opens in the attachment viewer over the page. Escape closes it.",
+    },
+    {
+      route: "/guidelines/patterns/loading-empty-and-error/",
+      where:
+        "Reload the page: each log, diff and the comment box shows a skeleton in its shape until it is drawn, so nothing jumps.",
+    },
+    {
+      route: "/guidelines/platforms/desktop-and-pointer/",
+      where:
+        "The tabs are one Tab stop, and the arrow keys move between them. Every job and Details button is a stop of its own.",
+    },
+    {
+      route: "/guidelines/platforms/touch-and-mobile/",
+      where:
+        "Press Touch in the bar above: the jobs, Details and Re-run grow to a thumb's size, and a log or a diff scrolls inside its own box.",
+    },
+  ],
 };
 
 import { DemoPage } from "../../demos/demo-page.tsx";
 import { PullRequest } from "../../demos/pull-request/pull-request.tsx";
 
-<DemoPage
-  guidelines={[
-    { route: "/guidelines/foundations/color/", title: "Color" },
-    { route: "/guidelines/foundations/layout-and-spacing/", title: "Layout & spacing" },
-    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
-    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
-    { route: "/guidelines/patterns/overlays/", title: "Overlays" },
-    { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
-    { route: "/guidelines/patterns/forms/", title: "Forms" },
-  ]}
->
+<DemoPage>
   <PullRequest />
 </DemoPage>

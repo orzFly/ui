@@ -5,7 +5,15 @@ export const meta = {
   order: 21,
   api: [
     "ui/Primitives/Button",
+    "ui/Primitives/Checkbox",
+    "ui/Primitives/DropdownMenu",
+    "ui/Primitives/Input",
+    "ui/Primitives/RadioGroup",
+    "ui/Primitives/Select",
+    "ui/Primitives/Switch",
+    "ui/Primitives/Tabs",
     "ui/Primitives/Sheet",
+    "ui/Primitives/Toaster",
     "ui/Hooks/useVisualViewportInsets",
     "ui/Hooks/useScrollInsets",
     "ui/Hooks/useAutoHideHeader",
@@ -13,17 +21,18 @@ export const meta = {
   ],
 };
 
-import { ThreadControls } from "../../../examples/touch-and-mobile/thread-controls.tsx";
+import { AccountSettings } from "../../../examples/touch-and-mobile/account-settings.tsx";
+import { MailList } from "../../../examples/touch-and-mobile/mail-list.tsx";
 
 **On a coarse pointer every control is 44px to the finger, by itself; the app keeps its own controls
 the same size, its edges clear of the notch and the keyboard, and every gesture backed by
 something to tap.**
 
-<Example of={ThreadControls} />
+<Example of={MailList} />
 
-On a phone this is already the touch layout; on a desk, press **Touch** under the example. The text
-buttons, the select and the menu's rows grow; the icon buttons and the switch keep their drawn size
-and take a 44px hit area around it, so the header row does not grow at all.
+On a phone this is already the touch layout; on a desk, press **Touch** under the example.
+**Compose** and the rows of each `⋯` menu grow; the checkboxes and the `⋯` buttons keep their drawn
+size and take a 44px hit area around it, so the conversations' rows do not grow at all.
 
 ## Hit areas
 
@@ -48,6 +57,13 @@ size and widens its hit area with a transparent `::after`.
 
 Sizes are in CSS pixels. "Pointer" is what a mouse gets, and what the [Density](/guidelines/foundations/density/)
 page's sizes are.
+
+<Example of={AccountSettings} />
+
+Press **Touch** and **Pointer** in turn. The tabs, the field, the select and **Save profile** are
+drawn taller; the checkbox, the radio buttons and the switch stay their size, and under
+**Notifications** the radio rows move apart so their hit areas do not overlap. Open the time zone
+select to see its items grow too.
 
 `touch:` follows the primary pointer, so a touchscreen laptop driven by its trackpad keeps the
 pointer sizes. `data-pointer="coarse"` or `"fine"` on an element forces either set on everything
@@ -191,7 +207,7 @@ useAutoHideHeader(header, !useMediaQuery(SM_UP));
 | Swipe from the left or right edge | The system: back and forward | Nothing within 20px or so of the edge, so the back swipe always works |
 | Pull down at the top | The browser: refresh | Leaves the page's overscroll alone; `overscroll-contain` on a panel that scrolls inside the page |
 | Pinch | The browser: zoom | Never disabled; a canvas that zooms its own content (an image viewer) takes it only inside itself |
-| Long press | The system: select text, preview a link | No app action of its own |
+| Long press | The system: select text, preview a link | Nothing a control does not also do: a long press that selects a row repeats the row's checkbox |
 | Swipe on a toast, a row | The app | Only as a shortcut: the toast also leaves on its own, the row's action is also in its menu, a delete still offers **Undo** |
 
 Every gesture an app adds has a control that does the same thing with one tap, and anything that
@@ -199,6 +215,9 @@ follows a path or needs two fingers works with a single pointer too
 ([WCAG 2.5.1](https://www.w3.org/WAI/WCAG22/Understanding/pointer-gestures.html)). A tap acts when
 the finger lifts, not when it lands, so a finger that lands on the wrong control can slide off;
 @orz/ui's buttons already do.
+
+In the example at the top, archive a conversation from its `⋯` menu: the toast that says so can be
+swiped away, leaves on its own, and holds the **Undo**.
 
 `Dialog` and `Sheet` lock the page behind them while they are open, and let a scroller inside them,
 a code diff included, scroll on its own.

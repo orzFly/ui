@@ -10,20 +10,51 @@ export const meta = {
     "ui-markdown/Markdown",
     "ui-mermaid/Content",
     "ui-content/AttachmentViewerProvider",
+    "ui/Primitives/DropdownMenu",
+    "ui/Primitives/Toaster",
+  ],
+  guidelines: [
+    {
+      route: "/guidelines/patterns/destructive-actions/",
+      where:
+        "More actions → Delete note: the note goes at once, and Undo in the toast puts it back where it was. Nothing asks first.",
+    },
+    {
+      route: "/guidelines/patterns/loading-empty-and-error/",
+      where:
+        "Filter for a word no note has: No notes match, with Clear filter. Delete every note, and the empty notebook says what a note is, with New note.",
+    },
+    {
+      route: "/guidelines/patterns/actions-and-buttons/",
+      where:
+        "New note is the list's one action. Delete note waits in More actions, last, after a separator.",
+    },
+    {
+      route: "/guidelines/foundations/layout-and-spacing/",
+      where:
+        "Below lg there is room for the editor or the preview, not both. Below md the list and the note take turns.",
+    },
+    {
+      route: "/guidelines/foundations/typography/",
+      where:
+        "The preview holds a note to a readable measure. Titles truncate in the list, and its dates are set in tabular figures.",
+    },
+    {
+      route: "/guidelines/platforms/desktop-and-pointer/",
+      where:
+        "Type / at the start of a line for blocks, or # for the tags already in use. The keyboard button lists the editor's shortcuts with each platform's keys.",
+    },
+    {
+      route: "/guidelines/platforms/touch-and-mobile/",
+      where:
+        "On a phone a note opens to be read, and the on-screen keyboard comes up only when you press Edit.",
+    },
   ],
 };
 
 import { DemoPage } from "../../demos/demo-page.tsx";
 import { Notes } from "../../demos/notes/notes.tsx";
 
-<DemoPage
-  guidelines={[
-    { route: "/guidelines/foundations/layout-and-spacing/", title: "Layout & spacing" },
-    { route: "/guidelines/foundations/typography/", title: "Typography" },
-    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
-    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
-    { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
-  ]}
->
+<DemoPage>
   <Notes />
 </DemoPage>

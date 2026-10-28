@@ -4,13 +4,14 @@ import { Switch } from "@orz/ui/components/switch";
 export function SwitchesApplyNow() {
   return (
     <div className="grid gap-3">
+      <p className="font-medium text-muted-foreground text-xs">Send them by</p>
       <div className="flex items-center justify-between gap-4">
-        <Label htmlFor="do-motion">Reduce motion</Label>
-        <Switch id="do-motion" />
+        <Label htmlFor="do-email">Email</Label>
+        <Switch id="do-email" defaultChecked />
       </div>
       <div className="flex items-center justify-between gap-4">
-        <Label htmlFor="do-sounds">Play sounds</Label>
-        <Switch id="do-sounds" defaultChecked />
+        <Label htmlFor="do-desktop">Desktop notifications</Label>
+        <Switch id="do-desktop" />
       </div>
     </div>
   );

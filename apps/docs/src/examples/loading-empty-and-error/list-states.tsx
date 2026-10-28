@@ -1,3 +1,4 @@
+import { NOTES } from "@orz/fixtures/notes.ts";
 import { Button } from "@orz/ui/components/button";
 import { LoadFailure } from "@orz/ui/components/load-failure";
 import { Skeleton } from "@orz/ui/components/skeleton";
@@ -7,65 +8,76 @@ import {
   TabsList,
   TabsTrigger,
 } from "@orz/ui/components/tabs";
-import { FolderPlusIcon } from "lucide-react";
+import { NotebookIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 
-const RUNS = [
-  { name: "build", detail: "Passed in 2m 14s" },
-  { name: "test", detail: "Passed in 5m 02s" },
-  { name: "deploy", detail: "Waiting for approval" },
-];
+const titleOf = (body: string) => /^# (.+)$/m.exec(body)?.[1] ?? "Untitled";
+
+const SHOWN = NOTES.slice(0, 4);
 
 export function ListStates() {
+  const [state, setState] = useState("loading");
   const [retrying, setRetrying] = useState(false);
   return (
-    <Tabs defaultValue="loading">
+    <Tabs value={state} onValueChange={setState}>
       <TabsList>
         <TabsTrigger value="loading">Loading</TabsTrigger>
         <TabsTrigger value="empty">Empty</TabsTrigger>
         <TabsTrigger value="failed">Failed</TabsTrigger>
         <TabsTrigger value="loaded">Loaded</TabsTrigger>
       </TabsList>
-      <div className="mt-2 min-h-40 rounded-lg border p-4">
-        <TabsContent value="loading" className="grid gap-4">
-          {RUNS.map((run) => (
-            <div key={run.name} className="grid gap-1.5">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-3 w-40" />
-            </div>
-          ))}
+      <div className="mt-2 min-h-56 rounded-lg border p-2">
+        <TabsContent value="loading">
+          <ul aria-label="Loading notes" className="grid gap-0.5">
+            {SHOWN.map((note) => (
+              <li key={note.id} className="grid gap-1.5 px-2.5 py-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-20" />
+              </li>
+            ))}
+          </ul>
         </TabsContent>
         <TabsContent
           value="empty"
-          className="flex flex-col items-center justify-center gap-2 py-4 text-center"
+          className="grid justify-items-center gap-2 px-4 py-8 text-center"
         >
-          <FolderPlusIcon className="size-6 text-muted-foreground" />
-          <p className="font-medium">No pipelines yet</p>
+          <NotebookIcon className="size-8 text-muted-foreground" aria-hidden />
+          <p className="font-medium">No notes yet</p>
           <p className="text-muted-foreground text-sm">
-            A pipeline runs your checks on every push.
+            A note is markdown, kept in this tab. Start one with a # heading.
           </p>
-          <Button variant="outline" className="mt-2">
-            New pipeline
+          <Button variant="outline" size="sm" className="mt-1">
+            <PlusIcon />
+            New note
           </Button>
         </TabsContent>
-        <TabsContent value="failed">
+        <TabsContent value="failed" className="p-2.5">
           <LoadFailure
-            message="Couldn't load the pipelines."
+            message="Couldn't load your notes."
             detail="503 Service Unavailable"
             retrying={retrying}
             onRetry={() => {
               setRetrying(true);
-              setTimeout(() => setRetrying(false), 800);
+              setTimeout(() => {
+                setRetrying(false);
+                setState("loaded");
+              }, 800);
             }}
           />
         </TabsContent>
-        <TabsContent value="loaded" className="grid gap-4">
-          {RUNS.map((run) => (
-            <div key={run.name} className="grid gap-0.5">
-              <p className="font-medium text-sm">{run.name}</p>
-              <p className="text-muted-foreground text-xs">{run.detail}</p>
-            </div>
-          ))}
+        <TabsContent value="loaded">
+          <ul aria-label="Notes" className="grid gap-0.5">
+            {SHOWN.map((note) => (
+              <li key={note.id} className="grid gap-0.5 px-2.5 py-2">
+                <span className="font-medium text-sm">
+                  {titleOf(note.body)}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  {note.folder}
+                </span>
+              </li>
+            ))}
+          </ul>
         </TabsContent>
       </div>
     </Tabs>

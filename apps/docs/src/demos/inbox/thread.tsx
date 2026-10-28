@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
 import {
@@ -33,7 +34,7 @@ import {
   Trash2Icon,
   Undo2Icon,
 } from "lucide-react";
-import { type Ref, useImperativeHandle, useRef, useState } from "react";
+import { type Ref, useImperativeHandle, useRef } from "react";
 import { ActionButton } from "./keys.tsx";
 import {
   folderOf,
@@ -101,10 +102,14 @@ function Composer({
   ref: Ref<ComposerHandle>;
 }) {
   const editor = useRef<MarkdownEditorHandle>(null);
-  const [empty, setEmpty] = useState(true);
   useImperativeHandle(ref, () => ({ focus: () => editor.current?.focus() }));
+  // Send is never greyed out unexplained: with nothing written it lands on the box, whose
+  // placeholder says what goes there.
   const send = (value: string) => {
-    if (value.trim() === "") return;
+    if (value.trim() === "") {
+      editor.current?.focus();
+      return;
+    }
     onSend(value.trim());
     editor.current?.setValue("");
     editor.current?.focus();
@@ -124,11 +129,11 @@ function Composer({
         ariaLabel="Reply"
         placeholder="Reply in markdown…"
         onSubmit={send}
-        onChange={(value) => setEmpty(value.trim() === "")}
         className="max-h-[30dvh] min-h-10 flex-1"
       />
-      <Button type="submit" size="icon" aria-label="Send" disabled={empty}>
+      <Button type="submit">
         <SendIcon />
+        Send
       </Button>
     </form>
   );
@@ -140,6 +145,8 @@ export interface ThreadActions {
   onArchive: () => void;
   onTrash: () => void;
   onRestore: () => void;
+  /** The one action that is not undone from a toast: it asks first. */
+  onDeleteForever: () => void;
   onUnread: () => void;
   onStar: () => void;
   onLabel: (label: string, on: boolean) => void;
@@ -218,7 +225,8 @@ function Toolbar({
       </DropdownMenu>
       <span className="flex-1" />
       <ActionButton
-        label={thread.starred ? "Unstar" : "Star"}
+        // A toggle keeps one name and says its state as pressed; "Unstar" would read as pressed Unstar.
+        label="Star"
         action="star"
         aria-pressed={thread.starred}
         onClick={actions.onStar}
@@ -245,6 +253,18 @@ function Toolbar({
             <LinkIcon />
             Copy link
           </DropdownMenuItem>
+          {folder === "trash" && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={actions.onDeleteForever}
+              >
+                <Trash2Icon />
+                Delete forever…
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

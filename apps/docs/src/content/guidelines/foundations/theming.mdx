@@ -6,18 +6,21 @@ export const meta = {
   api: ["ui/Foundations/Theme", "ui/ThemeMenu", "ui/ThemeEditor", "ui/Foundations/Terminal"],
 };
 
-import { ThemeControls } from "../../../examples/theming/theme-controls.tsx";
+import { AppearanceSettings } from "../../../examples/theming/appearance-settings.tsx";
+import { TestBarFromTheme } from "../../../examples/theming/test-bar-from-theme.tsx";
+import { TestBarReadOnce } from "../../../examples/theming/test-bar-read-once.tsx";
 
 **Put a `ThemeMenu` where the user can reach it from any screen, and let the store do the rest.**
 The theme is the user's: they pick it for their eyes, their room and their screen, and an app that
 fixes one, or quietly bends one, takes that away.
 
-<Example of={ThemeControls} clientOnly />
+<Example of={AppearanceSettings} clientOnly />
 
-This is the site's own theme store. A pick in the first menu repaints the whole page, this text
-included; the second picks a terminal theme of its own or lets the terminal follow. **Custom
-themes…** in either menu opens the `ThemeEditor`, which repaints the page with the draft as you
-edit it.
+The Settings demo's Appearance rows, on the site's own theme store. A pick in **Theme** repaints the
+whole page, this text included, and its submenus hold the mode and the variant. **Terminal theme**
+repaints only the test output under it, from the pull request demo's failing run, unless it is left
+to follow. **Edit…**, or **Custom themes…** in either menu, opens the `ThemeEditor`, which repaints
+the page with the draft as you edit it.
 
 ## What the user chooses
 
@@ -47,15 +50,19 @@ mode is Auto, and follows a pick made in another tab.
 ## What the app does not do
 
 <DoDont>
-  <Do>
+  <Do show={<TestBarFromTheme />}>
     Draw every colour from a token, and read `useTheme()` or `useTerminalTheme()` when a script needs
     the colours, such as a canvas or xterm.js. Both re-render when the pick changes.
   </Do>
-  <Dont>
+  <Dont show={<TestBarReadOnce />}>
     Style by theme id with `[data-theme="dracula"]`, or read a colour from CSS once and keep it. The
     first breaks in every theme you did not test; the second keeps the old colour after a switch.
   </Dont>
 </DoDont>
+
+Both bars are drawn on a canvas, the way a chart or xterm.js draws. Pick another theme or terminal
+theme above: the first redraws in it, and the second keeps the colours it read when the page
+loaded.
 
 - **No fixed theme for a screen.** A dark-only editor or a light-only print view takes the choice
   away in the place the user spends the most time.

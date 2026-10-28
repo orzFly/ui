@@ -3,22 +3,32 @@ export const meta = {
   description:
     "A token names a role; the user's theme picks the colour. Every surface, line and text reads one.",
   order: 10,
-  api: ["ui/Foundations/Theme", "ui/Foundations/Terminal", "ui/Primitives/Badge"],
+  api: [
+    "ui/Foundations/Theme",
+    "ui/Foundations/Terminal",
+    "ui/Primitives/Badge",
+    "ui/Primitives/Button",
+    "ui/Primitives/DropdownMenu",
+  ],
 };
 
-import { Badge } from "@orz/ui/components/badge";
-import { CircleXIcon } from "lucide-react";
-import { RunList } from "../../../examples/color/run-list.tsx";
+import { GraySecondaryLine } from "../../../examples/color/gray-secondary-line.tsx";
+import { JobStatusAsDots } from "../../../examples/color/job-status-as-dots.tsx";
+import { JobStatusInWords } from "../../../examples/color/job-status-in-words.tsx";
+import { MailSurfaces } from "../../../examples/color/mail-surfaces.tsx";
+import { MergeBox } from "../../../examples/color/merge-box.tsx";
+import { MutedSecondaryLine } from "../../../examples/color/muted-secondary-line.tsx";
 import { TokenPairs, TokenSwatches } from "../../../token-swatches.tsx";
 
 **Draw with the tokens, never with a colour.** `bg-card`, `text-muted-foreground` and `border` say
 what a thing is; the theme the user picked says what colour that is, in light, in dark, and in each
 of a dozen palettes.
 
-<Example of={RunList} />
+<Example of={MergeBox} />
 
-Nothing in it names a colour. Pick another theme from the top bar and every swatch on this page
-follows, values and contrast included.
+The pull request demo's merge box. Nothing in it names a colour: the card, the failed check and the
+passed ones all read a token. Pick another theme from the top bar and the box follows, as does
+every swatch on this page, values and contrast included.
 
 ## Surfaces and their text
 
@@ -51,6 +61,13 @@ the contrast of the pair in the theme you are looking at.
 | The one main action in view | `bg-primary` | `text-primary-foreground` |
 | A second action beside it | `bg-secondary` | `text-secondary-foreground` |
 | A hovered or selected row | `bg-accent` | `text-accent-foreground` |
+
+<Example of={MailSurfaces} />
+
+The Mail demo in miniature, on the surfaces in the table: the folders on `sidebar`, **Compose** on
+`primary`, the open conversation and the current folder on `accent`, names and dates on the page's
+`foreground` and `muted-foreground`, a code span on `muted`, and **More actions** opening on
+`popover`. The merge box above is the card. On a phone the folders hide, as they do in the demo.
 
 The components already make these choices: a `Card` is `bg-card`, a `Button` is `bg-primary`. Reach
 for the tokens yourself for the surfaces you build.
@@ -108,10 +125,10 @@ colour-blind reader and to anyone in a palette where the two are close
 an icon, or both.
 
 <DoDont>
-  <Do show={<div className="flex gap-2"><Badge variant="destructive"><CircleXIcon /> Failed</Badge></div>}>
+  <Do show={<JobStatusInWords />}>
     Say the state, and let the colour back it up.
   </Do>
-  <Dont show={<div className="flex items-center gap-2 text-sm"><span className="size-2.5 rounded-full bg-red-500" /> Run 412</div>}>
+  <Dont show={<JobStatusAsDots />}>
     Show a state as a colour alone, and in a hard-coded red that no theme can change.
   </Dont>
 </DoDont>
@@ -124,10 +141,10 @@ theme. Text on a tint of its own colour is where contrast fails first, so a comp
 `text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]`, as `Button` and `Badge` do.
 
 <DoDont>
-  <Do show={<p className="text-muted-foreground text-sm">Updated 3 min ago</p>}>
+  <Do show={<MutedSecondaryLine />}>
     Write `text-muted-foreground` for the secondary line. It is tuned for every theme.
   </Do>
-  <Dont show={<p className="text-gray-500 text-sm">Updated 3 min ago</p>}>
+  <Dont show={<GraySecondaryLine />}>
     Write `text-gray-500`, `bg-white` or a hex value. It is right in one theme, and in the others
     nobody checks.
   </Dont>

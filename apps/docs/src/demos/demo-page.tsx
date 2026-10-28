@@ -23,7 +23,7 @@ import {
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { type Pointer, PointerToggle, useOverlaysFollow } from "../example.tsx";
 import type { PageMeta } from "../page.ts";
-import { hasPage, loadedPage, pages } from "../pages.ts";
+import { loadedPage, pages } from "../pages.ts";
 import { BASE, Link, useRouter } from "../router.tsx";
 import { storybookHref } from "../routes.ts";
 import { DemoCode } from "./demo-code.tsx";
@@ -34,13 +34,6 @@ import {
   useAboutOpen,
   useSourceParam,
 } from "./demo-state.ts";
-
-/** A guideline a demo puts into practice. */
-export interface DemoGuideline {
-  /** The page's route, from the site root (`/guidelines/patterns/overlays/`). */
-  route: string;
-  title: string;
-}
 
 /** The packages a demo is built from, read off the Storybook titles in its `meta.api`. */
 const packagesOf = (api: readonly string[] = []) => [
@@ -55,16 +48,10 @@ export const demoDir = (route: string) => route.split("/").at(-2) ?? "";
  * The demo's root takes `h-full` and lays itself out in that box; anything taller scrolls inside
  * it. The bar switches between the demo and its source (the files under `src/demos/<page>/` and
  * the fixtures they import), forces either pointer's sizes, opens the About panel with `meta`'s
- * description and the guidelines the demo shows, and takes the frame full screen. A demo page is
+ * description and `meta.guidelines`, and takes the frame full screen. A demo page is
  * `layout: "bare"`.
  */
-export function DemoPage({
-  guidelines,
-  children,
-}: {
-  guidelines: DemoGuideline[];
-  children: ReactNode;
-}) {
+export function DemoPage({ children }: { children: ReactNode }) {
   const { route } = useRouter();
   const meta = loadedPage(route)?.meta;
   const dir = demoDir(route);
@@ -74,7 +61,7 @@ export function DemoPage({
   const preview = useRef<HTMLDivElement>(null);
   useOverlaysFollow(preview, pointer);
   const fullScreen = useFullScreen();
-  const about = <About meta={meta} guidelines={guidelines} />;
+  const about = <About meta={meta} />;
   return (
     <Tabs
       value={source === null ? "preview" : "code"}
@@ -201,41 +188,34 @@ export function DemoPage({
   );
 }
 
-function About({
-  meta,
-  guidelines,
-}: {
-  meta: PageMeta | undefined;
-  guidelines: DemoGuideline[];
-}) {
+function About({ meta }: { meta: PageMeta | undefined }) {
   const id = useId();
+  const guidelines = meta?.guidelines ?? [];
   return (
     <div className="p-5 text-sm">
       {meta?.description && (
         <p className="text-base text-muted-foreground">{meta.description}</p>
       )}
-      <section aria-labelledby={`${id}-guidelines`} className="mt-6">
-        <h2 id={`${id}-guidelines`} className="mb-1 font-semibold">
-          Guidelines shown here
-        </h2>
-        <ul>
-          {guidelines.map(({ route: to, title }) => (
-            <li key={to} className="flex min-h-9 items-center">
-              {/* A guideline still being written shows as a title until its page lands. */}
-              {hasPage(to) ? (
+      {guidelines.length > 0 && (
+        <section aria-labelledby={`${id}-guidelines`} className="mt-6">
+          <h2 id={`${id}-guidelines`} className="mb-2 font-semibold">
+            Guidelines shown here
+          </h2>
+          <ul className="grid gap-3">
+            {guidelines.map(({ route, where }) => (
+              <li key={route}>
                 <Link
-                  to={to}
-                  className="font-medium underline underline-offset-4"
+                  to={route}
+                  className="inline-flex min-h-8 items-center font-medium underline underline-offset-4"
                 >
-                  {title}
+                  {pageTitle(route)}
                 </Link>
-              ) : (
-                <span className="text-muted-foreground">{title}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+                <p className="text-muted-foreground">{where}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {meta?.api && meta.api.length > 0 && (
         <section aria-labelledby={`${id}-components`} className="mt-6">
           <h2 id={`${id}-components`} className="mb-1 font-semibold">
@@ -285,6 +265,9 @@ function useFullScreen() {
   };
   return { available, on, toggle };
 }
+
+const pageTitle = (route: string) =>
+  pages.find((page) => page.route === route)?.meta.title ?? route;
 
 /** A card for each page under /demos/, from its `meta`. */
 export function DemoGallery() {

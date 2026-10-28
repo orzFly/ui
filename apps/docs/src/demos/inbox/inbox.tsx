@@ -1,6 +1,8 @@
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
+import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { RefreshFailure } from "@orz/ui/components/load-failure";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
 import { QueryBox } from "@orz/ui/components/query-box";
 import {
@@ -57,6 +59,7 @@ import {
 } from "./location.ts";
 import {
   changeThreads,
+  checkMail,
   DEFAULT_QUERY,
   type Draft,
   draftCount,
@@ -166,13 +169,7 @@ function ThreadRow({
         (open || selected) && "bg-accent",
       )}
     >
-      <span
-        className={cn(
-          "flex items-center pl-3",
-          // With a finger the box is for the selection mode a long press starts.
-          !selecting && "touch:hidden",
-        )}
-      >
+      <span className="flex items-center pl-3">
         <Checkbox
           checked={selected}
           onCheckedChange={(on) => onSelect(on === true)}
@@ -213,7 +210,9 @@ function ThreadRow({
           )}
         >
           {thread.unread && <span className="sr-only">Unread: </span>}
-          {draft && <span className="mr-1 text-destructive">Draft</span>}
+          {draft && (
+            <span className="mr-1 font-medium text-foreground">Draft</span>
+          )}
           {senders(thread)}
           {thread.messages.length > 1 && (
             <span className="ml-1 font-normal text-muted-foreground text-xs">
@@ -260,6 +259,15 @@ interface BulkActions {
   onTrash: (ids: string[]) => void;
   onRestore: (ids: string[]) => void;
   onRead: (ids: string[], unread: boolean) => void;
+  /** Asks before it deletes what is already in the Trash, which cannot be undone. */
+  onDeleteForever: (ids: string[]) => void;
+}
+
+/** A check for new mail, as the list's toolbar shows it. */
+interface Refresh {
+  pending: boolean;
+  /** Why the last check failed; the list stays as it was meanwhile. */
+  error: string | undefined;
 }
 
 function ThreadList({
@@ -269,7 +277,9 @@ function ThreadList({
   selected,
   onSelected,
   onSearch,
+  refresh,
   onRefresh,
+  onCompose,
   onOpen,
   onMenu,
   bulk,
@@ -282,7 +292,9 @@ function ThreadList({
   selected: ReadonlySet<string>;
   onSelected: Dispatch<SetStateAction<ReadonlySet<string>>>;
   onSearch: (query: string) => void;
+  refresh: Refresh;
   onRefresh: () => void;
+  onCompose: () => void;
   onOpen: (thread: InboxThread) => void;
   onMenu: () => void;
   bulk: BulkActions;
@@ -314,7 +326,9 @@ function ThreadList({
       const now = findThread(id, state);
       // One archived, deleted or moved back since leaves the list at once, as in any mail
       // client; one only read stays until the next search.
-      if (!then || !now || folderOf(then) !== folderOf(now)) return undefined;
+      if (!then || !now || now.gone || folderOf(then) !== folderOf(now)) {
+        return undefined;
+      }
       return now;
     })
     .filter((thread) => thread !== undefined);
@@ -324,6 +338,7 @@ function ThreadList({
   const all = threads.length > 0 && shown.length === threads.length;
   const ids = shown.map((thread) => thread.id);
   const folders = new Set(shown.map(folderOf));
+  const allTrash = folders.size === 1 && folders.has("trash");
   const anyUnread = shown.some((thread) => thread.unread);
   const place = PLACES.find((each) => each.query === search.query);
 
@@ -352,7 +367,7 @@ function ThreadList({
           leading={<SearchIcon />}
           inputProps={{
             "aria-label": "Search mail",
-            placeholder: "Search, or is:unread from: label:",
+            placeholder: "Search, or try is:unread…",
           }}
           className="min-w-0 flex-1"
         />
@@ -366,13 +381,7 @@ function ThreadList({
         )}
       </div>
       <div className="flex h-11 shrink-0 items-center gap-0.5 border-b px-1.5 text-sm touch:h-13">
-        <span
-          className={cn(
-            "flex size-8 items-center justify-center",
-            // A finger selects with a long press; the box comes with what it selected.
-            shown.length === 0 && "touch:hidden",
-          )}
-        >
+        <span className="flex size-8 items-center justify-center">
           <Checkbox
             checked={all ? true : shown.length > 0 ? "indeterminate" : false}
             onCheckedChange={() =>
@@ -418,11 +427,27 @@ function ThreadList({
             >
               {anyUnread ? <MailOpenIcon /> : <MailIcon />}
             </ActionButton>
+            {allTrash && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="ml-auto"
+                onClick={() => bulk.onDeleteForever(ids)}
+              >
+                Delete forever…
+              </Button>
+            )}
           </>
         ) : (
           <>
-            <ActionButton label="Refresh" onClick={onRefresh}>
-              <RefreshCwIcon />
+            <ActionButton
+              label="Refresh"
+              disabled={refresh.pending}
+              onClick={onRefresh}
+            >
+              <RefreshCwIcon
+                className={refresh.pending ? "animate-spin" : undefined}
+              />
             </ActionButton>
             <span className="min-w-0 flex-1 truncate px-1 font-medium">
               {place?.title ?? "Search results"}
@@ -433,6 +458,15 @@ function ThreadList({
           </>
         )}
       </div>
+      {refresh.error && (
+        <RefreshFailure
+          what="the mail"
+          detail={refresh.error}
+          retrying={refresh.pending}
+          onRetry={onRefresh}
+          className="border-b px-3 py-2"
+        />
+      )}
       {/* Room under the last row for the phone's Compose button. */}
       <div
         ref={scrollRef}
@@ -442,7 +476,20 @@ function ThreadList({
           <div className="grid justify-items-center gap-2 px-4 py-12 text-center">
             <InboxIcon className="size-8 text-muted-foreground" aria-hidden />
             {place ? (
-              <p className="font-medium">Nothing in {place.title}</p>
+              <>
+                <p className="font-medium">Nothing in {place.title}</p>
+                <p className="text-muted-foreground text-sm">{place.empty}</p>
+                {(place.query === "in:sent" || place.query === "in:drafts") && (
+                  <Button
+                    variant="outline"
+                    className="mt-2"
+                    onClick={onCompose}
+                  >
+                    <SquarePenIcon />
+                    Compose
+                  </Button>
+                )}
+              </>
             ) : (
               <>
                 <p className="font-medium">No conversations match</p>
@@ -451,6 +498,13 @@ function ThreadList({
                   <code className="font-mono">{search.query}</code>. Try fewer
                   words, or another filter.
                 </p>
+                <Button
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => onSearch(DEFAULT_QUERY)}
+                >
+                  Clear search
+                </Button>
               </>
             )}
           </div>
@@ -524,6 +578,13 @@ export function Inbox() {
   const [menu, setMenu] = useState(false);
   const [keys, setKeys] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [refresh, setRefresh] = useState<Refresh>({
+    pending: false,
+    error: undefined,
+  });
+  const [deleting, setDeleting] = useState<string[]>([]);
+  // Kept apart from `deleting` so the dialog keeps its title while it fades out.
+  const [confirming, setConfirming] = useState(false);
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -596,6 +657,28 @@ export function Inbox() {
       `${conversations(ids.length)} marked as ${unread ? "unread" : "read"}`,
     );
   };
+  const askDeleteForever = (ids: string[]) => {
+    if (ids.length === 0) return;
+    setDeleting(ids);
+    setConfirming(true);
+  };
+  const deleteForever = () => {
+    if (open !== null && deleting.includes(open)) closeThread();
+    setState((was) => changeThreads(was, deleting, { gone: true })[0]);
+    setSelected(new Set());
+    setConfirming(false);
+    toast(`${conversations(deleting.length)} deleted forever`);
+  };
+  const checkForMail = () => {
+    setRefresh((was) => ({ ...was, pending: true }));
+    checkMail().then(
+      () => {
+        setRefresh({ pending: false, error: undefined });
+        rerun(search.query);
+      },
+      (error: Error) => setRefresh({ pending: false, error: error.message }),
+    );
+  };
   const star = (id: string) => {
     const was = findThread(id, stateRef.current);
     if (!was) return;
@@ -607,6 +690,7 @@ export function Inbox() {
     onTrash: (ids) => move(ids, "trash"),
     onRestore: (ids) => move(ids, "inbox"),
     onRead: markRead,
+    onDeleteForever: askDeleteForever,
   };
 
   const reply = (body: string) => {
@@ -621,10 +705,15 @@ export function Inbox() {
         ],
       },
     }));
-    // After the commit that adds it: the new message lands above the reply box.
+    // After the commit that adds it: the new message lands above the reply box. A scroll of
+    // the script's own is not covered by the stylesheet's reduced motion, so it asks first.
     requestAnimationFrame(() => {
       const pane = threadScroll.current;
-      pane?.scrollTo({ top: pane.scrollHeight, behavior: "smooth" });
+      const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      pane?.scrollTo({
+        top: pane.scrollHeight,
+        behavior: still ? "auto" : "smooth",
+      });
     });
   };
 
@@ -699,7 +788,7 @@ export function Inbox() {
       ?.writeText(new URL(threadHref(open), location.href).href)
       .then(
         () => toast("Link copied"),
-        () => toast.error("Could not copy the link"),
+        () => toast.error("Couldn't copy the link"),
       );
   };
 
@@ -749,6 +838,7 @@ export function Inbox() {
       case "archive":
         return move(ids, "archive");
       case "trash":
+        if (one && folderOf(one) === "trash") return askDeleteForever(ids);
         return move(ids, "trash");
       case "star":
         if (one) star(one.id);
@@ -790,13 +880,13 @@ export function Inbox() {
           <aside
             aria-label="Mail"
             data-width="wide"
-            className="w-60 shrink-0 border-r bg-muted/30 max-xl:hidden"
+            className="w-60 shrink-0 border-r bg-sidebar text-sidebar-foreground max-xl:hidden"
           >
             <Sidebar {...side} />
           </aside>
           <aside
             aria-label="Mail"
-            className="w-14 shrink-0 border-r bg-muted/30 max-md:hidden xl:hidden"
+            className="w-14 shrink-0 border-r bg-sidebar text-sidebar-foreground max-md:hidden xl:hidden"
           >
             <Rail {...side} />
           </aside>
@@ -814,7 +904,9 @@ export function Inbox() {
               selected={selected}
               onSelected={setSelected}
               onSearch={onSearch}
-              onRefresh={() => rerun(search.query)}
+              refresh={refresh}
+              onRefresh={checkForMail}
+              onCompose={() => compose()}
               onOpen={openRow}
               onMenu={() => setMenu(true)}
               bulk={bulk}
@@ -848,6 +940,7 @@ export function Inbox() {
                   onArchive: () => move([thread.id], "archive"),
                   onTrash: () => move([thread.id], "trash"),
                   onRestore: () => move([thread.id], "inbox"),
+                  onDeleteForever: () => askDeleteForever([thread.id]),
                   onUnread: () => markRead([thread.id], true),
                   onStar: () => star(thread.id),
                   onLabel: (label, on) =>
@@ -890,6 +983,27 @@ export function Inbox() {
           </SheetContent>
         </Sheet>
         <KeysDialog open={keys} onOpenChange={setKeys} />
+        <ConfirmDialog
+          open={confirming}
+          onOpenChange={setConfirming}
+          title={
+            deleting.length === 1
+              ? `Delete “${findThread(deleting[0] ?? "", state)?.subject}” forever?`
+              : `Delete ${deleting.length} conversations forever?`
+          }
+          description={
+            deleting.length === 1
+              ? "It cannot be restored. To keep it, move it back to the inbox instead."
+              : "They cannot be restored. To keep them, move them back to the inbox instead."
+          }
+          confirmLabel={
+            deleting.length === 1
+              ? "Delete forever"
+              : `Delete ${deleting.length} conversations`
+          }
+          destructive
+          onConfirm={deleteForever}
+        />
       </ContentRenderers>
     </TooltipProvider>
   );

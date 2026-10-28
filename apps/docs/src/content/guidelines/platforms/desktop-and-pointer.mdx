@@ -7,25 +7,33 @@ export const meta = {
     "ui/Primitives/Tooltip",
     "ui/Primitives/HoverCard",
     "ui/Primitives/DropdownMenu",
+    "ui/Primitives/Select",
+    "ui/Primitives/Switch",
+    "ui/Primitives/RadioGroup",
+    "ui/Primitives/Toaster",
     "ui/Hooks/useSlashShortcut",
     "ui/Hooks/useMediaQuery",
     "ui-codemirror/EditorShortcutsHelp",
   ],
 };
 
+import { EditorSettings } from "../../../examples/desktop-and-pointer/editor-settings.tsx";
 import { HoverOnlyRowActions } from "../../../examples/desktop-and-pointer/hover-only-row-actions.tsx";
-import { RunList } from "../../../examples/desktop-and-pointer/run-list.tsx";
+import { KeyWithoutButton } from "../../../examples/desktop-and-pointer/key-without-button.tsx";
+import { ShortcutInTooltip } from "../../../examples/desktop-and-pointer/shortcut-in-tooltip.tsx";
+import { ThreadList } from "../../../examples/desktop-and-pointer/thread-list.tsx";
 import { VisibleRowActions } from "../../../examples/desktop-and-pointer/visible-row-actions.tsx";
 
 **With a mouse, hover may hint and a shortcut may hurry, but every action is on screen and every
 control is reached with Tab.** A desk is where these tools are used longest; it gets the density,
 and it gets nothing the keyboard or a thumb cannot also do.
 
-<Example of={RunList} />
+<Example of={ThreadList} />
 
-Hover over the toolbar's icons for their names, or Tab to them: the tooltip opens on focus too.
-Each run's **More actions** button is always drawn, quiet and small, and opens with Enter or Space
-as well as a click.
+Hover over **Refresh** for its name, or Tab to it: the tooltip opens on focus too, and
+**Compose**'s names its key, `C`. Each conversation's `⋯` button is always drawn, quiet
+and small, and opens with Enter or Space as well as a click; its menu prints each item's key, and
+an archive or a delete ends in a toast with **Undo**.
 
 ## Hover
 
@@ -68,6 +76,13 @@ out in the DOM in the order it is read rather than reordering it with CSS.
 | Home, End | The first and last item of a menu, a list box or the `QueryBox` suggestions |
 | A letter | In an open menu or `Select`, jumps to the first item that starts with it |
 
+<Example of={EditorSettings} />
+
+Click in the example and put the mouse away. Tab stops at each switch, the select and the radio
+group, once each; Space or Enter flips a switch. Space opens the select, a letter jumps to a
+language (<kbd>R</kbd> for Rust), Home and End reach the ends of the list, and Escape closes it
+without a change. The arrow keys move the radio group's choice.
+
 A group that the arrow keys move through, `Tabs` or a `RadioGroup`, is one Tab stop: Tab enters it
 at the selected item and the next Tab leaves it. Do not make every item a Tab stop, and do not
 remove the focus ring ([Accessibility](/guidelines/content/accessibility/) has the contrast it
@@ -105,11 +120,11 @@ item.
   opened from the help menu or with `?`.
 
 <DoDont>
-  <Do>
+  <Do show={<ShortcutInTooltip />}>
     Give the action people take over and over a shortcut, and print it next to the action's name so
-    it is learned by using the tool.
+    it is learned by using the tool. Hover over an icon to see it.
   </Do>
-  <Dont>
+  <Dont show={<KeyWithoutButton />}>
     Bind an action to a key with no button or menu item behind it: nobody finds it, and nobody on a
     phone can use it.
   </Dont>

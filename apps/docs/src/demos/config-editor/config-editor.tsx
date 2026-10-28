@@ -66,7 +66,7 @@ export function ConfigEditor() {
     if (!dirty || problem !== null) return;
     setSaved((was) => ({ ...was, [name]: draft }));
     setReviewing(false);
-    toast.success(`Saved ${name}`);
+    toast.success(`${name} saved`);
   };
   // The editor binds its keys once, at mount; Mod-S calls whatever save is current.
   const saveNow = useRef(save);
@@ -88,7 +88,7 @@ export function ConfigEditor() {
     setDrafts((was) => ({ ...was, [file]: saved[file] ?? "" }));
     setRevision((count) => count + 1);
     setReviewing(false);
-    toast(`Discarded the changes to ${file}`, {
+    toast(`Changes to ${file} discarded`, {
       action: {
         label: "Undo",
         onClick: () => {

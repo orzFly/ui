@@ -3,18 +3,26 @@ export const meta = {
   description:
     "A 4px grid, space that grows with the distance between ideas, and one breakpoint between a phone and the rest.",
   order: 12,
-  api: ["ui/Hooks/useMediaQuery"],
+  api: [
+    "ui/Hooks/useMediaQuery",
+    "ui/Primitives/Sheet",
+    "ui/Primitives/Tooltip",
+  ],
 };
 
-import { FilterBar } from "../../../examples/layout-and-spacing/filter-bar.tsx";
+import { AccountSections } from "../../../examples/layout-and-spacing/account-sections.tsx";
+import { BoxedGroups } from "../../../examples/layout-and-spacing/boxed-groups.tsx";
+import { MailPanes } from "../../../examples/layout-and-spacing/mail-panes.tsx";
+import { MailToolbar } from "../../../examples/layout-and-spacing/mail-toolbar.tsx";
+import { SpacedGroups } from "../../../examples/layout-and-spacing/spaced-groups.tsx";
 
 **Space things by how closely they belong together, in steps of Tailwind's 4px scale, and lay the
 screen out for a phone first, then add `md:` for the rest.**
 
-<Example of={FilterBar} />
+<Example of={MailToolbar} />
 
-Below 768px the filter takes the whole width and the status and the button share the row under it;
-from `md` up, all three sit on one line. One tree, laid out by CSS.
+Below 768px the search takes the whole width, and the label filter and **Compose** share the row
+under it; from `md` up, all three sit on one line. One tree, laid out by CSS.
 
 ## Spacing
 
@@ -33,15 +41,25 @@ Use `gap` on the parent rather than margins on the children: the space then belo
 and a child dropped in or taken out never leaves a double gap behind. Padding inside a panel
 matches the gap between its groups, so a card is `p-4` with `gap-4` inside.
 
+<Example of={AccountSections} />
+
+**Profile** and **Access tokens** are sections, `gap-8` apart. Inside each, the heading, the body
+and the buttons are groups, `gap-6`; the form's rows and the tokens are `gap-4`; the two buttons
+that close the form act together, `gap-2`. The icon in **Compose** above sits `gap-1.5` from its
+label, which `Button` does by itself.
+
 <DoDont>
-  <Do>
+  <Do show={<SpacedGroups />}>
     Separate two groups with space first, a line only when space is not enough.
   </Do>
-  <Dont>
-    Box every group in its own bordered card, or put a rule between every row. Each line competes
-    with the content for attention.
+  <Dont show={<BoxedGroups />}>
+    Box every group in its own bordered card, or rule off groups that space already sets apart.
+    Each line competes with the content for attention.
   </Dont>
 </DoDont>
+
+A long run of rows alike, a mailbox or a group of settings, is where space is not enough: each row
+holds several parts, and a hairline `divide-y` between the rows says which parts go together.
 
 ## Breakpoints
 
@@ -64,6 +82,14 @@ import { MD_UP, useMediaQuery } from "@orz/ui/hooks/use-media-query";
 
 const wide = useMediaQuery(MD_UP);
 ```
+
+<Example of={MailPanes} />
+
+Narrow the window to walk the table. From `lg` up the folders sit in a pane of their own; below it
+they move into a `Sheet` behind **Folders**. From `md` up the conversation opens beside the list;
+below it, it replaces the list and the arrow goes back. Every change is a `max-md:` or `lg:` class,
+so the tree stays the same. A dialog's footer puts its buttons side by side from `sm` up by itself;
+[Overlays](/guidelines/patterns/overlays/) shows one.
 
 **Width decides the layout; the pointer decides the size.** A tablet is wide and touched, a narrow
 desktop window is small and clicked. Do not size controls by width, and do not lay out by pointer:

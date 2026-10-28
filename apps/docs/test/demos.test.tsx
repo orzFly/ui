@@ -100,6 +100,30 @@ async function draw(Demo: ComponentType, width: number) {
   return container;
 }
 
+/**
+ * The site mounts one Toaster for every page; a describe whose demo toasts mounts one here too.
+ * Only the newest few toasts are drawn, so each test starts with none.
+ */
+function mountToaster() {
+  let toaster: Root;
+  beforeAll(async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    toaster = createRoot(host);
+    await act(async () => toaster.render(<Toaster />));
+  });
+  afterAll(() => act(() => toaster.unmount()));
+  beforeEach(() => act(() => toast.dismiss()));
+}
+
+/** Opens a Radix menu from its trigger, as Enter does: a click alone does not. */
+const openMenu = (trigger: Element | null | undefined) =>
+  act(async () => {
+    trigger?.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+    );
+  });
+
 /** Shows each tab in turn, the way a reader would, and waits out what it loads. */
 async function visitTabs(container: HTMLElement) {
   const tabs = [...container.querySelectorAll<HTMLElement>("[role=tab]")];
@@ -197,6 +221,7 @@ describe("pull-request", () => {
 });
 
 describe("settings", () => {
+  mountToaster();
   const section = (container: HTMLElement, name: string) =>
     [
       ...container.querySelectorAll<HTMLElement>(
@@ -276,6 +301,22 @@ describe("settings", () => {
     ).toBe("Editor");
   });
 
+  it("discards profile edits at once, and Undo brings them back", async () => {
+    const container = await draw(Settings, WIDTHS.desktop);
+    await click(section(container, "Profile"));
+    const name = () =>
+      container.querySelector<HTMLInputElement>("#settings-name");
+    const field = name();
+    if (!field) throw new Error("no name field");
+    await type(field, "alice2");
+    await click(button(container, "Discard changes"));
+    expect(dialog()).toBeNull();
+    expect(name()?.value).toBe("alice");
+    expect(document.body.textContent).toContain("Changes discarded");
+    await click(button(document, "Undo"));
+    expect(name()?.value).toBe("alice2");
+  });
+
   it("revokes a token only once the confirmation is accepted", async () => {
     const container = await draw(Settings, WIDTHS.desktop);
     await click(section(container, "Access tokens"));
@@ -292,17 +333,7 @@ describe("settings", () => {
 });
 
 describe("inbox", () => {
-  // The site mounts one Toaster for every page; the demo's toasts need it here too.
-  let toaster: Root;
-  beforeAll(async () => {
-    const host = document.createElement("div");
-    document.body.append(host);
-    toaster = createRoot(host);
-    await act(async () => toaster.render(<Toaster />));
-  });
-  afterAll(() => act(() => toaster.unmount()));
-  // Only the newest few toasts are drawn, so each test starts with none.
-  beforeEach(() => act(() => toast.dismiss()));
+  mountToaster();
   afterEach(() => {
     history.replaceState(null, "", "/demos/inbox/");
     localStorage.clear();
@@ -552,6 +583,60 @@ describe("inbox", () => {
     expect(subjects(container)[0]).toBe("Lunch on Friday");
   });
 
+  it("deletes from the Trash for good only once that is confirmed", async () => {
+    const container = await draw(Inbox, WIDTHS.desktop);
+    const subject = "Touch sizes for the toolbar icons";
+    const box = () =>
+      rows(container)
+        .find((row) => row.textContent?.includes(subject))
+        ?.closest("li")
+        ?.querySelector("[role=checkbox]");
+    await click(box());
+    await click(labelled(container, "Delete"));
+    await showPlace(container, "Trash");
+    expect(subjects(container)).toContain(subject);
+
+    const forever = () =>
+      [...container.querySelectorAll("button")].find(
+        (button) => button.textContent === "Delete forever…",
+      );
+    const dialog = () => document.querySelector<HTMLElement>("[role=dialog]");
+    const answer = (name: string) =>
+      click(
+        [...(dialog() ?? document).querySelectorAll("button")].find(
+          (button) => button.textContent === name,
+        ),
+      );
+    await click(box());
+    await click(forever());
+    expect(dialog()?.textContent).toContain(`Delete “${subject}” forever?`);
+    await answer("Cancel");
+    expect(subjects(container)).toContain(subject);
+
+    await click(forever());
+    await answer("Delete forever");
+    expect(subjects(container)).not.toContain(subject);
+    expect(document.body.textContent).toContain("Conversation deleted forever");
+  });
+
+  it("says a failed refresh above the list it keeps, and Retry checks again", async () => {
+    const container = await draw(Inbox, WIDTHS.desktop);
+    const before = subjects(container);
+    await click(labelled(container, "Refresh"));
+    await wait(LATENCY_MS + 50);
+    expect(container.textContent).toContain(
+      "Couldn't refresh the mail (503 Service Unavailable)",
+    );
+    expect(subjects(container)).toEqual(before);
+    await click(
+      [...container.querySelectorAll("button")].find(
+        (button) => button.textContent === "Retry",
+      ),
+    );
+    await wait(LATENCY_MS + 50);
+    expect(container.textContent).not.toContain("Couldn't refresh");
+  });
+
   it("walks and archives with single keys, and binds none once they are off", async () => {
     const container = await draw(Inbox, WIDTHS.desktop);
     await press("j");
@@ -579,6 +664,7 @@ describe("inbox", () => {
 });
 
 describe("notes", () => {
+  mountToaster();
   const rows = (container: HTMLElement) =>
     [
       ...container.querySelectorAll<HTMLButtonElement>(
@@ -673,6 +759,26 @@ describe("notes", () => {
     expect(
       container.querySelector("section[aria-label=Markdown] .cm-editor"),
     ).not.toBeNull();
+  });
+
+  it("deletes a note at once, and Undo puts it back where it was", async () => {
+    const container = await draw(Notes, WIDTHS.desktop);
+    await click(note(container, "Job states"));
+    await openMenu(
+      container.querySelector("article [aria-label='More actions']"),
+    );
+    await click(
+      [...document.querySelectorAll<HTMLElement>("[role=menuitem]")].find(
+        (item) => item.textContent === "Delete note",
+      ),
+    );
+    expect(rows(container)).not.toContain("Job states");
+    expect(document.body.textContent).toContain("Deleted “Job states”");
+    await click(button(document.body, "Undo"));
+    expect(rows(container)).toContain("Job states");
+    expect(container.querySelector("#note-title")?.textContent).toBe(
+      "Job states",
+    );
   });
 
   it("on a phone, opens a note to read it, and writes only when asked", async () => {
@@ -779,12 +885,12 @@ describe("binary-inspector", () => {
     await type(container, "f");
     expect(status(container)).toBe("Modified · 1 byte written");
 
-    await click(button(container, "Revert"));
+    await click(button(container, "Revert…"));
     expect(dialog()?.textContent).toContain("Revert gradient.png?");
     await click(button(dialog() ?? document, "Cancel"));
     expect(status(container)).toBe("Modified · 1 byte written");
 
-    await click(button(container, "Revert"));
+    await click(button(container, "Revert…"));
     await click(button(dialog() ?? document, "Revert"));
     expect(status(container)).toBe("Unmodified");
   });
@@ -832,16 +938,7 @@ describe("binary-inspector", () => {
 });
 
 describe("tasks", () => {
-  // The site mounts one Toaster for every page; the demo's toasts need it here too.
-  let toaster: Root;
-  beforeAll(async () => {
-    const host = document.createElement("div");
-    document.body.append(host);
-    toaster = createRoot(host);
-    await act(async () => toaster.render(<Toaster />));
-  });
-  afterAll(() => act(() => toaster.unmount()));
-  beforeEach(() => act(() => toast.dismiss()));
+  mountToaster();
   afterEach(() => history.replaceState(null, "", "/demos/tasks/"));
 
   /** The task keys on screen, in order. */
@@ -980,7 +1077,7 @@ describe("tasks", () => {
 
   it("creates a task on top of the list, and shows it", async () => {
     const container = await draw(Tasks, WIDTHS.desktop);
-    await click(button(container, "New"));
+    await click(button(container, "New task…"));
     const create = () => button(dialog() ?? document, "Create task");
     await click(create());
     expect(dialog()?.textContent).toContain("Give the task a title.");
@@ -1064,7 +1161,7 @@ describe("config-editor", () => {
     });
     expect(problem(container)).toContain("Valid JSON");
     await click(button(container, "Save"));
-    expect(document.body.textContent).toContain("Saved deploy.json");
+    expect(document.body.textContent).toContain("deploy.json saved");
     expect(container.textContent).not.toContain("Unsaved");
   });
 

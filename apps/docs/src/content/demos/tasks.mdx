@@ -23,22 +23,63 @@ export const meta = {
     "ui/LoadMoreFooter",
     "ui/Hooks/usePagedAppend",
   ],
+  guidelines: [
+    {
+      route: "/guidelines/patterns/destructive-actions/",
+      where:
+        "Select a few tasks and close them: they go at once, with Undo in the toast. Delete… is last in every row's menu, after a separator, and it is the one action that asks first, naming the tasks.",
+    },
+    {
+      route: "/guidelines/patterns/feedback/",
+      where:
+        "Close, reopen, create or delete a task, and a toast names the task it was done to. New task with no title says so under the field.",
+    },
+    {
+      route: "/guidelines/patterns/actions-and-buttons/",
+      where:
+        "New task… is the one primary button. Each row's ⋯ holds the actions on that task, and the bulk bar names its actions with their count once tasks are selected.",
+    },
+    {
+      route: "/guidelines/patterns/overlays/",
+      where:
+        "Each row's menu has a submenu for the assignee, and hovering an assignee previews them in a HoverCard. New task… opens a Dialog. Below lg, a task's details slide in as a Sheet.",
+    },
+    {
+      route: "/guidelines/patterns/choosing-a-control/",
+      where:
+        "Each filter is a menu you can search, picking one status, person or label, and it applies at once. Rows are picked with Checkboxes for the bulk bar, and New task picks its assignee and label from Selects.",
+    },
+    {
+      route: "/guidelines/patterns/forms/",
+      where:
+        "New task: submit it with an empty title, and the message lands under the field, which is checked again as you type.",
+    },
+    {
+      route: "/guidelines/patterns/loading-empty-and-error/",
+      where:
+        "Filter until nothing is left: No tasks match, with Clear filters. Scroll to the end, and Load more fetches the next page and says how many remain.",
+    },
+    {
+      route: "/guidelines/foundations/density/",
+      where:
+        "A table row is a key, a title and its badges, with the row's ⋯ always drawn. Press Touch in the bar above, and the rows and their controls grow for a thumb.",
+    },
+    {
+      route: "/guidelines/platforms/desktop-and-pointer/",
+      where:
+        "The row's ⋯ never waits for hover, a task's title is a link that opens in a new tab, and the HoverCard on an assignee only repeats what the Assignee filter offers.",
+    },
+    {
+      route: "/guidelines/platforms/touch-and-mobile/",
+      where:
+        "On a phone the filters scroll sideways in one row, and a task opens as a Sheet that fills the screen.",
+    },
+  ],
 };
 
 import { DemoPage } from "../../demos/demo-page.tsx";
 import { Tasks } from "../../demos/tasks/tasks.tsx";
 
-<DemoPage
-  guidelines={[
-    { route: "/guidelines/patterns/destructive-actions/", title: "Destructive actions" },
-    { route: "/guidelines/patterns/feedback/", title: "Feedback" },
-    { route: "/guidelines/patterns/overlays/", title: "Overlays" },
-    { route: "/guidelines/patterns/choosing-a-control/", title: "Choosing a control" },
-    { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
-    { route: "/guidelines/foundations/density/", title: "Density" },
-    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
-    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
-  ]}
->
+<DemoPage>
   <Tasks />
 </DemoPage>

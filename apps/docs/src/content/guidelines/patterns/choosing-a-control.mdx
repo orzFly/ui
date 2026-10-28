@@ -10,10 +10,17 @@ export const meta = {
     "ui/Primitives/Select",
     "ui/Primitives/Slider",
     "ui/Primitives/Tabs",
+    "ui/Primitives/Label",
+    "ui/Primitives/Button",
   ],
 };
 
 import { ControlsCompared } from "../../../examples/choosing-a-control/controls-compared.tsx";
+import { FontSizeSlider } from "../../../examples/choosing-a-control/font-size-slider.tsx";
+import { NotifyRadioGroup } from "../../../examples/choosing-a-control/notify-radio-group.tsx";
+import { NotifySelect } from "../../../examples/choosing-a-control/notify-select.tsx";
+import { ProfileChoices } from "../../../examples/choosing-a-control/profile-choices.tsx";
+import { PullRequestTabs } from "../../../examples/choosing-a-control/pull-request-tabs.tsx";
 import { SwitchesApplyNow } from "../../../examples/choosing-a-control/switches-apply-now.tsx";
 import { SwitchesInAForm } from "../../../examples/choosing-a-control/switches-in-a-form.tsx";
 
@@ -22,9 +29,11 @@ Exactly one of a few is a RadioGroup; exactly one of many is a Select.**
 
 <Example of={ControlsCompared} />
 
-The editor settings on the left apply as they change, so they are Switches, and the one with too
-many languages to show at once is a Select. The status filter on the right does nothing until
-**Apply**, so it is a list of Checkboxes.
+On the left, the Settings demo's editor section. Its settings apply as they change, so the on-off
+ones are Switches; the language new files open as has too many options to show at once, so it is a
+Select; and the three ways to indent are worth seeing side by side, so they are a RadioGroup. On
+the right, Mail's conversations do nothing until **Archive**, so each row has a Checkbox. Tick
+one, and the box above them turns partly checked; press it to select none.
 
 ## Do and don't
 
@@ -38,10 +47,10 @@ many languages to show at once is a Select. The status filter on the right does 
 </DoDont>
 
 <DoDont>
-  <Do>
+  <Do show={<NotifyRadioGroup />}>
     Show two to five options as a RadioGroup when people should compare them before choosing.
   </Do>
-  <Dont>
+  <Dont show={<NotifySelect />}>
     Hide three options in a Select to save a few lines: the choice costs a tap to open and the
     options cannot be read side by side.
   </Dont>
@@ -62,6 +71,21 @@ many languages to show at once is a Select. The status filter on the right does 
 The parent of a partly checked list is a Checkbox with `checked="indeterminate"`. A Switch has no
 indeterminate state and no "applies later": if the setting only takes effect once
 something else happens, it is not a Switch.
+
+<Example of={ProfileChoices} />
+
+The Settings demo's profile form keeps its choices until **Save profile**, so its one yes or no is
+a Checkbox. Its time zone is one of thirteen, too many to lay out side by side, so it is a Select.
+
+<Example of={FontSizeSlider} />
+
+The Settings demo's font size is picked by how the code looks, not by its number, so it is a
+Slider, and the line of code under it follows as it drags.
+
+<Example of={PullRequestTabs} />
+
+The pull request demo's tabs show its conversation, commits and checks in turn. Nothing is saved
+by picking one.
 
 ## On each platform
 

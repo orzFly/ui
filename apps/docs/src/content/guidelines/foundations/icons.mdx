@@ -3,20 +3,28 @@ export const meta = {
   description:
     "Lucide, at the size of the text beside it, in the colour of that text. An icon alone always carries a name.",
   order: 15,
-  api: ["ui/Primitives/Button", "ui/Primitives/Tooltip"],
+  api: [
+    "ui/Primitives/Button",
+    "ui/Primitives/Tooltip",
+    "ui/Primitives/DropdownMenu",
+    "ui/Primitives/Badge",
+  ],
 };
 
-import { EditorToolbar } from "../../../examples/icons/editor-toolbar.tsx";
+import { IconSizes } from "../../../examples/icons/icon-sizes.tsx";
+import { ThreadToolbar } from "../../../examples/icons/thread-toolbar.tsx";
 
 **Draw icons from [Lucide](https://lucide.dev/icons/), let the component size them, and give
 every icon-only control an `aria-label`.** An icon is shorthand for a word; the word still has to be
 there for the people and tools that cannot see the picture.
 
-<Example of={EditorToolbar} />
+<Example of={ThreadToolbar} />
 
-The formatting buttons are icons alone, each named for a screen reader and shown its name in a
-tooltip on hover or focus. **Send** keeps its word, because it is the one action the toolbar is
-for.
+The Mail demo's toolbar over an open conversation, and its reply box. **Archive**, **Delete** and
+**Mark as unread** are icons alone, each named for a screen reader and shown its name in a tooltip
+on hover or focus: people use them all day, and Undo takes back a delete. **Send** keeps its word,
+because it is what the reply box is for. **More actions** needs no word anywhere, and the rarer
+actions behind it, **Forward** and **Copy link**, have theirs.
 
 ## One set
 
@@ -33,6 +41,8 @@ grid. An icon from another set, even a better one, looks foreign beside the rest
 | Beside `text-sm` | `size-4` (16px) |
 | Beside `text-xs` | `size-3.5` or `size-3` |
 | An empty state's or error's illustration | `size-8` to `size-10`, `text-muted-foreground` |
+
+<Example of={IconSizes} />
 
 Icons draw in `currentColor`, so they take the text colour around them. Set `text-muted-foreground`
 on an icon that is decoration beside a label; leave it alone on an icon that is the control.
@@ -63,8 +73,8 @@ In a `Button`, mark an icon before or after the label with `data-icon="inline-st
 | The action | Show |
 |---|---|
 | Universally recognised (close, search, menu, more, back) | Icon alone, with `aria-label` |
-| Frequent, in a toolbar people learn (bold, wrap, refresh) | Icon alone, with `aria-label` and a tooltip |
-| The main action of a view, or anything destructive | Icon and word, or the word alone |
+| Frequent, in a toolbar people learn (bold, wrap, refresh, archive, a delete that Undo takes back) | Icon alone, with `aria-label` and a tooltip |
+| The main action of a view, or anything destructive that cannot be undone | Icon and word, or the word alone |
 | Rare, or with no established icon | The word alone |
 
 ## On each platform

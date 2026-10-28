@@ -157,7 +157,7 @@ export function Tasks() {
       ?.writeText(new URL(taskHref(id), location.href).href)
       .then(
         () => toast("Link copied"),
-        () => toast.error("Could not copy the link"),
+        () => toast.error("Couldn't copy the link"),
       );
   };
   const askDelete = (ids: number[]) => {
@@ -247,7 +247,7 @@ export function Tasks() {
               onClick={() => setCreating(true)}
             >
               <PlusIcon />
-              New
+              New task…
             </Button>
             {/* One row that scrolls sideways on a phone, rather than three that wrap. */}
             <div className="-mx-2 order-last flex w-[calc(100%+1rem)] gap-2 overflow-x-auto px-2 [scrollbar-width:none] sm:order-none sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">

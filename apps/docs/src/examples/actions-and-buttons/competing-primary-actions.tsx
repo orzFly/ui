@@ -2,10 +2,10 @@ import { Button } from "@orz/ui/components/button";
 
 export function CompetingPrimaryActions() {
   return (
-    <div className="flex justify-end gap-2">
+    <div className="flex flex-wrap gap-2">
+      <Button>Send</Button>
       <Button>Save draft</Button>
-      <Button>Preview</Button>
-      <Button>Publish</Button>
+      <Button>Discard</Button>
     </div>
   );
 }

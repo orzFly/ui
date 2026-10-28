@@ -16,6 +16,12 @@ import {
   SheetTrigger,
 } from "@orz/ui/components/sheet";
 import { Skeleton } from "@orz/ui/components/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@orz/ui/components/tooltip";
 import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog";
 import {
   blobSource,
@@ -361,7 +367,7 @@ export function BinaryInspector() {
           className="hidden w-64 shrink-0 flex-col border-r bg-sidebar md:flex"
         >
           <div className="grid gap-2 border-b p-3">{filePicker}</div>
-          <h2 className="px-3 pt-3 pb-1 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+          <h2 className="px-3 pt-3 pb-1 font-medium text-muted-foreground text-xs">
             Structure
           </h2>
           <nav
@@ -414,62 +420,73 @@ export function BinaryInspector() {
                 .join(" · ")
             : ""}
         </p>
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Undo"
-            disabled={!doc || !canUndo}
-            onClick={() => doc?.undo()}
-          >
-            <Undo2Icon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Redo"
-            disabled={!doc || !canRedo}
-            onClick={() => doc?.redo()}
-          >
-            <Redo2Icon />
-          </Button>
-          <Sheet>
-            <SheetTrigger asChild>
+        <TooltipProvider>
+          <div className="ml-auto flex items-center gap-1">
+            <Named label="Undo">
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Inspector"
-                disabled={!doc}
-                className="lg:hidden"
+                aria-label="Undo"
+                disabled={!doc || !canUndo}
+                onClick={() => doc?.undo()}
               >
-                <ScanSearchIcon />
+                <Undo2Icon />
               </Button>
-            </SheetTrigger>
-            <SheetContent
-              side="bottom"
-              className="max-h-[85dvh] gap-0 overflow-y-auto"
+            </Named>
+            <Named label="Redo">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Redo"
+                disabled={!doc || !canRedo}
+                onClick={() => doc?.redo()}
+              >
+                <Redo2Icon />
+              </Button>
+            </Named>
+            <Sheet>
+              <Named label="Inspector">
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Inspector"
+                    disabled={!doc}
+                    className="lg:hidden"
+                  >
+                    <ScanSearchIcon />
+                  </Button>
+                </SheetTrigger>
+              </Named>
+              <SheetContent
+                side="bottom"
+                className="max-h-[85dvh] gap-0 overflow-y-auto"
+              >
+                <SheetTitle className="px-4 pt-4 text-base">
+                  Inspector
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                  The selected bytes read as numbers and text
+                </SheetDescription>
+                <div className="p-4">{inspector}</div>
+              </SheetContent>
+            </Sheet>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!changes || !!fetching}
+              onClick={() => setReverting(true)}
             >
-              <SheetTitle className="px-4 pt-4 text-base">Inspector</SheetTitle>
-              <SheetDescription className="sr-only">
-                The selected bytes read as numbers and text
-              </SheetDescription>
-              <div className="p-4">{inspector}</div>
-            </SheetContent>
-          </Sheet>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={!changes || !!fetching}
-            onClick={() => setReverting(true)}
-          >
-            <RotateCcwIcon />
-            <span className="max-sm:sr-only">Revert</span>
-          </Button>
-          <Button size="sm" disabled={!doc || !!fetching} onClick={save}>
-            <DownloadIcon />
-            <span className="max-sm:sr-only">Download</span>
-          </Button>
-        </div>
+              <RotateCcwIcon />
+              {/* Words on a phone too: nothing undoes a revert, and Download is what the bar is for. */}
+              Revert…
+            </Button>
+            <Button size="sm" disabled={!doc || !!fetching} onClick={save}>
+              <DownloadIcon />
+              Download
+            </Button>
+          </div>
+        </TooltipProvider>
       </footer>
       {dragging && (
         <div
@@ -539,6 +556,16 @@ function FilePicker({
         Or drop one here. It is read in your browser, never uploaded.
       </p>
     </div>
+  );
+}
+
+/** The tooltip that shows an icon button's name, which its `aria-label` already carries. */
+function Named({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }
 

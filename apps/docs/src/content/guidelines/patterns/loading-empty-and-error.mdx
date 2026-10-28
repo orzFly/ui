@@ -12,7 +12,12 @@ export const meta = {
 };
 
 import { BareEmptyState } from "../../../examples/loading-empty-and-error/bare-empty-state.tsx";
+import { DelayedSkeleton } from "../../../examples/loading-empty-and-error/delayed-skeleton.tsx";
+import { EmptyWithNextStep } from "../../../examples/loading-empty-and-error/empty-with-next-step.tsx";
+import { FilteredNotes } from "../../../examples/loading-empty-and-error/filtered-notes.tsx";
+import { InboxList } from "../../../examples/loading-empty-and-error/inbox-list.tsx";
 import { ListStates } from "../../../examples/loading-empty-and-error/list-states.tsx";
+import { PageSpinner } from "../../../examples/loading-empty-and-error/page-spinner.tsx";
 import { SkeletonShapedLikeContent } from "../../../examples/loading-empty-and-error/skeleton-shaped-like-content.tsx";
 
 **Every surface that loads has four states, and each one looks like itself: a skeleton while it
@@ -21,6 +26,10 @@ then the content.**
 
 <Example of={ListStates} />
 
+Step through the tabs: the skeleton has the rows' shape, the empty list says what a note is and
+offers **New note**, and the failure names what failed. Press **Retry** there: it is disabled while
+the read runs, and the notes arrive.
+
 ## Do and don't
 
 <DoDont>
@@ -28,16 +37,16 @@ then the content.**
     Draw a `Skeleton` in the shape of the content that is coming, so the page does not jump when it
     arrives.
   </Do>
-  <Dont>
+  <Dont show={<PageSpinner />}>
     Cover the whole page with a spinner while one list loads: everything else on it was already
     usable.
   </Dont>
 </DoDont>
 
 <DoDont>
-  <Do>
-    Say what would be here and how to get some: "No pipelines yet", a line on what a pipeline is,
-    and a **New pipeline** button.
+  <Do show={<EmptyWithNextStep />}>
+    Say what would be here and how to get some: "No notes yet", a line on what a note is, and a
+    **New note** button.
   </Do>
   <Dont show={<BareEmptyState />}>
     Leave "No data" in an empty box. It reads the same as a failed load or a filter that hides
@@ -57,8 +66,24 @@ then the content.**
 | Refresh failed, older data still shown | That the data is stale, and **Retry** | `RefreshFailure` |
 | Loading more of a list | A **Load more** button that turns into its own failure and retry | `LoadMoreFooter` with `usePagedAppend` |
 
-An empty state that comes from a filter is not the same as an empty list. "No pipelines yet"
-invites creating one; "No pipelines match *failed*" invites clearing the filter.
+<Example of={DelayedSkeleton} />
+
+The first note answers in 0.2 s and replaces the one on screen with nothing in between. The second
+takes 2 s: the old note stays for half a second, then the skeleton holds its place.
+
+An empty state that comes from a filter is not the same as an empty list. "No notes yet" invites
+writing one; "No notes match" invites clearing the filter.
+
+<Example of={FilteredNotes} />
+
+Add **#release** to **#ci**: no note has both, and the list says so with **Clear filter** rather
+than "No notes yet".
+
+<Example of={InboxList} />
+
+Press **Refresh**: the first one fails, and the conversations already shown stay under the
+warning. Press **Load more** twice: the second page fails in place of the button, and its **Retry**
+loads only that page.
 
 ## Retrying
 

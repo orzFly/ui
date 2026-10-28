@@ -72,9 +72,7 @@ function TaskLinks({
   if (tasks.length === 0) return null;
   return (
     <section className="grid gap-2">
-      <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-        {title}
-      </h3>
+      <h3 className="font-medium text-muted-foreground text-xs">{title}</h3>
       <ul className="grid gap-1.5 text-sm">
         {tasks.map((task) => (
           <li key={task.id}>
@@ -179,7 +177,7 @@ export function TaskDetails({
         </Field>
       </div>
       <section className="grid gap-2 text-sm">
-        <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+        <h3 className="font-medium text-muted-foreground text-xs">
           Description
         </h3>
         {task.body === "" ? (

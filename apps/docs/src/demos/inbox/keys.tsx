@@ -35,9 +35,15 @@ export const KEYS = {
 
 export type KeyAction = keyof typeof KEYS;
 
-/** How a key is printed: the capitals are typed with Shift. */
-const printed = (key: string) =>
-  key !== key.toLowerCase() ? `Shift ${key}` : key.toUpperCase();
+/**
+ * How a key is printed: the capitals are typed with Shift, which an Apple keyboard prints as ⇧.
+ * Only tooltips and the open dialog print one, so the prerender never needs to know.
+ */
+const printed = (key: string) => {
+  if (key === key.toLowerCase()) return key.toUpperCase();
+  const apple = /mac|iphone|ipad/i.test(navigator.platform);
+  return apple ? `⇧${key}` : `Shift ${key}`;
+};
 
 function Kbd({ children }: { children: ReactNode }) {
   return (

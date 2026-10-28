@@ -9,11 +9,17 @@ export const meta = {
     "ui/Primitives/Textarea",
     "ui/Primitives/Select",
     "ui/Primitives/Checkbox",
+    "ui/Primitives/RadioGroup",
+    "ui/QueryBox",
     "ui/UnsavedChangesDialog",
   ],
 };
 
+import { CheckOnSubmit } from "../../../examples/forms/check-on-submit.tsx";
+import { CheckWhileTyping } from "../../../examples/forms/check-while-typing.tsx";
 import { LabelAboveField } from "../../../examples/forms/label-above-field.tsx";
+import { LeaveWithUnsavedChanges } from "../../../examples/forms/leave-with-unsaved-changes.tsx";
+import { MailFilterForm } from "../../../examples/forms/mail-filter-form.tsx";
 import { PlaceholderAsLabel } from "../../../examples/forms/placeholder-as-label.tsx";
 import { ProfileForm } from "../../../examples/forms/profile-form.tsx";
 
@@ -22,8 +28,10 @@ one primary button at the end that names what it saves.**
 
 <Example of={ProfileForm} />
 
-Submit it with the email empty: the message lands under the field, the field is marked invalid,
-and the rest of the form keeps what was typed.
+Clear the email and press **Save profile**: the message lands under the field, focus moves to it,
+and the rest of the form keeps what was typed. Start typing an address and the message updates
+with each key, then goes once the address is whole. **Discard changes** goes back to what was last
+saved.
 
 ## Do and don't
 
@@ -39,11 +47,11 @@ and the rest of the form keeps what was typed.
 </DoDont>
 
 <DoDont>
-  <Do>
+  <Do show={<CheckOnSubmit />}>
     Check a field when the form is submitted, and again as it is corrected once it has been marked
     wrong.
   </Do>
-  <Dont>
+  <Dont show={<CheckWhileTyping />}>
     Mark a field wrong while it is still being typed for the first time, or disable the submit
     button without saying what is missing.
   </Dont>
@@ -58,6 +66,11 @@ and the rest of the form keeps what was typed.
 | One of a fixed list | `Select`, or a `RadioGroup` for two to five, see [Choosing a control](/guidelines/patterns/choosing-a-control/) |
 | Yes or no, applied on submit | `Checkbox` |
 | Text in a query language, with completion | `QueryBox` |
+
+<Example of={MailFilterForm} />
+
+Press **Create filter** with **Matching** empty: the error lands under the `QueryBox` as under any
+other field. Type `from:` in it for the completions; Enter on the query as typed submits the form.
 
 Mark the optional fields "(optional)" in the label rather than every required one with an asterisk:
 most fields in a short form are required, and a reader should not have to decode a symbol.
@@ -76,6 +89,11 @@ most fields in a short form are required, and a reader should not have to decode
 A form that holds typed work guards it. When people navigate away before saving, ask with
 `UnsavedChangesDialog`: **Keep editing** is its primary action, and **Discard and leave** is the
 alternative. The dialog takes no router; the app's own navigation blocker opens it.
+
+<Example of={LeaveWithUnsavedChanges} />
+
+Change the name and press **Settings**: the dialog asks, and **Keep editing** returns to the field
+with the name as typed. Save first, or change nothing, and **Settings** leaves at once.
 
 Settings that apply as they change (Switches, see [Choosing a control](/guidelines/patterns/choosing-a-control/))
 have nothing unsaved, so a settings page of Switches needs no guard and no Save button.

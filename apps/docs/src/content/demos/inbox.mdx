@@ -7,6 +7,8 @@ export const meta = {
   api: [
     "ui/QueryBox",
     "ui/LoadMoreFooter",
+    "ui/LoadFailure",
+    "ui/ConfirmDialog",
     "ui/Primitives/Sheet",
     "ui/Primitives/DropdownMenu",
     "ui/Primitives/Tooltip",
@@ -18,23 +20,88 @@ export const meta = {
     "ui-markdown/Markdown",
     "ui-codemirror/MarkdownEditor",
   ],
+  guidelines: [
+    {
+      route: "/guidelines/principles/",
+      where:
+        "Archiving asks nothing and offers Undo, no action waits for hover, and the list says whether it is empty, filtered out or failed to refresh.",
+    },
+    {
+      route: "/guidelines/patterns/destructive-actions/",
+      where:
+        "Archive or delete a conversation: it moves at once, and the toast says where it went with Undo. In Trash, Delete forever… is the one step that asks, and it sits last in More actions.",
+    },
+    {
+      route: "/guidelines/patterns/feedback/",
+      where:
+        "Archive, delete, mark or send a message, and a toast says so, with Undo. Press Refresh: the first check fails, and says so above the list it kept, with Retry.",
+    },
+    {
+      route: "/guidelines/patterns/loading-empty-and-error/",
+      where:
+        "Open an empty folder for what it holds and how mail gets there, search for a word no mail has for the filter's own empty state, and scroll to the end for Load more.",
+    },
+    {
+      route: "/guidelines/patterns/actions-and-buttons/",
+      where:
+        "Compose is the one primary button. The toolbars are ghost icon buttons with tooltips, and the rare actions (Forward, Copy link) wait behind More actions.",
+    },
+    {
+      route: "/guidelines/patterns/overlays/",
+      where:
+        "On a phone the folders slide in as a Sheet. Labels and More actions are menus, ? opens a Dialog, and Delete forever… a ConfirmDialog. Compose docks in a corner and blocks nothing.",
+    },
+    {
+      route: "/guidelines/patterns/forms/",
+      where:
+        "Compose with nobody in To and press Send: the message lands under the field. Close it with words in it, and the message waits in Drafts.",
+    },
+    {
+      route: "/guidelines/foundations/layout-and-spacing/",
+      where:
+        "Narrow the window. The sidebar folds to a rail below xl, and below md one pane shows at a time, with the folders in a Sheet.",
+    },
+    {
+      route: "/guidelines/foundations/density/",
+      where:
+        "A row is a sender, a subject and one line of snippet. Press Touch in the bar above, and the rows, the toolbars and the checkboxes grow for a thumb with no layout of their own.",
+    },
+    {
+      route: "/guidelines/foundations/icons/",
+      where:
+        "The toolbars are Lucide icons alone, each with an aria-label and a tooltip, and unread and starred are said in words too. Compose, Send and Delete forever… keep their words, except in the narrow rail, where every place is an icon with a tooltip.",
+    },
+    {
+      route: "/guidelines/foundations/motion/",
+      where:
+        "Send a reply: the thread scrolls down to it, or jumps there under reduced motion. The folders' Sheet slides in from its edge, and Refresh spins while it checks.",
+    },
+    {
+      route: "/guidelines/platforms/desktop-and-pointer/",
+      where:
+        "Press ? for every shortcut, and turn them off in the same dialog. A toolbar button's tooltip prints its key, so e for Archive is learned where Archive is. j and k walk the list.",
+    },
+    {
+      route: "/guidelines/platforms/touch-and-mobile/",
+      where:
+        "On a phone a long press selects a conversation, Compose sits under the thumb, and the reply box rides above the on-screen keyboard.",
+    },
+    {
+      route: "/guidelines/content/accessibility/",
+      where:
+        "Put the mouse away: Tab reaches every row and control, each icon button is named, and the single-key shortcuts can be turned off.",
+    },
+    {
+      route: "/guidelines/content/writing/",
+      where:
+        "Toasts name the thing and what happened (“3 conversations archived”), each empty folder says what would be in it, and Delete forever… asks with the count.",
+    },
+  ],
 };
 
 import { DemoPage } from "../../demos/demo-page.tsx";
 import { Inbox } from "../../demos/inbox/inbox.tsx";
 
-<DemoPage
-  guidelines={[
-    { route: "/guidelines/foundations/layout-and-spacing/", title: "Layout & spacing" },
-    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
-    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
-    { route: "/guidelines/patterns/destructive-actions/", title: "Destructive actions" },
-    { route: "/guidelines/patterns/overlays/", title: "Overlays" },
-    { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
-    { route: "/guidelines/patterns/forms/", title: "Forms" },
-    { route: "/guidelines/content/accessibility/", title: "Accessibility" },
-    { route: "/guidelines/content/writing/", title: "Writing" },
-  ]}
->
+<DemoPage>
   <Inbox />
 </DemoPage>

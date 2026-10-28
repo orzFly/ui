@@ -6,14 +6,14 @@ export function SwitchesInAForm() {
   return (
     <div className="grid gap-3">
       <div className="flex items-center justify-between gap-4">
-        <Label htmlFor="dont-digest">Subscribe to the digest</Label>
-        <Switch id="dont-digest" defaultChecked />
+        <Label htmlFor="dont-show-email">Show my email on my profile</Label>
+        <Switch id="dont-show-email" />
       </div>
       <div className="flex items-center justify-between gap-4">
-        <Label htmlFor="dont-terms">Accept the terms</Label>
-        <Switch id="dont-terms" />
+        <Label htmlFor="dont-weekly">Weekly summary</Label>
+        <Switch id="dont-weekly" defaultChecked />
       </div>
-      <Button className="justify-self-end">Save</Button>
+      <Button className="justify-self-end">Save profile</Button>
     </div>
   );
 }

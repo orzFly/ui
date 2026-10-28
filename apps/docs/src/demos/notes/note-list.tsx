@@ -104,7 +104,7 @@ export function NoteList({
           <Input
             type="search"
             aria-label="Filter notes"
-            placeholder="Filter notes"
+            placeholder="Filter notes…"
             enterKeyHint="search"
             value={query}
             onChange={(event) => onQuery(event.target.value)}
@@ -135,14 +135,28 @@ export function NoteList({
               className="size-8 text-muted-foreground"
               aria-hidden
             />
-            <p className="font-medium">No notes match</p>
-            <p className="text-muted-foreground text-sm">
-              Try fewer words, or fewer tags.
-            </p>
-            {filtered && (
-              <Button variant="outline" size="sm" onClick={onClear}>
-                Clear filter
-              </Button>
+            {filtered ? (
+              <>
+                <p className="font-medium">No notes match</p>
+                <p className="text-muted-foreground text-sm">
+                  Try fewer words, or fewer tags.
+                </p>
+                <Button variant="outline" size="sm" onClick={onClear}>
+                  Clear filter
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="font-medium">No notes yet</p>
+                <p className="text-muted-foreground text-sm">
+                  A note is markdown, kept in this tab. Start one with a #
+                  heading.
+                </p>
+                <Button variant="outline" size="sm" onClick={onNew}>
+                  <PlusIcon />
+                  New note
+                </Button>
+              </>
             )}
           </div>
         ) : (
@@ -159,7 +173,7 @@ export function NoteList({
               >
                 <h3
                   id={`notes-folder-${folder}`}
-                  className="px-2.5 pb-1 font-medium text-muted-foreground text-xs uppercase tracking-wide"
+                  className="px-2.5 pb-1 font-medium text-muted-foreground text-xs"
                 >
                   {folder}
                 </h3>

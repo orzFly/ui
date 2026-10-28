@@ -1,3 +1,9 @@
+import {
+  PROFILE,
+  type Profile,
+  sameProfile,
+  TOKENS,
+} from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
 import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog";
 import { cn } from "@orz/ui/lib/utils";
@@ -12,7 +18,6 @@ import {
   UserIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PROFILE, type Profile, sameProfile, TOKENS } from "./account.ts";
 import {
   AppearanceSection,
   EditorSection,
@@ -57,7 +62,7 @@ const SECTIONS: {
   {
     id: "profile",
     title: "Profile",
-    description: "What others see of you. Saved when you press Save.",
+    description: "What others see of you. Saved when you press Save profile.",
     Icon: UserIcon,
   },
   {

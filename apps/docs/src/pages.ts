@@ -16,6 +16,21 @@ export const pages = Object.entries(metas).map(([file, meta]) => ({
 
 export const nav = buildNav(pages);
 
+/** The demos that name `route` among their guidelines, each with where to see it, in nav order. */
+export function demosShowing(route: string) {
+  return pages
+    .flatMap(({ route: demo, meta }) =>
+      (meta.guidelines ?? [])
+        .filter((guideline) => guideline.route === route)
+        .map(({ where }) => ({ route: demo, meta, where })),
+    )
+    .sort(
+      (a, b) =>
+        (a.meta.order ?? Number.POSITIVE_INFINITY) -
+        (b.meta.order ?? Number.POSITIVE_INFINITY),
+    );
+}
+
 const loaderOf = new Map(
   Object.entries(loaders).map(([file, load]) => [routeOf(file), load]),
 );

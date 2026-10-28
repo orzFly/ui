@@ -9,26 +9,54 @@ export const meta = {
     "ui-hex/HexInspector",
     "ui/Primitives/Select",
     "ui/Primitives/Sheet",
+    "ui/Primitives/Tooltip",
     "ui/Primitives/Toaster",
     "ui/LoadFailure",
     "ui/UnsavedChangesDialog",
     "ui/ConfirmDialog",
+  ],
+  guidelines: [
+    {
+      route: "/guidelines/patterns/destructive-actions/",
+      where:
+        "Edit a few bytes: Undo takes each one back. Revert… drops them all, so it is the one step that asks, and its dialog points at Download as the way to keep a copy.",
+    },
+    {
+      route: "/guidelines/patterns/forms/",
+      where:
+        "Edit a byte, then pick another sample: the unsaved edits are guarded by the same dialog a form uses before you leave it.",
+    },
+    {
+      route: "/guidelines/patterns/loading-empty-and-error/",
+      where:
+        "Pick another sample: skeleton rows hold its place while it loads. Should the fetch fail, the error takes that place, with Retry.",
+    },
+    {
+      route: "/guidelines/patterns/feedback/",
+      where:
+        "Paste more bytes than fit, or text that is not hex: a toast says what was pasted and what was refused. Revert ends in one that names the file.",
+    },
+    {
+      route: "/guidelines/patterns/overlays/",
+      where:
+        "Below lg the inspector waits in a Sheet from the bottom bar. Revert… asks in a ConfirmDialog, and opening another file over edits asks in UnsavedChangesDialog.",
+    },
+    {
+      route: "/guidelines/platforms/desktop-and-pointer/",
+      where:
+        "Drop a file anywhere to open it: a shortcut for Open file…, which does the same without a drag. Undo and Redo name themselves in a tooltip.",
+    },
+    {
+      route: "/guidelines/platforms/touch-and-mobile/",
+      where:
+        "On a phone the structure is a Select above the bytes and the inspector a Sheet, while Revert… keeps its word because nothing undoes it.",
+    },
   ],
 };
 
 import { BinaryInspector } from "../../demos/binary-inspector/binary-inspector.tsx";
 import { DemoPage } from "../../demos/demo-page.tsx";
 
-<DemoPage
-  guidelines={[
-    { route: "/guidelines/patterns/destructive-actions/", title: "Destructive actions" },
-    { route: "/guidelines/patterns/forms/", title: "Forms" },
-    { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
-    { route: "/guidelines/patterns/feedback/", title: "Feedback" },
-    { route: "/guidelines/patterns/overlays/", title: "Overlays" },
-    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
-    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
-  ]}
->
+<DemoPage>
   <BinaryInspector />
 </DemoPage>

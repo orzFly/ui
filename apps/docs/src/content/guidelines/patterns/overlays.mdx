@@ -10,15 +10,26 @@ export const meta = {
     "ui/Primitives/DropdownMenu",
     "ui/Primitives/HoverCard",
     "ui/Primitives/Tooltip",
+    "ui/ConfirmDialog",
   ],
 };
 
+import { ActionInHoverCard } from "../../../examples/overlays/action-in-hover-card.tsx";
+import { InfoDialog } from "../../../examples/overlays/info-dialog.tsx";
 import { OverlayKinds } from "../../../examples/overlays/overlay-kinds.tsx";
+import { PreviewOnHover } from "../../../examples/overlays/preview-on-hover.tsx";
+import { QuestionDialog } from "../../../examples/overlays/question-dialog.tsx";
 
 **Pick the overlay that interrupts least. A Popover or a menu keeps the page in reach; a Sheet sets
 it aside; a Dialog stops it until the question is answered.**
 
 <Example of={OverlayKinds} />
+
+Each control opens a different overlay. In Mail, the panel icon opens the folders in a `Sheet`, the
+star is named by its `Tooltip`, and the tag icon opens the labels in a `DropdownMenu` that stays
+open for the next tick. On the token, the pencil edits its name in a `Popover`, and **Revoke…** asks
+in a `Dialog`. Hover **alice** for a `HoverCard`. Press **Touch** below the preview: the Tooltip
+and the HoverCard no longer open, and every other control still works.
 
 ## Which one
 
@@ -37,22 +48,22 @@ that opens another dialog is a flow; make it a page, or one dialog with steps.
 ## Do and don't
 
 <DoDont>
-  <Do>
-    Title a dialog with its question, "Rename project", and put the action that answers it in the
-    footer, named with the same verb.
+  <Do show={<QuestionDialog />}>
+    Title a dialog with its question, "Delete … forever?", and put the action that answers it in
+    the footer, named with the same verb: **Delete forever**.
   </Do>
-  <Dont>
+  <Dont show={<InfoDialog />}>
     Use a dialog to show information that needs no answer: a toast, an inline note or a Popover
     interrupts less.
   </Dont>
 </DoDont>
 
 <DoDont>
-  <Do>
+  <Do show={<PreviewOnHover />}>
     Put anything a HoverCard or Tooltip shows somewhere reachable without hover too: the page the
     link opens, or a visible label.
   </Do>
-  <Dont>
+  <Dont show={<ActionInHoverCard />}>
     Hide an action inside a HoverCard: a phone cannot hover, and a keyboard reaches the card only
     through its trigger's focus.
   </Dont>

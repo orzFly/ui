@@ -8,11 +8,17 @@ export const meta = {
     "ui/Primitives/Button",
     "ui/Primitives/Toaster",
     "ui/Primitives/DropdownMenu",
+    "ui/UnsavedChangesDialog",
+    "ui/Primitives/Tooltip",
+    "ui/Primitives/Input",
   ],
 };
 
+import { ConfirmEveryDelete } from "../../../examples/destructive-actions/confirm-every-delete.tsx";
 import { DeleteWithUndo } from "../../../examples/destructive-actions/delete-with-undo.tsx";
 import { NamedConfirmActions } from "../../../examples/destructive-actions/named-confirm-actions.tsx";
+import { RevokeToken } from "../../../examples/destructive-actions/revoke-token.tsx";
+import { TrashWithUndo } from "../../../examples/destructive-actions/trash-with-undo.tsx";
 import { VagueConfirmActions } from "../../../examples/destructive-actions/vague-confirm-actions.tsx";
 
 **Make a destructive action reversible and offer Undo afterwards, rather than asking first.
@@ -20,16 +26,17 @@ Confirm only the step that cannot be undone, and say exactly what it destroys.**
 
 <Example of={DeleteWithUndo} />
 
-Moving a file to the trash happens at once, with **Undo** in the toast: nothing is lost yet, so
-nothing is asked. Emptying the trash cannot be undone, so it is the one step that asks, naming how
-many files go.
+Mail's conversations, as in the Mail demo. Archiving one, or deleting it into Trash, happens at
+once, with **Undo** in the toast: nothing is lost yet, so nothing is asked. **Delete forever…**
+cannot be undone, so it is the one step that asks, naming the conversation or how many go, and
+pointing at the way to keep them.
 
 ## Do and don't
 
 <DoDont>
   <Do show={<NamedConfirmActions />}>
     Ask a question that names the thing and the count, and label the button with the same verb:
-    **Delete 3 files**.
+    **Delete 3 conversations**.
   </Do>
   <Dont show={<VagueConfirmActions />}>
     Ask "Are you sure?" with **OK**: people learn to press it without reading.
@@ -37,11 +44,11 @@ many files go.
 </DoDont>
 
 <DoDont>
-  <Do>
+  <Do show={<TrashWithUndo />}>
     Archive, move to the trash or hide, and toast with **Undo**. The fast path stays fast and a slip
     costs one tap.
   </Do>
-  <Dont>
+  <Dont show={<ConfirmEveryDelete />}>
     Confirm every delete. A dialog on each one teaches people to click through it, so it no longer
     protects the one delete that mattered.
   </Dont>
@@ -57,13 +64,18 @@ many files go.
 | Delete for good, empty the trash, revoke a token | No | `ConfirmDialog` with `destructive` |
 | Delete something large or shared that others rely on | No | `ConfirmDialog`, and say what else goes with it |
 
+<Example of={RevokeToken} />
+
+The Settings demo's access tokens. A revoked token cannot be restored, and every script that signs
+in with it stops, so **Revoke…** asks first and says both.
+
 `ConfirmDialog` asks no one to type a name back. It is sized for actions whose irreversible step
 has a reversible alternative the wording can point at ("Archive it instead to keep its history").
 An action with no such alternative, that destroys a lot, deserves more than this dialog.
 
 ## Writing the confirmation
 
-- The title is the question, with the object: "Delete report.pdf?", "Revoke the token for
+- The title is the question, with the object: "Delete 3 conversations forever?", "Revoke the token for
   ci-runner?".
 - The description says what cannot be undone and, if there is one, the reversible alternative.
 - The confirm button repeats the verb: **Delete**, **Revoke**. The cancel button is **Cancel**.
@@ -75,14 +87,14 @@ An action with no such alternative, that destroys a lot, deserves more than this
 - In a menu, a destructive item comes last, after a separator, with `variant="destructive"`.
 - In a toolbar or a row, a destructive action is a ghost or `destructive` button away from the
   primary one, never the primary button itself.
-- Bulk actions say their count in the label: **Delete 3 files**.
+- Bulk actions say their count in the label: **Delete 3 conversations**.
 
 ## On each platform
 
 ### Desktop & pointer
 
 - Undo is also a shortcut where the app has one (Ctrl+Z or ⌘Z) for the last destructive action.
-- A row's delete button may appear on hover, but must also appear on keyboard focus within the row.
+- A row's delete button is always drawn, quiet and small, or waits in the row's `⋯` menu: never only on hover.
 
 ### Touch
 

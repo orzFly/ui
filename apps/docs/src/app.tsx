@@ -3,6 +3,7 @@ import { cn } from "@orz/ui/lib/utils";
 import { type ReactNode, useEffect } from "react";
 import { documentTitle } from "./head.ts";
 import { ClientOnly } from "./hydrated.tsx";
+import { InTheDemos } from "./in-the-demos.tsx";
 import { ApiLinks, PageFooter, Sidebar, SiteHeader, Toc } from "./layout.tsx";
 import { mdxComponents } from "./mdx.tsx";
 import { loadedPage, nav } from "./pages.ts";
@@ -98,13 +99,14 @@ export function App() {
             <div className="mt-8">
               <page.default components={mdxComponents} />
             </div>
+            <InTheDemos route={route} />
             {meta.api && meta.api.length > 0 && (
               <ApiLinks titles={meta.api} className="mt-10 xl:hidden" />
             )}
             {section && <PageFooter section={section} route={route} />}
           </article>
         </main>
-        <Toc toc={page.toc} meta={meta} />
+        <Toc toc={page.toc} meta={meta} route={route} />
       </div>
     );
   }

@@ -8,15 +8,21 @@ export const meta = {
     "ui/Primitives/Tooltip",
     "ui/Primitives/Label",
     "ui/Primitives/Dialog",
+    "ui/Primitives/DropdownMenu",
+    "ui/Primitives/Input",
+    "ui/Primitives/Badge",
+    "ui/Primitives/Toaster",
     "ui/ThemeEditor",
     "ui/Hooks/useScrollInsets",
     "ui/Hooks/useSlashShortcut",
   ],
 };
 
-import { Button } from "@orz/ui/components/button";
 import { ContrastPairs } from "../../../examples/accessibility/contrast-pairs.tsx";
-import { NamedIconButtons } from "../../../examples/accessibility/named-icon-buttons.tsx";
+import { KeptFocusRing } from "../../../examples/accessibility/kept-focus-ring.tsx";
+import { ProfileEmail } from "../../../examples/accessibility/profile-email.tsx";
+import { RemovedFocusRing } from "../../../examples/accessibility/removed-focus-ring.tsx";
+import { ThreadToolbar } from "../../../examples/accessibility/thread-toolbar.tsx";
 
 > **Every action works by keyboard, by touch and through a screen reader, and every word and edge is
 > readable in every theme.**
@@ -54,11 +60,11 @@ same numbers, and the theme editor shows each token's ratio against the surface 
 ## Focus
 
 <DoDont>
-  <Do show={<div><Button variant="outline" className="outline-2 outline-offset-2 outline-ring outline-solid">Save changes</Button></div>}>
+  <Do show={<KeptFocusRing />}>
     Keep the focus ring every @orz/ui control draws on `:focus-visible`, and give anything else that
     takes focus the same one.
   </Do>
-  <Dont show={<div><Button variant="outline" className="focus-visible:outline-none">Save changes</Button></div>}>
+  <Dont show={<RemovedFocusRing />}>
     Remove the ring because it looks heavy after a click. `:focus-visible` already leaves it off for
     a mouse click and shows it for the keyboard.
   </Dont>
@@ -99,6 +105,13 @@ patterns, so an app keeps to these keys and adds no competing ones:
 | Escape | Closes the innermost open overlay, and nothing else |
 | `/` | Focuses the page's search (`useSlashShortcut`) unless shortcuts are turned off; typed as itself inside a field |
 
+<Example of={ThreadToolbar} />
+
+Do it without the mouse. Tab reaches each button once, and its tooltip says what it is. Enter or
+Space archives, and the button becomes **Move to Inbox** with the focus still on it. In **Labels**
+the arrow keys move, Space ticks a label and leaves the menu open, and Escape closes the menu and
+nothing else, with the focus back on its button. `/` here reaches this site's search.
+
 **A single-key shortcut that acts can be turned off**
 ([SC 2.1.4](https://www.w3.org/TR/WCAG22/#character-key-shortcuts)): speech input types stray single
 keys, and a stray key that archives, sends or deletes costs the user work. An app with shortcuts
@@ -129,7 +142,11 @@ example on this site show both.
 
 ## Names and roles
 
-<Example of={NamedIconButtons} />
+<Example of={ProfileEmail} />
+
+Clear the email and press **Save profile**. The error appears beside the field in words, the field
+is marked invalid and takes the focus, and a screen reader reads the error with the field's name.
+Fix it and save: the toast that confirms it is announced without moving the focus.
 
 - **Every control has a name** a screen reader can announce
   ([SC 4.1.2](https://www.w3.org/TR/WCAG22/#name-role-value)). A field gets a `Label` with

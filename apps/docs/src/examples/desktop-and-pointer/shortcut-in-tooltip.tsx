@@ -5,27 +5,28 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@orz/ui/components/tooltip";
-import { CopyIcon, DownloadIcon, ExternalLinkIcon } from "lucide-react";
+import { ArchiveIcon, MailIcon, Trash2Icon } from "lucide-react";
 
 const ACTIONS = [
-  { label: "Copy log", Icon: CopyIcon },
-  { label: "Download log", Icon: DownloadIcon },
-  { label: "Open raw log", Icon: ExternalLinkIcon },
+  { label: "Archive", key: "E", Icon: ArchiveIcon },
+  { label: "Delete", key: "#", Icon: Trash2Icon },
+  { label: "Mark as unread", key: "Shift U", Icon: MailIcon },
 ];
 
-export function NamedIconButtons() {
+export function ShortcutInTooltip() {
   return (
     <TooltipProvider>
-      <div className="flex gap-1">
-        {ACTIONS.map(({ label, Icon }) => (
+      <div className="flex gap-0.5">
+        {ACTIONS.map(({ label, key, Icon }) => (
           <Tooltip key={label}>
             <TooltipTrigger asChild>
-              {/* The name a screen reader announces; the tooltip shows the same words to sighted users. */}
               <Button variant="ghost" size="icon" aria-label={label}>
                 <Icon />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{label}</TooltipContent>
+            <TooltipContent>
+              {label} <kbd className="font-mono">{key}</kbd>
+            </TooltipContent>
           </Tooltip>
         ))}
       </div>

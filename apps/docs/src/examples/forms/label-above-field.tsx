@@ -4,8 +4,13 @@ import { Label } from "@orz/ui/components/label";
 export function LabelAboveField() {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="do-host">Host</Label>
-      <Input id="do-host" placeholder="git.example.com" />
+      <Label htmlFor="do-email">Email</Label>
+      <Input
+        id="do-email"
+        type="email"
+        autoComplete="email"
+        placeholder="alice@example.com"
+      />
     </div>
   );
 }

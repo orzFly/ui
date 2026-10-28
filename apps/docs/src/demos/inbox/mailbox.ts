@@ -111,10 +111,11 @@ export function allThreads(state: MailboxState): InboxThread[] {
     .filter((thread) => !thread.gone);
 }
 
+/** A thread by its id, a gone one too, so what took it away can be undone. */
 export function findThread(
   id: string,
   state: MailboxState,
-): InboxThread | undefined {
+): (InboxThread & { gone?: boolean }) | undefined {
   const thread =
     state.composed.find((each) => each.id === id) ??
     INBOX_THREADS.find((each) => each.id === id);
@@ -205,6 +206,23 @@ export function fetchThreads(
 ): Promise<Page> {
   return new Promise((resolve) =>
     setTimeout(() => resolve(searchThreads(query, state, offset)), LATENCY_MS),
+  );
+}
+
+let refreshes = 0;
+
+/**
+ * A check for new mail, after a round trip. The demo's server turns the first one away, so the
+ * failure and its Retry are there to be seen; every one after it goes through.
+ */
+export function checkMail(): Promise<void> {
+  refreshes += 1;
+  const fails = refreshes === 1;
+  return new Promise((resolve, reject) =>
+    setTimeout(
+      () => (fails ? reject(new Error("503 Service Unavailable")) : resolve()),
+      LATENCY_MS,
+    ),
   );
 }
 

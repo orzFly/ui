@@ -1,3 +1,10 @@
+import {
+  type AccessToken,
+  LANGUAGES,
+  type Profile,
+  sameProfile,
+  TIME_ZONES,
+} from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
@@ -12,6 +19,7 @@ import {
   SelectValue,
 } from "@orz/ui/components/select";
 import { Skeleton } from "@orz/ui/components/skeleton";
+import { Slider } from "@orz/ui/components/slider";
 import { Switch } from "@orz/ui/components/switch";
 import { ThemeEditor } from "@orz/ui/components/theme-editor";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
@@ -21,18 +29,14 @@ import { KeyRoundIcon, PaletteIcon } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
-import {
-  type AccessToken,
-  LANGUAGES,
-  type Profile,
-  TIME_ZONES,
-} from "./account.ts";
 
 /** The settings that apply as they change; they outlive a visit to another section. */
 export interface Preferences {
   wrap: boolean;
   lineNumbers: boolean;
   formatOnSave: boolean;
+  /** Pixels. */
+  fontSize: number;
   language: string;
   indent: "2" | "4" | "tab";
   notify: "all" | "mentions" | "none";
@@ -45,6 +49,7 @@ export const PREFERENCES: Preferences = {
   wrap: true,
   lineNumbers: true,
   formatOnSave: false,
+  fontSize: 13,
   language: "markdown",
   indent: "2",
   notify: "mentions",
@@ -91,7 +96,7 @@ function Group({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="grid">
       {title && (
-        <h3 className="pt-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+        <h3 className="pt-2 font-medium text-muted-foreground text-xs">
           {title}
         </h3>
       )}
@@ -115,9 +120,10 @@ function EditorPreview({ prefs }: { prefs: Preferences }) {
       <figcaption className="text-muted-foreground text-xs">Preview</figcaption>
       <pre
         className={cn(
-          "rounded-lg border bg-muted/40 p-3 font-mono text-xs leading-5 [tab-size:4]",
+          "rounded-lg border bg-muted/40 p-3 font-mono leading-[1.6] [tab-size:4]",
           prefs.wrap ? "whitespace-pre-wrap break-words" : "overflow-x-auto",
         )}
+        style={{ fontSize: prefs.fontSize }}
       >
         {SAMPLE.map((line, index) => (
           <div key={line} className="flex gap-3">
@@ -167,6 +173,23 @@ export function EditorSection({ prefs, onChange }: PreferenceProps) {
             aria-describedby="settings-format-description"
           />
         </SettingRow>
+        <div className="grid gap-3 py-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <Label id="settings-font-size">Font size</Label>
+            <span className="text-muted-foreground text-sm tabular-nums">
+              {prefs.fontSize}px
+            </span>
+          </div>
+          <Slider
+            aria-labelledby="settings-font-size"
+            min={11}
+            max={20}
+            value={[prefs.fontSize]}
+            onValueChange={([fontSize]) =>
+              onChange({ fontSize: fontSize ?? PREFERENCES.fontSize })
+            }
+          />
+        </div>
         <SettingRow id="settings-language" label="New files open as">
           <Select
             value={prefs.language}
@@ -373,7 +396,7 @@ function ThemeRows() {
             onClick={() => setEditing({ id: undefined, slot: "ui" })}
           >
             <PaletteIcon />
-            Edit
+            Edit…
           </Button>
         </SettingRow>
       </Group>
@@ -435,8 +458,13 @@ export function ProfileSection({
       }}
       onReset={(event) => {
         event.preventDefault();
+        const lost = draft;
         onDraft(saved);
         setError(undefined);
+        if (sameProfile(lost, saved)) return;
+        toast("Changes discarded", {
+          action: { label: "Undo", onClick: () => onDraft(lost) },
+        });
       }}
     >
       <div className="grid gap-2">
@@ -540,19 +568,20 @@ export function TokensSection({
                 <span className="truncate font-medium font-mono text-sm">
                   {token.name}
                 </span>
-                <span className="text-muted-foreground text-sm">
+                <span className="text-muted-foreground text-xs">
                   {token.scopes} · {token.lastUsed}
                 </span>
               </div>
               <Button
                 variant="destructive"
+                size="sm"
                 aria-label={`Revoke ${token.name}`}
                 onClick={() => {
                   setRevoking(token);
                   setOpen(true);
                 }}
               >
-                Revoke
+                Revoke…
               </Button>
             </li>
           ))}

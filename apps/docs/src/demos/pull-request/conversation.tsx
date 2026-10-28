@@ -10,8 +10,10 @@ import {
   CircleXIcon,
   GitCommitHorizontalIcon,
   GitMergeIcon,
+  RotateCwIcon,
 } from "lucide-react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
 import { Stamp, StatusIcon, UserAvatar } from "./parts.tsx";
 import {
@@ -104,17 +106,34 @@ function Event({
   );
 }
 
+/** How long a re-run takes: long enough to switch to another tab meanwhile. */
+const RERUN_MS = 5000;
+
 /** Why the pull request cannot merge yet: each check, and a way into its log. */
 function MergeBox({ onJob }: { onJob(id: string): void }) {
-  const failed = CI_RUN.jobs.filter((job) => job.status === "failed").length;
+  const failing = CI_RUN.jobs.filter((job) => job.status === "failed");
+  const failed = failing.length;
+  const [rerunning, setRerunning] = useState(false);
+  // The run ends wherever the reader has gone meanwhile, so it says so in a toast that leads back.
+  const rerun = () => {
+    setRerunning(true);
+    setTimeout(() => {
+      setRerunning(false);
+      const [job] = failing;
+      if (!job) return;
+      toast.error(`${job.name} failed again in ${CI_RUN.workflow}`, {
+        action: { label: "Details", onClick: () => onJob(job.id) },
+      });
+    }, RERUN_MS);
+  };
   return (
     <section
       aria-labelledby="merge-status"
       className="ml-11 rounded-lg border bg-card text-card-foreground"
     >
-      <header className="flex items-start gap-3 border-b p-3">
+      <header className="flex flex-wrap items-start gap-3 border-b p-3">
         <CircleXIcon className="mt-0.5 size-5 shrink-0 text-destructive" />
-        <div>
+        <div className="min-w-0 flex-1">
           <h3 id="merge-status" className="font-semibold">
             Some checks were not successful
           </h3>
@@ -122,6 +141,16 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
             {failed} failing and {CI_RUN.jobs.length - failed} successful checks
           </p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={rerunning}
+          onClick={rerun}
+          className="touch:h-10"
+        >
+          <RotateCwIcon className={rerunning ? "animate-spin" : undefined} />
+          {rerunning ? "Re-running…" : "Re-run failed jobs"}
+        </Button>
       </header>
       <ul className="divide-y">
         {CI_RUN.jobs.map((job) => (
@@ -164,12 +193,16 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
 /** The comment box at the end of the timeline; what it posts lives only in this page's memory. */
 function CommentForm({ onPost }: { onPost(body: string): void }) {
   const editor = useRef<MarkdownEditorHandle>(null);
-  const [empty, setEmpty] = useState(true);
+  // Comment stays pressable, and says what is missing, rather than greying out unexplained.
+  const [missing, setMissing] = useState(false);
   const post = (value: string) => {
-    if (value.trim() === "") return;
+    if (value.trim() === "") {
+      setMissing(true);
+      editor.current?.focus();
+      return;
+    }
     onPost(value.trim());
     editor.current?.setValue("");
-    setEmpty(true);
   };
   return (
     <form
@@ -191,14 +224,17 @@ function CommentForm({ onPost }: { onPost(body: string): void }) {
             ariaLabel="Comment"
             placeholder="Leave a comment in markdown…"
             onSubmit={post}
-            onChange={(value) => setEmpty(value.trim() === "")}
+            onChange={(value) => {
+              if (value.trim() !== "") setMissing(false);
+            }}
             className="max-h-[40dvh] min-h-20"
           />
         </ClientOnly>
-        <div className="flex justify-end">
-          <Button type="submit" disabled={empty}>
-            Comment
-          </Button>
+        <div className="flex items-center justify-end gap-3">
+          <p role="status" className="text-destructive text-sm">
+            {missing && "Write a comment first."}
+          </p>
+          <Button type="submit">Comment</Button>
         </div>
       </div>
     </form>

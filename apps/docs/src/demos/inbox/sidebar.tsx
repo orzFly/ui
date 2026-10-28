@@ -35,15 +35,47 @@ interface Place {
   query: string;
   title: string;
   Icon: LucideIcon;
+  /** What the place holds and how something gets there, for when it holds nothing. */
+  empty: string;
 }
 
 export const PLACES: readonly Place[] = [
-  { query: "in:inbox", title: "Inbox", Icon: InboxIcon },
-  { query: "is:starred", title: "Starred", Icon: StarIcon },
-  { query: "in:sent", title: "Sent", Icon: SendIcon },
-  { query: "in:drafts", title: "Drafts", Icon: FileTextIcon },
-  { query: "in:archive", title: "Archive", Icon: ArchiveIcon },
-  { query: "in:trash", title: "Trash", Icon: Trash2Icon },
+  {
+    query: "in:inbox",
+    title: "Inbox",
+    Icon: InboxIcon,
+    empty: "New mail lands here. Archive what you have dealt with.",
+  },
+  {
+    query: "is:starred",
+    title: "Starred",
+    Icon: StarIcon,
+    empty: "Star a conversation to find it here later.",
+  },
+  {
+    query: "in:sent",
+    title: "Sent",
+    Icon: SendIcon,
+    empty: "Every message you send is kept here.",
+  },
+  {
+    query: "in:drafts",
+    title: "Drafts",
+    Icon: FileTextIcon,
+    empty: "A message you close without sending waits here.",
+  },
+  {
+    query: "in:archive",
+    title: "Archive",
+    Icon: ArchiveIcon,
+    empty: "Archived conversations leave the inbox and wait here.",
+  },
+  {
+    query: "in:trash",
+    title: "Trash",
+    Icon: Trash2Icon,
+    empty: "Deleted conversations wait here until you delete them forever.",
+  },
 ];
 
 /** A plain click opens in place; a modified one is the browser's, a new tab say. */

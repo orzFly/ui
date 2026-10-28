@@ -13,6 +13,19 @@ export interface PageMeta {
   layout?: "bare";
   /** false: kept out of the nav, reached by a control of its own (Settings, from the header). */
   nav?: false;
+  /**
+   * A demo's: the guidelines it puts into practice. Its About panel lists them, and each guideline
+   * page lists the demos that name it, so the link is written once, here.
+   */
+  guidelines?: DemoGuideline[];
+}
+
+/** A guideline a demo puts into practice, and where in the demo to see it. */
+export interface DemoGuideline {
+  /** The guideline page's route, from the site root (`/guidelines/patterns/overlays/`). */
+  route: string;
+  /** What to do in the demo to see the guideline at work, as one sentence. */
+  where: string;
 }
 
 /** An entry of a page's "On this page" list: its `##` and `###` headings. */

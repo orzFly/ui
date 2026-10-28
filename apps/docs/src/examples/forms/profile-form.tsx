@@ -1,3 +1,9 @@
+import {
+  PROFILE,
+  type Profile,
+  sameProfile,
+  TIME_ZONES,
+} from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
 import { Input } from "@orz/ui/components/input";
@@ -9,85 +15,112 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orz/ui/components/select";
-import { Textarea } from "@orz/ui/components/textarea";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+const checkEmail = (email: string) =>
+  /^\S+@\S+\.\S+$/.test(email)
+    ? undefined
+    : "Enter an email address, like alice@example.com.";
+
 export function ProfileForm() {
-  const [email, setEmail] = useState("");
+  const [saved, setSaved] = useState(PROFILE);
+  const [draft, setDraft] = useState(PROFILE);
   const [error, setError] = useState<string>();
   const emailRef = useRef<HTMLInputElement>(null);
+  const edit = (next: Partial<Profile>) =>
+    setDraft((was) => ({ ...was, ...next }));
   return (
     <form
       className="grid max-w-md gap-5"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        if (!/^\S+@\S+\.\S+$/.test(email)) {
-          setError("Enter an email address, like alice@example.com.");
+        const problem = checkEmail(draft.email);
+        setError(problem);
+        if (problem) {
           emailRef.current?.focus();
           return;
         }
-        setError(undefined);
+        setSaved(draft);
         toast.success("Profile saved");
       }}
-      onReset={() => {
-        setEmail("");
+      onReset={(event) => {
+        event.preventDefault();
+        const lost = draft;
+        setDraft(saved);
         setError(undefined);
+        if (sameProfile(lost, saved)) return;
+        toast("Changes discarded", {
+          action: { label: "Undo", onClick: () => setDraft(lost) },
+        });
       }}
     >
       <div className="grid gap-2">
-        <Label htmlFor="pf-name">Display name</Label>
-        <Input id="pf-name" defaultValue="alice" autoComplete="nickname" />
+        <Label htmlFor="profile-name">Display name</Label>
+        <Input
+          id="profile-name"
+          autoComplete="nickname"
+          value={draft.name}
+          onChange={(event) => edit({ name: event.target.value })}
+        />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="pf-email">Email</Label>
+        <Label htmlFor="profile-email">Email</Label>
         <Input
           ref={emailRef}
-          id="pf-email"
+          id="profile-email"
           type="email"
           autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          value={draft.email}
+          onChange={(event) => {
+            edit({ email: event.target.value });
+            if (error) setError(checkEmail(event.target.value));
+          }}
           aria-invalid={error !== undefined}
-          aria-describedby={error ? "pf-email-error" : "pf-email-hint"}
+          aria-describedby={
+            error ? "profile-email-error" : "profile-email-hint"
+          }
         />
         {error ? (
-          <p id="pf-email-error" className="text-destructive text-sm">
+          <p id="profile-email-error" className="text-destructive text-sm">
             {error}
           </p>
         ) : (
-          <p id="pf-email-hint" className="text-muted-foreground text-sm">
-            Notifications go here. Nobody else sees it.
+          <p id="profile-email-hint" className="text-muted-foreground text-sm">
+            Notifications go here.
           </p>
         )}
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="pf-role">Role</Label>
-        <Select defaultValue="maintainer">
-          <SelectTrigger id="pf-role" className="w-full">
+        <Label htmlFor="profile-time-zone">Time zone</Label>
+        <Select
+          value={draft.timeZone}
+          onValueChange={(timeZone) => edit({ timeZone })}
+        >
+          <SelectTrigger id="profile-time-zone" className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="maintainer">Maintainer</SelectItem>
-            <SelectItem value="contributor">Contributor</SelectItem>
-            <SelectItem value="viewer">Viewer</SelectItem>
+            {TIME_ZONES.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="pf-bio">
-          Bio <span className="text-muted-foreground">(optional)</span>
-        </Label>
-        <Textarea id="pf-bio" rows={3} />
-      </div>
       <div className="flex items-center gap-2">
-        <Checkbox id="pf-digest" defaultChecked />
-        <Label htmlFor="pf-digest">Send me a weekly summary</Label>
+        <Checkbox
+          id="profile-show-email"
+          checked={draft.showEmail}
+          onCheckedChange={(checked) => edit({ showEmail: checked === true })}
+        />
+        <Label htmlFor="profile-show-email">Show my email on my profile</Label>
       </div>
       <div className="flex justify-end gap-2">
         <Button type="reset" variant="outline">
-          Cancel
+          Discard changes
         </Button>
         <Button type="submit">Save profile</Button>
       </div>

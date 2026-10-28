@@ -3,10 +3,23 @@ export const meta = {
   description:
     "Toast, inline message or dialog: where a result is said depends on whether people have to do something about it.",
   order: 32,
-  api: ["ui/Primitives/Toaster", "ui/LoadFailure", "ui/Primitives/Dialog"],
+  api: [
+    "ui/Primitives/Toaster",
+    "ui/LoadFailure",
+    "ui/Primitives/Dialog",
+    "ui/Primitives/Input",
+    "ui/Primitives/Label",
+    "ui/Primitives/Button",
+  ],
 };
 
+import { ArchiveToast } from "../../../examples/feedback/archive-toast.tsx";
+import { ConversationsFailed } from "../../../examples/feedback/conversations-failed.tsx";
+import { ErrorAsToast } from "../../../examples/feedback/error-as-toast.tsx";
 import { FeedbackKinds } from "../../../examples/feedback/feedback-kinds.tsx";
+import { InlineFieldError } from "../../../examples/feedback/inline-field-error.tsx";
+import { SuccessDialog } from "../../../examples/feedback/success-dialog.tsx";
+import { ToastKinds } from "../../../examples/feedback/toast-kinds.tsx";
 
 **Say a result where people will act on it. A toast for something done that needs nothing more,
 an inline message beside whatever needs fixing, and a dialog only when nothing may go on until
@@ -14,28 +27,31 @@ it is answered.**
 
 <Example of={FeedbackKinds} />
 
-**Copy link** succeeds and asks for nothing, so a toast says so and goes away. An empty name is
-said under the field it belongs to, which keeps its message until the field is fixed. A refresh
-that failed sits above the data it could not update, with the one control that can fix it.
+**Copy link**, from a Mail conversation's menu, succeeds and asks for nothing, so a toast says so
+and goes away. Press **Save profile**: the email from the Settings demo's profile form is missing
+its domain, which is said under the field and stays until the field is fixed. The pull request's
+checks failed to refresh, so the warning sits above the list it could not update, with the one
+control that can fix it.
 
 ## Do and don't
 
 <DoDont>
-  <Do>
+  <Do show={<InlineFieldError />}>
     Put a validation error under its field, mark the field `aria-invalid`, and point
     `aria-describedby` at the message.
   </Do>
-  <Dont>
+  <Dont show={<ErrorAsToast />}>
     Send a validation error as a toast: it disappears before the field is fixed, and never says
     which field.
   </Dont>
 </DoDont>
 
 <DoDont>
-  <Do>
-    Toast "Archived 3 issues" with an **Undo** action after a bulk change that can be reversed.
+  <Do show={<ArchiveToast />}>
+    Toast "3 conversations archived" with an **Undo** action after a bulk change that can be
+    reversed.
   </Do>
-  <Dont>
+  <Dont show={<SuccessDialog />}>
     Open a dialog to say that something worked. A dialog stops everything; success should not.
   </Dont>
 </DoDont>
@@ -52,13 +68,23 @@ that failed sits above the data it could not update, with the one control that c
 | An action failed and the work is not saved | Decide what to do with it | `toast.error()` with a retry, or inline if the place is on screen |
 | Nothing may continue until a question is answered | Choose | `Dialog`, see [Overlays](/guidelines/patterns/overlays/) |
 
+<Example of={ToastKinds} />
+
+Each button ends in a toast, in the demos' words. **Archive** can be undone from it. **Re-run failed
+jobs** finishes out of view, and its error toast opens the run.
+
+<Example of={ConversationsFailed} />
+
+Mail's list failed to load and has nothing to show, so `LoadFailure` takes its place until
+**Retry** brings the conversations.
+
 A message that stays has to be removable by fixing its cause, not by a close button; one that
 leaves by itself must not carry the only copy of something people need to read.
 
 ## Writing the message
 
-- Say what happened in the past tense, naming the thing: "Saved report.pdf", "Couldn't load the
-  list". Do not open with "Success!" or "Error:"; the icon already says which.
+- Say what happened in the past tense, naming the thing: "Profile saved", "Couldn't load the
+  conversations". Do not open with "Success!" or "Error:"; the icon already says which.
 - An error says what failed and, when it is known, the server's own words: `LoadFailure` takes
   them as `detail`.
 - A message for one item names the item; a message for several counts them.

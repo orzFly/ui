@@ -7,21 +7,30 @@ export const meta = {
     "ui/Primitives/Button",
     "ui/Primitives/DropdownMenu",
     "ui/Primitives/Tooltip",
+    "ui/Primitives/Textarea",
+    "ui/Primitives/Badge",
+    "ui/ConfirmDialog",
   ],
 };
 
+import { ButtonVariants } from "../../../examples/actions-and-buttons/button-variants.tsx";
 import { CompetingPrimaryActions } from "../../../examples/actions-and-buttons/competing-primary-actions.tsx";
-import { EditorActions } from "../../../examples/actions-and-buttons/editor-actions.tsx";
+import { NamedButtons } from "../../../examples/actions-and-buttons/named-buttons.tsx";
 import { OnePrimaryAction } from "../../../examples/actions-and-buttons/one-primary-action.tsx";
+import { ThreadActions } from "../../../examples/actions-and-buttons/thread-actions.tsx";
+import { TrashThreadMenu } from "../../../examples/actions-and-buttons/trash-thread-menu.tsx";
+import { VagueButtons } from "../../../examples/actions-and-buttons/vague-buttons.tsx";
 
 **A surface has at most one primary button: the action most people came to take. Everything else
 steps down a variant, and actions used now and then move into a menu.**
 
-<Example of={EditorActions} />
+<Example of={ThreadActions} />
 
-**Publish** is the one primary button. **Save draft** is outlined beside it. The formatting
-buttons are ghost icon buttons, each with a name and a tooltip, and the rare actions wait behind
-**More actions**.
+A conversation from the Mail demo. **Send** is the one primary button, and it waits until there is
+a reply to send. Archive and Delete are ghost icon buttons, each with a name, and a tooltip that
+also shows its key. Forward and Copy link are used now and then, so they wait behind **More
+actions**. Archive or delete the conversation: the toolbar swaps in **Move to Inbox**, and the
+toast takes it back.
 
 ## Do and don't
 
@@ -36,11 +45,11 @@ buttons are ghost icon buttons, each with a name and a tooltip, and the rare act
 </DoDont>
 
 <DoDont>
-  <Do>
-    Label a button with a verb and its object, "Publish", "Delete 3 files", so it still reads right
-    out of context.
+  <Do show={<NamedButtons />}>
+    Label a button with a verb and its object, "Save profile", "Delete 3 files", so it still reads
+    right out of context.
   </Do>
-  <Dont>
+  <Dont show={<VagueButtons />}>
     Label it "OK", "Submit" or "Yes": the button then only makes sense after reading the question
     above it.
   </Dont>
@@ -56,6 +65,11 @@ buttons are ghost icon buttons, each with a name and a tooltip, and the rare act
 | An action that deletes or discards | `destructive`, see [Destructive actions](/guidelines/patterns/destructive-actions/) |
 | A navigation that looks like a link inside prose or a table | `link`, or a real `<a>` through `asChild` |
 
+<Example of={ButtonVariants} />
+
+Each row is taken from a demo: the Settings profile form's footer, the Mail toolbar, an access
+token's row, and a failed run on the pull request's timeline, whose **Details** is a link.
+
 The size follows the surface rather than the action: `default` in forms and dialogs, `sm` in dense
 rows and table cells, and `lg` only for a call to action that stands alone.
 
@@ -67,6 +81,12 @@ a new tab and shows its address; an action that changes something is a button.
 Put the actions a surface offers but people rarely take into a `DropdownMenu` behind a ghost icon
 button named "More actions". Keep the order stable: frequent first, destructive last behind a
 separator, each with `variant="destructive"`.
+
+<Example of={TrashThreadMenu} />
+
+A conversation in Mail's Trash. Open **More actions**: Forward and Copy link come first, and
+**Delete forever…** waits last, after a separator, in the destructive colour. Its ellipsis says it
+asks before it acts.
 
 Do not hide the primary action in a menu, and do not put a single action in one: a menu with one
 item is a button that costs two taps.

@@ -9,25 +9,59 @@ export const meta = {
     "ui/Primitives/Checkbox",
     "ui/Primitives/RadioGroup",
     "ui/Primitives/Select",
+    "ui/Primitives/Slider",
     "ui/ThemeMenu",
     "ui/ThemeEditor",
     "ui/UnsavedChangesDialog",
     "ui/ConfirmDialog",
+  ],
+  guidelines: [
+    {
+      route: "/guidelines/patterns/choosing-a-control/",
+      where:
+        "Editor's Switches apply as they flip, with no Save button, and its preview follows, as it follows the font size Slider while you drag. The language is a Select of many and the indent a RadioGroup of three. Profile's Checkbox waits for Save profile.",
+    },
+    {
+      route: "/guidelines/patterns/forms/",
+      where:
+        "In Profile, clear the email and press Save profile: the message lands under the field and focus moves there. Edit a field, then pick another section, and Keep editing guards what you typed.",
+    },
+    {
+      route: "/guidelines/patterns/destructive-actions/",
+      where:
+        "Discard changes in Profile acts at once and offers Undo. Revoke… a token is the one step that asks first, naming the token and that it cannot be restored.",
+    },
+    {
+      route: "/guidelines/patterns/feedback/",
+      where:
+        "Save the profile or revoke a token for a toast that names what happened. A wrong email is said under its field instead, where it can be fixed.",
+    },
+    {
+      route: "/guidelines/patterns/actions-and-buttons/",
+      where:
+        "Profile ends in one primary button, Save profile, with Discard changes outlined beside it. Revoke… repeats on every token, so it is a size down.",
+    },
+    {
+      route: "/guidelines/foundations/theming/",
+      where:
+        "Appearance picks the theme and the terminal theme from the same menus as this site's top bar, and Edit… opens the theme editor.",
+    },
+    {
+      route: "/guidelines/content/writing/",
+      where:
+        "Each Switch names its on state (Wrap long lines), buttons are a verb and its object (Save profile), and a button that opens a dialog first ends in an ellipsis (Revoke…).",
+    },
+    {
+      route: "/guidelines/platforms/touch-and-mobile/",
+      where:
+        "On a phone the sections are a list that pushes each one, with labels on the leading edge and controls on the trailing edge, as the phone's own settings are.",
+    },
   ],
 };
 
 import { DemoPage } from "../../demos/demo-page.tsx";
 import { Settings } from "../../demos/settings/settings.tsx";
 
-<DemoPage
-  guidelines={[
-    { route: "/guidelines/patterns/choosing-a-control/", title: "Choosing a control" },
-    { route: "/guidelines/patterns/forms/", title: "Forms" },
-    { route: "/guidelines/patterns/destructive-actions/", title: "Destructive actions" },
-    { route: "/guidelines/patterns/feedback/", title: "Feedback" },
-    { route: "/guidelines/foundations/theming/", title: "Theming" },
-    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
-  ]}
->
+<DemoPage>
   <Settings />
 </DemoPage>
