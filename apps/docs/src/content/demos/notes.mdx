@@ -1,0 +1,29 @@
+export const meta = {
+  title: "Notes",
+  description:
+    "A notebook: markdown notes beside their preview, diagrams drawn from mermaid fences, files embedded by name, and a / that offers blocks and a # that offers the tags already in use.",
+  order: 3,
+  layout: "bare",
+  api: [
+    "ui-codemirror/MarkdownEditor",
+    "ui-codemirror/EditorShortcutsHelp",
+    "ui-markdown/Markdown",
+    "ui-mermaid/Content",
+    "ui-content/AttachmentViewerProvider",
+  ],
+};
+
+import { DemoPage } from "../../demos/demo-page.tsx";
+import { Notes } from "../../demos/notes/notes.tsx";
+
+<DemoPage
+  guidelines={[
+    { route: "/guidelines/foundations/layout-and-spacing/", title: "Layout & spacing" },
+    { route: "/guidelines/foundations/typography/", title: "Typography" },
+    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
+    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
+    { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
+  ]}
+>
+  <Notes />
+</DemoPage>

@@ -7,6 +7,8 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Inbox } from "../src/demos/inbox/inbox.tsx";
 import { LATENCY_MS, PAGE_SIZE } from "../src/demos/inbox/mailbox.ts";
+import { tagsOf, titleOf } from "../src/demos/notes/notebook.ts";
+import { Notes } from "../src/demos/notes/notes.tsx";
 import { PullRequest } from "../src/demos/pull-request/pull-request.tsx";
 import { Settings } from "../src/demos/settings/settings.tsx";
 
@@ -16,9 +18,24 @@ vi.mock("../../../packages/ui-asciinema/src/load-player.ts", () => ({
   loadPlayer: () => new Promise(() => {}),
 }));
 
+// mermaid lays a diagram out by measuring text, which happy-dom cannot; any source draws as one
+// fixed picture here.
+vi.mock(
+  "../../../packages/ui-mermaid/src/render.ts",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    renderDiagram: async () => ({
+      ok: true,
+      svg: '<svg data-testid="diagram"></svg>',
+      width: 100,
+    }),
+  }),
+);
+
 /** Every page under content/demos/, by its file name, and the component it shows. */
 const DEMOS: Record<string, ComponentType> = {
   inbox: Inbox,
+  notes: Notes,
   "pull-request": PullRequest,
   settings: Settings,
 };
@@ -312,6 +329,128 @@ describe("inbox", () => {
     await wait(50);
     expect(location.search).toBe("");
     expect(container.querySelector("#inbox-subject")).toBeNull();
+    expect(list?.className).not.toContain("max-md:hidden");
+  });
+});
+
+describe("notes", () => {
+  const rows = (container: HTMLElement) =>
+    [
+      ...container.querySelectorAll<HTMLButtonElement>(
+        "nav[aria-label=Notebook] li button",
+      ),
+    ].map((row) => row.querySelector("span")?.textContent);
+  const button = (container: HTMLElement, name: string) =>
+    [...container.querySelectorAll<HTMLButtonElement>("button")].find(
+      (each) => each.textContent === name,
+    );
+  const note = (container: HTMLElement, title: string) =>
+    [
+      ...container.querySelectorAll<HTMLButtonElement>(
+        "nav[aria-label=Notebook] li button",
+      ),
+    ].find((row) => row.querySelector("span")?.textContent === title);
+  const click = (element: HTMLElement | null | undefined) =>
+    act(async () => {
+      if (!element) throw new Error("nothing to click");
+      element.click();
+    });
+  const settle = () =>
+    act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+
+  it("titles a note by its first heading, and tags it by its #words outside code", () => {
+    const body = [
+      "Intro line",
+      "## Plan #not-a-title",
+      "Talks about #ci and #Design, see [x](page#anchor).",
+      "`#inline` and",
+      "```",
+      "#fenced",
+      "```",
+    ].join("\n");
+    expect(titleOf(body)).toBe("Plan #not-a-title");
+    expect(titleOf("\n  First words\n")).toBe("First words");
+    expect(titleOf("")).toBe("Untitled");
+    expect(titleOf("```mermaid\n# not a title\n```\nAfter")).toBe("After");
+    expect(tagsOf(body)).toEqual(["not-a-title", "ci", "design"]);
+  });
+
+  it("narrows the list by tag and by words, and clears both at once", async () => {
+    const container = await draw(Notes, WIDTHS.desktop);
+    expect(rows(container)).toHaveLength(7);
+    await click(button(container, "#ci3"));
+    expect(rows(container)).toEqual(["Job states", "Oct 28", "Oct 24"]);
+
+    const filter = container.querySelector<HTMLInputElement>(
+      "input[aria-label='Filter notes']",
+    );
+    if (!filter) throw new Error("no filter");
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set?.call(filter, "nothing-has-this-word");
+      filter.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(container.textContent).toContain("No notes match");
+    await click(button(container, "Clear filter"));
+    expect(rows(container)).toHaveLength(7);
+  });
+
+  it("draws a mermaid fence in the preview as a diagram", async () => {
+    const container = await draw(Notes, WIDTHS.desktop);
+    await settle();
+    const preview = container.querySelector("section[aria-label=Preview]");
+    expect(container.querySelector("#note-title")?.textContent).toBe(
+      "Retry design",
+    );
+    expect(preview?.querySelector("[data-testid=diagram]")).not.toBeNull();
+    expect(preview?.querySelector("table")).not.toBeNull();
+  });
+
+  it("starts a new note in the editor, in the open note's folder", async () => {
+    const container = await draw(Notes, WIDTHS.desktop);
+    await click(note(container, "Job states"));
+    expect(container.querySelector("#note-title")?.textContent).toBe(
+      "Job states",
+    );
+    await click(button(container, "#ci3"));
+    await click(button(container, "New note"));
+    expect(container.querySelector("#note-title")?.textContent).toBe(
+      "Untitled",
+    );
+    // The filter is cleared, so the new note can be seen in the list.
+    expect(rows(container)).toHaveLength(8);
+    const projects = container.querySelector(
+      "#notes-folder-Projects",
+    )?.parentElement;
+    expect(projects?.textContent).toContain("Untitled");
+    expect(
+      container.querySelector("section[aria-label=Markdown] .cm-editor"),
+    ).not.toBeNull();
+  });
+
+  it("on a phone, opens a note to read it, and writes only when asked", async () => {
+    const container = await draw(Notes, WIDTHS.phone);
+    const list = container.querySelector("nav[aria-label=Notebook]");
+    const editor = () =>
+      container.querySelector("section[aria-label=Markdown]")?.className;
+    await click(note(container, "Sync, Oct 27"));
+    expect(list?.className).toContain("max-md:hidden");
+    expect(editor()).toContain("max-lg:hidden");
+
+    const edit = container.querySelector<HTMLElement>(
+      "fieldset[aria-label=View].lg\\:hidden button",
+    );
+    expect(edit?.textContent).toBe("Edit");
+    await click(edit);
+    expect(editor()).not.toContain("max-lg:hidden");
+
+    await click(
+      container.querySelector<HTMLElement>(
+        "button[aria-label='Back to notes']",
+      ),
+    );
     expect(list?.className).not.toContain("max-md:hidden");
   });
 });

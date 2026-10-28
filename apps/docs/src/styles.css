@@ -9,6 +9,7 @@
 @import "@orz/ui-content/styles.css";
 @import "@orz/ui-hex/styles.css";
 @import "@orz/ui-markdown/styles.css";
+@import "@orz/ui-mermaid/styles.css";
 
 /* The packages' stylesheets register their dist/; the site runs on src/. */
 @source "../../../packages/*/src/**/*.{ts,tsx}";

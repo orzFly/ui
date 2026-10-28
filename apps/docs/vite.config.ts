@@ -17,7 +17,11 @@ export default defineConfig({
     ...docsPlugins(),
     {
       enforce: "pre",
-      ...mdx({ remarkPlugins: [remarkGfm, remarkHeadings] }),
+      // Pages are .mdx only: a fixture's .md is sample text, imported `?raw`.
+      ...mdx({
+        mdExtensions: [],
+        remarkPlugins: [remarkGfm, remarkHeadings],
+      }),
     },
     react({ include: /\.(mdx|tsx?)$/ }),
     tailwindcss(),
@@ -50,9 +54,10 @@ export default defineConfig({
       "@orz/ui-codemirror > @codemirror/view",
     ],
   },
-  // shiki's larger grammars (C++, Emacs Lisp) pass 500 kB; each is its own
-  // chunk, fetched only for a block in that language.
-  build: { chunkSizeWarningLimit: 1000 },
+  // shiki's larger grammars (C++, Emacs Lisp) pass 500 kB, and mermaid's ELK
+  // layout 1.4 MB; each is its own chunk, fetched only for a block in that
+  // language or a diagram that asks for `layout: elk`.
+  build: { chunkSizeWarningLimit: 1500 },
   // The prerender renders the same source the browser runs.
   ssr: {
     resolve: { conditions: ["@orz/source", ...defaultServerConditions] },
