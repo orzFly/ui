@@ -1,12 +1,16 @@
 export const meta = {
-  title: "Log viewer",
+  title: "Pull request",
   description:
-    "A CI run: its logs, the change under test, a recording of the failing step and the run's artifacts, each drawn by the package Content picks for it.",
+    "A pull request in a code-hosting app: the conversation in markdown with a box to answer in, its commits, the CI run that blocks the merge with its logs, recording and artifacts, and the changed files, each file drawn by the package Content picks for it.",
   order: 3,
   layout: "bare",
   api: [
+    "ui/Primitives/Tabs",
+    "ui-markdown/Markdown",
+    "ui-codemirror/MarkdownEditor",
     "ui-content/Content",
     "ui-content/AttachmentList",
+    "ui-content/AttachmentViewerProvider",
     "ui-ansi/Content",
     "ui-code/Content",
     "ui-asciinema/Content",
@@ -15,7 +19,7 @@ export const meta = {
 };
 
 import { DemoPage } from "../../demos/demo-page.tsx";
-import { LogViewer } from "../../demos/log-viewer/log-viewer.tsx";
+import { PullRequest } from "../../demos/pull-request/pull-request.tsx";
 
 <DemoPage
   guidelines={[
@@ -25,7 +29,8 @@ import { LogViewer } from "../../demos/log-viewer/log-viewer.tsx";
     { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
     { route: "/guidelines/patterns/overlays/", title: "Overlays" },
     { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
+    { route: "/guidelines/patterns/forms/", title: "Forms" },
   ]}
 >
-  <LogViewer />
+  <PullRequest />
 </DemoPage>

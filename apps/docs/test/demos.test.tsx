@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Inbox } from "../src/demos/inbox/inbox.tsx";
 import { LATENCY_MS, PAGE_SIZE } from "../src/demos/inbox/mailbox.ts";
-import { LogViewer } from "../src/demos/log-viewer/log-viewer.tsx";
+import { PullRequest } from "../src/demos/pull-request/pull-request.tsx";
 import { Settings } from "../src/demos/settings/settings.tsx";
 
 // The asciinema player needs canvas and WASM, which happy-dom has neither of;
@@ -19,7 +19,7 @@ vi.mock("../../../packages/ui-asciinema/src/load-player.ts", () => ({
 /** Every page under content/demos/, by its file name, and the component it shows. */
 const DEMOS: Record<string, ComponentType> = {
   inbox: Inbox,
-  "log-viewer": LogViewer,
+  "pull-request": PullRequest,
   settings: Settings,
 };
 
@@ -87,15 +87,61 @@ describe("demos", () => {
   }
 });
 
-describe("log-viewer", () => {
-  it("opens on the failed job's log, drawn by the log renderer", async () => {
-    const container = await draw(LogViewer, WIDTHS.desktop);
-    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
-    const current = container.querySelector(
-      "nav[aria-label=Jobs] [aria-current]",
+describe("pull-request", () => {
+  const click = (element: HTMLElement | null | undefined) =>
+    act(async () => element?.click());
+  const wait = () =>
+    act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+  const button = (root: ParentNode, name: string) =>
+    [...root.querySelectorAll<HTMLElement>("button")].find(
+      (each) => each.textContent === name,
     );
-    expect(current?.textContent).toContain("Test");
-    expect(container.textContent).toContain("test.log");
+  const selectedTab = (container: HTMLElement) =>
+    container.querySelector("[role=tab][aria-selected=true]")?.textContent;
+
+  it("opens on the conversation, and a check's Details opens its log", async () => {
+    const container = await draw(PullRequest, WIDTHS.desktop);
+    expect(selectedTab(container)).toContain("Conversation");
+    expect(container.textContent).toContain("Some checks were not successful");
+    await click(
+      container.querySelector<HTMLElement>("[aria-label='Details for Build']"),
+    );
+    await wait();
+    expect(selectedTab(container)).toContain("Checks");
+    expect(
+      container.querySelector("ul[aria-label=Jobs] [aria-current]")
+        ?.textContent,
+    ).toContain("Build");
+    expect(container.textContent).toContain("build.log");
+  });
+
+  it("adds a posted comment to the timeline", async () => {
+    const container = await draw(PullRequest, WIDTHS.desktop);
+    const comments = () =>
+      container.querySelectorAll("ol[aria-label=Timeline] article").length;
+    const before = comments();
+    const form = container.querySelector<HTMLFormElement>(
+      "form[aria-label=Comment]",
+    );
+    const editor = form?.querySelector<HTMLElement>(".cm-content");
+    if (!form || !editor) throw new Error("no comment box");
+    await act(async () => {
+      editor.textContent = "Looks good once the test is green.";
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    await act(async () => form.requestSubmit());
+    expect(comments()).toBe(before + 1);
+    expect(container.textContent).toContain(
+      "Looks good once the test is green.",
+    );
+  });
+
+  it("says which repository tabs are not in the demo, and leads back", async () => {
+    const container = await draw(PullRequest, WIDTHS.phone);
+    await click(button(container, "Issues4"));
+    expect(container.textContent).toContain("Issues is not part of this demo");
+    await click(button(container, "Open pull request #12"));
+    expect(selectedTab(container)).toContain("Conversation");
   });
 });
 

@@ -62,7 +62,7 @@ index 0000000..d1e5c0a
 
 From 7e6f5d4c3b2a1908f7e6d5c4b3a29180f7e6d5c4 Mon Sep 17 00:00:00 2001
 From: bot-one <noreply@example.com>
-Date: Wed, 21 Oct 2026 11:52:07 +0000
+Date: Wed, 21 Oct 2026 09:11:37 +0000
 Subject: [PATCH 2/2] docs: say what fetchTask does on a network error
 
 ---
