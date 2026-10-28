@@ -1,0 +1,34 @@
+export const meta = {
+  title: "Binary inspector",
+  description:
+    "A hex editor for one file: a sample, or one of your own, opened or dropped and read in the browser alone. A PNG's chunks or a ZIP's headers list beside the bytes and select them, an inspector reads the selection as numbers and text, and the edits download as a new file.",
+  order: 7,
+  layout: "bare",
+  api: [
+    "ui-hex/HexEditor",
+    "ui-hex/HexInspector",
+    "ui/Primitives/Select",
+    "ui/Primitives/Sheet",
+    "ui/Primitives/Toaster",
+    "ui/LoadFailure",
+    "ui/UnsavedChangesDialog",
+    "ui/ConfirmDialog",
+  ],
+};
+
+import { BinaryInspector } from "../../demos/binary-inspector/binary-inspector.tsx";
+import { DemoPage } from "../../demos/demo-page.tsx";
+
+<DemoPage
+  guidelines={[
+    { route: "/guidelines/patterns/destructive-actions/", title: "Destructive actions" },
+    { route: "/guidelines/patterns/forms/", title: "Forms" },
+    { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
+    { route: "/guidelines/patterns/feedback/", title: "Feedback" },
+    { route: "/guidelines/patterns/overlays/", title: "Overlays" },
+    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
+    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
+  ]}
+>
+  <BinaryInspector />
+</DemoPage>

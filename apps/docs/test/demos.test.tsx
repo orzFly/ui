@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import { Toaster } from "@orz/ui/components/sonner";
 import type { Window as HappyWindow } from "happy-dom";
 import { act, type ComponentType } from "react";
@@ -16,6 +16,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { BinaryInspector } from "../src/demos/binary-inspector/binary-inspector.tsx";
 import { Inbox } from "../src/demos/inbox/inbox.tsx";
 import { LATENCY_MS, PAGE_SIZE } from "../src/demos/inbox/mailbox.ts";
 import { tagsOf, titleOf } from "../src/demos/notes/notebook.ts";
@@ -45,6 +46,7 @@ vi.mock(
 
 /** Every page under content/demos/, by its file name, and the component it shows. */
 const DEMOS: Record<string, ComponentType> = {
+  "binary-inspector": BinaryInspector,
   inbox: Inbox,
   notes: Notes,
   "pull-request": PullRequest,
@@ -52,6 +54,21 @@ const DEMOS: Record<string, ComponentType> = {
 };
 
 const WIDTHS = { desktop: 1280, phone: 390 };
+
+// No server answers a fixture's asset URL here; the file is read from disk instead.
+const realFetch = globalThis.fetch;
+vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = String(input instanceof Request ? input.url : input);
+  if (!url.includes("/attachment/")) return realFetch(input, init);
+  const name = basename(new URL(url, "http://localhost/").pathname);
+  return Promise.resolve(
+    new Response(
+      readFileSync(
+        join(import.meta.dirname, "../../fixtures/src/attachment", name),
+      ),
+    ),
+  );
+});
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -674,5 +691,136 @@ describe("notes", () => {
       ),
     );
     expect(list?.className).not.toContain("max-md:hidden");
+  });
+});
+
+describe("binary-inspector", () => {
+  const wait = (ms = 50) =>
+    act(() => new Promise((resolve) => setTimeout(resolve, ms)));
+  const click = (element: Element | null | undefined) =>
+    act(async () => {
+      if (!element) throw new Error("nothing to click");
+      (element as HTMLElement).click();
+    });
+  const region = (container: HTMLElement, label: string) =>
+    [
+      ...container.querySelectorAll<HTMLElement>(
+        "nav[aria-label=Structure] button",
+      ),
+    ].find((button) => button.firstElementChild?.textContent === label);
+  const button = (root: ParentNode, name: string) =>
+    [...root.querySelectorAll<HTMLElement>("button")].find(
+      (each) => each.textContent === name,
+    );
+  const dialog = () => document.querySelector<HTMLElement>("[role=dialog]");
+  const status = (container: HTMLElement) =>
+    container.querySelector("footer p")?.textContent;
+  const inspector = (container: HTMLElement) =>
+    container.querySelector("aside[aria-label=Inspector]")?.textContent;
+
+  async function open(width = WIDTHS.desktop) {
+    const container = await draw(BinaryInspector, width);
+    await wait();
+    await wait();
+    return container;
+  }
+
+  async function type(container: HTMLElement, key: string) {
+    const editor = container.querySelector<HTMLElement>(
+      "[aria-label='Bytes of gradient.png']",
+    );
+    if (!editor) throw new Error("no editor");
+    await act(async () => {
+      editor.focus();
+      editor.dispatchEvent(
+        new KeyboardEvent("keydown", { key, bubbles: true }),
+      );
+    });
+  }
+
+  it("lists the sample's chunks, and selects the bytes of the one clicked", async () => {
+    const container = await open();
+    expect(
+      container
+        .querySelector("nav[aria-label=Structure] ul")
+        ?.getAttribute("aria-label"),
+    ).toBe("PNG image");
+    expect(region(container, "Width")).toBeUndefined();
+
+    await click(region(container, "IHDR"));
+    expect(region(container, "IHDR")?.getAttribute("aria-current")).toBe(
+      "location",
+    );
+    // The chunk opens to its fields while the selection is inside it.
+    expect(region(container, "Width")).not.toBeUndefined();
+    expect(inspector(container)).toContain("Offset 0x8 · 25 bytes");
+    // A PNG writes its numbers big-endian, and the inspector reads them so.
+    expect(
+      container
+        .querySelector("aside[aria-label=Inspector] [role=switch]")
+        ?.getAttribute("aria-checked"),
+    ).toBe("false");
+
+    await click(region(container, "Width"));
+    expect(inspector(container)).toContain("Offset 0x10 · 4 bytes");
+    expect(inspector(container)).toContain("320");
+  });
+
+  it("counts an edit, and reverts it only once that is confirmed", async () => {
+    const container = await open();
+    expect(status(container)).toBe("Unmodified");
+    await click(region(container, "Signature"));
+    await type(container, "f");
+    expect(status(container)).toBe("Modified · 1 byte written");
+
+    await click(button(container, "Revert"));
+    expect(dialog()?.textContent).toContain("Revert gradient.png?");
+    await click(button(dialog() ?? document, "Cancel"));
+    expect(status(container)).toBe("Modified · 1 byte written");
+
+    await click(button(container, "Revert"));
+    await click(button(dialog() ?? document, "Revert"));
+    expect(status(container)).toBe("Unmodified");
+  });
+
+  it("asks before another file replaces unsaved edits", async () => {
+    const container = await open();
+    await click(region(container, "Signature"));
+    await type(container, "0");
+    const input = container.querySelector<HTMLInputElement>("input[type=file]");
+    if (!input) throw new Error("no file input");
+    const choose = (file: File) =>
+      act(async () => {
+        Object.defineProperty(input, "files", {
+          value: [file],
+          configurable: true,
+        });
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+
+    await choose(new File(["plain text"], "notes.txt"));
+    expect(dialog()?.textContent).toContain("Leave with unsaved changes?");
+    await click(button(dialog() ?? document, "Keep editing"));
+    expect(
+      container.querySelector("[aria-label='Bytes of gradient.png']"),
+    ).not.toBeNull();
+
+    await choose(new File(["plain text"], "notes.txt"));
+    await click(button(dialog() ?? document, "Discard and leave"));
+    await wait();
+    expect(
+      container.querySelector("[aria-label='Bytes of notes.txt']"),
+    ).not.toBeNull();
+    expect(container.textContent).toContain("Not a PNG or a ZIP");
+    expect(status(container)).toBe("Unmodified");
+  });
+
+  it("on a phone, picks a region from a Select and reads it in a sheet", async () => {
+    const container = await open(WIDTHS.phone);
+    expect(
+      container.querySelector("[aria-label='PNG image structure']"),
+    ).not.toBeNull();
+    await click(container.querySelector("button[aria-label=Inspector]"));
+    expect(dialog()?.textContent).toContain("Little endian");
   });
 });
