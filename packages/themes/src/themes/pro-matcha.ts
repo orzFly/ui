@@ -1,4 +1,8 @@
-import { type Published, prohibitorumTheme } from "../prohibitorum.ts";
+import {
+  type ProSide,
+  type Published,
+  prohibitorumTheme,
+} from "../prohibitorum.ts";
 import type { Theme } from "../types.ts";
 
 // Prohibitorum's Matcha scheme, resolved to hex; see src/prohibitorum.ts.
@@ -54,10 +58,52 @@ const dark: Published = {
   info: "#2b7fff",
 };
 
+// Everforest's published accents, moved in lightness only where one misses
+// its floor on this page.
+const lightColours: ProSide = {
+  syntax: {
+    keyword: "#d02c31",
+    string: "#007d58",
+    constant: "#b44193",
+    function: "#667500",
+    type: "#916600",
+    property: "#0e75a5",
+    parameter: "#b15300",
+  },
+  ansi: {
+    red: { normal: "#d43034", bright: "#f85552" },
+    green: { normal: "#687800", bright: "#859631" },
+    yellow: { normal: "#946900", bright: "#b38732" },
+    blue: { normal: "#1177a6", bright: "#3c96c6" },
+    magenta: { normal: "#b64394", bright: "#d863b3" },
+    cyan: { normal: "#00815b", bright: "#37a078" },
+  },
+};
+
+const darkColours: ProSide = {
+  syntax: {
+    keyword: "#e67e80",
+    string: "#83c092",
+    constant: "#d699b6",
+    function: "#a7c080",
+    type: "#dbbc7f",
+    property: "#7fbbb3",
+    parameter: "#e69875",
+  },
+  ansi: {
+    red: { normal: "#e67e80", bright: "#ff999a" },
+    green: { normal: "#a7c080", bright: "#c0da99" },
+    yellow: { normal: "#dbbc7f", bright: "#f6d698" },
+    blue: { normal: "#7fbbb3", bright: "#98d5cc" },
+    magenta: { normal: "#d699b6", bright: "#f1b2d0" },
+    cyan: { normal: "#83c092", bright: "#9cdaab" },
+  },
+};
+
 export const proMatcha: Theme = prohibitorumTheme(
   "pro-matcha",
   "ProMatcha",
   light,
   dark,
-  { light: "everforest-light", dark: "everforest-dark" },
+  { light: lightColours, dark: darkColours },
 );

@@ -33,8 +33,10 @@ const theme: Theme = {
   terminal's own background, foreground, cursor and selection and the 16 ANSI colours, as
   `#rrggbb` or `#rrggbbaa`, because terminal sources publish hex and xterm.js does not parse
   `oklch()`.
-- `syntax` names the shiki theme from pierre's bundled collection that `@orz/ui-code` highlights
-  with. Without it, code uses pierre's own colours.
+- `syntax` is the shiki theme `@orz/ui-code` highlights with: the name of one in pierre's bundled
+  collection, or a `TextMateTheme` object drawn for the palette, which `@orz/ui-code` registers
+  under its `name`. `textMateTheme()` builds one from a page and a few role colours. Without
+  `syntax`, code uses pierre's own colours.
 - A variant is a partial override of one palette's tokens, and it is chosen for the whole theme.
   Picking AMOLED applies it to every palette that defines it, and a palette without it shows its
   default. An id means the same on both sides of a theme, so both palettes give it the same label.
@@ -86,11 +88,15 @@ console, in its order: Graphite, Nord, Sand and Matcha, then Sakura, Lavender, L
 They paint its colours as the browser resolves them, with no value adjusted, so ProCitrus's yellow
 primary is a fill too light to read as text and ProGraphite keeps a light sidebar ring; the tests
 list both. Prohibitorum draws a field's edge with its border, so `input` is the border mixed toward
-the foreground until it clears 3:1. `src/prohibitorum.ts` holds the mapping and what it derives.
+the foreground until it clears 3:1. Prohibitorum has no code or terminal colours, so each Pro
+theme carries its own syntax theme and ANSI colours, drawn for its page; ProMatcha, ProNord and
+ProLavender, whose pages are Everforest's, Nord's and Catppuccin's, take that family's accents.
+Every syntax colour clears 4.5:1 on the page, each normal ANSI colour 4.5:1 and each bright one
+3:1. `src/prohibitorum.ts` holds the mapping and what it derives.
 
 To add a theme, write a module in `src/themes/` and add it to `builtinThemes` in `src/builtin.ts`
 and to the exports in `src/index.ts`. The tests check every palette's tokens, its contrast, its
-shiki name and its JSON round trip.
+syntax theme and its JSON round trip.
 
 ## Functions
 
@@ -142,5 +148,5 @@ where it sets no selection, the selection is VS Code's fallback.
 | Nord | [nordtheme/alacritty](https://github.com/nordtheme/alacritty) | MIT |
 | Tokyo Night | [folke/tokyonight.nvim](https://github.com/folke/tokyonight.nvim) "night" | MIT header on the generated extras; the repository is Apache-2.0 |
 | One Dark | [One Dark Pro](https://github.com/Binaryify/OneDark-Pro) | MIT |
-| ProGraphite … ProCitrus | none upstream; Tailwind CSS 4.3.3's palette, UI tokens from [Prohibitorum](https://github.com/TundraWork/Prohibitorum) `6d3bc42` (see `src/prohibitorum.ts`) | Apache-2.0, see `NOTICE`; Tailwind CSS is MIT |
+| ProGraphite … ProCitrus | none upstream; Tailwind CSS 4.3.3's palette, UI tokens from [Prohibitorum](https://github.com/TundraWork/Prohibitorum) `6d3bc42` (see `src/prohibitorum.ts`); code and terminal colours drawn here, ProMatcha's, ProNord's and ProLavender's from [Everforest](https://github.com/sainnhe/everforest)'s, Nord's and Catppuccin's accents | Apache-2.0, see `NOTICE`; Tailwind CSS, Everforest, Nord and Catppuccin are MIT |
 | Monokai | [VS Code's built-in Monokai](https://github.com/microsoft/vscode/tree/main/extensions/theme-monokai) | MIT |

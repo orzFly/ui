@@ -1,4 +1,9 @@
-import { type ColorScheme, type Theme, useTheme } from "@orz/ui/theme";
+import {
+  type ColorScheme,
+  type TextMateTheme,
+  type Theme,
+  useTheme,
+} from "@orz/ui/theme";
 import type { CodeViewItem, ParsedPatch, PostRenderPhase } from "@pierre/diffs";
 import type {
   CodeViewHandle,
@@ -22,13 +27,15 @@ import {
   type CodeWorkerFactory,
   useCodeWorkerFactory,
 } from "./code-worker.tsx";
+import { ensureSyntaxTheme, loadPierre } from "./syntax-registry.ts";
 
 // @pierre/diffs is the heaviest dependency in the web bundle (T-24). Every
 // value import goes through lazy() here so the library lands in its own
 // chunk, fetched the first time a code surface actually renders; the rest
-// of the app must only use type imports.
+// of the app must only use type imports. Each loader waits for loadPierre()
+// too, so a palette's own syntax theme is registered before the first view.
 const LazyCodeView = lazy(() =>
-  import("@pierre/diffs/react").then((m) => ({
+  Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(([m]) => ({
     default: m.CodeView as ComponentType<
       CodeViewProps<undefined, undefined> & {
         ref?: Ref<CodeViewHandle<undefined, undefined>>;
@@ -49,7 +56,7 @@ type CodeViewComponentProps = CodeViewProps<undefined, undefined> & {
  * text at once, and their colours follow.
  */
 const LazyWorkerCodeView = lazy(() =>
-  import("@pierre/diffs/react").then((m) => {
+  Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(([m]) => {
     const CodeView = m.CodeView as ComponentType<CodeViewComponentProps>;
     // The pool keeps the theme it was created with and overrides each
     // view's own; a theme switch while it lives has to reach it here.
@@ -89,7 +96,7 @@ const LazyWorkerCodeView = lazy(() =>
 );
 
 export const LazyMultiFileDiff = lazy(() =>
-  import("@pierre/diffs/react").then((m) => ({
+  Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(([m]) => ({
     default: m.MultiFileDiff as ComponentType<
       MultiFileDiffProps<undefined, undefined>
     >,
@@ -136,7 +143,7 @@ function syntaxOf(
   theme: Theme,
   scheme: ColorScheme,
   variant: string | undefined,
-): string | undefined {
+): string | TextMateTheme | undefined {
   const palette = theme[scheme];
   const variants = palette?.variants;
   const picked =
@@ -152,17 +159,19 @@ function syntaxOf(
  * made by CSS light-dark() inside the shadow root rather than by a React
  * render. A pinned mode or a one-palette theme fills both slots from the side
  * on screen: the slot the browser will not paint is irrelevant. A palette
- * with no shiki theme keeps that slot of pierre's own pair.
+ * with no shiki theme keeps that slot of pierre's own pair, and one that
+ * carries its own theme object has it registered with pierre under its name.
  */
 export function useSyntaxTheme(): SyntaxTheme {
   const { pref, theme, colorScheme } = useTheme();
   const variant = pref.ui?.variant;
   const both = pref.ui?.mode === "system" && theme.light && theme.dark;
-  const light =
-    syntaxOf(theme, both ? "light" : colorScheme, variant) ??
-    PIERRE_THEME.light;
-  const dark =
-    syntaxOf(theme, both ? "dark" : colorScheme, variant) ?? PIERRE_THEME.dark;
+  const nameOf = (scheme: ColorScheme) => {
+    const syntax = syntaxOf(theme, scheme, variant);
+    return typeof syntax === "object" ? ensureSyntaxTheme(syntax) : syntax;
+  };
+  const light = nameOf(both ? "light" : colorScheme) ?? PIERRE_THEME.light;
+  const dark = nameOf(both ? "dark" : colorScheme) ?? PIERRE_THEME.dark;
   const key = `${light}\0${dark}`;
   let cached = SYNTAX_THEMES.get(key);
   if (cached === undefined) {

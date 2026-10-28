@@ -1,4 +1,8 @@
-import { type Published, prohibitorumTheme } from "../prohibitorum.ts";
+import {
+  type ProSide,
+  type Published,
+  prohibitorumTheme,
+} from "../prohibitorum.ts";
 import type { Theme } from "../types.ts";
 
 // Prohibitorum's Lavender scheme, resolved to hex; see src/prohibitorum.ts.
@@ -54,10 +58,52 @@ const dark: Published = {
   info: "#2b7fff",
 };
 
+// Catppuccin Latte and Mocha's published accents, moved in lightness only
+// where one misses its floor on this page.
+const lightColours: ProSide = {
+  syntax: {
+    keyword: "#8839ef",
+    string: "#1f7b00",
+    constant: "#b84500",
+    function: "#175fee",
+    type: "#995d00",
+    property: "#5060d2",
+    parameter: "#cb283e",
+  },
+  ansi: {
+    red: { normal: "#d20f39", bright: "#f74256" },
+    green: { normal: "#207e00", bright: "#439d30" },
+    yellow: { normal: "#9d6000", bright: "#bb7c2f" },
+    blue: { normal: "#1b63f1", bright: "#4b87fd" },
+    magenta: { normal: "#b24297", bright: "#d260b4" },
+    cyan: { normal: "#007a80", bright: "#36989e" },
+  },
+};
+
+const darkColours: ProSide = {
+  syntax: {
+    keyword: "#cba6f7",
+    string: "#a6e3a1",
+    constant: "#fab387",
+    function: "#89b4fa",
+    type: "#f9e2af",
+    property: "#b4befe",
+    parameter: "#eba0ac",
+  },
+  ansi: {
+    red: { normal: "#f38ba8", bright: "#ffafc3" },
+    green: { normal: "#a6e3a1", bright: "#c0feba" },
+    yellow: { normal: "#f9e2af", bright: "#fff4dc" },
+    blue: { normal: "#89b4fa", bright: "#b0ceff" },
+    magenta: { normal: "#f5c2e7", bright: "#ffe6f8" },
+    cyan: { normal: "#94e2d5", bright: "#aefdef" },
+  },
+};
+
 export const proLavender: Theme = prohibitorumTheme(
   "pro-lavender",
   "ProLavender",
   light,
   dark,
-  { light: "catppuccin-latte", dark: "catppuccin-mocha" },
+  { light: lightColours, dark: darkColours },
 );

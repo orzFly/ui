@@ -92,9 +92,18 @@ const sides = builtinThemes.flatMap((theme) =>
 describe("syntax themes", () => {
   it("only names themes shiki actually bundles", () => {
     const unknown = sides.filter(
-      (s) => s.syntax !== undefined && !SHIKI_THEMES.has(s.syntax),
+      (s) => typeof s.syntax === "string" && !SHIKI_THEMES.has(s.syntax),
     );
     expect(unknown.map((s) => `${s.name}: ${s.syntax}`)).toEqual([]);
+  });
+
+  it("registers a palette's own theme under a name no bundled theme has", () => {
+    // Registering over a bundled name would repaint every palette mapped to it.
+    for (const { name, syntax } of sides) {
+      if (typeof syntax !== "object") continue;
+      expect(syntax.name, name).toMatch(/^orz-/);
+      expect(SHIKI_THEMES.has(syntax.name), name).toBe(false);
+    }
   });
 
   it("keeps a mapped syntax theme on the same side as the palette", () => {
@@ -102,6 +111,10 @@ describe("syntax themes", () => {
     // bright code block on a dark page, which is the T-144 bug inverted.
     for (const { name, scheme, syntax } of sides) {
       if (syntax === undefined) continue;
+      if (typeof syntax === "object") {
+        expect(syntax.type, name).toBe(scheme);
+        continue;
+      }
       expect(
         syntax.includes("light") || syntax === "catppuccin-latte",
         name,
@@ -109,17 +122,22 @@ describe("syntax themes", () => {
     }
   });
 
-  it("never maps two palettes on one side to the same syntax theme", () => {
-    // Not a correctness requirement of pierre's, but a duplicate is a
-    // copy-paste slip in a table this repetitive. ProNord and ProLavender
-    // are Nord and Catppuccin's colours, so they share those on purpose.
-    const SHARED = new Set(["pro-nord", "pro-lavender"]);
+  it("never maps two palettes to the same syntax theme", () => {
+    // Not a correctness requirement of pierre's for a bundled name, but a
+    // duplicate is a copy-paste slip in a table this repetitive; two objects
+    // under one name would have the second registration ignored.
     for (const scheme of ["light", "dark"] as const) {
       const mapped = builtinThemes
-        .filter((theme) => !SHARED.has(theme.id))
         .map((theme) => theme[scheme]?.syntax)
-        .filter((s): s is string => s !== undefined);
+        .filter((s) => s !== undefined)
+        .map((s) => (typeof s === "string" ? s : s.name));
       expect(new Set(mapped).size, scheme).toBe(mapped.length);
     }
+    const own = builtinThemes.flatMap((theme) =>
+      [theme.light?.syntax, theme.dark?.syntax].flatMap((s) =>
+        typeof s === "object" ? [s.name] : [],
+      ),
+    );
+    expect(new Set(own).size).toBe(own.length);
   });
 });

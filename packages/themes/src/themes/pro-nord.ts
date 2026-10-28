@@ -1,4 +1,8 @@
-import { type Published, prohibitorumTheme } from "../prohibitorum.ts";
+import {
+  type ProSide,
+  type Published,
+  prohibitorumTheme,
+} from "../prohibitorum.ts";
 import type { Theme } from "../types.ts";
 
 // Prohibitorum's Nord scheme, resolved to hex; see src/prohibitorum.ts.
@@ -54,10 +58,52 @@ const dark: Published = {
   info: "#2b7fff",
 };
 
+// Nord's published accents, moved in lightness only where one misses its
+// floor on this page; Nord publishes no light side, so that one is darkened.
+const lightColours: ProSide = {
+  syntax: {
+    keyword: "#496b95",
+    string: "#597143",
+    constant: "#815e7b",
+    function: "#3a707f",
+    type: "#467171",
+    property: "#4e6c8a",
+    parameter: "#9c5742",
+  },
+  ansi: {
+    red: { normal: "#ab4f59", bright: "#cd6d76" },
+    green: { normal: "#5c7446", bright: "#789062" },
+    yellow: { normal: "#866828", bright: "#a38445" },
+    blue: { normal: "#516f8d", bright: "#6e8dac" },
+    magenta: { normal: "#84607e", bright: "#a37d9c" },
+    cyan: { normal: "#3c7382", bright: "#5a91a0" },
+  },
+};
+
+const darkColours: ProSide = {
+  syntax: {
+    keyword: "#81a1c1",
+    string: "#a3be8c",
+    constant: "#b48ead",
+    function: "#88c0d0",
+    type: "#8fbcbb",
+    property: "#d8dee9",
+    parameter: "#d08770",
+  },
+  ansi: {
+    red: { normal: "#da7981", bright: "#f69299" },
+    green: { normal: "#a3be8c", bright: "#bcd8a5" },
+    yellow: { normal: "#ebcb8b", bright: "#ffe7b6" },
+    blue: { normal: "#81a1c1", bright: "#99badb" },
+    magenta: { normal: "#b48ead", bright: "#cea7c6" },
+    cyan: { normal: "#88c0d0", bright: "#a1daea" },
+  },
+};
+
 export const proNord: Theme = prohibitorumTheme(
   "pro-nord",
   "ProNord",
   light,
   dark,
-  { dark: "nord" },
+  { light: lightColours, dark: darkColours },
 );

@@ -1,4 +1,8 @@
-import { type Published, prohibitorumTheme } from "../prohibitorum.ts";
+import {
+  type ProSide,
+  type Published,
+  prohibitorumTheme,
+} from "../prohibitorum.ts";
 import type { Theme } from "../types.ts";
 
 // Prohibitorum's Sakura scheme, resolved to hex; see src/prohibitorum.ts.
@@ -54,9 +58,51 @@ const dark: Published = {
   info: "#2b7fff",
 };
 
+// Code and terminal colours drawn for this page.
+const lightColours: ProSide = {
+  syntax: {
+    keyword: "#a4406d",
+    string: "#0a7e3a",
+    constant: "#a84811",
+    function: "#7055b0",
+    type: "#896100",
+    property: "#007399",
+    parameter: "#904895",
+  },
+  ansi: {
+    red: { normal: "#a43b38", bright: "#cd605a" },
+    green: { normal: "#1e7729", bright: "#479c4d" },
+    yellow: { normal: "#7a6000", bright: "#a48200" },
+    blue: { normal: "#2063b0", bright: "#4687d8" },
+    magenta: { normal: "#8e4088", bright: "#b464ae" },
+    cyan: { normal: "#007176", bright: "#00999f" },
+  },
+};
+
+const darkColours: ProSide = {
+  syntax: {
+    keyword: "#f6a0c1",
+    string: "#89d298",
+    constant: "#f9a782",
+    function: "#c3b0fd",
+    type: "#e3b667",
+    property: "#6bcbf7",
+    parameter: "#e2a5e5",
+  },
+  ansi: {
+    red: { normal: "#e18881", bright: "#ffb5ae" },
+    green: { normal: "#77b779", bright: "#9dde9e" },
+    yellow: { normal: "#bfa14c", bright: "#e6c873" },
+    blue: { normal: "#74a7e8", bright: "#a7ceff" },
+    magenta: { normal: "#cc8bc5", bright: "#f4b0ed" },
+    cyan: { normal: "#35b9c0", bright: "#65e0e7" },
+  },
+};
+
 export const proSakura: Theme = prohibitorumTheme(
   "pro-sakura",
   "ProSakura",
   light,
   dark,
+  { light: lightColours, dark: darkColours },
 );

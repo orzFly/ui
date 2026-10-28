@@ -8,6 +8,10 @@ import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PIERRE_THEME, useSyntaxTheme } from "../src/code-block.tsx";
+import { loadPierre } from "../src/syntax-registry.ts";
+
+const registerCustomTheme = vi.hoisted(() => vi.fn());
+vi.mock("@pierre/diffs", () => ({ registerCustomTheme }));
 
 let store: ThemeStore;
 
@@ -138,5 +142,57 @@ describe("useSyntaxTheme", () => {
     act(() => store.setPref({ ui: { theme: "monokai", mode: "dark" } }));
     expect(result.current).not.toBe(nord);
     expect(result.current.light).toBe("monokai");
+  });
+});
+
+describe("a palette's own syntax theme", () => {
+  const names = () => registerCustomTheme.mock.calls.map(([name]) => name);
+
+  it("is handed to pierre by name and registered once", async () => {
+    stubOsDark(false);
+    createStore().setPref({ ui: { theme: "pro-sakura", mode: "system" } });
+    const { result, rerender } = renderHook(() => useSyntaxTheme(), {
+      wrapper,
+    });
+    expect(result.current).toEqual({
+      light: "orz-pro-sakura-light",
+      dark: "orz-pro-sakura-dark",
+    });
+    // Picked before pierre loaded: queued, then registered by the loader.
+    expect(names()).toEqual([]);
+    await loadPierre();
+    expect(names()).toEqual(["orz-pro-sakura-light", "orz-pro-sakura-dark"]);
+    const [, load] = registerCustomTheme.mock.calls[0];
+    await expect(load()).resolves.toMatchObject({
+      name: "orz-pro-sakura-light",
+      type: "light",
+    });
+
+    act(() => store.setPref({ ui: { theme: "pro-sakura", mode: "dark" } }));
+    rerender();
+    act(() =>
+      store.setPref({
+        ui: { theme: "pro-sakura", mode: "dark", variant: "amoled" },
+      }),
+    );
+    expect(result.current.dark).toBe("orz-pro-sakura-dark");
+    expect(names()).toHaveLength(2);
+
+    // Picked after pierre loaded: registered at once.
+    act(() => store.setPref({ ui: { theme: "pro-lagoon", mode: "light" } }));
+    expect(result.current.light).toBe("orz-pro-lagoon-light");
+    expect(names()).toEqual([
+      "orz-pro-sakura-light",
+      "orz-pro-sakura-dark",
+      "orz-pro-lagoon-light",
+    ]);
+  });
+
+  it("is not involved for a bundled name", () => {
+    registerCustomTheme.mockClear();
+    stubOsDark(false);
+    createStore().setPref({ ui: { theme: "solarized", mode: "system" } });
+    renderHook(() => useSyntaxTheme(), { wrapper });
+    expect(names()).toEqual([]);
   });
 });

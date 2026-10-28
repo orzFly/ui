@@ -13,6 +13,7 @@ export {
   schemesOf,
   variantsOf,
 } from "./resolve.ts";
+export { textMateTheme } from "./syntax.ts";
 export { catppuccin } from "./themes/catppuccin.ts";
 export { defaultTheme } from "./themes/default.ts";
 export { dracula } from "./themes/dracula.ts";
@@ -49,11 +50,13 @@ export type {
   Palette,
   ResolvedPalette,
   ResolvedTerminal,
+  SyntaxRoles,
   TerminalPalette,
   TerminalTheme,
   TerminalTokenName,
   TerminalTokens,
   TerminalVariant,
+  TextMateTheme,
   Theme,
   TokenName,
   Tokens,

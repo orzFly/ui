@@ -6,14 +6,16 @@
  * as a browser reads it (Tailwind CSS 4.3.3's palette, then Graphite's base,
  * then the scheme) and stored as opaque hex, Graphite's translucent fills laid
  * over the surface they sit on; Prohibitorum's names are mapped onto these
- * tokens; and the field edge, charts, diff colours and terminal, which
- * Prohibitorum does not define, are derived here.
+ * tokens; and the field edge, charts, diff colours, terminal and syntax
+ * theme, which Prohibitorum does not define, are derived here.
  */
 import { amoled } from "./amoled.ts";
 import { contrastOf, mixOf, oklchOf } from "./color.ts";
+import { textMateTheme } from "./syntax.ts";
 import type {
   ColorScheme,
   Palette,
+  SyntaxRoles,
   TerminalTokens,
   Theme,
   Tokens,
@@ -51,15 +53,17 @@ export interface Published {
   info: string;
 }
 
-/** Tailwind CSS 4.3.3's 300, 400, 600 and 700 steps, as hex. */
-const ANSI = {
-  red: ["#ffa2a2", "#ff6467", "#e7000b", "#c10007"],
-  green: ["#7bf1a8", "#05df72", "#00a63e", "#008236"],
-  yellow: ["#ffdf20", "#fdc700", "#d08700", "#a65f00"],
-  blue: ["#8ec5ff", "#51a2ff", "#155dfc", "#1447e6"],
-  magenta: ["#f4a8ff", "#ed6aff", "#c800de", "#a800b7"],
-  cyan: ["#53eafd", "#00d3f2", "#0092b8", "#007595"],
-} as const;
+/** The six chromatic ANSI colours of one side, normal and bright. */
+export type AnsiHues = Record<
+  "red" | "green" | "yellow" | "blue" | "magenta" | "cyan",
+  { normal: string; bright: string }
+>;
+
+/** The colours a theme draws for one side's code and terminal. */
+export interface ProSide {
+  syntax: SyntaxRoles;
+  ansi: AnsiHues;
+}
 
 /** WCAG 1.4.11's floor for the edge that identifies a field. */
 const FIELD_EDGE = 3;
@@ -83,16 +87,17 @@ function fieldEdge(p: Published): string {
 }
 
 /**
- * The terminal has no Prohibitorum colours either. The six hues are
- * Tailwind's, the family Prohibitorum's status colours come from: 700 and 600
- * for the normal and bright ones on a light page, 400 and 300 on a dark one.
- * Black and white pair the page's neutrals as Picotera's do, so the bright one
- * of each pair is the lighter; the cursor is the foreground and the selection
- * the primary at 25%.
+ * The terminal has no Prohibitorum colours either. Each theme draws its six
+ * hues for its own page, or takes them from the family its page comes from,
+ * normal ones at 4.5:1 and bright ones at 3:1. Black and white pair the page's
+ * neutrals as Picotera's do, so the bright one of each pair is the lighter;
+ * the cursor is the foreground and the selection the primary at 25%.
  */
-function terminalOf(p: Published, scheme: ColorScheme): TerminalTokens {
-  const [bright, normal] = scheme === "light" ? [2, 3] : [1, 0];
-  const hue = (name: keyof typeof ANSI, step: number) => ANSI[name][step];
+function terminalOf(
+  p: Published,
+  scheme: ColorScheme,
+  ansi: AnsiHues,
+): TerminalTokens {
   const [black, brightBlack, white, brightWhite] =
     scheme === "light"
       ? [p.foreground, p["muted-foreground"], p.border, p.background]
@@ -103,20 +108,20 @@ function terminalOf(p: Published, scheme: ColorScheme): TerminalTokens {
     "terminal-cursor": p.foreground,
     "terminal-selection": `${p.primary}40`,
     "ansi-black": black,
-    "ansi-red": hue("red", normal),
-    "ansi-green": hue("green", normal),
-    "ansi-yellow": hue("yellow", normal),
-    "ansi-blue": hue("blue", normal),
-    "ansi-magenta": hue("magenta", normal),
-    "ansi-cyan": hue("cyan", normal),
+    "ansi-red": ansi.red.normal,
+    "ansi-green": ansi.green.normal,
+    "ansi-yellow": ansi.yellow.normal,
+    "ansi-blue": ansi.blue.normal,
+    "ansi-magenta": ansi.magenta.normal,
+    "ansi-cyan": ansi.cyan.normal,
     "ansi-white": white,
     "ansi-bright-black": brightBlack,
-    "ansi-bright-red": hue("red", bright),
-    "ansi-bright-green": hue("green", bright),
-    "ansi-bright-yellow": hue("yellow", bright),
-    "ansi-bright-blue": hue("blue", bright),
-    "ansi-bright-magenta": hue("magenta", bright),
-    "ansi-bright-cyan": hue("cyan", bright),
+    "ansi-bright-red": ansi.red.bright,
+    "ansi-bright-green": ansi.green.bright,
+    "ansi-bright-yellow": ansi.yellow.bright,
+    "ansi-bright-blue": ansi.blue.bright,
+    "ansi-bright-magenta": ansi.magenta.bright,
+    "ansi-bright-cyan": ansi.cyan.bright,
     "ansi-bright-white": brightWhite,
   };
 }
@@ -124,7 +129,8 @@ function terminalOf(p: Published, scheme: ColorScheme): TerminalTokens {
 function paletteOf(
   p: Published,
   scheme: ColorScheme,
-  syntax: string | undefined,
+  id: string,
+  side: ProSide,
 ): Palette {
   // Status text is Prohibitorum's `*-foreground`, which is what clears AA on
   // the page; the 500-step fills draw the charts and the diff.
@@ -165,9 +171,11 @@ function paletteOf(
     "sidebar-border": p["sidebar-border"],
     "sidebar-ring": p["sidebar-ring"],
   };
-  const palette: Palette = { tokens, terminal: terminalOf(p, scheme) };
-  if (syntax !== undefined) palette.syntax = syntax;
-  return palette;
+  return {
+    tokens,
+    terminal: terminalOf(p, scheme, side.ansi),
+    syntax: textMateTheme(`orz-${id}-${scheme}`, scheme, side.syntax, tokens),
+  };
 }
 
 /**
@@ -200,19 +208,19 @@ function amoledOf(palette: Palette): NonNullable<Palette["variants"]> {
   };
 }
 
-/** A Prohibitorum scheme as a theme, with `syntax` naming each side's shiki theme where one fits. */
+/** A Prohibitorum scheme as a theme, with each side's code and terminal colours. */
 export function prohibitorumTheme(
   id: string,
   label: string,
   light: Published,
   dark: Published,
-  syntax: { light?: string; dark?: string } = {},
+  colours: { light: ProSide; dark: ProSide },
 ): Theme {
-  const darkPalette = paletteOf(dark, "dark", syntax.dark);
+  const darkPalette = paletteOf(dark, "dark", id, colours.dark);
   return {
     id,
     label,
-    light: paletteOf(light, "light", syntax.light),
+    light: paletteOf(light, "light", id, colours.light),
     dark: { ...darkPalette, variants: amoledOf(darkPalette) },
   };
 }

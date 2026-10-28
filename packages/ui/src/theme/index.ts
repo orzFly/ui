@@ -11,6 +11,7 @@ export type {
   TerminalTokenName,
   TerminalTokens,
   TerminalVariant,
+  TextMateTheme,
   Theme,
   TokenName,
   Tokens,

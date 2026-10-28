@@ -63,6 +63,33 @@ export type TerminalTokenName =
   | "ansi-bright-white";
 export type TerminalTokens = Record<TerminalTokenName, string>;
 
+/**
+ * A TextMate theme as shiki reads it, cut down to what a palette's own theme
+ * sets. Plain data, so a theme stays JSON and this package needs no shiki.
+ */
+export interface TextMateTheme {
+  /** The highlighter registers it under this name, which no bundled theme has. */
+  name: string;
+  type: ColorScheme;
+  colors: { "editor.foreground": string; "editor.background": string };
+  tokenColors: {
+    scope: string[];
+    settings: { foreground: string; fontStyle?: string };
+  }[];
+}
+
+/** The chromatic roles a palette's own syntax theme is drawn from. */
+export interface SyntaxRoles {
+  keyword: string;
+  string: string;
+  /** Numbers, booleans, `null` and named constants. */
+  constant: string;
+  function: string;
+  type: string;
+  property: string;
+  parameter: string;
+}
+
 export interface TerminalVariant {
   label: string;
   terminal?: Partial<TerminalTokens>;
@@ -71,7 +98,7 @@ export interface Variant extends TerminalVariant {
   /** Overrides on top of the palette's UI tokens. */
   tokens?: Partial<Tokens>;
   /** Overrides the palette's syntax theme. */
-  syntax?: string;
+  syntax?: string | TextMateTheme;
 }
 
 export interface TerminalPalette {
@@ -83,8 +110,11 @@ export interface TerminalPalette {
 }
 export interface Palette extends TerminalPalette {
   tokens: Tokens;
-  /** shiki theme from pierre's bundled collection; absent = pierre's own tokens. */
-  syntax?: string;
+  /**
+   * A shiki theme from pierre's bundled collection, by name, or a theme drawn
+   * for this palette; absent = pierre's own tokens.
+   */
+  syntax?: string | TextMateTheme;
   variants?: Record<string, Variant>;
 }
 
@@ -138,7 +168,7 @@ export type AnyCustomTheme = CustomTheme | CustomTerminalTheme;
 export interface ResolvedPalette {
   tokens: Tokens;
   terminal: TerminalTokens;
-  syntax?: string;
+  syntax?: string | TextMateTheme;
   /** The variant actually applied on this side: the requested id, or "default". */
   variant: string;
 }

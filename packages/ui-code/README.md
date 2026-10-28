@@ -35,8 +35,9 @@ counterpart. It also colours a patch's `+`/`−` counts from the theme's `--diff
 ## Theme
 
 Blocks follow `@orz/ui`'s `ThemeProvider`. A palette's `syntax` (or its variant's) names the shiki
-theme for its token colors, and a palette without one uses that slot of pierre's own light/dark
-pair. Under `system` each slot comes from its own palette, so Solarized highlights as
+theme for its token colors, or is a theme object of its own, which is registered with pierre under
+its `name` the first time it is picked; a palette without one uses that slot of pierre's own
+light/dark pair. Under `system` each slot comes from its own palette, so Solarized highlights as
 solarized-light by day and solarized-dark at night. A pinned mode or a one-palette theme fills both
 slots from the side on screen. Outside a provider, blocks use pierre's pair.
 

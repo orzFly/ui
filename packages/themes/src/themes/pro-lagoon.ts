@@ -1,4 +1,8 @@
-import { type Published, prohibitorumTheme } from "../prohibitorum.ts";
+import {
+  type ProSide,
+  type Published,
+  prohibitorumTheme,
+} from "../prohibitorum.ts";
 import type { Theme } from "../types.ts";
 
 // Prohibitorum's Lagoon scheme, resolved to hex; see src/prohibitorum.ts.
@@ -54,9 +58,51 @@ const dark: Published = {
   info: "#2b7fff",
 };
 
+// Code and terminal colours drawn for this page.
+const lightColours: ProSide = {
+  syntax: {
+    keyword: "#00758e",
+    string: "#007d51",
+    constant: "#a14d2f",
+    function: "#3e68ad",
+    type: "#856300",
+    property: "#6f59a6",
+    parameter: "#984979",
+  },
+  ansi: {
+    red: { normal: "#a03f3c", bright: "#c8635d" },
+    green: { normal: "#27762f", bright: "#4e9a52" },
+    yellow: { normal: "#7a6000", bright: "#a48200" },
+    blue: { normal: "#2863ab", bright: "#4c88d3" },
+    magenta: { normal: "#8b4486", bright: "#b167ab" },
+    cyan: { normal: "#007176", bright: "#00999f" },
+  },
+};
+
+const darkColours: ProSide = {
+  syntax: {
+    keyword: "#6ccdea",
+    string: "#82d2a8",
+    constant: "#f6a88d",
+    function: "#98bffe",
+    type: "#dbb970",
+    property: "#c2b1f8",
+    parameter: "#eda4cc",
+  },
+  ansi: {
+    red: { normal: "#dc8c85", bright: "#ffb5ae" },
+    green: { normal: "#7cb57d", bright: "#a1dca2" },
+    yellow: { normal: "#bda257", bright: "#e4c87c" },
+    blue: { normal: "#79a7e2", bright: "#a7ceff" },
+    magenta: { normal: "#c88ec3", bright: "#f0b3ea" },
+    cyan: { normal: "#48b7bd", bright: "#72dee4" },
+  },
+};
+
 export const proLagoon: Theme = prohibitorumTheme(
   "pro-lagoon",
   "ProLagoon",
   light,
   dark,
+  { light: lightColours, dark: darkColours },
 );

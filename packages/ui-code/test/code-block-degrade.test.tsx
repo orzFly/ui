@@ -11,6 +11,10 @@ const mock = vi.hoisted(() => ({
   notification: "sync" as "sync" | "microtask",
 }));
 
+// The real module defines the diffs-container element, whose own shadow root
+// would collide with the one the mock below attaches.
+vi.mock("@pierre/diffs", () => ({ registerCustomTheme: () => {} }));
+
 /**
  * Stands in for pierre closely enough for both lifecycle signals: each
  * surface owns a shadow root, then onPostRender runs with either no line,
