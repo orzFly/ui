@@ -28,7 +28,7 @@ function read(): boolean {
   }
 }
 
-/** Whether `/` focuses the search (WCAG SC 2.1.4); on until the reader says otherwise. */
+/** Whether single keys act — `/` for the search, the Mail demo's keys (WCAG SC 2.1.4); on until the reader says otherwise. */
 export function useShortcutsEnabled(): boolean {
   return useSyncExternalStore(subscribe, read, () => true);
 }

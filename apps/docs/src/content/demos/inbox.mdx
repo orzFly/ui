@@ -1,15 +1,20 @@
 export const meta = {
-  title: "Inbox",
+  title: "Mail",
   description:
-    "A mail client: conversations under a search box that takes filters, one open beside the list or, on a phone, in its place, and a markdown reply box that stays above the on-screen keyboard.",
+    "A whole mail client: folders and labels that are saved searches, conversations you can select, archive and undo, a compose window docked in the corner, single-key shortcuts, and on a phone one pane at a time with the reply box above the on-screen keyboard.",
   order: 2,
   layout: "bare",
   api: [
     "ui/QueryBox",
     "ui/LoadMoreFooter",
+    "ui/Primitives/Sheet",
+    "ui/Primitives/DropdownMenu",
+    "ui/Primitives/Tooltip",
+    "ui/Primitives/Checkbox",
+    "ui/Primitives/Dialog",
+    "ui/Primitives/Toaster",
     "ui/Hooks/usePagedAppend",
     "ui/Hooks/useVisualViewportInsets",
-    "ui/Hooks/useScrollInsets",
     "ui-markdown/Markdown",
     "ui-codemirror/MarkdownEditor",
   ],
@@ -23,8 +28,11 @@ import { Inbox } from "../../demos/inbox/inbox.tsx";
     { route: "/guidelines/foundations/layout-and-spacing/", title: "Layout & spacing" },
     { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
     { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
+    { route: "/guidelines/patterns/destructive-actions/", title: "Destructive actions" },
+    { route: "/guidelines/patterns/overlays/", title: "Overlays" },
     { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
     { route: "/guidelines/patterns/forms/", title: "Forms" },
+    { route: "/guidelines/content/accessibility/", title: "Accessibility" },
     { route: "/guidelines/content/writing/", title: "Writing" },
   ]}
 >

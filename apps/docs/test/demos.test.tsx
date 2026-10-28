@@ -1,10 +1,21 @@
 // @vitest-environment happy-dom
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
+import { Toaster } from "@orz/ui/components/sonner";
 import type { Window as HappyWindow } from "happy-dom";
 import { act, type ComponentType } from "react";
-import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { createRoot, type Root } from "react-dom/client";
+import { toast } from "sonner";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { Inbox } from "../src/demos/inbox/inbox.tsx";
 import { LATENCY_MS, PAGE_SIZE } from "../src/demos/inbox/mailbox.ts";
 import { tagsOf, titleOf } from "../src/demos/notes/notebook.ts";
@@ -258,34 +269,86 @@ describe("settings", () => {
 });
 
 describe("inbox", () => {
-  afterEach(() => history.replaceState(null, "", "/demos/inbox/"));
+  // The site mounts one Toaster for every page; the demo's toasts need it here too.
+  let toaster: Root;
+  beforeAll(async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    toaster = createRoot(host);
+    await act(async () => toaster.render(<Toaster />));
+  });
+  afterAll(() => act(() => toaster.unmount()));
+  // Only the newest few toasts are drawn, so each test starts with none.
+  beforeEach(() => act(() => toast.dismiss()));
+  afterEach(() => {
+    history.replaceState(null, "", "/demos/inbox/");
+    localStorage.clear();
+  });
 
   const rows = (container: HTMLElement) => [
     ...container.querySelectorAll<HTMLAnchorElement>(
       "ul[aria-label=Conversations] a",
     ),
   ];
+  const subjects = (container: HTMLElement) =>
+    rows(container).map(
+      (row) => row.querySelector("span:nth-of-type(4)")?.textContent,
+    );
   const wait = (ms: number) =>
     act(() => new Promise((resolve) => setTimeout(resolve, ms)));
+  const click = (element: Element | null | undefined) =>
+    act(async () => (element as HTMLElement | null)?.click());
+  const labelled = (root: ParentNode, label: string) =>
+    root.querySelector<HTMLElement>(`[aria-label='${label}']`);
+  const press = (key: string) =>
+    act(async () => {
+      (document.activeElement ?? document.body).dispatchEvent(
+        new KeyboardEvent("keydown", { key, bubbles: true }),
+      );
+    });
+  const type = (input: HTMLInputElement | null, value: string) =>
+    act(async () => {
+      if (!input) throw new Error("no field");
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
 
   async function searchFor(container: HTMLElement, query: string) {
     const input = container.querySelector<HTMLInputElement>(
       "input[aria-label='Search mail']",
     );
-    if (!input) throw new Error("no search box");
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(
-        HTMLInputElement.prototype,
-        "value",
-      )?.set?.call(input, query);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await act(async () => input.form?.requestSubmit());
+    await type(input, query);
+    await act(async () => input?.form?.requestSubmit());
   }
 
-  it("lists a page, and the next one after a round trip", async () => {
+  /** Clicks a place in the wide screen's sidebar. */
+  const showPlace = (container: HTMLElement, title: string) =>
+    click(
+      [
+        ...container.querySelectorAll(
+          "aside[data-width=wide] nav[aria-label=Folders] a",
+        ),
+      ].find((link) => link.textContent?.startsWith(title)),
+    );
+
+  const undo = () =>
+    click(
+      [...document.querySelectorAll("button")].findLast(
+        (button) => button.textContent === "Undo",
+      ),
+    );
+
+  it("lists a page of the inbox, and the next one after a round trip", async () => {
     const container = await draw(Inbox, WIDTHS.desktop);
     expect(rows(container)).toHaveLength(PAGE_SIZE);
+    // A draft and a message nobody answered are filed elsewhere.
+    expect(subjects(container)).not.toContain("Notes for the retry write-up");
+    expect(subjects(container)).not.toContain(
+      "Agenda for Thursday's design review",
+    );
     const more = [...container.querySelectorAll("button")].find(
       (button) => button.textContent === "Load more",
     );
@@ -298,21 +361,48 @@ describe("inbox", () => {
   it("filters by the query, and says so when nothing matches", async () => {
     const container = await draw(Inbox, WIDTHS.desktop);
     await searchFor(container, "is:starred label:design");
-    expect(rows(container).map((row) => row.textContent)).toEqual([
-      expect.stringContaining("Touch sizes for the toolbar icons"),
-      expect.stringContaining("Contrast audit results"),
+    expect(new URLSearchParams(location.search).get("q")).toBe(
+      "is:starred label:design",
+    );
+    expect(subjects(container)).toEqual([
+      "Touch sizes for the toolbar icons",
+      "Contrast audit results",
     ]);
     await searchFor(container, "nothing-has-this-word");
     expect(rows(container)).toHaveLength(0);
     expect(container.textContent).toContain("No conversations match");
   });
 
+  it("shows each folder as its search, and Back returns to the last", async () => {
+    const container = await draw(Inbox, WIDTHS.desktop);
+    await showPlace(container, "Sent");
+    expect(new URLSearchParams(location.search).get("q")).toBe("in:sent");
+    expect(
+      container.querySelector<HTMLInputElement>(
+        "input[aria-label='Search mail']",
+      )?.value,
+    ).toBe("in:sent");
+    expect(subjects(container)).toContain(
+      "Agenda for Thursday's design review",
+    );
+
+    await showPlace(container, "Drafts");
+    expect(subjects(container)).toEqual(["Notes for the retry write-up"]);
+
+    await act(async () => history.back());
+    await wait(50);
+    expect(new URLSearchParams(location.search).get("q")).toBe("in:sent");
+    expect(subjects(container)).toContain(
+      "Agenda for Thursday's design review",
+    );
+  });
+
   it("opens a thread in the URL, marks it read, and goes back to the list", async () => {
     const container = await draw(Inbox, WIDTHS.phone);
-    const list = container.querySelector("section[aria-label=Inbox]");
+    const list = container.querySelector("section[aria-label='Mail list']");
     const row = rows(container)[0];
     expect(row?.textContent).toContain("Unread");
-    await act(async () => row?.click());
+    await click(row);
     expect(location.search).toBe("?thread=touch-sizes");
     expect(container.querySelector("#inbox-subject")?.textContent).toBe(
       "Touch sizes for the toolbar icons",
@@ -322,14 +412,146 @@ describe("inbox", () => {
     expect(rows(container)[0]?.textContent).not.toContain("Unread");
     expect(container.querySelector("form[aria-label=Reply]")).not.toBeNull();
 
-    const back = container.querySelector<HTMLButtonElement>(
-      "button[aria-label='Back to inbox']",
-    );
-    await act(async () => back?.click());
+    await click(labelled(container, "Back to inbox"));
     await wait(50);
     expect(location.search).toBe("");
     expect(container.querySelector("#inbox-subject")).toBeNull();
     expect(list?.className).not.toContain("max-md:hidden");
+  });
+
+  it("archives the open thread, and Undo puts it back", async () => {
+    const container = await draw(Inbox, WIDTHS.desktop);
+    await click(rows(container)[0]);
+    await click(
+      labelled(container.querySelector("article") ?? container, "Archive"),
+    );
+    await wait(50);
+    expect(container.querySelector("#inbox-subject")).toBeNull();
+    expect(subjects(container)).not.toContain(
+      "Touch sizes for the toolbar icons",
+    );
+    expect(document.body.textContent).toContain("Conversation archived");
+    await undo();
+    expect(subjects(container)[0]).toBe("Touch sizes for the toolbar icons");
+
+    await showPlace(container, "Archive");
+    expect(subjects(container)).not.toContain(
+      "Touch sizes for the toolbar icons",
+    );
+  });
+
+  it("selects with a long press on a touch screen, then with a tap", async () => {
+    const container = await draw(Inbox, WIDTHS.phone);
+    const touch = (row: Element | undefined, type: string) =>
+      row?.dispatchEvent(
+        new PointerEvent(type, { bubbles: true, pointerType: "touch" }),
+      );
+    const [first, second] = rows(container);
+    await act(async () => touch(first, "pointerdown"));
+    await wait(500);
+    await act(async () => touch(first, "pointerup"));
+    await click(first);
+    expect(container.textContent).toContain("1 selected");
+    expect(location.search).toBe("");
+
+    await act(async () => touch(second, "pointerdown"));
+    await act(async () => touch(second, "pointerup"));
+    await click(second);
+    expect(container.textContent).toContain("2 selected");
+    expect(location.search).toBe("");
+  });
+
+  it("acts on the selected threads at once", async () => {
+    const container = await draw(Inbox, WIDTHS.desktop);
+    const boxes = [
+      ...container.querySelectorAll<HTMLElement>(
+        "ul[aria-label=Conversations] [role=checkbox]",
+      ),
+    ];
+    await click(boxes[1]);
+    await click(boxes[2]);
+    expect(container.textContent).toContain("2 selected");
+    await click(labelled(container, "Delete"));
+    expect(document.body.textContent).toContain(
+      "2 conversations moved to Trash",
+    );
+    expect(rows(container)).toHaveLength(PAGE_SIZE - 2);
+    await showPlace(container, "Trash");
+    expect(subjects(container)).toEqual(
+      expect.arrayContaining([
+        "Release 0.9.0: changelog draft",
+        "Flaky test: retry-once times out on the slow runner",
+      ]),
+    );
+  });
+
+  it("keeps a closed message as a draft, and files a sent one under Sent", async () => {
+    const container = await draw(Inbox, WIDTHS.desktop);
+    await click(
+      [...container.querySelectorAll("button")].find(
+        (button) => button.textContent === "Compose",
+      ),
+    );
+    await type(
+      container.querySelector<HTMLInputElement>("#compose-subject"),
+      "Lunch on Friday",
+    );
+    const sendButton = () =>
+      container.querySelector(
+        "form[aria-label='New message'] button[type=submit]",
+      );
+    // Without a recipient it says so, and sends nothing.
+    await click(sendButton());
+    expect(container.textContent).toContain("Add at least one recipient.");
+
+    await click(
+      container.querySelector(
+        "[data-compose-controls] [aria-label='Close and keep as a draft']",
+      ),
+    );
+    expect(container.querySelector("#compose-subject")).toBeNull();
+    expect(document.body.textContent).toContain("Saved to Drafts");
+    await showPlace(container, "Drafts");
+    expect(subjects(container)).toContain("Lunch on Friday");
+
+    await click(rows(container)[0]);
+    expect(
+      container.querySelector<HTMLInputElement>("#compose-subject")?.value,
+    ).toBe("Lunch on Friday");
+    await type(
+      container.querySelector<HTMLInputElement>("#compose-to"),
+      "alice",
+    );
+    await click(sendButton());
+    expect(document.body.textContent).toContain("Message sent");
+    expect(subjects(container)).not.toContain("Lunch on Friday");
+    await showPlace(container, "Sent");
+    expect(subjects(container)[0]).toBe("Lunch on Friday");
+  });
+
+  it("walks and archives with single keys, and binds none once they are off", async () => {
+    const container = await draw(Inbox, WIDTHS.desktop);
+    await press("j");
+    expect(document.activeElement).toBe(rows(container)[0]);
+    await press("j");
+    expect(document.activeElement).toBe(rows(container)[1]);
+    await press("e");
+    expect(subjects(container)).not.toContain("Release 0.9.0: changelog draft");
+
+    await press("?");
+    expect(document.querySelector("[role=dialog]")?.textContent).toContain(
+      "Keyboard shortcuts",
+    );
+    await click(document.querySelector("#mail-character-keys"));
+    await click(
+      [...document.querySelectorAll("[role=dialog] button")].find(
+        (button) => button.textContent === "Close",
+      ),
+    );
+    const before = subjects(container);
+    rows(container)[0]?.focus();
+    await press("e");
+    expect(subjects(container)).toEqual(before);
   });
 });
 

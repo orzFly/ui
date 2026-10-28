@@ -4,7 +4,15 @@ export interface InboxMessage {
   /** ISO 8601, UTC. */
   at: string;
   body: string;
+  /** Who it went to, for a message the reader wrote. */
+  to?: string[];
 }
+
+/**
+ * Where a thread is filed. A thread the reader started and nobody has answered is in `sent`; one
+ * with an answer is in `inbox`, and shows under Sent as well.
+ */
+export type InboxFolder = "inbox" | "sent" | "drafts" | "archive" | "trash";
 
 export interface InboxThread {
   id: string;
@@ -12,6 +20,8 @@ export interface InboxThread {
   labels: string[];
   unread: boolean;
   starred: boolean;
+  /** `inbox` when left out. */
+  folder?: InboxFolder;
   /** Oldest first. */
   messages: InboxMessage[];
 }
@@ -42,6 +52,22 @@ const at = (minutes: number) =>
   new Date(Date.UTC(2026, 9, 26, 8, 0) + minutes * 60_000).toISOString();
 
 const WRITTEN: InboxThread[] = [
+  {
+    id: "retry-write-up",
+    subject: "Notes for the retry write-up",
+    labels: ["docs"],
+    unread: false,
+    starred: false,
+    folder: "drafts",
+    messages: [
+      {
+        from: "user",
+        to: ["claude-agent"],
+        at: at(1_650),
+        body: "Could the write-up say *why* the fetch retries only once? A second retry",
+      },
+    ],
+  },
   {
     id: "touch-sizes",
     subject: "Touch sizes for the toolbar icons",
@@ -164,6 +190,26 @@ switch here?". Is that intended?`,
     ],
   },
   {
+    id: "design-review-agenda",
+    subject: "Agenda for Thursday's design review",
+    labels: ["design"],
+    unread: false,
+    starred: false,
+    folder: "sent",
+    messages: [
+      {
+        from: "user",
+        to: ["alice", "newcomer"],
+        at: at(1_000),
+        body: `Three things, half an hour:
+
+1. The touch sizes for the toolbar icons
+2. Whether the filter menu becomes a Sheet on a phone
+3. The contrast audit's two failing tokens`,
+      },
+    ],
+  },
+  {
     id: "contrast-audit",
     subject: "Contrast audit results",
     labels: ["design"],
@@ -280,6 +326,8 @@ const GENERATED: InboxThread[] = Array.from({ length: 40 }, (_, i) => {
     labels: [label],
     unread: i % 7 === 2,
     starred: false,
+    // Older notices were dealt with: every fifth archived, the oldest thrown away.
+    folder: i === 39 ? "trash" : i % 5 === 4 ? "archive" : "inbox",
     messages: [
       {
         from,

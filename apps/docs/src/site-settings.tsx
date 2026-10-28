@@ -13,9 +13,10 @@ export function CharacterKeysSetting() {
           id="settings-character-keys-description"
           className="text-muted-foreground text-sm"
         >
-          Press <kbd className="font-mono">/</kbd> to search the docs. Turn it
-          off if a key you did not mean to press — from speech input, say —
-          keeps landing you in the search box.
+          Press <kbd className="font-mono">/</kbd> to search the docs, and
+          single keys such as <kbd className="font-mono">E</kbd> to archive in
+          the Mail demo. Turn them off if keys you did not mean to press — from
+          speech input, say — keep acting.
         </p>
       </div>
       <Switch

@@ -2,13 +2,42 @@ import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@orz/ui/components/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@orz/ui/components/tooltip";
+import {
   MarkdownEditor,
   type MarkdownEditorHandle,
 } from "@orz/ui-codemirror/components/markdown-editor";
 import { Markdown } from "@orz/ui-markdown";
-import { ArrowLeftIcon, SendIcon, StarIcon } from "lucide-react";
-import { type Ref, useRef, useState } from "react";
 import {
+  ArchiveIcon,
+  ArrowLeftIcon,
+  EllipsisIcon,
+  ForwardIcon,
+  InboxIcon,
+  LinkIcon,
+  MailIcon,
+  SendIcon,
+  StarIcon,
+  TagIcon,
+  Trash2Icon,
+  Undo2Icon,
+} from "lucide-react";
+import { type Ref, useImperativeHandle, useRef, useState } from "react";
+import { ActionButton } from "./keys.tsx";
+import {
+  folderOf,
+  INBOX_LABELS,
   INBOX_PEOPLE,
   type InboxMessage,
   type InboxThread,
@@ -35,6 +64,11 @@ function Message({ message }: { message: InboxMessage }) {
       </Avatar>
       <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
         <span className="font-medium">{name}</span>
+        {message.to && message.to.length > 0 && (
+          <span className="text-muted-foreground text-xs">
+            to {message.to.map(nameOf).join(", ")}
+          </span>
+        )}
         <time
           dateTime={message.at}
           className="text-muted-foreground text-xs tabular-nums"
@@ -49,9 +83,14 @@ function Message({ message }: { message: InboxMessage }) {
   );
 }
 
+/** What the reply box lets the thread around it do. */
+export interface ComposerHandle {
+  focus: () => void;
+}
+
 /**
- * The reply box, pinned to the bottom of the screen while the thread is in view. On a phone the
- * on-screen keyboard shrinks only the visual viewport, so `bottom` follows `--vv-bottom` from
+ * The reply box, pinned to the bottom of the thread while it scrolls. On a phone the on-screen
+ * keyboard shrinks only the visual viewport, so `bottom` follows `--vv-bottom` from
  * `useVisualViewportInsets`, or the box would sit behind the keyboard it raised.
  */
 function Composer({
@@ -59,10 +98,11 @@ function Composer({
   ref,
 }: {
   onSend: (body: string) => void;
-  ref: Ref<HTMLFormElement>;
+  ref: Ref<ComposerHandle>;
 }) {
   const editor = useRef<MarkdownEditorHandle>(null);
   const [empty, setEmpty] = useState(true);
+  useImperativeHandle(ref, () => ({ focus: () => editor.current?.focus() }));
   const send = (value: string) => {
     if (value.trim() === "") return;
     onSend(value.trim());
@@ -71,13 +111,12 @@ function Composer({
   };
   return (
     <form
-      ref={ref}
       aria-label="Reply"
       onSubmit={(event) => {
         event.preventDefault();
         send(editor.current?.getValue() ?? "");
       }}
-      className="sticky z-10 flex items-end gap-2 rounded-b-xl border-t bg-card p-3 md:rounded-bl-none"
+      className="sticky z-10 flex items-end gap-2 border-t bg-background p-3"
       style={{ bottom: "var(--vv-bottom, 0px)" }}
     >
       <MarkdownEditor
@@ -95,64 +134,175 @@ function Composer({
   );
 }
 
+/** What can be done to the open thread; each is undone from the toast it ends in. */
+export interface ThreadActions {
+  onBack: () => void;
+  onArchive: () => void;
+  onTrash: () => void;
+  onRestore: () => void;
+  onUnread: () => void;
+  onStar: () => void;
+  onLabel: (label: string, on: boolean) => void;
+  onForward: () => void;
+  onCopyLink: () => void;
+}
+
+function Toolbar({
+  thread,
+  actions,
+}: {
+  thread: InboxThread;
+  actions: ThreadActions;
+}) {
+  const folder = folderOf(thread);
+  return (
+    <div className="flex h-12 shrink-0 items-center gap-0.5 border-b px-2 touch:h-14">
+      <ActionButton
+        label="Back to inbox"
+        action="back"
+        className="md:hidden"
+        onClick={actions.onBack}
+      >
+        <ArrowLeftIcon />
+      </ActionButton>
+      {folder === "archive" || folder === "trash" ? (
+        <ActionButton label="Move to Inbox" onClick={actions.onRestore}>
+          {folder === "trash" ? <Undo2Icon /> : <InboxIcon />}
+        </ActionButton>
+      ) : (
+        <ActionButton
+          label="Archive"
+          action="archive"
+          onClick={actions.onArchive}
+        >
+          <ArchiveIcon />
+        </ActionButton>
+      )}
+      {folder !== "trash" && (
+        <ActionButton label="Delete" action="trash" onClick={actions.onTrash}>
+          <Trash2Icon />
+        </ActionButton>
+      )}
+      <ActionButton
+        label="Mark as unread"
+        action="unread"
+        onClick={actions.onUnread}
+      >
+        <MailIcon />
+      </ActionButton>
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Labels">
+                <TagIcon />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Labels</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="start" className="w-44">
+          <DropdownMenuLabel>Labels</DropdownMenuLabel>
+          {INBOX_LABELS.map((label) => (
+            <DropdownMenuCheckboxItem
+              key={label}
+              checked={thread.labels.includes(label)}
+              onCheckedChange={(on) => actions.onLabel(label, on)}
+              // A reader ticks several in a row; the menu stays open for the next.
+              onSelect={(event) => event.preventDefault()}
+            >
+              {label}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <span className="flex-1" />
+      <ActionButton
+        label={thread.starred ? "Unstar" : "Star"}
+        action="star"
+        aria-pressed={thread.starred}
+        onClick={actions.onStar}
+      >
+        <StarIcon className={thread.starred ? "fill-current" : undefined} />
+      </ActionButton>
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="More actions">
+                <EllipsisIcon />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>More actions</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem onSelect={actions.onForward}>
+            <ForwardIcon />
+            Forward
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={actions.onCopyLink}>
+            <LinkIcon />
+            Copy link
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 /**
- * One conversation: its subject, the messages, and the reply box. On a phone it replaces the
- * list, and the back arrow returns to it.
+ * One conversation: the actions on it, its subject, the messages, and the reply box. On a phone
+ * it replaces the list, and the back arrow returns to it.
  */
 export function Thread({
   thread,
-  onBack,
+  actions,
   onSend,
-  headerRef,
   composerRef,
+  scrollRef,
 }: {
   thread: InboxThread;
-  onBack: () => void;
+  actions: ThreadActions;
   onSend: (body: string) => void;
-  headerRef: Ref<HTMLElement>;
-  composerRef: Ref<HTMLFormElement>;
+  composerRef: Ref<ComposerHandle>;
+  scrollRef: Ref<HTMLDivElement>;
 }) {
+  // A thread in the bin is read, not answered: Move to Inbox first.
+  const canReply = folderOf(thread) !== "trash";
   return (
-    <article aria-labelledby="inbox-subject" className="flex flex-1 flex-col">
-      <header
-        ref={headerRef}
-        // Under the site's own 3.5rem header; the card's top corners show above it.
-        className="sticky top-14 z-10 flex items-center gap-2 border-b rounded-t-xl bg-card/95 px-2 py-2 backdrop-blur md:rounded-tl-none md:px-4"
+    <article
+      aria-labelledby="inbox-subject"
+      className="flex min-h-0 flex-1 flex-col"
+    >
+      <Toolbar thread={thread} actions={actions} />
+      <div
+        ref={scrollRef}
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          aria-label="Back to inbox"
-          onClick={onBack}
-        >
-          <ArrowLeftIcon />
-        </Button>
-        <div className="min-w-0 flex-1">
-          <h2 id="inbox-subject" className="font-semibold leading-snug">
+        <header className="border-b px-4 py-3">
+          <h2 id="inbox-subject" className="font-semibold text-lg leading-snug">
             {thread.subject}
           </h2>
-          <p className="mt-1 flex flex-wrap gap-1">
-            {thread.labels.map((label) => (
-              <Badge key={label} variant="outline">
-                {label}
-              </Badge>
-            ))}
-          </p>
-        </div>
-        {thread.starred && (
-          <StarIcon
-            aria-label="Starred"
-            className="mr-2 size-4 shrink-0 fill-current text-foreground"
-          />
+          {thread.labels.length > 0 && (
+            <p className="mt-1 flex flex-wrap gap-1">
+              {thread.labels.map((label) => (
+                <Badge key={label} variant="outline">
+                  {label}
+                </Badge>
+              ))}
+            </p>
+          )}
+        </header>
+        <ol className="flex-1 divide-y">
+          {thread.messages.map((message) => (
+            <Message key={`${message.from}-${message.at}`} message={message} />
+          ))}
+        </ol>
+        {canReply && (
+          <Composer key={thread.id} ref={composerRef} onSend={onSend} />
         )}
-      </header>
-      <ol className="flex-1 divide-y">
-        {thread.messages.map((message) => (
-          <Message key={`${message.from}-${message.at}`} message={message} />
-        ))}
-      </ol>
-      <Composer key={thread.id} ref={composerRef} onSend={onSend} />
+      </div>
     </article>
   );
 }
