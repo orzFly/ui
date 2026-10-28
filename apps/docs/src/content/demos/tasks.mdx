@@ -1,0 +1,44 @@
+export const meta = {
+  title: "Tasks",
+  description:
+    "A task list: a table filtered from menus you can search, a menu on every row, details beside the list or in a sheet on a phone, and bulk actions that close with Undo and ask only before they delete.",
+  order: 1.5,
+  layout: "bare",
+  api: [
+    "ui/Primitives/Table",
+    "ui/FilterMenu",
+    "ui/Primitives/DropdownMenu",
+    "ui/Primitives/HoverCard",
+    "ui/Primitives/Tooltip",
+    "ui/Primitives/LinkChip",
+    "ui/Primitives/Checkbox",
+    "ui/Primitives/Input",
+    "ui/Primitives/Select",
+    "ui/Primitives/Sheet",
+    "ui/Primitives/Dialog",
+    "ui/Primitives/Avatar",
+    "ui/Primitives/Badge",
+    "ui/Primitives/Toaster",
+    "ui/ConfirmDialog",
+    "ui/LoadMoreFooter",
+    "ui/Hooks/usePagedAppend",
+  ],
+};
+
+import { DemoPage } from "../../demos/demo-page.tsx";
+import { Tasks } from "../../demos/tasks/tasks.tsx";
+
+<DemoPage
+  guidelines={[
+    { route: "/guidelines/patterns/destructive-actions/", title: "Destructive actions" },
+    { route: "/guidelines/patterns/feedback/", title: "Feedback" },
+    { route: "/guidelines/patterns/overlays/", title: "Overlays" },
+    { route: "/guidelines/patterns/choosing-a-control/", title: "Choosing a control" },
+    { route: "/guidelines/patterns/loading-empty-and-error/", title: "Loading, empty & error" },
+    { route: "/guidelines/foundations/density/", title: "Density" },
+    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
+    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
+  ]}
+>
+  <Tasks />
+</DemoPage>

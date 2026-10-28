@@ -23,6 +23,8 @@ import { tagsOf, titleOf } from "../src/demos/notes/notebook.ts";
 import { Notes } from "../src/demos/notes/notes.tsx";
 import { PullRequest } from "../src/demos/pull-request/pull-request.tsx";
 import { Settings } from "../src/demos/settings/settings.tsx";
+import { LATENCY_MS as TASKS_LATENCY_MS } from "../src/demos/tasks/board.ts";
+import { Tasks } from "../src/demos/tasks/tasks.tsx";
 
 // The asciinema player needs canvas and WASM, which happy-dom has neither of;
 // left loading, the recording draws its frame and nothing more.
@@ -51,6 +53,7 @@ const DEMOS: Record<string, ComponentType> = {
   notes: Notes,
   "pull-request": PullRequest,
   settings: Settings,
+  tasks: Tasks,
 };
 
 const WIDTHS = { desktop: 1280, phone: 390 };
@@ -822,5 +825,171 @@ describe("binary-inspector", () => {
     ).not.toBeNull();
     await click(container.querySelector("button[aria-label=Inspector]"));
     expect(dialog()?.textContent).toContain("Little endian");
+  });
+});
+
+describe("tasks", () => {
+  // The site mounts one Toaster for every page; the demo's toasts need it here too.
+  let toaster: Root;
+  beforeAll(async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    toaster = createRoot(host);
+    await act(async () => toaster.render(<Toaster />));
+  });
+  afterAll(() => act(() => toaster.unmount()));
+  beforeEach(() => act(() => toast.dismiss()));
+  afterEach(() => history.replaceState(null, "", "/demos/tasks/"));
+
+  /** The task keys on screen, in order. */
+  const keys = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>("tr[data-task]")].map(
+      (row) => `T-${row.dataset.task}`,
+    );
+  const row = (container: HTMLElement, key: string) =>
+    container.querySelector<HTMLElement>(`tr[data-task='${key.slice(2)}']`);
+  const wait = (ms: number) =>
+    act(() => new Promise((resolve) => setTimeout(resolve, ms)));
+  const click = (element: Element | null | undefined) =>
+    act(async () => (element as HTMLElement | null)?.click());
+  const button = (root: ParentNode, name: string) =>
+    [...root.querySelectorAll<HTMLElement>("button")].find(
+      (each) => each.textContent === name,
+    );
+  const dialog = () => document.querySelector<HTMLElement>("[role=dialog]");
+  const select = (container: HTMLElement, key: string) =>
+    click(row(container, key)?.querySelector("[role=checkbox]"));
+  const type = (input: HTMLInputElement | null, value: string) =>
+    act(async () => {
+      if (!input) throw new Error("no field");
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  /** Opens a toolbar filter and picks a row of its menu. */
+  async function pick(container: HTMLElement, name: string, option: string) {
+    const trigger = [...container.querySelectorAll("button")].find((each) =>
+      each.textContent?.startsWith(`${name}:`),
+    );
+    await click(trigger);
+    const choice = [...document.querySelectorAll("[role=option]")].find(
+      (each) => each.textContent === option,
+    );
+    if (!choice) throw new Error(`no ${option} in ${name}`);
+    await click(choice);
+  }
+
+  it("lists a page of open tasks, newest first, and the next after a round trip", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    const first = keys(container);
+    expect(first).toHaveLength(20);
+    expect(first[0]).toBe("T-60");
+    expect(container.textContent).toContain("20 of");
+    await click(button(container, "Load more"));
+    expect(container.textContent).toContain("Loading…");
+    await wait(TASKS_LATENCY_MS + 50);
+    expect(keys(container).length).toBeGreaterThan(20);
+    expect(keys(container).slice(0, 20)).toEqual(first);
+  });
+
+  it("narrows the list from the toolbar, and says so when nothing matches", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    await pick(container, "Status", "Closed");
+    expect(keys(container).length).toBeGreaterThan(0);
+    for (const each of container.querySelectorAll("tr[data-task]")) {
+      expect(each.textContent).toContain("Closed");
+    }
+    await pick(container, "Status", "Any status");
+    await pick(container, "Assignee", "Nobody");
+    expect(keys(container).length).toBeGreaterThan(0);
+    for (const each of container.querySelectorAll("tr[data-task]")) {
+      expect(each.textContent).toContain("Nobody");
+    }
+    await type(
+      container.querySelector<HTMLInputElement>(
+        "input[aria-label='Search tasks']",
+      ),
+      "no task has this word",
+    );
+    expect(keys(container)).toEqual([]);
+    expect(container.textContent).toContain("No tasks match");
+    await click(button(container, "Clear filters"));
+    expect(keys(container)[0]).toBe("T-60");
+  });
+
+  it("shows a task's details beside the list, in the URL", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    await click(row(container, "T-60")?.querySelector("td:nth-child(4)"));
+    expect(location.search).toBe("?task=60");
+    expect(container.querySelector("aside")?.textContent).toContain(
+      "Keyboard help for the demos",
+    );
+    expect(dialog()).toBeNull();
+    // A related task's chip shows that one in its place.
+    await click(container.querySelector("aside [data-slot=link-chip]"));
+    expect(location.search).toBe("?task=59");
+    await click(container.querySelector("[aria-label='Close details']"));
+    await wait(50);
+    expect(location.search).toBe("");
+    expect(container.querySelector("aside")).toBeNull();
+  });
+
+  it("shows a task's details in a sheet on a phone", async () => {
+    const container = await draw(Tasks, WIDTHS.phone);
+    await click(row(container, "T-60")?.querySelector("a"));
+    expect(container.querySelector("aside")).toBeNull();
+    expect(dialog()?.textContent).toContain("Keyboard help for the demos");
+  });
+
+  it("closes the selected tasks at once, and Undo brings them back", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    const [a, b] = keys(container);
+    if (!a || !b) throw new Error("too few tasks");
+    await select(container, a);
+    await select(container, b);
+    await click(button(container, "Close 2 tasks"));
+    expect(dialog()).toBeNull();
+    expect(keys(container)).not.toContain(a);
+    expect(keys(container)).not.toContain(b);
+    // A toast dismissed by an earlier test may still be fading out, Undo and all.
+    const closed = [...document.querySelectorAll("[data-sonner-toast]")].find(
+      (each) => each.textContent?.includes("Closed 2 tasks"),
+    );
+    expect(closed).toBeDefined();
+    await click(button(closed ?? document, "Undo"));
+    expect(keys(container).slice(0, 2)).toEqual([a, b]);
+  });
+
+  it("deletes only once the confirmation is accepted", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    await select(container, "T-60");
+    await click(button(container, "Delete 1 task…"));
+    expect(dialog()?.textContent).toContain("Delete T-60?");
+    await click(button(dialog() ?? document, "Cancel"));
+    expect(keys(container)).toContain("T-60");
+    await click(button(container, "Delete 1 task…"));
+    await click(button(dialog() ?? document, "Delete task"));
+    expect(keys(container)).not.toContain("T-60");
+    expect(document.body.textContent).toContain("Deleted T-60");
+  });
+
+  it("creates a task on top of the list, and shows it", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    await click(button(container, "New"));
+    const create = () => button(dialog() ?? document, "Create task");
+    await click(create());
+    expect(dialog()?.textContent).toContain("Give the task a title.");
+    await type(
+      document.querySelector<HTMLInputElement>("#new-task-title"),
+      "Write the tasks demo",
+    );
+    await click(create());
+    expect(keys(container)[0]).toBe("T-61");
+    expect(location.search).toBe("?task=61");
+    expect(container.querySelector("aside")?.textContent).toContain(
+      "Write the tasks demo",
+    );
   });
 });
