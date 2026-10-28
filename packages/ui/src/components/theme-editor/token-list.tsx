@@ -222,7 +222,7 @@ function TokenListView<N extends string>({
           type="button"
           title={values[entry.name]}
           className={cn(
-            "size-7 shrink-0 overflow-hidden rounded-md border border-black/15 shadow-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:border-white/15",
+            "size-7 shrink-0 overflow-hidden rounded-md border border-black/15 shadow-xs outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid dark:border-white/15",
             className,
           )}
           style={CHECKERBOARD}

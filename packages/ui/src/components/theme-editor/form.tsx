@@ -230,7 +230,7 @@ function ModeControl<M extends string>({
             if (option.value !== value) onChange(option.value);
           }}
           className={cn(
-            "flex-1 rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+            "flex-1 rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid disabled:pointer-events-none disabled:opacity-50",
             option.value === value && "bg-background text-foreground shadow-xs",
           )}
         >

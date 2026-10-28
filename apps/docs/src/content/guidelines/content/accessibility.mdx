@@ -54,11 +54,11 @@ same numbers, and the theme editor shows each token's ratio against the surface 
 ## Focus
 
 <DoDont>
-  <Do show={<div><Button variant="outline" className="border-ring ring-3 ring-ring/50">Save changes</Button></div>}>
+  <Do show={<div><Button variant="outline" className="outline-2 outline-offset-2 outline-ring outline-solid">Save changes</Button></div>}>
     Keep the focus ring every @orz/ui control draws on `:focus-visible`, and give anything else that
     takes focus the same one.
   </Do>
-  <Dont show={<div><Button variant="outline" className="focus-visible:ring-0 focus-visible:border-border">Save changes</Button></div>}>
+  <Dont show={<div><Button variant="outline" className="focus-visible:outline-none">Save changes</Button></div>}>
     Remove the ring because it looks heavy after a click. `:focus-visible` already leaves it off for
     a mouse click and shows it for the keyboard.
   </Dont>
@@ -67,6 +67,11 @@ same numbers, and the theme editor shows each token's ratio against the surface 
 - **Visible** ([SC 2.4.7](https://www.w3.org/TR/WCAG22/#focus-visible)): whatever has keyboard focus
   shows it. A clickable surface that is not an @orz/ui control is a `<button>` or `<a>`, so it
   takes focus at all, and borrows the `focus-visible:` classes from `Button`.
+- **Drawn apart from the control** ([SC 2.4.13](https://www.w3.org/TR/WCAG22/#focus-appearance)):
+  the ring is a 2px `ring` outline 2px off the control's edge, so the page shows between the two
+  and the ring is measured against the page, never against a filled button that may share its
+  colour. A destructive `Button` draws it in `destructive`. Being an `outline`, not a shadow, it
+  still shows in Windows' contrast themes, which drop shadows.
 - **Not hidden** ([SC 2.4.11](https://www.w3.org/TR/WCAG22/#focus-not-obscured-minimum), new in 2.2):
   a sticky header, a toolbar or the on-screen keyboard never covers the focused element entirely.
   Give a scroller with a sticky header `scroll-padding-top` of the header's height, so Tab lands

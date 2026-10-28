@@ -879,7 +879,7 @@ export function AnsiView({
       // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region takes focus so the keyboard can scroll it
       tabIndex={0}
       onCopy={onCopy}
-      className="relative min-h-0 flex-auto overflow-auto px-3 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+      className="relative min-h-0 flex-auto overflow-auto px-3 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
       style={
         virtual
           ? { height: maxHeight ?? VIRTUAL_HEIGHT }

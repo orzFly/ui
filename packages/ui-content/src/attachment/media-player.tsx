@@ -217,7 +217,7 @@ function MediaFrame({
           tabIndex={0}
           aria-label={title}
           className={cn(
-            "relative outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+            "relative outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
             fullscreen && "min-h-0 flex-1",
           )}
         >

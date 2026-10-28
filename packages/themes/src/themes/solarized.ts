@@ -24,7 +24,7 @@ const lightPalette: Palette = {
     warning: "oklch(0.539 0.134 85.7)",
     border: "oklch(0.88 0.04 90)",
     input: "oklch(0.635 0.04 90)",
-    ring: "oklch(0.72 0.15 85)",
+    ring: "oklch(0.6 0.15 85)",
     "chart-1": "oklch(0.62 0.14 85)",
     "chart-2": "oklch(0.58 0.13 135)",
     "chart-3": "oklch(0.64 0.14 65)",
@@ -37,7 +37,7 @@ const lightPalette: Palette = {
     "sidebar-accent": "oklch(0.94 0.05 85)",
     "sidebar-accent-foreground": "oklch(0.46 0.14 85)",
     "sidebar-border": "oklch(0.88 0.04 90)",
-    "sidebar-ring": "oklch(0.72 0.15 85)",
+    "sidebar-ring": "oklch(0.6 0.15 85)",
   },
   syntax: "solarized-light",
   terminal: {

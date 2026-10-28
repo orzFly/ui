@@ -25,7 +25,7 @@ const lightPalette: Palette = {
     warning: "oklch(0.571 0.179 58.3)",
     border: "oklch(0.922 0 0)",
     input: "oklch(0.667 0 0)",
-    ring: "oklch(0.708 0 0)",
+    ring: "oklch(0.62 0 0)",
     "chart-1": "oklch(0.87 0 0)",
     "chart-2": "oklch(0.556 0 0)",
     "chart-3": "oklch(0.439 0 0)",
@@ -38,7 +38,7 @@ const lightPalette: Palette = {
     "sidebar-accent": "oklch(0.97 0 0)",
     "sidebar-accent-foreground": "oklch(0.205 0 0)",
     "sidebar-border": "oklch(0.922 0 0)",
-    "sidebar-ring": "oklch(0.708 0 0)",
+    "sidebar-ring": "oklch(0.62 0 0)",
   },
   terminal: {
     // VS Code Light+ terminal defaults, https://raw.githubusercontent.com/microsoft/vscode/main/src/vs/workbench/contrib/terminal/common/terminalColorRegistry.ts

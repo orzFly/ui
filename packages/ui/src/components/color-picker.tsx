@@ -974,7 +974,7 @@ export function ColorPicker({
               aria-pressed={shown === s}
               disabled={disabled}
               onClick={() => pickSurface(s)}
-              className="h-6 rounded-[5px] text-[0.7rem] font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs"
+              className="h-6 rounded-[5px] text-[0.7rem] font-medium text-muted-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid disabled:opacity-50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs"
             >
               {SURFACE_LABELS[s]}
             </button>
@@ -1002,7 +1002,7 @@ export function ColorPicker({
                 : `lightness ${round(color.l * 100, 1)}%, chroma ${round(color.c, 3)} (${Math.round(rel * 100)}% of ${gamutName} max)`
         }
         className={cn(
-          "relative h-42 cursor-crosshair touch-none overflow-hidden rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+          "relative h-42 cursor-crosshair touch-none overflow-hidden rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
           disabled && "pointer-events-none opacity-50",
         )}
         style={
@@ -1316,7 +1316,7 @@ export function ColorPicker({
                     aria-pressed={pressed}
                     disabled={disabled}
                     onClick={() => pickSwatch(text)}
-                    className="aspect-square rounded-full border border-black/15 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 aria-pressed:ring-2 aria-pressed:ring-foreground aria-pressed:ring-offset-2 aria-pressed:ring-offset-popover"
+                    className="aspect-square rounded-full border border-black/15 outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring focus-visible:outline-solid disabled:opacity-50 aria-pressed:ring-2 aria-pressed:ring-foreground aria-pressed:ring-offset-2 aria-pressed:ring-offset-popover"
                     style={{
                       ...CHECKERBOARD,
                       backgroundImage: `linear-gradient(${css(parsed.color)}, ${css(parsed.color)}), ${CHECKERBOARD.backgroundImage}`,
@@ -1373,7 +1373,7 @@ function TrackSlider({
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb
         aria-label={label}
-        className="block size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_0_0_1px_rgb(0_0_0/0.3)] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="block size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_0_0_1px_rgb(0_0_0/0.3)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
       />
     </SliderPrimitive.Root>
   );

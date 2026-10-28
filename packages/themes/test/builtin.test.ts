@@ -138,12 +138,18 @@ describe("the port from @orz/ui's styles.css", () => {
     expect(Object.keys(PORTED).sort()).toEqual(Object.keys(legacy).sort());
   });
 
-  // Darkened or lightened after the port to clear AA as text; contrast.test.ts
-  // holds them instead. The fixture stays as scraped.
+  // Darkened or lightened after the port to clear AA as text or 3:1 as a
+  // focus ring; contrast.test.ts and focus-ring.test.ts hold them instead. The
+  // fixture stays as scraped.
   const RETUNED: Record<string, string[]> = {
-    light: ["muted-foreground"],
+    light: ["muted-foreground", "ring", "sidebar-ring"],
     "pico-light": ["destructive"],
-    "solarized-light": ["muted-foreground", "destructive"],
+    "solarized-light": [
+      "muted-foreground",
+      "destructive",
+      "ring",
+      "sidebar-ring",
+    ],
     "solarized-dark": ["muted-foreground", "destructive"],
     "catppuccin-latte": ["muted-foreground"],
     "gruvbox-light": ["muted-foreground"],
