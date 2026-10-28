@@ -15,6 +15,7 @@ import {
   ArrowUpRightIcon,
   MenuIcon,
   SearchIcon,
+  SettingsIcon,
 } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { ClientOnly } from "./hydrated.tsx";
@@ -23,6 +24,7 @@ import { nav } from "./pages.ts";
 import { BASE, Link, useRouter } from "./router.tsx";
 import { type NavNode, pagesIn, storybookHref } from "./routes.ts";
 import { SearchBox, SheetSearch } from "./search-box.tsx";
+import { useShortcutsEnabled } from "./shortcuts.ts";
 
 /** The top bar's sections: content/'s top-level pages and directories, Home aside. */
 const sections = nav.children;
@@ -59,10 +61,13 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
   const sheetBox = useRef<HTMLInputElement>(null);
   const [nav, setNav] = useState<NavOpen>(false);
   // The top bar's box is hidden on a phone; there the key opens the nav at its box.
-  useSlashShortcut(() => {
-    if (box.current?.checkVisibility()) box.current.focus();
-    else setNav("search");
-  });
+  useSlashShortcut(
+    () => {
+      if (box.current?.checkVisibility()) box.current.focus();
+      else setNav("search");
+    },
+    { enabled: useShortcutsEnabled() },
+  );
   return (
     <header className="sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-2 pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-6 md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))]">
@@ -103,6 +108,16 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
             <SearchIcon className="size-5" />
           </Button>
           <ThemeButton />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="aria-[current=page]:bg-muted"
+            asChild
+          >
+            <Link to="/settings/" aria-label="Settings">
+              <SettingsIcon />
+            </Link>
+          </Button>
         </div>
       </div>
     </header>

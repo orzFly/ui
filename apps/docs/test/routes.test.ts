@@ -105,9 +105,10 @@ describe("buildNav", () => {
       meta: { title: "Choosing a control", order: 2 },
     },
     { route: "/guidelines/foundations/color/", meta: { title: "Color" } },
+    { route: "/settings/", meta: { title: "Settings", nav: false } },
   ]);
 
-  it("nests pages by path and sorts by order, then title", () => {
+  it("nests pages by path and sorts by order, then title, leaving out nav: false", () => {
     expect(nav.children.map((node) => node.title)).toEqual([
       "Start",
       "Guidelines",

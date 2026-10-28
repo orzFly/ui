@@ -99,6 +99,7 @@ export function buildNav(
     return node;
   };
   for (const { route, meta } of pages) {
+    if (meta.nav === false) continue;
     const node = nodeAt(route);
     node.page = true;
     node.title = meta.title;

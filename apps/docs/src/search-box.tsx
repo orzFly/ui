@@ -18,6 +18,7 @@ import {
 } from "react";
 import { Link, useRouter } from "./router.tsx";
 import { type ExcerptPart, type SearchHit, useSearch } from "./search.ts";
+import { useShortcutsEnabled } from "./shortcuts.ts";
 
 /** A row of the results: a page, or a heading under the page above it. */
 interface SearchOption {
@@ -194,6 +195,7 @@ export function SearchBox({
   const { query, input, list, showing } = useSearchBox(() =>
     local.current?.blur(),
   );
+  const shortcut = useShortcutsEnabled();
   const setRefs = (node: HTMLInputElement | null) => {
     local.current = node;
     if (typeof inputRef === "function") inputRef(node);
@@ -221,7 +223,7 @@ export function SearchBox({
               }
             }}
           />
-          {query === "" && (
+          {shortcut && query === "" && (
             <Kbd className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2">
               /
             </Kbd>

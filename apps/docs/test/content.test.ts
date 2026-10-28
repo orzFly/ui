@@ -48,7 +48,7 @@ describe("content", () => {
     expect(routes.size).toBe(pages.length);
   });
 
-  it("lists in the nav exactly the routes that have a page", () => {
+  it("lists in the nav exactly the routes that have a page and want to be", () => {
     const listed: string[] = [];
     const walk = (node: NavNode) => {
       if (node.page) listed.push(node.route);
@@ -57,7 +57,10 @@ describe("content", () => {
       for (const child of node.children) walk(child);
     };
     walk(buildNav(pages));
-    expect(listed.sort()).toEqual([...routes].sort());
+    const wanted = pages
+      .filter((page) => page.meta.nav !== false)
+      .map((page) => page.route);
+    expect(listed.sort()).toEqual(wanted.sort());
   });
 
   it("links API titles to stories that exist", () => {

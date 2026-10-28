@@ -11,6 +11,8 @@ export interface PageMeta {
   api?: string[];
   /** "bare": no title block, sidebar or contents list; the page lays itself out (Home). */
   layout?: "bare";
+  /** false: kept out of the nav, reached by a control of its own (Settings, from the header). */
+  nav?: false;
 }
 
 /** An entry of a page's "On this page" list: its `##` and `###` headings. */

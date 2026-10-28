@@ -94,11 +94,14 @@ patterns, so an app keeps to these keys and adds no competing ones:
 | Escape | Closes the innermost open overlay, and nothing else |
 | `/` | Focuses the page's search (`useSlashShortcut`) unless shortcuts are turned off; typed as itself inside a field |
 
-**A shortcut that is one character can be turned off**
+**A single-key shortcut that acts can be turned off**
 ([SC 2.1.4](https://www.w3.org/TR/WCAG22/#character-key-shortcuts)): speech input types stray single
-keys. An app that binds `/` or any other single key offers a setting for keyboard shortcuts. For
-`/`, pass that setting to `useSlashShortcut(onSlash, { enabled })`, which binds nothing while it is
-`false`; a single-key binding of your own does the same, or is not mounted while the setting is off.
+keys, and a stray key that archives, sends or deletes costs the user work. An app with shortcuts
+like that offers a setting for keyboard shortcuts, and does not mount those bindings while it is
+off. `/` alone is the mild case: it only moves focus to the search, so a stray one costs an Escape.
+WCAG still counts it, and once an app has the setting, `useSlashShortcut(onSlash, { enabled })`
+takes it and binds nothing while it is `false`. This site's [Settings](/settings/) page does exactly
+this.
 
 ## Target size
 
