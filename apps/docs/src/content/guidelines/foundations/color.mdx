@@ -47,13 +47,16 @@ the contrast of the pair in the theme you are looking at.
 | A card, a panel set off from the page | `bg-card` | `text-card-foreground` |
 | A menu, popover, dialog or sheet | `bg-popover` | `text-popover-foreground` |
 | A well, a code span, a quiet fill | `bg-muted` | `text-muted-foreground` or `text-foreground` |
-| The app's side navigation | `bg-sidebar` | `text-sidebar-foreground` |
+| The app's side navigation, where it meets the window's edge | `bg-sidebar` | `text-sidebar-foreground` |
 | The one main action in view | `bg-primary` | `text-primary-foreground` |
 | A second action beside it | `bg-secondary` | `text-secondary-foreground` |
 | A hovered or selected row | `bg-accent` | `text-accent-foreground` |
 
 The components already make these choices: a `Card` is `bg-card`, a `Button` is `bg-primary`. Reach
 for the tokens yourself for the surfaces you build.
+
+A navigation column inside a centred page takes no fill: on a wide screen the fill stops short of the
+edge and the column floats. Its `border-r` separates it.
 
 ## Lines and focus
 

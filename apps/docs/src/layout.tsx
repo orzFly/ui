@@ -249,7 +249,7 @@ export function NavTree({
 
 export function Sidebar({ section }: { section: NavNode }) {
   return (
-    <aside className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] hidden h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] w-60 shrink-0 overflow-y-auto border-r bg-sidebar py-4 pr-2 pl-[max(0.5rem,env(safe-area-inset-left))] text-sm md:block">
+    <aside className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] hidden h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] w-60 shrink-0 overflow-y-auto border-r py-4 pr-2 pl-[max(0.5rem,env(safe-area-inset-left))] text-sm md:block">
       <nav aria-label={section.title}>
         <NavTree node={section} />
       </nav>
