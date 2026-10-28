@@ -112,10 +112,13 @@ export function Settings() {
     setPrefs((was) => ({ ...was, ...next }));
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card text-card-foreground md:grid md:grid-cols-[14rem_1fr]">
+    <div className="h-full overflow-y-auto md:grid md:grid-cols-[14rem_1fr] md:overflow-hidden">
       <nav
         aria-label="Settings"
-        className={cn("p-2 md:border-r md:p-3", view.open && "max-md:hidden")}
+        className={cn(
+          "p-2 md:overflow-y-auto md:border-r md:bg-sidebar md:p-3",
+          view.open && "max-md:hidden",
+        )}
       >
         <ul className="grid gap-0.5">
           {SECTIONS.map(({ id, title, Icon }) => (
@@ -139,7 +142,10 @@ export function Settings() {
       </nav>
       <section
         aria-labelledby="settings-section-title"
-        className={cn("min-w-0 p-4 md:p-6", !view.open && "max-md:hidden")}
+        className={cn(
+          "min-w-0 p-4 md:overflow-y-auto md:p-6",
+          !view.open && "max-md:hidden",
+        )}
       >
         <Button
           variant="ghost"

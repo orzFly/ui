@@ -127,6 +127,11 @@ file per route.
 - A live example is a file under `src/examples/<page>/` exporting exactly one component
   (`export function Name`); the page writes `<Example of={Name} />`, which shows the component and
   that file as its source.
+- A demo is `content/demos/<name>.mdx`, `layout: "bare"`, wrapping its component in `DemoPage`,
+  and its files live in `src/demos/<name>/`, the directory named after the page: the Code view
+  lists that directory, then the text fixtures its files import. The demo's root takes `h-full`
+  and lays itself out in the box `DemoPage` gives it, the window below the site header; it draws
+  no card or border of its own.
 - A rule about *when* to use a component lives on a guideline page under
   `content/guidelines/`; its JSDoc and Storybook say *what it takes*, and do not restate the
   rule. A card that adds or changes a component updates the guideline page that

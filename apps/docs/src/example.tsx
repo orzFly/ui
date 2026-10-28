@@ -5,6 +5,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@orz/ui/components/tabs";
+import { cn } from "@orz/ui/lib/utils";
 import {
   type ComponentType,
   type RefObject,
@@ -16,7 +17,7 @@ import { Code } from "./code.tsx";
 import { exampleSource } from "./example-source.ts";
 import { ClientOnly } from "./hydrated.tsx";
 
-type Pointer = "fine" | "coarse";
+export type Pointer = "fine" | "coarse";
 
 const POINTERS: { value: Pointer; label: string }[] = [
   { value: "fine", label: "Pointer" },
@@ -34,7 +35,7 @@ const OPENING_INPUT = ["pointerdown", "keydown"];
  * tagged, so a menu opened from a dialog follows too; one opened from the rest
  * of the page does not.
  */
-function useOverlaysFollow(
+export function useOverlaysFollow(
   preview: RefObject<HTMLElement | null>,
   pointer: Pointer | undefined,
 ) {
@@ -132,21 +133,40 @@ export function Example({
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="code">Code</TabsTrigger>
         </TabsList>
-        <fieldset className="ml-auto flex gap-1">
-          <legend className="sr-only">Preview sizes for</legend>
-          {POINTERS.map(({ value, label }) => (
-            <Button
-              key={value}
-              variant={pointer === value ? "secondary" : "ghost"}
-              size="sm"
-              aria-pressed={pointer === value}
-              onClick={() => setPointer(pointer === value ? undefined : value)}
-            >
-              {label}
-            </Button>
-          ))}
-        </fieldset>
+        <PointerToggle
+          pointer={pointer}
+          onChange={setPointer}
+          className="ml-auto"
+        />
       </div>
     </Tabs>
+  );
+}
+
+/** Pointer and Touch: press one to force its sizes, press it again to follow the device. */
+export function PointerToggle({
+  pointer,
+  onChange,
+  className,
+}: {
+  pointer: Pointer | undefined;
+  onChange: (pointer: Pointer | undefined) => void;
+  className?: string;
+}) {
+  return (
+    <fieldset className={cn("flex gap-1", className)}>
+      <legend className="sr-only">Preview sizes for</legend>
+      {POINTERS.map(({ value, label }) => (
+        <Button
+          key={value}
+          variant={pointer === value ? "secondary" : "ghost"}
+          size="sm"
+          aria-pressed={pointer === value}
+          onClick={() => onChange(pointer === value ? undefined : value)}
+        >
+          {label}
+        </Button>
+      ))}
+    </fieldset>
   );
 }
