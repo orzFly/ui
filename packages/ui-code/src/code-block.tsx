@@ -1,5 +1,5 @@
 import { type ColorScheme, type Theme, useTheme } from "@orz/ui/theme";
-import type { CodeViewItem, ParsedPatch } from "@pierre/diffs";
+import type { CodeViewItem, ParsedPatch, PostRenderPhase } from "@pierre/diffs";
 import type {
   CodeViewHandle,
   CodeViewProps,
@@ -233,6 +233,33 @@ function handlePostRender(container: HTMLElement): void {
 }
 
 /**
+ * pierre's FileDiff creates its `<pre>` before the highlighter is loaded and
+ * fills it once it is. A ref detached and reattached in between — StrictMode
+ * in dev, or a Suspense boundary above re-suspending — cleans that instance
+ * up and hands the same `diffs-container` to a new one, which takes the empty
+ * `<pre>` for server-rendered HTML, adopts it and never renders (UI-110).
+ * Removing it as the old instance lets go makes the new one render afresh.
+ */
+function handleFenceDiffPostRender(
+  container: HTMLElement,
+  _instance: unknown,
+  phase: PostRenderPhase,
+): void {
+  if (phase !== "unmount") {
+    handlePostRender(container);
+    return;
+  }
+  for (const element of container.shadowRoot?.children ?? []) {
+    if (
+      element.tagName === "PRE" &&
+      element.querySelector("[data-line]") == null
+    ) {
+      element.remove();
+    }
+  }
+}
+
+/**
  * pierre defaults to "shiki-js", which transpiles the TextMate grammars'
  * Oniguruma patterns into native RegExp through oniguruma-to-es. That
  * transpiler is a recursive-descent pass over patterns, and the TypeScript
@@ -357,7 +384,7 @@ function fenceDiffOptions(
     // diff and badly in a fence the reader opened the document to read: a
     // 34-line block with one edited line came out as 10 rendered lines.
     expandUnchanged: true,
-    onPostRender: handlePostRender,
+    onPostRender: handleFenceDiffPostRender,
   } as const;
   FENCE_DIFF_OPTIONS.set(theme, options);
   return options;
