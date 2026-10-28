@@ -214,7 +214,7 @@ export function PullRequest() {
   return (
     <ContentRenderers renderers={RENDERERS}>
       <AttachmentViewerProvider>
-        <div className="flex h-full min-h-[min(48rem,100dvh)] flex-col bg-background text-foreground">
+        <div className="flex min-h-full flex-col bg-background text-foreground">
           <AppBar />
           <RepoNav current={section} onSelect={setSection} />
           {section !== "pulls" && other ? (
