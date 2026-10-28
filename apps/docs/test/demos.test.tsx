@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { EditorView } from "@codemirror/view";
 import { Toaster } from "@orz/ui/components/sonner";
 import type { Window as HappyWindow } from "happy-dom";
 import { act, type ComponentType } from "react";
@@ -17,6 +18,7 @@ import {
   vi,
 } from "vitest";
 import { BinaryInspector } from "../src/demos/binary-inspector/binary-inspector.tsx";
+import { ConfigEditor } from "../src/demos/config-editor/config-editor.tsx";
 import { Inbox } from "../src/demos/inbox/inbox.tsx";
 import { LATENCY_MS, PAGE_SIZE } from "../src/demos/inbox/mailbox.ts";
 import { tagsOf, titleOf } from "../src/demos/notes/notebook.ts";
@@ -49,6 +51,7 @@ vi.mock(
 /** Every page under content/demos/, by its file name, and the component it shows. */
 const DEMOS: Record<string, ComponentType> = {
   "binary-inspector": BinaryInspector,
+  "config-editor": ConfigEditor,
   inbox: Inbox,
   notes: Notes,
   "pull-request": PullRequest,
@@ -991,5 +994,115 @@ describe("tasks", () => {
     expect(container.querySelector("aside")?.textContent).toContain(
       "Write the tasks demo",
     );
+  });
+});
+
+describe("config-editor", () => {
+  // The site mounts one Toaster for every page; the demo's toasts need it here too.
+  let toaster: Root;
+  beforeAll(async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    toaster = createRoot(host);
+    await act(async () => toaster.render(<Toaster />));
+  });
+  afterAll(() => act(() => toaster.unmount()));
+  beforeEach(() => act(() => toast.dismiss()));
+
+  const click = (element: Element | null | undefined) =>
+    act(async () => {
+      if (!element) throw new Error("nothing to click");
+      (element as HTMLElement).click();
+    });
+  const button = (root: ParentNode, name: string) =>
+    [...root.querySelectorAll<HTMLButtonElement>("button")].find(
+      (each) => each.textContent === name,
+    );
+  const file = (container: HTMLElement, name: string) =>
+    [
+      ...container.querySelectorAll<HTMLElement>(
+        "nav[aria-label=Files] button",
+      ),
+    ].find((each) => each.textContent?.startsWith(name));
+  const dialog = () => document.querySelector<HTMLElement>("[role=dialog]");
+  const title = (container: HTMLElement) =>
+    container.querySelector("#config-file-title")?.textContent;
+  const problem = (container: HTMLElement) =>
+    container.querySelector("#config-problem")?.textContent;
+  const editor = (container: HTMLElement) => {
+    const content = container.querySelector<HTMLElement>(".cm-content");
+    const view = content && EditorView.findFromDOM(content);
+    if (!view) throw new Error("no editor");
+    return view;
+  };
+  const text = (container: HTMLElement) =>
+    editor(container).state.doc.toString();
+  /** Puts `insert` after the first `after` in the open file. */
+  const edit = (container: HTMLElement, after: string, insert: string) =>
+    act(async () => {
+      const view = editor(container);
+      const at = view.state.doc.toString().indexOf(after) + after.length;
+      view.dispatch({ changes: { from: at, insert } });
+    });
+
+  it("names the first syntax error by line, and saves only a file that parses", async () => {
+    const container = await draw(ConfigEditor, WIDTHS.desktop);
+    expect(button(container, "Save")?.disabled).toBe(true);
+    await edit(container, '"timeout": "30s",', ",");
+    expect(problem(container)).toBe('Line 7: Unexpected ","');
+    expect(button(container, "Save")?.disabled).toBe(true);
+    expect(
+      container.querySelector(".cm-content")?.getAttribute("aria-invalid"),
+    ).toBe("true");
+
+    await act(async () => {
+      const view = editor(container);
+      const at = view.state.doc.toString().indexOf(",,") + 1;
+      view.dispatch({
+        changes: { from: at, to: at + 1, insert: ' "canary": true,' },
+      });
+    });
+    expect(problem(container)).toContain("Valid JSON");
+    await click(button(container, "Save"));
+    expect(document.body.textContent).toContain("Saved deploy.json");
+    expect(container.textContent).not.toContain("Unsaved");
+  });
+
+  it("asks before switching away from unsaved edits", async () => {
+    const container = await draw(ConfigEditor, WIDTHS.desktop);
+    await edit(container, '"replicas": ', "1");
+    expect(file(container, "deploy.json")?.textContent).toContain("unsaved");
+
+    await click(file(container, "alerts.json"));
+    expect(dialog()?.textContent).toContain("Leave with unsaved changes?");
+    await click(button(dialog() ?? document, "Keep editing"));
+    expect(title(container)).toBe("deploy.json");
+    expect(text(container)).toContain('"replicas": 13');
+
+    await click(file(container, "alerts.json"));
+    await click(button(dialog() ?? document, "Discard and leave"));
+    expect(title(container)).toBe("alerts.json");
+    await click(file(container, "deploy.json"));
+    expect(dialog()).toBeNull();
+    expect(text(container)).toContain('"replicas": 3,');
+  });
+
+  it("reviews the edits as a diff, and undoes a discard", async () => {
+    const container = await draw(ConfigEditor, WIDTHS.desktop);
+    expect(button(container, "Review changes")?.disabled).toBe(true);
+    await edit(container, '"replicas": ', "1");
+    await click(button(container, "Review changes"));
+    expect(dialog()?.textContent).toContain("Changes to deploy.json");
+
+    await click(button(dialog() ?? document, "Discard changes"));
+    expect(dialog()).toBeNull();
+    expect(text(container)).toContain('"replicas": 3,');
+    await click(
+      [...document.querySelectorAll("button")].findLast(
+        (each) => each.textContent === "Undo",
+      ),
+    );
+    expect(text(container)).toContain('"replicas": 13');
+    expect(container.textContent).toContain("Unsaved");
   });
 });

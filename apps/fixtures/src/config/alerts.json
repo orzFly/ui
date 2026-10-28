@@ -1,0 +1,31 @@
+{
+  "defaults": {
+    "notify": ["alice"],
+    "repeatAfter": "4h"
+  },
+  "rules": [
+    {
+      "name": "High error rate",
+      "metric": "http.errors.ratio",
+      "above": 0.05,
+      "for": "5m",
+      "severity": "page"
+    },
+    {
+      "name": "Slow checkout",
+      "metric": "http.latency.p95",
+      "above": 800,
+      "for": "10m",
+      "severity": "ticket",
+      "notify": ["bot-one"]
+    },
+    {
+      "name": "Disk almost full",
+      "metric": "disk.used.ratio",
+      "above": 0.9,
+      "for": "15m",
+      "severity": "ticket"
+    }
+  ],
+  "quietHours": null
+}

@@ -1,0 +1,18 @@
+{
+  "new-checkout": {
+    "enabled": true,
+    "rollout": 25,
+    "owner": "alice"
+  },
+  "dark-mode-default": {
+    "enabled": false,
+    "rollout": 0,
+    "owner": "newcomer"
+  },
+  "batch-exports": {
+    "enabled": true,
+    "rollout": 100,
+    "owner": "claude-agent",
+    "allowList": ["bot-one"]
+  }
+}

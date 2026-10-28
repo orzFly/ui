@@ -1,0 +1,30 @@
+export const meta = {
+  title: "Config editor",
+  description:
+    "JSON config files edited in place: the first syntax error named by its line under the editor, Save held back until the file parses, the edits reviewed as a diff before they are saved, and a question before switching away from unsaved ones.",
+  order: 5,
+  layout: "bare",
+  api: [
+    "ui-codemirror/CodeEditor",
+    "ui-code/CodeDiffBlock",
+    "ui/Primitives/Dialog",
+    "ui/Primitives/Toaster",
+    "ui/UnsavedChangesDialog",
+  ],
+};
+
+import { ConfigEditor } from "../../demos/config-editor/config-editor.tsx";
+import { DemoPage } from "../../demos/demo-page.tsx";
+
+<DemoPage
+  guidelines={[
+    { route: "/guidelines/patterns/forms/", title: "Forms" },
+    { route: "/guidelines/patterns/destructive-actions/", title: "Destructive actions" },
+    { route: "/guidelines/patterns/feedback/", title: "Feedback" },
+    { route: "/guidelines/patterns/overlays/", title: "Overlays" },
+    { route: "/guidelines/platforms/desktop-and-pointer/", title: "Desktop & pointer" },
+    { route: "/guidelines/platforms/touch-and-mobile/", title: "Touch & mobile" },
+  ]}
+>
+  <ConfigEditor />
+</DemoPage>

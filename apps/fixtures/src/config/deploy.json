@@ -1,0 +1,18 @@
+{
+  "service": "orders-api",
+  "image": "registry.example/orders-api:2.14.0",
+  "region": "eu-west",
+  "replicas": 3,
+  "retries": 2,
+  "timeout": "30s",
+  "healthCheck": {
+    "path": "/healthz",
+    "interval": "10s",
+    "failuresBeforeRestart": 3
+  },
+  "env": {
+    "LOG_LEVEL": "info",
+    "PUBLIC_URL": "https://app.example"
+  },
+  "approvers": ["alice", "claude-agent"]
+}
