@@ -7,12 +7,15 @@ selection.
 
 ## Install
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
-pnpm add @orz/ui-hex @orz/ui react react-dom radix-ui lucide-react sonner
+pnpm add @orz/ui-hex @orz/query @orz/themes @orz/ui lucide-react radix-ui react react-dom sonner
+# only for @orz/ui-hex/content:
+pnpm add @orz/ui-content
 ```
 
-`@orz/ui`, `radix-ui` and React are peer dependencies; `lucide-react` and `sonner` are there because
-`@orz/ui` declares them as its own peers. The encoding picker in the view's and the editor's header
+`@orz/ui`, `radix-ui` and React are peer dependencies; the rest are there because `@orz/ui` needs
+them (see its README). The encoding picker in the view's and the editor's header
 is `@orz/ui`'s `FilterMenu`, and the inspector's endianness switch its `Switch`; both have to share
 the app's radix copy.
 

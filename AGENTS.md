@@ -105,6 +105,13 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   package's `test/`: a story wants a showcase and a test wants exact cases, and each is free to
   change without the other. `apps/storybook/test/stories.test.ts` holds every story file to the title, opening-story
   and edge-tag rules; the file-name rule is not tested.
+- No install line is written by hand. `scripts/install.ts` works each one out from the
+  package.json files: the package, its required peers and its `@orz/` dependencies, again for each
+  of those, then each optional peer under the entry points whose imports reach it. `pnpm fmt`
+  rewrites the block under each README's generated-by comment and `pnpm lint` fails on a stale one;
+  the docs site reads the same lines from `virtual:orz-install` (`<Install pkg>`,
+  `<PackageInstalls>`). A peer that only some entry points need is marked optional in
+  `peerDependenciesMeta`, so the line names what needs it.
 - Shipped CSS lives at the package root (`styles.css`, `vendor/`), not in `src/`. `tsc` never
   touches it, `files` lists it, and `exports` points straight at it.
 - New shadcn primitives arrive with `shadcn add` run inside `packages/ui`. It writes `@/…` imports

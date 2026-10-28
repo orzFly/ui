@@ -10,6 +10,7 @@ CodeMirror halves live in `@orz/ui` (`QueryBox`, `HighlightedInput`) and `@orz/u
 
 ## Install
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
 pnpm add @orz/query
 ```

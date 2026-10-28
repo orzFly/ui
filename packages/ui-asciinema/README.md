@@ -8,8 +8,10 @@ either. The engine is [asciinema-player](https://www.npmjs.com/package/asciinema
 
 ## Install
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
-pnpm add @orz/ui-asciinema @orz/ui-content @orz/ui react lucide-react
+pnpm add @orz/ui-asciinema @orz/query @orz/themes @orz/ui @orz/ui-content lucide-react radix-ui \
+  react react-dom sonner
 ```
 
 `asciinema-player` is a regular dependency: installing this package is the whole setup.

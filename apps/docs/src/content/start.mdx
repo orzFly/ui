@@ -9,14 +9,16 @@ import { FirstControls } from "../examples/start/first-controls.tsx";
 
 ## Install
 
-```bash
-pnpm add @orz/ui react react-dom radix-ui lucide-react sonner
-```
+<Install pkg="@orz/ui" />
 
 `radix-ui`, `sonner`, `lucide-react` and React are peer dependencies, so they are your app's own
 copies. Radix's focus and dismiss stacks and sonner's toast store are module state: with a second
 copy beside yours, Escape would stop closing a menu opened over a dialog, and `toast()` would not
 reach `<Toaster />`.
+
+`@orz/themes` and `@orz/query` are `@orz/ui`'s own dependencies, installed beside it because your
+app imports them too: the themes below come from `@orz/themes`, and a query box's schema from
+`@orz/query`.
 
 ## CSS
 
@@ -74,20 +76,10 @@ whichever device you are reading on.
 
 ## Packages
 
-Each package installs on its own, with its peers named in its README.
+Each package installs on its own, with its peers and the `@orz/` packages your app imports beside
+it.
 
-| Package | Install |
-|---|---|
-| `@orz/themes` | `pnpm add @orz/themes` |
-| `@orz/query` | `pnpm add @orz/query` |
-| `@orz/ui-content` | `pnpm add @orz/ui-content react` |
-| `@orz/ui-markdown` | `pnpm add @orz/ui-markdown @orz/ui-content @orz/ui react` |
-| `@orz/ui-codemirror` | `pnpm add @orz/ui-codemirror @orz/ui react react-dom lucide-react sonner` and the `@codemirror/*` packages its README lists |
-| `@orz/ui-code` | `pnpm add @orz/ui-code @orz/ui @orz/ui-content @pierre/diffs lucide-react react react-dom` |
-| `@orz/ui-ansi` | `pnpm add @orz/ui-ansi @orz/ui-content @orz/ui react lucide-react` |
-| `@orz/ui-asciinema` | `pnpm add @orz/ui-asciinema @orz/ui-content @orz/ui react lucide-react` |
-| `@orz/ui-hex` | `pnpm add @orz/ui-hex @orz/ui react react-dom radix-ui lucide-react sonner` |
-| `@orz/ui-mermaid` | `pnpm add @orz/ui-mermaid @orz/ui-content @orz/ui react` |
+<PackageInstalls except="@orz/ui" />
 
 The READMEs are the full reference for each: [github.com/orzFly/ui](https://github.com/orzFly/ui),
 under `packages/`. Every component is also in <StorybookLink>Storybook</StorybookLink>, live, with

@@ -5,8 +5,9 @@ CSS v4. The theme data itself lives in `@orz/themes`.
 
 ## Install
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
-pnpm add @orz/ui react react-dom radix-ui lucide-react sonner
+pnpm add @orz/ui @orz/query @orz/themes lucide-react radix-ui react react-dom sonner
 # only for @orz/ui/hooks/use-overlay-scrollbars:
 pnpm add overlayscrollbars
 ```
@@ -15,6 +16,9 @@ pnpm add overlayscrollbars
 own copies, because radix's dismissable-layer and focus stacks and sonner's toast store are module
 state. If a second copy sat beside the app's, Escape and outside clicks would stop working between
 a dialog from one copy and a menu from the other, and `toast()` would not reach `<Toaster />`.
+
+`@orz/themes` and `@orz/query` are dependencies of `@orz/ui`, installed beside it because the app
+imports them as well: the themes it hands the theme store, and the schema a `QueryBox` parses with.
 
 ## CSS
 

@@ -12,8 +12,10 @@ needs no routing decision, and plain text takes the parser's fast path at no ext
 
 ## Install
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
-pnpm add @orz/ui-ansi @orz/ui-content @orz/ui react lucide-react
+pnpm add @orz/ui-ansi @orz/query @orz/themes @orz/ui @orz/ui-content lucide-react radix-ui react \
+  react-dom sonner
 ```
 
 There are no runtime dependencies. `@orz/ui-content` is a peer dependency so that the app and every

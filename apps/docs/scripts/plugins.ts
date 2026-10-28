@@ -2,6 +2,7 @@ import { createReadStream, readFileSync, statSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin, ViteDevServer } from "vite";
+import { installs, installText, workspaces } from "../../../scripts/install.ts";
 import { fillTemplate } from "./html.ts";
 import { closeSearch, searchIndex } from "./search.ts";
 
@@ -156,8 +157,31 @@ function serveRendered(server: ViteDevServer) {
   });
 }
 
+const INSTALL = "virtual:orz-install";
+
+/**
+ * `virtual:orz-install`: every package's install lines, worked out from the
+ * package.json files as the READMEs' are, so no page lists a peer by hand.
+ */
+export function installPlugin(): Plugin {
+  return {
+    name: "orz-docs:install",
+    resolveId: (id) => (id === INSTALL ? `\0${INSTALL}` : undefined),
+    load(id) {
+      if (id !== `\0${INSTALL}`) return;
+      const all = workspaces();
+      for (const { dir } of all.values()) {
+        this.addWatchFile(join(dir, "package.json"));
+      }
+      const texts = installs(all).map(installText);
+      return `export default ${JSON.stringify(texts)};`;
+    },
+  };
+}
+
 export function docsPlugins(): Plugin[] {
   return [
+    installPlugin(),
     {
       name: "orz-docs:meta",
       enforce: "pre",

@@ -7,8 +7,10 @@ documents without importing any of them.
 
 ## Install
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
-pnpm add @orz/ui-markdown @orz/ui-content @orz/ui react
+pnpm add @orz/ui-markdown @orz/query @orz/themes @orz/ui @orz/ui-content lucide-react radix-ui \
+  react react-dom sonner
 ```
 
 `@orz/ui-content` is a peer dependency so that the app, this package and every other content package

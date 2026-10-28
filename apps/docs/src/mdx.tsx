@@ -1,3 +1,4 @@
+import installs from "virtual:orz-install";
 import { buttonVariants } from "@orz/ui/components/button";
 import { cn } from "@orz/ui/lib/utils";
 import { ArrowUpRightIcon } from "lucide-react";
@@ -71,10 +72,95 @@ function Pre({ children }: ComponentProps<"pre">) {
     : null;
   const lang = /language-(\S+)/.exec(code?.props.className ?? "")?.[1] ?? "";
   const text = String(code?.props.children ?? "").replace(/\n$/, "");
+  return <CodeFrame lang={lang} contents={text} />;
+}
+
+function CodeFrame(props: { lang: string; contents: string }) {
   return (
     <div className="my-5 overflow-hidden rounded-lg border text-sm">
-      <Code lang={lang} contents={text} />
+      <Code {...props} />
     </div>
+  );
+}
+
+function InlineCode(props: ComponentProps<"code">) {
+  return (
+    <code
+      className="rounded bg-muted px-1 py-0.5 font-mono text-[0.875em]"
+      {...props}
+    />
+  );
+}
+
+function Table(props: ComponentProps<"table">) {
+  return (
+    <div className="my-5 overflow-x-auto">
+      <table className="w-full border-collapse text-sm" {...props} />
+    </div>
+  );
+}
+
+function Th(props: ComponentProps<"th">) {
+  return (
+    <th
+      className="border-b px-3 py-2 text-left font-medium text-muted-foreground"
+      {...props}
+    />
+  );
+}
+
+function Td(props: ComponentProps<"td">) {
+  return <td className="border-b px-3 py-2 align-top" {...props} />;
+}
+
+function installOf(pkg: string) {
+  const install = installs.find(({ name }) => name === pkg);
+  if (!install) throw new Error(`${pkg}: not a published package`);
+  return install;
+}
+
+/** A package's install lines, as its README has them. */
+function Install({ pkg }: { pkg: string }) {
+  return <CodeFrame lang="bash" contents={installOf(pkg).block} />;
+}
+
+/** Every package but `except`, each with its install line and the optional ones. */
+function PackageInstalls({ except }: { except: string }) {
+  return (
+    <Table>
+      <thead>
+        <tr>
+          <Th>Package</Th>
+          <Th>Install</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {installs
+          .filter(({ name }) => name !== except)
+          .map((install) => (
+            <tr key={install.name}>
+              <Td>
+                <InlineCode>{install.name}</InlineCode>
+              </Td>
+              <Td>
+                <InlineCode>{install.command}</InlineCode>
+                {install.optional.map((group) => (
+                  <p key={group.command} className="mt-1.5">
+                    For{" "}
+                    {group.for.map((entry, index) => (
+                      <span key={entry}>
+                        {index > 0 && ", "}
+                        <InlineCode>{entry}</InlineCode>
+                      </span>
+                    ))}
+                    : <InlineCode>{group.command}</InlineCode>
+                  </p>
+                ))}
+              </Td>
+            </tr>
+          ))}
+      </tbody>
+    </Table>
   );
 }
 
@@ -169,32 +255,18 @@ export const mdxComponents = {
     />
   ),
   hr: () => <hr className="my-10" />,
-  code: (props: ComponentProps<"code">) => (
-    <code
-      className="rounded bg-muted px-1 py-0.5 font-mono text-[0.875em]"
-      {...props}
-    />
-  ),
+  code: InlineCode,
   pre: Pre,
-  table: (props: ComponentProps<"table">) => (
-    <div className="my-5 overflow-x-auto">
-      <table className="w-full border-collapse text-sm" {...props} />
-    </div>
-  ),
-  th: (props: ComponentProps<"th">) => (
-    <th
-      className="border-b px-3 py-2 text-left font-medium text-muted-foreground"
-      {...props}
-    />
-  ),
-  td: (props: ComponentProps<"td">) => (
-    <td className="border-b px-3 py-2 align-top" {...props} />
-  ),
+  table: Table,
+  th: Th,
+  td: Td,
   Do,
   DoDont,
   Dont,
   Doors,
   Example,
+  Install,
   LinkButton,
+  PackageInstalls,
   StorybookLink,
 };

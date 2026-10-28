@@ -7,8 +7,10 @@ from either.
 
 ## Install
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
-pnpm add @orz/ui-mermaid @orz/ui-content @orz/ui react
+pnpm add @orz/ui-mermaid @orz/query @orz/themes @orz/ui @orz/ui-content lucide-react radix-ui \
+  react react-dom sonner
 ```
 
 `mermaid` is a regular dependency: installing this package is the whole setup.

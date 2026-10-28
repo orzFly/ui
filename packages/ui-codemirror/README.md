@@ -6,10 +6,11 @@ the completion extensions they are assembled from, and the slash-command panel a
 
 ## Install
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
-pnpm add @orz/ui-codemirror @orz/ui react react-dom lucide-react sonner \
-  @codemirror/state @codemirror/view @codemirror/language @codemirror/autocomplete \
-  @codemirror/commands @codemirror/search @lezer/highlight
+pnpm add @orz/ui-codemirror @orz/query @orz/themes @orz/ui @codemirror/autocomplete \
+  @codemirror/commands @codemirror/language @codemirror/search @codemirror/state @codemirror/view \
+  @lezer/highlight lucide-react radix-ui react react-dom sonner
 ```
 
 These are peer dependencies, so the app and the editors share one copy of each:

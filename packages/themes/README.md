@@ -4,6 +4,7 @@ Theme palettes for `@orz/ui` and for terminals, as plain data, with the pure fun
 render and compose them. The package has no React, no DOM and no dependencies. `@orz/ui`'s theme
 store paints these themes; anything else can read them too.
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
 pnpm add @orz/themes
 ```

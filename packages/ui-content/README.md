@@ -7,8 +7,11 @@ which renderers exist.
 
 ## Install
 
+<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
 ```bash
 pnpm add @orz/ui-content react
+# only for @orz/ui-content/attachment:
+pnpm add @orz/query @orz/themes @orz/ui lucide-react radix-ui react-dom sonner
 ```
 
 The root entry has no runtime dependencies and needs no CSS. Its fallbacks are a plain `<pre>` and
@@ -194,11 +197,8 @@ package draws the same file as the same kind.
 
 `@orz/ui-content/attachment` draws files: renderers for images, HTML, PDF, video and audio, a frame
 for text files embedded in a document, one viewer dialog, and the links and lists that open it. It
-peers on `@orz/ui`, `lucide-react` and `react-dom` as well:
-
-```bash
-pnpm add @orz/ui-content @orz/ui lucide-react react react-dom
-```
+needs `@orz/ui`, `lucide-react` and `react-dom` as well, the optional peers [Install](#install)
+lists for it, and `@orz/ui-content`'s stylesheet after `@orz/ui`'s:
 
 ```css
 @import "tailwindcss";
