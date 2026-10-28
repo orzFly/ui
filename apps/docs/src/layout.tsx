@@ -32,7 +32,7 @@ const sections = nav.children;
 function Logo() {
   return (
     <Link to="/" className="font-semibold tracking-tight">
-      orz<span className="font-medium text-muted-foreground">/ui</span>
+      @orz<span className="font-medium text-muted-foreground">/ui</span>
     </Link>
   );
 }
