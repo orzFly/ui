@@ -78,12 +78,12 @@ conversation, then press **Undo** in the toast.
 
 ## On each platform
 
-- **Pointer.** The sizes above. Neighbouring controls can sit 4px apart; a mouse lands on a 24px
-  target reliably.
+- **Pointer.** The sizes above. Neighbouring controls can sit 4px apart; a mouse lands reliably
+  on a target of WCAG's 24px minimum
+  ([2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)).
 - **Touch.** Controls grow on a coarse pointer through `@orz/ui`'s `touch:` variant, drawn larger
   or given an invisible hit area around them, toward the 44pt Apple asks for
   ([Apple HIG: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility))
-  and never below WCAG's 24px minimum
-  ([2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)). [Touch &
+  and never below that 24px minimum. [Touch &
   mobile](/guidelines/platforms/touch-and-mobile/) has the size of each control. A row you build yourself grows the same way:
   `touch:min-h-11`.

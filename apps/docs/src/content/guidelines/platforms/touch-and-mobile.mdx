@@ -103,7 +103,8 @@ DOM takes the tap, so:
 ## Text fields
 
 - Fields are 16px text on touch at every width. Safari zooms the page into a field whose text is
-  smaller, and leaves it zoomed after.
+  smaller ([how Safari decides](https://thingsthemselves.com/no-input-zoom-in-safari-on-iphone-the-pixel-perfect-way/)),
+  and leaves it zoomed after.
 - Give a field the keyboard it needs: `type="email"`, `inputMode="numeric"`, `autoComplete`, and
   `enterKeyHint` (`"search"`, `"send"`, `"next"`) for the label on the return key.
 - Do not focus a field on arrival on a phone; that raises the keyboard over a page the person came
