@@ -4,6 +4,7 @@ import { withWidth } from "./decorators.tsx";
 
 const meta = {
   title: "ui/Primitives/Separator",
+  parameters: { guidelines: "/guidelines/foundations/layout-and-spacing/" },
   component: Separator,
   args: { orientation: "horizontal" },
   decorators: [withWidth("max-w-sm")],

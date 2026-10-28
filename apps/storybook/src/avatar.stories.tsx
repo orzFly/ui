@@ -14,6 +14,7 @@ const SHAPES = ["circle", "square"] as const;
 
 const meta = {
   title: "ui/Primitives/Avatar",
+  parameters: { guidelines: "/guidelines/foundations/icons/" },
   component: Avatar,
   args: { size: "default", shape: "circle" },
   argTypes: {

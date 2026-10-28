@@ -121,6 +121,7 @@ function labelOf(id: string): string {
 
 const meta = {
   title: "ui/FilterMenu",
+  parameters: { guidelines: "/guidelines/patterns/choosing-a-control/" },
   component: FilterMenu,
   args: {
     query: "",

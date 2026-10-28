@@ -5,6 +5,7 @@ export const meta = {
   order: 12,
   api: [
     "ui/Hooks/useMediaQuery",
+    "ui/Primitives/Separator",
     "ui/Primitives/Sheet",
     "ui/Primitives/Tooltip",
   ],
@@ -12,6 +13,7 @@ export const meta = {
 
 import { AccountSections } from "../../../examples/layout-and-spacing/account-sections.tsx";
 import { BoxedGroups } from "../../../examples/layout-and-spacing/boxed-groups.tsx";
+import { FormattingToolbar } from "../../../examples/layout-and-spacing/formatting-toolbar.tsx";
 import { MailPanes } from "../../../examples/layout-and-spacing/mail-panes.tsx";
 import { MailToolbar } from "../../../examples/layout-and-spacing/mail-toolbar.tsx";
 import { SpacedGroups } from "../../../examples/layout-and-spacing/spaced-groups.tsx";
@@ -60,6 +62,18 @@ label, which `Button` does by itself.
 
 A long run of rows alike, a mailbox or a group of settings, is where space is not enough: each row
 holds several parts, and a hairline `divide-y` between the rows says which parts go together.
+
+Groups that are not rows of one list take a `Separator` when space is not enough between them:
+clusters of buttons in a toolbar, where a gap wide enough to set them apart would scatter the row.
+It is an element of the layout, so the parent's `gap` spaces it like any other child, and
+`orientation="vertical"` stands it between the items of a row. A pane's own edge, such as a
+sidebar's, is that pane's `border-r` instead: the line belongs to the pane and goes with it.
+
+<Example of={FormattingToolbar} />
+
+The toolbar's buttons fall into three groups: how text looks, how a block is shaped, what is
+attached. A separator between groups in a `role="toolbar"` takes `decorative={false}`, so a screen
+reader hears where one group ends; elsewhere it stays decorative, as it is by default.
 
 ## Breakpoints
 

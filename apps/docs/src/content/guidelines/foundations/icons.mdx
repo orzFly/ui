@@ -8,6 +8,7 @@ export const meta = {
     "ui/Primitives/Tooltip",
     "ui/Primitives/DropdownMenu",
     "ui/Primitives/Badge",
+    "ui/Primitives/Avatar",
   ],
 };
 
@@ -76,6 +77,17 @@ In a `Button`, mark an icon before or after the label with `data-icon="inline-st
 | Frequent, in a toolbar people learn (bold, wrap, refresh, archive, a delete that Undo takes back) | Icon alone, with `aria-label` and a tooltip |
 | The main action of a view, or anything destructive that cannot be undone | Icon and word, or the word alone |
 | Rare, or with no established icon | The word alone |
+
+## Avatars
+
+An avatar is a person's icon, and follows the same rules. Put one beside the name where people scan
+a column of who: a conversation's authors, the reviewers of a pull request, an assignee column, a
+menu of people. The face is found before the word is read. There the name says who it is, so the
+`Avatar` is `aria-hidden`, as the pull request and Tasks demos have it. The name alone is enough
+where the person is one fact in a line of text ("alice committed 2 hours ago"), or where every row
+is the same person. An avatar never stands in for the name: one shown alone, in a stack or a
+narrow column, carries the name as its `aria-label`, and on a pointer a tooltip as well.
+A mark that is not a person, a project or an organisation, takes `shape="square"`.
 
 ## On each platform
 

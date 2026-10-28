@@ -191,7 +191,7 @@ export function Sidebar({
         </ul>
       </nav>
       <div className="flex items-center gap-2 border-t pt-3">
-        <Avatar size="sm">
+        <Avatar size="sm" aria-hidden>
           <AvatarFallback>Y</AvatarFallback>
         </Avatar>
         <span className="flex-1 text-sm">You</span>

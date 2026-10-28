@@ -8,7 +8,9 @@ export const meta = {
     "ui/Primitives/Checkbox",
     "ui/Primitives/RadioGroup",
     "ui/Primitives/Select",
+    "ui/FilterMenu",
     "ui/Primitives/Slider",
+    "ui/ColorPicker",
     "ui/Primitives/Tabs",
     "ui/Primitives/Label",
     "ui/Primitives/Button",
@@ -16,7 +18,9 @@ export const meta = {
 };
 
 import { ControlsCompared } from "../../../examples/choosing-a-control/controls-compared.tsx";
+import { DuplicateOf } from "../../../examples/choosing-a-control/duplicate-of.tsx";
 import { FontSizeSlider } from "../../../examples/choosing-a-control/font-size-slider.tsx";
+import { LabelColours } from "../../../examples/choosing-a-control/label-colours.tsx";
 import { NotifyRadioGroup } from "../../../examples/choosing-a-control/notify-radio-group.tsx";
 import { NotifySelect } from "../../../examples/choosing-a-control/notify-select.tsx";
 import { ProfileChoices } from "../../../examples/choosing-a-control/profile-choices.tsx";
@@ -65,7 +69,9 @@ one, and the box above them turns partly checked; press it to select none.
 | Any number of items from a set: filters, facets, a bulk selection | On apply or submit | `Checkbox` list |
 | Exactly one of two to five, worth seeing together | Either | `RadioGroup` |
 | Exactly one of many, or of options with long names | Either | `Select` |
+| Exactly one of a list too long to scan, or one that grows with people's own data: a task, a person, a label | Either | `FilterMenu`, behind a button that shows the pick |
 | A value along a range, where the exact number matters less than the feel | Either | `Slider` |
+| A colour | Either | `ColorPickerPopover`, with the app's palette as `swatches` |
 | One of a few views of the same thing | Immediately | `Tabs`: they switch what is shown, not a value that is saved |
 
 The parent of a partly checked list is a Checkbox with `checked="indeterminate"`. A Switch has no
@@ -77,10 +83,26 @@ something else happens, it is not a Switch.
 The Settings demo's profile form keeps its choices until **Save profile**, so its one yes or no is
 a Checkbox. Its time zone is one of thirteen, too many to lay out side by side, so it is a Select.
 
+<Example of={DuplicateOf} />
+
+A task is a duplicate of one of sixty others. A Select would make people scroll for it; people
+already know a word of its title or its number, so `FilterMenu` lets them type it. The trigger is a
+button that names the pick, and the menu closes on it. Use it once a list runs past what fits on
+one screen, or holds things people add themselves, whose number nobody can promise; a fixed set
+that fits, like the time zones above, stays a Select.
+
 <Example of={FontSizeSlider} />
 
 The Settings demo's font size is picked by how the code looks, not by its number, so it is a
 Slider, and the line of code under it follows as it drags.
+
+<Example of={LabelColours} />
+
+A label's colour only tells it apart from the others, so the app's palette rides along as
+swatches and most picks are one tap; the area and sliders above them are there for a colour of
+one's own. Pass
+`format="hex"` and `alpha={false}` when the colour is stored as a plain hex. Open the full
+`ColorPicker`, without the popover, only where colour is the work itself, such as a theme editor.
 
 <Example of={PullRequestTabs} />
 

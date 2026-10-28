@@ -31,6 +31,7 @@ const panel: Decorator = (Story) => (
 
 const meta = {
   title: "ui/ColorPicker",
+  parameters: { guidelines: "/guidelines/patterns/choosing-a-control/" },
   component: ColorPicker,
   args: {
     value: "oklch(0.623 0.214 259.815)",
