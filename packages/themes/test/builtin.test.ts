@@ -155,10 +155,16 @@ describe("the port from @orz/ui's styles.css", () => {
   };
   // Added after the port, so the scraped fixture has no value for them.
   const ADDED = ["success", "warning"];
+  // Raised in every palette to clear 3:1 as a field's edge;
+  // field-contrast.test.ts holds it instead.
+  const RAISED = ["input"];
   const without = (tokens: Record<string, string>, names: string[] = []) =>
     Object.fromEntries(
       Object.entries(tokens).filter(
-        ([name]) => !names.includes(name) && !ADDED.includes(name),
+        ([name]) =>
+          !names.includes(name) &&
+          !ADDED.includes(name) &&
+          !RAISED.includes(name),
       ),
     );
 

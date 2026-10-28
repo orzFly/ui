@@ -59,10 +59,13 @@ for the tokens yourself for the surfaces you build.
 
 <TokenSwatches tokens={["border", "input", "ring"]} />
 
-`border` separates; `input` outlines a field; `ring` draws focus. The base layer gives every
-element `border-border`, so a bare `border` class is already the right colour. A line is the
-quietest way to separate two things, and space is quieter still: prefer a gap to a rule where the
-grouping reads without one.
+`border` separates; `input` outlines a field; `ring` draws focus. `input` is the darker of the two
+lines: it is the edge an empty field, an unchecked checkbox and a switch's off track are found by,
+so it keeps 3:1 against the page, a card and a popover, where `border` only has to be seen beside
+what it divides. Outline a control you build in `input`, and divide in `border`. The base layer
+gives every element `border-border`, so a bare `border` class is already the right colour. A line
+is the quietest way to separate two things, and space is quieter still: prefer a gap to a rule
+where the grouping reads without one.
 
 ## Meaning
 

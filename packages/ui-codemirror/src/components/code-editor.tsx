@@ -356,7 +356,7 @@ export function CodeEditor({
       className={cn(
         // text-base below md is not cosmetic: iOS auto-zooms a focused field
         // under 16px. Same rule `@orz/ui`'s Textarea follows.
-        "flex w-full flex-col rounded-lg border border-input bg-transparent text-base transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 md:text-sm dark:bg-input/30",
+        "flex w-full flex-col rounded-lg border border-input bg-transparent text-base transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 md:text-sm dark:bg-input/15",
         readOnly && "opacity-50",
         className,
       )}

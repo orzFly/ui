@@ -23,7 +23,7 @@ const darkPalette: Palette = {
     success: "oklch(0.871 0.22 148)",
     warning: "oklch(0.955 0.134 112.8)",
     border: "oklch(0.39 0.03 285)",
-    input: "oklch(0.39 0.03 285)",
+    input: "oklch(0.575 0.03 285)",
     ring: "oklch(0.74 0.16 300)",
     "chart-1": "oklch(0.74 0.16 300)",
     "chart-2": "oklch(0.82 0.19 150)",
