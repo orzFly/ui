@@ -18,6 +18,7 @@ import { ArrivingJobs } from "../../../examples/motion/arriving-jobs.tsx";
 import { OverlayMotion } from "../../../examples/motion/overlay-motion.tsx";
 import { SlidingHeight } from "../../../examples/motion/sliding-height.tsx";
 import { TurningChevron } from "../../../examples/motion/turning-chevron.tsx";
+import { classes, css, ms, same } from "../../../sizes.ts";
 
 **Animate only to show where something came from or went, keep it under 200ms, and leave it out for
 anyone who asked the system for less motion.** In a tool used all day, motion that does not explain
@@ -36,11 +37,12 @@ The components already animate, and an app adds little to them:
 
 | What | Motion | Duration |
 |---|---|---|
-| A menu, popover, select, tooltip or hover card | Fades in, zooms from 95% and slides 8px out of its trigger | 100ms |
-| A dialog and its overlay | Fades and zooms in place | 100ms |
-| A sheet | Slides in from its edge | 200ms |
-| An auto-hiding header, once scrolling stops | Settles fully in or out | 150ms |
-| A block a link jumps to (`revealBlock`) | A tint that fades out | 2s |
+| A menu, popover, select or hover card | Fades in, zooms from 95% and slides 8px out of its trigger | {same(ms(classes.dropdownMenuContent), ms(classes.popoverContent), ms(classes.selectContent), ms(classes.hoverCardContent))}ms |
+| A tooltip | The same | {ms(classes.tooltipContent)}ms |
+| A dialog and its overlay | Fades and zooms in place | {ms(classes.dialogContent)}ms |
+| A sheet | Slides in from its edge | {ms(classes.sheetContent)}ms |
+| An auto-hiding header, once scrolling stops | Settles fully in or out | {css.headerSettle}ms |
+| A block a link jumps to (`revealBlock`) | A tint that fades out | {css.anchorFlash}s |
 | A `Skeleton` | Pulses until the content arrives | until then |
 
 <Example of={OverlayMotion} />

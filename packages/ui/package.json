@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui",
   "version": "0.1.0",
-  "description": "Shared React components, hooks and theme for orz projects",
+  "description": "React primitives, patterns, hooks and the theme store",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",

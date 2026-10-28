@@ -4,10 +4,11 @@ Theme palettes for `@orz/ui` and for terminals, as plain data, with the pure fun
 render and compose them. The package has no React, no DOM and no dependencies. `@orz/ui`'s theme
 store paints these themes; anything else can read them too.
 
-<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
+<!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
 pnpm add @orz/themes
 ```
+<!-- /generated -->
 
 ## Model
 
@@ -59,24 +60,32 @@ import { dracula } from "@orz/themes/themes/dracula";
 import { github } from "@orz/themes/themes/github";
 ```
 
-| Theme | Light | Dark |
-|---|---|---|
-| `defaultTheme` (`default`) | ✓ | ✓ |
-| `picotera` | Pico | Tera |
-| `solarized` | ✓ | ✓ |
-| `vs` (Visual Studio) | ✓ | ✓ |
-| `github` | ✓ | ✓ |
-| `catppuccin` | Latte | Mocha, Frappé, Macchiato |
-| `gruvbox` | ✓ | ✓ |
-| `proGraphite`, `proNord`, `proSand`, `proMatcha` (`pro-graphite`, …) | ✓ | ✓ |
-| `proSakura`, `proLavender`, `proLagoon`, `proCitrus` (`pro-sakura`, …) | ✓ | ✓ |
-| `dracula` | | ✓ |
-| `nord` | | ✓ |
-| `tokyoNight` (`tokyo-night`) | | ✓ |
-| `oneDark` (`one-dark`) | | ✓ |
-| `monokai` | | ✓ |
+<!-- generated:themes by scripts/readme.ts: run `pnpm fmt` after changing a built-in theme -->
+| Theme | Import | Light | Dark |
+|---|---|---|---|
+| Default | `defaultTheme` (`default`) | ✓ | ✓ |
+| Picotera | `picotera` | Pico | Tera |
+| Solarized | `solarized` | ✓ | ✓ |
+| Visual Studio | `vs` | ✓ | ✓ |
+| GitHub | `github` | ✓ | ✓ |
+| Catppuccin | `catppuccin` | Latte; Mocha (Gray), Frappé (Gray), Macchiato (Gray) | Mocha; Frappé, Macchiato, Mocha (Gray), Frappé (Gray), Macchiato (Gray) |
+| Gruvbox | `gruvbox` | ✓ | ✓ |
+| ProGraphite | `proGraphite` (`pro-graphite`) | ✓ | ✓ |
+| ProNord | `proNord` (`pro-nord`) | ✓ | ✓ |
+| ProSand | `proSand` (`pro-sand`) | ✓ | ✓ |
+| ProMatcha | `proMatcha` (`pro-matcha`) | ✓ | ✓ |
+| ProSakura | `proSakura` (`pro-sakura`) | ✓ | ✓ |
+| ProLavender | `proLavender` (`pro-lavender`) | ✓ | ✓ |
+| ProLagoon | `proLagoon` (`pro-lagoon`) | ✓ | ✓ |
+| ProCitrus | `proCitrus` (`pro-citrus`) | ✓ | ✓ |
+| Dracula | `dracula` |  | ✓ |
+| Nord | `nord` |  | ✓ |
+| Tokyo Night | `tokyoNight` (`tokyo-night`) |  | ✓ |
+| One Dark | `oneDark` (`one-dark`) |  | ✓ |
+| Monokai | `monokai` |  | ✓ |
 
-Every dark palette has an `amoled` variant.
+Every dark palette also has an `amoled` variant.
+<!-- /generated -->
 
 Catppuccin has one light flavour and three dark ones, so its light side is always Latte and its
 variants pick the dark flavour: Mocha (the default), Frappé and Macchiato, then each again as Gray,
@@ -128,6 +137,19 @@ syntax theme and its JSON round trip.
   `kind: "ui"`; `isCustomTerminalTheme(custom)` tells the two apart in an `AnyCustomTheme` list.
 - `xtermTheme(terminal)` maps terminal tokens onto xterm.js's `ITheme` field names:
   `terminal.options.theme = xtermTheme(tokens)`.
+- `contrastRows(tokens)`, from `@orz/themes/contrast`, measures a palette against
+  `CONTRAST_CHECKS`: the token pairs this package's tests hold every built-in theme to, each with
+  its WCAG floor (4.5:1 for text, 3:1 for a field's edge and a focus ring). A row carries the pair,
+  its ratio and its floor, so a theme editor or a test of your own palette can list what falls
+  short.
+
+## Entry points
+
+| Import | Contents |
+|---|---|
+| `@orz/themes` | `builtinThemes`, each built-in theme, the functions above but `contrastRows`, `TOKEN_NAMES`, `TERMINAL_TOKEN_NAMES`, `LATE_TOKEN_NAMES`, `DEFAULT_VARIANT`, types |
+| `@orz/themes/contrast` | `contrastRows`, `CONTRAST_CHECKS`, `ContrastCheck`, `ContrastRow` |
+| `@orz/themes/themes/<name>` | `catppuccin`, `default`, `dracula`, `github`, `gruvbox`, `monokai`, `nord`, `one-dark`, `picotera`, `pro-citrus`, `pro-graphite`, `pro-lagoon`, `pro-lavender`, `pro-matcha`, `pro-nord`, `pro-sakura`, `pro-sand`, `solarized`, `tokyo-night`, `vs` |
 
 ## Sources
 

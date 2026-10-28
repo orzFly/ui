@@ -39,7 +39,7 @@ export const resolvedPalettes: { name: string; tokens: Tokens }[] =
 // every Gray variant paints; on the dark side each id is its own flavour.
 const EXEMPT: Record<string, Record<string, number>> = {
   primary: {
-    "pro-citrus light default link": 1.32,
+    "pro-citrus light default primary/background": 1.32,
   },
   text: {
     "catppuccin light default muted-foreground/background": 4.36,

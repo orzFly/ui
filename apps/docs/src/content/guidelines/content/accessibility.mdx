@@ -23,6 +23,7 @@ import { KeptFocusRing } from "../../../examples/accessibility/kept-focus-ring.t
 import { ProfileEmail } from "../../../examples/accessibility/profile-email.tsx";
 import { RemovedFocusRing } from "../../../examples/accessibility/removed-focus-ring.tsx";
 import { ThreadToolbar } from "../../../examples/accessibility/thread-toolbar.tsx";
+import { button, classes, px, same } from "../../../sizes.ts";
 
 > **Every action works by keyboard, by touch and through a screen reader, and every word and edge is
 > readable in every theme held to the numbers below.**
@@ -56,11 +57,12 @@ follows.
   *and* has a failed icon.
 
 Catppuccin, and the Pro themes drawn from Prohibitorum, keep their published values, so a few of
-their pairs fall below these numbers: Catppuccin Latte's secondary and status text, field edge and
-focus ring; Frappé's field edge and secondary text on `muted`; ProCitrus's light primary as link
-text; and ProGraphite's light sidebar ring. A row that fails is a gap in that palette, not a licence
-to copy it. A custom theme is held to the same numbers, and the theme editor shows each token's
-ratio against the surface it is drawn on.
+their pairs fall below these numbers. These are all of them, measured from the palettes:
+
+<BelowFloor />
+
+A row here is a gap in that palette, not a licence to copy it. A custom theme is held to the same
+numbers, and the theme editor shows each token's ratio against the surface it is drawn on.
 
 ## Focus
 
@@ -139,8 +141,8 @@ this.
   ([SC 2.5.7](https://www.w3.org/TR/WCAG22/#dragging-movements), AA, new in 2.2): a `Slider` moves
   to where its track is clicked, and with the arrow keys.
 
-On a mouse, @orz/ui's `Button` is 32px tall and its `xs` size 24px; a `Checkbox` and a
-`RadioGroup` item are 16px, and a `Switch` 20px tall. Those three pass by the spacing exception, so
+On a mouse, @orz/ui's `Button` is {px(button())}px tall and its `xs` size {px(button("xs"))}px; a `Checkbox` and a
+`RadioGroup` item are {same(px(classes.checkbox), px(classes.radioGroupItem))}px, and a `Switch` {px(classes.switch)}px tall. Those three pass by the spacing exception, so
 keep other targets out of the 24px around them, and pair each with its `Label`: the words then
 toggle it too. On a touch screen the controls grow; the **Pointer** and **Touch** buttons under any
 example on this site show both.

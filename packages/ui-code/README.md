@@ -7,11 +7,12 @@ package contributes two renderers to `@orz/ui-content`'s registry: `codeContent`
 
 ## Install
 
-<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
+<!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
 pnpm add @orz/ui-code @orz/query @orz/themes @orz/ui @orz/ui-content @pierre/diffs lucide-react \
   radix-ui react react-dom sonner
 ```
+<!-- /generated -->
 
 `@orz/ui-content` is a peer dependency so that the app and every content package share one registry.
 

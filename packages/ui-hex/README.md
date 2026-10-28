@@ -7,12 +7,13 @@ selection.
 
 ## Install
 
-<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
+<!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
 pnpm add @orz/ui-hex @orz/query @orz/themes @orz/ui lucide-react radix-ui react react-dom sonner
 # only for @orz/ui-hex/content:
 pnpm add @orz/ui-content
 ```
+<!-- /generated -->
 
 `@orz/ui`, `radix-ui` and React are peer dependencies; the rest are there because `@orz/ui` needs
 them (see its README). The encoding picker in the view's and the editor's header

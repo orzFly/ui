@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { loadCsf } from "storybook/internal/csf-tools";
 import { describe, expect, it } from "vitest";
+import { demoApis } from "../scripts/data.ts";
 import { exampleExport, metaFrom } from "../scripts/plugins.ts";
 import type { PageMeta } from "../src/page.ts";
 import { buildNav, type NavNode, routeOf } from "../src/routes.ts";
@@ -80,6 +81,32 @@ describe("demos", () => {
   const guidelines = pages.filter(
     ({ route }) => route.startsWith("/guidelines/") && route !== "/guidelines/",
   );
+
+  it.each(demos)("$file leaves its API to its imports", ({ meta }) => {
+    expect(meta.api).toBeUndefined();
+  });
+
+  it("list the Storybook pages of what their files import", () => {
+    const apis = demoApis();
+    expect(Object.keys(apis).sort()).toEqual(
+      demos.map(({ route }) => route.split("/").at(-2)).sort(),
+    );
+    // By name, a renderer by its package's Content page, a sibling export by
+    // its module's page, and a peer by the page of the module named after it.
+    expect(apis["pull-request"]).toEqual(
+      expect.arrayContaining([
+        "ui/Primitives/Tabs",
+        "ui-ansi/Content",
+        "ui-hex/Content",
+        "ui/Primitives/Toaster",
+      ]),
+    );
+    expect(apis.inbox).toContain("ui/LoadFailure");
+    const titles = new Set(stories.map((story) => story.title));
+    for (const title of Object.values(apis).flat()) {
+      expect(titles.has(title), title).toBe(true);
+    }
+  });
 
   it.each(demos)(
     "$file names the guidelines it puts into practice",

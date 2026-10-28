@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { amoled } from "../src/index.ts";
-import { contrast, rgbOf } from "./color.ts";
+import { contrast, rgbOf } from "../src/rgb.ts";
 import { terminal, tokens } from "./fixtures.ts";
 
 const palette = {

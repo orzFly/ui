@@ -11,7 +11,7 @@ import {
   TOKEN_NAMES,
   variantsOf,
 } from "../src/index.ts";
-import { rgbOf } from "./color.ts";
+import { rgbOf } from "../src/rgb.ts";
 
 const palettes = builtinThemes.flatMap((theme) =>
   schemesOf(theme).map((scheme) => ({

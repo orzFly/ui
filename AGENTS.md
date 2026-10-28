@@ -107,11 +107,19 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   and edge-tag rules; the file-name rule is not tested.
 - No install line is written by hand. `scripts/install.ts` works each one out from the
   package.json files: the package, its required peers and its `@orz/` dependencies, again for each
-  of those, then each optional peer under the entry points whose imports reach it. `pnpm fmt`
-  rewrites the block under each README's generated-by comment and `pnpm lint` fails on a stale one;
-  the docs site reads the same lines from `virtual:orz-install` (`<Install pkg>`,
-  `<PackageInstalls>`). A peer that only some entry points need is marked optional in
-  `peerDependenciesMeta`, so the line names what needs it.
+  of those, then each optional peer under the entry points whose imports reach it. The docs site
+  reads the same lines from `virtual:orz-install` (`<Install pkg>`, `<PackageInstalls>`). A peer
+  that only some entry points need is marked optional in `peerDependenciesMeta`, so the line names
+  what needs it.
+- Nothing a README or a docs page says that the code already knows is written by hand: it is
+  generated from the code, or held to it by a test. `scripts/readme.ts` (`pnpm fmt` rewrites,
+  `pnpm lint` fails on stale) fills each README block between `<!-- generated:<kind> … -->` and
+  `<!-- /generated -->` (`install`, and `themes` from `builtinThemes`), and keeps the
+  `## Entry points` table to package.json's `exports`: a row per export, a wildcard's row listing
+  the files it reaches, or a row per file; a package with more than one export has the table.
+  Its one-line `description` is a package's summary on npm and the docs home page alike. The docs
+  site generates the rest (see **Docs site**). A sentence that names data for the sake of the
+  reason around it stays prose, and `apps/docs/test/facts.test.ts` holds it to the code.
 - Shipped CSS lives at the package root (`styles.css`, `vendor/`), not in `src/`. `tsc` never
   touches it, `files` lists it, and `exports` points straight at it.
 - New shadcn primitives arrive with `shadcn add` run inside `packages/ui`. It writes `@/…` imports
@@ -128,7 +136,8 @@ file per route.
   `content/guidelines/patterns/forms.mdx` is `/guidelines/patterns/forms/`, an `index.mdx` is its
   directory's. It opens with `export const meta = { title, description, order, api }`, a plain
   literal followed by a blank line: the nav reads it without loading the page. `api` lists the
-  Storybook titles the page links to. The top bar, sidebar, phone nav, breadcrumb and previous/next
+  Storybook titles the page links to; a demo sets none, because its About panel lists the pages of
+  what its files import (`virtual:orz-demo-api`). The top bar, sidebar, phone nav, breadcrumb and previous/next
   are built from `meta`; no page is listed by hand. A directory without an `index.mdx` is a nav
   heading named after it.
 - A live example is a file under `src/examples/<page>/` exporting exactly one component
@@ -139,6 +148,13 @@ file per route.
   lists that directory, then the text fixtures its files import. The demo's root takes `h-full`
   and lays itself out in the box `DemoPage` gives it, the window below the site header; it draws
   no card or border of its own.
+- A page states no number or list the code holds. The packages table, the built-in themes and the
+  pairs below the contrast floors are components (`<Packages />`, `<BuiltinThemes />`,
+  `<BelowFloor />`) over virtual modules that `apps/docs/scripts/data.ts` works out at build
+  time. A component's size or duration is an expression over its classes, from
+  `src/sizes.ts` (`{px(button("lg"))}px`, `{ms(classes.sheetContent)}ms`), which throws, and so
+  fails the prerender, on a class it cannot read; a sentence that gives one number for several
+  parts wraps them in `same(…)`, which throws when they part.
 - A rule about *when* to use a component lives on a guideline page under
   `content/guidelines/`; its JSDoc and Storybook say *what it takes*, and do not restate the
   rule. A card that adds or changes a component updates the guideline page that

@@ -1,11 +1,11 @@
 import { defaultClientConditions } from "vite";
 import { defineConfig } from "vitest/config";
-import { installPlugin } from "./scripts/plugins.ts";
+import { dataPlugin } from "./scripts/plugins.ts";
 
 export default defineConfig({
   resolve: { conditions: ["@orz/source", ...defaultClientConditions] },
   plugins: [
-    installPlugin(),
+    dataPlugin(),
     {
       name: "uncached-glob",
       // Vitest keys a cached module on its own source, so a module whose

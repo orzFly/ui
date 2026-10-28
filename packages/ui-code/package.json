@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui-code",
   "version": "0.1.0",
-  "description": "Syntax-highlighted code and diff blocks on pierre, a CJK-aware word differ, and the code renderer for the @orz/ui-content registry",
+  "description": "Highlighted code, diffs and a word differ",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",

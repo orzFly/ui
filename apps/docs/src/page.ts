@@ -7,7 +7,10 @@ export interface PageMeta {
   description?: string;
   /** Position among its siblings in the nav, ascending; unordered pages follow, by title. */
   order?: number;
-  /** Storybook titles of the components the page is about (`ui/Primitives/Switch`), linked under API. */
+  /**
+   * Storybook titles of the components the page is about (`ui/Primitives/Switch`), linked under
+   * API. A demo sets none: its About panel lists what its files import (`virtual:orz-demo-api`).
+   */
   api?: string[];
   /** "bare": no title block, sidebar or contents list; the page lays itself out (Home). */
   layout?: "bare";

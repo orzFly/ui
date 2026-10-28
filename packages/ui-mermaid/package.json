@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui-mermaid",
   "version": "0.1.0",
-  "description": "Mermaid diagrams drawn in the active @orz/ui theme, contributed to the @orz/ui-content registry",
+  "description": "Mermaid diagrams in the active theme",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",

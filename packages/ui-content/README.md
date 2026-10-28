@@ -7,12 +7,13 @@ which renderers exist.
 
 ## Install
 
-<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
+<!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
 pnpm add @orz/ui-content react
 # only for @orz/ui-content/attachment:
 pnpm add @orz/query @orz/themes @orz/ui lucide-react radix-ui react-dom sonner
 ```
+<!-- /generated -->
 
 The root entry has no runtime dependencies and needs no CSS. Its fallbacks are a plain `<pre>` and
 a plain link, styled by whatever typography surrounds them. Attachment viewing, under
@@ -409,3 +410,11 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
   audio, video, else a generic file.
 
 `@orz/ui-markdown`'s `attachmentLinks` plugin draws markdown links to files as `AttachmentLink`s.
+
+## Entry points
+
+| Import | Contents |
+|---|---|
+| `@orz/ui-content` | `Content`, `ContentRenderers`, `ContentFallback`, the `useContent…` hooks, `ContentTitleBar`, `useContentTitleBar`, `useSourceText`, the file-kind predicates, `formatSize`, `textPreviewGate` and its limits, types |
+| `@orz/ui-content/attachment` | the attachment renderers, viewer, links, cards and icons |
+| `@orz/ui-content/styles.css` | `@source "./dist"` |

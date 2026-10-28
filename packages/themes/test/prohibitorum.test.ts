@@ -9,7 +9,7 @@ import {
   type TextMateTheme,
   variantsOf,
 } from "../src/index.ts";
-import { contrast, rgbOf } from "./color.ts";
+import { contrast, rgbOf } from "../src/rgb.ts";
 
 // Prohibitorum's dashboard/src/lib/color-scheme.ts at 6d3bc42: each scheme's
 // swatch, the page surface and the accent its pickers preview.

@@ -1,53 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { CONTRAST_CHECKS, contrastRows } from "../src/contrast.ts";
 import { builtinThemes, resolvePalette } from "../src/index.ts";
-import { contrast, rgbOf } from "./color.ts";
+import { contrast, rgbOf } from "../src/rgb.ts";
 import { failures, resolvedPalettes as resolved } from "./palettes.ts";
 
-/** WCAG AA for normal-size text, which every button and badge label is. */
-const AA = 4.5;
-
-describe("primary contrast", () => {
-  it("clears AA for primary-foreground on primary, and primary text on the page", () => {
-    const rows = resolved.flatMap(({ name, tokens }) => {
-      const primary = rgbOf(tokens.primary);
-      return [
-        {
-          name: `${name} button`,
-          ratio: contrast(primary, rgbOf(tokens["primary-foreground"])),
-        },
-        {
-          name: `${name} link`,
-          ratio: contrast(primary, rgbOf(tokens.background)),
-        },
-      ];
-    });
-    expect(failures("primary", rows, AA)).toEqual([]);
-  });
-});
-
-// Secondary and status text on the surfaces it is drawn on: inactive tabs sit
-// on muted, an error line on the page, a destructive menu item in a popover.
-const TEXT = [
-  ["muted-foreground", "background"],
-  ["muted-foreground", "muted"],
-  ...(["destructive", "success", "warning"] as const).flatMap(
-    (status) =>
-      [
-        [status, "background"],
-        [status, "popover"],
-      ] as const,
-  ),
-] as const;
-
-describe("text contrast", () => {
-  it("clears AA for muted and status text on the surfaces it sits on", () => {
+describe.each(CONTRAST_CHECKS)("$id contrast", ({ id, floor }) => {
+  it(`clears ${floor}:1 for every pair of the check`, () => {
     const rows = resolved.flatMap(({ name, tokens }) =>
-      TEXT.map(([text, surface]) => ({
-        name: `${name} ${text}/${surface}`,
-        ratio: contrast(rgbOf(tokens[text]), rgbOf(tokens[surface])),
-      })),
+      contrastRows(tokens)
+        .filter((row) => row.check === id)
+        .map((row) => ({
+          name: `${name} ${row.foreground}/${row.surface}`,
+          ratio: row.ratio,
+        })),
     );
-    expect(failures("text", rows, AA)).toEqual([]);
+    expect(failures(id, rows, floor)).toEqual([]);
   });
 });
 

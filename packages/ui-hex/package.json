@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui-hex",
   "version": "0.1.0",
-  "description": "Virtualised hex viewer and data inspector over in-memory or paged byte sources",
+  "description": "A hex view, editor and data inspector",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",

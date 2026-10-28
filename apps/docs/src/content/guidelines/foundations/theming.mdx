@@ -26,14 +26,21 @@ the page with the draft as you edit it.
 
 | Choice | Values | Where |
 |---|---|---|
-| Theme | The themes the app passes the store, such as `@orz/themes`' twenty built-ins | `ThemeMenu` |
+| Theme | The themes the app passes the store, such as [`@orz/themes`' built-ins](#the-built-in-themes) | `ThemeMenu` |
 | Mode | Auto (follows the system), Light, Dark; one-palette themes have one | `ThemeMenu` |
-| Variant | Per theme, such as AMOLED on every built-in dark palette, or Catppuccin's Frappé, Macchiato and Gray | A theme's submenu in `ThemeMenu` |
+| Variant | Per theme, such as a dark palette's AMOLED, or [Catppuccin's flavours](#the-built-in-themes) | A theme's submenu in `ThemeMenu` |
 | Terminal theme | Any theme, a terminal-only one, or following the UI | `ThemeMenu slot="terminal"` |
 | Custom themes | A theme based on another with overrides, or made from scratch | `ThemeEditor` |
 
 The store saves the pick under the app's `storageKey`, follows the system's light and dark when the
 mode is Auto, and follows a pick made in another tab.
+
+## The built-in themes
+
+`@orz/themes` ships these, each a module of its own; `builtinThemes` lists them all. A side
+with a name of its own shows it, and the variants a side adds follow it.
+
+<BuiltinThemes />
 
 ## Setting it up
 

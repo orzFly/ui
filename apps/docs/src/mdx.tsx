@@ -1,4 +1,6 @@
 import installs from "virtual:orz-install";
+import packages from "virtual:orz-packages";
+import themeTable from "virtual:orz-themes";
 import { buttonVariants } from "@orz/ui/components/button";
 import { cn } from "@orz/ui/lib/utils";
 import { ArrowUpRightIcon } from "lucide-react";
@@ -8,6 +10,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
+import { BelowFloor } from "./below-floor.tsx";
 import { Code } from "./code.tsx";
 import { Do, DoDont, Dont } from "./do-dont.tsx";
 import { Example } from "./example.tsx";
@@ -164,6 +167,72 @@ function PackageInstalls({ except }: { except: string }) {
   );
 }
 
+/** Every package with its package.json description. */
+function Packages() {
+  return (
+    <Table>
+      <thead>
+        <tr>
+          <Th>Package</Th>
+          <Th>What it is</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {packages.map(({ name, description }) => (
+          <tr key={name}>
+            <Td>
+              <InlineCode>{name}</InlineCode>
+            </Td>
+            <Td>{description}</Td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
+}
+
+/** `@orz/themes`' built-in themes, each side's own name and its variants, as its README has them. */
+function BuiltinThemes() {
+  return (
+    <>
+      <Table>
+        <thead>
+          <tr>
+            <Th>Theme</Th>
+            <Th>Import</Th>
+            <Th>Light</Th>
+            <Th>Dark</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {themeTable.rows.map(({ label, id, name, light, dark }) => (
+            <tr key={id}>
+              <Td>{label}</Td>
+              <Td>
+                <InlineCode>{name}</InlineCode>
+                {name !== id && (
+                  <>
+                    {" "}
+                    (<InlineCode>{id}</InlineCode>)
+                  </>
+                )}
+              </Td>
+              <Td>{light}</Td>
+              <Td>{dark}</Td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+      {themeTable.amoledEverywhere && (
+        <p className="my-4 leading-7">
+          Every dark palette also has an AMOLED variant, which makes the
+          background true black.
+        </p>
+      )}
+    </>
+  );
+}
+
 /** A link styled as a button, for a page's calls to action. */
 function LinkButton({
   to,
@@ -265,8 +334,11 @@ export const mdxComponents = {
   Dont,
   Doors,
   Example,
+  BelowFloor,
+  BuiltinThemes,
   Install,
   LinkButton,
   PackageInstalls,
+  Packages,
   StorybookLink,
 };

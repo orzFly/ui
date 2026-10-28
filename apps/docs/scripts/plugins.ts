@@ -1,8 +1,17 @@
-import { createReadStream, readFileSync, statSync } from "node:fs";
+import { createReadStream, readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin, ViteDevServer } from "vite";
 import { installs, installText, workspaces } from "../../../scripts/install.ts";
+import { themeTable } from "../../../scripts/themes.ts";
+import {
+  cssLengths,
+  DEMOS,
+  demoApis,
+  internalClasses,
+  packageSummaries,
+  STORIES,
+} from "./data.ts";
 import { fillTemplate } from "./html.ts";
 import { closeSearch, searchIndex } from "./search.ts";
 
@@ -10,6 +19,8 @@ const APP = fileURLToPath(new URL("..", import.meta.url));
 const EXAMPLES = join(APP, "src/examples/");
 const REGISTRY = join(APP, "src/example-source.ts");
 const STORYBOOK = join(APP, "../storybook/storybook-static");
+const THEMES = join(APP, "../../packages/themes/src");
+const UI = join(APP, "../../packages/ui");
 
 const META_QUERY = "?meta";
 const META = /^export const meta = /m;
@@ -157,31 +168,67 @@ function serveRendered(server: ViteDevServer) {
   });
 }
 
-const INSTALL = "virtual:orz-install";
+const filesUnder = (dir: string) =>
+  readdirSync(dir, { recursive: true, encoding: "utf8" }).map((file) =>
+    join(dir, file),
+  );
 
 /**
- * `virtual:orz-install`: every package's install lines, worked out from the
- * package.json files as the READMEs' are, so no page lists a peer by hand.
+ * What the pages restate from the code, as virtual modules worked out from it (data.ts):
+ * `virtual:orz-install` every package's install lines, as the READMEs have them;
+ * `virtual:orz-packages` each package's description; `virtual:orz-themes` the built-in
+ * themes' table; `virtual:orz-demo-api` the Storybook pages each demo uses; and
+ * `virtual:orz-ui-source` the class strings of `@orz/ui`'s internal parts and the lengths
+ * its stylesheets set.
  */
-export function installPlugin(): Plugin {
-  return {
-    name: "orz-docs:install",
-    resolveId: (id) => (id === INSTALL ? `\0${INSTALL}` : undefined),
-    load(id) {
-      if (id !== `\0${INSTALL}`) return;
+export function dataPlugin(): Plugin {
+  const modules: Record<string, () => { data: unknown; watch: string[] }> = {
+    "virtual:orz-install": () => {
       const all = workspaces();
-      for (const { dir } of all.values()) {
-        this.addWatchFile(join(dir, "package.json"));
-      }
-      const texts = installs(all).map(installText);
-      return `export default ${JSON.stringify(texts)};`;
+      return {
+        data: installs(all).map(installText),
+        watch: [...all.values()].map(({ dir }) => join(dir, "package.json")),
+      };
+    },
+    "virtual:orz-packages": () => ({
+      data: packageSummaries(),
+      watch: [...workspaces().values()].map(({ dir }) =>
+        join(dir, "package.json"),
+      ),
+    }),
+    "virtual:orz-themes": () => ({
+      data: themeTable(),
+      watch: filesUnder(THEMES),
+    }),
+    "virtual:orz-demo-api": () => ({
+      data: demoApis(),
+      watch: [...filesUnder(DEMOS), ...filesUnder(STORIES)],
+    }),
+    "virtual:orz-ui-source": () => ({
+      data: { classes: internalClasses(), css: cssLengths() },
+      watch: [
+        ...filesUnder(join(UI, "src/components")),
+        join(UI, "styles.css"),
+        join(UI, "theme.css"),
+      ],
+    }),
+  };
+  return {
+    name: "orz-docs:data",
+    resolveId: (id) => (id in modules ? `\0${id}` : undefined),
+    load(id) {
+      const make = modules[id.slice(1)];
+      if (!id.startsWith("\0") || !make) return;
+      const { data, watch } = make();
+      for (const file of watch) this.addWatchFile(file);
+      return `export default ${JSON.stringify(data)};`;
     },
   };
 }
 
 export function docsPlugins(): Plugin[] {
   return [
-    installPlugin(),
+    dataPlugin(),
     {
       name: "orz-docs:meta",
       enforce: "pre",

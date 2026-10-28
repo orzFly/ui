@@ -1,9 +1,7 @@
 // The `pnpm add` lines for every package, worked out from the package.json files and the imports
-// in src/, so that no README or docs page lists a package's peers by hand.
-//
-//   node scripts/install.ts          rewrite each README's generated install block
-//   node scripts/install.ts --check  fail if one is stale
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+// in src/, so that no README or docs page lists a package's peers by hand. scripts/readme.ts
+// writes them into the READMEs.
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,8 +9,9 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const PACKAGES = join(ROOT, "packages");
 const WIDTH = 100;
 
-interface Manifest {
+export interface Manifest {
   name: string;
+  description?: string;
   private?: boolean;
   dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
@@ -20,7 +19,7 @@ interface Manifest {
   exports?: Record<string, string | Record<string, string>>;
 }
 
-interface Workspace {
+export interface Workspace {
   dir: string;
   manifest: Manifest;
 }
@@ -219,47 +218,4 @@ export function installText(install: Install): InstallText {
       command: command(group.packages, Infinity),
     })),
   };
-}
-
-export const README_MARKER =
-  "<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->";
-const README_BLOCK = new RegExp(
-  `${README_MARKER.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n\`\`\`bash\\n[\\s\\S]*?\\n\`\`\``,
-);
-
-function syncReadmes(check: boolean): string[] {
-  const all = workspaces();
-  const stale: string[] = [];
-  for (const { name, dir } of [...all.values()].map((workspace) => ({
-    name: workspace.manifest.name,
-    dir: workspace.dir,
-  }))) {
-    const file = join(dir, "README.md");
-    const text = readFileSync(file, "utf8");
-    if (!README_BLOCK.test(text)) {
-      stale.push(
-        `${relative(ROOT, file)}: no install block under ${README_MARKER}`,
-      );
-      continue;
-    }
-    const next = text.replace(
-      README_BLOCK,
-      () =>
-        `${README_MARKER}\n\`\`\`bash\n${block(install(name, all))}\n\`\`\``,
-    );
-    if (next === text) continue;
-    if (check) stale.push(`${relative(ROOT, file)}: install block is stale`);
-    else writeFileSync(file, next);
-  }
-  return stale;
-}
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const stale = syncReadmes(process.argv.includes("--check"));
-  if (stale.length > 0) {
-    console.error(
-      `${stale.join("\n")}\nRun \`node scripts/install.ts\` to rewrite them.`,
-    );
-    process.exit(1);
-  }
 }

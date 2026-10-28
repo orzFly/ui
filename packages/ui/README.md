@@ -5,12 +5,13 @@ CSS v4. The theme data itself lives in `@orz/themes`.
 
 ## Install
 
-<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
+<!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
 pnpm add @orz/ui @orz/query @orz/themes lucide-react radix-ui react react-dom sonner
 # only for @orz/ui/hooks/use-overlay-scrollbars:
 pnpm add overlayscrollbars
 ```
+<!-- /generated -->
 
 `radix-ui`, `sonner`, `lucide-react` and React are peer dependencies. They have to be the app's
 own copies, because radix's dismissable-layer and focus stacks and sonner's toast store are module
@@ -534,9 +535,9 @@ import { MediaControls } from "@orz/ui/components/media-controls";
 | Import | Contents |
 |---|---|
 | `@orz/ui` | `cn` |
-| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `link-chip`, `load-failure`, `load-more`, `media-controls`, `popover`, `query-box`, `query-highlight`, `select`, `separator`, `sheet`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-editor`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
-| `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut` |
-| `@orz/ui/lib/<name>` | `cell-width`, `clipboard`, `color`, `scroll-map`, `text-metrics`, `theme-file`, `unsaved-guard`, `utils` |
+| `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `checkbox`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `link-chip`, `load-failure`, `load-more`, `media-controls`, `popover`, `query-box`, `query-highlight`, `radio-group`, `select`, `separator`, `sheet`, `skeleton`, `slider`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-editor`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
+| `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut`, `viewport-chrome` |
+| `@orz/ui/lib/<name>` | `cell-width`, `cell-width-table`, `clipboard`, `color`, `scroll-map`, `text-metrics`, `theme-file`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
 | `@orz/ui/theme.css` | baseline tokens and custom variants, without the base layer or @source |

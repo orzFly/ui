@@ -17,13 +17,15 @@ import { FormattingToolbar } from "../../../examples/layout-and-spacing/formatti
 import { MailPanes } from "../../../examples/layout-and-spacing/mail-panes.tsx";
 import { MailToolbar } from "../../../examples/layout-and-spacing/mail-toolbar.tsx";
 import { SpacedGroups } from "../../../examples/layout-and-spacing/spaced-groups.tsx";
+import { MD_UP, SM_UP } from "@orz/ui/hooks/use-media-query";
+import { minWidth } from "../../../sizes.ts";
 
 **Space things by how closely they belong together, in steps of Tailwind's 4px scale, and lay the
 screen out for a phone first, then add `md:` for the rest.**
 
 <Example of={MailToolbar} />
 
-Below 768px the search takes the whole width, and the label filter and **Compose** share the row
+Below {minWidth(MD_UP)}px the search takes the whole width, and the label filter and **Compose** share the row
 under it; from `md` up, all three sit on one line. One tree, laid out by CSS.
 
 ## Spacing
@@ -77,14 +79,14 @@ reader hears where one group ends; elsewhere it stays decorative, as it is by de
 
 ## Breakpoints
 
-Tailwind's breakpoints are the library's, and the line that matters is `md`, 768px: below it is a
+Tailwind's breakpoints are the library's, and the line that matters is `md`, {minWidth(MD_UP)}px: below it is a
 phone, at or above it is everything else.
 
 | Prefix | From | Use |
 |---|---|---|
 | — | 0 | The phone layout: one column, full-width fields, navigation in a `Sheet` |
-| `sm:` | 640px | Small adjustments: a dialog's buttons side by side |
-| `md:` | 768px | The desktop layout: side-by-side panes, a sidebar, a toolbar on one line |
+| `sm:` | {minWidth(SM_UP)}px | Small adjustments: a dialog's buttons side by side |
+| `md:` | {minWidth(MD_UP)}px | The desktop layout: side-by-side panes, a sidebar, a toolbar on one line |
 | `lg:`, `xl:` | 1024px, 1280px | Extra panes that only fit on a wide screen, such as a contents column |
 
 A layout change is CSS (`md:flex-row`) wherever the same elements can be rearranged. Branch in

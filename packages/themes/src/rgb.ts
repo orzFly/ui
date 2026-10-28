@@ -48,3 +48,12 @@ export function contrast(x: Rgb, y: Rgb): number {
   const b = luminance(y);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
+
+/** `value` painted over `surface`; default dark's `input` is white at an alpha. */
+export function painted(value: string, surface: Rgb): Rgb {
+  const m = /^(oklch\([^/]*?)\s*\/\s*([\d.]+)%\s*\)$/.exec(value);
+  if (!m) return rgbOf(value);
+  const alpha = Number(m[2]) / 100;
+  const colour = rgbOf(`${m[1]})`);
+  return colour.map((v, i) => v * alpha + surface[i] * (1 - alpha)) as Rgb;
+}

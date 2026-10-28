@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { grayOf, oklchOf } from "../src/color.ts";
-import { oklab, rgbOf } from "./color.ts";
+import { oklab, rgbOf } from "../src/rgb.ts";
 
 const bytes = (hex: string) =>
   [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));

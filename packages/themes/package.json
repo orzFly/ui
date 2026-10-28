@@ -1,7 +1,7 @@
 {
   "name": "@orz/themes",
   "version": "0.1.0",
-  "description": "Theme palettes for @orz/ui and terminals as plain data, with light/dark palettes and variants",
+  "description": "Theme palettes for the UI and for terminals, as plain data",
   "license": "BSD-3-Clause AND Apache-2.0",
   "repository": {
     "type": "git",
@@ -15,6 +15,11 @@
       "@orz/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./contrast": {
+      "@orz/source": "./src/contrast.ts",
+      "types": "./dist/contrast.d.ts",
+      "default": "./dist/contrast.js"
     },
     "./themes/*": {
       "@orz/source": "./src/themes/*.ts",

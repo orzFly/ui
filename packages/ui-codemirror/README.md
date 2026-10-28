@@ -6,12 +6,13 @@ the completion extensions they are assembled from, and the slash-command panel a
 
 ## Install
 
-<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
+<!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
 pnpm add @orz/ui-codemirror @orz/query @orz/themes @orz/ui @codemirror/autocomplete \
   @codemirror/commands @codemirror/language @codemirror/search @codemirror/state @codemirror/view \
   @lezer/highlight lucide-react radix-ui react react-dom sonner
 ```
+<!-- /generated -->
 
 These are peer dependencies, so the app and the editors share one copy of each:
 
@@ -247,7 +248,7 @@ The handle's `setValue` and `append` are not marked, so they count as the reader
 | `@orz/ui-codemirror/components/code-editor` | `CodeEditor`, `CodeEditorHandle`, `CodeEditorProps`, `PROGRAMMATIC_USER_EVENT` |
 | `@orz/ui-codemirror/components/editor-shortcuts-help` | `EditorShortcutsHelp` |
 | `@orz/ui-codemirror/components/markdown-editor` | `MarkdownEditor`, `MarkdownEditorHandle`, `MarkdownEditorProps`, `FileClipboardEvent`, `FileDragEvent`, `markdownLanguage`, `markdownHighlightStyle` |
-| `@orz/ui-codemirror/extensions/<name>` | `code-context`, `completion`, `completion-space`, `json`, `paste-as`, `quote-toggle`, `slash-commands`, `tag-completion`, `trim-trailing-space` |
+| `@orz/ui-codemirror/extensions/<name>` | `code-context`, `completion`, `completion-space`, `composition-safe-measure`, `json`, `parked-tooltip`, `paste-as`, `quote-toggle`, `slash-commands`, `tag-completion`, `tooltip-space`, `trim-trailing-space` |
 | `@orz/ui-codemirror/styles.css` | `@source "./dist"` |
 
 There is no root entry, so a markdown-only app never reaches `@lezer/json` through an index file.

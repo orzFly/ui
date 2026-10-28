@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui-content",
   "version": "0.1.0",
-  "description": "A registry where content packages contribute renderers and any surface asks for content to be drawn",
+  "description": "The registry through which content packages draw one another",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",

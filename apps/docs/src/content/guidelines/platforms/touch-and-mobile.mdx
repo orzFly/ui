@@ -27,8 +27,9 @@ export const meta = {
 
 import { AccountSettings } from "../../../examples/touch-and-mobile/account-settings.tsx";
 import { MailList } from "../../../examples/touch-and-mobile/mail-list.tsx";
+import { button, classes, coarse, css, font, gap, hit, px, range, same, touch, width } from "../../../sizes.ts";
 
-**On a coarse pointer every control is 44px to the finger, by itself; the app keeps its own controls
+**On a coarse pointer every control is {css.hitArea}px to the finger, by itself; the app keeps its own controls
 the same size, its edges clear of the notch and the keyboard, and every gesture backed by
 something to tap.**
 
@@ -36,7 +37,7 @@ something to tap.**
 
 On a phone this is already the touch layout; on a desk, press **Touch** under the example.
 **Compose** and the rows of each `⋯` menu grow; the checkboxes and the `⋯` buttons keep their drawn
-size and take a 44px hit area around it, so the conversations' rows do not grow at all.
+size and take a {css.hitArea}px hit area around it, so the conversations' rows do not grow at all.
 
 ## Hit areas
 
@@ -49,17 +50,17 @@ size and widens its hit area with a transparent `::after`.
 
 | Control | Pointer | Touch, drawn | Touch, hit area |
 |---|---|---|---|
-| `Button` default | 32 | 40 | 44 |
-| `Button` `lg` | 36 | 44 | 44 |
-| `Button` `xs`, `sm`, and the `icon` sizes | 24–36 | unchanged | 44 |
-| `Switch` (36 × 20), `Checkbox`, `RadioGroupItem` (16) | — | unchanged | 44 |
-| `Input`, `HighlightedInput` (so `QueryBox`'s field) | 32 | 40, at 16px text | 40 |
-| `FilterMenu`'s search field | 36 | 40, at 16px text | 40 |
-| `Select` trigger, default / `sm` | 32 / 28 | 40 / 28 | 44 |
-| `Tabs` trigger | 28 | 40 | 44 |
-| `DropdownMenu` items, `Select` items, `FilterMenu` rows | 28 | 44 | 44 |
-| `QueryBox` suggestions | 32 | 44 | 44 |
-| `RadioGroup` rows | 12 apart | 28 apart | rows 44 apart |
+| `Button` default | {px(button())} | {touch(button())} | {hit(button())} |
+| `Button` `lg` | {px(button("lg"))} | {touch(button("lg"))} | {hit(button("lg"))} |
+| `Button` `xs`, `sm`, and the `icon` sizes | {range(...["xs", "sm", "icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => px(button(size))))} | {same(...["xs", "sm", "icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => touch(button(size))))} | {same(...["xs", "sm", "icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => hit(button(size))))} |
+| `Switch` ({width(classes.switch)} × {px(classes.switch)}), `Checkbox`, `RadioGroupItem` ({same(px(classes.checkbox), px(classes.radioGroupItem))}) | — | {same(touch(classes.switch), touch(classes.checkbox), touch(classes.radioGroupItem))} | {same(hit(classes.switch), hit(classes.checkbox), hit(classes.radioGroupItem))} |
+| `Input`, `HighlightedInput` (so `QueryBox`'s field) | {same(px(classes.input), px(classes.highlightedInput))} | {same(touch(classes.input), touch(classes.highlightedInput))}, at {font(classes.input, coarse)}px text | {same(hit(classes.input), hit(classes.highlightedInput))} |
+| `FilterMenu`'s search field | {px(classes.filterBox)} | {touch(classes.filterBox)}, at {font(classes.filterBox, coarse)}px text | {hit(classes.filterBox)} |
+| `Select` trigger, default / `sm` | {px(classes.selectTrigger)} / {px(classes.selectTrigger, { size: "sm" })} | {px(classes.selectTrigger, coarse)} / {px(classes.selectTrigger, { ...coarse, size: "sm" })} | {same(hit(classes.selectTrigger), hit(classes.selectTrigger, { size: "sm" }))} |
+| `Tabs` trigger | {px(classes.tabsTrigger)} | {touch(classes.tabsTrigger)} | {hit(classes.tabsTrigger)} |
+| `DropdownMenu` items, `Select` items, `FilterMenu` rows | {same(px(classes.dropdownMenuItem), px(classes.selectItem), px(classes.filterOption))} | {same(touch(classes.dropdownMenuItem), touch(classes.selectItem), touch(classes.filterOption))} | {same(hit(classes.dropdownMenuItem), hit(classes.selectItem), hit(classes.filterOption))} |
+| `QueryBox` suggestions | {px(classes.queryOption)} | {touch(classes.queryOption)} | {hit(classes.queryOption)} |
+| `RadioGroup` rows | {gap(classes.radioGroup)} apart | {gap(classes.radioGroup, coarse)} apart | rows {gap(classes.radioGroup, coarse) + px(classes.radioGroupItem)} apart |
 
 Sizes are in CSS pixels. "Pointer" is what a mouse gets, and what the [Density](/guidelines/foundations/density/)
 page's sizes are.

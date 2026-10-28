@@ -1,3 +1,4 @@
+import demoApis from "virtual:orz-demo-api";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
@@ -35,8 +36,11 @@ import {
   useSourceParam,
 } from "./demo-state.ts";
 
-/** The packages a demo is built from, read off the Storybook titles in its `meta.api`. */
-const packagesOf = (api: readonly string[] = []) => [
+/** The Storybook pages a demo's files use, worked out from their imports. */
+const apiOf = (route: string) => demoApis[demoDir(route)] ?? [];
+
+/** The packages a demo is built from, read off the Storybook titles of what it uses. */
+const packagesOf = (api: readonly string[]) => [
   ...new Set(api.map((title) => title.split("/")[0] ?? "")),
 ];
 
@@ -61,7 +65,7 @@ export function DemoPage({ children }: { children: ReactNode }) {
   const preview = useRef<HTMLDivElement>(null);
   useOverlaysFollow(preview, pointer);
   const fullScreen = useFullScreen();
-  const about = <About meta={meta} />;
+  const about = <About meta={meta} api={apiOf(route)} />;
   return (
     <Tabs
       value={source === null ? "preview" : "code"}
@@ -188,7 +192,13 @@ export function DemoPage({ children }: { children: ReactNode }) {
   );
 }
 
-function About({ meta }: { meta: PageMeta | undefined }) {
+function About({
+  meta,
+  api,
+}: {
+  meta: PageMeta | undefined;
+  api: readonly string[];
+}) {
   const id = useId();
   const guidelines = meta?.guidelines ?? [];
   return (
@@ -216,13 +226,13 @@ function About({ meta }: { meta: PageMeta | undefined }) {
           </ul>
         </section>
       )}
-      {meta?.api && meta.api.length > 0 && (
+      {api.length > 0 && (
         <section aria-labelledby={`${id}-components`} className="mt-6">
           <h2 id={`${id}-components`} className="mb-1 font-semibold">
             Components
           </h2>
           <ul data-pagefind-ignore>
-            {meta.api.map((title) => (
+            {api.map((title) => (
               <li key={title}>
                 {/* Several packages export a `Content` page, so a demo names the package too. */}
                 <a
@@ -294,7 +304,7 @@ export function DemoGallery() {
             </span>
           )}
           <span className="mt-auto flex flex-wrap gap-1 pt-2">
-            {packagesOf(meta.api).map((name) => (
+            {packagesOf(apiOf(route)).map((name) => (
               <Badge key={name} variant="outline" className="font-mono">
                 {name}
               </Badge>

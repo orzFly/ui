@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui-ansi",
   "version": "0.1.0",
-  "description": "Text with ANSI escape sequences drawn in the active @orz/ui terminal colours, contributed to the @orz/ui-content registry",
+  "description": "Text with ANSI escapes, and logs by level",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",

@@ -15,6 +15,7 @@ export const meta = {
 import { ButtonSizes } from "../../../examples/density/button-sizes.tsx";
 import { CiRunPanel } from "../../../examples/density/ci-run-panel.tsx";
 import { ThreadRows } from "../../../examples/density/thread-rows.tsx";
+import { button, classes, px, same } from "../../../sizes.ts";
 
 **Use the default size, step down only inside a dense row or toolbar, and leave touch to the
 components.** The default is drawn for a mouse, so a screen shows as much of the work as it can; on
@@ -32,11 +33,11 @@ Every size of `Button` as drawn for a pointer:
 
 | Size | Height | Use |
 |---|---|---|
-| `lg` | 36px | The one action a page or empty state is for; a call to action on a landing page |
-| default | 32px | Forms, dialogs, a panel's own actions: anything a person reads before pressing |
-| `sm` | 28px | A toolbar of text buttons, a filter row, actions inside a card |
-| `xs` | 24px | An action repeated on every row of a list or table, inline with text |
-| `icon`, `icon-sm`, `icon-xs`, `icon-lg` | 32, 28, 24, 36px square | The icon-only counterparts of the four |
+| `lg` | {px(button("lg"))}px | The one action a page or empty state is for; a call to action on a landing page |
+| default | {px(button())}px | Forms, dialogs, a panel's own actions: anything a person reads before pressing |
+| `sm` | {px(button("sm"))}px | A toolbar of text buttons, a filter row, actions inside a card |
+| `xs` | {px(button("xs"))}px | An action repeated on every row of a list or table, inline with text |
+| `icon`, `icon-sm`, `icon-xs`, `icon-lg` | {["icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => px(button(size))).join(", ")}px square | The icon-only counterparts of the four |
 
 <Example of={ButtonSizes} />
 
@@ -44,8 +45,9 @@ Each size where a demo uses it: **Compose** on Mail's phone layout, the profile 
 Settings, **Recording** above a pull request's test log and **Revoke…** on each access token, each
 job's **Log** in the panel above, and **Archive** at every icon size.
 
-`Input` and `Select`'s trigger are 32px, the default, so a field and its button line up on one row.
-`Select`'s trigger also comes in `sm` for a toolbar.
+`Input` and `Select`'s trigger are {same(px(classes.input), px(classes.selectTrigger), px(button()))}px, the
+default, so a field and its button line up on one row. `Select`'s trigger also comes in `sm` for a
+toolbar.
 
 <DoDont>
   <Do>

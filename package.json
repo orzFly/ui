@@ -5,8 +5,8 @@
   "repository": "github:orzFly/ui",
   "type": "module",
   "scripts": {
-    "fmt": "node scripts/install.ts && biome check --write .",
-    "lint": "biome check . && node scripts/install.ts --check",
+    "fmt": "node scripts/readme.ts && biome check --write .",
+    "lint": "biome check . && node scripts/readme.ts --check",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"

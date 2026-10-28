@@ -8,11 +8,12 @@ either. The engine is [asciinema-player](https://www.npmjs.com/package/asciinema
 
 ## Install
 
-<!-- Generated from package.json by scripts/install.ts: run `pnpm fmt` after changing a peer. -->
+<!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
 pnpm add @orz/ui-asciinema @orz/query @orz/themes @orz/ui @orz/ui-content lucide-react radix-ui \
   react react-dom sonner
 ```
+<!-- /generated -->
 
 `asciinema-player` is a regular dependency: installing this package is the whole setup.
 `@orz/ui-content` is a peer dependency so that the app and every content package share one registry.

@@ -1,7 +1,7 @@
 {
   "name": "@orz/query",
   "version": "0.1.0",
-  "description": "Search query and slash-command grammars driven by an app's schema, with no runtime dependencies",
+  "description": "The grammar of a search box and a slash-command line",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",

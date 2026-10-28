@@ -22,7 +22,7 @@ import { TokenPairs, TokenSwatches } from "../../../token-swatches.tsx";
 
 **Draw with the tokens, never with a colour.** `bg-card`, `text-muted-foreground` and `border` say
 what a thing is; the theme the user picked says what colour that is, in light, in dark, and in each
-of a dozen palettes.
+of the palettes they can pick.
 
 <Example of={MergeBox} />
 
@@ -82,9 +82,9 @@ edge and the column floats. Its `border-r` separates it.
 `border` separates; `input` outlines a field; `ring` draws focus. `input` is the darker of the two
 lines: it is the edge an empty field, an unchecked checkbox and a switch's off track are found by,
 so it keeps 3:1 against the page, a card and a popover, where `border` only has to be seen beside
-what it divides. Catppuccin is the exception: it is used as published, and its Latte and Frappé
-edges are lighter; the [contrast table](/guidelines/content/accessibility/#contrast) measures the
-theme you are in. Outline a control you build in `input`, and divide in `border`. The base layer
+what it divides. The themes used as published keep their own edges, a few of them lighter;
+[Accessibility](/guidelines/content/accessibility/#contrast) lists them, and its contrast table
+measures the theme you are in. Outline a control you build in `input`, and divide in `border`. The base layer
 gives every element `border-border`, so a bare `border` class is already the right colour. A line
 is the quietest way to separate two things, and space is quieter still: prefer a gap to a rule
 where the grouping reads without one.
@@ -154,7 +154,7 @@ theme. Text on a tint of its own colour is where contrast fails first, so a comp
 </DoDont>
 
 Do not reach for `dark:` to fix a colour either: a token already flips with the scheme, and `dark:`
-knows two schemes where the user has a dozen themes.
+knows two schemes where the user has many themes.
 
 ## Contrast
 
