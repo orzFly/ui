@@ -25,7 +25,7 @@ import { RemovedFocusRing } from "../../../examples/accessibility/removed-focus-
 import { ThreadToolbar } from "../../../examples/accessibility/thread-toolbar.tsx";
 
 > **Every action works by keyboard, by touch and through a screen reader, and every word and edge is
-> readable in every theme.**
+> readable in every theme held to the numbers below.**
 
 The bar is [WCAG 2.2](https://www.w3.org/TR/WCAG22/) level AA. Each number below links the success
 criterion (SC) it comes from; where a page asks for more than AA, it says so and names the source.
@@ -49,13 +49,18 @@ follows.
 - **Disabled controls are exempt.** They are drawn at half opacity on purpose; do not use the same
   look for anything a reader is meant to read.
 - **Colour reads from the tokens, never a hard-coded value.** A token is held to these numbers in
-  every theme; a hex code is held to them in the one theme it was picked in.
+  every built-in theme but the ones used as published; a hex code is held to them in the one theme
+  it was picked in.
 - **Never colour alone** ([SC 1.4.1](https://www.w3.org/TR/WCAG22/#use-of-color)). An invalid field
   is red *and* says what is wrong; a diff line is green *and* starts with `+`; a failed run is red
   *and* has a failed icon.
 
-A row that fails is a gap in that palette, not a licence to copy it. A custom theme is held to the
-same numbers, and the theme editor shows each token's ratio against the surface it is drawn on.
+Catppuccin, and the Pro themes drawn from Prohibitorum, keep their published values, so a few of
+their pairs fall below these numbers: Catppuccin Latte's secondary and status text, field edge and
+focus ring; Frappé's field edge and secondary text on `muted`; ProCitrus's light primary as link
+text; and ProGraphite's light sidebar ring. A row that fails is a gap in that palette, not a licence
+to copy it. A custom theme is held to the same numbers, and the theme editor shows each token's
+ratio against the surface it is drawn on.
 
 ## Focus
 

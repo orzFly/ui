@@ -82,7 +82,9 @@ edge and the column floats. Its `border-r` separates it.
 `border` separates; `input` outlines a field; `ring` draws focus. `input` is the darker of the two
 lines: it is the edge an empty field, an unchecked checkbox and a switch's off track are found by,
 so it keeps 3:1 against the page, a card and a popover, where `border` only has to be seen beside
-what it divides. Outline a control you build in `input`, and divide in `border`. The base layer
+what it divides. Catppuccin is the exception: it is used as published, and its Latte and Frappé
+edges are lighter; the [contrast table](/guidelines/content/accessibility/#contrast) measures the
+theme you are in. Outline a control you build in `input`, and divide in `border`. The base layer
 gives every element `border-border`, so a bare `border` class is already the right colour. A line
 is the quietest way to separate two things, and space is quieter still: prefer a gap to a rule
 where the grouping reads without one.
@@ -142,7 +144,8 @@ theme. Text on a tint of its own colour is where contrast fails first, so a comp
 
 <DoDont>
   <Do show={<MutedSecondaryLine />}>
-    Write `text-muted-foreground` for the secondary line. It is tuned for every theme.
+    Write `text-muted-foreground` for the secondary line. Each theme sets it for its own surfaces,
+    and the swatches above show how it holds in the one you are in.
   </Do>
   <Dont show={<GraySecondaryLine />}>
     Write `text-gray-500`, `bg-white` or a hex value. It is right in one theme, and in the others
