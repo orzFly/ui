@@ -67,7 +67,8 @@ type BoxRow<R> =
  * would otherwise shrink to a pill beside its full-width neighbours; on the
  * `<a>` and `<div>` rows, which are block already, it changes nothing.
  */
-const OPTION = "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm";
+const OPTION =
+  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm touch:min-h-11";
 
 /** Nothing highlighted. Enter then submits what was typed, not an offer. */
 const NONE = -1;

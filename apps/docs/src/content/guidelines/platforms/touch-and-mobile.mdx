@@ -7,11 +7,15 @@ export const meta = {
     "ui/Primitives/Button",
     "ui/Primitives/Checkbox",
     "ui/Primitives/DropdownMenu",
+    "ui/Primitives/HighlightedInput",
     "ui/Primitives/Input",
     "ui/Primitives/RadioGroup",
     "ui/Primitives/Select",
     "ui/Primitives/Switch",
     "ui/Primitives/Tabs",
+    "ui/Primitives/Textarea",
+    "ui/FilterMenu",
+    "ui/QueryBox",
     "ui/Primitives/Sheet",
     "ui/Primitives/Toaster",
     "ui/Hooks/useVisualViewportInsets",
@@ -49,10 +53,12 @@ size and widens its hit area with a transparent `::after`.
 | `Button` `lg` | 36 | 44 | 44 |
 | `Button` `xs`, `sm`, and the `icon` sizes | 24–36 | unchanged | 44 |
 | `Switch` (36 × 20), `Checkbox`, `RadioGroupItem` (16) | — | unchanged | 44 |
-| `Input` | 32 | 40, at 16px text | 40 |
+| `Input`, `HighlightedInput` (so `QueryBox`'s field) | 32 | 40, at 16px text | 40 |
+| `FilterMenu`'s search field | 36 | 40, at 16px text | 40 |
 | `Select` trigger, default / `sm` | 32 / 28 | 40 / 28 | 44 |
 | `Tabs` trigger | 28 | 40 | 44 |
-| `DropdownMenu` items, `Select` items | 28 | 44 | 44 |
+| `DropdownMenu` items, `Select` items, `FilterMenu` rows | 28 | 44 | 44 |
+| `QueryBox` suggestions | 32 | 44 | 44 |
 | `RadioGroup` rows | 12 apart | 28 apart | rows 44 apart |
 
 Sizes are in CSS pixels. "Pointer" is what a mouse gets, and what the [Density](/guidelines/foundations/density/)
@@ -102,9 +108,10 @@ DOM takes the tap, so:
 
 ## Text fields
 
-- Fields are 16px text on touch at every width. Safari zooms the page into a field whose text is
-  smaller ([how Safari decides](https://thingsthemselves.com/no-input-zoom-in-safari-on-iphone-the-pixel-perfect-way/)),
-  and leaves it zoomed after.
+- Fields are 16px text on touch at every width: `Input`, `Textarea`, `HighlightedInput` and
+  `FilterMenu`'s search field all are. Safari zooms the page into a field whose text is smaller
+  ([how Safari decides](https://thingsthemselves.com/no-input-zoom-in-safari-on-iphone-the-pixel-perfect-way/)),
+  and leaves it zoomed after. A field you build takes `text-base md:text-sm touch:text-base`.
 - Give a field the keyboard it needs: `type="email"`, `inputMode="numeric"`, `autoComplete`, and
   `enterKeyHint` (`"search"`, `"send"`, `"next"`) for the label on the return key.
 - Do not focus a field on arrival on a phone; that raises the keyboard over a page the person came

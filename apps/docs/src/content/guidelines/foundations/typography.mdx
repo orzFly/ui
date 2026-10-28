@@ -83,10 +83,11 @@ shows it whole, wrapping where it has to: the full text is a click or a tap away
 ## On each platform
 
 - **Pointer.** Inputs are `md:text-sm`, the body size.
-- **Touch.** Below `md`, an `Input`, `Textarea` and `HighlightedInput` are `text-base`. iOS Safari
-  zooms the page into any field whose text is under 16px when it takes focus
+- **Touch.** An `Input`, `Textarea` and `HighlightedInput` are `text-base` below `md`, and on a
+  coarse pointer at every width, because a tablet is wider than `md`. iOS Safari zooms the page into
+  any field whose text is under 16px when it takes focus
   ([how Safari decides](https://thingsthemselves.com/no-input-zoom-in-safari-on-iphone-the-pixel-perfect-way/)),
-  and does not zoom back out. Keep that in any field you build: `text-base md:text-sm`.
+  and does not zoom back out. Keep that in any field you build: `text-base md:text-sm touch:text-base`.
 - **Both.** Sizes are in `rem`, so a reader who raises the browser's text size gets larger text
   everywhere. Text must survive 200% without loss
   ([WCAG 1.4.4](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)); do not set a fixed

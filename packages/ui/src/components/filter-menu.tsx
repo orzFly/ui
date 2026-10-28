@@ -219,7 +219,7 @@ function insidePolygon(point: Point, polygon: readonly Point[]): boolean {
 const GRACE_MS = 300;
 
 const ROW_CLASS =
-  "group/option relative flex w-full cursor-default items-center rounded-md text-sm select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+  "group/option relative flex w-full cursor-default items-center rounded-md text-sm touch:min-h-11 select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
 
 const CELL_CLASS = "gap-1.5 py-1 pl-1.5";
 
@@ -269,7 +269,7 @@ function FilterBox({
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}
-        className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        className="h-9 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-sm touch:h-10 touch:text-base"
         {...props}
       />
     </div>

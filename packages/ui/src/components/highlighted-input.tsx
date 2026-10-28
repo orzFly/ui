@@ -12,7 +12,7 @@ export type CaretPosition = { caret: number };
  * on rather than on it. Nothing here may differ between the two, and no span
  * inside the mirror may add width of its own.
  */
-const METRICS = "px-2.5 py-1 text-base md:text-sm";
+const METRICS = "px-2.5 py-1 text-base md:text-sm touch:text-base";
 
 /**
  * A one-line input that shows its own text through a mirror layer, so the
@@ -83,7 +83,7 @@ export function HighlightedInput({
   return (
     <div
       className={cn(
-        "relative h-8 rounded-lg border border-input bg-transparent transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring focus-within:outline-solid dark:bg-input/15",
+        "relative h-8 rounded-lg touch:h-10 border border-input bg-transparent transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring focus-within:outline-solid dark:bg-input/15",
         className,
       )}
     >

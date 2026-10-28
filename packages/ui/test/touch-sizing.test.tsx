@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { todouSchema } from "../../query/test/fixtures/todou-schema.ts";
 import { Button } from "../src/components/button.tsx";
 import { Checkbox } from "../src/components/checkbox.tsx";
 import {
@@ -15,7 +16,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../src/components/dropdown-menu.tsx";
+import {
+  FilterMenu,
+  type FilterMenuSection,
+} from "../src/components/filter-menu.tsx";
+import { HighlightedInput } from "../src/components/highlighted-input.tsx";
 import { Input } from "../src/components/input.tsx";
+import { QueryBox } from "../src/components/query-box.tsx";
 import { RadioGroup, RadioGroupItem } from "../src/components/radio-group.tsx";
 import {
   Select,
@@ -26,6 +33,7 @@ import {
 } from "../src/components/select.tsx";
 import { Switch } from "../src/components/switch.tsx";
 import { Tabs, TabsList, TabsTrigger } from "../src/components/tabs.tsx";
+import { Textarea } from "../src/components/textarea.tsx";
 
 // Not `new URL(…, import.meta.url)`: under happy-dom `URL` is the window's
 // class, which node:fs refuses as a file URL.
@@ -123,6 +131,72 @@ describe("touch sizes", () => {
     expect(classesOf(screen.getByRole("textbox"))).toEqual(
       expect.arrayContaining(["touch:h-10", "touch:text-base"]),
     );
+  });
+
+  it("Textarea keeps 16px text at every width", () => {
+    render(<Textarea aria-label="T" />);
+    expect(classesOf(screen.getByRole("textbox"))).toContain("touch:text-base");
+  });
+
+  it("HighlightedInput draws 40px, with 16px text in both layers", () => {
+    const { container } = render(
+      <HighlightedInput
+        aria-label="H"
+        value="a"
+        onValueChange={() => {}}
+        render={(text) => text}
+      />,
+    );
+    const box = container.firstElementChild as Element;
+    expect(classesOf(box)).toContain("touch:h-10");
+    const mirror = box.querySelector("[aria-hidden]") as Element;
+    for (const layer of [mirror, screen.getByRole("textbox")]) {
+      expect(classesOf(layer)).toContain("touch:text-base");
+    }
+  });
+
+  it("QueryBox suggestion rows are 44px rows", () => {
+    render(
+      <QueryBox
+        schema={todouSchema}
+        providers={{}}
+        value="har"
+        onValueChange={() => {}}
+        onSubmit={() => {}}
+        renderSubmitRow={(query, option) => <div {...option}>{query}</div>}
+        inputProps={{ "aria-label": "Search" }}
+      />,
+    );
+    act(() => screen.getByLabelText("Search").focus());
+    const rows = screen.getAllByRole("option");
+    expect(rows.length).toBeGreaterThan(1);
+    for (const row of rows) expect(classesOf(row)).toContain("touch:min-h-11");
+  });
+
+  it("FilterMenu rows are 44px rows; its search field keeps 16px text", () => {
+    const sections: FilterMenuSection<{ id: string }>[] = [
+      { id: "s", label: "S", rows: [{ id: "a" }, { id: "b" }] },
+    ];
+    render(
+      <FilterMenu
+        query=""
+        onQueryChange={() => {}}
+        sections={sections}
+        onSelect={() => {}}
+        renderRow={(row) => row.id}
+        inputLabel="Filter"
+        listLabel="Rows"
+      >
+        <button type="button">Pick</button>
+      </FilterMenu>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Pick" }));
+    expect(classesOf(screen.getByRole("combobox", { name: "Filter" }))).toEqual(
+      expect.arrayContaining(["touch:h-10", "touch:text-base"]),
+    );
+    const rows = screen.getAllByRole("option");
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(classesOf(row)).toContain("touch:min-h-11");
   });
 
   it("Select trigger grows at the default size; its items are 44px rows", () => {
