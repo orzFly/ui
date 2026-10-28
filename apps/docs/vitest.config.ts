@@ -3,6 +3,20 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: { conditions: ["@orz/source", ...defaultClientConditions] },
+  plugins: [
+    {
+      name: "uncached-glob",
+      // Vitest keys a cached module on its own source, so a module whose
+      // import.meta.glob expands to a file list keeps the old list after a file
+      // is added. It skips such a module only when the source spells
+      // `import.meta.glob(`, which a type argument (`glob<string>(`) defeats.
+      configureVitest({ defineCacheKeyGenerator }) {
+        defineCacheKeyGenerator(({ sourceCode }) =>
+          /\bimport\.meta\.glob\b/.test(sourceCode) ? false : undefined,
+        );
+      },
+    },
+  ],
   test: {
     // Its own module cache: the default one is shared at the workspace root, and
     // when the lockfile changes every parallel `pnpm -r test` run clears it at
