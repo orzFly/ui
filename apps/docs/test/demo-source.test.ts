@@ -20,8 +20,11 @@ describe("demo source", () => {
     const files = await loadDemoFiles("inbox");
     expect(files.map(({ name, group }) => `${group} ${name}`)).toEqual([
       "demo inbox.tsx",
+      "demo compose.tsx",
+      "demo keys.tsx",
+      "demo location.ts",
       "demo mailbox.ts",
-      "demo open-thread.ts",
+      "demo sidebar.tsx",
       "demo thread.tsx",
       "fixtures @orz/fixtures/inbox.ts",
     ]);
