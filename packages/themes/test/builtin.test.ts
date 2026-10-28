@@ -151,7 +151,6 @@ describe("the port from @orz/ui's styles.css", () => {
       "sidebar-ring",
     ],
     "solarized-dark": ["muted-foreground", "destructive"],
-    "catppuccin-latte": ["muted-foreground"],
     "gruvbox-light": ["muted-foreground"],
     "gruvbox-dark": ["destructive"],
     dracula: ["destructive"],
@@ -174,7 +173,11 @@ describe("the port from @orz/ui's styles.css", () => {
       ),
     );
 
-  it.each(Object.entries(PORTED))(
+  // Rebuilt from catppuccin/palette after the port; no ported value is meant
+  // to survive.
+  const REBUILT = ["catppuccin-latte", "catppuccin-mocha"];
+
+  it.each(Object.entries(PORTED).filter(([slug]) => !REBUILT.includes(slug)))(
     "changed no UI value of %s",
     (slug, [id, scheme]) => {
       const theme = builtinThemes.find((t) => t.id === id) as Theme;

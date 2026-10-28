@@ -19,14 +19,33 @@ describe("schemesOf", () => {
 });
 
 describe("variantsOf", () => {
-  it("unions the palettes' ids after default, light side first, once each", () => {
+  it("unions the palettes' ids after default, the side with the most first, once each", () => {
     expect(variantsOf(duo)).toEqual([
       { id: "default", label: "Default" },
-      { id: "soft", label: "Soft" },
       { id: "dim", label: "Dim" },
+      { id: "soft", label: "Soft" },
     ]);
     expect(variantsOf(night)).toEqual([{ id: "default", label: "Default" }]);
     expect(variantsOf(term).map((v) => v.id)).toEqual(["default", "hc"]);
+  });
+
+  it("takes the light side first on a tie", () => {
+    const even: Theme = {
+      ...duo,
+      dark: { ...(duo.dark as Palette), variants: { dim: { label: "Dim" } } },
+    };
+    expect(variantsOf(even).map((v) => v.id)).toEqual([
+      "default",
+      "soft",
+      "dim",
+    ]);
+  });
+
+  it("names default after the theme's defaultVariantLabel", () => {
+    expect(variantsOf({ ...night, defaultVariantLabel: "Mocha" })[0]).toEqual({
+      id: "default",
+      label: "Mocha",
+    });
   });
 
   it("throws when one id carries two labels", () => {

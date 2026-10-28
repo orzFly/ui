@@ -1,26 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-  builtinThemes,
-  resolvePalette,
-  schemesOf,
-  variantsOf,
-} from "../src/index.ts";
+import { builtinThemes, resolvePalette } from "../src/index.ts";
 import { contrast, rgbOf } from "./color.ts";
+import { failures, resolvedPalettes as resolved } from "./palettes.ts";
 
 /** WCAG AA for normal-size text, which every button and badge label is. */
 const AA = 4.5;
-
-// Every palette under every variant the theme offers; a variant a side lacks
-// resolves to that side's default, which is what the page shows.
-const resolved = builtinThemes.flatMap((theme) =>
-  schemesOf(theme).flatMap((scheme) =>
-    variantsOf(theme).map(({ id }) => ({
-      name: `${theme.id} ${scheme} ${id}`,
-      // biome-ignore lint/style/noNonNullAssertion: schemesOf lists only present sides
-      tokens: resolvePalette(theme, scheme, id)!.tokens,
-    })),
-  ),
-);
 
 describe("primary contrast", () => {
   it("clears AA for primary-foreground on primary, and primary text on the page", () => {
@@ -37,11 +21,7 @@ describe("primary contrast", () => {
         },
       ];
     });
-    expect(
-      rows
-        .filter((r) => r.ratio < AA)
-        .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`),
-    ).toEqual([]);
+    expect(failures("primary", rows, AA)).toEqual([]);
   });
 });
 
@@ -67,11 +47,7 @@ describe("text contrast", () => {
         ratio: contrast(rgbOf(tokens[text]), rgbOf(tokens[surface])),
       })),
     );
-    expect(
-      rows
-        .filter((r) => r.ratio < AA)
-        .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`),
-    ).toEqual([]);
+    expect(failures("text", rows, AA)).toEqual([]);
   });
 });
 

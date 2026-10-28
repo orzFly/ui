@@ -88,14 +88,20 @@ export interface Palette extends TerminalPalette {
   variants?: Record<string, Variant>;
 }
 
-export type TerminalTheme = { id: string; label: string } & (
-  | { light: TerminalPalette; dark?: TerminalPalette }
-  | { light?: TerminalPalette; dark: TerminalPalette }
-);
-export type Theme = { id: string; label: string } & (
-  | { light: Palette; dark?: Palette }
-  | { light?: Palette; dark: Palette }
-);
+interface ThemeHead {
+  id: string;
+  label: string;
+  /** What a picker calls the `default` variant; "Default" when absent. */
+  defaultVariantLabel?: string;
+}
+
+export type TerminalTheme = ThemeHead &
+  (
+    | { light: TerminalPalette; dark?: TerminalPalette }
+    | { light?: TerminalPalette; dark: TerminalPalette }
+  );
+export type Theme = ThemeHead &
+  ({ light: Palette; dark?: Palette } | { light?: Palette; dark: Palette });
 
 export type CustomTerminal =
   | {

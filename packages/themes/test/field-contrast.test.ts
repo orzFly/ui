@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  builtinThemes,
-  resolvePalette,
-  schemesOf,
-  variantsOf,
-} from "../src/index.ts";
 import { contrast, type Rgb, rgbOf } from "./color.ts";
+import { failures, resolvedPalettes as resolved } from "./palettes.ts";
 
 /**
  * WCAG 1.4.11's floor for the edge that identifies a component: an empty
@@ -15,16 +10,6 @@ const NON_TEXT = 3;
 
 /** The surfaces a field sits on: the page, a card, a dialog or popover. */
 const SURFACES = ["background", "card", "popover"] as const;
-
-const resolved = builtinThemes.flatMap((theme) =>
-  schemesOf(theme).flatMap((scheme) =>
-    variantsOf(theme).map(({ id }) => ({
-      name: `${theme.id} ${scheme} ${id}`,
-      // biome-ignore lint/style/noNonNullAssertion: schemesOf lists only present sides
-      tokens: resolvePalette(theme, scheme, id)!.tokens,
-    })),
-  ),
-);
 
 /** `value` painted over `surface`; default dark's `input` is white at an alpha. */
 function painted(value: string, surface: Rgb): Rgb {
@@ -47,10 +32,6 @@ describe("field edge contrast", () => {
       }),
     );
     expect(rows).toHaveLength(resolved.length * SURFACES.length);
-    expect(
-      rows
-        .filter((r) => r.ratio < NON_TEXT)
-        .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`),
-    ).toEqual([]);
+    expect(failures("field", rows, NON_TEXT)).toEqual([]);
   });
 });

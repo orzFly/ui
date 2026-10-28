@@ -38,10 +38,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const frappe: CustomTheme = {
+const creme: CustomTheme = {
   ...sunrise,
-  id: "custom-frappe",
-  label: "Frappé",
+  id: "custom-creme",
+  label: "Crème",
 };
 
 interface Setup extends ThemeMenuProps {
@@ -231,10 +231,10 @@ describe("ThemeMenu: filtering", () => {
   });
 
   it("folds diacritics", () => {
-    setup({ customs: [frappe] });
+    setup({ customs: [creme] });
     open();
-    type("frappe");
-    expect(rows()).toEqual(["Frappé"]);
+    type("creme");
+    expect(rows()).toEqual(["Crème"]);
   });
 
   it("says when nothing matches", () => {
@@ -358,17 +358,17 @@ describe("ThemeMenu: preview", () => {
 
   it("pins a variant's preview to a palette that has it under system", () => {
     const themes = setup({
-      pref: { ui: { theme: "catppuccin", mode: "system" } },
+      pref: { ui: { theme: "gruvbox", mode: "system" } },
     });
     open();
-    expect(highlighted()).toBe("Catppuccin");
+    expect(highlighted()).toBe("Gruvbox");
     key("ArrowRight");
     expect(highlighted()).toBe("Default");
     key("ArrowDown");
     expect(highlighted()).toBe("AMOLED (dark only)");
     settle();
     expect(themes.getPreview()).toEqual({
-      ui: { theme: "catppuccin", mode: "dark", variant: "amoled" },
+      ui: { theme: "gruvbox", mode: "dark", variant: "amoled" },
     });
     expect(themes.getResolved()).toMatchObject({
       colorScheme: "dark",
@@ -379,7 +379,7 @@ describe("ThemeMenu: preview", () => {
   it("does not pin by night", () => {
     const themes = setup({
       dark: true,
-      pref: { ui: { theme: "catppuccin", mode: "system" } },
+      pref: { ui: { theme: "gruvbox", mode: "system" } },
     });
     open();
     key("ArrowRight");

@@ -38,6 +38,7 @@ const theme: Theme = {
 - A variant is a partial override of one palette's tokens, and it is chosen for the whole theme.
   Picking AMOLED applies it to every palette that defines it, and a palette without it shows its
   default. An id means the same on both sides of a theme, so both palettes give it the same label.
+  A picker lists `default` first, under the theme's `defaultVariantLabel` or "Default".
 - A **terminal-only theme** (`TerminalTheme`) has terminal tokens and no UI tokens. It can be
   picked for a terminal, and it can be used before a UI mapping for it exists. Every `Theme` is
   also a `TerminalTheme`, so a terminal can follow any UI theme.
@@ -62,7 +63,7 @@ import { github } from "@orz/themes/themes/github";
 | `solarized` | ✓ | ✓ |
 | `vs` (Visual Studio) | ✓ | ✓ |
 | `github` | ✓ | ✓ |
-| `catppuccin` | Latte | Mocha |
+| `catppuccin` | Latte | Mocha, Frappé, Macchiato |
 | `gruvbox` | ✓ | ✓ |
 | `dracula` | | ✓ |
 | `nord` | | ✓ |
@@ -71,6 +72,12 @@ import { github } from "@orz/themes/themes/github";
 | `monokai` | | ✓ |
 
 Every dark palette has an `amoled` variant.
+
+Catppuccin has one light flavour and three dark ones, so its light side is always Latte and its
+variants pick the dark flavour: Mocha (the default), Frappé and Macchiato, then each again as Gray,
+where every background and text colour is the neutral grey of the same OKLab lightness, Latte
+included. It paints the published palette with no value adjusted, so a few of its pairs sit below
+the contrast floors the tests hold every other theme to; `test/palettes.ts` lists them.
 
 To add a theme, write a module in `src/themes/` and add it to `builtinThemes` in `src/builtin.ts`
 and to the exports in `src/index.ts`. The tests check every palette's tokens, its contrast, its
@@ -120,7 +127,7 @@ where it sets no selection, the selection is VS Code's fallback.
 | Picotera | derived from its own hues (see the module) | — |
 | Solarized | [Solarized](https://github.com/altercation/solarized) | MIT |
 | GitHub | [primer/github-vscode-theme](https://github.com/primer/github-vscode-theme) 6.3.5 | MIT |
-| Catppuccin | [catppuccin/palette](https://github.com/catppuccin/palette) 1.8.0 | MIT |
+| Catppuccin | [catppuccin/palette](https://github.com/catppuccin/palette) 1.8.0, UI tokens too | MIT |
 | Gruvbox | [morhetz/gruvbox](https://github.com/morhetz/gruvbox), medium contrast | MIT/X11 per its README; the repository has no licence file |
 | Dracula | [Dracula spec](https://github.com/dracula/spec) | MIT |
 | Nord | [nordtheme/alacritty](https://github.com/nordtheme/alacritty) | MIT |

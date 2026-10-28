@@ -23,21 +23,49 @@ type Rgb = [number, number, number];
 type Lab = [number, number, number];
 
 // Every palette under every variant its theme offers; a variant a side lacks
-// resolves to that side's default, which is what the page shows then.
+// resolves to that side's default, which is what the page shows then. One
+// that paints a side exactly as an earlier one does is listed once, under the
+// earlier name.
 const PALETTES = builtinThemes.flatMap((theme) =>
-  schemesOf(theme).flatMap((scheme) =>
-    variantsOf(theme).map(({ id }) => ({
-      name: `${theme.id} ${scheme} ${id}`,
-      scheme,
+  schemesOf(theme).flatMap((scheme) => {
+    const seen = new Set<string>();
+    return variantsOf(theme).flatMap(({ id }) => {
       // biome-ignore lint/style/noNonNullAssertion: schemesOf lists only present sides
-      tokens: resolvePalette(theme, scheme, id)!.tokens,
-    })),
-  ),
+      const { tokens } = resolvePalette(theme, scheme, id)!;
+      const key = JSON.stringify(tokens);
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [{ name: `${theme.id} ${scheme} ${id}`, scheme, tokens }];
+    });
+  }),
 );
 
+/** sRGB `#rrggbb` through CSS Color 4's matrices; Catppuccin's tokens are hex. */
+function hexOklab(hex: string): Lab {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const v = Number.parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  const long = Math.cbrt(
+    0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b,
+  );
+  const medium = Math.cbrt(
+    0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b,
+  );
+  const short = Math.cbrt(
+    0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b,
+  );
+  return [
+    0.2104542553 * long + 0.793617785 * medium - 0.0040720468 * short,
+    1.9779984951 * long - 2.428592205 * medium + 0.4505937099 * short,
+    0.0259040371 * long + 0.7827717662 * medium - 0.808675766 * short,
+  ];
+}
+
 function oklab(spec: string): Lab {
+  if (/^#[0-9a-f]{6}$/i.test(spec)) return hexOklab(spec);
   const m = /^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)$/.exec(spec);
-  if (!m) throw new Error(`not a plain oklch() colour: ${spec}`);
+  if (!m) throw new Error(`not a plain oklch() or hex colour: ${spec}`);
   const hue = (Number(m[3]) * Math.PI) / 180;
   return [
     Number(m[1]),
@@ -90,10 +118,51 @@ const MIX_CLASS =
   /text-\[color-mix\(in_oklab,var\(--destructive\),var\(--foreground\)_(\d+)%\)\]/;
 const MIX = MIX_CLASS.exec(BUTTON);
 
-const failures = (rows: { name: string; ratio: number }[], floor: number) =>
-  rows
-    .filter((r) => r.ratio < floor)
+/**
+ * Rows kept below a floor on purpose, by test and row name, each holding the
+ * lowest ratio it may fall to: the palette's own, rounded down, so a change
+ * that makes one worse still fails. Catppuccin paints its published colours
+ * unadjusted (@orz/themes' src/themes/catppuccin.ts). On its light side
+ * "default" is Latte and "mocha-gray" is Latte Gray.
+ */
+const EXEMPT: Record<string, Record<string, number>> = {
+  button: {
+    "catppuccin light default@0.2": 4.36,
+    "catppuccin light mocha-gray@0.2": 4.38,
+    "catppuccin dark frappe@0.3": 4.18,
+    "catppuccin dark frappe-gray@0.3": 4.13,
+  },
+  "badge success": {
+    "catppuccin light default@0.2": 4.21,
+    "catppuccin light mocha-gray@0.2": 4.19,
+    "catppuccin dark frappe@0.3": 3.97,
+    "catppuccin dark frappe-gray@0.3": 3.92,
+  },
+  "badge warning": {
+    "catppuccin light default@0.1": 4.27,
+    "catppuccin light default@0.2": 3.94,
+    "catppuccin light mocha-gray@0.1": 4.3,
+    "catppuccin light mocha-gray@0.2": 3.95,
+    "catppuccin dark frappe@0.3": 3.97,
+    "catppuccin dark frappe-gray@0.3": 3.91,
+  },
+};
+
+/** The rows under their floor, and every exemption that no longer names a row under `floor`. */
+function failures(
+  test: string,
+  rows: { name: string; ratio: number }[],
+  floor: number,
+): string[] {
+  const exempt = EXEMPT[test] ?? {};
+  const below = rows
+    .filter((r) => r.ratio < (exempt[r.name] ?? floor))
     .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`);
+  const stale = Object.keys(exempt)
+    .filter((name) => !rows.some((r) => r.name === name && r.ratio < floor))
+    .map((name) => `stale exemption: ${name}`);
+  return [...below, ...stale];
+}
 
 describe("destructive variant contrast", () => {
   it("mixes --foreground into the label rather than using bare --destructive", () => {
@@ -113,7 +182,7 @@ describe("destructive variant contrast", () => {
         ratio: contrast(label, over(srgb(destructive), page, alpha)),
       }));
     });
-    expect(failures(rows, AA)).toEqual([]);
+    expect(failures("button", rows, AA)).toEqual([]);
   });
 });
 
@@ -165,7 +234,7 @@ describe("destructive menu item contrast", () => {
         ),
       }));
     });
-    expect(failures(rows, AA)).toEqual([]);
+    expect(failures("menu", rows, AA)).toEqual([]);
   });
 
   it("keeps the icon's bare --destructive above 3:1", () => {
@@ -178,7 +247,7 @@ describe("destructive menu item contrast", () => {
         ratio: contrast(srgb(oklab(tokens.destructive)), bg),
       })),
     );
-    expect(failures(rows, NON_TEXT)).toEqual([]);
+    expect(failures("menu icon", rows, NON_TEXT)).toEqual([]);
   });
 });
 
@@ -207,11 +276,7 @@ describe.each(["success", "warning"] as const)(
           ratio: contrast(label, over(srgb(colour), page, alpha)),
         }));
       });
-      expect(
-        rows
-          .filter((r) => r.ratio < AA)
-          .map((r) => `${r.name} ${r.ratio.toFixed(2)}:1`),
-      ).toEqual([]);
+      expect(failures(`badge ${status}`, rows, AA)).toEqual([]);
     });
   },
 );

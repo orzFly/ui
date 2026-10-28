@@ -29,15 +29,21 @@ function variantOf<V>(
 }
 
 /**
- * `default` (label "Default") first, then each id in palette order (light,
- * then dark), once. Throws when two palettes give one id different labels,
- * which would leave a menu showing one entry that means two things.
+ * `default` (labelled `defaultVariantLabel`, else "Default") first, then each
+ * id once, in the order of the palette with the most variants (light on a
+ * tie), then the other's. Throws when two palettes give one id different
+ * labels, which would leave a menu showing one entry that means two things.
  */
 export function variantsOf(
   theme: TerminalTheme,
 ): { id: string; label: string }[] {
-  const out = [{ id: DEFAULT_VARIANT, label: "Default" }];
-  for (const scheme of schemesOf(theme)) {
+  const out = [
+    { id: DEFAULT_VARIANT, label: theme.defaultVariantLabel ?? "Default" },
+  ];
+  const count = (scheme: ColorScheme) =>
+    Object.keys(theme[scheme]?.variants ?? {}).length;
+  const schemes = schemesOf(theme).sort((a, b) => count(b) - count(a));
+  for (const scheme of schemes) {
     const variants = theme[scheme]?.variants ?? {};
     for (const [id, { label }] of Object.entries(variants)) {
       if (id === DEFAULT_VARIANT) continue;
