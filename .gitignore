@@ -11,6 +11,7 @@ dist/
 coverage/
 storybook-static/
 .claude/*
+.claude/settings.local.json
 !.claude/skills/
 
 # impeccable-ignore-start
