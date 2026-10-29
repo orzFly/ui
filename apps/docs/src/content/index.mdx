@@ -1,7 +1,7 @@
 export const meta = {
   title: "@orz/ui",
   description:
-    "React components, a theme store, and guidelines for tools people live in all day, on a desktop with a mouse and on a phone with a thumb.",
+    "A UI library by AI, for AI: React components, a theme store and guidelines for tools people live in all day, on a desktop with a mouse and on a phone with a thumb.",
   layout: "bare",
 };
 
@@ -10,6 +10,7 @@ import { Link } from "../router.tsx";
 <section className="border-b">
   <div className="mx-auto max-w-5xl px-5 py-14 md:px-10 md:py-20">
     {/* Text on its own lines inside JSX would become a markdown paragraph, a <p> in the <p>. */}
+    <p className="mb-4 font-medium text-muted-foreground text-sm">A UI library by AI, for AI.</p>
     <h1 className="max-w-3xl font-semibold text-4xl tracking-tight md:text-5xl">Components for tools people live in all day.</h1>
     <p className="mt-5 max-w-2xl text-lg text-muted-foreground">React and Tailwind CSS v4 components, a theme store, and viewers for what tools produce: logs, diffs, terminal recordings, markdown, diagrams and binaries. Dense with a mouse, generous with a thumb.</p>
     <div className="mt-8 flex flex-wrap items-center gap-3" data-pagefind-ignore>
@@ -22,6 +23,18 @@ import { Link } from "../router.tsx";
 
 <section className="mx-auto max-w-5xl px-5 py-10 md:px-10">
   <Doors />
+</section>
+
+<section className="mx-auto max-w-5xl px-5 pb-10 md:px-10">
+
+## By AI, for AI
+
+<div className="grid gap-x-8 gap-y-4 leading-7 md:grid-cols-3">
+  <p><strong>By AI.</strong> Coding agents write every package here, and a person decides what ships.</p>
+  <p><strong>For AI.</strong> Agents build apps on it, so each guideline is written to be followed as written.</p>
+  <p><strong>For people.</strong> Those apps are tools someone keeps open all day, and every component answers to them.</p>
+</div>
+
 </section>
 
 <section className="mx-auto max-w-5xl px-5 pb-16 md:px-10">

@@ -71,9 +71,10 @@ a thumb, in whatever theme its user picked, without the app branching on any of 
 
 ## Brand Commitments
 
-- Identity: "A UI library by AI, for AI." (the GitHub repository's description), alongside the
-  docs home's "Components for tools people live in all day." Both hold; the site does not yet say
-  the first.
+- Identity: "A UI library by AI, for AI." (the GitHub repository's description, and the line
+  above the docs home's heading), alongside that heading, "Components for tools people live in all
+  day." Both hold: the home page's "By AI, for AI" section says the first is about who writes and
+  reads the library, the second about who its apps are for.
 - Names: `@orz/ui` and `@orz/ui-<name>`; the repository is `orzui`.
 - Voice (`/guidelines/content/writing/`): plain, calm, exact; about the thing, not the app; never
   blaming; the same word for the same thing; sentence case everywhere.
