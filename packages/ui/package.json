@@ -1,6 +1,6 @@
 {
   "name": "@orz/ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React primitives, patterns, hooks and the theme store",
   "license": "BSD-3-Clause",
   "repository": {

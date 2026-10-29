@@ -1,6 +1,6 @@
 {
   "name": "@orz/ui-hex",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A hex view, editor and data inspector",
   "license": "BSD-3-Clause",
   "repository": {
