@@ -168,10 +168,12 @@ function serveRendered(server: ViteDevServer) {
   });
 }
 
+// Files only: Vite dev resolves every watched path as an import of the virtual module, and a
+// directory does not resolve.
 const filesUnder = (dir: string) =>
-  readdirSync(dir, { recursive: true, encoding: "utf8" }).map((file) =>
-    join(dir, file),
-  );
+  readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name));
 
 /**
  * What the pages restate from the code, as virtual modules worked out from it (data.ts):
