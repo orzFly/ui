@@ -657,6 +657,16 @@ describe("AnsiView chrome details", () => {
     expect(screen.queryByRole("link", { name: "Download" })).toBeNull();
   });
 
+  it("search box draws a field's edge and rings while its input has focus", () => {
+    render(<AnsiView chrome="file" filename="a.log" text="x" />);
+    const box = screen.getByRole("searchbox", { name: "Search log" })
+      .parentElement as HTMLElement;
+    expect(box.dataset.slot).toBe("ansi-search");
+    expect(box.className).toContain("border-input");
+    // Not focus-within: a toggle inside rings itself.
+    expect(box.className).toContain("has-[input:focus-visible]:focus-ring");
+  });
+
   it("file without downloadUrl has no Download link", () => {
     render(<AnsiView chrome="file" filename="a.ansi" text="x" />);
     expect(screen.queryByRole("link", { name: "Download" })).toBeNull();

@@ -168,8 +168,9 @@ export function SearchBox({
   const invalid = counter.error !== null && query !== "";
   return (
     <div
+      data-slot="ansi-search"
       className={cn(
-        "flex min-w-0 items-center gap-0.5 rounded-[min(var(--radius-control),8px)] border border-border bg-background pl-1.5",
+        "flex min-w-0 items-center gap-0.5 rounded-[min(var(--radius-control),8px)] border border-input bg-background pl-1.5 has-[input:focus-visible]:focus-ring",
         className,
       )}
     >

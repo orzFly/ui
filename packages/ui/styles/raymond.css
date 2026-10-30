@@ -12,7 +12,7 @@
    wins; and a component's own classes win too, so a rule mostly reassigns a
    token on its slot (`--primary` on a default button, which its bg-primary
    reads) rather than setting the property the component sets. Each slot a
-   rule names exists in @orz/ui (test/raymond.test.ts). */
+   rule names exists in an @orz/ package (test/raymond.test.ts). */
 
 @layer base {
   [data-style="raymond"] {
@@ -139,10 +139,16 @@
   [data-style="raymond"] [data-slot="input"],
   [data-style="raymond"] [data-slot="textarea"],
   [data-style="raymond"] [data-slot="select-trigger"],
-  [data-style="raymond"] [data-slot="highlighted-input"] {
+  [data-style="raymond"] [data-slot="highlighted-input"],
+  [data-style="raymond"] [data-slot="ansi-search"] {
     --input: transparent;
     background-clip: padding-box;
     box-shadow: var(--shadow-sunken);
+  }
+  /* AnsiView's search box, an input and its buttons in one frame, fills
+     with the window colour as a field does. */
+  [data-style="raymond"] [data-slot="ansi-search"] {
+    --background: var(--window);
   }
   [data-style="raymond"] [data-slot="table-container"] {
     padding: 2px;
