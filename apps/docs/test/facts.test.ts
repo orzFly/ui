@@ -1,7 +1,12 @@
 // Sentences that name what the code knows, where the reason around the names is the point and
 // the names stay prose: each is held to the code here rather than generated.
 import { readFileSync } from "node:fs";
-import { builtinThemes, defaultStyle } from "@orz/themes";
+import {
+  builtinThemes,
+  defaultStyle,
+  raymondStyle,
+  themesForStyle,
+} from "@orz/themes";
 import { createThemeStore, useStyle } from "@orz/ui/theme";
 import { describe, expect, it } from "vitest";
 import { workspaces } from "../../../scripts/install.ts";
@@ -99,6 +104,26 @@ describe("theming", () => {
     expect(
       createThemeStore({ storageKey: "facts", themes }).getStyles(),
     ).toEqual([defaultStyle]);
+  });
+
+  it("names how to offer raymond", () => {
+    expect(named(text, / whose built-in themes\s+include its own/)).toEqual([
+      "@orz/themes",
+      "@orz/ui",
+      "@orz/ui/styles.css",
+      "@orz/ui/styles/raymond.css",
+      "raymondStyle",
+    ]);
+    expect(raymondStyle.id).toBe("raymond");
+    expect(themesForStyle(builtinThemes, raymondStyle.id)).not.toEqual([]);
+    expect(
+      Object.keys(workspaces().get("@orz/ui")?.manifest.exports ?? {}),
+    ).toContain("./styles/*.css");
+    expect(
+      readFileSync(
+        new URL("../../../packages/ui/styles/raymond.css", import.meta.url),
+      ),
+    ).toBeTruthy();
   });
 
   it("names the calls that switch the style", () => {

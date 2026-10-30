@@ -63,6 +63,9 @@ describe("builtinThemes", () => {
 
   it("puts the terminal on the page's own background and foreground", () => {
     for (const { theme, scheme, palette } of palettes) {
+      // The Windows console keeps its own black: its white and bright yellow
+      // vanish on the 3D face.
+      if (theme.id === "windows-standard") continue;
       for (const [terminal, ui] of [
         ["terminal-background", "background"],
         ["terminal-foreground", "foreground"],

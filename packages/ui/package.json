@@ -39,12 +39,14 @@
       "default": "./dist/theme/index.js"
     },
     "./styles.css": "./styles.css",
-    "./theme.css": "./theme.css"
+    "./theme.css": "./theme.css",
+    "./styles/*.css": "./styles/*.css"
   },
   "files": [
     "dist",
     "styles.css",
     "theme.css",
+    "styles",
     "vendor"
   ],
   "publishConfig": {

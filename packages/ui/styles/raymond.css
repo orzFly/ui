@@ -1,0 +1,331 @@
+/* raymond: Windows 2000. The classic grey face, two-tone bevels (raised on
+   buttons and panels, sunken on fields and list boxes, inverted while a
+   button is held), square corners, Tahoma at 11px, the gradient title bar on
+   dialogs and sheets, a classic tab strip, group boxes and a dotted focus
+   rectangle. Import it after @orz/ui/styles.css; it draws only under
+   data-style="raymond", which the theme store writes when a user picks the
+   style.
+
+   Two parts. The tokens come first: the style tokens theme.css declares,
+   reassigned. Then the slot rules, for what a token cannot draw. They sit in
+   the components layer, below the utilities, so a caller's className still
+   wins; and a component's own classes win too, so a rule mostly reassigns a
+   token on its slot (`--primary` on a default button, which its bg-primary
+   reads) rather than setting the property the component sets. Each slot a
+   rule names exists in @orz/ui (test/raymond.test.ts). */
+
+@layer base {
+  [data-style="raymond"] {
+    /* The style's own colours, which a raymond palette supplies (Windows
+       Standard's are Windows 2000's); these fallbacks draw a custom theme
+       made without them from its UI tokens. A palette's values come from the
+       theme store's own rule, which outranks this layer. */
+    --3d-face: var(--muted);
+    --3d-highlight: color-mix(in oklab, var(--muted), #fff 80%);
+    --3d-light: var(--muted);
+    --3d-shadow: color-mix(in oklab, var(--muted), var(--foreground) 40%);
+    --3d-dark-shadow: color-mix(in oklab, var(--muted), var(--foreground) 70%);
+    --window: var(--popover);
+    --caption: var(--primary);
+    --caption-gradient: color-mix(in oklab, var(--primary), #fff 60%);
+    --caption-foreground: var(--primary-foreground);
+    --caption-inactive: var(--muted-foreground);
+    --caption-inactive-gradient: color-mix(
+      in oklab,
+      var(--muted-foreground),
+      #fff 50%
+    );
+    --caption-inactive-foreground: var(--muted);
+    --info: var(--popover);
+    --info-foreground: var(--popover-foreground);
+
+    /* 23px push buttons at a fine pointer; a coarse one grows every control
+       to the literal touch: sizes, which no token reaches. */
+    --spacing-control-xs: 1.125rem;
+    --spacing-control-sm: 1.3125rem;
+    --spacing-control: 1.4375rem;
+    --spacing-control-lg: 1.5625rem;
+    --spacing-row: 1.125rem;
+    --spacing-row-head: 1.125rem;
+    --spacing-row-dense: 1rem;
+    --spacing-chip: 1rem;
+
+    --radius: 0;
+    --radius-control: 0;
+    --radius-item: 0;
+    --radius-frame: 0;
+    --radius-surface: 0;
+    --radius-overlay: 0;
+    --radius-chip: 0;
+
+    /* Tahoma at 11px for everything a component sets; no font ships, since
+       Tahoma's licence does not allow it. */
+    --text-ui: 0.6875rem;
+    --text-ui--line-height: 0.8125rem;
+    --text-ui-sm: 0.6875rem;
+    --text-ui-sm--line-height: 0.8125rem;
+    --text-ui-xs: 0.6875rem;
+    --text-ui-xs--line-height: 0.8125rem;
+    --text-ui-2xs: 0.6875rem;
+    --text-ui-3xs: 0.6875rem;
+    --text-data: 0.75rem;
+    --text-title: 0.6875rem;
+    --text-title--line-height: 0.8125rem;
+    --font-ui:
+      Tahoma, "Segoe UI", Verdana, ui-sans-serif, system-ui, sans-serif,
+      "Apple Color Emoji", "Segoe UI Emoji";
+    --font-mono: "Courier New", "Lucida Console", ui-monospace, monospace;
+    --font-heading: var(--font-ui);
+
+    /* Light from the top left: the face's highlight and light on the lit
+       edges, its shadow and dark shadow on the others, two pixels each. */
+    --shadow-raised:
+      inset -1px -1px var(--3d-dark-shadow), inset 1px 1px var(--3d-highlight),
+      inset -2px -2px var(--3d-shadow), inset 2px 2px var(--3d-light);
+    --shadow-sunken:
+      inset 1px 1px var(--3d-shadow), inset -1px -1px var(--3d-highlight),
+      inset 2px 2px var(--3d-dark-shadow), inset -2px -2px var(--3d-light);
+    --shadow-pressed:
+      inset 0 0 0 1px var(--3d-dark-shadow), inset 0 0 0 2px var(--3d-shadow);
+    --shadow-menu: var(--shadow-raised);
+    --shadow-overlay: var(--shadow-raised);
+    /* A highlighted or selected item is filled with the highlight colour;
+       nothing else marks it. */
+    --state-cue: 0 0 #0000;
+
+    /* A modal window does not dim what it covers. */
+    --color-scrim: transparent;
+    --color-field: var(--window);
+
+    /* The dotted focus rectangle, in ring at 3:1. */
+    --focus-width: 1px;
+    --focus-style: dotted;
+    --focus-offset: 1px;
+
+    /* No overlay moves; a menu fades in, as Windows 2000's do. */
+    --duration-overlay: 100ms;
+    --overlay-zoom: 1;
+    --translate-overlay: 0;
+    --duration-sheet: 100ms;
+    --translate-sheet: 0;
+  }
+}
+
+@layer components {
+  /* Push buttons: the face, never the highlight colour, with the default
+     button's black frame; the focus rectangle inside the bevel. A Button is
+     matched by its variant and size, which it alone sets: as a trigger or a
+     close button it takes that part's data-slot. */
+  [data-style="raymond"] [data-variant][data-size] {
+    --focus-offset: -4px;
+  }
+  [data-style="raymond"] [data-variant="default"][data-size] {
+    --primary: var(--3d-face);
+    --primary-foreground: var(--foreground);
+    --shadow-raised:
+      inset 0 0 0 1px var(--foreground), inset -2px -2px var(--3d-dark-shadow),
+      inset 2px 2px var(--3d-highlight), inset -3px -3px var(--3d-shadow),
+      inset 3px 3px var(--3d-light);
+  }
+  [data-style="raymond"] [data-variant="outline"][data-size] {
+    --input: transparent;
+    --background: var(--3d-face);
+  }
+
+  /* Fields and list boxes: sunken, on the window colour. The border gives
+     way to the bevel, which draws the edge at 3:1 in its dark shadow. */
+  [data-style="raymond"] [data-slot="input"],
+  [data-style="raymond"] [data-slot="textarea"],
+  [data-style="raymond"] [data-slot="select-trigger"],
+  [data-style="raymond"] [data-slot="highlighted-input"] {
+    --input: transparent;
+    background-clip: padding-box;
+    box-shadow: var(--shadow-sunken);
+  }
+  [data-style="raymond"] [data-slot="table-container"] {
+    padding: 2px;
+    background-color: var(--window);
+    box-shadow: var(--shadow-sunken);
+  }
+  /* A list box's column headers are raised buttons; its rows carry no
+     rules. */
+  [data-style="raymond"] [data-slot="table-head"] {
+    box-shadow: var(--shadow-raised);
+  }
+  [data-style="raymond"] [data-slot="table-row"] {
+    border-bottom-color: transparent;
+  }
+  [data-style="raymond"] [data-slot="table-row"][data-state="selected"] {
+    --accent: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  /* A highlighted item takes the highlight colour, the palette's primary;
+     accent stays the soft fill an app's own rows hover in. */
+  [data-style="raymond"] [data-slot="dropdown-menu-item"],
+  [data-style="raymond"] [data-slot="dropdown-menu-checkbox-item"],
+  [data-style="raymond"] [data-slot="dropdown-menu-radio-item"],
+  [data-style="raymond"] [data-slot="dropdown-menu-sub-trigger"],
+  [data-style="raymond"] [data-slot="select-item"] {
+    --accent: var(--primary);
+    --accent-foreground: var(--primary-foreground);
+  }
+
+  /* Check boxes and option buttons: a sunken white well, the mark in black. */
+  [data-style="raymond"] [data-slot="checkbox"],
+  [data-style="raymond"] [data-slot="radio-group-item"] {
+    --primary: var(--window);
+    --primary-foreground: var(--foreground);
+    --input: transparent;
+    background-color: var(--window);
+    background-clip: padding-box;
+  }
+
+  /* The classic tab strip: tabs raised from the strip's lit edge, the
+     current one two pixels larger every way but down, covering the edge so
+     it joins what lies below. */
+  [data-style="raymond"] [data-slot="tabs-list"] {
+    --muted: var(--3d-face);
+    --muted-foreground: var(--foreground);
+    padding: 2px 2px 0;
+    border-bottom-color: var(--3d-highlight);
+  }
+  [data-style="raymond"] [data-slot="tabs-trigger"] {
+    --border: transparent;
+    --radius-item: 3px 3px 0 0;
+    --focus-offset: -3px;
+    --tab-cue:
+      inset 1px 1px var(--3d-highlight), inset -1px 0 var(--3d-dark-shadow),
+      inset -2px 0 var(--3d-shadow);
+    margin-top: 2px;
+    box-shadow: var(--tab-cue);
+  }
+  [data-style="raymond"] [data-slot="tabs-trigger"][data-state="active"] {
+    z-index: 1;
+    margin: 0 -2px -1px;
+    padding-inline: calc(var(--spacing) * 3 + 2px);
+  }
+
+  /* Window title bars: a dialog's or a sheet's title spans the window's top
+     in the caption gradient, grey while the window does not hold focus. */
+  [data-style="raymond"] [data-slot="dialog-title"],
+  [data-style="raymond"] [data-slot="sheet-title"] {
+    --foreground: var(--caption-foreground);
+    --font-weight-medium: 700;
+    min-height: 1.125rem;
+    margin: calc(var(--spacing) * -4 + 3px) calc(var(--spacing) * -4 + 3px) 0;
+    padding: 0 2px 0 3px;
+    color: var(--caption-foreground);
+    background-image: linear-gradient(
+      to right,
+      var(--caption),
+      color-mix(in oklab, var(--caption), var(--caption-gradient)) 60%,
+      var(--caption-gradient)
+    );
+  }
+  [data-style="raymond"]
+    :is([data-slot="dialog-content"], [data-slot="sheet-content"]):not(
+      :focus-within
+    )
+    :is([data-slot="dialog-title"], [data-slot="sheet-title"]) {
+    --foreground: var(--caption-inactive-foreground);
+    color: var(--caption-inactive-foreground);
+    background-image: linear-gradient(
+      to right,
+      var(--caption-inactive),
+      var(--caption-inactive-gradient)
+    );
+  }
+  /* A dialog's buttons sit on its face, under no rule. */
+  [data-style="raymond"] [data-slot="dialog-footer"] {
+    --muted: transparent;
+    border-top-color: transparent;
+  }
+  /* The close box sits in the title bar, a small raised button. */
+  [data-style="raymond"]
+    :is([data-slot="dialog-content"], [data-slot="sheet-content"])
+    > [data-slot="dialog-close"],
+  [data-style="raymond"]
+    [data-slot="sheet-content"]
+    > [data-slot="sheet-close"] {
+    --spacing-control-sm: 0.875rem;
+    --muted: var(--3d-face);
+    background-color: var(--3d-face);
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* Group boxes: an etched frame, the header its legend on the top line. */
+  [data-style="raymond"] [data-slot="card"] {
+    /* The ring gives way to the etched frame. */
+    --tw-ring-offset-width: -1px;
+    position: relative;
+    isolation: isolate;
+  }
+  [data-style="raymond"] [data-slot="card"]::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0 1px 1px 0;
+    border: 1px solid var(--3d-shadow);
+    box-shadow:
+      inset 1px 1px var(--3d-highlight),
+      1px 1px var(--3d-highlight);
+    pointer-events: none;
+  }
+  [data-style="raymond"]
+    [data-slot="card"]:has(> [data-slot="card-header"])::before {
+    top: calc(var(--spacing-row) / 2);
+  }
+  [data-style="raymond"] [data-slot="card-header"] {
+    --muted: transparent;
+    border-bottom-color: transparent;
+  }
+  /* The line breaks around the legend: each part masks half the gap on
+     either side of it with the card's colour. */
+  [data-style="raymond"]
+    [data-slot="card-header"]
+    > :is(
+      [data-slot="module-marker"],
+      [data-slot="card-title"],
+      [data-slot="card-description"]
+    ) {
+    outline: calc(var(--spacing) * 1) solid var(--card);
+    background-color: var(--card);
+  }
+  [data-style="raymond"] [data-slot="card-footer"] {
+    --muted: transparent;
+    border-top-color: transparent;
+  }
+
+  /* Menus and their separators: an etched line. */
+  [data-style="raymond"] [data-slot="dropdown-menu-separator"],
+  [data-style="raymond"] [data-slot="select-separator"] {
+    box-shadow: 0 1px var(--3d-highlight);
+  }
+  [data-style="raymond"]
+    [data-slot="separator"][data-orientation="horizontal"] {
+    box-shadow: 0 1px var(--3d-highlight);
+  }
+  [data-style="raymond"] [data-slot="separator"][data-orientation="vertical"] {
+    box-shadow: 1px 0 var(--3d-highlight);
+  }
+
+  /* Tooltips: the info colours, framed in their text colour. */
+  [data-style="raymond"] [data-slot="tooltip-content"] {
+    --foreground: var(--info);
+    --background: var(--info-foreground);
+    border: 1px solid var(--info-foreground);
+  }
+
+  [data-style="raymond"] [data-slot="dialog-overlay"] {
+    --blur-xs: 0;
+  }
+}
+
+/* Code reads on the window colour, as in an editor, not on the face: a
+   syntax colour held to the page would fall under 4.5:1 on the grey. Not in
+   a layer, because @orz/ui-code's own rule for the surface is not. */
+[data-style="raymond"] diffs-container {
+  --diffs-light-bg: var(--window);
+  --diffs-dark-bg: var(--window);
+}

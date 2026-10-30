@@ -18,9 +18,13 @@ import { proSand } from "./themes/pro-sand.ts";
 import { solarized } from "./themes/solarized.ts";
 import { tokyoNight } from "./themes/tokyo-night.ts";
 import { vs } from "./themes/vs.ts";
+import { windowsStandard } from "./themes/windows-standard.ts";
 import type { Theme } from "./types.ts";
 
-/** Every built-in theme, two-palette themes first. */
+/**
+ * Every built-in theme: the default style's, two-palette themes first, then
+ * raymond's.
+ */
 export const builtinThemes: readonly Theme[] = [
   defaultTheme,
   picotera,
@@ -42,4 +46,5 @@ export const builtinThemes: readonly Theme[] = [
   tokyoNight,
   oneDark,
   monokai,
+  windowsStandard,
 ];

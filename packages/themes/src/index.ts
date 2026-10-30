@@ -17,6 +17,7 @@ export {
 export {
   DEFAULT_STYLE,
   defaultStyle,
+  raymondStyle,
   stylesOf,
   themesForStyle,
 } from "./styles.ts";
@@ -41,6 +42,7 @@ export { proSand } from "./themes/pro-sand.ts";
 export { solarized } from "./themes/solarized.ts";
 export { tokyoNight } from "./themes/tokyo-night.ts";
 export { vs } from "./themes/vs.ts";
+export { windowsStandard } from "./themes/windows-standard.ts";
 export {
   DEFAULT_VARIANT,
   LATE_TOKEN_NAMES,

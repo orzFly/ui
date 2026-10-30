@@ -4,10 +4,18 @@ import { builtinThemes, resolvePalette } from "../src/index.ts";
 import { contrast, rgbOf } from "../src/rgb.ts";
 import { failures, resolvedPalettes as resolved } from "./palettes.ts";
 
-describe.each(CONTRAST_CHECKS)("$id contrast", ({ id, floor }) => {
+// A check id names one floor; each style may add its own pairs under it.
+const floors = new Map(CONTRAST_CHECKS.map(({ id, floor }) => [id, floor]));
+
+describe.each([...floors])("%s contrast", (id, floor) => {
   it(`clears ${floor}:1 for every pair of the check`, () => {
-    const rows = resolved.flatMap(({ name, tokens }) =>
-      contrastRows(tokens)
+    expect(
+      new Set(
+        CONTRAST_CHECKS.filter((check) => check.id === id).map((c) => c.floor),
+      ).size,
+    ).toBe(1);
+    const rows = resolved.flatMap(({ name, tokens, styles }) =>
+      contrastRows(tokens, styles)
         .filter((row) => row.check === id)
         .map((row) => ({
           name: `${name} ${row.foreground}/${row.surface}`,

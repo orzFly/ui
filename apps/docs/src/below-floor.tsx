@@ -3,6 +3,7 @@ import {
   DEFAULT_VARIANT,
   resolvePalette,
   schemesOf,
+  stylesOf,
   type TokenName,
   type Tokens,
   variantsOf,
@@ -44,7 +45,7 @@ function shortfalls(): Shortfall[] {
         const variants = names.includes("") ? "" : names.join(", ");
         const palette = `${theme.label} ${side}${variants ? ` · ${variants}` : ""}`;
         const byToken = new Map<TokenName, Shortfall>();
-        for (const row of contrastRows(tokens)) {
+        for (const row of contrastRows(tokens, stylesOf(theme))) {
           if (row.ratio >= row.floor) continue;
           const seen = byToken.get(row.foreground);
           if (seen) {

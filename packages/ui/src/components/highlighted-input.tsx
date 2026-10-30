@@ -82,8 +82,9 @@ export function HighlightedInput({
 
   return (
     <div
+      data-slot="highlighted-input"
       className={cn(
-        "relative h-control rounded-control touch:h-10 border border-input bg-transparent transition-colors focus-within:focus-ring dark:bg-input/15",
+        "relative h-control rounded-control touch:h-10 border border-input bg-field transition-colors focus-within:focus-ring dark:bg-input/15",
         className,
       )}
     >

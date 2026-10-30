@@ -49,7 +49,8 @@ const theme: Theme = {
 - A theme belongs to the **styles** it lists in `styles`, by id; absent, it belongs to the default
   style (`DEFAULT_STYLE`, described by `defaultStyle`). A `Style` is `{ id, label, tokens? }`, where
   `tokens` names the colours beyond the UI tokens that its palettes supply in `styleTokens`. Every
-  built-in theme is in the default style.
+  built-in theme is in the default style but Windows Standard, which is raymond's (`raymondStyle`,
+  drawn by `@orz/ui/styles/raymond.css`).
 
 Themes are plain JSON with no functions or classes, so a theme built by hand, imported or composed
 can be stored, sent and compared like a built-in one.
@@ -87,6 +88,7 @@ import { github } from "@orz/themes/themes/github";
 | Tokyo Night | `tokyoNight` (`tokyo-night`) |  | ✓ |
 | One Dark | `oneDark` (`one-dark`) |  | ✓ |
 | Monokai | `monokai` |  | ✓ |
+| Windows Standard | `windowsStandard` (`windows-standard`) | ✓ |  |
 
 Every dark palette also has an `amoled` variant.
 <!-- /generated -->
@@ -159,7 +161,7 @@ syntax theme and its JSON round trip.
 |---|---|
 | `@orz/themes` | `builtinThemes`, each built-in theme, the functions above but `contrastRows`, `TOKEN_NAMES`, `TERMINAL_TOKEN_NAMES`, `LATE_TOKEN_NAMES`, `DEFAULT_VARIANT`, types |
 | `@orz/themes/contrast` | `contrastRows`, `CONTRAST_CHECKS`, `ContrastCheck`, `ContrastRow` |
-| `@orz/themes/themes/<name>` | `catppuccin`, `default`, `dracula`, `github`, `gruvbox`, `monokai`, `nord`, `one-dark`, `picotera`, `pro-citrus`, `pro-graphite`, `pro-lagoon`, `pro-lavender`, `pro-matcha`, `pro-nord`, `pro-sakura`, `pro-sand`, `solarized`, `tokyo-night`, `vs` |
+| `@orz/themes/themes/<name>` | `catppuccin`, `default`, `dracula`, `github`, `gruvbox`, `monokai`, `nord`, `one-dark`, `picotera`, `pro-citrus`, `pro-graphite`, `pro-lagoon`, `pro-lavender`, `pro-matcha`, `pro-nord`, `pro-sakura`, `pro-sand`, `solarized`, `tokyo-night`, `vs`, `windows-standard` |
 
 ## Sources
 
@@ -167,7 +169,8 @@ The UI tokens were ported from `@orz/ui`'s earlier stylesheet. The terminal toke
 theme's upstream terminal palette; `terminal-background` and `terminal-foreground` are the
 palette's own background and foreground, so a terminal sits on the page's surface. Where upstream
 sets no cursor, the cursor is the foreground (Monokai takes its editor cursor, `#f8f8f0`), and
-where it sets no selection, the selection is VS Code's fallback.
+where it sets no selection, the selection is VS Code's fallback. Windows Standard's terminal keeps
+the Windows console's own black, on which its sixteen colours were drawn.
 
 | Theme | Terminal palette | Licence |
 |---|---|---|
@@ -182,4 +185,5 @@ where it sets no selection, the selection is VS Code's fallback.
 | Tokyo Night | [folke/tokyonight.nvim](https://github.com/folke/tokyonight.nvim) "night" | MIT header on the generated extras; the repository is Apache-2.0 |
 | One Dark | [One Dark Pro](https://github.com/Binaryify/OneDark-Pro) | MIT |
 | ProGraphite … ProCitrus | none upstream; Tailwind CSS 4.3.3's palette, UI tokens from [Prohibitorum](https://github.com/TundraWork/Prohibitorum) `6d3bc42` (see `src/prohibitorum.ts`); code and terminal colours drawn here, ProMatcha's, ProNord's and ProLavender's from [Everforest](https://github.com/sainnhe/everforest)'s, Nord's and Catppuccin's accents | Apache-2.0, see `NOTICE`; Tailwind CSS, Everforest, Nord and Catppuccin are MIT |
+| Windows Standard | the Windows 2000 console's sixteen colours | — |
 | Monokai | [VS Code's built-in Monokai](https://github.com/microsoft/vscode/tree/main/extensions/theme-monokai) | MIT |

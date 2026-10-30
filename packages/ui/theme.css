@@ -95,6 +95,8 @@
   --font-heading: var(--font-ui);
 
   --color-scrim: color-mix(in oklab, #000 10%, transparent);
+  /* A text field's ground: the surface it sits on, unless a style fills it. */
+  --color-field: transparent;
 
   --focus-width: 2px;
   --focus-offset: 2px;
@@ -150,6 +152,9 @@
     /* Surfaces tile flat; only what floats above the mosaic casts one
        small hard shadow, beside its 1px rule. */
     --shadow-raised: 0 0 #0000;
+    /* A bevelled style's field, and its button while held. */
+    --shadow-sunken: 0 0 #0000;
+    --shadow-pressed: 0 0 #0000;
     --shadow-menu: 2px 2px 0 0 rgb(15 23 39 / 0.14);
     --shadow-overlay: 3px 3px 0 0 rgb(15 23 39 / 0.14);
     --state-cue: inset 3px 0 0 0 currentColor;
@@ -159,6 +164,18 @@
 
 @utility shadow-raised {
   --tw-shadow: var(--shadow-raised);
+  box-shadow:
+    var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+    var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+@utility shadow-sunken {
+  --tw-shadow: var(--shadow-sunken);
+  box-shadow:
+    var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+    var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+@utility shadow-pressed {
+  --tw-shadow: var(--shadow-pressed);
   box-shadow:
     var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
     var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);

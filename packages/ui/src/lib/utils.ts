@@ -20,7 +20,7 @@ const twMerge = extendTailwindMerge({
       radius: ["control", "item", "frame", "surface", "overlay", "chip"],
       text: ["ui", "ui-sm", "ui-xs", "ui-2xs", "ui-3xs", "data", "title"],
       font: ["ui"],
-      shadow: ["raised", "menu", "overlay"],
+      shadow: ["raised", "sunken", "pressed", "menu", "overlay"],
     },
   },
 });

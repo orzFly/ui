@@ -204,7 +204,7 @@ const RADIUS_TOKENS = [
   "overlay",
   "chip",
 ];
-const SHADOW_TOKENS = ["raised", "menu", "overlay"];
+const SHADOW_TOKENS = ["raised", "sunken", "pressed", "menu", "overlay"];
 const RADIUS_VAR = new RegExp(
   `var\\(--radius-(?:${RADIUS_TOKENS.join("|")})\\)`,
 );

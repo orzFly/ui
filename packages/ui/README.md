@@ -117,6 +117,20 @@ the theme. `createThemeStore({ styles, defaultStyle })` takes the styles the app
 style alone. A theme belongs to the styles it lists in `styles` (the default style when it lists
 none), and the UI pick is always one of the current style's themes.
 
+One more style ships: raymond, Windows 2000, with its own theme, Windows Standard, among
+`builtinThemes`. Import its stylesheet after `styles.css` and offer it beside the default one:
+
+```css
+@import "@orz/ui/styles.css";
+@import "@orz/ui/styles/raymond.css";
+```
+
+```ts
+import { builtinThemes, defaultStyle, raymondStyle } from "@orz/themes";
+
+createThemeStore({ themes: builtinThemes, styles: [defaultStyle, raymondStyle] });
+```
+
 - `pref.style` is the picked style, absent for the store's default one.
 - `store.setStyle(id)` switches it, remembering the UI pick under the style it leaves
   (`pref.uiByStyle`) and returning to the one remembered under `id`, or to that style's first
@@ -569,6 +583,7 @@ import { MediaControls } from "@orz/ui/components/media-controls";
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `useStyle`, `themePaintGuardScript`, `themePaintCookieStyle`, `themePaintCookieRootAttributes`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
 | `@orz/ui/theme.css` | baseline tokens and custom variants, without the base layer or @source |
+| `@orz/ui/styles/<name>.css` | `raymond` |
 
 `UnsavedChangesDialog` only renders the prompt, and the blocker belongs to your router. Its JSDoc
 shows the TanStack Router wiring. Register the work that can be lost with `useDirtySource()` from

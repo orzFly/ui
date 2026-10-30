@@ -9,19 +9,22 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        // The depth tokens are no-ops in the default style; a style that
+        // bevels draws its buttons raised, and pressed while held or open.
+        default:
+          "bg-primary text-primary-foreground shadow-raised hover:bg-primary/80 active:shadow-pressed aria-expanded:shadow-pressed",
         outline:
-          "border-input bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+          "border-input bg-background shadow-raised hover:bg-muted hover:text-foreground active:shadow-pressed aria-expanded:bg-muted aria-expanded:text-foreground aria-expanded:shadow-pressed",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-secondary text-secondary-foreground shadow-raised hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] active:shadow-pressed aria-expanded:bg-secondary aria-expanded:text-secondary-foreground aria-expanded:shadow-pressed",
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "hover:bg-muted hover:text-foreground hover:shadow-raised active:shadow-pressed aria-expanded:bg-muted aria-expanded:text-foreground aria-expanded:shadow-pressed dark:hover:bg-muted/50",
         // Not bare text-destructive: on its own 10-30% tint that measured
         // 3.2-4.5:1 in 15 of the 19 themes. Mixing 65% of --foreground in
         // clears 4.5:1 in every theme at rest and on hover; the tint keeps the
         // red. test/destructive-contrast.test.ts pins it.
         destructive:
-          "bg-destructive/10 text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] hover:bg-destructive/20 focus-visible:outline-destructive dark:bg-destructive/20 dark:hover:bg-destructive/30",
+          "bg-destructive/10 text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] shadow-raised hover:bg-destructive/20 active:shadow-pressed focus-visible:outline-destructive dark:bg-destructive/20 dark:hover:bg-destructive/30",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

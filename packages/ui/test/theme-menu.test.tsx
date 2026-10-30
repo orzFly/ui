@@ -2,6 +2,8 @@ import {
   type AnyCustomTheme,
   builtinThemes,
   type CustomTheme,
+  DEFAULT_STYLE,
+  themesForStyle,
 } from "@orz/themes";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import {
@@ -39,6 +41,9 @@ resetThemeEnvironment();
 afterEach(() => {
   vi.useRealTimers();
 });
+
+/** The UI list's themes: a store offering only the default style lists only its own. */
+const uiThemes = themesForStyle(builtinThemes, DEFAULT_STYLE);
 
 const creme: CustomTheme = {
   ...sunrise,
@@ -144,7 +149,7 @@ describe("ThemeMenu: filtering", () => {
   it("lists the themes in store order, unfiltered", () => {
     setup();
     open();
-    expect(rows()).toEqual(builtinThemes.map((t) => t.label));
+    expect(rows()).toEqual(uiThemes.map((t) => t.label));
   });
 
   it("matches a theme by its label or a palette's label, and marks the label", () => {
@@ -164,9 +169,7 @@ describe("ThemeMenu: filtering", () => {
     type("d");
     expect(rows()).not.toContain("Picotera");
     type("dar");
-    expect(rows()).toEqual(
-      builtinThemes.filter((t) => t.dark).map((t) => t.label),
-    );
+    expect(rows()).toEqual(uiThemes.filter((t) => t.dark).map((t) => t.label));
   });
 
   it("matches Same as UI by same or follow only", () => {
@@ -184,14 +187,10 @@ describe("ThemeMenu: filtering", () => {
     setup();
     open();
     type("light");
-    expect(rows()).toEqual(
-      builtinThemes.filter((t) => t.light).map((t) => t.label),
-    );
+    expect(rows()).toEqual(uiThemes.filter((t) => t.light).map((t) => t.label));
     expect(rows()).not.toContain("Dracula");
     type("dark");
-    expect(rows()).toEqual(
-      builtinThemes.filter((t) => t.dark).map((t) => t.label),
-    );
+    expect(rows()).toEqual(uiThemes.filter((t) => t.dark).map((t) => t.label));
   });
 
   it("matches custom to the Custom group", () => {

@@ -2,6 +2,7 @@ import {
   builtinThemes,
   resolvePalette,
   schemesOf,
+  stylesOf,
   type Tokens,
   variantsOf,
 } from "../src/index.ts";
@@ -12,20 +13,29 @@ import {
  * that paints a side exactly as an earlier one does is listed once, under the
  * earlier name, so an exemption names each painted palette once.
  */
-export const resolvedPalettes: { name: string; tokens: Tokens }[] =
-  builtinThemes.flatMap((theme) =>
-    schemesOf(theme).flatMap((scheme) => {
-      const seen = new Set<string>();
-      return variantsOf(theme).flatMap(({ id }) => {
-        // biome-ignore lint/style/noNonNullAssertion: schemesOf lists only present sides
-        const { tokens } = resolvePalette(theme, scheme, id)!;
-        const key = JSON.stringify(tokens);
-        if (seen.has(key)) return [];
-        seen.add(key);
-        return [{ name: `${theme.id} ${scheme} ${id}`, tokens }];
-      });
-    }),
-  );
+export const resolvedPalettes: {
+  name: string;
+  tokens: Tokens;
+  styles: readonly string[];
+}[] = builtinThemes.flatMap((theme) =>
+  schemesOf(theme).flatMap((scheme) => {
+    const seen = new Set<string>();
+    return variantsOf(theme).flatMap(({ id }) => {
+      // biome-ignore lint/style/noNonNullAssertion: schemesOf lists only present sides
+      const { tokens } = resolvePalette(theme, scheme, id)!;
+      const key = JSON.stringify(tokens);
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [
+        {
+          name: `${theme.id} ${scheme} ${id}`,
+          tokens,
+          styles: stylesOf(theme),
+        },
+      ];
+    });
+  }),
+);
 
 /**
  * Pairs kept below a test's floor on purpose, by test and row name, each

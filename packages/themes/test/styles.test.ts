@@ -4,6 +4,7 @@ import {
   composeTheme,
   DEFAULT_STYLE,
   defaultStyle,
+  raymondStyle,
   renderDeclarations,
   resolvePalette,
   stylesOf,
@@ -33,11 +34,25 @@ describe("styles", () => {
     expect(stylesOf(bevel)).toEqual(["bevel"]);
   });
 
-  it("keeps every built-in theme in the default style by omission", () => {
-    for (const theme of builtinThemes) {
-      expect(theme, theme.id).not.toHaveProperty("styles");
+  it("keeps every built-in theme but raymond's in the default style by omission", () => {
+    const raymond = builtinThemes.filter((theme) => theme.styles);
+    expect(raymond.map((theme) => theme.id)).toEqual(["windows-standard"]);
+    expect(themesForStyle(builtinThemes, DEFAULT_STYLE)).toEqual(
+      builtinThemes.filter((theme) => !raymond.includes(theme)),
+    );
+    expect(themesForStyle(builtinThemes, raymondStyle.id)).toEqual(raymond);
+  });
+
+  it("gives each raymond palette exactly the style's tokens", () => {
+    for (const theme of themesForStyle(builtinThemes, raymondStyle.id)) {
+      for (const scheme of ["light", "dark"] as const) {
+        const palette = theme[scheme];
+        if (!palette) continue;
+        expect(Object.keys(palette.styleTokens ?? {}), theme.id).toEqual(
+          raymondStyle.tokens,
+        );
+      }
     }
-    expect(themesForStyle(builtinThemes, DEFAULT_STYLE)).toEqual(builtinThemes);
   });
 
   it("lists a style's themes in their order", () => {

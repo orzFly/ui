@@ -411,9 +411,12 @@ async function capture(
   variant: (typeof VARIANTS)[number],
   style: string | undefined,
 ) {
+  // Under another style the store falls back from the default theme to that
+  // style's first theme, on the side the mode asks for if it has one.
   const globals = [
     `theme:${DEFAULT_THEME}_${variant.mode}`,
     `pointer:${variant.pointer}`,
+    ...(style === undefined ? [] : [`style:${style}`]),
   ];
   const url = `${base}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story&globals=${globals.join(";")}`;
   await tab.send("Page.navigate", { url });
@@ -422,11 +425,6 @@ async function capture(
     if (Date.now() - start > 30_000)
       throw new Error(`${story.id}: not rendered after 30s`);
     await delay(50);
-  }
-  if (style !== undefined) {
-    await tab.evaluate(
-      `document.documentElement.dataset.style = ${JSON.stringify(style)}`,
-    );
   }
   await tab.evaluate("document.fonts.ready.then(() => true)");
   await tab.networkIdle(300, 10_000);
