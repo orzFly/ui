@@ -10,6 +10,7 @@ import {
 } from "@orz/ui/components/select";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetTitle,
@@ -458,17 +459,14 @@ export function BinaryInspector() {
                   </Button>
                 </SheetTrigger>
               </Named>
-              <SheetContent
-                side="bottom"
-                className="max-h-[85dvh] gap-0 overflow-y-auto"
-              >
+              <SheetContent side="bottom" className="gap-0">
                 <SheetTitle className="px-4 pt-4 text-base">
                   Inspector
                 </SheetTitle>
                 <SheetDescription className="sr-only">
                   The selected bytes read as numbers and text
                 </SheetDescription>
-                <div className="p-4">{inspector}</div>
+                <SheetBody className="p-4">{inspector}</SheetBody>
               </SheetContent>
             </Sheet>
             <Button

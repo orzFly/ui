@@ -1,6 +1,7 @@
 import { Button } from "@orz/ui/components/button";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetTitle,
@@ -170,7 +171,7 @@ function MobileNav({
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="gap-0 overflow-y-auto p-2 pb-8"
+        className="gap-0 p-2 pb-8"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           // Focus on the box would raise a phone's keyboard over a nav the
@@ -385,7 +386,7 @@ export function PageContents({
           </SheetTrigger>
           <SheetContent
             side="bottom"
-            className="max-h-[85dvh] gap-0 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]"
+            className="gap-0 pb-[max(1rem,env(safe-area-inset-bottom))]"
             onCloseAutoFocus={(event) => {
               const id = target.current;
               target.current = null;
@@ -400,17 +401,19 @@ export function PageContents({
             <SheetDescription className="sr-only">
               The sections of {meta.title}
             </SheetDescription>
-            <nav aria-label="On this page" className="px-5 pt-3 text-base">
-              <TocList
-                toc={toc}
-                active={active}
-                onPick={(event, id) => {
-                  event.preventDefault();
-                  target.current = id;
-                  setOpen(false);
-                }}
-              />
-            </nav>
+            <SheetBody className="px-5 pt-3 text-base">
+              <nav aria-label="On this page">
+                <TocList
+                  toc={toc}
+                  active={active}
+                  onPick={(event, id) => {
+                    event.preventDefault();
+                    target.current = id;
+                    setOpen(false);
+                  }}
+                />
+              </nav>
+            </SheetBody>
           </SheetContent>
         </Sheet>
       )}

@@ -69,6 +69,7 @@ import {
 import { Separator } from "../src/components/separator.tsx";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -235,6 +236,7 @@ const CASES: [file: string, slot: string, tree: ReactElement][] = [
           <SheetTitle>Title</SheetTitle>
           <SheetDescription>Description</SheetDescription>
         </SheetHeader>
+        <SheetBody>Body</SheetBody>
         <SheetFooter>Footer</SheetFooter>
       </SheetContent>
     </Sheet>,

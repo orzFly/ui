@@ -45,10 +45,10 @@ and the HoverCard no longer open, and every other control still works.
 Open one overlay from another at most once: a menu or a Popover inside a dialog is fine. A dialog
 that opens another dialog is a flow; make it a page, or one dialog with steps.
 
-A dialog never grows past the screen. Wrap the part that can grow, a list, a diff or a long form,
-in `DialogBody`: on a short screen or a phone held sideways, that part scrolls and the question
-and its answer stay in view. A dialog without one scrolls whole, which still reaches the footer
-but scrolls the title away.
+A dialog or a sheet never grows past the screen. Wrap the part that can grow, a list, a diff or a
+long form, in `DialogBody` or `SheetBody`: on a short screen or a phone held sideways, that part
+scrolls and the question and its answer stay in view. One without it scrolls whole, which still
+reaches the footer but scrolls the title away.
 
 ## Do and don't
 

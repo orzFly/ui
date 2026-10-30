@@ -3,6 +3,7 @@ import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import {
   Sheet,
+  SheetBody,
   SheetClose,
   SheetContent,
   SheetDescription,
@@ -33,10 +34,10 @@ const meta = {
             Changes apply when you save; closing the sheet drops them.
           </SheetDescription>
         </SheetHeader>
-        <div className="grid gap-2 px-4">
+        <SheetBody className="grid gap-2">
           <Label htmlFor="sheet-name">Name</Label>
           <Input id="sheet-name" defaultValue="alice" />
-        </div>
+        </SheetBody>
         <SheetFooter>
           <Button>Save</Button>
           <SheetClose asChild>
@@ -84,6 +85,39 @@ export const Sides: Story = {
             <SheetHeader>
               <SheetTitle>Slides in from the {side}</SheetTitle>
             </SheetHeader>
+          </SheetContent>
+        </Sheet>
+      ))}
+    </div>
+  ),
+};
+
+export const ScrollingBody: Story = {
+  render: (args) => (
+    <div className="flex flex-wrap gap-2">
+      {SIDES.map((side) => (
+        <Sheet {...args} key={side}>
+          <SheetTrigger asChild>
+            <Button variant="outline">{side}</Button>
+          </SheetTrigger>
+          <SheetContent side={side}>
+            <SheetHeader>
+              <SheetTitle>Changelog</SheetTitle>
+              <SheetDescription>
+                The body scrolls; the title and the footer stay.
+              </SheetDescription>
+            </SheetHeader>
+            <SheetBody>
+              {Array.from({ length: 40 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static filler rows
+                <p key={i}>Entry {i + 1}</p>
+              ))}
+            </SheetBody>
+            <SheetFooter>
+              <SheetClose asChild>
+                <Button variant="outline">Close</Button>
+              </SheetClose>
+            </SheetFooter>
           </SheetContent>
         </Sheet>
       ))}

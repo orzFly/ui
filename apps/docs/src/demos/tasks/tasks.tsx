@@ -5,6 +5,7 @@ import { Input } from "@orz/ui/components/input";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
   SheetTitle,
@@ -384,13 +385,13 @@ export function Tasks() {
                   {task.title}
                 </SheetTitle>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <SheetBody className="flex-1 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <TaskDetails
                   task={task}
                   tasks={tasks}
                   actions={detailActions}
                 />
-              </div>
+              </SheetBody>
             </>
           )}
         </SheetContent>
