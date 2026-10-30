@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@orz/ui/styles.css";
+@import "@orz/ui/fonts.css";
 @import "@orz/ui/styles/raymond.css";
 @import "@orz/ui-ansi/styles.css";
 @import "@orz/ui-asciinema/styles.css";

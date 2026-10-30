@@ -1,6 +1,6 @@
 // The `pnpm add` lines for every package, worked out from the package.json files and the imports
-// in src/, so that no README or docs page lists a package's peers by hand. scripts/readme.ts
-// writes them into the READMEs.
+// in src/ and the shipped CSS, so that no README or docs page lists a package's peers by hand.
+// scripts/readme.ts writes them into the READMEs.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,6 +16,7 @@ export interface Manifest {
   dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
   peerDependenciesMeta?: Record<string, { optional?: boolean }>;
+  files?: string[];
   exports?: Record<string, string | Record<string, string>>;
 }
 
@@ -87,10 +88,28 @@ function ordered(names: Iterable<string>, first?: string): string[] {
   ];
 }
 
-function sourceFiles(dir: string): string[] {
-  return readdirSync(join(dir, "src"), { recursive: true, encoding: "utf8" })
+/**
+ * The modules in src/, and the shipped stylesheets: a stylesheet's `@import` can reach a peer
+ * too (`@orz/ui/fonts.css`).
+ */
+function sourceFiles({ dir, manifest }: Workspace): string[] {
+  const modules = readdirSync(join(dir, "src"), {
+    recursive: true,
+    encoding: "utf8",
+  })
     .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
     .map((file) => join(dir, "src", file));
+  const stylesheets = (manifest.files ?? [])
+    .filter((entry) => entry !== "dist" && existsSync(join(dir, entry)))
+    .flatMap((entry) =>
+      entry.endsWith(".css")
+        ? [entry]
+        : readdirSync(join(dir, entry), { recursive: true, encoding: "utf8" })
+            .filter((file) => file.endsWith(".css"))
+            .map((file) => join(entry, file)),
+    )
+    .map((file) => join(dir, file));
+  return [...modules, ...stylesheets];
 }
 
 const IMPORT = /(?:\bfrom|\bimport)\s*\(?\s*"([^"]+)"/g;
@@ -100,7 +119,7 @@ export function entriesImporting(workspace: Workspace, peer: string): string[] {
   const { dir, manifest } = workspace;
   const importers = new Map<string, string[]>();
   const reached: string[] = [];
-  for (const file of sourceFiles(dir)) {
+  for (const file of sourceFiles(workspace)) {
     for (const [, spec = ""] of readFileSync(file, "utf8").matchAll(IMPORT)) {
       if (spec === peer || spec.startsWith(`${peer}/`)) reached.push(file);
       if (spec.startsWith(".")) {

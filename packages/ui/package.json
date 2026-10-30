@@ -39,12 +39,14 @@
       "default": "./dist/theme/index.js"
     },
     "./styles.css": "./styles.css",
+    "./fonts.css": "./fonts.css",
     "./theme.css": "./theme.css",
     "./styles/*.css": "./styles/*.css"
   },
   "files": [
     "dist",
     "styles.css",
+    "fonts.css",
     "theme.css",
     "styles",
     "vendor"
@@ -58,6 +60,8 @@
     "test": "vitest run"
   },
   "peerDependencies": {
+    "@fontsource-variable/noto-sans": "^5",
+    "@fontsource-variable/noto-sans-mono": "^5",
     "lucide-react": "^1",
     "overlayscrollbars": "^2",
     "radix-ui": "^1",
@@ -66,13 +70,17 @@
     "sonner": "^2"
   },
   "peerDependenciesMeta": {
+    "@fontsource-variable/noto-sans": {
+      "optional": true
+    },
+    "@fontsource-variable/noto-sans-mono": {
+      "optional": true
+    },
     "overlayscrollbars": {
       "optional": true
     }
   },
   "dependencies": {
-    "@fontsource-variable/noto-sans": "^5.3.0",
-    "@fontsource-variable/noto-sans-mono": "^5.3.0",
     "@orz/query": "workspace:^",
     "@orz/themes": "workspace:^",
     "class-variance-authority": "^0.7.1",
@@ -82,6 +90,8 @@
     "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
+    "@fontsource-variable/noto-sans": "^5.3.0",
+    "@fontsource-variable/noto-sans-mono": "^5.3.0",
     "@testing-library/react": "^16.3.2",
     "@types/culori": "^4.0.1",
     "@types/node": "^22.20.5",

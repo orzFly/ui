@@ -33,6 +33,13 @@ describe("install", () => {
   it("puts an optional peer under the entry points that import it", () => {
     expect(install("@orz/ui").optional).toEqual([
       {
+        packages: [
+          "@fontsource-variable/noto-sans",
+          "@fontsource-variable/noto-sans-mono",
+        ],
+        for: ["@orz/ui/fonts.css"],
+      },
+      {
         packages: ["overlayscrollbars"],
         for: ["@orz/ui/hooks/use-overlay-scrollbars"],
       },

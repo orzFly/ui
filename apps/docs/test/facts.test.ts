@@ -1,6 +1,7 @@
 // Sentences that name what the code knows, where the reason around the names is the point and
 // the names stay prose: each is held to the code here rather than generated.
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import {
   builtinThemes,
   defaultStyle,
@@ -150,5 +151,48 @@ describe("color", () => {
     );
     expect(tokens.length).toBeGreaterThan(0);
     expect(raymondStyle.tokens).toEqual(expect.arrayContaining(tokens));
+  });
+});
+
+describe("fonts", () => {
+  const require = createRequire(import.meta.url);
+  /** The scripts a face's wght.css covers, an `-ext` subset counted as its script. */
+  const scripts = (face: string) =>
+    new Set(
+      [
+        ...readFileSync(
+          require.resolve(`@fontsource-variable/${face}/wght.css`),
+          "utf8",
+        ).matchAll(
+          new RegExp(`/\\* ${face}-([a-z]+)(?:-ext)?-wght-normal`, "g"),
+        ),
+      ].map(
+        ([, script = ""]) =>
+          `${script.charAt(0).toUpperCase()}${script.slice(1)}`,
+      ),
+    );
+  const listed = (text = "") => text.split(/, | and /).sort();
+  const sans = scripts("noto-sans");
+  const mono = scripts("noto-sans-mono");
+  const both = [...sans].filter((script) => mono.has(script)).sort();
+  const sansOnly = [...sans].filter((script) => !mono.has(script)).sort();
+
+  it("covers no script in the mono face that the sans face lacks", () => {
+    expect(sans.size).toBeGreaterThan(0);
+    expect([...mono].filter((script) => !sans.has(script))).toEqual([]);
+  });
+
+  it.each([
+    "packages/ui/README.md",
+    "apps/docs/src/content/start.mdx",
+    "apps/docs/src/content/guidelines/foundations/typography.mdx",
+  ])("%s names the scripts fonts.css covers", (path) => {
+    const [, shared, own] =
+      read(path)
+        .replace(/\s+/g, " ")
+        .match(
+          /loads Noto Sans and Noto Sans Mono for ([^;.]+?), and Noto Sans for ([^;.]+?) too/,
+        ) ?? [];
+    expect([listed(shared), listed(own)]).toEqual([both, sansOnly]);
   });
 });

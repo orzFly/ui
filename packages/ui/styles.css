@@ -1,7 +1,3 @@
-/* The default style's faces, Latin, Greek and Cyrillic; each subset's file
-   loads only when a page draws its characters. */
-@import "@fontsource-variable/noto-sans/wght.css";
-@import "@fontsource-variable/noto-sans-mono/wght.css";
 @import "./theme.css";
 
 /* Tailwind resolves an imported file's @source against that file, so a

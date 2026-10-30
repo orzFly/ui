@@ -30,8 +30,16 @@ app imports them too: the themes below come from `@orz/themes`, and a query box'
 `styles.css` brings the baseline tokens, the base layer, `tw-animate-css` and shadcn's Tailwind
 variants, and registers the package's own files with Tailwind, so you add no `@source` line for it.
 
-It loads Noto Sans and Noto Sans Mono, for Latin, Greek and Cyrillic text; Chinese, Japanese and
-Korean come from the system, or from a font your app loads.
+It loads no fonts. The default style's faces are a separate import, with their own install line
+above:
+
+```css
+@import "@orz/ui/fonts.css";
+```
+
+`fonts.css` loads Noto Sans and Noto Sans Mono for Latin, Greek, Cyrillic and Vietnamese, and Noto
+Sans for Devanagari too; Chinese, Japanese and Korean come from the system, or from a font your app
+loads. Without it, the system's faces draw everything.
 
 A surface that shares its document with someone else's UI imports `@orz/ui/theme.css` instead: the
 tokens and variants, with nothing that styles the page around it.

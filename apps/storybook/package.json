@@ -17,6 +17,8 @@
     "@codemirror/search": "^6.7.1",
     "@codemirror/state": "^6.7.1",
     "@codemirror/view": "^6.43.9",
+    "@fontsource-variable/noto-sans": "^5.3.0",
+    "@fontsource-variable/noto-sans-mono": "^5.3.0",
     "@lezer/highlight": "^1.2.3",
     "@orz/fixtures": "workspace:*",
     "@orz/query": "workspace:*",

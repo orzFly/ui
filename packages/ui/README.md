@@ -8,6 +8,8 @@ CSS v4. The theme data itself lives in `@orz/themes`.
 <!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
 pnpm add @orz/ui @orz/query @orz/themes lucide-react radix-ui react react-dom sonner
+# only for @orz/ui/fonts.css:
+pnpm add @fontsource-variable/noto-sans @fontsource-variable/noto-sans-mono
 # only for @orz/ui/hooks/use-overlay-scrollbars:
 pnpm add overlayscrollbars
 ```
@@ -50,9 +52,20 @@ global. `theme.css` carries no `@source`, so that surface names the files Tailwi
 heights (`--spacing-control`), corners (`--radius-control`, `--radius-surface`), shadows, text
 sizes, fonts, the focus ring and overlay motion. Their values are the default style's.
 
-`styles.css` loads Noto Sans and Noto Sans Mono (`--font-ui`, `--font-mono`) for Latin, Greek and
-Cyrillic; Chinese, Japanese and Korean text takes the face its `lang` names from the system, or from
-a font your app loads.
+`--font-ui` and `--font-mono` name Noto Sans and Noto Sans Mono first, then the system's faces.
+`styles.css` loads neither; to draw them, install the two fontsource packages from the install
+block above and import `fonts.css` beside `styles.css`:
+
+```css
+@import "@orz/ui/fonts.css";
+```
+
+`fonts.css` loads Noto Sans and Noto Sans Mono for Latin, Greek, Cyrillic and Vietnamese, and Noto
+Sans for Devanagari too. A browser fetches a script's file only when a page draws its characters.
+Chinese, Japanese and Korean text takes the face its `lang` names from the system, or from a font
+your app loads. An app with fonts of its own sets `--font-ui` and `--font-mono` and skips
+`fonts.css`, and then installs and bundles none of Noto's files.
+
 `useOverlayScrollbars` needs the library's own stylesheet, which you import yourself:
 `@import "overlayscrollbars/overlayscrollbars.css";`.
 
@@ -582,6 +595,7 @@ import { MediaControls } from "@orz/ui/components/media-controls";
 | `@orz/ui/lib/<name>` | `cell-width`, `cell-width-table`, `clipboard`, `color`, `scroll-map`, `text-metrics`, `theme-file`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `useStyle`, `themePaintGuardScript`, `themePaintCookieStyle`, `themePaintCookieRootAttributes`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
+| `@orz/ui/fonts.css` | Noto Sans and Noto Sans Mono, the faces `--font-ui` and `--font-mono` name first |
 | `@orz/ui/theme.css` | baseline tokens and custom variants, without the base layer or @source |
 | `@orz/ui/styles/<name>.css` | `raymond` |
 

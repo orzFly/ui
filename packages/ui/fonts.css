@@ -1,0 +1,6 @@
+/* The default style's faces, which --font-ui and --font-mono name first.
+   Kept out of styles.css so an app with its own fonts installs and bundles
+   none of these files. Each subset's file loads only when a page draws its
+   characters. */
+@import "@fontsource-variable/noto-sans/wght.css";
+@import "@fontsource-variable/noto-sans-mono/wght.css";

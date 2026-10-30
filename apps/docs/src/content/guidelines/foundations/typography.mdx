@@ -40,7 +40,10 @@ its ruled header, `font-heading text-ui-sm font-bold`, and a `Badge` is `text-ui
 
 ## Family
 
-`styles.css` ships Noto Sans as `--font-ui` and Noto Sans Mono as `--font-mono`; a browser fetches a script's file only when a page draws its characters. Chinese, Japanese and
+`--font-ui` is Noto Sans and `--font-mono` Noto Sans Mono, then the system's faces. `styles.css`
+leaves the fonts out so an app with its own pays nothing for them; `@orz/ui/fonts.css` loads Noto
+Sans and Noto Sans Mono for Latin, Greek, Cyrillic and Vietnamese, and Noto Sans for Devanagari
+too. A browser fetches a script's file only when a page draws its characters. Chinese, Japanese and
 Korean come from the page's language: `lang="zh-Hans"` names Noto Sans SC, then PingFang SC and
 Microsoft YaHei, `ja` Noto Sans JP, then Hiragino Sans and Yu Gothic, and so on. None of those is
 shipped, so the system's, or one your app loads, draws them; one family for every language would
