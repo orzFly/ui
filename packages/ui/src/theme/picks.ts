@@ -3,8 +3,42 @@ import {
   DEFAULT_VARIANT,
   schemesOf,
   type TerminalTheme,
+  type Theme,
+  themesForStyle,
 } from "@orz/themes";
-import type { ThemePick } from "./pref.ts";
+import type { ThemePick, ThemePref } from "./pref.ts";
+
+/**
+ * Switching the UI from style `from` to `to`: the UI pick is remembered under
+ * `from`, and the one remembered under `to` comes back, or, when its theme is
+ * gone, `to`'s first theme in the current mode. The terminal pick stays.
+ */
+export function prefForStyle(
+  pref: ThemePref,
+  from: string,
+  to: string,
+  themes: readonly Theme[],
+): ThemePref {
+  if (from === to) return pref;
+  const byStyle: Record<string, ThemePick> = { ...pref.uiByStyle };
+  if (pref.ui) byStyle[from] = pref.ui;
+  const remembered = Object.hasOwn(byStyle, to) ? byStyle[to] : undefined;
+  delete byStyle[to];
+  const next: ThemePref = { ...pref, style: to };
+  delete next.uiByStyle;
+  if (Object.keys(byStyle).length > 0) next.uiByStyle = byStyle;
+  const own = themesForStyle(themes, to);
+  const first = own[0];
+  if (remembered && own.some((t) => t.id === remembered.theme)) {
+    next.ui = remembered;
+  } else if (first) {
+    next.ui = { theme: first.id, mode: pref.ui?.mode ?? "system" };
+  } else if (remembered) {
+    // A style with no themes of its own shows every theme.
+    next.ui = remembered;
+  }
+  return next;
+}
 
 /** The palettes of `theme` that define `variantId`; `default` is on every one. */
 export function schemesDefining(

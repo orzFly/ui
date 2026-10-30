@@ -12,6 +12,7 @@ import {
   type ThemeStore,
 } from "@orz/ui/theme";
 import { createRoot } from "react-dom/client";
+import { STYLES } from "../styles.ts";
 
 /** ThemeMenu's `onCustomize`. */
 export type Customize = (
@@ -94,6 +95,7 @@ export function createToolbar(initial: ThemePref): Toolbar {
     customStorageKey: "orz-storybook-theme-custom",
     themes: builtinThemes,
     terminalThemes: builtinThemes,
+    styles: STYLES,
   });
   store.setPref(initial);
   return {

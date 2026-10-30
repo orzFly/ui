@@ -7,6 +7,7 @@ import {
   type CustomTheme,
   composeTerminalTheme,
   composeTheme,
+  DEFAULT_STYLE,
   DEFAULT_VARIANT,
   isCustomTerminalTheme,
   schemesOf,
@@ -821,6 +822,11 @@ export interface NewThemeContext {
   customs: readonly AnyCustomTheme[];
   /** Labels a new theme must not take: custom and base themes'. */
   labels: readonly string[];
+  /**
+   * The style the page is drawn in (`useStyle()`'s `style`), recorded on a new UI theme so a side
+   * later made fully custom keeps it. Absent = "default", which is never recorded.
+   */
+  style?: string;
 }
 
 export interface NewTerminalThemeContext
@@ -853,9 +859,15 @@ export function duplicate<C extends AnyCustomTheme>(
     id: newThemeId(takenIds(ctx)),
     ...(isCustomTerminalTheme(custom) ? { kind: "terminal" } : {}),
     label: uniqueLabel(`${custom.label} copy`, ctx.labels),
+    ...styleOf(custom),
     ...copySides(custom),
   } as C;
 }
+
+const styleOf = (custom: AnyCustomTheme): { style?: string } =>
+  !isCustomTerminalTheme(custom) && custom.style !== undefined
+    ? { style: custom.style }
+    : {};
 
 /**
  * A copy of what the page shows: on a base theme, each of its sides based on
@@ -881,7 +893,7 @@ function newUiTheme(ctx: NewThemeContext): CustomTheme {
   const shown = ctx.resolved.theme.id;
   const custom = ctx.customs.find((c) => c.id === shown);
   if (custom !== undefined && !isCustomTerminalTheme(custom)) {
-    return { id, label, ...copySides(custom) };
+    return { id, label, ...styleOf(custom), ...copySides(custom) };
   }
 
   const base =
@@ -891,6 +903,9 @@ function newUiTheme(ctx: NewThemeContext): CustomTheme {
   const variant =
     ctx.pref.ui?.theme === base.id ? ctx.pref.ui.variant : ctx.resolved.variant;
   const out: CustomTheme = { id, label };
+  if (ctx.style !== undefined && ctx.style !== DEFAULT_STYLE) {
+    out.style = ctx.style;
+  }
   for (const scheme of schemesOf(base)) {
     const variants = base[scheme]?.variants ?? {};
     out[scheme] = {

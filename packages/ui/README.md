@@ -110,9 +110,22 @@ store.setPref({
 - `setThemes(list)` and `setTerminalThemes(list)` replace those lists at runtime. A pick whose theme
   leaves the list comes back when the theme returns.
 
+A **style** draws the components (radii, edges, type, density, focus, motion) and is picked beside
+the theme. `createThemeStore({ styles, defaultStyle })` takes the styles the app offers, each a
+`Style` from `@orz/themes` whose stylesheet the app imports; without `styles` it offers the default
+style alone. A theme belongs to the styles it lists in `styles` (the default style when it lists
+none), and the UI pick is always one of the current style's themes.
+
+- `pref.style` is the picked style, absent for the store's default one.
+- `store.setStyle(id)` switches it, remembering the UI pick under the style it leaves
+  (`pref.uiByStyle`) and returning to the one remembered under `id`, or to that style's first
+  theme. The terminal pick is not tied to a style.
+- A custom theme belongs to its base theme's styles; a fully custom one records the style it was
+  made under (`CustomTheme.style`).
+
 The store paints through one `<style data-orz-theme>` element in `<head>`, holding a single
-`:root { … }` rule rendered from the data. It also toggles `.dark` and sets `data-theme`,
-`data-variant` and `data-terminal-theme` on the root. Given a `root` other than `<html>`, the store
+`:root { … }` rule rendered from the data, the palette's own `styleTokens` included. It also toggles
+`.dark` and sets `data-theme`, `data-variant`, `data-style` and `data-terminal-theme` on the root. Given a `root` other than `<html>`, the store
 keeps an element of its own, sets `data-orz-theme-root` on that root to an id unique to the store,
 and scopes the rule to it, so stores on different roots never repaint each other. The rule has
 plain `:root` specificity, so a stylesheet loaded later, or a `:root:root` selector, can still
@@ -127,6 +140,9 @@ retune a token for every theme.
   list is empty and the two calls are ignored.
 - `useThemeSlots()` returns `{ ui, terminal }`: which slots the store has. The two hooks fall back
   where theirs is missing, so they cannot tell you.
+- `useStyle()` returns `{ style, committed, styles, setStyle }`: the style on screen (a hovered one
+  included), the picked one, the styles offered, and the switch. Outside a provider it reports the
+  default style alone.
 
 ### Theme menu
 
@@ -142,6 +158,8 @@ Whatever is highlighted previews on the whole page after resting 80 ms, and a pi
 
 - `slot` is `"ui"` (default) or `"terminal"`. A picker whose slot the store lacks renders nothing.
   The terminal picker adds a "Same as UI" row and a Terminal only group.
+- With more than one style offered, the UI picker adds a Style row above the modes, previewing a
+  style while it is hovered or focused, and lists only the picked style's themes.
 - `onCustomize` adds a "Custom themes…" row, which calls it with no id, and an edit button on each
   custom theme's row, which calls it with that theme's id. The second argument is the menu's slot,
   so a new theme opened from the terminal menu is a terminal theme; a callback that takes only the
@@ -345,12 +363,17 @@ side it can show to that cookie (path `/`, one year, `SameSite=Lax`). `themePain
 turns the cookie's value, URL-encoded or not, into CSS for a `<style>` in `<head>`: the background
 and `color-scheme` on `html`, with the dark side under `@media (prefers-color-scheme: dark)` when
 both are stored. A side whose colour could break out of the rule is dropped, and a missing or
-malformed value gives `""`.
+malformed value gives `""`. The cookie holds the committed style too, and
+`themePaintCookieRootAttributes(value)` returns `{ "data-style": id }` for `<html>`, or `{}`, so
+the page has the style's shapes before any script runs. The guard script sets `data-style` from
+its cache the same way.
 
 ```ts
 // a server template
-const css = themePaintCookieStyle(request.cookies["app-theme-paint"]);
-html`<head><style>${css}</style>…</head>`;
+const value = request.cookies["app-theme-paint"];
+const css = themePaintCookieStyle(value);
+const { "data-style": style } = themePaintCookieRootAttributes(value);
+html`<html${style ? ` data-style="${style}"` : ""}><head><style>${css}</style>…</head>`;
 ```
 
 ## Query input
@@ -542,7 +565,7 @@ import { MediaControls } from "@orz/ui/components/media-controls";
 | `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `checkbox`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `filter-menu`, `highlighted-input`, `hover-card`, `input`, `label`, `link-chip`, `load-failure`, `load-more`, `media-controls`, `popover`, `query-box`, `query-highlight`, `radio-group`, `select`, `separator`, `sheet`, `skeleton`, `slider`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `theme-editor`, `theme-menu`, `tooltip`, `unsaved-changes-dialog` |
 | `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-slash-shortcut`, `viewport-chrome` |
 | `@orz/ui/lib/<name>` | `cell-width`, `cell-width-table`, `clipboard`, `color`, `scroll-map`, `text-metrics`, `theme-file`, `unsaved-guard`, `utils` |
-| `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `themePaintGuardScript`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
+| `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `useStyle`, `themePaintGuardScript`, `themePaintCookieStyle`, `themePaintCookieRootAttributes`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
 | `@orz/ui/theme.css` | baseline tokens and custom variants, without the base layer or @source |
 

@@ -22,8 +22,9 @@ function sideOk(value: unknown): boolean {
 
 function customOk(value: unknown): value is AnyCustomTheme {
   if (!isObject(value)) return false;
-  const { id, kind, label, light, dark } = value;
+  const { id, kind, label, style, light, dark } = value;
   if (typeof id !== "string" || typeof label !== "string") return false;
+  if (style !== undefined && typeof style !== "string") return false;
   if (light === undefined && dark === undefined) return false;
   // A kind this version does not know must not reach composeTheme as a UI
   // theme: a based terminal side is also a valid based UI side.

@@ -1,6 +1,8 @@
 // Sentences that name what the code knows, where the reason around the names is the point and
 // the names stay prose: each is held to the code here rather than generated.
 import { readFileSync } from "node:fs";
+import { builtinThemes, defaultStyle } from "@orz/themes";
+import { createThemeStore, useStyle } from "@orz/ui/theme";
 import { describe, expect, it } from "vitest";
 import { workspaces } from "../../../scripts/install.ts";
 import { classOf } from "../scripts/data.ts";
@@ -67,5 +69,41 @@ describe("typography", () => {
 
   it("sets a Badge in text-xs", () => {
     expect(classOf("badge.tsx", "group/badge").split(" ")).toContain("text-xs");
+  });
+});
+
+describe("theming", () => {
+  const text = read("apps/docs/src/content/guidelines/foundations/theming.mdx");
+  const themes = builtinThemes;
+
+  it("names the style options as createThemeStore takes them", () => {
+    expect(named(text, / style alone, and the menu has no Style row/)).toEqual([
+      "createThemeStore({ styles, defaultStyle })",
+      "defaultStyle",
+      "styles",
+    ]);
+    const bevel = { id: "bevel", label: "Bevel" };
+    const offered = createThemeStore({
+      storageKey: "facts",
+      themes,
+      styles: [defaultStyle, bevel],
+      defaultStyle: "bevel",
+    });
+    expect(offered.getStyle()).toBe("bevel");
+    expect(
+      createThemeStore({ storageKey: "facts", themes }).getStyles(),
+    ).toEqual([defaultStyle]);
+  });
+
+  it("names the calls that switch the style", () => {
+    expect(named(text, / switches it\./)).toEqual([
+      "ThemeMenu",
+      "setStyle",
+      "useStyle()",
+    ]);
+    expect(
+      createThemeStore({ storageKey: "facts", themes }).setStyle,
+    ).toBeTypeOf("function");
+    expect(useStyle).toBeTypeOf("function");
   });
 });

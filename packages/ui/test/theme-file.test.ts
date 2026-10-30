@@ -192,6 +192,7 @@ describe("round trip", () => {
     ["detached", paper],
     ["based terminal on a terminal-only theme, and a detached side", tidal],
     ["following terminal", embers],
+    ["recording the style it was made under", { ...paper, style: "bevel" }],
   ])("%s", (_, custom) => {
     const [entry] = entries(serializeThemeFile([custom], themes));
     expect(entry).toEqual({
@@ -201,6 +202,12 @@ describe("round trip", () => {
       theme: withoutId(custom),
       messages: [],
     });
+  });
+
+  it("drops a style that is no style id", () => {
+    const entry = only(file({ ...(exported(paper) as object), style: "a b" }));
+    expect(entry.status).toBe("ok");
+    expect(entry.theme).not.toHaveProperty("style");
   });
 
   it("keeps several themes in order and never stores `resolved`", () => {

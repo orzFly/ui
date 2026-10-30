@@ -1,10 +1,15 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { themePaintCookieStyle } from "../src/theme/index.ts";
 import {
+  themePaintCookieRootAttributes,
+  themePaintCookieStyle,
+} from "../src/theme/index.ts";
+import {
+  bothStyles,
   ink,
   resetThemeEnvironment,
   store,
   stubDarkQuery,
+  styledThemes,
 } from "./theme-helpers.ts";
 
 resetThemeEnvironment();
@@ -37,10 +42,11 @@ describe("paintCookie", () => {
     const themes = store({ paintCookie: "app-bg" });
     themes.setPref({ ui: { theme: "solarized", mode: "system" } });
     const value = JSON.parse(decodeURIComponent(cookie("app-bg") ?? ""));
-    expect(Object.keys(value).sort()).toEqual(["dark", "light"]);
+    expect(Object.keys(value).sort()).toEqual(["dark", "light", "style"]);
+    expect(value.style).toBe("default");
     themes.setPref({ ui: { theme: "dracula", mode: "dark" } });
     const dark = JSON.parse(decodeURIComponent(cookie("app-bg") ?? ""));
-    expect(Object.keys(dark)).toEqual(["dark"]);
+    expect(Object.keys(dark).sort()).toEqual(["dark", "style"]);
     expect(themePaintCookieStyle(cookie("app-bg"))).toBe(
       `html{background-color:${dark.dark};color-scheme:dark}`,
     );
@@ -105,5 +111,35 @@ describe("themePaintCookieStyle", () => {
     expect(themePaintCookieStyle(value)).toBe(
       "html{background-color:#fff;color-scheme:light}",
     );
+  });
+});
+
+describe("themePaintCookieRootAttributes", () => {
+  it("names the committed style, which a preview does not change", () => {
+    stubDarkQuery(false);
+    const themes = store({
+      paintCookie: "app-bg",
+      themes: styledThemes,
+      styles: bothStyles,
+    });
+    themes.setPref({ ui: { theme: "github", mode: "light" } });
+    expect(themePaintCookieRootAttributes(cookie("app-bg"))).toEqual({
+      "data-style": "default",
+    });
+    themes.setStyle("bevel");
+    themes.preview({ style: "default" });
+    expect(themePaintCookieRootAttributes(cookie("app-bg"))).toEqual({
+      "data-style": "bevel",
+    });
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["not JSON", "%E0%A4%A"],
+    ["written before styles", JSON.stringify({ dark: "#000000" })],
+    ["not a string", JSON.stringify({ style: 1 })],
+    ["not an id", JSON.stringify({ style: 'x" onload="alert(1)' })],
+  ])("is empty for a %s value", (_, value) => {
+    expect(themePaintCookieRootAttributes(value)).toEqual({});
   });
 });

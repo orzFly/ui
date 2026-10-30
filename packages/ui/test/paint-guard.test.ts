@@ -6,6 +6,7 @@ import {
   type ThemeStoreOptions,
   themePaintGuardScript,
 } from "../src/theme/index.ts";
+import { bothStyles, styledThemes } from "./theme-helpers.ts";
 
 const html = document.documentElement;
 
@@ -41,6 +42,7 @@ function stubOsDark(matches: boolean) {
 function reset() {
   delete html.dataset.theme;
   delete html.dataset.variant;
+  delete html.dataset.style;
   delete html.dataset.terminalTheme;
   html.classList.remove("dark");
   for (const el of document.head.querySelectorAll("style")) el.remove();
@@ -75,6 +77,7 @@ function snapshot() {
     dark: html.classList.contains("dark"),
     theme: html.dataset.theme,
     variant: html.dataset.variant,
+    style: html.dataset.style,
     terminalTheme: html.dataset.terminalTheme,
   };
 }
@@ -160,6 +163,28 @@ describe("themePaintGuardScript", () => {
       }
     },
   );
+
+  it.each([
+    [
+      "the default style",
+      { style: "default", ui: { theme: "solarized", mode: "system" } },
+    ],
+    [
+      "a second style",
+      { style: "bevel", ui: { theme: "bevel-day", mode: "system" } },
+    ],
+  ] as const)("sets data-style for %s the way the store does", (_, pref) => {
+    const styled = { themes: styledThemes, styles: bothStyles };
+    for (const os of [false, true]) {
+      const { guard, store } = paintBoth(styled, pref, os);
+      expect(guard, `OS dark: ${os}`).toEqual(store);
+      expect(guard.style).toBe(pref.style);
+    }
+    // The palette's own style tokens are painted with the rest.
+    expect(paintBoth(styled, pref, true).guard.values["--3d-face"]).toBe(
+      pref.style === "bevel" ? "#404040" : undefined,
+    );
+  });
 
   it("paints the page background under a UI pick, where the store does not", () => {
     const options = { storageKey: "app-theme", ...ui };

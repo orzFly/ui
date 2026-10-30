@@ -13,6 +13,12 @@ export {
   schemesOf,
   variantsOf,
 } from "./resolve.ts";
+export {
+  DEFAULT_STYLE,
+  defaultStyle,
+  stylesOf,
+  themesForStyle,
+} from "./styles.ts";
 export { textMateTheme } from "./syntax.ts";
 export { catppuccin } from "./themes/catppuccin.ts";
 export { defaultTheme } from "./themes/default.ts";
@@ -50,6 +56,7 @@ export type {
   Palette,
   ResolvedPalette,
   ResolvedTerminal,
+  Style,
   SyntaxRoles,
   TerminalPalette,
   TerminalTheme,

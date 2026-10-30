@@ -1,4 +1,5 @@
 import { isUiTheme, resolvePalette, resolveTerminal } from "./resolve.ts";
+import { DEFAULT_STYLE, stylesOf } from "./styles.ts";
 import type {
   AnyCustomTheme,
   ColorScheme,
@@ -69,7 +70,35 @@ function composeSide(
     terminal,
   };
   if (resolved.syntax !== undefined) palette.syntax = resolved.syntax;
+  if (resolved.styleTokens !== undefined) {
+    palette.styleTokens = resolved.styleTokens;
+  }
   return palette;
+}
+
+/**
+ * Each surviving based side belongs to its base theme's styles, a fully
+ * custom one to the style it was made under; undefined when that is the
+ * default style alone, as on a theme that never names one.
+ */
+function composedStyles(
+  custom: CustomTheme,
+  sides: Partial<Record<ColorScheme, Palette | null>>,
+  themes: readonly TerminalTheme[],
+): string[] | undefined {
+  const styles = new Set<string>();
+  for (const scheme of ["light", "dark"] as const) {
+    const side = custom[scheme];
+    if (!side || !sides[scheme]) continue;
+    if (!("base" in side)) {
+      styles.add(custom.style ?? DEFAULT_STYLE);
+      continue;
+    }
+    const base = themes.find((t) => t.id === side.base.theme) as Theme;
+    for (const style of stylesOf(base)) styles.add(style);
+  }
+  const out = [...styles];
+  return out.length === 1 && out[0] === DEFAULT_STYLE ? undefined : out;
 }
 
 /**
@@ -84,8 +113,15 @@ export function composeTheme(
   const light = custom.light && composeSide(custom.light, "light", themes);
   const dark = custom.dark && composeSide(custom.dark, "dark", themes);
   if (!light && !dark) return null;
-  const theme: { id: string; label: string; light?: Palette; dark?: Palette } =
-    { id: custom.id, label: custom.label };
+  const theme: {
+    id: string;
+    label: string;
+    styles?: string[];
+    light?: Palette;
+    dark?: Palette;
+  } = { id: custom.id, label: custom.label };
+  const styles = composedStyles(custom, { light, dark }, themes);
+  if (styles) theme.styles = styles;
   if (light) theme.light = light;
   if (dark) theme.dark = dark;
   return theme as Theme;

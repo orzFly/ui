@@ -1,4 +1,4 @@
-import { builtinThemes } from "@orz/themes";
+import { builtinThemes, defaultStyle } from "@orz/themes";
 import { createThemeStore, ThemeProvider } from "@orz/ui/theme";
 import { StrictMode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
@@ -20,6 +20,9 @@ if (redirect) {
     storageKey: THEME_STORAGE_KEY,
     themes: builtinThemes,
     terminalThemes: builtinThemes,
+    // A style other than the default needs its stylesheet in styles.css too.
+    // With one, ThemeMenu and the Settings page show no Style row.
+    styles: [defaultStyle],
   });
   const route = routeFromPathname(location.pathname, BASE);
   // Hydration has to render what the server rendered, so the page's chunk

@@ -33,8 +33,8 @@ import { collapseLongLiterals } from "./collapse-literals.ts";
 import { DocsRenderer } from "./docs-renderer.tsx";
 import {
   changedGlobals,
+  GLOBAL_KEYS,
   INITIAL_GLOBALS,
-  KEY_OF,
   prefOf,
   type ThemeGlobals,
   urlGlobals,
@@ -42,6 +42,7 @@ import {
 } from "./globals.ts";
 import { jsxSourceOptions } from "./jsx-source.ts";
 import { storybookTheme } from "./storybook-theme.ts";
+import { STYLES } from "./styles.ts";
 import {
   CUSTOMIZE_EVENT,
   type CustomizeMessage,
@@ -58,6 +59,7 @@ const themes = createThemeStore({
   persistPref: false,
   themes: builtinThemes,
   terminalThemes: builtinThemes,
+  styles: STYLES,
 });
 const DEFAULT_THEME = builtinThemes[0].id;
 
@@ -67,6 +69,9 @@ const last: ThemeGlobals = {
   ...urlGlobals(location.search),
 };
 themes.setPref(prefOf(last, DEFAULT_THEME));
+/** The globals as a pref, keeping the picks this store remembers per style. */
+const globalsPref = () =>
+  prefOf(last, DEFAULT_THEME, themes.getPref().uiByStyle);
 
 // A docs page that renders its stories in iframes (ThemeMenu's) takes their
 // URL from PREVIEW_URL, and Storybook remounts them on every globals change.
@@ -88,7 +93,7 @@ const setPref = (next: ThemePref) => {
 
 function applyGlobals(globals: Readonly<Record<string, unknown>>) {
   let moved = false;
-  for (const key of Object.values(KEY_OF)) {
+  for (const key of GLOBAL_KEYS) {
     const value = globals[key];
     if (typeof value === "string" && value !== last[key]) {
       last[key] = value;
@@ -97,7 +102,7 @@ function applyGlobals(globals: Readonly<Record<string, unknown>>) {
   }
   if (!moved) return;
   syncPreviewUrl();
-  setPref(prefOf(last, DEFAULT_THEME));
+  setPref(globalsPref());
 }
 
 function emitPreview(preview: ThemePreview | null, isDraft = false) {
@@ -263,6 +268,7 @@ function PinnedTheme({
       root: ref.current ?? undefined,
       themes: builtinThemes,
       terminalThemes: builtinThemes,
+      styles: STYLES,
     });
     // The page store's custom themes, kept in step: a pin may name one, and
     // the toolbar's editor changes them in this tab, which fires no `storage`.
@@ -281,10 +287,10 @@ function PinnedTheme({
       own.dispose();
     };
   }, []);
-  const { theme, terminal } = globals;
+  const { theme, terminal, style } = globals;
   useLayoutEffect(() => {
-    store?.setPref(prefOf({ theme, terminal }, DEFAULT_THEME));
-  }, [store, theme, terminal]);
+    store?.setPref(prefOf({ theme, terminal, style }, DEFAULT_THEME));
+  }, [store, theme, terminal, style]);
   return (
     <div ref={ref} className="bg-background p-4 text-foreground">
       {store && <ThemeProvider store={store}>{children}</ThemeProvider>}
@@ -293,23 +299,21 @@ function PinnedTheme({
 }
 
 const withTheme: Decorator = (Story, context) => {
-  const { theme, terminal } = context.globals;
+  const { theme, terminal, style } = context.globals;
   // On a docs page every inline story mounts at once; each applying its pin
   // to the page's store would repaint the page once per pin. The page's own
   // globals reach that store through the channel listeners above.
   const docs = context.viewMode === "docs";
   const pinned =
-    docs &&
-    (context.storyGlobals.theme !== undefined ||
-      context.storyGlobals.terminal !== undefined);
+    docs && GLOBAL_KEYS.some((key) => context.storyGlobals[key] !== undefined);
   // In story view the channel listeners apply a change first; this is the
   // fallback for a story's own globals.
   useEffect(() => {
-    if (!docs) applyGlobals({ theme, terminal });
-  }, [docs, theme, terminal]);
+    if (!docs) applyGlobals({ theme, terminal, style });
+  }, [docs, theme, terminal, style]);
   if (pinned) {
     return (
-      <PinnedTheme globals={{ theme, terminal }}>
+      <PinnedTheme globals={{ theme, terminal, style }}>
         <Story />
         <Toaster />
       </PinnedTheme>
@@ -366,6 +370,8 @@ const preview: Preview = {
   globalTypes: {
     theme: { description: "Theme" },
     terminal: { description: "Terminal theme" },
+    // Picked in the Theme menu's Style row, which drives data-style.
+    style: { description: "Style" },
     // What `touch:` sizes follow. "device" leaves it to the primary pointer;
     // the other two set data-pointer, so a desktop previews touch sizing.
     pointer: {

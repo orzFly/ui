@@ -12,6 +12,7 @@ import { GLOBALS_UPDATED, SET_GLOBALS } from "storybook/internal/core-events";
 import { addons, types } from "storybook/manager-api";
 import {
   changedGlobals,
+  GLOBAL_KEYS,
   INITIAL_GLOBALS,
   KEY_OF,
   prefOf,
@@ -124,20 +125,24 @@ addons.register("orz/theme", (api) => {
   ) => {
     if (storyGlobals !== undefined) {
       for (const slot of SLOTS) {
-        pinned[slot] = KEY_OF[slot] in storyGlobals;
+        // The style is picked in the UI slot's menu.
+        pinned[slot] =
+          KEY_OF[slot] in storyGlobals ||
+          (slot === "ui" && "style" in storyGlobals);
         handles[slot]?.setPinned(pinned[slot]);
       }
     }
     let moved = false;
-    for (const slot of SLOTS) {
-      const key = KEY_OF[slot];
+    for (const key of GLOBAL_KEYS) {
       const value = globals[key];
       if (typeof value === "string" && value !== last[key]) {
         last[key] = value;
         moved = true;
       }
     }
-    if (moved) setPref(prefOf(last, defaultThemeId));
+    if (moved) {
+      setPref(prefOf(last, defaultThemeId, store.getPref().uiByStyle));
+    }
   };
 
   api.on(

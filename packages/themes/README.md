@@ -46,6 +46,10 @@ const theme: Theme = {
 - A **terminal-only theme** (`TerminalTheme`) has terminal tokens and no UI tokens. It can be
   picked for a terminal, and it can be used before a UI mapping for it exists. Every `Theme` is
   also a `TerminalTheme`, so a terminal can follow any UI theme.
+- A theme belongs to the **styles** it lists in `styles`, by id; absent, it belongs to the default
+  style (`DEFAULT_STYLE`, described by `defaultStyle`). A `Style` is `{ id, label, tokens? }`, where
+  `tokens` names the colours beyond the UI tokens that its palettes supply in `styleTokens`. Every
+  built-in theme is in the default style.
 
 Themes are plain JSON with no functions or classes, so a theme built by hand, imported or composed
 can be stored, sent and compared like a built-in one.
@@ -113,9 +117,10 @@ syntax theme and its JSON round trip.
 - `resolvePalette(theme, scheme, variant?)` returns the palette with the variant applied, or null
   when the theme has no palette for that scheme. An unknown variant resolves to `default`.
   `resolveTerminal` does the same for terminal tokens and accepts terminal-only themes.
-- `schemesOf(theme)`, `variantsOf(theme)` and `isUiTheme(theme)` describe a theme for a picker.
-- `renderDeclarations(tokens, scheme)` and `renderTerminalDeclarations(terminal)` return the CSS
-  declarations for a rule body (`color-scheme: dark; --background: …;`).
+- `schemesOf(theme)`, `variantsOf(theme)`, `stylesOf(theme)` and `isUiTheme(theme)` describe a
+  theme for a picker; `themesForStyle(themes, styleId)` keeps the themes of one style.
+- `renderDeclarations(tokens, scheme, styleTokens?)` and `renderTerminalDeclarations(terminal)`
+  return the CSS declarations for a rule body (`color-scheme: dark; --background: …;`).
 - `amoled(palette)` derives the AMOLED variant of a dark palette. The panels (`background`, `card`,
   `popover`, `sidebar`) drop by the background's lightness, so the background becomes pure black
   and the rest stay near it. Highlights, fills and opaque borders (`accent`, `muted`, `secondary`,
@@ -129,7 +134,8 @@ syntax theme and its JSON round trip.
   tokens, or is detached (`{ tokens, terminal }`) and owns all of them. A side's terminal can base
   on any theme in the list, terminal-only ones included, with an optional `scheme`. A side whose
   base is missing is dropped, and the result is null when no side is left. Compose again whenever
-  the list changes, so a custom theme follows its base.
+  the list changes, so a custom theme follows its base. A based side brings its base theme's
+  styles and style tokens; a detached one belongs to the custom theme's `style`.
 - `composeTerminalTheme(custom, themes)` does the same for a `CustomTerminalTheme`
   (`kind: "terminal"`), a custom theme made of terminal colours alone. Each side is a
   `CustomTerminal`, resolved exactly as a UI side's terminal is, and the result is a

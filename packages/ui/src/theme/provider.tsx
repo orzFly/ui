@@ -1,18 +1,23 @@
-import type {
-  AnyCustomTheme,
-  ColorScheme,
-  TerminalTheme,
-  TerminalTokens,
-  Theme,
+import {
+  type AnyCustomTheme,
+  type ColorScheme,
+  DEFAULT_STYLE,
+  defaultStyle,
+  type Style,
+  type TerminalTheme,
+  type TerminalTokens,
+  type Theme,
 } from "@orz/themes";
 import { defaultTheme } from "@orz/themes/themes/default";
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useMemo,
   useSyncExternalStore,
 } from "react";
+import { prefForStyle } from "./picks.ts";
 import type { ThemePref } from "./pref.ts";
 import type {
   ResolvedTerminalTheme,
@@ -43,8 +48,12 @@ const FALLBACK_THEMES: readonly Theme[] = [defaultTheme];
 const FALLBACK_RESOLVED: ResolvedTheme = {
   theme: defaultTheme,
   colorScheme: "light",
+  style: DEFAULT_STYLE,
   variant: "default",
 };
+const FALLBACK_STYLES: readonly Style[] = [defaultStyle];
+const fallbackStyle = () => DEFAULT_STYLE;
+const fallbackStyles = () => FALLBACK_STYLES;
 const FALLBACK_TERMINAL: ResolvedTerminalTheme = {
   following: true,
   theme: defaultTheme,
@@ -145,6 +154,44 @@ export function useTerminalTheme(): ResolvedTerminalTheme & {
     () => ({ ...terminal, themes, preview, customThemes, setCustomThemes }),
     [terminal, themes, preview, customThemes, setCustomThemes],
   );
+}
+
+/**
+ * The style the UI is drawn in (a hovered one included), the committed one, the styles the
+ * provider's store offers, and a switch that goes through the store's `setPref` (see
+ * `ThemeStore.setStyle`). Outside a provider, or under a terminal-only store: the default style
+ * alone, and `setStyle` does nothing.
+ */
+export function useStyle(): {
+  style: string;
+  committed: string;
+  styles: readonly Style[];
+  setStyle: (id: string) => void;
+} {
+  const store = useContext(ThemeContext);
+  const ui = store !== null && store.getThemes().length > 0 ? store : null;
+  const subscribe = ui?.subscribe ?? subscribeNowhere;
+  const getStyle = ui
+    ? () => ui.getResolved()?.style ?? ui.getStyle()
+    : fallbackStyle;
+  const getCommitted = ui?.getStyle ?? fallbackStyle;
+  const getStyles = ui?.getStyles ?? fallbackStyles;
+  const style = useSyncExternalStore(subscribe, getStyle, getStyle);
+  const committed = useSyncExternalStore(subscribe, getCommitted, getCommitted);
+  const styles = useSyncExternalStore(subscribe, getStyles, getStyles);
+  const setStyle = useCallback(
+    (id: string) => {
+      if (ui === null) return;
+      if (!ui.getStyles().some((s) => s.id === id)) {
+        throw new Error(`setStyle: style ${id} is not offered`);
+      }
+      // setPref rather than setStyle: a wrapper that intercepts commits
+      // (Storybook's toolbar) overrides setPref alone.
+      ui.setPref(prefForStyle(ui.getPref(), ui.getStyle(), id, ui.getThemes()));
+    },
+    [ui],
+  );
+  return { style, committed, styles, setStyle };
 }
 
 const OUTSIDE_SLOTS = { ui: true, terminal: false };

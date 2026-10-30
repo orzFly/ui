@@ -583,6 +583,29 @@ describe("new themes", () => {
     expect(theme.light).not.toBe(based.light);
   });
 
+  it("records the style it was made under, and copies a recorded one", () => {
+    const ctx = {
+      pref: { ui: { theme: "dracula", mode: "dark" as const } },
+      resolved: { theme: dracula, variant: "default" },
+      baseThemes: builtinThemes,
+      customs: [],
+      labels: [],
+    };
+    expect(newTheme(ctx)).not.toHaveProperty("style");
+    expect(newTheme({ ...ctx, style: "default" })).not.toHaveProperty("style");
+    const made = newTheme({ ...ctx, style: "bevel" });
+    expect(made.style).toBe("bevel");
+    expect(duplicate(made, ctx).style).toBe("bevel");
+    const shown = composeDraft(made, builtinThemes);
+    if (!shown) throw new Error("composes");
+    const copy = newTheme({
+      ...ctx,
+      resolved: { theme: shown, variant: "default" },
+      customs: [made],
+    });
+    expect(copy.style).toBe("bevel");
+  });
+
   it("names a duplicate '<label> copy', numbered until free", () => {
     const ctx = {
       baseThemes: builtinThemes,

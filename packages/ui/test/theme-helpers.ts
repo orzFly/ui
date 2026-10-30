@@ -2,10 +2,15 @@ import {
   builtinThemes,
   type CustomTerminalTheme,
   type CustomTheme,
+  defaultStyle,
   dracula,
   nord,
+  type Palette,
+  type Style,
+  solarized,
   type TerminalTheme,
   type TerminalTokens,
+  type Theme,
 } from "@orz/themes";
 import { afterEach, beforeEach, vi } from "vitest";
 import { createThemeStore, type ThemeStore } from "../src/theme/index.ts";
@@ -105,6 +110,7 @@ export function resetThemeEnvironment() {
     localStorage.clear();
     delete html.dataset.theme;
     delete html.dataset.variant;
+    delete html.dataset.style;
     delete html.dataset.terminalTheme;
     html.classList.remove("dark");
     for (const el of document.head.querySelectorAll("style")) el.remove();
@@ -115,3 +121,36 @@ export function resetThemeEnvironment() {
     vi.restoreAllMocks();
   });
 }
+
+/** A second style, whose palettes supply one colour of their own. */
+export const bevelStyle: Style = {
+  id: "bevel",
+  label: "Bevel",
+  tokens: ["3d-face"],
+};
+export const bothStyles: readonly Style[] = [defaultStyle, bevelStyle];
+
+const withFace = (palette: Palette | undefined, face: string): Palette => ({
+  ...(palette as Palette),
+  styleTokens: { "3d-face": face },
+});
+/** The bevel style's themes: two palettes, then dark only. */
+export const bevelDay: Theme = {
+  id: "bevel-day",
+  label: "Bevel Day",
+  styles: ["bevel"],
+  light: withFace(solarized.light, "#d4d0c8"),
+  dark: withFace(solarized.dark, "#404040"),
+};
+export const bevelNight: Theme = {
+  id: "bevel-night",
+  label: "Bevel Night",
+  styles: ["bevel"],
+  dark: withFace(dracula.dark, "#202020"),
+};
+/** Built-ins plus the bevel themes. */
+export const styledThemes: readonly Theme[] = [
+  ...builtinThemes,
+  bevelDay,
+  bevelNight,
+];

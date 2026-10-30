@@ -1,5 +1,6 @@
 import {
   type AnyCustomTheme,
+  defaultStyle as builtinDefaultStyle,
   type ColorScheme,
   composeTerminalTheme,
   composeTheme,
@@ -9,14 +10,17 @@ import {
   renderTerminalDeclarations,
   resolvePalette,
   resolveTerminal,
+  type Style,
   type TerminalTheme,
   type TerminalTokens,
   type Theme,
   type Tokens,
 } from "@orz/themes";
 import { parseCustomThemes } from "./custom.ts";
-import type { PaintBackgrounds } from "./paint-guard.ts";
+import type { PaintCookie } from "./paint-guard.ts";
+import { prefForStyle } from "./picks.ts";
 import {
+  defaultStyleOf,
   fitPick,
   normalizePref,
   readStoredPref,
@@ -32,11 +36,14 @@ const STYLE_SELECTOR = 'style[data-orz-theme=""]';
 // Shared, so a missing slot's getter is as stable a snapshot as the others.
 const NO_THEMES: readonly Theme[] = Object.freeze([]);
 const NO_TERMINAL_THEMES: readonly TerminalTheme[] = Object.freeze([]);
+const DEFAULT_STYLES: readonly Style[] = Object.freeze([builtinDefaultStyle]);
 let nextRootId = 0;
 
 export interface ResolvedTheme {
   theme: Theme;
   colorScheme: ColorScheme;
+  /** The style the UI is drawn in, a hovered one included. */
+  style: string;
   /** The variant the active side shows ("default" when the picked one is not defined there). */
   variant: string;
 }
@@ -56,6 +63,11 @@ export type PreviewPick =
   | { theme: TerminalTheme; mode: ThemeMode; variant?: string };
 
 export interface ThemePreview {
+  /**
+   * An offered style. Without `ui`, the UI shows the pick switching to it would land on (the one
+   * remembered there, or its first theme).
+   */
+  style?: string;
   ui?: PreviewPick;
   /** "follow" previews the terminal following the (shown) UI. */
   terminal?: PreviewPick | "follow";
@@ -70,6 +82,13 @@ export interface ThemeStoreOptions {
   themes?: readonly Theme[];
   /** The terminal slot. Same rules. */
   terminalThemes?: readonly TerminalTheme[];
+  /**
+   * The styles the UI can be drawn in, each one's stylesheet imported by the app. Non-empty when
+   * given; on a duplicate id the first entry wins. Default: the default style alone.
+   */
+  styles?: readonly Style[];
+  /** The style a user who never picked one sees. Default "default" when offered, else the first. */
+  defaultStyle?: string;
   /** Where the attributes and `.dark` are written. Default `<html>`. */
   root?: HTMLElement;
   /** localStorage key holding the custom themes as JSON. Default `${storageKey}-custom`. */
@@ -104,6 +123,16 @@ export interface ThemeStore {
   getTerminalThemes(): readonly TerminalTheme[];
   /** Normalizes, persists, applies, notifies. Clears the preview. */
   setPref(next: ThemePref): void;
+  /** The styles offered, as passed. */
+  getStyles(): readonly Style[];
+  /** The committed style's id: `getPref().style`, or the default style when that is absent. */
+  getStyle(): string;
+  /**
+   * Switches the UI to an offered style through `setPref`, remembering the UI pick under the
+   * current style and restoring the one remembered under `id` (`ThemePref.uiByStyle`), or, when
+   * its theme is gone, the style's first theme. Throws on a style not offered or without a UI slot.
+   */
+  setStyle(id: string): void;
   /**
    * Shows `next` without persisting it; `null` shows the committed pick again.
    * A slot absent from `next` shows its committed pick. Throws when `next.ui`
@@ -133,6 +162,8 @@ export interface ThemeStore {
 interface PaintSide {
   theme: string;
   variant?: string;
+  /** The UI side's style. */
+  style?: string;
   light?: string;
   dark?: string;
 }
@@ -198,12 +229,28 @@ export function createThemeStore({
   persistCustomThemes = true,
   persistPref = true,
   paintCookie,
+  styles: initialStyles = DEFAULT_STYLES,
+  defaultStyle: initialDefaultStyle,
 }: ThemeStoreOptions): ThemeStore {
   if (initialThemes === undefined && initialTerminalThemes === undefined) {
     throw new Error("createThemeStore: pass themes, terminalThemes or both");
   }
   let baseThemes = slot(initialThemes, "themes");
   let baseTerminalThemes = slot(initialTerminalThemes, "terminalThemes");
+  const styles = slot(initialStyles, "styles") as Style[];
+  const styleIds = styles.map((s) => s.id);
+  if (
+    initialDefaultStyle !== undefined &&
+    !styleIds.includes(initialDefaultStyle)
+  ) {
+    throw new Error(
+      `createThemeStore: defaultStyle ${initialDefaultStyle} is not in styles`,
+    );
+  }
+  const defaultStyle = defaultStyleOf({
+    styles: styleIds,
+    defaultStyle: initialDefaultStyle,
+  });
   let customs: readonly AnyCustomTheme[] = [];
   // What the slots show: the composed custom themes, then the base list.
   let themes = baseThemes;
@@ -229,18 +276,25 @@ export function createThemeStore({
   let resolved: ResolvedTheme | null = null;
   let terminal = null as unknown as ResolvedTerminalTheme;
   let uiTokens: Tokens | null = null;
+  let uiStyleTokens: Record<string, string> | undefined;
   let shown: ThemePreview | null = null;
   // What resolve() last chose to show for each slot; a null terminal follows.
   let shownUi: Shown<Theme> | null = null;
   let shownTerminal: Shown<TerminalTheme> | null = null;
 
-  const slots = () => ({ themes, terminalThemes });
+  const slots = () => ({
+    themes,
+    terminalThemes,
+    styles: styleIds,
+    defaultStyle,
+  });
   // A missing pick falls back to the first base theme: adding a custom theme
   // must not change what a user who never picked sees.
   const fallback = () => ({
     themes: baseThemes,
     terminalThemes: baseTerminalThemes,
   });
+  const committedStyle = () => pref.style ?? defaultStyle;
   const persistsCustom = browser && persistCustomThemes;
   const persists = browser && persistPref;
   const baseIds = () =>
@@ -318,6 +372,7 @@ export function createThemeStore({
       const terminal = pickOf(cache?.terminal);
       if (ui) out.ui = ui;
       if (terminal) out.terminal = terminal;
+      if (typeof cache?.ui?.style === "string") out.style = cache.ui.style;
       return out;
     } catch {
       return {};
@@ -347,7 +402,17 @@ export function createThemeStore({
   }
 
   function resolve() {
-    shownUi = themes ? pickFor(themes, shown?.ui, pref.ui) : null;
+    const committed = committedStyle();
+    const style =
+      shown?.style !== undefined && styleIds.includes(shown.style)
+        ? shown.style
+        : committed;
+    const uiPreview =
+      shown?.ui ??
+      (style !== committed && themes
+        ? prefForStyle(pref, committed, style, themes).ui
+        : undefined);
+    shownUi = themes ? pickFor(themes, uiPreview, pref.ui) : null;
     const terminalPreview = shown?.terminal;
     // Following needs a UI to follow; a terminal-only store ignores it.
     shownTerminal =
@@ -367,9 +432,10 @@ export function createThemeStore({
       const colorScheme = schemeOf(ui.mode);
       const palette = resolvePalette(theme, colorScheme, ui.variant);
       if (palette !== null) {
-        nextResolved = { theme, colorScheme, variant: palette.variant };
+        nextResolved = { theme, colorScheme, style, variant: palette.variant };
         uiTerminal = palette.terminal;
         uiTokens = palette.tokens;
+        uiStyleTokens = palette.styleTokens;
       }
     }
     if (shownTerminal) {
@@ -404,13 +470,13 @@ export function createThemeStore({
     if (pref.ui && themes) {
       const ui = pref.ui;
       const theme = themes.find((t) => t.id === ui.theme) as Theme;
-      const side: PaintSide = { theme: ui.theme };
+      const side: PaintSide = { theme: ui.theme, style: committedStyle() };
       if (ui.variant) side.variant = ui.variant;
       for (const scheme of schemesFor(ui)) {
         const palette = resolvePalette(theme, scheme, ui.variant);
         if (palette === null) continue;
         side[scheme] =
-          `${renderDeclarations(palette.tokens, scheme)} ${renderTerminalDeclarations(palette.terminal)}`;
+          `${renderDeclarations(palette.tokens, scheme, palette.styleTokens)} ${renderTerminalDeclarations(palette.terminal)}`;
       }
       cache.ui = side;
     }
@@ -451,7 +517,9 @@ export function createThemeStore({
     if (target === null) return;
     const declarations: string[] = [];
     if (resolved !== null && uiTokens !== null) {
-      declarations.push(renderDeclarations(uiTokens, resolved.colorScheme));
+      declarations.push(
+        renderDeclarations(uiTokens, resolved.colorScheme, uiStyleTokens),
+      );
     }
     declarations.push(renderTerminalDeclarations(terminal.tokens));
     const selector = ownRoot ? `[data-orz-theme-root="${rootId}"]` : ":root";
@@ -462,6 +530,7 @@ export function createThemeStore({
     if (resolved !== null && shownUi) {
       target.classList.toggle("dark", resolved.colorScheme === "dark");
       target.dataset.theme = resolved.theme.id;
+      target.dataset.style = resolved.style;
       if (shownUi.pick.variant) target.dataset.variant = shownUi.pick.variant;
       else delete target.dataset.variant;
     }
@@ -500,14 +569,14 @@ export function createThemeStore({
     const ui = pref.ui;
     const theme = ui && themes?.find((t) => t.id === ui.theme);
     if (!ui || !theme) return;
-    const backgrounds: PaintBackgrounds = {};
+    const value: PaintCookie = { style: committedStyle() };
     for (const scheme of schemesFor(ui)) {
       const palette = resolvePalette(theme, scheme, ui.variant);
-      if (palette !== null) backgrounds[scheme] = palette.tokens.background;
+      if (palette !== null) value[scheme] = palette.tokens.background;
     }
     // biome-ignore lint/suspicious/noDocumentCookie: synchronous like the localStorage cache beside it, and the Cookie Store API is missing from older Firefox and Safari
     document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(
-      JSON.stringify(backgrounds),
+      JSON.stringify(value),
     )}; path=/; max-age=31536000; samesite=lax`;
   }
 
@@ -563,25 +632,38 @@ export function createThemeStore({
     window.addEventListener("storage", onStorage);
   }
 
+  function setPref(next: ThemePref) {
+    shown = null;
+    requested = next;
+    renormalize();
+    if (persists) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(pref));
+      } catch {
+        // preference just won't persist
+      }
+    }
+    apply();
+    notify();
+  }
+
   return {
     getPref: () => pref,
     getResolved: () => resolved,
     getTerminal: () => terminal,
     getThemes: () => themes ?? NO_THEMES,
     getTerminalThemes: () => terminalThemes ?? NO_TERMINAL_THEMES,
-    setPref(next) {
-      shown = null;
-      requested = next;
-      renormalize();
-      if (persists) {
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(pref));
-        } catch {
-          // preference just won't persist
-        }
+    setPref,
+    getStyles: () => styles,
+    getStyle: committedStyle,
+    setStyle(id) {
+      if (themes === undefined) {
+        throw new Error("setStyle: this store has no UI slot");
       }
-      apply();
-      notify();
+      if (!styleIds.includes(id)) {
+        throw new Error(`setStyle: style ${id} is not offered`);
+      }
+      setPref(prefForStyle(pref, committedStyle(), id, themes));
     },
     setThemes(next) {
       if (themes === undefined) {
@@ -667,6 +749,7 @@ function sameResolved(a: ResolvedTheme | null, b: ResolvedTheme | null) {
       b !== null &&
       a.theme === b.theme &&
       a.colorScheme === b.colorScheme &&
+      a.style === b.style &&
       a.variant === b.variant)
   );
 }

@@ -44,6 +44,8 @@ interface FileTerminalTheme {
 }
 interface FileTheme {
   label: string;
+  /** `CustomTheme.style`, when the theme records one. */
+  style?: string;
   light?: FileSide;
   dark?: FileSide;
 }
@@ -65,6 +67,9 @@ type FileTerminal =
 
 const SCHEMES: readonly ColorScheme[] = ["light", "dark"];
 const HEX = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
+// A style id this version may not offer is kept: the theme shows under it
+// once the app does.
+const STYLE = /^[\w-]{1,64}$/;
 
 // The scheme composeTheme reads a terminal base at: a one-palette base serves either side.
 function terminalScheme(
@@ -102,6 +107,7 @@ export function serializeThemeFile(
       continue;
     }
     const out: FileTheme = { label: custom.label };
+    if (custom.style !== undefined) out.style = custom.style;
     for (const scheme of SCHEMES) {
       const side = custom[scheme];
       if (side) out[scheme] = serializeSide(custom, scheme, side, themes);
@@ -667,6 +673,9 @@ function importEntry(
     | Omit<CustomTheme, "id" | "kind">
     | Omit<CustomTerminalTheme, "id"> =
     kind === "terminal" ? { kind: "terminal", label } : { label };
+  if (kind === "ui" && typeof raw.style === "string" && STYLE.test(raw.style)) {
+    (theme as Omit<CustomTheme, "id" | "kind">).style = raw.style;
+  }
   for (const scheme of SCHEMES) {
     const raw = sides[scheme];
     if (raw === undefined) continue;

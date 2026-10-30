@@ -22,12 +22,14 @@ import {
   type ThemeStore,
 } from "../src/theme/index.ts";
 import {
+  bothStyles,
   dusk,
   ink,
   paper,
   resetThemeEnvironment,
   store,
   stubDarkQuery,
+  styledThemes,
   styleText,
   sunrise,
 } from "./theme-helpers.ts";
@@ -573,6 +575,108 @@ describe("ThemeMenu: mode switch", () => {
       theme: "solarized",
       mode: "light",
     });
+    expect(themes.getPref().ui).toEqual({ theme: "vs", mode: "light" });
+  });
+});
+
+describe("ThemeMenu: style switch", () => {
+  const styled = { themes: styledThemes, styles: bothStyles };
+  const segment = (name: string) =>
+    within(screen.getByRole("group", { name: "Style" })).getByRole("button", {
+      name,
+    });
+
+  it("is absent with one style offered, and from the terminal picker", () => {
+    setup();
+    open();
+    expect(screen.queryByRole("group", { name: "Style" })).toBeNull();
+    unmount();
+    setup({
+      slot: "terminal",
+      options: { ...styled, terminalThemes: builtinThemes },
+    });
+    open("terminal");
+    expect(screen.queryByRole("group", { name: "Style" })).toBeNull();
+  });
+
+  it("lists the offered styles above the modes, pressing the committed one", () => {
+    setup({ options: styled });
+    open();
+    const fieldsets = [...document.querySelectorAll("fieldset")];
+    expect(fieldsets.map((f) => f.getAttribute("aria-label"))).toEqual([
+      "Style",
+      "Mode",
+    ]);
+    expect(segment("Default").getAttribute("aria-pressed")).toBe("true");
+    expect(segment("Bevel").getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("lists only the committed style's themes", () => {
+    setup({ options: styled });
+    open();
+    expect(rows()).not.toContain("Bevel Day");
+    expect(rows()).toContain("Nord");
+    unmount();
+    setup({
+      options: styled,
+      pref: { style: "bevel", ui: { theme: "bevel-night", mode: "dark" } },
+    });
+    open();
+    expect(rows()).toEqual(["Bevel Day", "Bevel Night"]);
+  });
+
+  it("previews a hovered style after 80 ms, and the highlighted row again on leaving it", () => {
+    const themes = setup({ options: styled });
+    open();
+    fireEvent.pointerMove(row("Nord"));
+    settle();
+    fireEvent.pointerEnter(segment("Bevel"));
+    settle();
+    expect(themes.getPreview()).toEqual({ style: "bevel" });
+    expect(themes.getResolved()).toMatchObject({
+      style: "bevel",
+      theme: { id: "bevel-day" },
+    });
+    expect(segment("Default").getAttribute("aria-pressed")).toBe("true");
+    // Hovering leaves the list on the committed style's themes.
+    expect(rows()).toContain("Nord");
+    fireEvent.pointerLeave(segment("Bevel"));
+    settle();
+    expect(themes.getPreview()).toEqual({
+      ui: { theme: "nord", mode: "system" },
+    });
+  });
+
+  it("is reachable from the keyboard, previewing on focus", () => {
+    const themes = setup({ options: styled });
+    open();
+    const bevel = segment("Bevel");
+    expect(bevel.tabIndex).toBe(0);
+    act(() => bevel.focus());
+    settle();
+    expect(themes.getResolved()?.style).toBe("bevel");
+    act(() => bevel.blur());
+    settle();
+    expect(themes.getPreview()).toBeNull();
+  });
+
+  it("commits a pick at once, remembering the theme of the style it leaves", () => {
+    const themes = setup({
+      options: styled,
+      pref: { ui: { theme: "vs", mode: "light" } },
+    });
+    open();
+    fireEvent.click(segment("Bevel"));
+    expect(themes.getPref()).toEqual({
+      style: "bevel",
+      ui: { theme: "bevel-day", mode: "light" },
+      uiByStyle: { default: { theme: "vs", mode: "light" } },
+    });
+    expect(segment("Bevel").getAttribute("aria-pressed")).toBe("true");
+    expect(rows()).toEqual(["Bevel Day", "Bevel Night"]);
+    settle();
+    expect(themes.getPreview()).toBeNull();
+    fireEvent.click(segment("Default"));
     expect(themes.getPref().ui).toEqual({ theme: "vs", mode: "light" });
   });
 });

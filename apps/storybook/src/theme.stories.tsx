@@ -2,15 +2,21 @@ import { Header, PageSample } from "@orz/fixtures/themes.tsx";
 import {
   builtinThemes,
   type ColorScheme,
+  defaultStyle,
+  github,
+  type Style,
   schemesOf,
+  type Theme,
   TOKEN_NAMES,
   variantsOf,
+  vs,
 } from "@orz/themes";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import {
   createThemeStore,
   ThemeProvider as ThemeProviderView,
   type ThemeStore,
+  useStyle,
   useTerminalTheme,
   useTheme,
   useThemeSlots,
@@ -41,6 +47,24 @@ const { ui, terminal } = useThemeSlots();
 // createThemeStore({ themes }) → { ui: true, terminal: false }
 // createThemeStore({ terminalThemes }) → { ui: false, terminal: true }
 // outside any ThemeProvider → { ui: true, terminal: false }`;
+
+const USE_STYLE = `import { builtinThemes, defaultStyle, type Style } from "@orz/themes";
+import { createThemeStore, useStyle } from "@orz/ui/theme";
+import "./compact.css"; // [data-style="compact"] { … }
+
+// Offer only the styles whose stylesheets the app imports; the default style needs none.
+const compact: Style = { id: "compact", label: "Compact" };
+const store = createThemeStore({
+  storageKey: "app-theme",
+  themes: [...builtinThemes, ...compactThemes], // a theme lists its styles in \`styles\`
+  styles: [defaultStyle, compact],
+  defaultStyle: "default",
+});
+// Back to the theme last picked under compact, or compact's first theme.
+store.setStyle("compact");
+
+const { style, committed, styles, setStyle } = useStyle();
+// style: what is shown, a hovered one included; committed: the pick`;
 
 /** Pick a theme from the toolbar, or click a swatch below; this page follows it. */
 const meta = {
@@ -207,6 +231,80 @@ export const ThemeProvider: Story = {
               <ThemeMenu />
             </Header>
             <PageSample />
+          </ThemeProviderView>
+        )}
+      </div>
+    );
+  },
+};
+
+/** A second style for the store below; no stylesheet here draws it. */
+const bevel: Style = { id: "bevel", label: "Bevel" };
+const bevelThemes: Theme[] = [vs, github].map((theme) => ({
+  ...theme,
+  id: `bevel-${theme.id}`,
+  label: `Bevel ${theme.label}`,
+  styles: ["bevel"],
+}));
+
+/** Reads `useStyle()` where it is rendered, as definition-list rows. */
+function StyleReadout() {
+  const { style, committed, styles } = useStyle();
+  return (
+    <dl className="grid w-fit grid-cols-[auto_auto] gap-x-6 gap-y-1 text-sm">
+      <dt>style</dt>
+      <dd>
+        <code>{style}</code>
+      </dd>
+      <dt>committed</dt>
+      <dd>
+        <code>{committed}</code>
+      </dd>
+      <dt>styles</dt>
+      <dd>
+        <code>{styles.map((s) => s.id).join(", ")}</code>
+      </dd>
+    </dl>
+  );
+}
+
+/**
+ * The style the UI is drawn in, beside the theme. With more than one style
+ * offered, `ThemeMenu` shows a Style row; hovering a style previews it, and
+ * the list holds that style's themes once it is picked.
+ */
+export const UseStyle: Story = {
+  name: "useStyle",
+  parameters: { docs: { source: { code: USE_STYLE, language: "tsx" } } },
+  render: function Render() {
+    const ref = useRef<HTMLDivElement>(null);
+    const [store, setStore] = useState<ThemeStore | null>(null);
+    useLayoutEffect(() => {
+      // See ThemeProvider above: the discarded copy has no root to paint.
+      const root = ref.current;
+      if (!root) return;
+      const own = createThemeStore({
+        storageKey: "orz-storybook-use-style",
+        persistPref: false,
+        persistCustomThemes: false,
+        root,
+        themes: [...builtinThemes, ...bevelThemes],
+        styles: [defaultStyle, bevel],
+      });
+      setStore(own);
+      return () => own.dispose();
+    }, []);
+    return (
+      <div
+        ref={ref}
+        className="grid gap-4 rounded-lg border bg-background p-4 text-foreground"
+      >
+        {store && (
+          <ThemeProviderView store={store}>
+            <Header>
+              <ThemeMenu />
+            </Header>
+            <StyleReadout />
           </ThemeProviderView>
         )}
       </div>

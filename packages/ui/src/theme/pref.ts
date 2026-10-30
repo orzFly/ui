@@ -1,8 +1,10 @@
 import {
   type ColorScheme,
+  DEFAULT_STYLE,
   DEFAULT_VARIANT,
   type TerminalTheme,
   type Theme,
+  themesForStyle,
 } from "@orz/themes";
 
 export type ThemeMode = "system" | ColorScheme;
@@ -13,15 +15,41 @@ export interface ThemePick {
   variant?: string;
 }
 export interface ThemePref {
-  /** Present exactly when the store has a UI slot. */
+  /** Present exactly when the store has a UI slot. Always a theme of `style`. */
   ui?: ThemePick;
   /** Absent = the terminal follows the UI pick. */
   terminal?: ThemePick;
+  /** The style the UI is drawn in; absent = the store's default style. Only with a UI slot. */
+  style?: string;
+  /** The UI pick last made under each other offered style, which switching back to it restores. */
+  uiByStyle?: Record<string, ThemePick>;
 }
 
 export interface ThemeSlots {
   themes?: readonly Theme[];
   terminalThemes?: readonly TerminalTheme[];
+  /** The ids of the styles offered; absent = the default style alone. */
+  styles?: readonly string[];
+  /** Absent = "default" when it is offered, else the first of `styles`. */
+  defaultStyle?: string;
+}
+
+/** The style an absent `ThemePref.style` stands for. */
+export function defaultStyleOf(slots: ThemeSlots): string {
+  const styles = slots.styles ?? [DEFAULT_STYLE];
+  return (
+    slots.defaultStyle ??
+    (styles.includes(DEFAULT_STYLE) ? DEFAULT_STYLE : (styles[0] as string))
+  );
+}
+
+/** The themes a style can show: its own, or every theme when it has none. */
+export function themesShownFor<T extends Theme>(
+  themes: readonly T[],
+  style: string,
+): readonly T[] {
+  const own = themesForStyle(themes, style);
+  return own.length > 0 ? own : themes;
 }
 
 /**
@@ -91,9 +119,27 @@ export function fitPick(pick: ThemePick, theme: TerminalTheme): ThemePick {
 const SYSTEM = (theme: TerminalTheme) =>
   fitPick({ theme: theme.id, mode: "system" }, theme);
 
+/** The remembered picks of the offered styles other than `current`; undefined when none. */
+function byStyleOf(
+  value: unknown,
+  styles: readonly string[],
+  current: string,
+): Record<string, ThemePick> | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const out: Record<string, ThemePick> = {};
+  for (const id of styles) {
+    if (id === current || !Object.hasOwn(value, id)) continue;
+    const pick = pickOf((value as Record<string, unknown>)[id]);
+    if (pick) out[id] = pick;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 /**
- * The pref made valid for the slots the store has. A pick naming no theme
- * falls back to the first of `fallback`'s list, by default the slot's own.
+ * The pref made valid for the slots the store has. A UI pick naming no theme
+ * of the style falls back to the style's first in `fallback`'s list, by
+ * default the slot's own. A remembered pick is kept as asked for: its theme
+ * may arrive later, and switching to its style checks it then.
  */
 export function normalizePref(
   pref: ThemePref,
@@ -106,10 +152,22 @@ export function normalizePref(
   const uiSlot = slots.themes !== undefined && slots.themes.length > 0;
 
   if (uiSlot) {
-    const themes = slots.themes as readonly Theme[];
+    const styles = slots.styles ?? [DEFAULT_STYLE];
+    const defaultStyle = defaultStyleOf(slots);
+    const style =
+      typeof pref.style === "string" && styles.includes(pref.style)
+        ? pref.style
+        : defaultStyle;
+    const all = slots.themes as readonly Theme[];
+    const themes = themesShownFor(all, style);
     const theme = ui && themes.find((t) => t.id === ui.theme);
     out.ui =
-      ui && theme ? fitPick(ui, theme) : SYSTEM((fallback.themes ?? themes)[0]);
+      ui && theme
+        ? fitPick(ui, theme)
+        : SYSTEM(themesShownFor(fallback.themes ?? all, style)[0] as Theme);
+    if (style !== defaultStyle) out.style = style;
+    const byStyle = byStyleOf(pref.uiByStyle, styles, style);
+    if (byStyle) out.uiByStyle = byStyle;
   }
 
   const terminalThemes = slots.terminalThemes;
@@ -157,6 +215,11 @@ export function readStoredPref(raw: string | null): ThemePref {
     const terminal = pickOf(record.terminal);
     if (ui) out.ui = ui;
     if (terminal) out.terminal = terminal;
+    if (typeof record.style === "string") out.style = record.style;
+    // Each pick is checked as normalizePref reads it.
+    if (typeof record.uiByStyle === "object" && record.uiByStyle !== null) {
+      out.uiByStyle = record.uiByStyle as Record<string, ThemePick>;
+    }
     return out;
   }
   return {};

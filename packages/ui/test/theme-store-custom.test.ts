@@ -44,10 +44,13 @@ describe("parseCustomThemes", () => {
       },
       inkwell,
       "custom-string",
+      { ...sunrise, id: "styled", style: "bevel" },
+      { ...sunrise, id: "bad-style", style: ["bevel"] },
     ];
     expect(parseCustomThemes(JSON.stringify(entries))).toEqual([
       sunrise,
       inkwell,
+      { ...sunrise, id: "styled", style: "bevel" },
     ]);
   });
 

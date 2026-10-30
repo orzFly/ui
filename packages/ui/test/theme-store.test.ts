@@ -225,9 +225,11 @@ describe("createThemeStore", () => {
     expect(themes.getResolved()).toEqual({
       theme: dracula,
       colorScheme: "dark",
+      style: "default",
       variant: "default",
     });
     expect(html.dataset.theme).toBe("dracula");
+    expect(html.dataset.style).toBe("default");
     expect(html.dataset.variant).toBeUndefined();
     expect(html.classList.contains("dark")).toBe(true);
     expect(styleText()).toMatch(
@@ -656,8 +658,9 @@ describe("createThemeStore", () => {
     });
     const cache = stored("app-theme-paint");
     expect(Object.keys(cache.ui).sort()).toEqual(
-      ["dark", "light", "theme", "variant"].sort(),
+      ["dark", "light", "style", "theme", "variant"].sort(),
     );
+    expect(cache.ui.style).toBe("default");
     expect(cache.ui.variant).toBe("amoled");
     expect(cache.ui.dark).toContain("--background: oklch(0 0 0);");
     expect(cache.ui.light).toContain("--ansi-red: ");
@@ -668,6 +671,7 @@ describe("createThemeStore", () => {
     expect(Object.keys(stored("app-theme-paint"))).toEqual(["ui"]);
     expect(Object.keys(stored("app-theme-paint").ui).sort()).toEqual([
       "light",
+      "style",
       "theme",
     ]);
   });

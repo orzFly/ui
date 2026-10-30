@@ -82,6 +82,9 @@ export function resolvePalette(
   };
   const syntax = picked?.syntax ?? palette.syntax;
   if (syntax !== undefined) resolved.syntax = syntax;
+  if (palette.styleTokens !== undefined) {
+    resolved.styleTokens = { ...palette.styleTokens };
+  }
   return resolved;
 }
 

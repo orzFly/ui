@@ -6,6 +6,7 @@ export type {
   CustomTerminalTheme,
   CustomTheme,
   Palette,
+  Style,
   TerminalPalette,
   TerminalTheme,
   TerminalTokenName,
@@ -18,6 +19,7 @@ export type {
   Variant,
 } from "@orz/themes";
 export {
+  themePaintCookieRootAttributes,
   themePaintCookieStyle,
   themePaintGuardScript,
 } from "./paint-guard.ts";
@@ -30,6 +32,7 @@ export {
 } from "./pref.ts";
 export {
   ThemeProvider,
+  useStyle,
   useTerminalTheme,
   useTheme,
   useThemeSlots,

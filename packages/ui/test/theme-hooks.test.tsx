@@ -1,19 +1,22 @@
-import { builtinThemes } from "@orz/themes";
+import { builtinThemes, defaultStyle } from "@orz/themes";
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 import {
   ThemeProvider,
   type ThemeStore,
+  useStyle,
   useTerminalTheme,
   useTheme,
   useThemeSlots,
 } from "../src/theme/index.ts";
 import {
+  bothStyles,
   ink,
   resetThemeEnvironment,
   store,
   stubDarkQuery,
+  styledThemes,
   sunrise,
 } from "./theme-helpers.ts";
 
@@ -93,6 +96,48 @@ describe("useTheme and useTerminalTheme: preview and custom themes", () => {
     expect(result.current).toBe(first);
     act(() => themes.setCustomThemes([sunrise]));
     expect(result.current).not.toBe(first);
+  });
+});
+
+describe("useStyle", () => {
+  it("answers the default style alone outside a provider and under a terminal-only store", () => {
+    stubDarkQuery(false);
+    const terminalOnly = store({ themes: undefined, terminalThemes: [ink] });
+    for (const wrapper of [undefined, within(terminalOnly)]) {
+      const { result } = renderHook(() => useStyle(), { wrapper });
+      expect(result.current.style).toBe("default");
+      expect(result.current.styles).toEqual([defaultStyle]);
+      expect(() => result.current.setStyle("bevel")).not.toThrow();
+    }
+  });
+
+  it("follows the shown style, and switches through the store's setPref", () => {
+    stubDarkQuery(false);
+    const themes = store({ themes: styledThemes, styles: bothStyles });
+    // What Storybook's toolbar does: a wrapper that sees every commit.
+    const commits: unknown[] = [];
+    const facade: ThemeStore = {
+      ...themes,
+      setPref(next) {
+        commits.push(next);
+        themes.setPref(next);
+      },
+    };
+    const { result } = renderHook(() => useStyle(), {
+      wrapper: within(facade),
+    });
+    expect(result.current.styles).toBe(themes.getStyles());
+    act(() => themes.preview({ style: "bevel" }));
+    expect(result.current.style).toBe("bevel");
+    expect(result.current.committed).toBe("default");
+    act(() => themes.preview(null));
+    expect(result.current.style).toBe("default");
+    act(() => result.current.setStyle("bevel"));
+    expect(result.current.style).toBe("bevel");
+    expect(result.current.committed).toBe("bevel");
+    expect(commits).toHaveLength(1);
+    expect(themes.getPref().ui?.theme).toBe("bevel-day");
+    expect(() => result.current.setStyle("chrome")).toThrow(/not offered/);
   });
 });
 

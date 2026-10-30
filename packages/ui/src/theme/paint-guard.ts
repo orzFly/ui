@@ -7,12 +7,16 @@ import type { ColorScheme } from "@orz/themes";
  */
 const PAGE_BACKGROUND = "background-color: var(--background);";
 
-/** The paint cookie's value, as JSON: each side's background the UI pick can show. */
-export type PaintBackgrounds = Partial<Record<ColorScheme, string>>;
+/** The paint cookie's value, as JSON: each side's background the UI pick can show, and its style. */
+export type PaintCookie = Partial<Record<ColorScheme, string>> & {
+  style?: string;
+};
 
 // A colour as a token holds one: no `;`, braces, quotes or `<`, which could
 // close the declaration, the rule or the <style> it lands in.
 const COLOR = /^[\w#.,%()/+\- ]{1,100}$/;
+// An id as a style has one, safe in any attribute however it is quoted.
+const STYLE_ID = /^[\w-]{1,64}$/;
 
 /** An open `(` would swallow the rest of the stylesheet as a function's arguments. */
 function balanced(color: string): boolean {
@@ -24,13 +28,13 @@ function balanced(color: string): boolean {
   return depth === 0;
 }
 
-function parseBackgrounds(value: string): PaintBackgrounds | null {
+function parseCookie(value: string): PaintCookie | null {
   // Frameworks hand a cookie over decoded or not; the store writes it encoded.
   for (const text of [value, safeDecode(value)]) {
     try {
       const parsed: unknown = JSON.parse(text);
       if (typeof parsed === "object" && parsed !== null) {
-        return parsed as PaintBackgrounds;
+        return parsed as PaintCookie;
       }
     } catch {
       // try the other form
@@ -56,9 +60,9 @@ export function themePaintCookieStyle(
   value: string | null | undefined,
 ): string {
   if (!value) return "";
-  const backgrounds = parseBackgrounds(value);
+  const cookie = parseCookie(value);
   const side = (scheme: ColorScheme) => {
-    const color = backgrounds?.[scheme];
+    const color = cookie?.[scheme];
     return typeof color === "string" && COLOR.test(color) && balanced(color)
       ? `html{background-color:${color};color-scheme:${scheme}}`
       : "";
@@ -69,6 +73,20 @@ export function themePaintCookieStyle(
     return `${light}@media (prefers-color-scheme: dark){${dark}}`;
   }
   return light || dark;
+}
+
+/**
+ * The attributes for a server to put on `<html>` beside `themePaintCookieStyle()`, from the same
+ * cookie value: `{ "data-style": id }`, so the page has the style's shapes before any script
+ * runs; `{}` for a missing or malformed value.
+ */
+export function themePaintCookieRootAttributes(
+  value: string | null | undefined,
+): { "data-style"?: string } {
+  const style = value ? parseCookie(value)?.style : undefined;
+  return typeof style === "string" && STYLE_ID.test(style)
+    ? { "data-style": style }
+    : {};
 }
 
 /** Inside a `<script>`, so `<` is escaped: a key holding `</script>` would end it. */
@@ -127,6 +145,7 @@ export function themePaintGuardScript({
       root.classList.toggle("dark", ui.scheme === "dark");
       root.dataset.theme = cache.ui.theme;
       if (cache.ui.variant) root.dataset.variant = cache.ui.variant;
+      if (cache.ui.style) root.dataset.style = cache.ui.style;
     }
     if (terminal) root.dataset.terminalTheme = cache.terminal.theme;
   } catch {}

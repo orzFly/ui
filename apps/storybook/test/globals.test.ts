@@ -10,6 +10,7 @@ import {
   changedGlobals,
   decodePick,
   encodePick,
+  encodeStyle,
   prefOf,
   type Slot,
   urlGlobals,
@@ -168,6 +169,58 @@ describe("round trip", () => {
       }
     }
     expect(encodePick(undefined, "terminal", DEFAULT)).toBe("follow");
+  });
+});
+
+describe("the style global", () => {
+  it("reads the default style as no style, and another as the pref's", () => {
+    expect(prefOf({ style: "default" }, DEFAULT)).toEqual({
+      ui: pick(DEFAULT, "system"),
+    });
+    expect(prefOf({ theme: "nord_dark", style: "bevel" }, DEFAULT)).toEqual({
+      ui: pick("nord", "dark"),
+      style: "bevel",
+    });
+    expect(encodeStyle({})).toBe("default");
+    expect(encodeStyle({ style: "bevel" })).toBe("bevel");
+  });
+
+  it("drops a value that is no style id", () => {
+    expect(prefOf({ style: "a:b" }, DEFAULT)).not.toHaveProperty("style");
+    expect(prefOf({ style: 3 }, DEFAULT)).not.toHaveProperty("style");
+  });
+
+  it("hands back the picks the store remembers per style", () => {
+    const uiByStyle = { bevel: pick("nord", "dark") };
+    expect(prefOf({}, DEFAULT, uiByStyle).uiByStyle).toBe(uiByStyle);
+  });
+
+  it("is written when the style changes, with the theme it lands on", () => {
+    const ui = pick("nord", "dark");
+    expect(
+      changedGlobals(
+        { ui },
+        { ui: pick("bevel-day", "dark"), style: "bevel" },
+        {},
+        DEFAULT,
+      ),
+    ).toEqual({ theme: "bevel-day_dark", style: "bevel" });
+    expect(changedGlobals({ ui, style: "bevel" }, { ui }, {}, DEFAULT)).toEqual(
+      { style: "default" },
+    );
+    expect(
+      changedGlobals(
+        { ui },
+        { ui, style: "bevel" },
+        { style: "bevel" },
+        DEFAULT,
+      ),
+    ).toEqual({});
+  });
+
+  it("travels in the URL", () => {
+    const url = withUrlGlobals("iframe.html", { style: "bevel" });
+    expect(urlGlobals(url.slice(url.indexOf("?")))).toEqual({ style: "bevel" });
   });
 });
 

@@ -3,16 +3,27 @@
 import type { ThemePick, ThemePref } from "@orz/ui/theme";
 
 export type Slot = "ui" | "terminal";
-export type GlobalKey = "theme" | "terminal";
+export type GlobalKey = "theme" | "terminal" | "style";
 export type ThemeGlobals = Partial<Record<GlobalKey, string>>;
 
 export const SLOTS: readonly Slot[] = ["ui", "terminal"];
-export const KEY_OF: Readonly<Record<Slot, GlobalKey>> = {
+export const KEY_OF: Readonly<Record<Slot, "theme" | "terminal">> = {
   ui: "theme",
   terminal: "terminal",
 };
-/** Storybook's `initialGlobals`: the first theme under system, the terminal following. */
-export const INITIAL_GLOBALS = { theme: "system", terminal: "follow" } as const;
+/** Every global the theme store reads. */
+export const GLOBAL_KEYS: readonly GlobalKey[] = ["theme", "terminal", "style"];
+/**
+ * Storybook's `initialGlobals`: the first theme under system, the terminal
+ * following, the default style.
+ */
+export const INITIAL_GLOBALS = {
+  theme: "system",
+  terminal: "follow",
+  style: "default",
+} as const;
+// A style id is already inside Storybook's URL charset.
+const STYLE = /^[A-Za-z0-9_-]+$/;
 
 // `_`, not `:`: Storybook drops a URL global holding anything outside
 // [a-zA-Z0-9 _-], so a reload would lose the pick.
@@ -66,17 +77,27 @@ export function urlGlobals(search: string): ThemeGlobals {
   for (const pair of raw.split(";")) {
     const colon = pair.indexOf(":");
     const key = pair.slice(0, colon);
-    if (colon > 0 && (key === "theme" || key === "terminal")) {
-      out[key] = pair.slice(colon + 1);
+    if (colon > 0 && (GLOBAL_KEYS as readonly string[]).includes(key)) {
+      out[key as GlobalKey] = pair.slice(colon + 1);
     }
   }
   return out;
 }
 
-/** Both slots from Storybook's globals; a missing global reads as its initial value. */
+/** The style global's string: the default style is its initial value. */
+export function encodeStyle(pref: ThemePref): string {
+  return pref.style ?? INITIAL_GLOBALS.style;
+}
+
+/**
+ * Both slots and the style from Storybook's globals; a missing global reads
+ * as its initial value. The globals hold no per-style memory, so the store's
+ * own `uiByStyle` is passed back in.
+ */
 export function prefOf(
   globals: Readonly<Record<string, unknown>>,
   defaultThemeId: string,
+  uiByStyle?: ThemePref["uiByStyle"],
 ): ThemePref {
   const pref: ThemePref = {};
   for (const slot of SLOTS) {
@@ -88,12 +109,21 @@ export function prefOf(
     );
     if (pick !== undefined) pref[slot] = pick;
   }
+  const style = globals.style;
+  if (
+    typeof style === "string" &&
+    style !== INITIAL_GLOBALS.style &&
+    STYLE.test(style)
+  ) {
+    pref.style = style;
+  }
+  if (uiByStyle !== undefined) pref.uiByStyle = uiByStyle;
   return pref;
 }
 
 /**
  * The globals a commit from `before` to `after` writes: only the slots whose
- * pick changed, and not one already equal to `last`. Normalizing drops a pick
+ * pick changed and the style if it did, and not one already equal to `last`. Normalizing drops a pick
  * whose theme this browser lacks, so re-encoding an untouched slot would
  * overwrite a shared custom id with the fallback.
  */
@@ -110,6 +140,8 @@ export function changedGlobals(
     if (value === last[KEY_OF[slot]]) continue;
     out[KEY_OF[slot]] = value;
   }
+  const style = encodeStyle(after);
+  if (style !== encodeStyle(before) && style !== last.style) out.style = style;
   return out;
 }
 

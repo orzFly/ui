@@ -111,6 +111,11 @@ export interface TerminalPalette {
 export interface Palette extends TerminalPalette {
   tokens: Tokens;
   /**
+   * The colour tokens the theme's styles add beyond the 35 (each `Style`'s `tokens`), named as in
+   * CSS without the leading `--`.
+   */
+  styleTokens?: Record<string, string>;
+  /**
    * A shiki theme from pierre's bundled collection, by name, or a theme drawn
    * for this palette; absent = pierre's own tokens.
    */
@@ -130,8 +135,21 @@ export type TerminalTheme = ThemeHead &
     | { light: TerminalPalette; dark?: TerminalPalette }
     | { light?: TerminalPalette; dark: TerminalPalette }
   );
-export type Theme = ThemeHead &
-  ({ light: Palette; dark?: Palette } | { light?: Palette; dark: Palette });
+export type Theme = ThemeHead & {
+  /** The ids of the styles the theme belongs to; absent = `["default"]`. */
+  styles?: readonly string[];
+} & ({ light: Palette; dark?: Palette } | { light?: Palette; dark: Palette });
+
+/**
+ * How components are drawn: radii, edges, depth, type, density, focus, state cues and motion.
+ * Plain data; what it changes is a stylesheet scoped to `[data-style="<id>"]`.
+ */
+export interface Style {
+  id: string;
+  label: string;
+  /** Colour tokens beyond the 35 that a palette of this style supplies in `styleTokens`. */
+  tokens?: readonly string[];
+}
 
 export type CustomTerminal =
   | {
@@ -151,6 +169,11 @@ export type CustomTheme = {
   /** Absent in everything written before terminal custom themes existed; writers omit it. */
   kind?: "ui";
   label: string;
+  /**
+   * The style a fully custom side belongs to, recorded when the theme is made; absent =
+   * "default". A based side belongs to its base theme's styles instead.
+   */
+  style?: string;
   light?: CustomSide;
   dark?: CustomSide;
 };
@@ -167,6 +190,7 @@ export type AnyCustomTheme = CustomTheme | CustomTerminalTheme;
 
 export interface ResolvedPalette {
   tokens: Tokens;
+  styleTokens?: Record<string, string>;
   terminal: TerminalTokens;
   syntax?: string | TextMateTheme;
   /** The variant actually applied on this side: the requested id, or "default". */

@@ -26,6 +26,7 @@ the page with the draft as you edit it.
 
 | Choice | Values | Where |
 |---|---|---|
+| Style | The [styles](#styles) the app offers; there is no choice when it offers one | `ThemeMenu`'s Style row |
 | Theme | The themes the app passes the store, such as [`@orz/themes`' built-ins](#the-built-in-themes) | `ThemeMenu` |
 | Mode | Auto (follows the system), Light, Dark; one-palette themes have one | `ThemeMenu` |
 | Variant | Per theme, such as a dark palette's AMOLED, or [Catppuccin's flavours](#the-built-in-themes) | A theme's submenu in `ThemeMenu` |
@@ -53,6 +54,22 @@ with a name of its own shows it, and the variants a side adds follow it.
   never flashes white.
 - **Give a terminal its own slot** with `terminalThemes` when the app shows terminal output, so
   someone who likes a light UI can keep a dark terminal.
+
+## Styles
+
+A style draws the components: their corners, edges, type, spacing, focus and motion. A theme
+belongs to the styles it lists in `styles`, or to the default style when it lists none, so the user
+picks a style and then one of its themes.
+
+- **Offer the styles whose stylesheets you import.** `createThemeStore({ styles, defaultStyle })`
+  takes them and starts a new user on `defaultStyle`; without `styles` the store offers the default
+  style alone, and the menu has no Style row.
+- **Let the user switch.** With more than one style, `ThemeMenu` shows a Style row above the modes
+  and previews a style while it is hovered; from code, `setStyle` on the store or from `useStyle()`
+  switches it. Either way the user lands on the theme they last picked under that style, or on its
+  first theme.
+- **Hold the user to one style** by offering that one alone. A terminal theme is not tied to a
+  style: terminal output is content, and its own pick shows under any.
 
 ## What the app does not do
 

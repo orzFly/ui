@@ -21,6 +21,7 @@ import { type ImportEntry, serializeThemeFile } from "../lib/theme-file.ts";
 import { useDirtySource } from "../lib/unsaved-guard.ts";
 import {
   type ThemeMode,
+  useStyle,
   useTerminalTheme,
   useTheme,
   useThemeSlots,
@@ -159,6 +160,7 @@ function EditorSession({
   const ui = useTheme();
   const terminal = useTerminalTheme();
   const slots = useThemeSlots();
+  const { style } = useStyle();
   const { customThemes: everyCustom, pref, setPref, preview } = ui;
   // Without a UI slot useTheme() answers a fallback list.
   const themes = slots.ui ? ui.themes : NO_THEMES;
@@ -253,6 +255,7 @@ function EditorSession({
       baseThemes,
       customs: everyCustom,
       labels,
+      style,
     });
     return { draft, saved: null };
   };

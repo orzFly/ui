@@ -31,6 +31,7 @@ import {
   type ThemeMode,
   type ThemePick,
   type ThemePreview,
+  useStyle,
   useTerminalTheme,
   useTheme,
   useThemeSlots,
@@ -41,6 +42,7 @@ import {
   previewForVariant,
   schemesDefining,
 } from "../theme/picks.ts";
+import { themesShownFor } from "../theme/pref.ts";
 import { Button } from "./button.tsx";
 import {
   FilterMenu,
@@ -90,6 +92,11 @@ const MODES: { mode: ThemeMode; label: string; Icon: typeof SunIcon }[] = [
   { mode: "light", label: "Light", Icon: SunIcon },
   { mode: "dark", label: "Dark", Icon: MoonIcon },
 ];
+// The Style and Mode rows: segmented buttons on a muted track.
+const SEGMENTS =
+  "mx-2 grid gap-0.5 rounded-[min(var(--radius-control),8px)] bg-muted p-0.5";
+const SEGMENT =
+  "flex items-center justify-center gap-1.5 rounded-[min(var(--radius-control),6px)] py-1 text-muted-foreground text-xs aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-raised disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-3.5";
 const FOLLOW_LABEL = "Same as UI";
 const CUSTOMIZE_LABEL = "Custom themes…";
 
@@ -213,8 +220,14 @@ export function ThemeMenu({
   const previewing = useRef(false);
 
   const { pref, setPref, preview } = ui;
+  const style = useStyle();
+  // The committed style's, so hovering another style leaves the list alone.
+  const uiThemes = useMemo(
+    () => themesShownFor(ui.themes, style.committed),
+    [ui.themes, style.committed],
+  );
   const themes: readonly TerminalTheme[] =
-    slot === "ui" ? ui.themes : terminal.themes;
+    slot === "ui" ? uiThemes : terminal.themes;
   // The composed custom themes lead the list. Only that run counts: a stored
   // custom theme whose id a base theme took is left out of the list, and the
   // base theme must not show as custom.
@@ -272,14 +285,30 @@ export function ThemeMenu({
     return { [slot]: pick };
   };
 
-  const onHighlight = (row: Row | null) => {
+  const settle = (next: ThemePreview | null) => {
     cancelSettle();
-    if (!open) return;
-    const next = previewOf(row);
     timer.current = setTimeout(() => {
       timer.current = null;
       show(next);
     }, SETTLE_MS);
+  };
+
+  // What leaving a style button shows again: the highlighted row's preview.
+  const highlighted = useRef<Row | null>(null);
+  const onHighlight = (row: Row | null) => {
+    highlighted.current = row;
+    cancelSettle();
+    if (!open) return;
+    settle(previewOf(row));
+  };
+
+  const pickStyle = (id: string) => {
+    cancelSettle();
+    previewing.current = false;
+    style.setStyle(id);
+    menu.current?.resetHighlight();
+    // resetHighlight reports null, and setPref already showed the commit.
+    cancelSettle();
   };
 
   const onOpenChange = (next: boolean) => {
@@ -492,10 +521,34 @@ export function ThemeMenu({
     );
   };
 
-  const header = (
+  const styleRow = slot === "ui" && style.styles.length > 1 && (
+    <fieldset
+      aria-label="Style"
+      className={cn(SEGMENTS, "mt-2 auto-cols-fr grid-flow-col")}
+    >
+      {style.styles.map(({ id, label }) => (
+        <button
+          key={id}
+          type="button"
+          aria-pressed={style.committed === id}
+          className={SEGMENT}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => pickStyle(id)}
+          onPointerEnter={() => settle({ style: id })}
+          onPointerLeave={() => settle(previewOf(highlighted.current))}
+          onFocus={() => settle({ style: id })}
+          onBlur={() => settle(previewOf(highlighted.current))}
+        >
+          {label}
+        </button>
+      ))}
+    </fieldset>
+  );
+
+  const modes = (
     <fieldset
       aria-label="Mode"
-      className="mx-2 mt-2 mb-1 grid grid-cols-3 gap-0.5 rounded-[min(var(--radius-control),8px)] bg-muted p-0.5"
+      className={cn(SEGMENTS, "mt-2 mb-1 grid-cols-3")}
     >
       {MODES.map(({ mode, label, Icon }) => {
         const schemes = committedTheme ? schemesOf(committedTheme) : [];
@@ -516,7 +569,7 @@ export function ThemeMenu({
             aria-pressed={pressed}
             disabled={!usable}
             title={title}
-            className="flex items-center justify-center gap-1.5 rounded-[min(var(--radius-control),6px)] py-1 text-muted-foreground text-xs aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-raised disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-3.5"
+            className={SEGMENT}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => setMode(mode)}
           >
@@ -526,6 +579,12 @@ export function ThemeMenu({
         );
       })}
     </fieldset>
+  );
+  const header = (
+    <>
+      {styleRow}
+      {modes}
+    </>
   );
 
   const Icon: LucideIcon =
