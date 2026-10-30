@@ -137,6 +137,23 @@ describe("CodeBlock highlighting failures", () => {
     expect(view.parentElement?.style.visibility).toBe("hidden");
   });
 
+  it("stands in for a long file with its start, in the view's box", async () => {
+    mock.mode = "pending";
+    const lines = Array.from({ length: 2000 }, (_, i) => `line ${i + 1}`);
+    const { container } = render(
+      <CodeBlock
+        filename="long.txt"
+        contents={lines.join("\n")}
+        lineNumbers
+        className="max-h-96 overflow-auto"
+      />,
+    );
+    await screen.findByTestId("code-view");
+    const pre = container.querySelector("pre");
+    expect(pre?.textContent).toBe(lines.slice(0, 500).join("\n"));
+    expect(pre?.classList).toContain("max-h-96");
+  });
+
   it("removes the fallback and reveals CodeView after its first line", async () => {
     const { container } = render(
       <CodeBlock filename="snippet.ts" contents={TS_SNIPPET} />,

@@ -1,5 +1,6 @@
 import { Button } from "@orz/ui/components/button";
 import { copyToClipboard } from "@orz/ui/lib/clipboard";
+import { cn } from "@orz/ui/lib/utils";
 import {
   type ColorScheme,
   type TextMateTheme,
@@ -188,11 +189,55 @@ export function useSyntaxTheme(): SyntaxTheme {
 }
 
 /** The shape every code surface falls back to: the code, unhighlighted. */
-export function PlainCodeFallback({ contents }: { contents: string }) {
+export function PlainCodeFallback({
+  contents,
+  className,
+}: {
+  contents: string;
+  className?: string;
+}) {
   return (
-    <pre className="overflow-x-auto rounded-[min(var(--radius-frame),8px)] bg-muted p-3 text-[0.85em] leading-[1.45]">
+    <pre
+      className={cn(
+        "overflow-x-auto rounded-[min(var(--radius-frame),8px)] bg-muted p-3 text-[0.85em] leading-[1.45]",
+        className,
+      )}
+    >
       <code>{contents}</code>
     </pre>
+  );
+}
+
+// Storybook's a11y check (axe's color-contrast) runs over whatever a story
+// shows when it renders, which for a long file is this stand-in: it held the
+// tab 51 ms over 500 lines, 4 s over 10,000, and past a minute over the
+// CodeWorkerProvider story's 45,000 (UI-134).
+const LOADING_LINES = 500;
+
+/**
+ * What a code surface shows until pierre has drawn: the code unhighlighted,
+ * in the box the view will take, and only its start. Laid out whole, a long
+ * file's stand-in costs what the view's virtualization saves — 45,000 lines
+ * made the page 744,814px tall — and the view replaces it before the reader
+ * has scrolled far.
+ */
+export function LoadingCodeFallback({
+  contents,
+  className,
+}: {
+  contents: string;
+  className?: string;
+}) {
+  let end = -1;
+  for (let line = 0; line < LOADING_LINES; line++) {
+    end = contents.indexOf("\n", end + 1);
+    if (end === -1) break;
+  }
+  return (
+    <PlainCodeFallback
+      contents={end === -1 ? contents : contents.slice(0, end)}
+      className={className}
+    />
   );
 }
 
@@ -551,10 +596,12 @@ export function CodeBlock({
   // Highlighting fails per grammar rather than per input, so a block that has
   // gone plain stays plain: re-arming it would only repeat the same failure.
   const block = degraded ? (
-    <PlainCodeFallback contents={contents} />
+    <PlainCodeFallback contents={contents} className={className} />
   ) : (
     <CodeViewBoundary contents={contents}>
-      {!ready && <PlainCodeFallback contents={contents} />}
+      {!ready && (
+        <LoadingCodeFallback contents={contents} className={className} />
+      )}
       <div style={ready ? undefined : { visibility: "hidden" }}>
         <Suspense fallback={null}>
           {/* Plain text has nothing to tokenize, so no worker to start for it. */}
@@ -651,7 +698,7 @@ function FenceDiff({
   return (
     <div ref={containerRef}>
       <CodeViewBoundary contents={after}>
-        {!ready && <PlainCodeFallback contents={after} />}
+        {!ready && <LoadingCodeFallback contents={after} />}
         <div style={ready ? undefined : { visibility: "hidden" }}>
           <Suspense fallback={null}>
             <LazyMultiFileDiff
@@ -796,7 +843,9 @@ export function PatchFiles({
   if (degraded) return <PlainCodeFallback contents={text} />;
   return (
     <CodeViewBoundary contents={text}>
-      <Suspense fallback={<PlainCodeFallback contents={text} />}>
+      <Suspense
+        fallback={<LoadingCodeFallback contents={text} className={className} />}
+      >
         <LazyCodeView
           ref={viewRef}
           items={items}

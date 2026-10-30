@@ -22,9 +22,9 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CappedCodeBlock } from "./capped-code-block.tsx";
 import {
+  LoadingCodeFallback,
   PATCH_HEADER_HEIGHT,
   PatchFiles,
-  PlainCodeFallback,
   parsePatch,
   patchCommitId,
   patchFileId,
@@ -372,7 +372,9 @@ export function PatchView({
     return rows;
   }, [drawn, collapsed]);
 
-  if (parsed.kind === "pending") return <PlainCodeFallback contents={text} />;
+  if (parsed.kind === "pending") {
+    return <LoadingCodeFallback contents={text} className={FIT_CLASS[fit]} />;
+  }
   if (patches === null || drawn === null) {
     return (
       <>
