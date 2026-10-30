@@ -4,7 +4,7 @@ import themeTable from "virtual:orz-themes";
 import { Button, buttonVariants } from "@orz/ui/components/button";
 import { copyToClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
-import { ArrowUpRightIcon, CopyIcon } from "lucide-react";
+import { CopyIcon } from "lucide-react";
 import {
   type ComponentProps,
   isValidElement,
@@ -15,9 +15,8 @@ import { BelowFloor } from "./below-floor.tsx";
 import { Code } from "./code.tsx";
 import { Do, DoDont, Dont } from "./do-dont.tsx";
 import { Example } from "./example.tsx";
-import { nav } from "./pages.ts";
 import { BASE, Link } from "./router.tsx";
-import { pagesIn, storybookHref } from "./routes.ts";
+import { storybookHref } from "./routes.ts";
 
 function Anchor({ href = "", children, ...props }: ComponentProps<"a">) {
   const className = "font-medium underline underline-offset-4";
@@ -117,7 +116,7 @@ function Td(props: ComponentProps<"td">) {
   return <td className="border-b px-3 py-2 align-top" {...props} />;
 }
 
-function installOf(pkg: string) {
+export function installOf(pkg: string) {
   const install = installs.find(({ name }) => name === pkg);
   if (!install) throw new Error(`${pkg}: not a published package`);
   return install;
@@ -129,7 +128,7 @@ function Install({ pkg }: { pkg: string }) {
 }
 
 /** An install line in running text, with a button that copies it. */
-function Command({ command }: { command: string }) {
+export function Command({ command }: { command: string }) {
   return (
     <span className="inline-flex items-center gap-0.5">
       <InlineCode>{command}</InlineCode>
@@ -257,7 +256,7 @@ function BuiltinThemes() {
 }
 
 /** A link styled as a button, for a page's calls to action. */
-function LinkButton({
+export function LinkButton({
   to,
   variant = "default",
   children,
@@ -271,38 +270,6 @@ function LinkButton({
     <Link to={to} className={cn(buttonVariants({ variant, size: "lg" }))}>
       {children}
     </Link>
-  );
-}
-
-/** One card per door into the site: its sections, from the nav, and Storybook. */
-function Doors() {
-  const card =
-    "flex flex-col gap-1 rounded-xl border bg-card p-5 text-card-foreground transition-colors hover:bg-accent";
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {nav.children.map((section) => (
-        <Link
-          key={section.route}
-          to={(pagesIn(section)[0] ?? section).route}
-          className={card}
-        >
-          <span className="font-semibold">{section.title}</span>
-          {section.description && (
-            <span className="text-muted-foreground text-sm">
-              {section.description}
-            </span>
-          )}
-        </Link>
-      ))}
-      <a href={storybookHref(BASE)} className={card}>
-        <span className="inline-flex items-center font-semibold">
-          Components <ArrowUpRightIcon className="ml-1 size-4" />
-        </span>
-        <span className="text-muted-foreground text-sm">
-          Every export, live, with its props: the Storybook reference.
-        </span>
-      </a>
-    </div>
   );
 }
 
@@ -361,7 +328,6 @@ export const mdxComponents = {
   Do,
   DoDont,
   Dont,
-  Doors,
   Example,
   BelowFloor,
   BuiltinThemes,

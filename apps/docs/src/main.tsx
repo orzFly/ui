@@ -1,9 +1,9 @@
-import { builtinThemes, defaultStyle, raymondStyle } from "@orz/themes";
+import { builtinThemes } from "@orz/themes";
 import { createThemeStore, ThemeProvider } from "@orz/ui/theme";
 import { StrictMode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { App } from "./app.tsx";
-import { THEME_STORAGE_KEY } from "./head.ts";
+import { SITE_STYLES, THEME_STORAGE_KEY } from "./head.ts";
 import { loadPage } from "./pages.ts";
 import { storybookRedirect } from "./redirect.ts";
 import { BASE, Router } from "./router.tsx";
@@ -20,8 +20,7 @@ if (redirect) {
     storageKey: THEME_STORAGE_KEY,
     themes: builtinThemes,
     terminalThemes: builtinThemes,
-    // A style other than the default needs its stylesheet in styles.css too.
-    styles: [defaultStyle, raymondStyle],
+    styles: SITE_STYLES,
   });
   const route = routeFromPathname(location.pathname, BASE);
   // Hydration has to render what the server rendered, so the page's chunk

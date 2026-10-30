@@ -155,8 +155,13 @@
   [data-style="raymond"] [data-slot="table-row"] {
     border-bottom-color: transparent;
   }
+  /* Everything in a selected row, its quiet text and outlined chips
+     included, takes the highlight's text colour, as Windows draws it. */
   [data-style="raymond"] [data-slot="table-row"][data-state="selected"] {
     --accent: var(--primary);
+    --foreground: var(--primary-foreground);
+    --muted-foreground: var(--primary-foreground);
+    --border: var(--primary-foreground);
     color: var(--primary-foreground);
   }
 
@@ -287,7 +292,8 @@
     > :is(
       [data-slot="module-marker"],
       [data-slot="card-title"],
-      [data-slot="card-description"]
+      [data-slot="card-description"],
+      [data-slot="card-action"]
     ) {
     outline: calc(var(--spacing) * 1) solid var(--card);
     background-color: var(--card);

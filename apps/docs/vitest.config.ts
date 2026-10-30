@@ -1,11 +1,19 @@
+import mdx from "@mdx-js/rollup";
+import remarkGfm from "remark-gfm";
 import { defaultClientConditions } from "vite";
 import { defineConfig } from "vitest/config";
-import { dataPlugin } from "./scripts/plugins.ts";
+import { docsPlugins } from "./scripts/plugins.ts";
+import { remarkHeadings } from "./scripts/remark-headings.ts";
 
 export default defineConfig({
   resolve: { conditions: ["@orz/source", ...defaultClientConditions] },
   plugins: [
-    dataPlugin(),
+    ...docsPlugins(),
+    // A page renders in a test as it does in the site: home.test.tsx renders index.mdx.
+    {
+      enforce: "pre",
+      ...mdx({ mdExtensions: [], remarkPlugins: [remarkGfm, remarkHeadings] }),
+    },
     {
       name: "uncached-glob",
       // Vitest keys a cached module on its own source, so a module whose
