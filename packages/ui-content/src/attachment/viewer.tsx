@@ -1,6 +1,7 @@
 import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
+  DialogBody,
   DialogCloseButton,
   DialogContent,
   DialogTitle,
@@ -277,9 +278,11 @@ function ViewerBody({
   // For this opening only: the body is keyed by file.
   const [asked, setAsked] = useState(false);
   return (
-    <div
+    <DialogBody
+      // Inset as the title row and footer are: a renderer draws to its own
+      // edges, and the scrollbar sits by it rather than on the frame.
       className={cn(
-        "min-h-0 overflow-auto",
+        "mx-0 overflow-auto px-0",
         maximized ? "flex-1" : "max-h-[75vh]",
       )}
       // A renderer in "viewer" placement no longer knows the pane it is drawn
@@ -299,7 +302,7 @@ function ViewerBody({
           <Content source={file} placement="viewer" />
         </ContentTitleBar>
       )}
-    </div>
+    </DialogBody>
   );
 }
 
@@ -489,7 +492,7 @@ export function AttachmentViewer({
           // but stay a modal — Esc still closes it. sm:max-w-none is needed
           // to beat the dialog's built-in sm:max-w-sm cap.
           maximized
-            ? "top-0 left-0 h-full w-full max-w-none translate-x-0 translate-y-0 rounded-none sm:max-w-none"
+            ? "top-0 left-0 h-full max-h-none w-full max-w-none translate-x-0 translate-y-0 rounded-none sm:max-w-none"
             : "sm:max-w-5xl",
         )}
       >

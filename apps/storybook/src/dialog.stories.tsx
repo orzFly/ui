@@ -1,6 +1,7 @@
 import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogCloseButton,
   DialogContent,
@@ -120,15 +121,20 @@ export const ScrollingBody: Story = {
       <DialogTrigger asChild>
         <Button variant="outline">Long content</Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[80dvh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Changelog</DialogTitle>
-          <DialogDescription>Scrolls inside the dialog.</DialogDescription>
+          <DialogDescription>
+            The body scrolls; the title and the footer stay.
+          </DialogDescription>
         </DialogHeader>
-        {Array.from({ length: 40 }, (_, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: static filler rows
-          <p key={i}>Entry {i + 1}</p>
-        ))}
+        <DialogBody>
+          {Array.from({ length: 40 }, (_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static filler rows
+            <p key={i}>Entry {i + 1}</p>
+          ))}
+        </DialogBody>
+        <DialogFooter showCloseButton />
       </DialogContent>
     </Dialog>
   ),

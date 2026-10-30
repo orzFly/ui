@@ -2,6 +2,7 @@ import type { EditorView } from "@codemirror/view";
 import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -214,16 +215,16 @@ export function ConfigEditor() {
         </footer>
       </section>
       <Dialog open={reviewing} onOpenChange={setReviewing}>
-        <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-3xl">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Changes to {name}</DialogTitle>
             <DialogDescription>
               What the saved file loses in red, what your edits add in green.
             </DialogDescription>
           </DialogHeader>
-          <div className="min-h-0 overflow-y-auto">
+          <DialogBody>
             <CodeDiffBlock filename={name} before={before} after={draft} />
-          </div>
+          </DialogBody>
           <DialogFooter className="items-center">
             {problem !== null && (
               <p className="mr-auto text-destructive text-ui-sm">

@@ -24,6 +24,7 @@ import { Checkbox } from "../src/components/checkbox.tsx";
 import { ConfirmDialog } from "../src/components/confirm-dialog.tsx";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -158,6 +159,7 @@ const CASES: [file: string, slot: string, tree: ReactElement][] = [
           <DialogTitle>Title</DialogTitle>
           <DialogDescription>Description</DialogDescription>
         </DialogHeader>
+        <DialogBody>Body</DialogBody>
         <DialogFooter showCloseButton />
       </DialogContent>
     </Dialog>,

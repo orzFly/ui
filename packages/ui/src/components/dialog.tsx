@@ -152,7 +152,16 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-surface bg-popover p-4 text-ui text-popover-foreground shadow-overlay ring-1 ring-border duration-(--duration-overlay) outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
+          // A flex column, not a grid: an auto grid row never shrinks below
+          // its content, so a capped grid has no room to give back. Here a
+          // DialogBody shrinks and scrolls while the title bar and footer stay
+          // put; a dialog without one, or too short even for those, scrolls
+          // whole, so its footer is still reached. Every other child keeps its
+          // height, or a part drawn at a fixed one (a Skeleton, an image's
+          // box) would be the one to give. Clipped across: the corner X's
+          // touch hit area reaches past the frame, and as a scroller the
+          // content would otherwise scroll sideways by that much.
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-x-hidden overflow-y-auto rounded-surface bg-popover p-4 text-ui text-popover-foreground shadow-overlay ring-1 ring-border duration-(--duration-overlay) outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom) [&>:not([data-slot=dialog-body])]:shrink-0",
           className,
         )}
         onWheel={(event) => {
@@ -216,6 +225,25 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-header"
       className={cn("flex flex-col gap-2", className)}
+      {...props}
+    />
+  );
+}
+
+/** The part between the header and the footer that scrolls on a short screen. */
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-body"
+      className={cn(
+        // Out to the dialog's edges, so the scrollbar sits on the frame and a
+        // focus ring inside is not clipped. A sliver of body scrolls nothing
+        // usefully, so below a few lines the dialog scrolls whole instead;
+        // calc-size() keeps a shorter body at its own height, and a browser
+        // without it lets the body shrink as far as it must.
+        "-mx-4 min-h-[calc-size(max-content,min(size,4rem))] overflow-y-auto px-4",
+        className,
+      )}
       {...props}
     />
   );
@@ -291,6 +319,7 @@ function DialogDescription({
 
 export {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogCloseButton,
   DialogContent,
