@@ -7,12 +7,7 @@ import {
   type ValueProviders,
 } from "@orz/query";
 import { FilterIcon, TagIcon } from "lucide-react";
-import type {
-  ComponentProps,
-  FormEvent,
-  KeyboardEvent,
-  ReactNode,
-} from "react";
+import type { ComponentProps, KeyboardEvent, ReactNode } from "react";
 import {
   Fragment,
   useEffect,
@@ -94,8 +89,10 @@ const COMPLETION_ICON = {
  * A query box: `HighlightedInput` with the schema's colours, its completions,
  * and the app's own rows in one panel, behind todou's keyboard model.
  *
- * A form, not a button with a handler: Enter submits it the way every search
- * box on the web does. Where the query goes is the app's: `onSubmit`.
+ * Enter submits it the way every search box on the web does, and where the
+ * query goes is the app's: `onSubmit`. It is no `<form>` of its own, so it can
+ * sit in one as a field; Enter never reaches the enclosing form, whose
+ * submitting is `onSubmit`'s to decide.
  *
  * The listbox is hand-rolled rather than a radix popover because focus has to
  * stay in the input and `Content` wants to take it. Nothing is ever
@@ -306,28 +303,23 @@ export function QueryBox<R>({
     onSubmit(query, chosen?.kind === "app" ? chosen.row : undefined);
   };
 
-  // An IME takes Enter to commit its candidate, and on some browsers the
-  // keydown arrives with the composition already ended; keyCode 229 is how
-  // that one still says so. Either way the form must not submit.
-  const imeEnter = useRef(false);
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    if (imeEnter.current) {
-      imeEnter.current = false;
-      return;
-    }
-    // Esc hid the panel, and hiding it has to mean something: Enter then
-    // does the plain thing rather than following an invisible highlight.
-    // `open` is false after Escape, so nothing counts as chosen.
-    choose(open && hl !== NONE ? rows[hl] : undefined);
-  };
-
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     inputProps.onKeyDown?.(e);
     if (e.defaultPrevented) return;
+    // An IME takes Enter to commit its candidate, and on some browsers the
+    // keydown arrives with the composition already ended; keyCode 229 is how
+    // that one still says so.
     const composing = e.nativeEvent.isComposing || e.keyCode === 229;
-    imeEnter.current = e.key === "Enter" && composing;
+    if (e.key === "Enter") {
+      // Implicit submission would otherwise send an enclosing form along with
+      // this Enter, the IME's included.
+      if (!e.nativeEvent.isComposing) e.preventDefault();
+      // Esc hid the panel, and hiding it has to mean something: Enter then
+      // does the plain thing rather than following an invisible highlight.
+      // `open` is false after Escape, so nothing counts as chosen.
+      if (!composing) choose(open && hl !== NONE ? rows[hl] : undefined);
+      return;
+    }
     // The IME owns every key until it commits: Escape cancels its candidate,
     // Tab and the arrows pick one.
     if (composing) return;
@@ -385,63 +377,64 @@ export function QueryBox<R>({
 
   return (
     <search className={cn("relative", className)}>
-      <form onSubmit={submit}>
-        {leading !== undefined && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-2 z-10 flex -translate-y-1/2 text-muted-foreground [&_svg]:size-3.5"
-          >
-            {leading}
-          </span>
-        )}
-        <HighlightedInput
-          type="text"
-          {...inputProps}
-          inputRef={input}
-          // The browser's own drop-down would cover this panel, and it knows
-          // neither the syntax nor the app's values (T-268).
-          autoComplete="off"
-          // A combobox, so a screen reader follows `aria-activedescendant`
-          // through the rows while focus stays here with the caret.
-          role="combobox"
-          aria-expanded={open}
-          aria-controls={listId}
-          aria-activedescendant={open && hl !== NONE ? optionId(hl) : undefined}
-          aria-autocomplete="list"
-          aria-busy={loading || undefined}
-          value={value}
-          onValueChange={(next) => {
-            emit(next);
-            setDismissed(false);
-            setHighlight(NONE);
-          }}
-          onCaretChange={setPosition}
-          render={(text) =>
-            highlightQuery(
-              text,
-              text === value ? parts : parseQuery(schema, text),
-              schema,
-              providers,
-            )
-          }
-          onKeyDown={onKeyDown}
-          onFocus={(e) => {
-            setFocused(true);
-            setDismissed(false);
-            setHighlight(NONE);
-            inputProps.onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            inputProps.onBlur?.(e);
-            // Clicking a row blurs the input before the click lands; the
-            // listbox's own mousedown guard covers the pointer, this covers
-            // a focus that really did move into it.
-            if (list.current?.contains(e.relatedTarget)) return;
-            setFocused(false);
-          }}
-          {...(leading === undefined ? {} : { padding: "pl-7" })}
-        />
-      </form>
+      {leading !== undefined && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 left-2 z-10 flex -translate-y-1/2 text-muted-foreground [&_svg]:size-3.5"
+        >
+          {leading}
+        </span>
+      )}
+      <HighlightedInput
+        type="text"
+        // The phone keyboard's Enter key reads Search, as a search box's
+        // should.
+        enterKeyHint="search"
+        {...inputProps}
+        inputRef={input}
+        // The browser's own drop-down would cover this panel, and it knows
+        // neither the syntax nor the app's values (T-268).
+        autoComplete="off"
+        // A combobox, so a screen reader follows `aria-activedescendant`
+        // through the rows while focus stays here with the caret.
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-activedescendant={open && hl !== NONE ? optionId(hl) : undefined}
+        aria-autocomplete="list"
+        aria-busy={loading || undefined}
+        value={value}
+        onValueChange={(next) => {
+          emit(next);
+          setDismissed(false);
+          setHighlight(NONE);
+        }}
+        onCaretChange={setPosition}
+        render={(text) =>
+          highlightQuery(
+            text,
+            text === value ? parts : parseQuery(schema, text),
+            schema,
+            providers,
+          )
+        }
+        onKeyDown={onKeyDown}
+        onFocus={(e) => {
+          setFocused(true);
+          setDismissed(false);
+          setHighlight(NONE);
+          inputProps.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          inputProps.onBlur?.(e);
+          // Clicking a row blurs the input before the click lands; the
+          // listbox's own mousedown guard covers the pointer, this covers
+          // a focus that really did move into it.
+          if (list.current?.contains(e.relatedTarget)) return;
+          setFocused(false);
+        }}
+        {...(leading === undefined ? {} : { padding: "pl-7" })}
+      />
       {open && (
         <div
           ref={list}

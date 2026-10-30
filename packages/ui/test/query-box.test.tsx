@@ -1,6 +1,6 @@
 import type { ValueProviders } from "@orz/query";
 import { act, fireEvent, render } from "@testing-library/react";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { todouSchema } from "../../query/test/fixtures/todou-schema.ts";
 import { QueryBox, type RowSource } from "../src/components/query-box.tsx";
@@ -82,7 +82,6 @@ function Harness({
 function mount(props: Parameters<typeof Harness>[0] = {}) {
   const utils = render(<Harness {...props} />);
   const input = utils.getByLabelText("Search") as HTMLInputElement;
-  const form = utils.container.querySelector("form") as HTMLFormElement;
   const options = () => [
     ...utils.container.querySelectorAll('[role="option"]'),
   ];
@@ -97,7 +96,7 @@ function mount(props: Parameters<typeof Harness>[0] = {}) {
   };
   const key = (k: string, init: Record<string, unknown> = {}) =>
     fireEvent.keyDown(input, { key: k, ...init });
-  return { ...utils, input, form, options, texts, listbox, type, key };
+  return { ...utils, input, options, texts, listbox, type, key };
 }
 
 describe("QueryBox · keyboard model", () => {
@@ -110,7 +109,7 @@ describe("QueryBox · keyboard model", () => {
       box.options().map((o) => o.getAttribute("aria-selected")),
     ).not.toContain("true");
     expect(box.input.getAttribute("aria-activedescendant")).toBeNull();
-    fireEvent.submit(box.form);
+    box.key("Enter");
     expect(onSubmit).toHaveBeenCalledWith("har", undefined);
   });
 
@@ -118,10 +117,10 @@ describe("QueryBox · keyboard model", () => {
     const onSubmit = vi.fn();
     const box = mount({ onSubmit });
     box.type("   ");
-    fireEvent.submit(box.form);
+    box.key("Enter");
     expect(onSubmit).not.toHaveBeenCalled();
     box.type("  部署  ");
-    fireEvent.submit(box.form);
+    box.key("Enter");
     expect(onSubmit).toHaveBeenCalledWith("部署", undefined);
   });
 
@@ -190,7 +189,7 @@ describe("QueryBox · keyboard model", () => {
     const box = mount({ onSubmit });
     box.type("har");
     box.key("ArrowDown");
-    fireEvent.submit(box.form);
+    box.key("Enter");
     expect(box.input.value).toBe("harness:");
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -201,7 +200,7 @@ describe("QueryBox · keyboard model", () => {
     box.type("部署");
     box.key("ArrowDown");
     box.key("ArrowDown");
-    fireEvent.submit(box.form);
+    box.key("Enter");
     expect(onSubmit).toHaveBeenCalledWith("部署", { q: "部署 失败" });
     // Submitting closes the panel.
     expect(box.listbox()).toBeNull();
@@ -235,7 +234,7 @@ describe("QueryBox · keyboard model", () => {
     box.key("ArrowDown");
     box.key("ArrowDown");
     box.key("Escape");
-    fireEvent.submit(box.form);
+    box.key("Enter");
     expect(onSubmit).toHaveBeenCalledWith("部署", undefined);
   });
 
@@ -252,7 +251,7 @@ describe("QueryBox · keyboard model", () => {
       box.key("ArrowDown");
       box.key("ArrowDown");
       if (how === "submit") {
-        fireEvent.submit(box.form);
+        box.key("Enter");
         expect(onSubmit).toHaveBeenCalledWith("foo", { q: "foo bar" });
         expect(box.input.value).toBe("foo bar");
       } else {
@@ -290,7 +289,7 @@ describe("QueryBox · keyboard model", () => {
       await act(async () => answer([{ value: "alice" }]));
       expect(box.texts()).toContain("alice");
       expect(box.input.getAttribute("aria-activedescendant")).toBe(submitRow());
-      fireEvent.submit(box.form);
+      box.key("Enter");
       expect(onSubmit).toHaveBeenCalledWith("assignee:", undefined);
     } finally {
       vi.useRealTimers();
@@ -523,17 +522,14 @@ describe("QueryBox · IME", () => {
     box.type("bu");
     fireEvent.compositionStart(box.input);
     box.key("Enter", { isComposing: true });
-    fireEvent.submit(box.form);
     expect(onSubmit).not.toHaveBeenCalled();
     fireEvent.compositionEnd(box.input);
 
     // Safari ends the composition first and reports the key as 229.
     box.key("Enter", { keyCode: 229 });
-    fireEvent.submit(box.form);
     expect(onSubmit).not.toHaveBeenCalled();
 
     box.key("Enter");
-    fireEvent.submit(box.form);
     expect(onSubmit).toHaveBeenCalledWith("bu", undefined);
   });
 
@@ -559,5 +555,25 @@ describe("QueryBox · IME", () => {
     expect(box.input.className).toContain("text-foreground");
     fireEvent.compositionEnd(box.input);
     expect(box.input.className).toContain("text-transparent");
+  });
+});
+
+describe("QueryBox · in a form", () => {
+  it("is a field of the enclosing form, which Enter does not submit", () => {
+    const onSubmit = vi.fn();
+    const outer = vi.fn((e: FormEvent) => e.preventDefault());
+    const utils = render(
+      <form onSubmit={outer}>
+        <Harness onSubmit={onSubmit} />
+      </form>,
+    );
+    expect(utils.container.querySelectorAll("form")).toHaveLength(1);
+    const input = utils.getByLabelText("Search");
+    act(() => input.focus());
+    fireEvent.change(input, { target: { value: "部署" } });
+    // `false` is a prevented default, so no implicit submission follows.
+    expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(false);
+    expect(onSubmit).toHaveBeenCalledWith("部署", undefined);
+    expect(outer).not.toHaveBeenCalled();
   });
 });

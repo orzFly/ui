@@ -375,7 +375,11 @@ describe("mail", () => {
       "input[aria-label='Search mail']",
     );
     await type(input, query);
-    await act(async () => input?.form?.requestSubmit());
+    await act(async () =>
+      input?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      ),
+    );
   }
 
   /** Clicks a place in the wide screen's sidebar. */

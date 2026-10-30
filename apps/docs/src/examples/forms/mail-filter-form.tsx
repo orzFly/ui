@@ -79,6 +79,7 @@ export function MailFilterForm() {
           listAlign="start"
           inputProps={{
             id: "filter-query",
+            enterKeyHint: "go",
             placeholder: "from:ci label:release",
             "aria-invalid": error !== undefined,
             "aria-describedby": error ? "filter-query-error" : undefined,
