@@ -172,7 +172,7 @@ export function MediaControls({
                     data-slot="media-marker"
                     disabled={disabled}
                     aria-label={`${marker.label || `Marker ${index + 1}`} at ${formatTime(marker.time, long)}`}
-                    className="absolute top-1/2 h-3 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/50 outline-none after:absolute after:-inset-x-1.5 after:-inset-y-1 hover:bg-foreground focus-visible:focus-ring disabled:pointer-events-none"
+                    className="absolute top-1/2 h-3 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/50 outline-none after:absolute after:-inset-x-2.5 after:-inset-y-1.5 hover:bg-foreground focus-visible:focus-ring disabled:pointer-events-none touch:hit-area"
                     style={{
                       left: `${(Math.min(marker.time, duration) / duration) * 100}%`,
                     }}

@@ -11,6 +11,7 @@ import { ChevronRightIcon, RotateCcwIcon } from "lucide-react";
 import { type Dispatch, useId, useState } from "react";
 import { contrastRatio, parseColor } from "../../lib/color.ts";
 import { cn } from "../../lib/utils.ts";
+import { Button } from "../button.tsx";
 import { ColorPickerPopover } from "../color-picker.tsx";
 import { MatchedText, matchText } from "../filter-menu.tsx";
 import { Input } from "../input.tsx";
@@ -237,15 +238,16 @@ function TokenListView<N extends string>({
   };
 
   const resetButton = (entry: TokenEntry<N>) => (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="icon-xs"
       aria-label={`Reset ${entry.name}`}
       title="Remove the override"
       onClick={() => onReset(entry.name)}
-      className="inline-flex size-5 items-center justify-center rounded-[min(var(--radius-control),4px)] text-muted-foreground hover:bg-accent hover:text-foreground"
+      className="text-muted-foreground"
     >
-      <RotateCcwIcon className="size-3" />
-    </button>
+      <RotateCcwIcon />
+    </Button>
   );
 
   const state = (entry: TokenEntry<N>) => {

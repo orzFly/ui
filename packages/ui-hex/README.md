@@ -28,8 +28,9 @@ the app's radix copy.
 @import "@orz/ui-hex/styles.css";
 ```
 
-Import it after `@orz/ui/styles.css`. The stylesheet is plain CSS, scoped under `.orz-hex` and
-`.orz-hex-inspector`, and every colour in it is derived from the theme tokens through these
+Import it after `@orz/ui/styles.css`. The stylesheet registers the package's shipped JS with
+Tailwind, for the touch hit areas of the header's and the status bar's buttons; the rest is plain
+CSS, scoped under `.orz-hex` and `.orz-hex-inspector`, and every colour in it is derived from the theme tokens through these
 variables:
 
 | Variable | Default |

@@ -652,7 +652,7 @@ describe("AnsiView chrome details", () => {
     expect(cluster.className).toContain("group-hover:opacity-100");
     expect(cluster.className).toContain("focus-within:opacity-100");
     // A touch screen has no hover to reveal them.
-    expect(cluster.className).toContain("pointer-coarse:opacity-100");
+    expect(cluster.className).toContain("touch:opacity-100");
     expect(screen.getByRole("button", { name: "Wrap lines" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Download" })).toBeNull();
   });

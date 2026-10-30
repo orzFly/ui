@@ -220,7 +220,7 @@ function MobileNav({
 function rowClass(size: "pointer" | "touch") {
   return cn(
     "flex items-center px-3 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:font-medium aria-[current=page]:text-foreground aria-[current=page]:state-cue",
-    size === "touch" ? "min-h-11" : "min-h-8 pointer-coarse:min-h-11",
+    size === "touch" ? "min-h-11" : "min-h-8 touch:min-h-11",
   );
 }
 

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { todouSchema } from "../../query/test/fixtures/todou-schema.ts";
 import { Button } from "../src/components/button.tsx";
 import { Checkbox } from "../src/components/checkbox.tsx";
+import { ColorPicker } from "../src/components/color-picker.tsx";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -31,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../src/components/select.tsx";
+import { Slider } from "../src/components/slider.tsx";
 import { Switch } from "../src/components/switch.tsx";
 import { Tabs, TabsList, TabsTrigger } from "../src/components/tabs.tsx";
 import { Textarea } from "../src/components/textarea.tsx";
@@ -259,6 +261,40 @@ describe("touch sizes", () => {
     );
     expect(classesOf(screen.getByRole("tab"))).toEqual(
       expect.arrayContaining(["relative", "touch:hit-area", "touch:min-h-10"]),
+    );
+  });
+
+  it("Slider keeps its drawn size; its bar and its thumb have hit areas", () => {
+    const { container } = render(
+      <>
+        <Slider aria-label="H" defaultValue={[50]} />
+        <Slider aria-label="V" orientation="vertical" defaultValue={[50]} />
+      </>,
+    );
+    for (const root of container.querySelectorAll('[data-slot="slider"]')) {
+      expectHitAreaOnly(root);
+      // Under the thumb, so a press on it grabs it instead of jumping.
+      expect(classesOf(root)).toEqual(
+        expect.arrayContaining(["touch:isolate", "touch:after:-z-10"]),
+      );
+    }
+    for (const thumb of screen.getAllByRole("slider")) expectHitAreaOnly(thumb);
+  });
+
+  it("ColorPicker swatches widen to six a row, with a hit area", () => {
+    render(
+      <ColorPicker
+        value="#3b82f6"
+        onValueChange={() => {}}
+        swatches={["#ef4444", "#3b82f6"]}
+      />,
+    );
+    const swatch = screen.getByRole("button", { name: "#ef4444" });
+    expect(classesOf(swatch)).toEqual(
+      expect.arrayContaining(["relative", "touch:hit-area"]),
+    );
+    expect(classesOf(swatch.parentElement as Element)).toEqual(
+      expect.arrayContaining(["touch:grid-cols-6", "touch:gap-2"]),
     );
   });
 });

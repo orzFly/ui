@@ -127,7 +127,7 @@ export const EncodingPicker = memo(function EncodingPicker({
     >
       <button
         type="button"
-        className="orz-hex-encoding"
+        className="orz-hex-encoding relative touch:hit-area"
         aria-label="Text encoding"
       >
         <span className="orz-hex-encoding-value">{encodingLabel(value)}</span>

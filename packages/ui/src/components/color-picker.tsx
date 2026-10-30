@@ -1304,7 +1304,7 @@ export function ColorPicker({
             <div className="text-ui-3xs tracking-wide text-muted-foreground uppercase">
               {group.label}
             </div>
-            <div className="grid grid-cols-10 gap-1">
+            <div className="grid grid-cols-10 gap-1 touch:grid-cols-6 touch:gap-2">
               {usable.map(({ text, parsed }) => {
                 const pressed = isCurrent(parsed.color);
                 return (
@@ -1316,7 +1316,7 @@ export function ColorPicker({
                     aria-pressed={pressed}
                     disabled={disabled}
                     onClick={() => pickSwatch(text)}
-                    className="aspect-square rounded-full border border-black/15 outline-none focus-visible:focus-ring focus-visible:outline-offset-0 disabled:opacity-50 aria-pressed:ring-2 aria-pressed:ring-foreground aria-pressed:ring-offset-2 aria-pressed:ring-offset-popover"
+                    className="relative aspect-square rounded-full border border-black/15 outline-none focus-visible:focus-ring focus-visible:outline-offset-0 disabled:opacity-50 aria-pressed:ring-2 aria-pressed:ring-foreground aria-pressed:ring-offset-2 aria-pressed:ring-offset-popover touch:hit-area"
                     style={{
                       ...CHECKERBOARD,
                       backgroundImage: `linear-gradient(${css(parsed.color)}, ${css(parsed.color)}), ${CHECKERBOARD.backgroundImage}`,

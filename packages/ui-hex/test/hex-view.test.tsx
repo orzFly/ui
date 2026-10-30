@@ -677,6 +677,10 @@ describe("HexView encodings", () => {
       onCopy,
     });
     const trigger = root.querySelector(".orz-hex-encoding") as HTMLElement;
+    // Drawn at the dense row's height; a touch pointer gets 44px to hit.
+    expect(trigger.className.split(" ")).toEqual(
+      expect.arrayContaining(["relative", "touch:hit-area"]),
+    );
     const setData = vi.fn();
     fireEvent.copy(trigger, { clipboardData: { setData } });
     expect(setData).not.toHaveBeenCalled();

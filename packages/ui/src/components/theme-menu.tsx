@@ -497,12 +497,13 @@ export function ThemeMenu({
           )}
         </span>
         {onCustomize && customIds.has(theme.id) && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-xs"
             aria-label={`Edit ${theme.label}`}
             title="Edit"
             className={cn(
-              "flex size-5 items-center justify-center rounded-[min(var(--radius-control),6px)] text-muted-foreground hover:text-foreground",
+              "text-muted-foreground",
               !state.highlighted && "invisible",
             )}
             // Keeps focus, and so the keys, in the filter box.
@@ -514,7 +515,7 @@ export function ThemeMenu({
             }}
           >
             <PencilIcon className="size-3.5" />
-          </button>
+          </Button>
         )}
         <SchemeMarks theme={theme} />
       </>

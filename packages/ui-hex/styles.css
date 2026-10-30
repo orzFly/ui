@@ -1,3 +1,8 @@
+/* Tailwind resolves an imported file's @source against that file, so a
+   consumer importing this stylesheet scans the classes in the package's
+   shipped JS without writing an @source of its own. */
+@source "./dist";
+
 /* Load after @orz/ui/styles.css. The --hex-* defaults are declared on the
    components' own roots, so their var(--primary) and friends resolve
    against whichever theme class sits above them; an override therefore has

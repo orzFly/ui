@@ -749,7 +749,10 @@ describe("ThemeMenu: onCustomize", () => {
     open();
     fireEvent.pointerMove(row("Sunrise"));
     settle();
-    fireEvent.click(screen.getByRole("button", { name: "Edit Sunrise" }));
+    const edit = screen.getByRole("button", { name: "Edit Sunrise" });
+    // A Button, so it takes the style's xs size and a touch hit area.
+    expect(edit.dataset.size).toBe("icon-xs");
+    fireEvent.click(edit);
     expect(onCustomize).toHaveBeenLastCalledWith("custom-sunrise", "ui");
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(themes.getPreview()).toBeNull();

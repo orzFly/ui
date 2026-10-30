@@ -252,7 +252,10 @@ describe("TokenList rows", () => {
 
   it("removes an override with ↺", () => {
     render(<Harness initial={based} />);
-    fireEvent.click(screen.getByRole("button", { name: "Reset primary" }));
+    const reset = screen.getByRole("button", { name: "Reset primary" });
+    // A Button, so it takes the style's xs size and a touch hit area.
+    expect(reset.dataset.size).toBe("icon-xs");
+    fireEvent.click(reset);
     expect(latest.light).toEqual({ base: { theme: "solarized" } });
     expect(screen.queryByRole("button", { name: "Reset primary" })).toBeNull();
   });

@@ -371,7 +371,7 @@ export function HexEditor({
         <button
           type="button"
           tabIndex={-1}
-          className="orz-hex-mode"
+          className="orz-hex-mode relative touch:hit-area"
           aria-label={MODE_NAMES[mode]}
           aria-pressed={mode === "insert"}
           disabled={!doc.resizable || readOnly}

@@ -148,7 +148,7 @@ function SearchResults({
             onClick={onPick}
             className={cn(
               "flex flex-col justify-center gap-0.5 rounded-md px-3 py-1.5 aria-selected:bg-accent",
-              size === "touch" ? "min-h-11" : "min-h-8 pointer-coarse:min-h-11",
+              size === "touch" ? "min-h-11" : "min-h-8 touch:min-h-11",
               option.section && "ml-3 border-l pl-3",
             )}
           >

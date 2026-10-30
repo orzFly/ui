@@ -165,6 +165,9 @@ describe("HexEditor mode", () => {
     const { root, type } = setup({ onModeChange });
     const button = root.querySelector(".orz-hex-mode") as HTMLButtonElement;
     expect(button.textContent).toBe("OVR");
+    expect(button.className.split(" ")).toEqual(
+      expect.arrayContaining(["relative", "touch:hit-area"]),
+    );
     type("Insert");
     expect(onModeChange).toHaveBeenLastCalledWith("insert");
     expect(root.getAttribute("data-mode")).toBe("insert");

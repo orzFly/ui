@@ -83,6 +83,9 @@ A control you build yourself takes the same sizes the same way:
 - A row that is tapped grows with `touch:min-h-11` (44px).
 - A small control in a dense row keeps its size and adds the hit area: `relative touch:hit-area`.
   The `::after` belongs to the positioned element, so `relative` (or any positioning) is required.
+- Anything else that changes for a finger, such as tools that hover would reveal or a keyboard
+  shortcut hint, uses `touch:` too, not Tailwind's `pointer-coarse:`, which no `data-pointer`
+  reaches.
 
 ### Spacing between targets
 

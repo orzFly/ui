@@ -911,7 +911,7 @@ export function AnsiView({
         )}
         style={rootStyle}
       >
-        <div className="absolute top-1 right-1 z-10 flex gap-0.5 rounded-[min(var(--radius-control),8px)] bg-terminal-background opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
+        <div className="absolute top-1 right-1 z-10 flex gap-0.5 rounded-[min(var(--radius-control),8px)] bg-terminal-background opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100">
           {tools}
         </div>
         {scroller}

@@ -27,6 +27,9 @@ function Slider({
   );
 
   return (
+    // Under touch the whole bar takes a tap, through a 44px ::after kept under
+    // the thumb: a press on the thumb grabs it rather than jumping the value
+    // to where the finger landed.
     <SliderPrimitive.Root
       data-slot="slider"
       defaultValue={defaultValue}
@@ -34,7 +37,7 @@ function Slider({
       min={min}
       max={max}
       className={cn(
-        "relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
+        "relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col touch:isolate touch:hit-area touch:after:-z-10",
         className,
       )}
       {...props}
@@ -58,7 +61,7 @@ function Slider({
           aria-labelledby={ariaLabelledBy}
           // biome-ignore lint/suspicious/noArrayIndexKey: thumbs are positional, one per value
           key={index}
-          className="relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 outline-none hover:ring-3 focus-visible:focus-ring active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+          className="relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 outline-none hover:ring-3 focus-visible:focus-ring active:ring-3 disabled:pointer-events-none disabled:opacity-50 touch:hit-area"
         />
       ))}
     </SliderPrimitive.Root>

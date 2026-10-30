@@ -352,13 +352,13 @@ export function ImageCanvas({
         <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuItem onSelect={() => atCentre((f) => fitView(f))}>
             Fit
-            <DropdownMenuShortcut className="pointer-coarse:hidden">
+            <DropdownMenuShortcut className="touch:hidden">
               0
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => atCentre(actualAt)}>
             100%
-            <DropdownMenuShortcut className="pointer-coarse:hidden">
+            <DropdownMenuShortcut className="touch:hidden">
               1
             </DropdownMenuShortcut>
           </DropdownMenuItem>

@@ -174,6 +174,21 @@ describe("MediaControls", () => {
     expect(onSeek).toHaveBeenCalledWith(15);
   });
 
+  it("gives a marker 24px to hit, and 44px under a touch pointer", () => {
+    renderBar({ markers: [{ time: 15, label: "Intro" }] });
+    const classes = screen
+      .getByRole("button", { name: "Intro at 0:15" })
+      .className.split(/\s+/);
+    // Drawn 4×12; the ::after reaches 4+2×10 by 12+2×6.
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        "after:-inset-x-2.5",
+        "after:-inset-y-1.5",
+        "touch:hit-area",
+      ]),
+    );
+  });
+
   it("adds a speed outside the presets to the list", () => {
     renderBar({ speed: 3 });
     fireEvent.click(screen.getByRole("combobox", { name: "Speed" }));
