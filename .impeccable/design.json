@@ -1,0 +1,308 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T00:00:00Z",
+  "title": "Design System: @orz/ui",
+  "extensions": {
+    "colorMeta": {
+      "ai": {
+        "role": "primary",
+        "displayName": "Ai Indigo",
+        "canonical": "#1f3d6b",
+        "dark": "oklch(0.78 0.09 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.04 258)",
+          "oklch(0.25 0.07 258)",
+          "oklch(0.35 0.08 258)",
+          "oklch(0.45 0.09 258)",
+          "oklch(0.58 0.09 258)",
+          "oklch(0.7 0.08 258)",
+          "oklch(0.82 0.05 258)",
+          "oklch(0.95 0.015 258)"
+        ]
+      },
+      "ai-foreground": {
+        "role": "neutral",
+        "displayName": "Paper White on Ai",
+        "canonical": "#ffffff",
+        "dark": "oklch(0.18 0.014 258)"
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#ffffff",
+        "dark": "oklch(0.18 0.014 258)",
+        "amoled": "panels taken to black by amoled()"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Dense Ink",
+        "canonical": "#0f1727",
+        "dark": "oklch(0.94 0.012 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.012 258)",
+          "oklch(0.25 0.015 258)",
+          "oklch(0.35 0.018 258)",
+          "oklch(0.47 0.02 258)",
+          "oklch(0.6 0.02 258)",
+          "oklch(0.72 0.016 258)",
+          "oklch(0.84 0.012 258)",
+          "oklch(0.95 0.006 258)"
+        ]
+      },
+      "strip": {
+        "role": "neutral",
+        "displayName": "Strip Tint",
+        "canonical": "#eff3f9",
+        "dark": "oklch(0.225 0.018 258)"
+      },
+      "quiet-ink": {
+        "role": "neutral",
+        "displayName": "Quiet Ink",
+        "canonical": "#4a5568",
+        "dark": "oklch(0.74 0.022 258)"
+      },
+      "state-fill": {
+        "role": "neutral",
+        "displayName": "State Fill",
+        "canonical": "#e8eef7",
+        "dark": "oklch(0.285 0.028 258)"
+      },
+      "sidebar-state-fill": {
+        "role": "neutral",
+        "displayName": "Sidebar State Fill",
+        "canonical": "#dfe6f0",
+        "dark": "oklch(0.285 0.028 258)"
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline Rule",
+        "canonical": "#bfc8d5",
+        "dark": "oklch(0.36 0.022 258)"
+      },
+      "field-edge": {
+        "role": "neutral",
+        "displayName": "Field Edge",
+        "canonical": "#7c8799",
+        "dark": "oklch(0.55 0.025 258)"
+      },
+      "marker-tint": {
+        "role": "neutral",
+        "displayName": "Marker Tint",
+        "canonical": "#d3ddec",
+        "dark": "oklch(0.33 0.05 258)"
+      },
+      "destructive": {
+        "role": "status",
+        "displayName": "Destructive",
+        "canonical": "#c8102e",
+        "dark": "oklch(0.7 0.17 22)"
+      },
+      "success": {
+        "role": "status",
+        "displayName": "Success",
+        "canonical": "#12733a",
+        "dark": "oklch(0.74 0.15 150)"
+      },
+      "warning": {
+        "role": "status",
+        "displayName": "Warning",
+        "canonical": "#975a00",
+        "dark": "oklch(0.8 0.14 75)"
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "Dialog and sheet titles, beside the marker square."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All control, menu, tab and running UI text."
+      },
+      "body-sm": {
+        "displayName": "Body small",
+        "purpose": "Table text, header strips, descriptions, small buttons."
+      },
+      "module-title": {
+        "displayName": "Module title",
+        "purpose": "The card title inside the ruled header strip."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges and counts; the 11px floor."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Dense tabular data such as the hex grid."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-raised",
+        "value": "0 0 #0000",
+        "purpose": "Surfaces tile flat: no shadow."
+      },
+      {
+        "name": "state-cue",
+        "value": "inset 3px 0 0 0 currentColor",
+        "purpose": "The highlighted or selected row's leading ink bar, paired with the state fill."
+      },
+      {
+        "name": "tab-cue",
+        "value": "inset 0 2px 0 0 var(--primary)",
+        "purpose": "The current tab's ai top edge."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline: 2px solid var(--ring); outline-offset: 2px",
+        "purpose": "Focus indicator on every control; focus-ring-inset draws it inside a clipping frame."
+      },
+      {
+        "name": "shadow-menu",
+        "value": "2px 2px 0 0 rgb(15 23 39 / 0.14)",
+        "purpose": "Menus and selects: one small hard shadow beside the 1px ring, above the mosaic."
+      },
+      {
+        "name": "shadow-overlay",
+        "value": "3px 3px 0 0 rgb(15 23 39 / 0.14)",
+        "purpose": "Popovers, dialogs and sheets: the same, a step deeper."
+      }
+    ],
+    "motion": [
+      {
+        "name": "duration-overlay",
+        "value": "100ms",
+        "purpose": "Menus, popovers, dialogs fade; zoom 1 and translate 0, so nothing moves."
+      },
+      {
+        "name": "duration-sheet",
+        "value": "100ms",
+        "purpose": "A sheet fades in from its edge with translate 0."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "translate, scale, rotate, blur reset to initial",
+        "purpose": "Under prefers-reduced-motion a fade stays, travel stops."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "touch",
+        "value": "(pointer: coarse), or a data-pointer=\"coarse\" ancestor"
+      },
+      {
+        "name": "md",
+        "value": "48rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one ai-filled action in a module.",
+      "html": "<button class=\"ds-btn-primary\">Save</button>",
+      "css": ".ds-btn-primary { background: var(--primary, #1f3d6b); color: var(--primary-foreground, #fff); height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 2px; font: 500 13px/20px 'Noto Sans Variable', system-ui, sans-serif; transition: all 150ms; cursor: pointer; } .ds-btn-primary:hover { background: color-mix(in oklab, var(--primary, #1f3d6b) 80%, transparent); } .ds-btn-primary:focus-visible { outline: 2px solid var(--ring, #1f3d6b); outline-offset: 2px; } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "A secondary action on the ground, edged in the field colour.",
+      "html": "<button class=\"ds-btn-outline\">Cancel</button>",
+      "css": ".ds-btn-outline { background: var(--background, #fff); color: var(--foreground, #0f1727); height: 28px; padding: 0 10px; border: 1px solid var(--input, #7c8799); border-radius: 2px; font: 500 13px/20px 'Noto Sans Variable', system-ui, sans-serif; cursor: pointer; } .ds-btn-outline:hover { background: var(--muted, #eff3f9); } .ds-btn-outline:focus-visible { outline: 2px solid var(--ring, #1f3d6b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A text field; 16px text under touch.",
+      "html": "<input class=\"ds-input\" placeholder=\"Filter\">",
+      "css": ".ds-input { height: 28px; padding: 4px 10px; border: 1px solid var(--input, #7c8799); border-radius: 2px; background: transparent; color: var(--foreground, #0f1727); font: 400 13px/20px 'Noto Sans Variable', system-ui, sans-serif; } .ds-input::placeholder { color: var(--muted-foreground, #4a5568); } .ds-input:focus-visible { outline: 2px solid var(--ring, #1f3d6b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Module Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A hairline-ruled module headed by a strip with the 16px marker square.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-head\"><span class=\"ds-marker\"><svg width=\"7\" height=\"9\" viewBox=\"0 0 7 9\" fill=\"currentColor\"><path d=\"M0 0 7 4.5 0 9z\"/></svg></span><span class=\"ds-card-title\">Recent activity</span></div><div class=\"ds-card-body\">Three items changed since yesterday.</div></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 12px; padding-bottom: 12px; background: var(--card, #fff); color: var(--card-foreground, #0f1727); box-shadow: 0 0 0 1px var(--border, #bfc8d5); font: 400 13px/20px 'Noto Sans Variable', system-ui, sans-serif; } .ds-card-head { display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 2px 8px; background: var(--muted, #eff3f9); border-bottom: 1px solid var(--border, #bfc8d5); font-size: 12px; line-height: 18px; } .ds-marker { display: inline-grid; place-items: center; width: 16px; height: 16px; background: var(--marker, #d3ddec); color: var(--primary, #1f3d6b); } .ds-marker svg { margin-left: 1px; } .ds-card-title { font-weight: 700; } .ds-card-body { padding: 0 12px; }"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "A strip-tinted tab list; the current tab joins its content with a 2px ai top edge.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab ds-tab-active\">Files</button><button class=\"ds-tab\">Commits</button><button class=\"ds-tab\">Checks</button></div>",
+      "css": ".ds-tabs { display: inline-flex; align-items: stretch; background: var(--muted, #eff3f9); border-bottom: 1px solid var(--border, #bfc8d5); color: var(--muted-foreground, #4a5568); } .ds-tab { position: relative; margin-bottom: -1px; min-height: 28px; padding: 0 12px; border: 0; border-right: 1px solid color-mix(in oklab, var(--border, #bfc8d5) 60%, transparent); background: transparent; color: inherit; font: 500 13px/20px 'Noto Sans Variable', system-ui, sans-serif; cursor: pointer; transition: color 150ms, background-color 150ms; } .ds-tab:first-child { border-left: 1px solid color-mix(in oklab, var(--border, #bfc8d5) 60%, transparent); } .ds-tab:focus-visible { outline: 2px solid var(--ring, #1f3d6b); outline-offset: 2px; } .ds-tab-active { background: var(--background, #fff); color: var(--foreground, #0f1727); box-shadow: inset 0 2px 0 0 var(--primary, #1f3d6b); }"
+    },
+    {
+      "name": "Menu",
+      "kind": "custom",
+      "refersTo": "menu-item-highlighted",
+      "description": "A square menu; the highlighted row takes the state fill and a 3px ink bar.",
+      "html": "<div class=\"ds-menu\"><div class=\"ds-menu-item\">Rename</div><div class=\"ds-menu-item ds-menu-item-hl\">Duplicate</div><div class=\"ds-menu-item\">Archive</div></div>",
+      "css": ".ds-menu { display: inline-block; min-width: 128px; padding: 4px; background: var(--popover, #fff); color: var(--popover-foreground, #0f1727); box-shadow: 0 0 0 1px var(--border, #bfc8d5); font: 400 13px/20px 'Noto Sans Variable', system-ui, sans-serif; } .ds-menu-item { display: flex; align-items: center; min-height: 28px; padding: 4px 6px; cursor: default; } .ds-menu-item:hover, .ds-menu-item-hl { background: var(--accent, #e8eef7); color: var(--accent-foreground, #0f1727); box-shadow: inset 3px 0 0 0 currentColor; }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "A 20px count or status chip.",
+      "html": "<span class=\"ds-badge\">12</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; height: 20px; padding: 2px 8px; border-radius: 2px; background: var(--primary, #1f3d6b); color: var(--primary-foreground, #fff); font: 500 11px/16px 'Noto Sans Variable', system-ui, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Module Mosaic",
+    "overview": "The default style draws on contemporary Japanese high-density web pages: a bright white ground, dense ink text, and content held in hairline-ruled modules tiled edge to edge. Each module is headed by a ruled strip on the strip tint, opening with a 16px marker square. Nothing floats or rounds for decoration; structure comes from 1px rules, tints and type weight.\n\nOne strong colour, ai, carries meaning: where you are (the current tab, focus) and what you can do (the primary button, links, the marker's icon). Everything else is ink on white or neutrals pulled toward ai's hue (oklch h 258). State never rests on a fill alone: an ink bar or an ai edge says it in a second channel.\n\nDensity is for the pointer only. Under a coarse pointer, controls grow to 40px and 44px and field text to 16px, and those sizes outrank the style. Overlays fade in 100ms without moving, and reduced motion strips any travel a style adds.",
+    "keyCharacteristics": [
+      "White ground, ink text, one accent (ai), neutrals tinted to hue 258.",
+      "Modules tiled edge to edge, sharing one 1px rule; square corners on every surface.",
+      "Ruled header strip with a 16px marker square heading each module.",
+      "13px body text, 28px controls and rows with a pointer; 40/44px and 16px field text under touch.",
+      "State cues in two channels: fill plus a 3px ink bar or a 2px ai top edge."
+    ],
+    "rules": [
+      {
+        "name": "The One Ink Accent Rule",
+        "body": "Ai marks only where you are and what you can do: the primary action, focus, the current tab, links, the marker icon. It never fills a module, a strip or a decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Held Floors Rule",
+        "body": "Every built-in palette passes the contrast checks in `packages/themes/src/contrast.ts`: text pairs 4.5:1 (ai-foreground on ai, ai on ground, quiet ink on ground and strip, status on ground and popover, the marker icon on its square); field edges, focus rings, state cues and chart series 3:1.",
+        "section": "colors"
+      },
+      {
+        "name": "The Eleven Pixel Floor Rule",
+        "body": "No UI text below 11px (`text-ui-xs`, `-2xs` and `-3xs` all resolve to 0.6875rem).",
+        "section": "typography"
+      },
+      {
+        "name": "The Sixteen Under Thumb Rule",
+        "body": "Text fields render at 16px under a coarse pointer and below `md`, and at 13px only with a fine pointer at `md` and up.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tiled Not Stacked Rule",
+        "body": "A module separates from its neighbour by a shared hairline rule, never by a shadow or a gap with a drop.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** head every module with the ruled strip and the 16px marker square.",
+      "**Do** pair every state fill with a second cue: the 3px ink bar for rows, the 2px ai top edge for the current tab.",
+      "**Do** keep touch sizes (40px, 44px hit areas) and 16px field text under a coarse pointer, whatever the style.",
+      "**Do** read sizes and radii from the style tokens (`--spacing-control`, `--radius-surface`), capping a smaller part to the token rather than adding one.",
+      "**Do** keep overlays at a 100ms fade with no travel; under reduced motion, translate, scale, rotate and blur reset."
+    ],
+    "donts": [
+      "**Don't** use ai as a decorative fill or on anything that is not the current place or an action.",
+      "**Don't** round a surface, overlay, row or tab.",
+      "**Don't** set UI text below 11px.",
+      "**Don't** mark selection, highlight or the current tab with a fill alone."
+    ]
+  }
+}
