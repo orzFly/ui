@@ -222,7 +222,7 @@ function TokenListView<N extends string>({
           type="button"
           title={values[entry.name]}
           className={cn(
-            "size-7 shrink-0 overflow-hidden rounded-md border border-black/15 shadow-xs outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid dark:border-white/15",
+            "size-control-sm shrink-0 overflow-hidden rounded-[min(var(--radius-control),8px)] border border-black/15 shadow-raised outline-none focus-visible:focus-ring dark:border-white/15",
             className,
           )}
           style={CHECKERBOARD}
@@ -242,7 +242,7 @@ function TokenListView<N extends string>({
       aria-label={`Reset ${entry.name}`}
       title="Remove the override"
       onClick={() => onReset(entry.name)}
-      className="inline-flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+      className="inline-flex size-5 items-center justify-center rounded-[min(var(--radius-control),4px)] text-muted-foreground hover:bg-accent hover:text-foreground"
     >
       <RotateCcwIcon className="size-3" />
     </button>
@@ -261,12 +261,12 @@ function TokenListView<N extends string>({
   };
 
   const entryRow = (entry: TokenEntry<N>) => (
-    <div key={entry.name} className="flex min-h-8 items-center gap-2">
+    <div key={entry.name} className="flex min-h-control items-center gap-2">
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm">
           <MatchedText text={entry.label} query={q} />
         </div>
-        <div className="truncate font-mono text-[11px] text-muted-foreground">
+        <div className="truncate font-mono text-ui-2xs text-muted-foreground">
           <MatchedText text={entry.name} query={q} />
         </div>
       </div>
@@ -308,11 +308,11 @@ function TokenListView<N extends string>({
               key={entry.name}
               className="flex min-w-0 flex-col items-center gap-0.5"
             >
-              {swatchFor(entry, "h-7 w-full")}
+              {swatchFor(entry, "h-control-sm w-full")}
               <span
                 title={entry.name}
                 className={cn(
-                  "max-w-full truncate text-[10px]",
+                  "max-w-full truncate text-ui-3xs",
                   showState && !overridden(entry.name)
                     ? "text-muted-foreground"
                     : undefined,
@@ -343,7 +343,7 @@ function TokenListView<N extends string>({
           data-keeps-escape={query !== "" ? "" : undefined}
           placeholder="Find a colour…"
           aria-label="Find a colour"
-          className="h-7 flex-1"
+          className="h-control-sm flex-1"
         />
         {showState && (
           <div className="flex shrink-0 items-center gap-1.5">
@@ -372,7 +372,7 @@ function TokenListView<N extends string>({
               aria-expanded={open}
               aria-controls={`${id}-${group.id}`}
               onClick={() => toggle(group.id, !open)}
-              className="flex w-full items-center gap-1.5 rounded py-1 text-left text-sm font-medium hover:bg-accent/50"
+              className="flex w-full items-center gap-1.5 rounded-[min(var(--radius-item),4px)] py-1 text-left text-sm font-medium hover:bg-accent/50"
             >
               <ChevronRightIcon
                 aria-hidden
@@ -418,7 +418,7 @@ function PairSample({
     <div className="flex w-14 shrink-0 flex-col items-center gap-1 pt-0.5">
       <div
         aria-hidden
-        className="flex h-9 w-full items-center justify-center rounded-md border text-base font-semibold"
+        className="flex h-control-lg w-full items-center justify-center rounded-item border text-base font-semibold"
         style={{ background: surface, color: text }}
       >
         Aa
@@ -429,7 +429,7 @@ function PairSample({
           data-low={low || undefined}
           title={`WCAG 2 contrast of ${label}`}
           className={cn(
-            "font-mono text-[11px] tabular-nums",
+            "font-mono text-ui-2xs tabular-nums",
             low ? "text-warning" : "text-muted-foreground",
           )}
         >

@@ -187,7 +187,7 @@ export function useSyntaxTheme(): SyntaxTheme {
 /** The shape every code surface falls back to: the code, unhighlighted. */
 export function PlainCodeFallback({ contents }: { contents: string }) {
   return (
-    <pre className="overflow-x-auto rounded-md bg-muted p-3 text-[0.85em] leading-[1.45]">
+    <pre className="overflow-x-auto rounded-[min(var(--radius-frame),8px)] bg-muted p-3 text-[0.85em] leading-[1.45]">
       <code>{contents}</code>
     </pre>
   );

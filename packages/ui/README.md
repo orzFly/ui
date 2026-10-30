@@ -46,8 +46,12 @@ shares a document with someone else's UI, and must not restyle it, imports
 `@orz/ui/theme.css` instead: the tokens, `.dark`, `tw-animate-css` and shadcn's variants, nothing
 global. `theme.css` carries no `@source`, so that surface names the files Tailwind scans itself.
 
-`styles.css` does not load a font. `--font-sans` names `'Geist Variable'` first and falls back to
-the system UI font, so install `@fontsource-variable/geist` (or define `--font-sans`) if you want it.
+`theme.css` also declares the style tokens every component draws its shape from: control and row
+heights (`--spacing-control`), corners (`--radius-control`, `--radius-surface`), shadows, text
+sizes, fonts, the focus ring and overlay motion. Their values are the default style's.
+
+`styles.css` does not load a font. `--font-ui` names `'Geist Variable'` first and falls back to
+the system UI font, so install `@fontsource-variable/geist` (or define `--font-ui`) if you want it.
 `useOverlayScrollbars` needs the library's own stylesheet, which you import yourself:
 `@import "overlayscrollbars/overlayscrollbars.css";`.
 

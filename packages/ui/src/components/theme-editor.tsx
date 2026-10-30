@@ -677,7 +677,7 @@ function EditorSession({
             {deletedElsewhere && (
               <p
                 role="status"
-                className="mb-3 rounded-lg border border-warning/40 bg-warning/10 p-2.5 text-xs"
+                className="mb-3 rounded-frame border border-warning/40 bg-warning/10 p-2.5 text-xs"
               >
                 This theme was deleted elsewhere. Save adds it again.
               </p>

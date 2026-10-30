@@ -35,7 +35,7 @@ variables:
 | Variable | Default |
 |---|---|
 | `--hex-font` | `var(--font-mono)`, then the system monospace fonts |
-| `--hex-row-height` | `1.375rem` |
+| `--hex-row-height` | `var(--spacing-row-dense)`, the style's dense row |
 | `--hex-fill` | `color-mix(in oklch, var(--primary) 32%, var(--card))` |
 | `--hex-edge` | `var(--primary)` |
 | `--hex-twin-fill` | `color-mix(in oklch, var(--foreground) 6%, var(--card))` |

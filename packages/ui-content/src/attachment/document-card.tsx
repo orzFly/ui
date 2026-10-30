@@ -88,7 +88,7 @@ export function DocumentCard({
 
   return (
     <section
-      className={cn("my-2 overflow-hidden rounded-lg border", className)}
+      className={cn("my-2 overflow-hidden rounded-frame border", className)}
     >
       <div className="flex items-center gap-1 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-sm">
         {onExpand ? (
@@ -113,7 +113,7 @@ export function DocumentCard({
             href={downloadUrl}
             download={name}
             aria-label={`download ${name}`}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="rounded-[min(var(--radius-control),8px)] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <DownloadIcon className="size-3.5" />
           </a>
@@ -123,7 +123,7 @@ export function DocumentCard({
             type="button"
             onClick={onExpand}
             aria-label={`expand ${name}`}
-            className="cursor-pointer rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="cursor-pointer rounded-[min(var(--radius-control),8px)] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <Maximize2Icon className="size-3.5" />
           </button>

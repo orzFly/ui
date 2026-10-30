@@ -15,7 +15,7 @@ export function DeletedAttachmentMark({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded border border-dashed px-1.5 text-sm text-muted-foreground",
+        "inline-flex items-center gap-1 rounded-[min(var(--radius-chip),4px)] border border-dashed px-1.5 text-sm text-muted-foreground",
         className,
       )}
       data-attachment-deleted=""

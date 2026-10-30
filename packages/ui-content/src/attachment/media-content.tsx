@@ -89,7 +89,7 @@ export function imageContent(): ContentRenderer {
           src={file.url}
           alt={file.name}
           className={cn(
-            "mx-auto max-h-(--attachment-pane-height) rounded-md object-contain",
+            "mx-auto max-h-(--attachment-pane-height) rounded-item object-contain",
             className,
           )}
         />
@@ -133,7 +133,7 @@ export function htmlContent(
         sandbox="allow-scripts"
         title={file.name}
         className={cn(
-          "h-(--attachment-pane-height) w-full rounded-md border bg-white",
+          "h-(--attachment-pane-height) w-full rounded-item border bg-white",
           className,
         )}
       />
@@ -159,7 +159,7 @@ export function pdfContent(options: FrameContentOptions = {}): ContentRenderer {
         src={options.src?.(file) ?? viewHref}
         title={file.name}
         className={cn(
-          "h-(--attachment-pane-height) w-full rounded-md border",
+          "h-(--attachment-pane-height) w-full rounded-item border",
           className,
         )}
       />

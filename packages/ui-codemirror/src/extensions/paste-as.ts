@@ -422,17 +422,17 @@ const toolbarTheme = EditorView.theme({
   // editor's only popups.
   ".cm-tooltip.cm-paste-options": {
     border: "1px solid var(--border)",
-    borderRadius: "0.5rem",
+    borderRadius: "min(var(--radius-overlay), 0.5rem)",
     backgroundColor: "var(--popover)",
     color: "var(--popover-foreground)",
     boxShadow:
       "0 4px 6px -1px color-mix(in oklab, var(--foreground) 12%, transparent)",
-    fontFamily: "var(--font-sans)",
+    fontFamily: "var(--font-ui)",
     display: "flex",
     alignItems: "center",
     gap: "0.25rem",
     padding: "0.125rem",
-    fontSize: "0.75rem",
+    fontSize: "var(--text-xs)",
   },
   ".cm-paste-forms": {
     display: "flex",
@@ -443,7 +443,7 @@ const toolbarTheme = EditorView.theme({
   ".cm-paste-forms[hidden]": { display: "none" },
   ".cm-paste-options button": {
     padding: "0.125rem 0.5rem",
-    borderRadius: "0.375rem",
+    borderRadius: "min(var(--radius-control), 0.375rem)",
     color: "var(--muted-foreground)",
     cursor: "pointer",
   },

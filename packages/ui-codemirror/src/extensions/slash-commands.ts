@@ -312,7 +312,7 @@ const AMBER_DARK = "var(--color-amber-400, oklch(82.8% 0.189 84.429))";
 const commandTheme = EditorView.theme({
   ".cm-command-line": {
     backgroundColor: "color-mix(in oklab, var(--primary) 18%, transparent)",
-    borderRadius: "0.25rem",
+    borderRadius: "min(var(--radius-item), 0.25rem)",
   },
   ".cm-command-line-broken": {
     backgroundColor: "color-mix(in oklab, var(--destructive) 16%, transparent)",
@@ -322,7 +322,7 @@ const commandTheme = EditorView.theme({
   ".cm-command-name": { color: "var(--primary)" },
   ".cm-command-arg": {
     backgroundColor: "color-mix(in oklab, var(--primary) 12%, transparent)",
-    borderRadius: "3px",
+    borderRadius: "min(var(--radius-item), 3px)",
   },
   ".cm-command-arg-special": {
     backgroundColor: `color-mix(in oklab, ${VIOLET} 15%, transparent)`,

@@ -47,13 +47,13 @@ export function completionWith(sources: CompletionSource[]): Extension {
 export const completionTheme = EditorView.theme({
   ".cm-tooltip.cm-tooltip-autocomplete": {
     border: "1px solid var(--border)",
-    borderRadius: "0.5rem",
+    borderRadius: "min(var(--radius-overlay), 0.5rem)",
     backgroundColor: "var(--popover)",
     color: "var(--popover-foreground)",
     boxShadow:
       "0 4px 6px -1px color-mix(in oklab, var(--foreground) 12%, transparent)",
     overflow: "hidden",
-    fontFamily: "var(--font-sans)",
+    fontFamily: "var(--font-ui)",
   },
   ".cm-tooltip-autocomplete > ul": {
     maxHeight: "16rem",

@@ -244,3 +244,65 @@ export function cssLengths(): CssLengths {
   }
   return out as CssLengths;
 }
+
+/**
+ * The style tokens a class can name, from theme.css's `@theme static` block, by namespace and
+ * name: `spacing.control` is `h-control`'s 32 (px), `text.ui-sm` `text-ui-sm`'s size, and
+ * `duration.overlay` `duration-(--duration-overlay)`'s 100 (ms). These are the default style's
+ * values, which is what every number a page quotes is.
+ */
+export interface StyleTokens {
+  spacing: Record<string, number>;
+  text: Record<string, number>;
+  /** A text token's own line height in px, where it sets one. */
+  leading: Record<string, number>;
+  duration: Record<string, number>;
+}
+
+/** A token's value in px or ms; null for one that is no plain length, such as a radius's calc(). */
+function measure(value: string, size?: number): number | null {
+  const found = /^(-?\d*\.?\d+)(rem|px|ms|s)?$/.exec(value.trim());
+  if (!found) return null;
+  const number = Number(found[1]);
+  switch (found[2]) {
+    case "rem":
+      return number * 16;
+    case "s":
+      return number * 1000;
+    case undefined:
+      // A bare line height is a multiple of the font size.
+      return size === undefined ? null : number * size;
+    default:
+      return number;
+  }
+}
+
+export function styleTokens(): StyleTokens {
+  const theme = readFileSync(join(UI, "../../theme.css"), "utf8");
+  const start = theme.indexOf("@theme static {");
+  if (start < 0)
+    throw new Error("packages/ui/theme.css: no @theme static block");
+  const block = theme.slice(start, theme.indexOf("\n}", start));
+  const out: StyleTokens = { spacing: {}, text: {}, leading: {}, duration: {} };
+  const declarations = [...block.matchAll(/--([\w-]+):\s*([^;]+);/g)];
+  for (const [, name = "", value = ""] of declarations) {
+    const [, namespace = "", key = ""] =
+      /^(spacing|text|duration)-(.+)$/.exec(name) ?? [];
+    if (!namespace || key.endsWith("--line-height")) continue;
+    const length = measure(value);
+    if (length === null) {
+      throw new Error(`packages/ui/theme.css: --${name} is not a length`);
+    }
+    out[namespace as "spacing" | "text" | "duration"][key] = length;
+  }
+  for (const [, name = "", value = ""] of declarations) {
+    const key = /^text-(.+)--line-height$/.exec(name)?.[1];
+    if (key === undefined) continue;
+    const line = measure(value, out.text[key]);
+    if (line === null) {
+      throw new Error(`packages/ui/theme.css: --${name} is not a length`);
+    }
+    out.leading[key] = line;
+  }
+  return out;
+}

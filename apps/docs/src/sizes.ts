@@ -2,7 +2,9 @@
 // them as a page renders, so a page cannot keep a size or a duration the component has dropped.
 // The classes come from `buttonVariants` or, for every part no export hands over, from @orz/ui's
 // source through `virtual:orz-ui-source`, which fails the build when it cannot find one. The
-// readers here know the few utilities those classes use; a shape they do not know throws.
+// readers here know the few utilities those classes use; a shape they do not know throws. A
+// class that names a style token (`h-control`) reads the token's value in theme.css, which
+// is the default style's.
 
 import source from "virtual:orz-ui-source";
 import { buttonVariants } from "@orz/ui/components/button";
@@ -38,9 +40,25 @@ const TEXT: Record<string, [size: number, line: number]> = {
   lg: [18, 28],
 };
 
-/** A spacing step in px: `8` is 32px, `[18px]` is 18px; null for `full`, `fit` and the like. */
+/**
+ * A text step, Tailwind's or a style token's, in px. A token without a line height of its own
+ * leaves the inherited one, which no class here says: its line is NaN, and a height that
+ * needs it throws.
+ */
+function textStep(value: string): [size: number, line: number] | undefined {
+  const size = source.tokens.text[value];
+  if (size === undefined) return TEXT[value];
+  return [size, source.tokens.leading[value] ?? Number.NaN];
+}
+
+/**
+ * A spacing step in px: `8` is 32px, `[18px]` is 18px, `control` the style token's value; null
+ * for `full`, `fit` and the like.
+ */
 function spacing(value: string): number | null {
   if (/^\d+(\.\d+)?$/.test(value)) return Number(value) * 4;
+  const token = source.tokens.spacing[value];
+  if (token !== undefined) return token;
   const px = /^\[(\d+)px\]$/.exec(value);
   return px ? Number(px[1]) : null;
 }
@@ -112,7 +130,7 @@ function box(text: string, options: Options = {}): Box {
     const length = spacing(value);
     if (utility === "border") border = 1;
     else if (utility === "hit-area") hitArea = true;
-    else if (name === "text") type = TEXT[value] ?? type;
+    else if (name === "text") type = textStep(value) ?? type;
     else if (length === null) continue;
     else if (name === "h") height = length;
     else if (name === "w") width = length;
@@ -123,6 +141,7 @@ function box(text: string, options: Options = {}): Box {
   }
   const [font, line] = type ?? [14, 20];
   const drawn = Math.max(height ?? line + 2 * padding + 2 * border, min);
+  if (Number.isNaN(drawn)) throw new Error(`no line height in "${text}"`);
   return {
     height: drawn,
     width,
@@ -170,10 +189,19 @@ function match(pattern: RegExp, text: string): number {
   return Number(found);
 }
 
-/** The `duration-*` in ms, or tw-animate-css's own for an `animate-in` that sets none. */
+/**
+ * The `duration-*` in ms, a style token's (`duration-(--duration-overlay)`) included, or
+ * tw-animate-css's own for an `animate-in` that sets none.
+ */
 export function ms(text: string): number {
   if (/(?:^|\s)duration-\d/.test(text)) {
     return match(/(?:^|\s)duration-(\d+)(?:\s|$)/, text);
+  }
+  const token = /(?:^|\s)duration-\(--duration-([\w-]+)\)(?:\s|$)/.exec(text);
+  if (token) {
+    const found = source.tokens.duration[token[1] ?? ""];
+    if (found === undefined) throw new Error(`no token --duration-${token[1]}`);
+    return found;
   }
   if (/(?:^|:)animate-(?:in|out)(?:\s|$)/.test(text)) {
     return Math.round(css.animateDefault * 1000);

@@ -38,9 +38,112 @@
   }
 }
 
+/* Style tokens: how the components are drawn, their shape, type, depth,
+   density, focus and motion, where a palette is their colours. A plain @theme,
+   not inline, so each utility reads the variable and a [data-style] rule can
+   reassign it at runtime; static, so all of them sit on :root for a viewer's
+   stylesheet or an app's own CSS to read. The values are the default
+   style's. A smaller part caps a token rather than taking one of its own
+   (`rounded-[min(var(--radius-control),8px)]`), so it follows the token down.
+   `touch:` sizes stay literal: a variant's rule follows the plain ones, so
+   they win under every style. */
+@theme static {
+  --spacing-control-xs: 1.5rem;
+  --spacing-control-sm: 1.75rem;
+  --spacing-control: 2rem;
+  --spacing-control-lg: 2.25rem;
+  /* A row of a menu or a list, and a table's header row. */
+  --spacing-row: 1.75rem;
+  --spacing-row-head: 2.5rem;
+  /* A row of dense data: the hex grid's. */
+  --spacing-row-dense: 1.375rem;
+  --spacing-chip: 1.25rem;
+
+  /* Buttons, fields, and the strips that hold them. */
+  --radius-control: var(--radius);
+  /* A row of a menu or a list, a tab, a small block inside a part. */
+  --radius-item: calc(var(--radius) * 0.8);
+  /* A viewer's or an editor's frame. */
+  --radius-frame: var(--radius);
+  /* Card and Dialog. */
+  --radius-surface: calc(var(--radius) * 1.4);
+  /* Menus, popovers and the like. */
+  --radius-overlay: var(--radius);
+  --radius-chip: calc(var(--radius) * 2.6);
+
+  --text-ui-sm: 0.8rem;
+  --text-ui-xs: 0.7rem;
+  --text-ui-2xs: 0.6875rem;
+  --text-ui-3xs: 0.625rem;
+  /* Dense tabular data: the hex grid's. */
+  --text-data: 0.8125rem;
+  --text-title: 1rem;
+  --text-title--line-height: 1.5;
+
+  --font-ui: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-ui);
+
+  --color-scrim: color-mix(in oklab, #000 10%, transparent);
+
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --focus-style: solid;
+  --duration-overlay: 100ms;
+  --overlay-zoom: 0.95;
+  /* A sheet sliding in from its edge. */
+  --duration-sheet: 200ms;
+}
+
+/* Depth. Not in @theme: Tailwind writes a --shadow-* theme value into the
+   utility itself, where a [data-style] rule could not reach it. */
+@layer theme {
+  :root {
+    --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-menu:
+      0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-overlay:
+      0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+}
+
+@utility shadow-raised {
+  --tw-shadow: var(--shadow-raised);
+  box-shadow:
+    var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+    var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+@utility shadow-menu {
+  --tw-shadow: var(--shadow-menu);
+  box-shadow:
+    var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+    var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+@utility shadow-overlay {
+  --tw-shadow: var(--shadow-overlay);
+  box-shadow:
+    var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+    var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+
+/* The focus indicator, under `focus-visible:` or `focus-within:`. A colour
+   beside it (`focus-visible:outline-destructive`) still wins: Tailwind sorts
+   a one-property utility after this one. */
+@utility focus-ring {
+  outline-style: var(--focus-style);
+  outline-width: var(--focus-width);
+  outline-offset: var(--focus-offset);
+  outline-color: var(--color-ring);
+}
+/* The same, drawn inside the edge, for a part that fills a clipping frame. */
+@utility focus-ring-inset {
+  outline-style: var(--focus-style);
+  outline-width: var(--focus-width);
+  outline-offset: calc(var(--focus-width) * -1);
+  outline-color: var(--color-ring);
+}
+
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-ui);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

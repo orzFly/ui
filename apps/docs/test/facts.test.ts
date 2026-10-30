@@ -55,13 +55,13 @@ describe("typography", () => {
       ["sheet.tsx", "sheet-title"],
     ]) {
       expect(classOf(file, `slot:${slot}`).split(" "), slot).toEqual(
-        expect.arrayContaining(["font-heading", "text-base", "font-medium"]),
+        expect.arrayContaining(["font-heading", "text-title", "font-medium"]),
       );
     }
     expect(
       read("apps/docs/src/content/guidelines/foundations/typography.mdx"),
     ).toContain(
-      "`CardTitle`,\n`DialogTitle` and `SheetTitle` are `font-heading text-base font-medium`, a `Badge` is `text-xs`.",
+      "`CardTitle`,\n`DialogTitle` and `SheetTitle` are `font-heading text-title font-medium`, a `Badge` is `text-xs`.",
     );
   });
 

@@ -106,7 +106,7 @@ const editorTheme = EditorView.theme({
   "&": {
     color: "var(--foreground)",
     backgroundColor: "transparent",
-    fontFamily: "var(--font-sans)",
+    fontFamily: "var(--font-ui)",
     // style-mod cannot express a media query against the generated theme
     // class, so the breakpoint lives in the wrapper's Tailwind classes and
     // the editor simply inherits it.
@@ -356,7 +356,7 @@ export function CodeEditor({
       className={cn(
         // text-base below md is not cosmetic: iOS auto-zooms a focused field
         // under 16px. Same rule `@orz/ui`'s Textarea follows.
-        "flex w-full flex-col rounded-lg border border-input bg-transparent text-base transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring focus-within:outline-solid md:text-sm dark:bg-input/15",
+        "flex w-full flex-col rounded-frame border border-input bg-transparent text-base transition-colors focus-within:focus-ring md:text-sm dark:bg-input/15",
         readOnly && "opacity-50",
         className,
       )}

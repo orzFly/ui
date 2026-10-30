@@ -962,7 +962,7 @@ export function ColorPicker({
       {offered.length > 1 && (
         <fieldset
           aria-label="Picking surface"
-          className="grid gap-0.5 rounded-md bg-muted p-0.5"
+          className="grid gap-0.5 rounded-[min(var(--radius-control),8px)] bg-muted p-0.5"
           style={{
             gridTemplateColumns: `repeat(${offered.length}, minmax(0, 1fr))`,
           }}
@@ -974,7 +974,7 @@ export function ColorPicker({
               aria-pressed={shown === s}
               disabled={disabled}
               onClick={() => pickSurface(s)}
-              className="h-6 rounded-[5px] text-[0.7rem] font-medium text-muted-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid disabled:opacity-50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs"
+              className="h-control-xs rounded-[min(var(--radius-control),5px)] text-ui-xs font-medium text-muted-foreground outline-none focus-visible:focus-ring disabled:opacity-50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-raised"
             >
               {SURFACE_LABELS[s]}
             </button>
@@ -1002,7 +1002,7 @@ export function ColorPicker({
                 : `lightness ${round(color.l * 100, 1)}%, chroma ${round(color.c, 3)} (${Math.round(rel * 100)}% of ${gamutName} max)`
         }
         className={cn(
-          "relative h-42 cursor-crosshair touch-none overflow-hidden rounded-md outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
+          "relative h-42 cursor-crosshair touch-none overflow-hidden rounded-item outline-none focus-visible:focus-ring",
           disabled && "pointer-events-none opacity-50",
         )}
         style={
@@ -1076,13 +1076,13 @@ export function ColorPicker({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute top-1 left-1 rounded-sm bg-black/45 px-1 text-[10px] text-white"
+          className="pointer-events-none absolute top-1 left-1 rounded-[min(var(--radius-item),6px)] bg-black/45 px-1 text-ui-3xs text-white"
         >
           {shown === "hsv" ? "V ↑" : "L ↑"}
         </span>
         <span
           aria-hidden
-          className="pointer-events-none absolute right-1 bottom-1 rounded-sm bg-black/45 px-1 text-[10px] text-white"
+          className="pointer-events-none absolute right-1 bottom-1 rounded-[min(var(--radius-item),6px)] bg-black/45 px-1 text-ui-3xs text-white"
         >
           {shown === "oklch" ? "C/max →" : shown === "absolute" ? "C →" : "S →"}
         </span>
@@ -1156,7 +1156,7 @@ export function ColorPicker({
           role="img"
           aria-label="Before and after"
           title="Before / after"
-          className="grid h-7 w-9 shrink-0 grid-cols-2 overflow-hidden rounded-md border"
+          className="grid h-control-sm w-9 shrink-0 grid-cols-2 overflow-hidden rounded-[min(var(--radius-control),8px)] border"
           style={CHECKERBOARD}
         >
           <span
@@ -1190,7 +1190,7 @@ export function ColorPicker({
             endText();
             commitPending();
           }}
-          className="h-7 flex-1 px-1.5 font-mono text-base md:text-xs"
+          className="h-control-sm flex-1 px-1.5 font-mono text-base md:text-xs"
         />
         {showEyeDropper && (
           <Button
@@ -1231,7 +1231,7 @@ export function ColorPicker({
       {/* A line of its own per chip, never wrapped, and the map button holding its place while
           hidden: a chip that wrapped or a button that came and went changed the panel's height
           mid-drag, and in a popover opened upwards that moved the surface from under the pointer. */}
-      <div className="grid gap-1 text-[11px]">
+      <div className="grid gap-1 text-ui-2xs">
         <div className="flex h-5 items-center gap-1.5">
           <span
             data-gamut={colorGamut}
@@ -1241,7 +1241,7 @@ export function ColorPicker({
                 : undefined
             }
             className={cn(
-              "min-w-0 truncate rounded-full border px-1.5 py-px",
+              "min-w-0 truncate rounded-chip border px-1.5 py-px",
               colorGamut === "srgb"
                 ? "border-success/60 text-success"
                 : colorGamut === "p3"
@@ -1278,7 +1278,7 @@ export function ColorPicker({
               data-contrast
               title={`WCAG 2 contrast against ${contrastWith}`}
               className={cn(
-                "min-w-0 truncate rounded-full border px-1.5 py-px",
+                "min-w-0 truncate rounded-chip border px-1.5 py-px",
                 ratio >= 4.5
                   ? "border-success/60 text-success"
                   : ratio >= 3
@@ -1301,7 +1301,7 @@ export function ColorPicker({
         if (usable.length === 0) return null;
         return (
           <div key={group.label} className="grid gap-1">
-            <div className="text-[10px] tracking-wide text-muted-foreground uppercase">
+            <div className="text-ui-3xs tracking-wide text-muted-foreground uppercase">
               {group.label}
             </div>
             <div className="grid grid-cols-10 gap-1">
@@ -1316,7 +1316,7 @@ export function ColorPicker({
                     aria-pressed={pressed}
                     disabled={disabled}
                     onClick={() => pickSwatch(text)}
-                    className="aspect-square rounded-full border border-black/15 outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring focus-visible:outline-solid disabled:opacity-50 aria-pressed:ring-2 aria-pressed:ring-foreground aria-pressed:ring-offset-2 aria-pressed:ring-offset-popover"
+                    className="aspect-square rounded-full border border-black/15 outline-none focus-visible:focus-ring focus-visible:outline-offset-0 disabled:opacity-50 aria-pressed:ring-2 aria-pressed:ring-foreground aria-pressed:ring-offset-2 aria-pressed:ring-offset-popover"
                     style={{
                       ...CHECKERBOARD,
                       backgroundImage: `linear-gradient(${css(parsed.color)}, ${css(parsed.color)}), ${CHECKERBOARD.backgroundImage}`,
@@ -1373,7 +1373,7 @@ function TrackSlider({
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb
         aria-label={label}
-        className="block size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_0_0_1px_rgb(0_0_0/0.3)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
+        className="block size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_0_0_1px_rgb(0_0_0/0.3)] outline-none focus-visible:focus-ring"
       />
     </SliderPrimitive.Root>
   );
@@ -1549,7 +1549,7 @@ function ChannelField({
   };
   return (
     <div className="grid gap-px text-center">
-      <label htmlFor={id} className="text-[10px] text-muted-foreground">
+      <label htmlFor={id} className="text-ui-3xs text-muted-foreground">
         {spec.label}
       </label>
       <Input
@@ -1566,7 +1566,7 @@ function ChannelField({
           else if (event.key === "Escape") setDraft(null);
         }}
         onBlur={settle}
-        className="h-6 px-1 text-center font-mono text-base md:text-[11px]"
+        className="h-control-xs px-1 text-center font-mono text-base md:text-ui-2xs"
       />
     </div>
   );
@@ -1609,7 +1609,7 @@ export function ColorPickerPopover({
           >
             <span
               aria-hidden
-              className="size-5 shrink-0 overflow-hidden rounded-sm border border-black/15"
+              className="size-5 shrink-0 overflow-hidden rounded-[min(var(--radius-item),6px)] border border-black/15"
               style={CHECKERBOARD}
             >
               <span

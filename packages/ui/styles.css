@@ -42,7 +42,7 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    @apply font-ui;
   }
   /* Stacked timestamps line up digit for digit. A date or time a component
      renders is a <time>; a range that is not one instant carries

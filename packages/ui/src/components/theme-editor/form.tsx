@@ -199,7 +199,7 @@ function ModeControl<M extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="flex rounded-lg bg-muted p-0.5"
+      className="flex rounded-control bg-muted p-0.5"
       onKeyDown={(event) => {
         const step = NEXT_KEYS[event.key];
         if (step === undefined || enabled.length === 0) return;
@@ -230,8 +230,9 @@ function ModeControl<M extends string>({
             if (option.value !== value) onChange(option.value);
           }}
           className={cn(
-            "flex-1 rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid disabled:pointer-events-none disabled:opacity-50",
-            option.value === value && "bg-background text-foreground shadow-xs",
+            "flex-1 rounded-[min(var(--radius-control),8px)] px-2 py-1 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50",
+            option.value === value &&
+              "bg-background text-foreground shadow-raised",
           )}
         >
           {option.label}
@@ -263,7 +264,7 @@ function Notice({ children }: { children: ReactNode }) {
   return (
     <div
       role="status"
-      className="flex flex-col gap-2 rounded-lg border border-warning/40 bg-warning/10 p-2.5 text-xs"
+      className="flex flex-col gap-2 rounded-frame border border-warning/40 bg-warning/10 p-2.5 text-xs"
     >
       {children}
     </div>
@@ -355,7 +356,7 @@ export function ThemeForm(props: ThemeFormProps) {
               className="h-auto min-w-0 flex-1 flex-col gap-0"
             >
               {t.label}
-              <span className="max-w-full truncate text-[11px] font-normal text-muted-foreground">
+              <span className="max-w-full truncate text-ui-2xs font-normal text-muted-foreground">
                 {t.subtitle}
               </span>
             </TabsTrigger>
@@ -976,7 +977,7 @@ export function TerminalThemeForm(props: TerminalThemeFormProps) {
               className="h-auto min-w-0 flex-1 flex-col gap-0"
             >
               {SCHEME_LABEL[scheme]}
-              <span className="max-w-full truncate text-[11px] font-normal text-muted-foreground">
+              <span className="max-w-full truncate text-ui-2xs font-normal text-muted-foreground">
                 {terminalSideSubtitle(draft, scheme, composeList)}
               </span>
             </TabsTrigger>

@@ -148,13 +148,13 @@ function TerminalSwatch({
   return (
     <span
       aria-hidden
-      className="flex h-4 shrink-0 items-center gap-px rounded-sm border px-0.5"
+      className="flex h-4 shrink-0 items-center gap-px rounded-[min(var(--radius-item),6px)] border px-0.5"
       style={{ backgroundColor: terminal?.["terminal-background"] }}
     >
       {ANSI.map((name) => (
         <span
           key={name}
-          className="h-2.5 w-1 rounded-[1px]"
+          className="h-2.5 w-1 rounded-[min(var(--radius-item),1px)]"
           style={{ backgroundColor: terminal?.[`ansi-${name}`] }}
         />
       ))}
@@ -473,7 +473,7 @@ export function ThemeMenu({
             aria-label={`Edit ${theme.label}`}
             title="Edit"
             className={cn(
-              "flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground",
+              "flex size-5 items-center justify-center rounded-[min(var(--radius-control),6px)] text-muted-foreground hover:text-foreground",
               !state.highlighted && "invisible",
             )}
             // Keeps focus, and so the keys, in the filter box.
@@ -495,7 +495,7 @@ export function ThemeMenu({
   const header = (
     <fieldset
       aria-label="Mode"
-      className="mx-2 mt-2 mb-1 grid grid-cols-3 gap-0.5 rounded-md bg-muted p-0.5"
+      className="mx-2 mt-2 mb-1 grid grid-cols-3 gap-0.5 rounded-[min(var(--radius-control),8px)] bg-muted p-0.5"
     >
       {MODES.map(({ mode, label, Icon }) => {
         const schemes = committedTheme ? schemesOf(committedTheme) : [];
@@ -516,7 +516,7 @@ export function ThemeMenu({
             aria-pressed={pressed}
             disabled={!usable}
             title={title}
-            className="flex items-center justify-center gap-1.5 rounded-sm py-1 text-muted-foreground text-xs aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-3.5"
+            className="flex items-center justify-center gap-1.5 rounded-[min(var(--radius-control),6px)] py-1 text-muted-foreground text-xs aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-raised disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-3.5"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => setMode(mode)}
           >

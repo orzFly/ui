@@ -20,7 +20,7 @@ function Avatar({
       data-shape={shape}
       className={cn(
         "group/avatar relative flex size-8 shrink-0 select-none after:absolute after:inset-0 after:border after:border-border after:mix-blend-darken data-[size=lg]:size-10 data-[size=sm]:size-6 dark:after:mix-blend-lighten",
-        "data-[shape=circle]:rounded-full data-[shape=circle]:after:rounded-full data-[shape=square]:rounded-md data-[shape=square]:after:rounded-md",
+        "data-[shape=circle]:rounded-full data-[shape=circle]:after:rounded-full data-[shape=square]:rounded-item data-[shape=square]:after:rounded-item",
         className,
       )}
       {...props}

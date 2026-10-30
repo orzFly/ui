@@ -10,7 +10,7 @@ import { cn } from "../lib/utils.ts";
  * rule lives in, so `no-underline` wins without a specificity fight.
  */
 export const RICH_CHIP_SKIN =
-  "rounded-sm border bg-muted/40 px-[0.3em] py-px no-underline hover:border-ring hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
+  "rounded-[min(var(--radius-chip),6px)] border bg-muted/40 px-[0.3em] py-px no-underline hover:border-ring hover:bg-muted focus-visible:focus-ring focus-visible:outline-offset-1";
 
 /**
  * `items-baseline` is what puts the chip's label baseline on the paragraph's:

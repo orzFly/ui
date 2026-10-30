@@ -78,7 +78,7 @@ function CommitHeader({ commit }: { commit: PatchCommit }) {
     <div className={HEADER_ROW} style={{ height: PATCH_HEADER_HEIGHT }}>
       <GitCommitHorizontalIcon className="size-4 shrink-0 text-muted-foreground" />
       {commit.series !== undefined && (
-        <span className="shrink-0 rounded-full border px-1.5 text-[11px] leading-4 text-muted-foreground tabular-nums">
+        <span className="shrink-0 rounded-chip border px-1.5 text-ui-2xs leading-4 text-muted-foreground tabular-nums">
           {commit.series}
         </span>
       )}
@@ -118,7 +118,7 @@ function FileHeader({
   return (
     <div className={HEADER_ROW} style={{ height: PATCH_HEADER_HEIGHT }}>
       <FileDiffIcon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 truncate font-mono text-[0.8rem]" title={label}>
+      <span className="min-w-0 truncate font-mono text-ui-sm" title={label}>
         {label}
       </span>
       <span className="ml-auto flex shrink-0 items-center gap-2">
@@ -452,7 +452,7 @@ export function PatchView({
     );
   }
   return (
-    <div className="overflow-hidden rounded-lg border">
+    <div className="overflow-hidden rounded-frame border">
       <div className="flex items-center gap-2 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-xs text-muted-foreground">
         <FileDiffIcon className="size-3.5" />
         <span>patch</span>

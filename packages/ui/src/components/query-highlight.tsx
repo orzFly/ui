@@ -22,10 +22,12 @@ import type { ReactNode } from "react";
 const KEY_CLASS = "text-primary";
 const PUNCT_CLASS = "text-muted-foreground";
 const VALUE_CLASS: Record<ValueVerdict, string> = {
-  valid: "text-foreground bg-primary/12 rounded-[3px]",
-  special: "text-foreground bg-violet-500/15 rounded-[3px]",
+  valid: "text-foreground bg-primary/12 rounded-[min(var(--radius-item),3px)]",
+  special:
+    "text-foreground bg-violet-500/15 rounded-[min(var(--radius-item),3px)]",
   invalid: "text-warning underline decoration-wavy",
-  unknown: "text-foreground bg-primary/12 rounded-[3px]",
+  unknown:
+    "text-foreground bg-primary/12 rounded-[min(var(--radius-item),3px)]",
 };
 
 type Filter = Extract<QueryPart, { kind: "filter" }>;

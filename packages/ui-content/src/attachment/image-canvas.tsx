@@ -46,6 +46,8 @@ type Point = { x: number; y: number };
 const CHECKER =
   "repeating-conic-gradient(#d4d4d4 0 25%, #fff 0 50%) 0 0 / 16px 16px";
 
+/** A fitted image's corner, and its checkerboard's. */
+const CORNER = "min(var(--radius-item), 6px)";
 /** Movement under this is still a click/tap, not a drag. */
 const TAP_SLOP = 4;
 const STEP = 1.25;
@@ -416,7 +418,7 @@ export function ImageCanvas({
         src={src}
         alt={alt}
         className={cn(
-          "mx-auto max-h-(--attachment-pane-height) rounded-md object-contain",
+          "mx-auto max-h-(--attachment-pane-height) rounded-item object-contain",
           className,
         )}
       />
@@ -461,7 +463,7 @@ export function ImageCanvas({
               width: natural.w * view.z,
               height: natural.h * view.z,
               background: CHECKER,
-              borderRadius: fitted ? 6 : 0,
+              borderRadius: fitted ? CORNER : 0,
             }}
           />
         )}
@@ -490,10 +492,10 @@ export function ImageCanvas({
                   width: natural.w,
                   height: natural.h,
                   transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})`,
-                  // A static image's rounded-md, divided back out of the
+                  // A static image's corner, divided back out of the
                   // scale; zoomed in, a rounded corner would read as the
                   // image's own edge.
-                  borderRadius: fitted ? 6 / view.z : 0,
+                  borderRadius: fitted ? `calc(${CORNER} / ${view.z})` : 0,
                   // Shrunk, nearest-neighbour drops whole rows and columns;
                   // pixelated only means something once an image pixel is
                   // bigger than a screen pixel.

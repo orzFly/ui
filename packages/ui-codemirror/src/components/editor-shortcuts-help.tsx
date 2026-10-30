@@ -58,7 +58,7 @@ export function EditorShortcutsHelp() {
                       {keys.map((key) => (
                         <kbd
                           key={key}
-                          className="rounded border bg-muted px-1.5 font-mono text-[0.7rem] text-muted-foreground"
+                          className="rounded-[min(var(--radius-chip),4px)] border bg-muted px-1.5 font-mono text-ui-xs text-muted-foreground"
                         >
                           {key === "V" || key === "." ? key : labels[key]}
                         </kbd>

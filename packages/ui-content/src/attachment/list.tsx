@@ -135,7 +135,7 @@ export function AttachmentList({
   const hiddenBefore = items.length - shown.length;
 
   return (
-    <section className={cn("rounded-lg border", className)} id={id}>
+    <section className={cn("rounded-frame border", className)} id={id}>
       <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-sm">
         <PaperclipIcon className="size-3.5 text-muted-foreground" />
         <span className="font-medium">{title}</span>

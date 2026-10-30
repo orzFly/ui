@@ -879,7 +879,7 @@ export function AnsiView({
       // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region takes focus so the keyboard can scroll it
       tabIndex={0}
       onCopy={onCopy}
-      className="relative min-h-0 flex-auto overflow-auto px-3 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
+      className="relative min-h-0 flex-auto overflow-auto px-3 outline-none focus-visible:focus-ring-inset"
       style={
         virtual
           ? { height: maxHeight ?? VIRTUAL_HEIGHT }
@@ -900,12 +900,12 @@ export function AnsiView({
     return (
       <div
         className={cn(
-          "ansi-view group relative flex flex-col overflow-hidden rounded-lg border border-border bg-terminal-background font-mono text-terminal-foreground",
+          "ansi-view group relative flex flex-col overflow-hidden rounded-frame border border-border bg-terminal-background font-mono text-terminal-foreground",
           className,
         )}
         style={rootStyle}
       >
-        <div className="absolute top-1 right-1 z-10 flex gap-0.5 rounded-md bg-terminal-background opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
+        <div className="absolute top-1 right-1 z-10 flex gap-0.5 rounded-[min(var(--radius-control),8px)] bg-terminal-background opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
           {tools}
         </div>
         {scroller}
@@ -921,7 +921,7 @@ export function AnsiView({
     // biome-ignore lint/a11y/noStaticElementInteractions: Ctrl+F from anywhere inside the view goes to its search box
     <div
       className={cn(
-        "ansi-view flex flex-col overflow-hidden rounded-lg border border-border bg-terminal-background font-mono text-terminal-foreground",
+        "ansi-view flex flex-col overflow-hidden rounded-frame border border-border bg-terminal-background font-mono text-terminal-foreground",
         className,
       )}
       style={rootStyle}
@@ -929,7 +929,7 @@ export function AnsiView({
     >
       {/* One child before the scroller, as in a pane, so that switching
           chrome keeps the scroller mounted and measured. */}
-      <div className="shrink-0 border-b border-border bg-card font-sans text-card-foreground text-xs">
+      <div className="shrink-0 border-b border-border bg-card font-ui text-card-foreground text-xs">
         <div className="flex items-center gap-2 py-1 pr-1 pl-3">
           {filename !== undefined && (
             <span className="min-w-0 truncate font-medium">{filename}</span>

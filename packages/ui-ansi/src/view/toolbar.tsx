@@ -63,7 +63,7 @@ export function LevelChips({ counts, hidden, onChange }: LevelChipsProps) {
           title="Click to show or hide; shift+click to show only this level"
           // styles.css gives [data-level] its --log-level, which colours the dot.
           data-level={key === "other" ? undefined : key}
-          className="rounded-full font-mono text-muted-foreground line-through opacity-60 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:no-underline aria-pressed:opacity-100"
+          className="rounded-chip font-mono text-muted-foreground line-through opacity-60 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:no-underline aria-pressed:opacity-100"
           onClick={onClick(key)}
         >
           <span
@@ -169,7 +169,7 @@ export function SearchBox({
   return (
     <div
       className={cn(
-        "flex min-w-0 items-center gap-0.5 rounded-md border border-border bg-background pl-1.5",
+        "flex min-w-0 items-center gap-0.5 rounded-[min(var(--radius-control),8px)] border border-border bg-background pl-1.5",
         className,
       )}
     >
@@ -186,7 +186,7 @@ export function SearchBox({
         value={query}
         onChange={(event) => onQuery(event.target.value)}
         onKeyDown={onKeyDown}
-        className="h-6 w-36 min-w-0 flex-auto bg-transparent px-1 font-mono text-foreground outline-none aria-invalid:text-destructive"
+        className="h-control-xs w-36 min-w-0 flex-auto bg-transparent px-1 font-mono text-foreground outline-none aria-invalid:text-destructive"
       />
       <span
         aria-live="polite"

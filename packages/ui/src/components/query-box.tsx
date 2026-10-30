@@ -68,7 +68,7 @@ type BoxRow<R> =
  * `<a>` and `<div>` rows, which are block already, it changes nothing.
  */
 const OPTION =
-  "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm touch:min-h-11";
+  "flex w-full items-center gap-2 rounded-item px-2 py-1.5 text-sm min-h-row touch:min-h-11";
 
 /** Nothing highlighted. Enter then submits what was typed, not an offer. */
 const NONE = -1;
@@ -453,7 +453,7 @@ export function QueryBox<R>({
           onMouseDown={(e) => e.preventDefault()}
           style={{ maxHeight }}
           className={cn(
-            "absolute top-full z-50 mt-1 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border bg-popover p-1 shadow-lg ring-1 ring-foreground/5",
+            "absolute top-full z-50 mt-1 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-overlay border bg-popover p-1 shadow-overlay ring-1 ring-foreground/5",
             listAlign === "start"
               ? // The box starts at the edge of the screen, so the panel
                 // takes its width and stops. A floor still applies, because

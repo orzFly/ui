@@ -202,7 +202,7 @@ function MediaFrame({
       data-slot={video ? "video-player" : "audio-player"}
       title={title}
       className={cn(
-        "overflow-hidden rounded-lg border [&:fullscreen]:rounded-none [&:fullscreen]:border-0",
+        "overflow-hidden rounded-frame border [&:fullscreen]:rounded-none [&:fullscreen]:border-0",
         video ? "bg-black" : "bg-card",
         fullscreen && "flex flex-col",
         className,
@@ -217,7 +217,7 @@ function MediaFrame({
           tabIndex={0}
           aria-label={title}
           className={cn(
-            "relative outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
+            "relative outline-none focus-visible:focus-ring-inset",
             fullscreen && "min-h-0 flex-1",
           )}
         >

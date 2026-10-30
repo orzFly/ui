@@ -134,7 +134,7 @@ export function ImportPanel({
     // biome-ignore lint/a11y/noStaticElementInteractions: dropping a file is a shortcut; Choose file… is the accessible route.
     <div
       className={cn(
-        "-m-2 flex flex-col gap-3 rounded-lg p-2",
+        "-m-2 flex flex-col gap-3 rounded-frame p-2",
         dragging && "bg-primary/5 ring-2 ring-primary/40",
       )}
       onDragOver={(event) => {
@@ -252,7 +252,7 @@ function ImportRow({
   return (
     <li
       data-status={entry.status}
-      className="flex items-start gap-2.5 rounded-lg border p-2.5"
+      className="flex items-start gap-2.5 rounded-frame border p-2.5"
     >
       <Checkbox
         id={id}
@@ -267,13 +267,13 @@ function ImportRow({
             {label}
           </label>
           {entry.kind === "terminal" && (
-            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="shrink-0 rounded-chip bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
               Terminal
             </span>
           )}
           <span
             className={cn(
-              "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
+              "shrink-0 rounded-chip px-2 py-0.5 text-xs font-medium",
               status.className,
             )}
           >

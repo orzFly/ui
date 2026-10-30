@@ -9,11 +9,14 @@
     "lint": "biome check . && node scripts/readme.ts --check",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "visual": "node scripts/visual-check.ts"
   },
   "packageManager": "pnpm@10.28.0",
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
+    "pixelmatch": "^8.0.0",
+    "pngjs": "^7.0.0",
     "typescript": "^7.0.2"
   }
 }

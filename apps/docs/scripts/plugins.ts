@@ -11,6 +11,7 @@ import {
   internalClasses,
   packageSummaries,
   STORIES,
+  styleTokens,
 } from "./data.ts";
 import { fillTemplate } from "./html.ts";
 import { closeSearch, searchIndex } from "./search.ts";
@@ -180,8 +181,8 @@ const filesUnder = (dir: string) =>
  * `virtual:orz-install` every package's install lines, as the READMEs have them;
  * `virtual:orz-packages` each package's description; `virtual:orz-themes` the built-in
  * themes' table; `virtual:orz-demo-api` the Storybook pages each demo uses; and
- * `virtual:orz-ui-source` the class strings of `@orz/ui`'s internal parts and the lengths
- * its stylesheets set.
+ * `virtual:orz-ui-source` the class strings of `@orz/ui`'s internal parts, the lengths
+ * its stylesheets set, and its style tokens' values.
  */
 export function dataPlugin(): Plugin {
   const modules: Record<string, () => { data: unknown; watch: string[] }> = {
@@ -207,7 +208,11 @@ export function dataPlugin(): Plugin {
       watch: [...filesUnder(DEMOS), ...filesUnder(STORIES)],
     }),
     "virtual:orz-ui-source": () => ({
-      data: { classes: internalClasses(), css: cssLengths() },
+      data: {
+        classes: internalClasses(),
+        css: cssLengths(),
+        tokens: styleTokens(),
+      },
       watch: [
         ...filesUnder(join(UI, "src/components")),
         join(UI, "styles.css"),

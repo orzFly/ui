@@ -4,7 +4,7 @@
      the renderer (react-markdown `components`) don't need class surgery.
      Sizes follow github.com issue comments (14px base). */
   .markdown-body {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     line-height: 1.6;
     overflow-wrap: break-word;
   }
@@ -214,7 +214,7 @@
     width: 100%;
     overflow-x: visible;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: min(var(--radius-frame), 6px);
     background-color: color-mix(in oklab, var(--muted) 45%, transparent);
     font-size: 0.9375em;
   }
@@ -274,13 +274,13 @@
      (T-31). */
   .markdown-body code {
     padding: 0.2em 0.4em;
-    border-radius: var(--radius-sm);
+    border-radius: min(var(--radius-chip), 6px);
     background-color: var(--muted);
     font-size: 0.85em;
   }
   .markdown-body pre {
     padding: 0.75rem;
-    border-radius: var(--radius-md);
+    border-radius: min(var(--radius-frame), 8px);
     background-color: var(--muted);
     overflow-x: auto;
     line-height: 1.45;

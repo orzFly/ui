@@ -23,6 +23,7 @@ declare module "virtual:orz-ui-source" {
   const source: {
     classes: import("../scripts/data.ts").InternalClasses;
     css: import("../scripts/data.ts").CssLengths;
+    tokens: import("../scripts/data.ts").StyleTokens;
   };
   export default source;
 }

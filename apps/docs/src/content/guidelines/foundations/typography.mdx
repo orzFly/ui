@@ -27,19 +27,20 @@ the review stops at a readable width however wide the card grows.
 | Role | Classes | Size |
 |---|---|---|
 | Body, labels, menu items, button text | `text-sm` | 14px |
-| A title: a card, dialog, sheet or panel | `font-heading text-base font-medium` | 16px |
+| A title: a card, dialog, sheet or panel | `font-heading text-title font-medium` | 16px |
 | Secondary: a timestamp, a count, a hint, a column header | `text-xs text-muted-foreground` | 12px |
 | What a user copies or compares: ids, hashes, paths, code | `font-mono` at the size around it, or `text-xs` inline | — |
 
 A page heading in a document-like view can go larger (`text-2xl`, `text-3xl`), as these docs do;
-inside a tool, a panel's title is `text-base`. The components follow the same scale: `CardTitle`,
-`DialogTitle` and `SheetTitle` are `font-heading text-base font-medium`, a `Badge` is `text-xs`.
+inside a tool, a panel's title is `text-title`. The components follow the same scale: `CardTitle`,
+`DialogTitle` and `SheetTitle` are `font-heading text-title font-medium`, a `Badge` is `text-xs`.
 
 ## Family
 
-`--font-sans` names Geist first and falls back to the system UI font, so an app that installs
+`--font-ui` names Geist first and falls back to the system UI font, so an app that installs
 `@fontsource-variable/geist` gets Geist and one that does not gets the platform's own.
-`--font-heading` is the same family; override it only if your app has a display face.
+`font-sans` and `--font-heading` are the same family; override `--font-heading` only if your app
+has a display face.
 `styles.css` sets no monospace: an app that wants one defines `--font-mono` in its `@theme`, as
 this site does with JetBrains Mono.
 
