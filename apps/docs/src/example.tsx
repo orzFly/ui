@@ -151,13 +151,9 @@ export function Example({
   );
 }
 
-/**
- * A pressed toggle: a box in the page's colour ringed in ink. The fill alone
- * would sit barely over 1:1 against the bar it is on; the ink holds 3:1 in
- * every palette, as text does.
- */
+/** A pressed toggle: a box in the page's colour, ringed by `pressed-cue`. */
 export const PRESSED =
-  "aria-pressed:bg-background aria-pressed:font-medium aria-pressed:text-foreground aria-pressed:inset-ring aria-pressed:inset-ring-foreground";
+  "aria-pressed:bg-background aria-pressed:font-medium aria-pressed:text-foreground aria-pressed:pressed-cue";
 
 /** Pointer and Touch: press one to force its sizes, press it again to follow the device. */
 export function PointerToggle({

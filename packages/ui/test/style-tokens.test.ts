@@ -329,7 +329,7 @@ function declarationProblem(property: string, value: string): string | null {
     case "font-size":
       return /^[\d.]+(?:px|rem)$/.test(value) ? "a literal text size" : null;
     case "box-shadow":
-      return value === "none" || value.includes("var(--shadow-")
+      return value === "none" || /var\(--(?:shadow-|pressed-cue\))/.test(value)
         ? null
         : "a shadow that is not a style token";
     default:

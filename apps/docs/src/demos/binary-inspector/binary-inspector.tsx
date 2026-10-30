@@ -592,7 +592,7 @@ function Segmented<T extends string>({
           type="button"
           aria-pressed={value === pressed}
           onClick={() => onPress(value)}
-          className="relative rounded-sm px-2.5 py-1 text-muted-foreground text-ui-sm transition-colors hover:text-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs touch:hit-area"
+          className="relative rounded-sm px-2.5 py-1 text-muted-foreground text-ui-sm transition-colors hover:text-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:pressed-cue touch:hit-area"
         >
           {text}
         </button>

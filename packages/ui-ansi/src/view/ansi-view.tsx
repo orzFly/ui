@@ -861,7 +861,7 @@ export function AnsiView({
         aria-label="Wrap lines"
         title="Wrap lines"
         aria-pressed={wrap}
-        className="aria-pressed:bg-muted aria-pressed:text-foreground"
+        className="aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:pressed-cue"
         onClick={() => setWrap((on) => !on)}
       >
         <WrapTextIcon />

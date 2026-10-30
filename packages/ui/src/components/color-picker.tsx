@@ -974,7 +974,7 @@ export function ColorPicker({
               aria-pressed={shown === s}
               disabled={disabled}
               onClick={() => pickSurface(s)}
-              className="h-control-xs rounded-[min(var(--radius-control),5px)] text-ui-xs font-medium text-muted-foreground outline-none focus-visible:focus-ring disabled:opacity-50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-raised"
+              className="h-control-xs rounded-[min(var(--radius-control),5px)] text-ui-xs font-medium text-muted-foreground outline-none focus-visible:focus-ring disabled:opacity-50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:pressed-cue"
             >
               {SURFACE_LABELS[s]}
             </button>

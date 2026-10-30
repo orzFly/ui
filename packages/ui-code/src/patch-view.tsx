@@ -419,7 +419,7 @@ export function PatchView({
         title={raw ? "Back to the diff" : "The patch as written"}
         className={cn(
           "font-normal text-muted-foreground",
-          raw && "bg-muted text-foreground",
+          raw && "bg-muted text-foreground pressed-cue",
         )}
         onClick={() => setRaw((shown) => !shown)}
       >

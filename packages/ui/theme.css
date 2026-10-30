@@ -158,6 +158,7 @@
     --shadow-menu: 2px 2px 0 0 rgb(15 23 39 / 0.14);
     --shadow-overlay: 3px 3px 0 0 rgb(15 23 39 / 0.14);
     --state-cue: inset 3px 0 0 0 currentColor;
+    --pressed-cue: inset 0 0 0 1px currentColor;
     --tab-cue: inset 0 2px 0 0 var(--primary);
   }
 }
@@ -207,6 +208,12 @@
    edge, held to 3:1 on the fill by the state contrast check. */
 @utility state-cue {
   box-shadow: var(--state-cue);
+}
+/* A pressed toggle (`aria-pressed:pressed-cue`): its fill measures barely
+   over 1:1 against the bar or track it sits on, so the toggle's own text
+   colour rings it, which as text already clears 3:1. */
+@utility pressed-cue {
+  box-shadow: var(--pressed-cue);
 }
 
 /* The current tab: a white box joined to its content, with a 2px primary

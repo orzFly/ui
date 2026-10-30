@@ -70,7 +70,7 @@ function MarkdownDocument({
       }
       className={cn(
         "font-normal text-muted-foreground",
-        showSource && "bg-muted text-foreground",
+        showSource && "bg-muted text-foreground pressed-cue",
       )}
       onClick={() => setShowSource((shown) => !shown)}
     >

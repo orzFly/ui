@@ -61,7 +61,7 @@ export const Usage: Story = {
               key={name}
               type="button"
               aria-pressed={list === name}
-              className="rounded-md border px-2 aria-pressed:bg-accent"
+              className="rounded-md border px-2 aria-pressed:bg-accent aria-pressed:pressed-cue"
               onClick={() => setList(name)}
             >
               {name}

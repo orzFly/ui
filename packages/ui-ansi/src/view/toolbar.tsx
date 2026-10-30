@@ -63,7 +63,7 @@ export function LevelChips({ counts, hidden, onChange }: LevelChipsProps) {
           title="Click to show or hide; shift+click to show only this level"
           // styles.css gives [data-level] its --log-level, which colours the dot.
           data-level={key === "other" ? undefined : key}
-          className="rounded-chip font-mono text-muted-foreground line-through opacity-60 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:no-underline aria-pressed:opacity-100"
+          className="rounded-chip font-mono text-muted-foreground line-through opacity-60 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:pressed-cue aria-pressed:no-underline aria-pressed:opacity-100"
           onClick={onClick(key)}
         >
           <span
@@ -133,7 +133,7 @@ function Toggle({
       aria-label={label}
       title={label}
       aria-pressed={pressed}
-      className="aria-pressed:bg-muted aria-pressed:text-foreground"
+      className="aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:pressed-cue"
       onClick={() => onPressed(!pressed)}
     >
       {children}

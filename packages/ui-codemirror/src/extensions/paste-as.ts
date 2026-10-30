@@ -455,6 +455,7 @@ const toolbarTheme = EditorView.theme({
     backgroundColor: "var(--accent)",
     color: "var(--accent-foreground)",
     fontWeight: "500",
+    boxShadow: "var(--pressed-cue)",
   },
   ".cm-paste-options button:focus-visible": {
     outline: "2px solid var(--ring)",
