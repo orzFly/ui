@@ -166,6 +166,14 @@ outline, a focus ring and an icon that carries meaning need 3:1
 show the ratio in the theme you are in; a pair marked **under 4.5** holds secondary text only in
 that theme, so keep what matters in the surface's own foreground.
 
+## Colours a style adds
+
+A theme belongs to a [style](/guidelines/foundations/styles/), and a style may ask its themes for
+colours beyond the shared tokens: raymond draws its bevels from `3d-face`, `3d-highlight` and
+`3d-shadow`, and its title bar from `caption` and `caption-gradient`. Those are the style's to read. Draw your own surfaces
+from the shared tokens above, which every theme of every style supplies, and they hold when the
+user switches style.
+
 ## Terminal colours
 
 A terminal, an ANSI log and a cast player draw from their own tokens: a background, foreground,

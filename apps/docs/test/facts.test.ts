@@ -83,8 +83,8 @@ describe("typography", () => {
   });
 });
 
-describe("theming", () => {
-  const text = read("apps/docs/src/content/guidelines/foundations/theming.mdx");
+describe("styles", () => {
+  const text = read("apps/docs/src/content/guidelines/foundations/styles.mdx");
   const themes = builtinThemes;
 
   it("names the style options as createThemeStore takes them", () => {
@@ -136,5 +136,19 @@ describe("theming", () => {
       createThemeStore({ storageKey: "facts", themes }).setStyle,
     ).toBeTypeOf("function");
     expect(useStyle).toBeTypeOf("function");
+  });
+});
+
+describe("color", () => {
+  it("names colours raymond's palettes add as tokens of raymondStyle", () => {
+    const text = read("apps/docs/src/content/guidelines/foundations/color.mdx");
+    const sentence = text
+      .replace(/\s+/g, " ")
+      .match(/raymond draws its bevels from [^.]*\./)?.[0];
+    const tokens = [...(sentence ?? "").matchAll(/`([^`]+)`/g)].map(
+      ([, name = ""]) => name,
+    );
+    expect(tokens.length).toBeGreaterThan(0);
+    expect(raymondStyle.tokens).toEqual(expect.arrayContaining(tokens));
   });
 });

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildSite } from "../scripts/build.ts";
+import { MOVED } from "../src/redirect.ts";
 import { routeOf } from "../src/routes.ts";
 
 const APP = fileURLToPath(new URL("..", import.meta.url));
@@ -111,6 +112,24 @@ describe("a build under /ui/", () => {
       "/ui/storybook/?path=/docs/ui-primitives-switch--docs",
     );
     expect(redirectOf(html, "")).toBeUndefined();
+  });
+
+  it("sends a moved route to its page, query and hash kept", () => {
+    for (const [from, to] of Object.entries(MOVED)) {
+      expect(routes, from).not.toContain(from);
+      expect(routes, to).toContain(to);
+      const html = readFileSync(join(dist, from, "index.html"), "utf8");
+      const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1];
+      let went: string | undefined;
+      new Function("location", script ?? "")({
+        search: "?thread=t1",
+        hash: "#reply",
+        replace: (url: string) => {
+          went = url;
+        },
+      });
+      expect(went).toBe(`/ui${to}?thread=t1#reply`);
+    }
   });
 });
 

@@ -101,7 +101,7 @@ describe("demos", () => {
         "ui/Primitives/Toaster",
       ]),
     );
-    expect(apis.inbox).toContain("ui/LoadFailure");
+    expect(apis.mail).toContain("ui/LoadFailure");
     const titles = new Set(stories.map((story) => story.title));
     for (const title of Object.values(apis).flat()) {
       expect(titles.has(title), title).toBe(true);

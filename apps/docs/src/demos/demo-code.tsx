@@ -133,7 +133,12 @@ export function DemoCode({
           />
         </div>
         <div className="min-h-0 flex-1 overflow-auto">
-          <CodeBlock filename={path} contents={file.contents} lineNumbers />
+          <CodeBlock
+            filename={path}
+            contents={file.contents}
+            lineNumbers
+            copy={false}
+          />
         </div>
       </div>
     </div>

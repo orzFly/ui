@@ -563,7 +563,7 @@ const conversations = (n: number) =>
  *
  * It fills the box it is given: the page lays the box out, the app only fills it.
  */
-export function Inbox() {
+export function Mail() {
   // Once, at the app's root: the reply box rides `--vv-bottom`.
   useVisualViewportInsets();
   const open = useOpenThread();

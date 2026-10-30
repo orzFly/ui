@@ -13,11 +13,19 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpRightIcon,
+  ListIcon,
   MenuIcon,
   SearchIcon,
   SettingsIcon,
 } from "lucide-react";
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type MouseEvent,
+  type RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ClientOnly } from "./hydrated.tsx";
 import { inTheDemosToc } from "./in-the-demos.tsx";
 import type { PageMeta, TocEntry } from "./page.ts";
@@ -51,8 +59,11 @@ function ThemeButton() {
   );
 }
 
+// The current section is the mosaic's current tab: a box in the page's colour
+// that covers the header's bottom rule, so it joins the page below, with a
+// primary edge across its top.
 const topLink =
-  "rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:text-foreground";
+  "-mb-px flex items-center self-stretch px-3 text-muted-foreground transition-colors hover:text-foreground";
 
 /** Whether the phone nav is open, and whether it opened to search. */
 type NavOpen = boolean | "search";
@@ -79,14 +90,15 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
           searchRef={sheetBox}
         />
         <Logo />
-        <nav aria-label="Site" className="hidden items-center gap-1 md:flex">
+        <nav aria-label="Site" className="hidden self-stretch md:flex">
           {sections.map((node) => (
             <Link
               key={node.route}
               to={firstPage(node).route}
               className={cn(
                 topLink,
-                node === section && "bg-accent text-foreground",
+                node === section &&
+                  "border-x bg-background font-medium text-foreground tab-cue",
               )}
             >
               {node.title}
@@ -207,7 +219,7 @@ function MobileNav({
 
 function rowClass(size: "pointer" | "touch") {
   return cn(
-    "flex items-center rounded-md px-3 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:font-medium aria-[current=page]:text-foreground",
+    "flex items-center px-3 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:font-medium aria-[current=page]:text-foreground aria-[current=page]:state-cue",
     size === "touch" ? "min-h-11" : "min-h-8 pointer-coarse:min-h-11",
   );
 }
@@ -277,6 +289,44 @@ function useActiveHeading(toc: TocEntry[]): string | undefined {
   return active;
 }
 
+/** The page's headings, then the demos that show it. */
+function usePageToc(headings: TocEntry[], route: string) {
+  return useMemo(
+    () => [...headings, ...inTheDemosToc(route)],
+    [headings, route],
+  );
+}
+
+function TocList({
+  toc,
+  active,
+  onPick,
+}: {
+  toc: TocEntry[];
+  active: string | undefined;
+  onPick?: (event: MouseEvent<HTMLAnchorElement>, id: string) => void;
+}) {
+  return (
+    <ul className="border-l">
+      {toc.map((entry) => (
+        <li key={entry.id}>
+          <a
+            href={`#${entry.id}`}
+            onClick={onPick && ((event) => onPick(event, entry.id))}
+            className={cn(
+              "-ml-px flex min-h-7 items-center border-l border-transparent py-1 text-muted-foreground transition-colors hover:text-foreground touch:min-h-11",
+              entry.depth === 3 ? "pl-6" : "pl-3",
+              entry.id === active && "border-foreground text-foreground",
+            )}
+          >
+            {entry.text}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function Toc({
   toc: headings,
   meta,
@@ -286,10 +336,7 @@ export function Toc({
   meta: PageMeta;
   route: string;
 }) {
-  const toc = useMemo(
-    () => [...headings, ...inTheDemosToc(route)],
-    [headings, route],
-  );
+  const toc = usePageToc(headings, route);
   const active = useActiveHeading(toc);
   const api = meta.api ?? [];
   if (toc.length === 0 && api.length === 0) return null;
@@ -298,26 +345,91 @@ export function Toc({
       {toc.length > 0 && (
         <nav aria-label="On this page">
           <p className="mb-2 font-medium">On this page</p>
-          <ul className="border-l">
-            {toc.map((entry) => (
-              <li key={entry.id}>
-                <a
-                  href={`#${entry.id}`}
-                  className={cn(
-                    "-ml-px block border-l border-transparent py-1 text-muted-foreground transition-colors hover:text-foreground",
-                    entry.depth === 3 ? "pl-6" : "pl-3",
-                    entry.id === active && "border-foreground text-foreground",
-                  )}
-                >
-                  {entry.text}
-                </a>
-              </li>
-            ))}
-          </ul>
+          <TocList toc={toc} active={active} />
         </nav>
       )}
       {api.length > 0 && <ApiLinks titles={api} className="mt-6" />}
     </aside>
+  );
+}
+
+/**
+ * Below xl, where the side column is gone: the page's contents in a sheet
+ * opened from the page header, and its Storybook pages on one line beside it.
+ */
+export function PageContents({
+  toc: headings,
+  meta,
+  route,
+}: {
+  toc: TocEntry[];
+  meta: PageMeta;
+  route: string;
+}) {
+  const toc = usePageToc(headings, route);
+  const active = useActiveHeading(toc);
+  const [open, setOpen] = useState(false);
+  // The sheet locks the page's scroll until it has closed, so the jump waits for that.
+  const target = useRef<string | null>(null);
+  const api = meta.api ?? [];
+  if (toc.length === 0 && api.length === 0) return null;
+  return (
+    <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm xl:hidden">
+      {toc.length > 0 && (
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" data-pagefind-ignore>
+              <ListIcon />
+              On this page
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="bottom"
+            className="max-h-[85dvh] gap-0 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]"
+            onCloseAutoFocus={(event) => {
+              const id = target.current;
+              target.current = null;
+              if (id === null) return;
+              event.preventDefault();
+              location.hash = id;
+            }}
+          >
+            <SheetTitle icon={<ListIcon />} className="px-5 pt-5">
+              On this page
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              The sections of {meta.title}
+            </SheetDescription>
+            <nav aria-label="On this page" className="px-5 pt-3 text-base">
+              <TocList
+                toc={toc}
+                active={active}
+                onPick={(event, id) => {
+                  event.preventDefault();
+                  target.current = id;
+                  setOpen(false);
+                }}
+              />
+            </nav>
+          </SheetContent>
+        </Sheet>
+      )}
+      {api.length > 0 && (
+        <p className="flex flex-wrap items-center gap-x-3" data-pagefind-ignore>
+          <span className="font-medium">API</span>
+          {api.map((title) => (
+            <a
+              key={title}
+              href={storybookHref(BASE, title)}
+              className="inline-flex min-h-7 items-center text-muted-foreground hover:text-foreground touch:min-h-11"
+            >
+              {title.split("/").at(-1)}
+              <ArrowUpRightIcon className="ml-0.5 size-3.5" />
+            </a>
+          ))}
+        </p>
+      )}
+    </div>
   );
 }
 

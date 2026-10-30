@@ -1,0 +1,87 @@
+export const meta = {
+  title: "Styles",
+  description:
+    "A style draws the components: their shape, type, density and motion. The user picks it beside the theme, and no style may move what keeps a screen usable.",
+  order: 17,
+  api: ["ui/Foundations/Theme", "ui/ThemeMenu", "ui/Primitives/Card"],
+};
+
+import { StyleSwitch } from "../../../examples/styles/style-switch.tsx";
+
+**Leave how the components are drawn to the style, and build every surface of your own from the
+same components and tokens, so a style the user picks redraws it too.** A theme says what colour
+each role is; a style says what shape it takes. Together they are the look, and both are the
+user's.
+
+<Example of={StyleSwitch} clientOnly />
+
+The buttons above call `setStyle`, and the whole page redraws, this text included: the card's
+header, the tabs, the field and the buttons change their corners, edges, type and height, and the
+site's own chrome follows, because it is built from the same components. Pick a style in the top
+bar's theme menu for the same.
+
+## What a style changes
+
+A style is the tokens `@orz/ui`'s components read for everything but colour, and a few rules for
+what a token cannot draw:
+
+- **Shape.** Corner radii, and how an edge is drawn: a flat 1px rule, or the two-tone bevel a
+  Windows 2000 button has.
+- **Depth.** Whether surfaces cast shadows, and what lifts a menu or a dialog above the page.
+- **Type.** The families, the size of body text and each step of the scale.
+- **Density at a pointer.** The height of a control and of a row, and the padding inside them.
+- **Focus.** How the focus indicator is drawn: a solid ring, or a dotted rectangle.
+- **State.** How a selected row, a highlighted menu item and the current tab are told apart.
+- **Motion.** How long an overlay takes to arrive, and whether it fades, zooms or slides.
+- **Its own colours.** A style may ask its themes for colour tokens beyond the shared ones, such as
+  raymond's 3D face and edges and its title bar's gradient.
+
+## What a style never changes
+
+These hold under every style, and outrank it:
+
+- The components' structure, props and behaviour. Code written against one style runs under all of
+  them.
+- The sizes on a coarse pointer: 40px and 44px controls, a 44px hit area around anything drawn
+  smaller, and 16px text in a field, so a phone does not zoom. A style sizes for the mouse only
+  ([Density](/guidelines/foundations/density/)).
+- The contrast floors: 4.5:1 for text, 3:1 for an edge a control is found by and for a state cue.
+  Every palette a style ships is held to them
+  ([Accessibility](/guidelines/content/accessibility/#contrast)).
+- A visible focus indicator, and reduced motion
+  ([Motion](/guidelines/foundations/motion/#reduced-motion)).
+
+## Offering styles
+
+A theme belongs to the styles it lists in `styles`, or to the default style when it lists none, so
+the user picks a style and then one of its themes.
+
+- **Offer the styles whose stylesheets you import.** `createThemeStore({ styles, defaultStyle })`
+  takes them and starts a new user on `defaultStyle`; without `styles` the store offers the default
+  style alone, and the menu has no Style row. Beside the default style, `@orz/ui` ships raymond,
+  Windows 2000: import `@orz/ui/styles/raymond.css` after `@orz/ui/styles.css`, and offer
+  `raymondStyle` from `@orz/themes`, whose built-in themes include its own.
+- **Let the user switch.** With more than one style, `ThemeMenu` shows a Style row above the modes
+  and previews a style while it is hovered; from code, `setStyle` on the store or from `useStyle()`
+  switches it. Either way the user lands on the theme they last picked under that style, or on its
+  first theme.
+- **Hold the user to one style** by offering that one alone. A terminal theme is not tied to a
+  style: terminal output is content, and its own pick shows under any.
+
+## Your own surfaces
+
+<DoDont>
+  <Do>
+    Build a panel from `Card`, a toolbar from `Button`, a list's rows at `min-h-row`, and round a
+    part of your own with `rounded-control` or `rounded-surface`. Under another style it changes
+    with everything around it.
+  </Do>
+  <Dont>
+    Write `rounded-lg`, `h-8` or `shadow-md` on a part of your own, or style by
+    `[data-style="raymond"]`. The first stays as it is when the style changes; the second breaks
+    under every style you did not write it for.
+  </Dont>
+</DoDont>
+
+The numbers the other guideline pages give, a row's height or a button's, are the default style's.
+Another style draws the same parts at its own sizes, and the pages' rules hold for it all the same.

@@ -1,13 +1,15 @@
 // The built-in themes as rows of a table, for the themes README and the docs site, so neither
 // lists a theme, a side or a variant by hand.
 import * as themes from "../packages/themes/src/index.ts";
-import type { Palette, Theme } from "../packages/themes/src/types.ts";
+import type { Palette, Style, Theme } from "../packages/themes/src/types.ts";
 
 export interface ThemeRow {
   label: string;
   id: string;
   /** The export that holds it, as an app imports it. */
   name: string;
+  /** The labels of the styles it belongs to. */
+  styles: string[];
   /** The side's own name ("Latte") or "✓", then its variants; null for a side the theme lacks. */
   light: string | null;
   dark: string | null;
@@ -20,6 +22,30 @@ export interface ThemeTable {
 }
 
 const AMOLED = "amoled";
+
+/** Every style @orz/themes exports, by id. */
+const STYLES = new Map(
+  Object.values(themes)
+    .filter(
+      (value): value is Style =>
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value) &&
+        "id" in value &&
+        "label" in value &&
+        !("light" in value) &&
+        !("dark" in value),
+    )
+    .map((style) => [style.id, style.label]),
+);
+
+function styleLabels(theme: Theme): string[] {
+  return (theme.styles ?? [themes.DEFAULT_STYLE]).map((id) => {
+    const label = STYLES.get(id);
+    if (label === undefined) throw new Error(`${theme.id}: no style ${id}`);
+    return label;
+  });
+}
 
 function exportName(theme: Theme): string {
   const found = Object.entries(themes).find(([, value]) => value === theme);
@@ -49,6 +75,7 @@ export function themeTable(
       label: theme.label,
       id: theme.id,
       name: exportName(theme),
+      styles: styleLabels(theme),
       light: side(theme.light, skip),
       dark: side(theme.dark, skip),
     })),
@@ -58,11 +85,11 @@ export function themeTable(
 /** The table as the README has it. */
 export function themeMarkdown({ rows, amoledEverywhere }: ThemeTable): string {
   const lines = [
-    "| Theme | Import | Light | Dark |",
-    "|---|---|---|---|",
-    ...rows.map(({ label, id, name, light, dark }) => {
+    "| Theme | Import | Style | Light | Dark |",
+    "|---|---|---|---|---|",
+    ...rows.map(({ label, id, name, styles, light, dark }) => {
       const code = name === id ? `\`${name}\`` : `\`${name}\` (\`${id}\`)`;
-      return `| ${label} | ${code} | ${light ?? ""} | ${dark ?? ""} |`;
+      return `| ${label} | ${code} | ${styles.join(", ")} | ${light ?? ""} | ${dark ?? ""} |`;
     }),
   ];
   if (amoledEverywhere) {

@@ -4,7 +4,13 @@ import { type ReactNode, useEffect } from "react";
 import { documentTitle } from "./head.ts";
 import { ClientOnly } from "./hydrated.tsx";
 import { InTheDemos } from "./in-the-demos.tsx";
-import { ApiLinks, PageFooter, Sidebar, SiteHeader, Toc } from "./layout.tsx";
+import {
+  PageContents,
+  PageFooter,
+  Sidebar,
+  SiteHeader,
+  Toc,
+} from "./layout.tsx";
 import { mdxComponents } from "./mdx.tsx";
 import { loadedPage, nav } from "./pages.ts";
 import { Link, useRouter } from "./router.tsx";
@@ -92,17 +98,15 @@ export function App() {
               {meta.title}
             </h1>
             {meta.description && (
-              <p className="mt-3 text-lg text-muted-foreground">
+              <p className="mt-3 max-w-prose text-lg text-muted-foreground">
                 {meta.description}
               </p>
             )}
+            <PageContents toc={page.toc} meta={meta} route={route} />
             <div className="mt-8">
               <page.default components={mdxComponents} />
             </div>
             <InTheDemos route={route} />
-            {meta.api && meta.api.length > 0 && (
-              <ApiLinks titles={meta.api} className="mt-10 xl:hidden" />
-            )}
             {section && <PageFooter section={section} route={route} />}
           </article>
         </main>

@@ -1,9 +1,10 @@
 import installs from "virtual:orz-install";
 import packages from "virtual:orz-packages";
 import themeTable from "virtual:orz-themes";
-import { buttonVariants } from "@orz/ui/components/button";
+import { Button, buttonVariants } from "@orz/ui/components/button";
+import { copyToClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
-import { ArrowUpRightIcon } from "lucide-react";
+import { ArrowUpRightIcon, CopyIcon } from "lucide-react";
 import {
   type ComponentProps,
   isValidElement,
@@ -127,6 +128,26 @@ function Install({ pkg }: { pkg: string }) {
   return <CodeFrame lang="bash" contents={installOf(pkg).block} />;
 }
 
+/** An install line in running text, with a button that copies it. */
+function Command({ command }: { command: string }) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      <InlineCode>{command}</InlineCode>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-label={`Copy ${command}`}
+        title="Copy"
+        className="text-muted-foreground touch:hit-area"
+        onClick={() => void copyToClipboard(command, "Install line copied")}
+      >
+        <CopyIcon />
+      </Button>
+    </span>
+  );
+}
+
 /** Every package but `except`, each with its install line and the optional ones. */
 function PackageInstalls({ except }: { except: string }) {
   return (
@@ -146,7 +167,7 @@ function PackageInstalls({ except }: { except: string }) {
                 <InlineCode>{install.name}</InlineCode>
               </Td>
               <Td>
-                <InlineCode>{install.command}</InlineCode>
+                <Command command={install.command} />
                 {install.optional.map((group) => (
                   <p key={group.command} className="mt-1.5">
                     For{" "}
@@ -156,7 +177,7 @@ function PackageInstalls({ except }: { except: string }) {
                         <InlineCode>{entry}</InlineCode>
                       </span>
                     ))}
-                    : <InlineCode>{group.command}</InlineCode>
+                    : <Command command={group.command} />
                   </p>
                 ))}
               </Td>
@@ -200,12 +221,13 @@ function BuiltinThemes() {
           <tr>
             <Th>Theme</Th>
             <Th>Import</Th>
+            <Th>Style</Th>
             <Th>Light</Th>
             <Th>Dark</Th>
           </tr>
         </thead>
         <tbody>
-          {themeTable.rows.map(({ label, id, name, light, dark }) => (
+          {themeTable.rows.map(({ label, id, name, styles, light, dark }) => (
             <tr key={id}>
               <Td>{label}</Td>
               <Td>
@@ -217,6 +239,7 @@ function BuiltinThemes() {
                   </>
                 )}
               </Td>
+              <Td>{styles.join(", ")}</Td>
               <Td>{light}</Td>
               <Td>{dark}</Td>
             </tr>
@@ -309,17 +332,23 @@ export const mdxComponents = {
   ),
   h3: heading("h3", "mt-8 mb-3 font-semibold text-lg tracking-tight"),
   p: (props: ComponentProps<"p">) => (
-    <p className="my-4 leading-7" {...props} />
+    <p className="my-4 max-w-prose leading-7" {...props} />
   ),
   ul: (props: ComponentProps<"ul">) => (
-    <ul className="my-4 ml-6 list-disc space-y-1.5 leading-7" {...props} />
+    <ul
+      className="my-4 ml-6 max-w-prose list-disc space-y-1.5 leading-7"
+      {...props}
+    />
   ),
   ol: (props: ComponentProps<"ol">) => (
-    <ol className="my-4 ml-6 list-decimal space-y-1.5 leading-7" {...props} />
+    <ol
+      className="my-4 ml-6 max-w-prose list-decimal space-y-1.5 leading-7"
+      {...props}
+    />
   ),
   blockquote: (props: ComponentProps<"blockquote">) => (
     <blockquote
-      className="my-5 border-l-2 pl-4 text-muted-foreground"
+      className="my-5 max-w-prose border-l-2 pl-4 text-muted-foreground"
       {...props}
     />
   ),

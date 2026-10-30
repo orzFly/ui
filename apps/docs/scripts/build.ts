@@ -9,6 +9,8 @@ import {
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build, type Manifest } from "vite";
+import { MOVED, movedPage } from "../src/redirect.ts";
+import { hrefOf } from "../src/routes.ts";
 import { fillTemplate } from "./html.ts";
 import { closeSearch, type IndexedPage, searchIndex } from "./search.ts";
 
@@ -100,6 +102,11 @@ export async function buildSite({ base, outDir, storybook }: BuildOptions) {
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "index.html"), html);
     indexed.push({ route, html });
+  }
+  for (const [from, to] of Object.entries(MOVED)) {
+    const dir = join(out, from);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "index.html"), movedPage(hrefOf(to, base)));
   }
   // GitHub Pages answers every unknown path with the root's 404.html.
   const missing = await entry.render(`${base}404/`);

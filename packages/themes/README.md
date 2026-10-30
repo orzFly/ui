@@ -66,29 +66,29 @@ import { github } from "@orz/themes/themes/github";
 ```
 
 <!-- generated:themes by scripts/readme.ts: run `pnpm fmt` after changing a built-in theme -->
-| Theme | Import | Light | Dark |
-|---|---|---|---|
-| Default | `defaultTheme` (`default`) | ✓ | ✓ |
-| Picotera | `picotera` | Pico | Tera |
-| Solarized | `solarized` | ✓ | ✓ |
-| Visual Studio | `vs` | ✓ | ✓ |
-| GitHub | `github` | ✓ | ✓ |
-| Catppuccin | `catppuccin` | Latte; Mocha (Gray), Frappé (Gray), Macchiato (Gray) | Mocha; Frappé, Macchiato, Mocha (Gray), Frappé (Gray), Macchiato (Gray) |
-| Gruvbox | `gruvbox` | ✓ | ✓ |
-| ProGraphite | `proGraphite` (`pro-graphite`) | ✓ | ✓ |
-| ProNord | `proNord` (`pro-nord`) | ✓ | ✓ |
-| ProSand | `proSand` (`pro-sand`) | ✓ | ✓ |
-| ProMatcha | `proMatcha` (`pro-matcha`) | ✓ | ✓ |
-| ProSakura | `proSakura` (`pro-sakura`) | ✓ | ✓ |
-| ProLavender | `proLavender` (`pro-lavender`) | ✓ | ✓ |
-| ProLagoon | `proLagoon` (`pro-lagoon`) | ✓ | ✓ |
-| ProCitrus | `proCitrus` (`pro-citrus`) | ✓ | ✓ |
-| Dracula | `dracula` |  | ✓ |
-| Nord | `nord` |  | ✓ |
-| Tokyo Night | `tokyoNight` (`tokyo-night`) |  | ✓ |
-| One Dark | `oneDark` (`one-dark`) |  | ✓ |
-| Monokai | `monokai` |  | ✓ |
-| Windows Standard | `windowsStandard` (`windows-standard`) | ✓ |  |
+| Theme | Import | Style | Light | Dark |
+|---|---|---|---|---|
+| Default | `defaultTheme` (`default`) | Default | ✓ | ✓ |
+| Picotera | `picotera` | Default | Pico | Tera |
+| Solarized | `solarized` | Default | ✓ | ✓ |
+| Visual Studio | `vs` | Default | ✓ | ✓ |
+| GitHub | `github` | Default | ✓ | ✓ |
+| Catppuccin | `catppuccin` | Default | Latte; Mocha (Gray), Frappé (Gray), Macchiato (Gray) | Mocha; Frappé, Macchiato, Mocha (Gray), Frappé (Gray), Macchiato (Gray) |
+| Gruvbox | `gruvbox` | Default | ✓ | ✓ |
+| ProGraphite | `proGraphite` (`pro-graphite`) | Default | ✓ | ✓ |
+| ProNord | `proNord` (`pro-nord`) | Default | ✓ | ✓ |
+| ProSand | `proSand` (`pro-sand`) | Default | ✓ | ✓ |
+| ProMatcha | `proMatcha` (`pro-matcha`) | Default | ✓ | ✓ |
+| ProSakura | `proSakura` (`pro-sakura`) | Default | ✓ | ✓ |
+| ProLavender | `proLavender` (`pro-lavender`) | Default | ✓ | ✓ |
+| ProLagoon | `proLagoon` (`pro-lagoon`) | Default | ✓ | ✓ |
+| ProCitrus | `proCitrus` (`pro-citrus`) | Default | ✓ | ✓ |
+| Dracula | `dracula` | Default |  | ✓ |
+| Nord | `nord` | Default |  | ✓ |
+| Tokyo Night | `tokyoNight` (`tokyo-night`) | Default |  | ✓ |
+| One Dark | `oneDark` (`one-dark`) | Default |  | ✓ |
+| Monokai | `monokai` | Default |  | ✓ |
+| Windows Standard | `windowsStandard` (`windows-standard`) | Raymond | ✓ |  |
 
 Every dark palette also has an `amoled` variant.
 <!-- /generated -->

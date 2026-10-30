@@ -2,22 +2,6 @@ import { nav } from "./pages.ts";
 import { Link } from "./router.tsx";
 import { type NavNode, pagesIn, trail } from "./routes.ts";
 
-function PageCard({ node }: { node: NavNode }) {
-  return (
-    <Link
-      to={node.route}
-      className="flex min-h-11 flex-col gap-0.5 rounded-lg border px-4 py-3 transition-colors hover:bg-accent"
-    >
-      <span className="font-medium">{node.title}</span>
-      {node.description && (
-        <span className="text-muted-foreground text-sm">
-          {node.description}
-        </span>
-      )}
-    </Link>
-  );
-}
-
 /** Children in nav order, consecutive pages in one run, a directory a run of its own. */
 function runs(children: NavNode[]): NavNode[][] {
   const out: NavNode[][] = [];
@@ -30,11 +14,32 @@ function runs(children: NavNode[]): NavNode[][] {
   return out;
 }
 
-const grid = "grid gap-3 sm:grid-cols-2";
+/** One line per page: its title, then what it says, beside it from sm up. */
+function PageList({ nodes }: { nodes: NavNode[] }) {
+  return (
+    <ul className="border-t text-sm">
+      {nodes.map((node) => (
+        <li key={node.route} className="border-b">
+          <Link
+            to={node.route}
+            className="grid min-h-row gap-x-6 gap-y-0.5 px-2 py-2 transition-colors hover:bg-accent sm:grid-cols-[11rem_1fr] touch:min-h-11"
+          >
+            <span className="font-medium">{node.title}</span>
+            {node.description && (
+              <span className="text-muted-foreground">{node.description}</span>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /**
  * The pages under a route, from the nav, a directory as a heading over its
- * own; so a section's landing page never lists a page by hand.
+ * own; so a section's landing page never lists a page by hand. A list rather
+ * than cards: the sidebar beside it already holds the same pages, and a list
+ * reads their descriptions in one pass.
  */
 export function SectionPages({ route }: { route: string }) {
   const node = trail(nav, route).at(-1);
@@ -45,24 +50,14 @@ export function SectionPages({ route }: { route: string }) {
         const [first] = run;
         if (!first) return null;
         if (first.children.length === 0) {
-          return (
-            <div key={first.route} className={grid}>
-              {run.map((child) => (
-                <PageCard key={child.route} node={child} />
-              ))}
-            </div>
-          );
+          return <PageList key={first.route} nodes={run} />;
         }
         return (
           <section key={first.route}>
-            <h3 className="mb-3 font-semibold text-lg tracking-tight">
+            <h3 className="mb-2 font-semibold text-lg tracking-tight">
               {first.title}
             </h3>
-            <div className={grid}>
-              {pagesIn(first).map((child) => (
-                <PageCard key={child.route} node={child} />
-              ))}
-            </div>
+            <PageList nodes={pagesIn(first)} />
           </section>
         );
       })}

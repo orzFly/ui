@@ -17,9 +17,9 @@ describe("demo source", () => {
   });
 
   it("lists a demo's files, then the fixtures they import", async () => {
-    const files = await loadDemoFiles("inbox");
+    const files = await loadDemoFiles("mail");
     expect(files.map(({ name, group }) => `${group} ${name}`)).toEqual([
-      "demo inbox.tsx",
+      "demo mail.tsx",
       "demo compose.tsx",
       "demo keys.tsx",
       "demo location.ts",
@@ -28,7 +28,7 @@ describe("demo source", () => {
       "demo thread.tsx",
       "fixtures @orz/fixtures/inbox.ts",
     ]);
-    expect(files[0]?.contents).toContain("export function Inbox");
+    expect(files[0]?.contents).toContain("export function Mail");
   });
 
   it("reads fixture imports across lines and past a query", () => {

@@ -1,3 +1,5 @@
+import { Button } from "@orz/ui/components/button";
+import { copyToClipboard } from "@orz/ui/lib/clipboard";
 import {
   type ColorScheme,
   type TextMateTheme,
@@ -10,6 +12,7 @@ import type {
   CodeViewProps,
   MultiFileDiffProps,
 } from "@pierre/diffs/react";
+import { CopyIcon } from "lucide-react";
 import {
   Component,
   type ComponentType,
@@ -478,12 +481,18 @@ export function CodeBlock({
   lineNumbers = false,
   plain = false,
   offThread = false,
+  copy = true,
   className,
 }: {
   filename: string;
   contents: string;
   /** Line numbers suit whole files; snippets read better without. */
   lineNumbers?: boolean;
+  /**
+   * A Copy button at the block's top right, in a column of its own so it never
+   * covers a line. Turn it off where the surface around the block already has one.
+   */
+  copy?: boolean;
   /**
    * No highlighting. Tokenizing is what costs: virtualized lines spare the
    * DOM, but pierre tokenizes the whole file regardless, 11 s for 1 MiB of
@@ -541,8 +550,9 @@ export function CodeBlock({
   }, []);
   // Highlighting fails per grammar rather than per input, so a block that has
   // gone plain stays plain: re-arming it would only repeat the same failure.
-  if (degraded) return <PlainCodeFallback contents={contents} />;
-  return (
+  const block = degraded ? (
+    <PlainCodeFallback contents={contents} />
+  ) : (
     <CodeViewBoundary contents={contents}>
       {!ready && <PlainCodeFallback contents={contents} />}
       <div style={ready ? undefined : { visibility: "hidden" }}>
@@ -567,6 +577,23 @@ export function CodeBlock({
         </Suspense>
       </div>
     </CodeViewBoundary>
+  );
+  if (!copy) return block;
+  return (
+    <div data-slot="code-block" className="flex">
+      <div className="min-w-0 flex-1">{block}</div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Copy code"
+        title="Copy code"
+        className="m-1 shrink-0 text-muted-foreground touch:hit-area"
+        onClick={() => void copyToClipboard(contents, "Code copied")}
+      >
+        <CopyIcon />
+      </Button>
+    </div>
   );
 }
 

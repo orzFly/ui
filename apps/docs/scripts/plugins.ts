@@ -1,9 +1,11 @@
 import { createReadStream, readdirSync, readFileSync, statSync } from "node:fs";
-import { extname, join, resolve } from "node:path";
+import { basename, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin, ViteDevServer } from "vite";
 import { installs, installText, workspaces } from "../../../scripts/install.ts";
 import { themeTable } from "../../../scripts/themes.ts";
+import { MOVED, movedPage } from "../src/redirect.ts";
+import { hrefOf, routeFromPathname } from "../src/routes.ts";
 import {
   cssLengths,
   DEMOS,
@@ -151,6 +153,14 @@ function serveRendered(server: ViteDevServer) {
     }
     try {
       const url = req.originalUrl ?? "/";
+      const { base } = server.config;
+      const moved =
+        MOVED[routeFromPathname(new URL(url, "http://dev").pathname, base)];
+      if (moved) {
+        res.setHeader("content-type", "text/html");
+        res.end(movedPage(hrefOf(moved, base)));
+        return;
+      }
       const template = await server.transformIndexHtml(
         url,
         readFileSync(join(APP, "index.html"), "utf8"),
@@ -255,7 +265,7 @@ export function docsPlugins(): Plugin[] {
         return `${code}
 import { registerExampleSource as __registerExampleSource } from ${JSON.stringify(REGISTRY)};
 import __exampleSource from ${JSON.stringify(`${id}?raw`)};
-__registerExampleSource(${name}, __exampleSource);
+__registerExampleSource(${name}, __exampleSource, ${JSON.stringify(basename(id))});
 `;
       },
     },

@@ -19,8 +19,8 @@ import {
 } from "vitest";
 import { BinaryInspector } from "../src/demos/binary-inspector/binary-inspector.tsx";
 import { ConfigEditor } from "../src/demos/config-editor/config-editor.tsx";
-import { Inbox } from "../src/demos/inbox/inbox.tsx";
-import { LATENCY_MS, PAGE_SIZE } from "../src/demos/inbox/mailbox.ts";
+import { Mail } from "../src/demos/mail/mail.tsx";
+import { LATENCY_MS, PAGE_SIZE } from "../src/demos/mail/mailbox.ts";
 import { tagsOf, titleOf } from "../src/demos/notes/notebook.ts";
 import { Notes } from "../src/demos/notes/notes.tsx";
 import { PullRequest } from "../src/demos/pull-request/pull-request.tsx";
@@ -52,7 +52,7 @@ vi.mock(
 const DEMOS: Record<string, ComponentType> = {
   "binary-inspector": BinaryInspector,
   "config-editor": ConfigEditor,
-  inbox: Inbox,
+  mail: Mail,
   notes: Notes,
   "pull-request": PullRequest,
   settings: Settings,
@@ -332,10 +332,10 @@ describe("settings", () => {
   });
 });
 
-describe("inbox", () => {
+describe("mail", () => {
   mountToaster();
   afterEach(() => {
-    history.replaceState(null, "", "/demos/inbox/");
+    history.replaceState(null, "", "/demos/mail/");
     localStorage.clear();
   });
 
@@ -396,7 +396,7 @@ describe("inbox", () => {
     );
 
   it("lists a page of the inbox, and the next one after a round trip", async () => {
-    const container = await draw(Inbox, WIDTHS.desktop);
+    const container = await draw(Mail, WIDTHS.desktop);
     expect(rows(container)).toHaveLength(PAGE_SIZE);
     // A draft and a message nobody answered are filed elsewhere.
     expect(subjects(container)).not.toContain("Notes for the retry write-up");
@@ -413,7 +413,7 @@ describe("inbox", () => {
   });
 
   it("filters by the query, and says so when nothing matches", async () => {
-    const container = await draw(Inbox, WIDTHS.desktop);
+    const container = await draw(Mail, WIDTHS.desktop);
     await searchFor(container, "is:starred label:design");
     expect(new URLSearchParams(location.search).get("q")).toBe(
       "is:starred label:design",
@@ -428,7 +428,7 @@ describe("inbox", () => {
   });
 
   it("shows each folder as its search, and Back returns to the last", async () => {
-    const container = await draw(Inbox, WIDTHS.desktop);
+    const container = await draw(Mail, WIDTHS.desktop);
     await showPlace(container, "Sent");
     expect(new URLSearchParams(location.search).get("q")).toBe("in:sent");
     expect(
@@ -452,7 +452,7 @@ describe("inbox", () => {
   });
 
   it("opens a thread in the URL, marks it read, and goes back to the list", async () => {
-    const container = await draw(Inbox, WIDTHS.phone);
+    const container = await draw(Mail, WIDTHS.phone);
     const list = container.querySelector("section[aria-label='Mail list']");
     const row = rows(container)[0];
     expect(row?.textContent).toContain("Unread");
@@ -474,7 +474,7 @@ describe("inbox", () => {
   });
 
   it("archives the open thread, and Undo puts it back", async () => {
-    const container = await draw(Inbox, WIDTHS.desktop);
+    const container = await draw(Mail, WIDTHS.desktop);
     await click(rows(container)[0]);
     await click(
       labelled(container.querySelector("article") ?? container, "Archive"),
@@ -495,7 +495,7 @@ describe("inbox", () => {
   });
 
   it("selects with a long press on a touch screen, then with a tap", async () => {
-    const container = await draw(Inbox, WIDTHS.phone);
+    const container = await draw(Mail, WIDTHS.phone);
     const touch = (row: Element | undefined, type: string) =>
       row?.dispatchEvent(
         new PointerEvent(type, { bubbles: true, pointerType: "touch" }),
@@ -516,7 +516,7 @@ describe("inbox", () => {
   });
 
   it("acts on the selected threads at once", async () => {
-    const container = await draw(Inbox, WIDTHS.desktop);
+    const container = await draw(Mail, WIDTHS.desktop);
     const boxes = [
       ...container.querySelectorAll<HTMLElement>(
         "ul[aria-label=Conversations] [role=checkbox]",
@@ -540,7 +540,7 @@ describe("inbox", () => {
   });
 
   it("keeps a closed message as a draft, and files a sent one under Sent", async () => {
-    const container = await draw(Inbox, WIDTHS.desktop);
+    const container = await draw(Mail, WIDTHS.desktop);
     await click(
       [...container.querySelectorAll("button")].find(
         (button) => button.textContent === "Compose",
@@ -584,7 +584,7 @@ describe("inbox", () => {
   });
 
   it("deletes from the Trash for good only once that is confirmed", async () => {
-    const container = await draw(Inbox, WIDTHS.desktop);
+    const container = await draw(Mail, WIDTHS.desktop);
     const subject = "Touch sizes for the toolbar icons";
     const box = () =>
       rows(container)
@@ -620,7 +620,7 @@ describe("inbox", () => {
   });
 
   it("says a failed refresh above the list it keeps, and Retry checks again", async () => {
-    const container = await draw(Inbox, WIDTHS.desktop);
+    const container = await draw(Mail, WIDTHS.desktop);
     const before = subjects(container);
     await click(labelled(container, "Refresh"));
     await wait(LATENCY_MS + 50);
@@ -638,7 +638,7 @@ describe("inbox", () => {
   });
 
   it("walks and archives with single keys, and binds none once they are off", async () => {
-    const container = await draw(Inbox, WIDTHS.desktop);
+    const container = await draw(Mail, WIDTHS.desktop);
     await press("j");
     expect(document.activeElement).toBe(rows(container)[0]);
     await press("j");

@@ -1,4 +1,5 @@
 import { Button } from "@orz/ui/components/button";
+import { ModuleMarker } from "@orz/ui/components/card";
 import {
   Tabs,
   TabsContent,
@@ -107,8 +108,26 @@ export function Example({
       defaultValue="preview"
       // A demo's labels and its source would answer searches meant for the prose.
       data-pagefind-ignore
-      className="my-6 gap-0 overflow-hidden rounded-xl border"
+      className="my-6 gap-0 overflow-hidden rounded-surface border"
     >
+      {/* A module's ruled header: its marker and name, then the tabs joined to the frame below. */}
+      <div className="flex flex-wrap items-stretch border-b bg-muted">
+        <div className="flex min-h-control items-center gap-2 px-3">
+          <ModuleMarker />
+          <span className="hidden font-mono text-ui-sm text-muted-foreground sm:inline">
+            {source.file}
+          </span>
+        </div>
+        <TabsList className="border-b-0 bg-transparent">
+          <TabsTrigger value="preview">Preview</TabsTrigger>
+          <TabsTrigger value="code">Code</TabsTrigger>
+        </TabsList>
+        <PointerToggle
+          pointer={pointer}
+          onChange={setPointer}
+          className="ml-auto items-center px-1.5 py-0.5"
+        />
+      </div>
       {/* Mounted while hidden, so the preview keeps its state across a look at the code. */}
       <TabsContent
         value="preview"
@@ -126,22 +145,19 @@ export function Example({
         </div>
       </TabsContent>
       <TabsContent value="code" className="max-h-[32rem] overflow-auto">
-        <Code lang="tsx" contents={source.trimEnd()} />
+        <Code lang="tsx" contents={source.source.trimEnd()} />
       </TabsContent>
-      <div className="flex flex-wrap items-center gap-2 border-t bg-muted/40 px-2 py-1.5">
-        <TabsList>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
-          <TabsTrigger value="code">Code</TabsTrigger>
-        </TabsList>
-        <PointerToggle
-          pointer={pointer}
-          onChange={setPointer}
-          className="ml-auto"
-        />
-      </div>
     </Tabs>
   );
 }
+
+/**
+ * A pressed toggle: a box in the page's colour ringed in ink. The fill alone
+ * would sit barely over 1:1 against the bar it is on; the ink holds 3:1 in
+ * every palette, as text does.
+ */
+export const PRESSED =
+  "aria-pressed:bg-background aria-pressed:font-medium aria-pressed:text-foreground aria-pressed:inset-ring aria-pressed:inset-ring-foreground";
 
 /** Pointer and Touch: press one to force its sizes, press it again to follow the device. */
 export function PointerToggle({
@@ -159,8 +175,9 @@ export function PointerToggle({
       {POINTERS.map(({ value, label }) => (
         <Button
           key={value}
-          variant={pointer === value ? "secondary" : "ghost"}
+          variant="ghost"
           size="sm"
+          className={PRESSED}
           aria-pressed={pointer === value}
           onClick={() => onChange(pointer === value ? undefined : value)}
         >

@@ -1,6 +1,7 @@
 import demoApis from "virtual:orz-demo-api";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
+import { ModuleMarker } from "@orz/ui/components/card";
 import {
   Sheet,
   SheetContent,
@@ -22,7 +23,12 @@ import {
   MinimizeIcon,
 } from "lucide-react";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
-import { type Pointer, PointerToggle, useOverlaysFollow } from "../example.tsx";
+import {
+  type Pointer,
+  PointerToggle,
+  PRESSED,
+  useOverlaysFollow,
+} from "../example.tsx";
 import type { PageMeta } from "../page.ts";
 import { loadedPage, pages } from "../pages.ts";
 import { BASE, Link, useRouter } from "../router.tsx";
@@ -44,7 +50,7 @@ const packagesOf = (api: readonly string[]) => [
   ...new Set(api.map((title) => title.split("/")[0] ?? "")),
 ];
 
-/** `/demos/inbox/` is the demo in `src/demos/inbox/`. */
+/** `/demos/mail/` is the demo in `src/demos/mail/`. */
 export const demoDir = (route: string) => route.split("/").at(-2) ?? "";
 
 /**
@@ -79,8 +85,9 @@ export function DemoPage({ children }: { children: ReactNode }) {
           : "h-[calc(100dvh-3.5rem-env(safe-area-inset-top))]",
       )}
     >
-      <div className="flex min-h-11 shrink-0 items-center gap-2 border-b bg-muted/40 px-2 py-1 md:gap-3 md:px-4">
-        <div className="flex min-w-0 items-baseline gap-1.5 text-ui">
+      <div className="flex min-h-11 shrink-0 items-stretch gap-2 border-b bg-muted px-2 md:gap-3 md:px-4">
+        <div className="flex min-w-0 items-center gap-1.5 text-ui">
+          <ModuleMarker className="mr-0.5" />
           <Link
             to="/demos/"
             className="hidden text-muted-foreground hover:text-foreground sm:inline"
@@ -93,7 +100,10 @@ export function DemoPage({ children }: { children: ReactNode }) {
           </span>
           <h1 className="truncate font-semibold">{meta?.title}</h1>
         </div>
-        <TabsList data-pagefind-ignore className="ml-auto sm:ml-0">
+        <TabsList
+          data-pagefind-ignore
+          className="ml-auto border-b-0 bg-transparent sm:ml-0"
+        >
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="code">Code</TabsTrigger>
         </TabsList>
@@ -109,10 +119,10 @@ export function DemoPage({ children }: { children: ReactNode }) {
             />
           )}
           <Button
-            variant={aboutOpen ? "secondary" : "ghost"}
+            variant="ghost"
             size="sm"
             aria-pressed={aboutOpen}
-            className="hidden lg:inline-flex"
+            className={cn("hidden lg:inline-flex", PRESSED)}
             onClick={() => setAboutOpen(!aboutOpen)}
           >
             <InfoIcon />

@@ -4,7 +4,7 @@ import { DEFAULT_QUERY } from "./mailbox.ts";
 
 // Absolute, so a prerendered link carries the base. Spelled out rather than read from the router,
 // which would pull every page's meta into this demo's tests.
-const PAGE = hrefOf("/demos/inbox/", import.meta.env.BASE_URL);
+const PAGE = hrefOf("/demos/mail/", import.meta.env.BASE_URL);
 
 /** A thread's own address, for its row's link. */
 export const threadHref = (id: string) =>
