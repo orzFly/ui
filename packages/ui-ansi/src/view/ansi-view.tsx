@@ -1,9 +1,15 @@
 import { Button } from "@orz/ui/components/button";
+import { ModuleMarker } from "@orz/ui/components/card";
 import { cellWidth as codePointCells } from "@orz/ui/lib/cell-width";
 import { copyToClipboard } from "@orz/ui/lib/clipboard";
 import { rowsInViewport } from "@orz/ui/lib/scroll-map";
 import { cn } from "@orz/ui/lib/utils";
-import { CopyIcon, DownloadIcon, WrapTextIcon } from "lucide-react";
+import {
+  CopyIcon,
+  DownloadIcon,
+  SquareTerminalIcon,
+  WrapTextIcon,
+} from "lucide-react";
 import {
   type ClipboardEvent,
   type CSSProperties,
@@ -900,7 +906,7 @@ export function AnsiView({
     return (
       <div
         className={cn(
-          "ansi-view group relative flex flex-col overflow-hidden rounded-frame border border-border bg-terminal-background font-mono text-terminal-foreground",
+          "ansi-view group relative flex flex-col overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border font-mono text-terminal-foreground",
           className,
         )}
         style={rootStyle}
@@ -921,7 +927,7 @@ export function AnsiView({
     // biome-ignore lint/a11y/noStaticElementInteractions: Ctrl+F from anywhere inside the view goes to its search box
     <div
       className={cn(
-        "ansi-view flex flex-col overflow-hidden rounded-frame border border-border bg-terminal-background font-mono text-terminal-foreground",
+        "ansi-view flex flex-col overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border font-mono text-terminal-foreground",
         className,
       )}
       style={rootStyle}
@@ -929,10 +935,11 @@ export function AnsiView({
     >
       {/* One child before the scroller, as in a pane, so that switching
           chrome keeps the scroller mounted and measured. */}
-      <div className="shrink-0 border-b border-border bg-card font-ui text-card-foreground text-xs">
-        <div className="flex items-center gap-2 py-1 pr-1 pl-3">
+      <div className="shrink-0 border-b border-border bg-muted font-ui text-foreground text-ui-sm">
+        <div className="flex items-center gap-2 py-1 pr-1 pl-2">
+          <ModuleMarker icon={<SquareTerminalIcon />} />
           {filename !== undefined && (
-            <span className="min-w-0 truncate font-medium">{filename}</span>
+            <span className="min-w-0 truncate font-bold">{filename}</span>
           )}
           <span className="shrink-0 text-muted-foreground">
             {done ? countLabel : `Parsing… ${countLabel}`}
@@ -953,7 +960,7 @@ export function AnsiView({
             )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border border-dashed py-1 pr-1 pl-3">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border border-dashed py-1 pr-1 pl-2">
           {parse.levelCounts && text !== "" && (
             <LevelChips
               counts={parse.levelCounts}

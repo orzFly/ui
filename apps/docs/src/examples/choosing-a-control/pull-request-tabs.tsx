@@ -20,10 +20,10 @@ export function PullRequestTabs() {
         <TabsTrigger value="commits">Commits</TabsTrigger>
         <TabsTrigger value="checks">Checks</TabsTrigger>
       </TabsList>
-      <TabsContent value="conversation" className="text-sm">
+      <TabsContent value="conversation" className="text-ui">
         {comments.length} comments on “{PULL_REQUEST.title}”.
       </TabsContent>
-      <TabsContent value="commits" className="text-sm">
+      <TabsContent value="commits" className="text-ui">
         <ul className="grid gap-1">
           {pushes.map((push) => (
             <li key={push.commit}>
@@ -32,7 +32,7 @@ export function PullRequestTabs() {
           ))}
         </ul>
       </TabsContent>
-      <TabsContent value="checks" className="text-sm">
+      <TabsContent value="checks" className="text-ui">
         <ul className="grid gap-1">
           {CI_RUN.jobs.map((job) => (
             <li key={job.id}>

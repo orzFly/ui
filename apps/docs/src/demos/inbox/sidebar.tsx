@@ -134,7 +134,7 @@ export function Sidebar({
   onKeys,
 }: SidebarProps) {
   const item =
-    "flex min-h-8 items-center gap-3 rounded-md px-2.5 text-sm transition-colors hover:bg-accent touch:min-h-11";
+    "flex min-h-8 items-center gap-3 rounded-md px-2.5 text-ui transition-colors hover:bg-accent touch:min-h-11";
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
       <p className="flex items-center gap-2 px-1 font-semibold">
@@ -160,7 +160,7 @@ export function Sidebar({
                 <Icon className="size-4 text-muted-foreground" />
                 <span className="flex-1">{title}</span>
                 {(counts[place] ?? 0) > 0 && (
-                  <span className="text-muted-foreground text-xs tabular-nums">
+                  <span className="text-muted-foreground text-ui-sm tabular-nums">
                     {counts[place]}
                   </span>
                 )}
@@ -168,7 +168,7 @@ export function Sidebar({
             </li>
           ))}
         </ul>
-        <h2 className="mt-4 mb-1 px-2.5 font-medium text-muted-foreground text-xs">
+        <h2 className="mt-4 mb-1 px-2.5 font-medium text-muted-foreground text-ui-sm">
           Labels
         </h2>
         <ul className="grid gap-0.5">
@@ -194,7 +194,7 @@ export function Sidebar({
         <Avatar size="sm" aria-hidden>
           <AvatarFallback>Y</AvatarFallback>
         </Avatar>
-        <span className="flex-1 text-sm">You</span>
+        <span className="flex-1 text-ui">You</span>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

@@ -28,7 +28,7 @@ export function LabelColours() {
     <ul className="grid max-w-xs divide-y rounded-lg border">
       {TASK_LABELS.map((label) => (
         <li key={label} className="flex items-center gap-2 px-3 py-1.5">
-          <span className="flex-1 text-sm">{label}</span>
+          <span className="flex-1 text-ui">{label}</span>
           <ColorPickerPopover
             value={colours[label] ?? "#6b7280"}
             onValueChange={(value) =>

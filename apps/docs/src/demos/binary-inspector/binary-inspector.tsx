@@ -367,7 +367,7 @@ export function BinaryInspector() {
           className="hidden w-64 shrink-0 flex-col border-r bg-sidebar md:flex"
         >
           <div className="grid gap-2 border-b p-3">{filePicker}</div>
-          <h2 className="px-3 pt-3 pb-1 font-medium text-muted-foreground text-xs">
+          <h2 className="px-3 pt-3 pb-1 font-medium text-muted-foreground text-ui-sm">
             Structure
           </h2>
           <nav
@@ -410,7 +410,7 @@ export function BinaryInspector() {
           pressed={mode}
           onPress={setMode}
         />
-        <p className="min-w-0 flex-1 truncate text-muted-foreground text-sm max-sm:order-last max-sm:basis-full">
+        <p className="min-w-0 flex-1 truncate text-muted-foreground text-ui max-sm:order-last max-sm:basis-full">
           {doc && !fetching
             ? [
                 dirty ? "Modified" : changes ? "Downloaded" : "Unmodified",
@@ -491,7 +491,7 @@ export function BinaryInspector() {
       {dragging && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-2 grid place-items-center rounded-xl border-2 border-primary border-dashed bg-background/85 font-medium text-sm"
+          className="pointer-events-none absolute inset-2 grid place-items-center rounded-xl border-2 border-primary border-dashed bg-background/85 font-medium text-ui"
         >
           Drop to open it here. Nothing is uploaded.
         </div>
@@ -552,7 +552,7 @@ function FilePicker({
         <FolderOpenIcon />
         Open file…
       </Button>
-      <p className="hidden text-muted-foreground text-xs md:block">
+      <p className="hidden text-muted-foreground text-ui-sm md:block">
         Or drop one here. It is read in your browser, never uploaded.
       </p>
     </div>
@@ -592,7 +592,7 @@ function Segmented<T extends string>({
           type="button"
           aria-pressed={value === pressed}
           onClick={() => onPress(value)}
-          className="relative rounded-sm px-2.5 py-1 text-muted-foreground text-xs transition-colors hover:text-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs touch:hit-area"
+          className="relative rounded-sm px-2.5 py-1 text-muted-foreground text-ui-sm transition-colors hover:text-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs touch:hit-area"
         >
           {text}
         </button>

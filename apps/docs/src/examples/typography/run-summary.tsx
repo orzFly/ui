@@ -34,21 +34,21 @@ export function RunSummary() {
         </CardTitle>
         <CardDescription>
           Started <time dateTime={CI_RUN.startedAt}>Oct 21, 09:14 UTC</time> on{" "}
-          <code className="font-mono text-xs">{CI_RUN.branch}</code> at{" "}
-          <code className="font-mono text-xs">{CI_RUN.commit}</code>
+          <code className="font-mono text-ui-sm">{CI_RUN.branch}</code> at{" "}
+          <code className="font-mono text-ui-sm">{CI_RUN.commit}</code>
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-muted-foreground text-xs">
+              <TableHead className="text-muted-foreground text-ui-sm">
                 Job
               </TableHead>
-              <TableHead className="text-muted-foreground text-xs">
+              <TableHead className="text-muted-foreground text-ui-sm">
                 Status
               </TableHead>
-              <TableHead className="text-right text-muted-foreground text-xs">
+              <TableHead className="text-right text-muted-foreground text-ui-sm">
                 Time (s)
               </TableHead>
             </TableRow>
@@ -74,11 +74,11 @@ export function RunSummary() {
             ))}
           </TableBody>
         </Table>
-        <blockquote className="grid max-w-prose gap-1 text-sm leading-6">
+        <blockquote className="grid max-w-prose gap-1 text-ui leading-6">
           <p>
             {paragraph.split("`").map((part, index) =>
               index % 2 === 1 ? (
-                <code key={part} className="font-mono text-xs">
+                <code key={part} className="font-mono text-ui-sm">
                   {part}
                 </code>
               ) : (
@@ -86,7 +86,7 @@ export function RunSummary() {
               ),
             )}
           </p>
-          <footer className="text-muted-foreground text-xs">
+          <footer className="text-muted-foreground text-ui-sm">
             claude-agent, reviewing #{PULL_REQUEST.number}
           </footer>
         </blockquote>

@@ -26,7 +26,7 @@ function TabsList({
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        "inline-flex w-fit items-center gap-1 rounded-control bg-muted p-1 text-muted-foreground",
+        "inline-flex w-fit items-stretch border-b bg-muted text-muted-foreground",
         className,
       )}
       {...props}
@@ -42,7 +42,10 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "relative inline-flex items-center justify-center gap-1.5 rounded-item px-2.5 py-1 touch:min-h-10 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground touch:hit-area",
+        // The current tab is a box in the page's colour that covers the list's
+        // bottom rule, so it joins the content below, with a primary edge
+        // across its top; the fill alone would not hold 3:1 on the strip.
+        "relative -mb-px inline-flex min-h-control items-center justify-center gap-1.5 rounded-item border-r border-border/60 px-3 first:border-l touch:min-h-10 text-ui font-medium whitespace-nowrap transition-colors outline-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:tab-cue touch:hit-area",
         className,
       )}
       {...props}

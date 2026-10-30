@@ -91,7 +91,7 @@ const SCHEME_LABEL: Record<ColorScheme, string> = {
   dark: "Dark",
 };
 const AUTO_SCHEME = "auto";
-const MUTED_NOTE = "text-xs text-muted-foreground";
+const MUTED_NOTE = "text-ui-sm text-muted-foreground";
 
 const isBased = (side: CustomTheme[ColorScheme]): side is BasedSide =>
   side !== undefined && "base" in side;
@@ -230,7 +230,7 @@ function ModeControl<M extends string>({
             if (option.value !== value) onChange(option.value);
           }}
           className={cn(
-            "flex-1 rounded-[min(var(--radius-control),8px)] px-2 py-1 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50",
+            "flex-1 rounded-[min(var(--radius-control),8px)] px-2 py-1 text-ui-sm font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50",
             option.value === value &&
               "bg-background text-foreground shadow-raised",
           )}
@@ -252,7 +252,7 @@ function Field({
   const id = useId();
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <Label htmlFor={id} className="text-xs">
+      <Label htmlFor={id} className="text-ui-sm">
         {label}
       </Label>
       {children(id)}
@@ -264,7 +264,7 @@ function Notice({ children }: { children: ReactNode }) {
   return (
     <div
       role="status"
-      className="flex flex-col gap-2 rounded-frame border border-warning/40 bg-warning/10 p-2.5 text-xs"
+      className="flex flex-col gap-2 rounded-frame border border-warning/40 bg-warning/10 p-2.5 text-ui-sm"
     >
       {children}
     </div>
@@ -297,7 +297,7 @@ function NameField({
       {nameError && (
         <p
           id={`${nameId}-error`}
-          className="text-xs text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
+          className="text-ui-sm text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
         >
           {nameError}
         </p>

@@ -53,7 +53,7 @@ export function PullRequestChecks() {
       <TabsContent value="checks" className="grid gap-3">
         <div>
           <h3 className="font-medium">Some checks were not successful</h3>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-ui">
             Merging is blocked until every check passes.
           </p>
         </div>

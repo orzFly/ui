@@ -28,7 +28,7 @@ export function TestBarFromTheme() {
         aria-hidden
         className="h-6 w-full rounded-md"
       />
-      <figcaption className="text-sm">
+      <figcaption className="text-ui">
         {PASSED} passed, {FAILED} failed
       </figcaption>
     </figure>

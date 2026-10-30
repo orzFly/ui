@@ -142,7 +142,6 @@ describe("the port from @orz/ui's styles.css", () => {
   // focus ring; contrast.test.ts and focus-ring.test.ts hold them instead. The
   // fixture stays as scraped.
   const RETUNED: Record<string, string[]> = {
-    light: ["muted-foreground", "ring", "sidebar-ring"],
     "pico-light": ["destructive"],
     "solarized-light": [
       "muted-foreground",
@@ -159,7 +158,7 @@ describe("the port from @orz/ui's styles.css", () => {
     monokai: ["destructive"],
   };
   // Added after the port, so the scraped fixture has no value for them.
-  const ADDED = ["success", "warning"];
+  const ADDED = ["success", "warning", "marker"];
   // Raised in every palette to clear 3:1 as a field's edge;
   // field-contrast.test.ts holds it instead.
   const RAISED = ["input"];
@@ -173,9 +172,9 @@ describe("the port from @orz/ui's styles.css", () => {
       ),
     );
 
-  // Rebuilt from catppuccin/palette after the port; no ported value is meant
-  // to survive.
-  const REBUILT = ["catppuccin-latte", "catppuccin-mocha"];
+  // Rebuilt after the port, Catppuccin from catppuccin/palette and Default as
+  // the module mosaic's palette; no ported value is meant to survive.
+  const REBUILT = ["catppuccin-latte", "catppuccin-mocha", "light", "dark"];
 
   it.each(Object.entries(PORTED).filter(([slug]) => !REBUILT.includes(slug)))(
     "changed no UI value of %s",

@@ -81,7 +81,7 @@ export function AccountSettings() {
       </TabsContent>
       <TabsContent value="notifications" className="grid gap-4 pt-2">
         <div className="grid gap-2">
-          <span id="touch-notify" className="font-medium text-sm">
+          <span id="touch-notify" className="font-medium text-ui">
             Notify me about
           </span>
           <RadioGroup aria-labelledby="touch-notify" defaultValue="mentions">

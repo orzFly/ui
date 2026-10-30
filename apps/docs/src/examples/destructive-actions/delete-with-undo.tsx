@@ -46,7 +46,7 @@ export function DeleteWithUndo() {
         <ul className="grid divide-y">
           {inbox.map(({ id, subject }) => (
             <li key={id} className="flex min-h-10 items-center gap-1">
-              <span className="min-w-0 flex-1 truncate text-sm">{subject}</span>
+              <span className="min-w-0 flex-1 truncate text-ui">{subject}</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -76,7 +76,7 @@ export function DeleteWithUndo() {
             </li>
           ))}
           {inbox.length === 0 && (
-            <li className="grid gap-0.5 py-2 text-sm">
+            <li className="grid gap-0.5 py-2 text-ui">
               <p className="font-medium">Nothing in Inbox</p>
               <p className="text-muted-foreground">
                 New mail lands here. Archive what you have dealt with.
@@ -85,7 +85,7 @@ export function DeleteWithUndo() {
           )}
         </ul>
         <div className="flex items-center gap-2 border-t pt-3">
-          <span className="flex-1 text-muted-foreground text-sm">
+          <span className="flex-1 text-muted-foreground text-ui">
             Trash:{" "}
             {trash.length === 0
               ? "empty"

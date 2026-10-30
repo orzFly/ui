@@ -1,9 +1,11 @@
+import { ModuleMarker } from "@orz/ui/components/card";
 import {
   clampTopRow,
   scrollFromTopRow,
   scrollGeometry,
   topRowFromScroll,
 } from "@orz/ui/lib/scroll-map";
+import { BinaryIcon } from "lucide-react";
 import {
   type CSSProperties,
   memo,
@@ -1032,10 +1034,11 @@ export function HexGrid({
           <div ref={headerRef} className="orz-hex-row orz-hex-header">
             <span className="orz-hex-header-labels" aria-hidden>
               {showAddresses && (
-                <span
-                  className="orz-hex-addr"
-                  style={{ width: `${digits}ch` }}
-                />
+                // The module marker heads the address column, which the
+                // header row otherwise leaves empty.
+                <span className="orz-hex-addr" style={{ width: `${digits}ch` }}>
+                  <ModuleMarker icon={<BinaryIcon />} />
+                </span>
               )}
               {Array.from({ length: columns }, (_, i) => (
                 <span

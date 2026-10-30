@@ -262,7 +262,7 @@ export function Tasks() {
                   className="size-8 text-muted-foreground"
                 />
                 <p className="font-medium">No tasks match</p>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-ui">
                   Try another filter, or fewer words.
                 </p>
                 <Button
@@ -290,7 +290,7 @@ export function Tasks() {
                         onLoadMore={loadMore}
                         focusRequested={focusRequested}
                       />
-                      <span className="text-muted-foreground text-xs tabular-nums">
+                      <span className="text-muted-foreground text-ui-sm tabular-nums">
                         {first.total - loaded} more
                       </span>
                     </div>
@@ -299,7 +299,7 @@ export function Tasks() {
               />
             )}
           </div>
-          <div className="flex min-h-12 shrink-0 items-center gap-2 border-t px-2 pb-[env(safe-area-inset-bottom)] text-sm md:px-4">
+          <div className="flex min-h-12 shrink-0 items-center gap-2 border-t px-2 pb-[env(safe-area-inset-bottom)] text-ui md:px-4">
             {picked.length > 0 ? (
               <>
                 <IconButton
@@ -347,7 +347,7 @@ export function Tasks() {
           >
             <div className="flex items-start gap-2 border-b p-4">
               <div className="grid min-w-0 flex-1 gap-1">
-                <span className="font-mono text-muted-foreground text-xs">
+                <span className="font-mono text-muted-foreground text-ui-sm">
                   {taskKey(task.id)}
                 </span>
                 <h2
@@ -377,7 +377,7 @@ export function Tasks() {
           {task && detailActions && (
             <>
               <div className="grid gap-1 border-b p-4 pr-12">
-                <SheetDescription className="font-mono text-xs">
+                <SheetDescription className="font-mono text-ui-sm">
                   {taskKey(task.id)}
                 </SheetDescription>
                 <SheetTitle className="text-lg leading-snug">

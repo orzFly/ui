@@ -85,7 +85,7 @@ export function MailFilterForm() {
           }}
         />
         {error && (
-          <p id="filter-query-error" className="text-destructive text-sm">
+          <p id="filter-query-error" className="text-destructive text-ui">
             {error}
           </p>
         )}

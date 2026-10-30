@@ -49,7 +49,7 @@ export function EditorShortcutsHelp() {
           container={host}
           className="w-auto max-w-[calc(100vw-1rem)] p-2"
         >
-          <table className="text-xs">
+          <table className="text-ui-sm">
             <tbody>
               {SHORTCUTS.map(({ keys, text }) => (
                 <tr key={text}>

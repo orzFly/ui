@@ -56,8 +56,8 @@ export function QuietThread() {
         </header>
         {MESSAGE && (
           <div className="grid gap-1 px-4 py-3">
-            <p className="font-medium text-sm">{INBOX_PEOPLE[MESSAGE.from]}</p>
-            <Markdown className="text-sm">{MESSAGE.body}</Markdown>
+            <p className="font-medium text-ui">{INBOX_PEOPLE[MESSAGE.from]}</p>
+            <Markdown className="text-ui">{MESSAGE.body}</Markdown>
           </div>
         )}
         <form

@@ -14,7 +14,7 @@ import { ArchiveIcon } from "lucide-react";
 export function SuccessDialog() {
   return (
     <div className="flex items-center gap-2">
-      <span className="flex-1 text-sm tabular-nums">3 selected</span>
+      <span className="flex-1 text-ui tabular-nums">3 selected</span>
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline">

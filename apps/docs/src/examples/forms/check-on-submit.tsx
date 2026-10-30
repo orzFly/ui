@@ -51,7 +51,7 @@ export function CheckOnSubmit() {
           aria-describedby={error ? "check-to-error" : undefined}
         />
         {error && (
-          <p id="check-to-error" className="text-destructive text-sm">
+          <p id="check-to-error" className="text-destructive text-ui">
             {error}
           </p>
         )}

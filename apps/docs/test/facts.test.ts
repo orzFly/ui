@@ -50,9 +50,8 @@ describe.each([
 });
 
 describe("typography", () => {
-  it("draws CardTitle, DialogTitle and SheetTitle as the scale's title", () => {
+  it("draws DialogTitle and SheetTitle as the scale's title, CardTitle as a module's name", () => {
     for (const [file, slot] of [
-      ["card.tsx", "card-title"],
       ["dialog.tsx", "dialog-title"],
       ["sheet.tsx", "sheet-title"],
     ]) {
@@ -60,15 +59,22 @@ describe("typography", () => {
         expect.arrayContaining(["font-heading", "text-title", "font-medium"]),
       );
     }
+    expect(classOf("card.tsx", "slot:card-title").split(" ")).toEqual(
+      expect.arrayContaining(["font-heading", "text-ui-sm", "font-bold"]),
+    );
     expect(
-      read("apps/docs/src/content/guidelines/foundations/typography.mdx"),
+      read(
+        "apps/docs/src/content/guidelines/foundations/typography.mdx",
+      ).replace(/\s+/g, " "),
     ).toContain(
-      "`CardTitle`,\n`DialogTitle` and `SheetTitle` are `font-heading text-title font-medium`, a `Badge` is `text-xs`.",
+      "`DialogTitle` and `SheetTitle` are `font-heading text-title font-medium`, a `CardTitle` is a module's name in its ruled header, `font-heading text-ui-sm font-bold`, and a `Badge` is `text-ui-xs`.",
     );
   });
 
-  it("sets a Badge in text-xs", () => {
-    expect(classOf("badge.tsx", "group/badge").split(" ")).toContain("text-xs");
+  it("sets a Badge in text-ui-xs", () => {
+    expect(classOf("badge.tsx", "group/badge").split(" ")).toContain(
+      "text-ui-xs",
+    );
   });
 });
 

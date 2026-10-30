@@ -49,12 +49,12 @@
    they win under every style. */
 @theme static {
   --spacing-control-xs: 1.5rem;
-  --spacing-control-sm: 1.75rem;
-  --spacing-control: 2rem;
-  --spacing-control-lg: 2.25rem;
+  --spacing-control-sm: 1.5rem;
+  --spacing-control: 1.75rem;
+  --spacing-control-lg: 2rem;
   /* A row of a menu or a list, and a table's header row. */
   --spacing-row: 1.75rem;
-  --spacing-row-head: 2.5rem;
+  --spacing-row-head: 1.75rem;
   /* A row of dense data: the hex grid's. */
   --spacing-row-dense: 1.375rem;
   --spacing-chip: 1.25rem;
@@ -62,25 +62,36 @@
   /* Buttons, fields, and the strips that hold them. */
   --radius-control: var(--radius);
   /* A row of a menu or a list, a tab, a small block inside a part. */
-  --radius-item: calc(var(--radius) * 0.8);
+  --radius-item: 0;
   /* A viewer's or an editor's frame. */
-  --radius-frame: var(--radius);
+  --radius-frame: 0;
   /* Card and Dialog. */
-  --radius-surface: calc(var(--radius) * 1.4);
+  --radius-surface: 0;
   /* Menus, popovers and the like. */
-  --radius-overlay: var(--radius);
-  --radius-chip: calc(var(--radius) * 2.6);
+  --radius-overlay: 0;
+  --radius-chip: var(--radius);
 
-  --text-ui-sm: 0.8rem;
-  --text-ui-xs: 0.7rem;
+  /* Body text, then secondary and table text, then counts and badges;
+     nothing smaller. */
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.25rem;
+  --text-ui-sm: 0.75rem;
+  --text-ui-sm--line-height: 1.125rem;
+  --text-ui-xs: 0.6875rem;
+  --text-ui-xs--line-height: 1rem;
   --text-ui-2xs: 0.6875rem;
-  --text-ui-3xs: 0.625rem;
+  --text-ui-3xs: 0.6875rem;
   /* Dense tabular data: the hex grid's. */
-  --text-data: 0.8125rem;
-  --text-title: 1rem;
-  --text-title--line-height: 1.5;
+  --text-data: 0.75rem;
+  --text-title: 0.9375rem;
+  --text-title--line-height: 1.375rem;
 
-  --font-ui: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-ui:
+    "Noto Sans Variable", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono:
+    "Noto Sans Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
   --font-heading: var(--font-ui);
 
   --color-scrim: color-mix(in oklab, #000 10%, transparent);
@@ -88,21 +99,61 @@
   --focus-width: 2px;
   --focus-offset: 2px;
   --focus-style: solid;
+  /* Overlays fade without zooming or sliding; a style that moves them sets
+     the scale and the distances. */
   --duration-overlay: 100ms;
-  --overlay-zoom: 0.95;
-  /* A sheet sliding in from its edge. */
-  --duration-sheet: 200ms;
+  --overlay-zoom: 1;
+  --translate-overlay: 0;
+  /* A sheet coming in from its edge. */
+  --duration-sheet: 100ms;
+  --translate-sheet: 0;
+}
+
+/* CJK text takes its own language's face: one face for every language would
+   draw Chinese with Japanese glyph shapes. None is shipped; the system's, or
+   the app's own, fills in. A nested [lang] element re-reads the stack, which
+   it would otherwise inherit already resolved. */
+@layer base {
+  :lang(zh-Hans),
+  :lang(zh-CN),
+  :lang(zh-SG) {
+    --font-ui:
+      "Noto Sans Variable", "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+      ui-sans-serif, sans-serif;
+  }
+  :lang(zh-Hant),
+  :lang(zh-TW),
+  :lang(zh-HK) {
+    --font-ui:
+      "Noto Sans Variable", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei",
+      ui-sans-serif, sans-serif;
+  }
+  :lang(ja) {
+    --font-ui:
+      "Noto Sans Variable", "Noto Sans JP", "Hiragino Sans", "Yu Gothic",
+      ui-sans-serif, sans-serif;
+  }
+  :lang(ko) {
+    --font-ui:
+      "Noto Sans Variable", "Noto Sans KR", "Apple SD Gothic Neo",
+      "Malgun Gothic", ui-sans-serif, sans-serif;
+  }
+  :where(body [lang]) {
+    font-family: var(--font-ui);
+  }
 }
 
 /* Depth. Not in @theme: Tailwind writes a --shadow-* theme value into the
    utility itself, where a [data-style] rule could not reach it. */
 @layer theme {
   :root {
-    --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-menu:
-      0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-overlay:
-      0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    /* Surfaces tile flat; only what floats above the mosaic casts one
+       small hard shadow, beside its 1px rule. */
+    --shadow-raised: 0 0 #0000;
+    --shadow-menu: 2px 2px 0 0 rgb(15 23 39 / 0.14);
+    --shadow-overlay: 3px 3px 0 0 rgb(15 23 39 / 0.14);
+    --state-cue: inset 3px 0 0 0 currentColor;
+    --tab-cue: inset 0 2px 0 0 var(--primary);
   }
 }
 
@@ -134,6 +185,19 @@
   outline-offset: var(--focus-offset);
   outline-color: var(--color-ring);
 }
+/* The highlighted or selected row: a fill alone measures barely over 1:1
+   against the list, so the row's own text colour draws a bar on its leading
+   edge, held to 3:1 on the fill by the state contrast check. */
+@utility state-cue {
+  box-shadow: var(--state-cue);
+}
+
+/* The current tab: a white box joined to its content, with a 2px primary
+   edge across its top. */
+@utility tab-cue {
+  box-shadow: var(--tab-cue);
+}
+
 /* The same, drawn inside the edge, for a part that fills a clipping frame. */
 @utility focus-ring-inset {
   outline-style: var(--focus-style);
@@ -158,6 +222,7 @@
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
+  --color-marker: var(--marker);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-warning: var(--warning);
@@ -212,45 +277,46 @@
        gitDecoration → terminal ANSI → Pierre's light/dark fallback. */
   --diff-addition: #18a46c;
   --diff-deletion: #d52c36;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.54 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --success: oklch(0.51 0.165 142.7);
-  --warning: oklch(0.571 0.179 58.3);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.667 0 0);
-  --ring: oklch(0.62 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.62 0 0);
+  --background: #ffffff;
+  --foreground: #0f1727;
+  --card: #ffffff;
+  --card-foreground: #0f1727;
+  --popover: #ffffff;
+  --popover-foreground: #0f1727;
+  --primary: #1f3d6b;
+  --primary-foreground: #ffffff;
+  --secondary: #eff3f9;
+  --secondary-foreground: #0f1727;
+  --muted: #eff3f9;
+  --muted-foreground: #4a5568;
+  --accent: #e8eef7;
+  --accent-foreground: #0f1727;
+  --destructive: #c8102e;
+  --success: #12733a;
+  --warning: #975a00;
+  --border: #bfc8d5;
+  --input: #7c8799;
+  --ring: #1f3d6b;
+  --marker: #d3ddec;
+  --chart-1: #2f6fd0;
+  --chart-2: #1f8a4c;
+  --chart-3: #b46a00;
+  --chart-4: #b03a96;
+  --chart-5: #0d8585;
+  --radius: 0.125rem;
+  --sidebar: #eff3f9;
+  --sidebar-foreground: #0f1727;
+  --sidebar-primary: #1f3d6b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dfe6f0;
+  --sidebar-accent-foreground: #0f1727;
+  --sidebar-border: #bfc8d5;
+  --sidebar-ring: #1f3d6b;
   /* The terminal and ANSI-escape surfaces: VS Code Light+ / Dark+ defaults,
      on this palette's own background and foreground. */
   --terminal-background: #ffffff;
-  --terminal-foreground: #0a0a0a;
-  --terminal-cursor: #0a0a0a;
+  --terminal-foreground: #0f1727;
+  --terminal-cursor: #0f1727;
   --terminal-selection: #add6ff;
   --ansi-black: #000000;
   --ansi-red: #cd3131;
@@ -274,42 +340,43 @@
   color-scheme: dark;
   --diff-addition: #07c480;
   --diff-deletion: #ff2e3f;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --success: oklch(0.702 0.16 158.8);
-  --warning: oklch(0.769 0.188 70.1);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 36%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-  --terminal-background: #0a0a0a;
-  --terminal-foreground: #fafafa;
-  --terminal-cursor: #fafafa;
+  --background: oklch(0.18 0.014 258);
+  --foreground: oklch(0.94 0.012 258);
+  --card: oklch(0.18 0.014 258);
+  --card-foreground: oklch(0.94 0.012 258);
+  --popover: oklch(0.21 0.016 258);
+  --popover-foreground: oklch(0.94 0.012 258);
+  --primary: oklch(0.78 0.09 258);
+  --primary-foreground: oklch(0.18 0.014 258);
+  --secondary: oklch(0.225 0.018 258);
+  --secondary-foreground: oklch(0.94 0.012 258);
+  --muted: oklch(0.225 0.018 258);
+  --muted-foreground: oklch(0.74 0.022 258);
+  --accent: oklch(0.285 0.028 258);
+  --accent-foreground: oklch(0.94 0.012 258);
+  --destructive: oklch(0.7 0.17 22);
+  --success: oklch(0.74 0.15 150);
+  --warning: oklch(0.8 0.14 75);
+  --border: oklch(0.36 0.022 258);
+  --input: oklch(0.55 0.025 258);
+  --ring: oklch(0.78 0.09 258);
+  --marker: oklch(0.33 0.05 258);
+  --chart-1: oklch(0.72 0.12 255);
+  --chart-2: oklch(0.72 0.15 150);
+  --chart-3: oklch(0.78 0.14 75);
+  --chart-4: oklch(0.7 0.16 330);
+  --chart-5: oklch(0.74 0.12 195);
+  --sidebar: oklch(0.225 0.018 258);
+  --sidebar-foreground: oklch(0.94 0.012 258);
+  --sidebar-primary: oklch(0.78 0.09 258);
+  --sidebar-primary-foreground: oklch(0.18 0.014 258);
+  --sidebar-accent: oklch(0.285 0.028 258);
+  --sidebar-accent-foreground: oklch(0.94 0.012 258);
+  --sidebar-border: oklch(0.36 0.022 258);
+  --sidebar-ring: oklch(0.78 0.09 258);
+  --terminal-background: #0e1218;
+  --terminal-foreground: #e6ecf3;
+  --terminal-cursor: #e6ecf3;
   --terminal-selection: #264f78;
   --ansi-black: #000000;
   --ansi-red: #cd3131;

@@ -53,7 +53,7 @@ export function InboxList() {
   return (
     <TooltipProvider>
       <div className="min-w-0 overflow-hidden rounded-lg border">
-        <div className="flex h-11 items-center gap-1 border-b px-1.5 text-sm">
+        <div className="flex h-11 items-center gap-1 border-b px-1.5 text-ui">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -73,7 +73,7 @@ export function InboxList() {
             <TooltipContent>Refresh</TooltipContent>
           </Tooltip>
           <span className="flex-1 font-medium">Inbox</span>
-          <span className="px-2 text-muted-foreground text-xs tabular-nums">
+          <span className="px-2 text-muted-foreground text-ui-sm tabular-nums">
             {threads.length} of {INBOX.length}
           </span>
         </div>
@@ -89,10 +89,10 @@ export function InboxList() {
         <ul aria-label="Conversations" className="divide-y">
           {threads.map((thread) => (
             <li key={thread.id} className="grid gap-0.5 px-3 py-2.5">
-              <span className="truncate font-medium text-sm">
+              <span className="truncate font-medium text-ui">
                 {INBOX_PEOPLE[thread.messages[0]?.from ?? ""]}
               </span>
-              <span className="truncate text-muted-foreground text-sm">
+              <span className="truncate text-muted-foreground text-ui">
                 {thread.subject}
               </span>
             </li>

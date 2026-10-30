@@ -160,7 +160,7 @@ export function KeysDialog({
             <Label htmlFor="mail-character-keys">Character keys</Label>
             <p
               id="mail-character-keys-description"
-              className="text-muted-foreground text-xs"
+              className="text-muted-foreground text-ui-sm"
             >
               Also turns off <Kbd>/</Kbd> for the site's search.
             </p>

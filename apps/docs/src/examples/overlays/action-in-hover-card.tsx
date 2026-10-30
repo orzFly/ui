@@ -11,7 +11,7 @@ const REVIEWER = PULL_REQUEST.reviewers[0] ?? "claude-agent";
 
 export function ActionInHoverCard() {
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex items-center gap-2 text-ui">
       <HoverCard>
         <HoverCardTrigger asChild>
           <a
@@ -21,7 +21,7 @@ export function ActionInHoverCard() {
             {REVIEWER}
           </a>
         </HoverCardTrigger>
-        <HoverCardContent className="grid w-64 gap-2 text-sm">
+        <HoverCardContent className="grid w-64 gap-2 text-ui">
           <p className="font-medium">{REVIEWER}</p>
           <p className="text-muted-foreground">
             Reviewer on #{PULL_REQUEST.number}. Commented on Oct 21.

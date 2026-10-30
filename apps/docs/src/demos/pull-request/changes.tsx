@@ -24,13 +24,13 @@ export function Commits() {
               <span className="row-span-2">
                 <UserAvatar login={commit.author} />
               </span>
-              <span className="min-w-0 truncate font-medium text-sm">
+              <span className="min-w-0 truncate font-medium text-ui">
                 {commit.subject}
               </span>
-              <code className="row-span-2 font-mono text-muted-foreground text-xs">
+              <code className="row-span-2 font-mono text-muted-foreground text-ui-sm">
                 {commit.hash}
               </code>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-ui-sm">
                 {commit.author} committed <Stamp at={commit.at} />
               </span>
             </button>

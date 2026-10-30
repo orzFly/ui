@@ -1,5 +1,6 @@
 import { amoled } from "../amoled.ts";
 import { grayOf, oklchOf } from "../color.ts";
+import { markerOf } from "../marker.ts";
 import type { Palette, TerminalTokens, Theme, Tokens } from "../types.ts";
 
 /*
@@ -267,6 +268,11 @@ function paletteOf(
     border: color("surface0"),
     input: color("overlay0"),
     ring: color("lavender"),
+    marker: markerOf({
+      primary: color("mauve"),
+      muted: color("surface0"),
+      background: color("base"),
+    }),
     "chart-1": color("mauve"),
     "chart-2": color("green"),
     "chart-3": color("yellow"),

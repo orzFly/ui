@@ -81,7 +81,7 @@ function AppBar() {
         <span className="px-1 text-muted-foreground">/</span>
         <span className="font-semibold">{name}</span>
       </p>
-      <p className="ml-auto flex items-center gap-2 text-muted-foreground text-sm">
+      <p className="ml-auto flex items-center gap-2 text-muted-foreground text-ui">
         <span className="sr-only">Signed in as</span>
         <span className="max-sm:hidden">{PULL_REQUEST_ME}</span>
         <UserAvatar login={PULL_REQUEST_ME} size="default" />
@@ -107,7 +107,7 @@ function RepoNav({
               aria-current={id === current ? "page" : undefined}
               onClick={() => onSelect(id)}
               className={cn(
-                "flex h-10 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-muted-foreground text-sm transition-colors hover:text-foreground touch:h-11",
+                "flex h-10 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-muted-foreground text-ui transition-colors hover:text-foreground touch:h-11",
                 id === current && "border-primary font-medium text-foreground",
               )}
             >
@@ -141,7 +141,7 @@ function NotInDemo({
       <h2 className="font-semibold text-lg">
         {section.label} is not part of this demo
       </h2>
-      <p className="max-w-sm text-muted-foreground text-sm">
+      <p className="max-w-sm text-muted-foreground text-ui">
         The demo is one pull request: its conversation, its commits, the CI run
         on it and the files it changes.
       </p>
@@ -161,7 +161,7 @@ function PullRequestHeader() {
           #{PULL_REQUEST.number}
         </span>
       </h2>
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground text-sm">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground text-ui">
         <Badge variant="success">
           <GitPullRequestArrowIcon />
           Open
@@ -171,11 +171,11 @@ function PullRequestHeader() {
             {PULL_REQUEST.author}
           </span>{" "}
           wants to merge {COMMITS.length} commits into{" "}
-          <code className="rounded bg-muted px-1 font-mono text-xs">
+          <code className="rounded bg-muted px-1 font-mono text-ui-sm">
             {PULL_REQUEST.base}
           </code>{" "}
           from{" "}
-          <code className="rounded bg-muted px-1 font-mono text-xs">
+          <code className="rounded bg-muted px-1 font-mono text-ui-sm">
             {PULL_REQUEST.head}
           </code>
         </span>
@@ -245,7 +245,7 @@ export function PullRequest() {
                       Files changed <Count>{STATS.files}</Count>
                     </TabsTrigger>
                   </TabsList>
-                  <p className="ml-auto font-mono text-xs tabular-nums max-sm:hidden">
+                  <p className="ml-auto font-mono text-ui-sm tabular-nums max-sm:hidden">
                     <span className="diff-addition-text">+{STATS.plus}</span>{" "}
                     <span className="diff-deletion-text">−{STATS.minus}</span>
                   </p>

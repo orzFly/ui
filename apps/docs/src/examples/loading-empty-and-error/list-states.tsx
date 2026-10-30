@@ -43,7 +43,7 @@ export function ListStates() {
         >
           <NotebookIcon className="size-8 text-muted-foreground" aria-hidden />
           <p className="font-medium">No notes yet</p>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-ui">
             A note is markdown, kept in this tab. Start one with a # heading.
           </p>
           <Button variant="outline" size="sm" className="mt-1">
@@ -69,10 +69,10 @@ export function ListStates() {
           <ul aria-label="Notes" className="grid gap-0.5">
             {SHOWN.map((note) => (
               <li key={note.id} className="grid gap-0.5 px-2.5 py-2">
-                <span className="font-medium text-sm">
+                <span className="font-medium text-ui">
                   {titleOf(note.body)}
                 </span>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground text-ui-sm">
                   {note.folder}
                 </span>
               </li>

@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/jetbrains-mono";
 @import "@orz/ui/styles.css";
 @import "@orz/ui-ansi/styles.css";
 @import "@orz/ui-asciinema/styles.css";
@@ -15,13 +13,3 @@
 @source "../../../packages/*/src/**/*.{ts,tsx}";
 @source "./";
 @source "../../fixtures/src";
-
-@theme {
-  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
-}
-
-/* The --hex-* defaults sit on .orz-hex itself, so an override has to reach
-   that element; :root lifts it above the package's own rule. */
-:root :is(.orz-hex, .orz-hex-inspector) {
-  --hex-font: "JetBrains Mono Variable", monospace;
-}

@@ -957,7 +957,7 @@ export function ColorPicker({
   return (
     <div
       data-slot="color-picker"
-      className={cn("grid w-64 gap-2 text-xs", className)}
+      className={cn("grid w-64 gap-2 text-ui-sm", className)}
     >
       {offered.length > 1 && (
         <fieldset
@@ -1190,7 +1190,7 @@ export function ColorPicker({
             endText();
             commitPending();
           }}
-          className="h-control-sm flex-1 px-1.5 font-mono text-base md:text-xs"
+          className="h-control-sm flex-1 px-1.5 font-mono text-base md:text-ui-sm"
         />
         {showEyeDropper && (
           <Button
@@ -1605,7 +1605,7 @@ export function ColorPickerPopover({
             type="button"
             variant="outline"
             size="sm"
-            className="pl-1 font-mono text-xs"
+            className="pl-1 font-mono text-ui-sm"
           >
             <span
               aria-hidden

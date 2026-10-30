@@ -57,7 +57,7 @@ export function ExportPanel({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <h3 className="min-w-0 flex-1 truncate text-sm font-medium">{title}</h3>
+        <h3 className="min-w-0 flex-1 truncate text-ui font-medium">{title}</h3>
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
           Back to the theme
         </Button>
@@ -67,7 +67,7 @@ export function ExportPanel({
         aria-label="Theme file"
         readOnly
         spellCheck={false}
-        className="field-sizing-fixed h-80 resize-y font-mono text-xs md:text-xs"
+        className="field-sizing-fixed h-80 resize-y font-mono text-ui-sm md:text-ui-sm"
         value={text}
       />
       <div className="flex justify-end gap-2">

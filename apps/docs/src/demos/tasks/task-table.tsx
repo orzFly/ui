@@ -214,7 +214,7 @@ export function TaskTable({
                   aria-label={`Select ${key}`}
                 />
               </TableCell>
-              <TableCell className="font-mono text-muted-foreground text-xs max-sm:hidden">
+              <TableCell className="font-mono text-muted-foreground text-ui-sm max-sm:hidden">
                 {key}
               </TableCell>
               <TableCell className="max-w-0">
@@ -233,7 +233,7 @@ export function TaskTable({
                   {task.title}
                 </a>
                 {/* What the hidden columns held, on a screen too narrow for them. */}
-                <span className="mt-0.5 flex items-center gap-2 text-muted-foreground text-xs sm:hidden">
+                <span className="mt-0.5 flex items-center gap-2 text-muted-foreground text-ui-sm sm:hidden">
                   <span className="font-mono">{key}</span>
                   <StatusDot status={task.status} />
                 </span>

@@ -24,6 +24,7 @@ export const TOKEN_NAMES: readonly TokenName[] = [
   "border",
   "input",
   "ring",
+  "marker",
   "chart-1",
   "chart-2",
   "chart-3",
@@ -43,7 +44,11 @@ export const TOKEN_NAMES: readonly TokenName[] = [
  * UI names added after custom themes could be saved. A fully custom side or
  * theme file written before them lacks them; composeTheme fills them in.
  */
-export const LATE_TOKEN_NAMES: readonly TokenName[] = ["success", "warning"];
+export const LATE_TOKEN_NAMES: readonly TokenName[] = [
+  "success",
+  "warning",
+  "marker",
+];
 
 /** Terminal names; renderTerminalDeclarations emits in this order. */
 export const TERMINAL_TOKEN_NAMES: readonly TerminalTokenName[] = [

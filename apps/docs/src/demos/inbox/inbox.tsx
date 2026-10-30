@@ -205,7 +205,7 @@ function ThreadRow({
         />
         <span
           className={cn(
-            "truncate text-sm",
+            "truncate text-ui",
             thread.unread ? "font-semibold" : "text-muted-foreground",
           )}
         >
@@ -215,12 +215,12 @@ function ThreadRow({
           )}
           {senders(thread)}
           {thread.messages.length > 1 && (
-            <span className="ml-1 font-normal text-muted-foreground text-xs">
+            <span className="ml-1 font-normal text-muted-foreground text-ui-sm">
               {thread.messages.length}
             </span>
           )}
         </span>
-        <span className="flex items-center gap-1 text-muted-foreground text-xs tabular-nums">
+        <span className="flex items-center gap-1 text-muted-foreground text-ui-sm tabular-nums">
           {thread.starred && (
             <StarIcon aria-label="Starred" className="size-3 fill-current" />
           )}
@@ -230,13 +230,13 @@ function ThreadRow({
         </span>
         <span
           className={cn(
-            "col-span-2 col-start-2 truncate text-sm",
+            "col-span-2 col-start-2 truncate text-ui",
             thread.unread && "font-medium",
           )}
         >
           {thread.subject}
         </span>
-        <span className="col-span-2 col-start-2 line-clamp-2 text-muted-foreground text-xs md:line-clamp-1">
+        <span className="col-span-2 col-start-2 line-clamp-2 text-muted-foreground text-ui-sm md:line-clamp-1">
           {thread.labels.map((label) => (
             <Badge
               key={label}
@@ -380,7 +380,7 @@ function ThreadList({
           </ActionButton>
         )}
       </div>
-      <div className="flex h-11 shrink-0 items-center gap-0.5 border-b px-1.5 text-sm touch:h-13">
+      <div className="flex h-11 shrink-0 items-center gap-0.5 border-b px-1.5 text-ui touch:h-13">
         <span className="flex size-8 items-center justify-center">
           <Checkbox
             checked={all ? true : shown.length > 0 ? "indeterminate" : false}
@@ -452,7 +452,7 @@ function ThreadList({
             <span className="min-w-0 flex-1 truncate px-1 font-medium">
               {place?.title ?? "Search results"}
             </span>
-            <span className="px-2 text-muted-foreground text-xs tabular-nums">
+            <span className="px-2 text-muted-foreground text-ui-sm tabular-nums">
               {threads.length} of {first.total}
             </span>
           </>
@@ -478,7 +478,7 @@ function ThreadList({
             {place ? (
               <>
                 <p className="font-medium">Nothing in {place.title}</p>
-                <p className="text-muted-foreground text-sm">{place.empty}</p>
+                <p className="text-muted-foreground text-ui">{place.empty}</p>
                 {(place.query === "in:sent" || place.query === "in:drafts") && (
                   <Button
                     variant="outline"
@@ -493,7 +493,7 @@ function ThreadList({
             ) : (
               <>
                 <p className="font-medium">No conversations match</p>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-ui">
                   Nothing matches{" "}
                   <code className="font-mono">{search.query}</code>. Try fewer
                   words, or another filter.

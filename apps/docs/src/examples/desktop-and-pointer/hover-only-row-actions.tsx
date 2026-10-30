@@ -6,7 +6,7 @@ const thread = INBOX_THREADS.find(({ id }) => id === "touch-sizes");
 
 export function HoverOnlyRowActions() {
   return (
-    <div className="group flex min-h-9 items-center gap-2 rounded-lg border px-3 text-sm">
+    <div className="group flex min-h-9 items-center gap-2 rounded-lg border px-3 text-ui">
       <span className="min-w-0 flex-1 truncate">{thread?.subject}</span>
       <Button
         variant="ghost"

@@ -42,11 +42,11 @@ export function ProfileEmail() {
           aria-describedby={error ? "a11y-email-error" : "a11y-email-hint"}
         />
         {error ? (
-          <p id="a11y-email-error" className="text-destructive text-sm">
+          <p id="a11y-email-error" className="text-destructive text-ui">
             {error}
           </p>
         ) : (
-          <p id="a11y-email-hint" className="text-muted-foreground text-sm">
+          <p id="a11y-email-hint" className="text-muted-foreground text-ui">
             Notifications go here.
           </p>
         )}

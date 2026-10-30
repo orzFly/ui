@@ -157,7 +157,7 @@ function MediaFrame({
   const unplayable = (
     <p
       data-slot="media-error"
-      className="px-3 py-4 text-center text-muted-foreground text-sm"
+      className="px-3 py-4 text-center text-muted-foreground text-ui"
     >
       {UNPLAYABLE}
     </p>
@@ -202,7 +202,7 @@ function MediaFrame({
       data-slot={video ? "video-player" : "audio-player"}
       title={title}
       className={cn(
-        "overflow-hidden rounded-frame border [&:fullscreen]:rounded-none [&:fullscreen]:border-0",
+        "overflow-hidden rounded-frame ring-1 ring-border [&:fullscreen]:rounded-none [&:fullscreen]:ring-0",
         video ? "bg-black" : "bg-card",
         fullscreen && "flex flex-col",
         className,

@@ -110,7 +110,7 @@ export function MediaControls({
       <div
         data-slot="media-controls"
         className={cn(
-          "@container/media-controls flex items-center gap-2 border-t bg-card px-2 py-1 text-card-foreground text-xs",
+          "@container/media-controls flex items-center gap-2 border-t bg-card px-2 py-1 text-card-foreground text-ui-sm",
           className,
         )}
       >
@@ -199,13 +199,13 @@ export function MediaControls({
           <SelectTrigger
             size="sm"
             aria-label="Speed"
-            className="h-control-sm border-transparent px-2 text-xs tabular-nums"
+            className="h-control-sm border-transparent px-2 text-ui-sm tabular-nums"
           >
             <SelectValue />
           </SelectTrigger>
           <SelectContent container={portal}>
             {speeds.map((s) => (
-              <SelectItem key={s} value={String(s)} className="text-xs">
+              <SelectItem key={s} value={String(s)} className="text-ui-sm">
                 {s}×
               </SelectItem>
             ))}

@@ -38,7 +38,7 @@ export function MailStates() {
         >
           <FileTextIcon className="size-6 text-muted-foreground" aria-hidden />
           <p className="font-medium">Nothing in Drafts</p>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-ui">
             A message you close without sending waits here.
           </p>
           <Button variant="outline" className="mt-1">
@@ -60,14 +60,14 @@ export function MailStates() {
           <ul className="grid gap-4">
             {DRAFTS.map((draft) => (
               <li key={draft.id} className="grid gap-0.5">
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground text-ui-sm">
                   <span className="font-medium text-foreground">Draft</span> To:{" "}
                   {draft.messages
                     .at(-1)
                     ?.to?.map((login) => INBOX_PEOPLE[login] ?? login)
                     .join(", ")}
                 </span>
-                <span className="truncate text-sm">{draft.subject}</span>
+                <span className="truncate text-ui">{draft.subject}</span>
               </li>
             ))}
           </ul>

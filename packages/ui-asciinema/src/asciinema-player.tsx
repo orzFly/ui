@@ -60,7 +60,7 @@ export function AsciinemaPlayer(props: AsciinemaPlayerProps) {
   const scan = useMemo(() => scanCast(props.cast), [props.cast]);
   if (isCastError(scan)) {
     return (
-      <p className={cn("text-destructive text-sm", props.className)}>
+      <p className={cn("text-destructive text-ui", props.className)}>
         {scan.error}
       </p>
     );
@@ -317,7 +317,7 @@ function CastPlayer({
       ref={frameRef}
       data-orz-cast={id}
       className={cn(
-        "overflow-hidden rounded-frame border bg-terminal-background [&:fullscreen]:rounded-none [&:fullscreen]:border-0",
+        "overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border [&:fullscreen]:rounded-none [&:fullscreen]:ring-0",
         className,
       )}
       onKeyDownCapture={onKeyDownCapture}
@@ -328,7 +328,7 @@ function CastPlayer({
       <div data-slot="cast-screen" className="relative">
         {!ready && (
           <div
-            className="grid w-full place-items-center text-terminal-foreground text-sm"
+            className="grid w-full place-items-center text-terminal-foreground text-ui"
             style={{
               aspectRatio: `${info.cols * CELL_WIDTH} / ${info.rows * LINE_HEIGHT}`,
             }}

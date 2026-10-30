@@ -102,10 +102,10 @@ export function Assignee({
           <PersonAvatar login={person.login} size="lg" />
           <div className="grid min-w-0 gap-0.5">
             <span className="truncate font-medium">{person.name}</span>
-            <span className="truncate text-muted-foreground text-xs">
+            <span className="truncate text-muted-foreground text-ui-sm">
               @{person.login} · {person.role}
             </span>
-            <span className="text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-ui-sm">
               {openCount === 1 ? "1 open task" : `${openCount} open tasks`}
             </span>
           </div>

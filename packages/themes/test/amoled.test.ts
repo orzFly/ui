@@ -65,6 +65,7 @@ describe("amoled", () => {
         "accent",
         "background",
         "card",
+        "marker",
         "muted",
         "popover",
         "secondary",

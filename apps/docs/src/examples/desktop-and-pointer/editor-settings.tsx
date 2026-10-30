@@ -43,7 +43,7 @@ export function EditorSettings() {
         </Select>
       </div>
       <div className="grid gap-2">
-        <span id="keys-indent" className="font-medium text-sm">
+        <span id="keys-indent" className="font-medium text-ui">
           Indent with
         </span>
         <RadioGroup aria-labelledby="keys-indent" defaultValue="2">

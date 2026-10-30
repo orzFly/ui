@@ -41,7 +41,7 @@ function Comment({
         <UserAvatar login={author} size="default" />
       </span>
       <article className="min-w-0 rounded-lg border bg-card text-card-foreground">
-        <header className="flex flex-wrap items-baseline gap-x-1.5 rounded-t-lg border-b bg-muted/50 px-3 py-2 text-muted-foreground text-sm">
+        <header className="flex flex-wrap items-baseline gap-x-1.5 rounded-t-lg border-b bg-muted/50 px-3 py-2 text-muted-foreground text-ui">
           <span className="font-medium text-foreground">{author}</span>
           {verb} <Stamp at={at} />
           {author === PULL_REQUEST.author && (
@@ -50,7 +50,7 @@ function Comment({
             </Badge>
           )}
         </header>
-        <Markdown className="min-w-0 p-3 text-sm">{body}</Markdown>
+        <Markdown className="min-w-0 p-3 text-ui">{body}</Markdown>
       </article>
     </li>
   );
@@ -65,7 +65,7 @@ function Event({
   onChecks(): void;
 }) {
   const row =
-    "flex flex-wrap items-center gap-x-2 gap-y-1 py-1 pl-2.5 text-muted-foreground text-sm";
+    "flex flex-wrap items-center gap-x-2 gap-y-1 py-1 pl-2.5 text-muted-foreground text-ui";
   if (event.kind === "push") {
     const commit = COMMITS.find((each) => each.hash === event.commit);
     return (
@@ -75,11 +75,11 @@ function Event({
           <span className="font-medium text-foreground">{event.author}</span>{" "}
           pushed
         </span>
-        <code className="font-mono text-xs">{event.commit}</code>
+        <code className="font-mono text-ui-sm">{event.commit}</code>
         <span className="min-w-0 truncate text-foreground">
           {commit?.subject}
         </span>
-        <span className="ml-auto text-xs">
+        <span className="ml-auto text-ui-sm">
           <Stamp at={event.at} />
         </span>
       </li>
@@ -99,7 +99,7 @@ function Event({
       >
         Details
       </Button>
-      <span className="ml-auto text-xs">
+      <span className="ml-auto text-ui-sm">
         <Stamp at={event.at} />
       </span>
     </li>
@@ -137,7 +137,7 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
           <h3 id="merge-status" className="font-semibold">
             Some checks were not successful
           </h3>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-ui">
             {failed} failing and {CI_RUN.jobs.length - failed} successful checks
           </p>
         </div>
@@ -156,13 +156,13 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
         {CI_RUN.jobs.map((job) => (
           <li
             key={job.id}
-            className="flex min-h-10 items-center gap-2 px-3 text-sm"
+            className="flex min-h-10 items-center gap-2 px-3 text-ui"
           >
             <StatusIcon status={job.status} />
             <span className="flex-1">
               {CI_RUN.workflow} / {job.name}
             </span>
-            <span className="text-muted-foreground text-xs tabular-nums">
+            <span className="text-muted-foreground text-ui-sm tabular-nums">
               {job.duration}s
             </span>
             <Button
@@ -182,7 +182,7 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
           <GitMergeIcon />
           Merge pull request
         </Button>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-ui">
           Merging is blocked until every check passes.
         </p>
       </footer>
@@ -231,7 +231,7 @@ function CommentForm({ onPost }: { onPost(body: string): void }) {
           />
         </ClientOnly>
         <div className="flex items-center justify-end gap-3">
-          <p role="status" className="text-destructive text-sm">
+          <p role="status" className="text-destructive text-ui">
             {missing && "Write a comment first."}
           </p>
           <Button type="submit">Comment</Button>
@@ -242,8 +242,8 @@ function CommentForm({ onPost }: { onPost(body: string): void }) {
 }
 
 function Sidebar() {
-  const heading = "mb-1.5 font-medium text-muted-foreground text-xs";
-  const person = "flex min-h-8 items-center gap-2 text-sm";
+  const heading = "mb-1.5 font-medium text-muted-foreground text-ui-sm";
+  const person = "flex min-h-8 items-center gap-2 text-ui";
   return (
     <aside
       aria-label="Details"

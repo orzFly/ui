@@ -82,7 +82,7 @@ function SettingRow({
       <div className={cn("grid gap-1", disabled && "opacity-50")}>
         <Label htmlFor={id}>{label}</Label>
         {description && (
-          <p id={`${id}-description`} className="text-muted-foreground text-sm">
+          <p id={`${id}-description`} className="text-muted-foreground text-ui">
             {description}
           </p>
         )}
@@ -96,7 +96,7 @@ function Group({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="grid">
       {title && (
-        <h3 className="pt-2 font-medium text-muted-foreground text-xs">
+        <h3 className="pt-2 font-medium text-muted-foreground text-ui-sm">
           {title}
         </h3>
       )}
@@ -117,7 +117,9 @@ function EditorPreview({ prefs }: { prefs: Preferences }) {
   const indent = prefs.indent === "tab" ? "\t" : " ".repeat(+prefs.indent);
   return (
     <figure className="grid gap-1.5">
-      <figcaption className="text-muted-foreground text-xs">Preview</figcaption>
+      <figcaption className="text-muted-foreground text-ui-sm">
+        Preview
+      </figcaption>
       <pre
         className={cn(
           "rounded-lg border bg-muted/40 p-3 font-mono leading-[1.6] [tab-size:4]",
@@ -176,7 +178,7 @@ export function EditorSection({ prefs, onChange }: PreferenceProps) {
         <div className="grid gap-3 py-3">
           <div className="flex items-baseline justify-between gap-4">
             <Label id="settings-font-size">Font size</Label>
-            <span className="text-muted-foreground text-sm tabular-nums">
+            <span className="text-muted-foreground text-ui tabular-nums">
               {prefs.fontSize}px
             </span>
           </div>
@@ -273,7 +275,7 @@ export function NotificationsSection({ prefs, onChange }: PreferenceProps) {
                 <Label htmlFor={`settings-notify-${value}`}>{label}</Label>
                 <p
                   id={`settings-notify-${value}-description`}
-                  className="text-muted-foreground text-sm"
+                  className="text-muted-foreground text-ui"
                 >
                   {description}
                 </p>
@@ -495,11 +497,11 @@ export function ProfileSection({
           }
         />
         {error ? (
-          <p id="settings-email-error" className="text-destructive text-sm">
+          <p id="settings-email-error" className="text-destructive text-ui">
             {error}
           </p>
         ) : (
-          <p id="settings-email-hint" className="text-muted-foreground text-sm">
+          <p id="settings-email-hint" className="text-muted-foreground text-ui">
             Notifications go here.
           </p>
         )}
@@ -555,7 +557,7 @@ export function TokensSection({
   return (
     <div className="grid gap-4">
       {tokens.length === 0 ? (
-        <p className="py-3 text-muted-foreground text-sm">
+        <p className="py-3 text-muted-foreground text-ui">
           No access tokens. Scripts and bots that need one get it from the
           command line.
         </p>
@@ -565,10 +567,10 @@ export function TokensSection({
             <li key={token.id} className="flex items-center gap-3 py-3">
               <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
               <div className="grid min-w-0 flex-1 gap-0.5">
-                <span className="truncate font-medium font-mono text-sm">
+                <span className="truncate font-medium font-mono text-ui">
                   {token.name}
                 </span>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground text-ui-sm">
                   {token.scopes} · {token.lastUsed}
                 </span>
               </div>

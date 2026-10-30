@@ -18,7 +18,7 @@ const NOTIFY = [
 export function NotifyRadioGroup() {
   return (
     <div className="grid gap-3">
-      <p className="font-medium text-sm" id="do-notify">
+      <p className="font-medium text-ui" id="do-notify">
         Notify me about
       </p>
       <RadioGroup defaultValue="mentions" aria-labelledby="do-notify">
@@ -34,7 +34,7 @@ export function NotifyRadioGroup() {
               <Label htmlFor={`do-notify-${value}`}>{label}</Label>
               <p
                 id={`do-notify-${value}-description`}
-                className="text-muted-foreground text-sm"
+                className="text-muted-foreground text-ui"
               >
                 {description}
               </p>

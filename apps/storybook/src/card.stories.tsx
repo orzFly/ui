@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@orz/ui/components/card";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ListChecksIcon } from "lucide-react";
 import { withWidth } from "./decorators.tsx";
 
 const meta = {
@@ -47,6 +48,21 @@ type Story = StoryObj<typeof meta>;
 export const Playground: Story = {};
 
 export const Small: Story = { args: { size: "sm" } };
+
+/** The header's marker shows the module's icon; without one it draws ▶. */
+export const WithIcon: Story = {
+  render: (args) => (
+    <Card {...args}>
+      <CardHeader icon={<ListChecksIcon />}>
+        <CardTitle>Checks</CardTitle>
+        <CardDescription>3 of 4 passed</CardDescription>
+      </CardHeader>
+      <CardContent>
+        Lint, typecheck and build passed; one test failed.
+      </CardContent>
+    </Card>
+  ),
+};
 
 export const ContentOnly: Story = {
   render: (args) => (

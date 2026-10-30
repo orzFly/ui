@@ -80,7 +80,7 @@ export function DemoPage({ children }: { children: ReactNode }) {
       )}
     >
       <div className="flex min-h-11 shrink-0 items-center gap-2 border-b bg-muted/40 px-2 py-1 md:gap-3 md:px-4">
-        <div className="flex min-w-0 items-baseline gap-1.5 text-sm">
+        <div className="flex min-w-0 items-baseline gap-1.5 text-ui">
           <Link
             to="/demos/"
             className="hidden text-muted-foreground hover:text-foreground sm:inline"
@@ -202,7 +202,7 @@ function About({
   const id = useId();
   const guidelines = meta?.guidelines ?? [];
   return (
-    <div className="p-5 text-sm">
+    <div className="p-5 text-ui">
       {meta?.description && (
         <p className="text-base text-muted-foreground">{meta.description}</p>
       )}
@@ -299,7 +299,7 @@ export function DemoGallery() {
         >
           <span className="font-semibold">{meta.title}</span>
           {meta.description && (
-            <span className="text-muted-foreground text-sm">
+            <span className="text-muted-foreground text-ui">
               {meta.description}
             </span>
           )}

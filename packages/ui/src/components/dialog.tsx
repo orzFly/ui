@@ -4,6 +4,7 @@ import type * as React from "react";
 import { useRef } from "react";
 import { cn } from "../lib/utils.ts";
 import { Button } from "./button.tsx";
+import { ModuleMarker } from "./card.tsx";
 
 /** Room left in `delta`'s direction, by the axis the gesture is mostly on. */
 function hasScrollRoom(node: Element, horizontal: boolean, delta: number) {
@@ -151,7 +152,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-surface bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-(--duration-overlay) outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-surface bg-popover p-4 text-ui text-popover-foreground shadow-overlay ring-1 ring-border duration-(--duration-overlay) outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
           className,
         )}
         onWheel={(event) => {
@@ -247,19 +248,28 @@ function DialogFooter({
   );
 }
 
+/** The title, after the module marker. */
 function DialogTitle({
   className,
+  icon,
+  children,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+}: React.ComponentProps<typeof DialogPrimitive.Title> & {
+  /** The module marker's icon; omitted, the marker draws ▶. */
+  icon?: React.ReactNode;
+}) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-heading text-title leading-none font-medium",
+        "font-heading text-title leading-none font-medium flex items-center gap-2",
         className,
       )}
       {...props}
-    />
+    >
+      <ModuleMarker icon={icon} />
+      {children}
+    </DialogPrimitive.Title>
   );
 }
 
@@ -271,7 +281,7 @@ function DialogDescription({
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(
-        "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        "text-ui text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
         className,
       )}
       {...props}

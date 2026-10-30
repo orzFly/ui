@@ -44,7 +44,7 @@ export function ControlsCompared() {
   return (
     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
       <div className="grid grid-cols-1 content-start gap-3">
-        <p className="font-medium text-sm">Editor</p>
+        <p className="font-medium text-ui">Editor</p>
         <div className="flex items-center justify-between gap-4">
           <Label htmlFor="cc-wrap">Wrap long lines</Label>
           <Switch id="cc-wrap" defaultChecked />
@@ -68,7 +68,7 @@ export function ControlsCompared() {
             </SelectContent>
           </Select>
         </div>
-        <p className="font-medium text-sm" id="cc-indent">
+        <p className="font-medium text-ui" id="cc-indent">
           Indent with
         </p>
         <RadioGroup defaultValue="2" aria-labelledby="cc-indent">
@@ -91,7 +91,7 @@ export function ControlsCompared() {
               )
             }
           />
-          <span className="flex-1 font-medium text-sm">
+          <span className="flex-1 font-medium text-ui">
             {selected.length > 0 ? `${selected.length} selected` : "Inbox"}
           </span>
           {selected.length > 0 && (
@@ -123,7 +123,7 @@ export function ControlsCompared() {
           </div>
         ))}
         {threads.length === 0 && (
-          <div className="grid gap-0.5 text-sm">
+          <div className="grid gap-0.5 text-ui">
             <p className="font-medium">Nothing in Inbox</p>
             <p className="text-muted-foreground">
               New mail lands here. Archive what you have dealt with.

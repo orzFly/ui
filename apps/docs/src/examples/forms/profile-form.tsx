@@ -83,11 +83,11 @@ export function ProfileForm() {
           }
         />
         {error ? (
-          <p id="profile-email-error" className="text-destructive text-sm">
+          <p id="profile-email-error" className="text-destructive text-ui">
             {error}
           </p>
         ) : (
-          <p id="profile-email-hint" className="text-muted-foreground text-sm">
+          <p id="profile-email-hint" className="text-muted-foreground text-ui">
             Notifications go here.
           </p>
         )}

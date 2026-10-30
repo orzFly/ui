@@ -125,7 +125,7 @@ export function ConfigEditor() {
                   type="button"
                   aria-current={file.name === name ? "page" : undefined}
                   onClick={() => open(file.name)}
-                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-2 text-left font-mono text-sm transition-colors hover:bg-accent aria-[current=page]:bg-accent aria-[current=page]:font-medium md:min-h-8 md:justify-start md:px-2.5 touch:md:min-h-11"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-2 text-left font-mono text-ui transition-colors hover:bg-accent aria-[current=page]:bg-accent aria-[current=page]:font-medium md:min-h-8 md:justify-start md:px-2.5 touch:md:min-h-11"
                 >
                   <FileJsonIcon className="size-4 text-muted-foreground max-md:hidden" />
                   <span className="truncate md:flex-1">{file.name}</span>
@@ -148,12 +148,12 @@ export function ConfigEditor() {
           <div className="flex min-w-0 items-baseline gap-2">
             <h2
               id="config-file-title"
-              className="truncate font-mono font-semibold text-sm"
+              className="truncate font-mono font-semibold text-ui"
             >
               {name}
             </h2>
             {dirty && (
-              <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+              <span className="flex items-center gap-1.5 text-muted-foreground text-ui-sm">
                 <span aria-hidden className="size-2 rounded-full bg-primary" />
                 Unsaved
               </span>
@@ -194,7 +194,7 @@ export function ConfigEditor() {
         />
         <footer
           id={PROBLEM_ID}
-          className="flex min-h-9 shrink-0 items-center border-t px-3 text-xs md:px-4"
+          className="flex min-h-9 shrink-0 items-center border-t px-3 text-ui-sm md:px-4"
         >
           {problem === null ? (
             <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -226,7 +226,7 @@ export function ConfigEditor() {
           </div>
           <DialogFooter className="items-center">
             {problem !== null && (
-              <p className="mr-auto text-destructive text-xs">
+              <p className="mr-auto text-destructive text-ui-sm">
                 Line {problem.line}: {problem.message}
               </p>
             )}

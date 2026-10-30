@@ -13,7 +13,7 @@ export function InlineFieldError() {
         aria-invalid
         aria-describedby="do-email-error"
       />
-      <p id="do-email-error" className="text-destructive text-sm">
+      <p id="do-email-error" className="text-destructive text-ui">
         Enter an email address, like {PROFILE.email}.
       </p>
     </div>

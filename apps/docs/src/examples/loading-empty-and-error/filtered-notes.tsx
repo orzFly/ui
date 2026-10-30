@@ -29,7 +29,7 @@ export function FilteredNotes() {
             type="button"
             aria-pressed={chosen.has(tag)}
             onClick={() => toggle(tag)}
-            className="relative inline-flex h-6 items-center rounded-full border px-2 text-xs transition-colors hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground touch:hit-area"
+            className="relative inline-flex h-6 items-center rounded-full border px-2 text-ui-sm transition-colors hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground touch:hit-area"
           >
             #{tag}
           </button>
@@ -43,7 +43,7 @@ export function FilteredNotes() {
               aria-hidden
             />
             <p className="font-medium">No notes match</p>
-            <p className="text-muted-foreground text-sm">Try fewer tags.</p>
+            <p className="text-muted-foreground text-ui">Try fewer tags.</p>
             <Button
               variant="outline"
               size="sm"
@@ -56,10 +56,10 @@ export function FilteredNotes() {
           <ul aria-label="Notes" className="grid gap-0.5">
             {shown.map((note) => (
               <li key={note.id} className="grid gap-0.5 px-2.5 py-2">
-                <span className="font-medium text-sm">
+                <span className="font-medium text-ui">
                   {titleOf(note.body)}
                 </span>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted-foreground text-ui-sm">
                   {note.folder}
                 </span>
               </li>

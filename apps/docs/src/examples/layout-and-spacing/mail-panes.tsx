@@ -96,7 +96,7 @@ export function MailPanes() {
             >
               <PanelLeftIcon />
             </IconButton>
-            <span className="px-1 font-medium text-sm">Inbox</span>
+            <span className="px-1 font-medium text-ui">Inbox</span>
           </div>
           <ul className="min-h-0 flex-1 overflow-y-auto py-1">
             {THREADS.map((each) => (
@@ -110,10 +110,10 @@ export function MailPanes() {
                     each.id === open && "bg-accent",
                   )}
                 >
-                  <span className="truncate text-muted-foreground text-xs">
+                  <span className="truncate text-muted-foreground text-ui-sm">
                     {INBOX_PEOPLE[each.messages[0]?.from ?? ""]}
                   </span>
-                  <span className="truncate text-sm">{each.subject}</span>
+                  <span className="truncate text-ui">{each.subject}</span>
                 </button>
               </li>
             ))}
@@ -136,16 +136,16 @@ export function MailPanes() {
                 >
                   <ArrowLeftIcon />
                 </IconButton>
-                <h3 className="truncate px-1 font-medium text-sm">
+                <h3 className="truncate px-1 font-medium text-ui">
                   {thread.subject}
                 </h3>
               </div>
-              <Markdown className="min-h-0 flex-1 overflow-y-auto p-4 text-sm">
+              <Markdown className="min-h-0 flex-1 overflow-y-auto p-4 text-ui">
                 {thread.messages[0]?.body ?? ""}
               </Markdown>
             </>
           ) : (
-            <p className="grid flex-1 place-content-center p-4 text-muted-foreground text-sm">
+            <p className="grid flex-1 place-content-center p-4 text-muted-foreground text-ui">
               Pick a conversation to read it.
             </p>
           )}

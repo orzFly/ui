@@ -12,7 +12,7 @@ export type CaretPosition = { caret: number };
  * on rather than on it. Nothing here may differ between the two, and no span
  * inside the mirror may add width of its own.
  */
-const METRICS = "px-2.5 py-1 text-base md:text-sm touch:text-base";
+const METRICS = "px-2.5 py-1 text-base md:text-ui touch:text-base";
 
 /**
  * A one-line input that shows its own text through a mirror layer, so the

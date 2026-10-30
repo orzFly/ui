@@ -4,6 +4,7 @@ import {
   composeTheme,
   isCustomTerminalTheme,
   LATE_TOKEN_NAMES,
+  markerOf,
   type Palette,
   resolvePalette,
   type TokenName,
@@ -71,7 +72,7 @@ describe("composeTheme", () => {
     });
   });
 
-  it("gives a detached side saved before success and warning its own diff-addition and yellow", () => {
+  it("gives a detached side saved before success, warning and marker its own diff-addition, yellow and primary-tinted fill", () => {
     const saved = Object.fromEntries(
       Object.entries(tokens(0.7, { "diff-addition": "#18a46c" })).filter(
         ([name]) => !LATE_TOKEN_NAMES.includes(name as TokenName),
@@ -94,6 +95,7 @@ describe("composeTheme", () => {
       ...saved,
       success: "#18a46c",
       warning: "#b58900",
+      marker: markerOf(saved),
     });
   });
 

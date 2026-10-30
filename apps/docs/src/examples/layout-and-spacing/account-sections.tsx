@@ -12,7 +12,7 @@ export function AccountSections() {
           <h3 id="spacing-profile" className="font-medium">
             Profile
           </h3>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-ui">
             What others see of you. Saved when you press Save profile.
           </p>
         </header>
@@ -40,7 +40,7 @@ export function AccountSections() {
           <h3 id="spacing-tokens" className="font-medium">
             Access tokens
           </h3>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-ui">
             Tokens that scripts and bots sign in with.
           </p>
         </header>
@@ -49,8 +49,8 @@ export function AccountSections() {
             <li key={token.id} className="flex items-center gap-2">
               <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
               <div className="grid min-w-0 flex-1">
-                <span className="truncate font-mono text-sm">{token.name}</span>
-                <span className="truncate text-muted-foreground text-xs">
+                <span className="truncate font-mono text-ui">{token.name}</span>
+                <span className="truncate text-muted-foreground text-ui-sm">
                   {token.scopes} · {token.lastUsed}
                 </span>
               </div>

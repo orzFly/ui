@@ -18,6 +18,7 @@ import {
 import {
   type CSSProperties,
   createContext,
+  createElement,
   type ReactNode,
   useCallback,
   useContext,
@@ -38,6 +39,7 @@ import {
 import { Content, useContentDisplay } from "../registry.tsx";
 import { ContentTitleBar } from "../title-bar.tsx";
 import type { ContentSource } from "../types.ts";
+import { fileIcon } from "./icon.ts";
 import { DEFAULT_IMAGE_LOOK, type ImageLook } from "./image-look.ts";
 
 export type FileSource = Extract<ContentSource, { kind: "file" }>;
@@ -217,7 +219,7 @@ function LargeTextPane({
   const hardMax =
     viewer?.textPreviewHardMaxBytes ?? TEXT_PREVIEW_HARD_MAX_BYTES;
   return (
-    <div className="flex flex-col items-center gap-3 py-16 text-sm text-muted-foreground">
+    <div className="flex flex-col items-center gap-3 py-16 text-ui text-muted-foreground">
       <FileIcon className="size-8" />
       {gate === "refuse" ? (
         <>
@@ -243,7 +245,7 @@ function LargeTextPane({
 /** Paging can land on types that only download — say so instead of a blank pane. */
 function DownloadOnlyPane({ file }: { file: FileSource }) {
   return (
-    <div className="flex flex-col items-center gap-2 py-16 text-sm text-muted-foreground">
+    <div className="flex flex-col items-center gap-2 py-16 text-ui text-muted-foreground">
       <FileIcon className="size-8" />
       <span className="font-medium text-foreground">{file.name}</span>
       <span>No inline preview for this file type.</span>
@@ -305,7 +307,7 @@ function ViewerFooter({ file }: { file: FileSource }) {
   const viewer = useContext(AttachmentViewerContext);
   const tab = viewer?.viewHref?.(file);
   return (
-    <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+    <div className="flex items-center justify-between gap-3 text-ui-sm text-muted-foreground">
       <span className="truncate">
         {[
           file.mime,
@@ -494,8 +496,11 @@ export function AttachmentViewer({
         {file && (
           <>
             <div className="flex items-center gap-1">
-              <DialogTitle className="min-w-0 flex-1 truncate">
-                {file.name}
+              <DialogTitle
+                className="min-w-0 flex-1"
+                icon={createElement(fileIcon(file))}
+              >
+                <span className="min-w-0 truncate">{file.name}</span>
               </DialogTitle>
               <span
                 ref={setHoldRegion}
@@ -517,7 +522,7 @@ export function AttachmentViewer({
                     >
                       <ChevronLeftIcon />
                     </Button>
-                    <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                    <span className="text-ui-sm whitespace-nowrap text-muted-foreground tabular-nums">
                       {(state?.index ?? 0) + 1} / {count}
                     </span>
                     <Button

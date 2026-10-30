@@ -17,7 +17,7 @@ export function ArrivingJobs() {
   return (
     <div className="grid gap-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-sm">
+        <span className="font-medium text-ui">
           {CI_RUN.workflow} #{CI_RUN.id}
         </span>
         <Button
@@ -29,7 +29,7 @@ export function ArrivingJobs() {
           <RotateCwIcon data-icon="inline-start" /> Re-run all jobs
         </Button>
       </div>
-      <ol aria-label="Jobs" className="grid gap-1 text-sm">
+      <ol aria-label="Jobs" className="grid gap-1 text-ui">
         {CI_RUN.jobs.slice(0, finished).map((job) => (
           <li
             key={job.id}
@@ -47,7 +47,7 @@ export function ArrivingJobs() {
               />
             )}
             <span className="flex-1">{job.name}</span>
-            <span className="text-muted-foreground text-xs tabular-nums">
+            <span className="text-muted-foreground text-ui-sm tabular-nums">
               {job.duration}s
             </span>
           </li>

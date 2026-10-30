@@ -5,6 +5,7 @@ export {
   composeTheme,
   isCustomTerminalTheme,
 } from "./compose.ts";
+export { markerOf } from "./marker.ts";
 export { renderDeclarations, renderTerminalDeclarations } from "./render.ts";
 export {
   isUiTheme,

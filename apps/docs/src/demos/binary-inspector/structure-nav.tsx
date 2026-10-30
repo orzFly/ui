@@ -42,7 +42,7 @@ export function StructureList({
   }
   if (state.kind === "none") {
     return (
-      <p className="px-3 py-2 text-muted-foreground text-sm">
+      <p className="px-3 py-2 text-muted-foreground text-ui">
         Not a PNG or a ZIP, so there is no structure to show: the bytes are all
         there is.
       </p>
@@ -86,18 +86,18 @@ function RegionList({
               onClick={() => onPick(region)}
               style={{ paddingLeft: `${0.75 + depth * 0.875}rem` }}
               className={cn(
-                "flex min-h-7 w-full items-center gap-2 rounded-md pr-2 text-left text-sm transition-colors hover:bg-accent aria-[current]:bg-accent aria-[current]:font-medium touch:min-h-11",
+                "flex min-h-7 w-full items-center gap-2 rounded-md pr-2 text-left text-ui transition-colors hover:bg-accent aria-[current]:bg-accent aria-[current]:font-medium touch:min-h-11",
                 depth > 0 &&
                   "text-muted-foreground aria-[current]:text-foreground",
               )}
             >
               <span className="shrink-0">{region.label}</span>
               {region.value && (
-                <span className="min-w-0 flex-1 truncate text-muted-foreground text-xs">
+                <span className="min-w-0 flex-1 truncate text-muted-foreground text-ui-sm">
                   {region.value}
                 </span>
               )}
-              <span className="ml-auto shrink-0 font-mono text-muted-foreground text-xs tabular-nums">
+              <span className="ml-auto shrink-0 font-mono text-muted-foreground text-ui-sm tabular-nums">
                 {formatOffset(region.offset)}
               </span>
             </button>
@@ -150,7 +150,7 @@ export function StructureSelect({
             <span style={{ paddingLeft: `${depth * 0.875}rem` }}>
               {region.label}
             </span>
-            <span className="font-mono text-muted-foreground text-xs">
+            <span className="font-mono text-muted-foreground text-ui-sm">
               {formatOffset(region.offset)}
             </span>
           </SelectItem>

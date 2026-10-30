@@ -50,8 +50,9 @@ global. `theme.css` carries no `@source`, so that surface names the files Tailwi
 heights (`--spacing-control`), corners (`--radius-control`, `--radius-surface`), shadows, text
 sizes, fonts, the focus ring and overlay motion. Their values are the default style's.
 
-`styles.css` does not load a font. `--font-ui` names `'Geist Variable'` first and falls back to
-the system UI font, so install `@fontsource-variable/geist` (or define `--font-ui`) if you want it.
+`styles.css` loads Noto Sans and Noto Sans Mono (`--font-ui`, `--font-mono`) for Latin, Greek and
+Cyrillic; Chinese, Japanese and Korean text takes the face its `lang` names from the system, or from
+a font your app loads.
 `useOverlayScrollbars` needs the library's own stylesheet, which you import yourself:
 `@import "overlayscrollbars/overlayscrollbars.css";`.
 

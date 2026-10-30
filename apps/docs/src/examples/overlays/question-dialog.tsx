@@ -10,11 +10,11 @@ export function QuestionDialog() {
   const [open, setOpen] = useState(false);
   const [deleted, setDeleted] = useState(false);
   if (!THREAD || deleted) {
-    return <p className="text-muted-foreground text-sm">Nothing in Trash</p>;
+    return <p className="text-muted-foreground text-ui">Nothing in Trash</p>;
   }
   return (
     <div className="grid min-w-0 gap-3">
-      <p className="truncate text-sm">{THREAD.subject}</p>
+      <p className="truncate text-ui">{THREAD.subject}</p>
       <Button
         variant="destructive"
         className="justify-self-start"

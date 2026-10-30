@@ -10,7 +10,7 @@ export function TrashWithUndo() {
   const [deleted, setDeleted] = useState(false);
   if (deleted) {
     return (
-      <div className="grid gap-0.5 text-sm">
+      <div className="grid gap-0.5 text-ui">
         <p className="font-medium">Nothing in Inbox</p>
         <p className="text-muted-foreground">
           New mail lands here. Archive what you have dealt with.
@@ -20,7 +20,7 @@ export function TrashWithUndo() {
   }
   return (
     <div className="flex items-center gap-2">
-      <span className="min-w-0 flex-1 truncate text-sm">{thread?.subject}</span>
+      <span className="min-w-0 flex-1 truncate text-ui">{thread?.subject}</span>
       <Button
         variant="outline"
         onClick={() => {

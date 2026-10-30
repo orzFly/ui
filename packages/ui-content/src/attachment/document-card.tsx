@@ -81,16 +81,21 @@ export function DocumentCard({
         {name}
       </span>
       {meta !== undefined && (
-        <span className="shrink-0 text-xs text-muted-foreground">{meta}</span>
+        <span className="shrink-0 text-ui-sm text-muted-foreground">
+          {meta}
+        </span>
       )}
     </>
   );
 
   return (
     <section
-      className={cn("my-2 overflow-hidden rounded-frame border", className)}
+      className={cn(
+        "my-2 overflow-hidden rounded-frame ring-1 ring-border",
+        className,
+      )}
     >
-      <div className="flex items-center gap-1 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-sm">
+      <div className="flex items-center gap-1 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-ui">
         {onExpand ? (
           <button
             type="button"
@@ -147,7 +152,7 @@ export function DocumentCard({
             <button
               type="button"
               onClick={onExpand}
-              className="absolute inset-x-0 bottom-0 flex h-16 cursor-pointer items-end justify-center bg-gradient-to-t from-background to-transparent pb-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+              className="absolute inset-x-0 bottom-0 flex h-16 cursor-pointer items-end justify-center bg-gradient-to-t from-background to-transparent pb-1.5 text-ui-sm font-medium text-muted-foreground hover:text-foreground"
             >
               Show full document
             </button>

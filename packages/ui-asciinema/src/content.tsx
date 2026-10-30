@@ -42,7 +42,7 @@ function TooLargeCast({ source, placement, className }: ContentProps) {
 
 function CastHeader({ source, title }: { source: FileSource; title?: string }) {
   return (
-    <div className="flex items-center gap-2 border-b bg-card py-1 pr-1 pl-3 text-card-foreground text-xs">
+    <div className="flex items-center gap-2 border-b bg-card py-1 pr-1 pl-3 text-card-foreground text-ui-sm">
       <span className="min-w-0 flex-1 truncate" title={source.name}>
         {title ?? source.name}
       </span>
@@ -104,7 +104,7 @@ function LoadedCast({ source, placement, className, Next }: CastProps) {
       <div className={className}>
         <Next source={source} placement={placement} />
         {scan !== undefined && (
-          <p className="text-muted-foreground text-xs">{scan.error}</p>
+          <p className="text-muted-foreground text-ui-sm">{scan.error}</p>
         )}
       </div>
     );

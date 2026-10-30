@@ -26,7 +26,7 @@ export function ConversationsFailed() {
     );
   }
   return (
-    <ul aria-label="Conversations" className="divide-y text-sm">
+    <ul aria-label="Conversations" className="divide-y text-ui">
       {THREADS.map(({ id, subject }) => (
         <li key={id} className="truncate py-2">
           {subject}

@@ -8,7 +8,7 @@ export function FontSizeSlider() {
     <div className="grid max-w-md gap-3">
       <div className="flex items-baseline justify-between gap-4">
         <Label id="fs-font-size">Font size</Label>
-        <span className="text-muted-foreground text-sm tabular-nums">
+        <span className="text-muted-foreground text-ui tabular-nums">
           {fontSize}px
         </span>
       </div>

@@ -10,7 +10,7 @@ const TITLES = NOTES.filter((note) => note.folder === "Projects").map(
 export function SlidingHeight() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="grid gap-1 text-sm">
+    <div className="grid gap-1 text-ui">
       <button
         type="button"
         aria-expanded={open}

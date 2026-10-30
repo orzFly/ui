@@ -62,7 +62,7 @@ export function DelayedSkeleton() {
           shown && (
             <>
               <h3 className="font-semibold text-lg">{titleOf(shown)}</h3>
-              <p className="text-sm">{openingOf(shown)}</p>
+              <p className="text-ui">{openingOf(shown)}</p>
             </>
           )
         )}

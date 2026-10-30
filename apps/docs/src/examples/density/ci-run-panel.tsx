@@ -23,7 +23,7 @@ export function CiRunPanel() {
             aria-label="failed"
             className="size-4 shrink-0 text-destructive"
           />
-          <span className="min-w-0 flex-1 truncate font-medium text-sm">
+          <span className="min-w-0 flex-1 truncate font-medium text-ui">
             {CI_RUN.workflow} #{CI_RUN.id}
           </span>
           <Button variant="outline" size="sm">
@@ -42,7 +42,7 @@ export function CiRunPanel() {
           {CI_RUN.jobs.map((job) => (
             <li
               key={job.id}
-              className="flex min-h-9 items-center gap-2 px-3 text-sm touch:min-h-11"
+              className="flex min-h-9 items-center gap-2 px-3 text-ui touch:min-h-11"
             >
               {job.status === "failed" ? (
                 <CircleXIcon
@@ -56,7 +56,7 @@ export function CiRunPanel() {
                 />
               )}
               <span className="min-w-0 flex-1 truncate">{job.name}</span>
-              <span className="text-muted-foreground text-xs tabular-nums">
+              <span className="text-muted-foreground text-ui-sm tabular-nums">
                 {job.duration}s
               </span>
               <Button

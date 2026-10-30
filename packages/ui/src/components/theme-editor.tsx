@@ -680,7 +680,7 @@ function EditorSession({
             {deletedElsewhere && (
               <p
                 role="status"
-                className="mb-3 rounded-frame border border-warning/40 bg-warning/10 p-2.5 text-xs"
+                className="mb-3 rounded-frame border border-warning/40 bg-warning/10 p-2.5 text-ui-sm"
               >
                 This theme was deleted elsewhere. Save adds it again.
               </p>
@@ -743,7 +743,7 @@ function EditorSession({
                 <p
                   key={message}
                   role="alert"
-                  className="text-xs text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
+                  className="text-ui-sm text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
                 >
                   {message}
                 </p>

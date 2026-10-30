@@ -39,16 +39,16 @@ function NoteRow({
           selected && "bg-accent",
         )}
       >
-        <span className="truncate font-medium text-sm">
+        <span className="truncate font-medium text-ui">
           {titleOf(note.body)}
         </span>
         <time
           dateTime={note.updated}
-          className="text-muted-foreground text-xs tabular-nums"
+          className="text-muted-foreground text-ui-sm tabular-nums"
         >
           {DAY.format(new Date(note.updated))}
         </time>
-        <span className="col-span-2 line-clamp-2 text-muted-foreground text-xs md:line-clamp-1">
+        <span className="col-span-2 line-clamp-2 text-muted-foreground text-ui-sm md:line-clamp-1">
           {snippetOf(note.body)}
         </span>
       </button>
@@ -119,7 +119,7 @@ export function NoteList({
                 type="button"
                 aria-pressed={chosen.has(tag)}
                 onClick={() => onToggleTag(tag)}
-                className="relative inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs transition-colors hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground touch:hit-area"
+                className="relative inline-flex h-6 items-center gap-1 rounded-full border px-2 text-ui-sm transition-colors hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground touch:hit-area"
               >
                 #{tag}
                 <span className="tabular-nums opacity-70">{count}</span>
@@ -138,7 +138,7 @@ export function NoteList({
             {filtered ? (
               <>
                 <p className="font-medium">No notes match</p>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-ui">
                   Try fewer words, or fewer tags.
                 </p>
                 <Button variant="outline" size="sm" onClick={onClear}>
@@ -148,7 +148,7 @@ export function NoteList({
             ) : (
               <>
                 <p className="font-medium">No notes yet</p>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-ui">
                   A note is markdown, kept in this tab. Start one with a #
                   heading.
                 </p>
@@ -173,7 +173,7 @@ export function NoteList({
               >
                 <h3
                   id={`notes-folder-${folder}`}
-                  className="px-2.5 pb-1 font-medium text-muted-foreground text-xs"
+                  className="px-2.5 pb-1 font-medium text-muted-foreground text-ui-sm"
                 >
                   {folder}
                 </h3>

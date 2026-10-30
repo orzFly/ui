@@ -150,12 +150,12 @@ export function ImportPanel({
       onDrop={drop}
     >
       <div className="flex items-center gap-2">
-        <h3 className="flex-1 text-sm font-medium">Import themes</h3>
+        <h3 className="flex-1 text-ui font-medium">Import themes</h3>
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
           Back to the theme
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-ui-sm text-muted-foreground">
         Paste a theme file, choose one, or drop it on this panel. Nothing is
         added until you import.
       </p>
@@ -165,7 +165,7 @@ export function ImportPanel({
         aria-invalid={problem ? true : undefined}
         spellCheck={false}
         placeholder='{ "format": "orz-themes", … }'
-        className="field-sizing-fixed h-40 resize-y font-mono text-xs md:text-xs"
+        className="field-sizing-fixed h-40 resize-y font-mono text-ui-sm md:text-ui-sm"
         value={text}
         onChange={(event) => edit(event.target.value)}
       />
@@ -195,7 +195,7 @@ export function ImportPanel({
         <p
           id={statusId}
           role="alert"
-          className="text-xs text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
+          className="text-ui-sm text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
         >
           {problem}
         </p>
@@ -216,7 +216,7 @@ export function ImportPanel({
       {error && (
         <p
           role="alert"
-          className="text-xs text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
+          className="text-ui-sm text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)]"
         >
           {error}
         </p>
@@ -263,17 +263,17 @@ function ImportRow({
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center gap-2">
-          <label htmlFor={id} className="min-w-0 flex-1 truncate text-sm">
+          <label htmlFor={id} className="min-w-0 flex-1 truncate text-ui">
             {label}
           </label>
           {entry.kind === "terminal" && (
-            <span className="shrink-0 rounded-chip bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="shrink-0 rounded-chip bg-muted px-2 py-0.5 text-ui-sm font-medium text-muted-foreground">
               Terminal
             </span>
           )}
           <span
             className={cn(
-              "shrink-0 rounded-chip px-2 py-0.5 text-xs font-medium",
+              "shrink-0 rounded-chip px-2 py-0.5 text-ui-sm font-medium",
               status.className,
             )}
           >
@@ -281,7 +281,7 @@ function ImportRow({
           </span>
         </div>
         {entry.messages.map((message) => (
-          <p key={message} className="text-xs text-muted-foreground">
+          <p key={message} className="text-ui-sm text-muted-foreground">
             {message}
           </p>
         ))}

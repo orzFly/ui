@@ -16,7 +16,7 @@ export function UndoOrConfirm() {
   const [revoked, setRevoked] = useState(false);
   const [confirming, setConfirming] = useState(false);
   return (
-    <div className="grid gap-2 text-sm">
+    <div className="grid gap-2 text-ui">
       <div className="flex min-h-9 items-center gap-2">
         <MailIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate">

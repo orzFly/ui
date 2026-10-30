@@ -98,7 +98,7 @@ export function Compose({
         </ActionButton>
         <h2
           id="compose-title"
-          className="min-w-0 flex-1 truncate font-medium text-sm"
+          className="min-w-0 flex-1 truncate font-medium text-ui"
         >
           {subject.trim() || "New message"}
         </h2>
@@ -147,7 +147,7 @@ export function Compose({
           <div className="flex items-center gap-2 px-3">
             <label
               htmlFor="compose-to"
-              className="w-14 text-muted-foreground text-sm"
+              className="w-14 text-muted-foreground text-ui"
             >
               To
             </label>
@@ -166,7 +166,7 @@ export function Compose({
           {error && (
             <p
               id="compose-to-error"
-              className="px-3 pb-2 text-destructive text-xs"
+              className="px-3 pb-2 text-destructive text-ui-sm"
             >
               {error}
             </p>
@@ -184,7 +184,7 @@ export function Compose({
         <div className="flex items-center gap-2 border-b px-3">
           <label
             htmlFor="compose-subject"
-            className="w-14 text-muted-foreground text-sm"
+            className="w-14 text-muted-foreground text-ui"
           >
             Subject
           </label>

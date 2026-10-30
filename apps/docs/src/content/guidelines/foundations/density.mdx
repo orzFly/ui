@@ -62,15 +62,15 @@ toolbar.
 
 ## Information density
 
-- A row holds one primary line in `text-sm` and at most one secondary line in `text-xs`. More than
+- A row holds one primary line in `text-ui` and at most one secondary line in `text-ui-sm`. More than
   that belongs in the detail view.
 - Repeated per-row actions are small and quiet (`ghost`, `xs`). One that destroys and asks first is
   `destructive` at `sm`, whose tint stays quiet until it is needed: the Settings demo's
   **Revoke…** on each token. A single action for the whole view is default size and stands apart.
 - On a pointer, a row's secondary actions can wait in a `DropdownMenu` behind a `⋯` button; they
   are not hidden until hover, which leaves keyboard and touch users nothing to press.
-- Dense is not cramped: rows keep `gap-2` between their parts and a 32 to 36px row height with a
-  mouse, so a misclick lands on the right row.
+- Dense is not cramped: rows keep `gap-2` between their parts and a {px("h-row")}px row height with
+  a mouse, so a misclick lands on the right row.
 
 <Example of={ThreadRows} />
 

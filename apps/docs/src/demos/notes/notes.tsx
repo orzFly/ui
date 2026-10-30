@@ -91,7 +91,7 @@ function Segmented<T extends string>({
           type="button"
           aria-pressed={value === pressed}
           onClick={() => onPress(value)}
-          className="relative rounded-sm px-2.5 py-1 text-muted-foreground text-xs transition-colors hover:text-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs touch:hit-area"
+          className="relative rounded-sm px-2.5 py-1 text-muted-foreground text-ui-sm transition-colors hover:text-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs touch:hit-area"
         >
           {text}
         </button>
@@ -273,7 +273,7 @@ export function Notes() {
                     >
                       {titleOf(note.body)}
                     </h2>
-                    <p className="truncate text-muted-foreground text-xs">
+                    <p className="truncate text-muted-foreground text-ui-sm">
                       {note.folder} · Edited{" "}
                       <time dateTime={note.updated}>
                         {STAMP.format(new Date(note.updated))} UTC
@@ -369,7 +369,7 @@ export function Notes() {
                     )}
                   >
                     {preview.trim() === "" ? (
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-muted-foreground text-ui">
                         Nothing to preview yet.
                       </p>
                     ) : (
@@ -386,7 +386,7 @@ export function Notes() {
                     )}
                   </section>
                 </div>
-                <footer className="shrink-0 border-t px-4 py-1.5 text-muted-foreground text-xs">
+                <footer className="shrink-0 border-t px-4 py-1.5 text-muted-foreground text-ui-sm">
                   {wordCount(note.body)} words · Kept in this tab only
                 </footer>
               </article>

@@ -1,3 +1,4 @@
+import { markerOf } from "./marker.ts";
 import { isUiTheme, resolvePalette, resolveTerminal } from "./resolve.ts";
 import { DEFAULT_STYLE, stylesOf } from "./styles.ts";
 import type {
@@ -17,7 +18,7 @@ import type {
 
 /**
  * A fully custom side's tokens, each of `LATE_TOKEN_NAMES` it was saved
- * without taken from the nearest colour it already has, so it keeps its hues.
+ * without made from colours it already has, so it keeps its hues.
  * The type says complete; a side stored before them is not.
  */
 function withLateTokens(tokens: Tokens, terminal: TerminalTokens): Tokens {
@@ -25,6 +26,7 @@ function withLateTokens(tokens: Tokens, terminal: TerminalTokens): Tokens {
     ...tokens,
     success: tokens.success ?? tokens["diff-addition"],
     warning: tokens.warning ?? terminal["ansi-yellow"],
+    marker: tokens.marker ?? markerOf(tokens),
   };
 }
 

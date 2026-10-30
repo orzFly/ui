@@ -240,8 +240,7 @@
     font-weight: 400;
     background-color: transparent;
   }
-  /* `--font-mono` is Tailwind's theme default rather than an @orz/ui token,
-     and Tailwind only emits it when something uses it — hence the fallback. */
+  /* `--font-mono` is @orz/ui's; the fallback serves a page without it. */
   .markdown-body table.markdown-frontmatter th {
     font-family: var(--font-mono, ui-monospace, monospace);
     font-size: 0.8125em;

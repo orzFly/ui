@@ -54,7 +54,7 @@ export function ThreadRows() {
     <TooltipProvider>
       <div className="grid gap-3">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-medium text-sm">Inbox</h3>
+          <h3 className="font-medium text-ui">Inbox</h3>
           <Button>
             <SquarePenIcon data-icon="inline-start" /> Compose
           </Button>
@@ -68,14 +68,14 @@ export function ThreadRows() {
               <div className="grid min-w-0 flex-1">
                 <span
                   className={cn(
-                    "truncate text-sm",
+                    "truncate text-ui",
                     thread.unread && "font-semibold",
                   )}
                 >
                   {thread.unread && <span className="sr-only">Unread: </span>}
                   {thread.subject}
                 </span>
-                <span className="truncate text-muted-foreground text-xs">
+                <span className="truncate text-muted-foreground text-ui-sm">
                   {senders(thread)}
                 </span>
               </div>

@@ -71,7 +71,7 @@ export function attachmentCard(
           className={className}
           collapsedClassName={options.collapsedClassName}
         >
-          <p className="text-sm text-muted-foreground">
+          <p className="text-ui text-muted-foreground">
             {gate === "refuse" ? (
               "This file is too large to preview."
             ) : (

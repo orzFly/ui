@@ -81,7 +81,7 @@ function MarkdownDocument({
   const body = showSource ? (
     <div className={className}>
       {large && (
-        <p className="mb-2 text-xs text-muted-foreground">
+        <p className="mb-2 text-ui-sm text-muted-foreground">
           Too large to render automatically.
         </p>
       )}

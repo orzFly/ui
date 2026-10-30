@@ -230,6 +230,9 @@ function classProblem(utility: string): string | null {
     return "a shadow that is not a style token";
   }
   if (/^text-\[[\d.]+(?:px|rem)\]$/.test(utility)) return "a literal text size";
+  // Tailwind's own steps; text-base stays, as a touch input's 16px.
+  if (/^text-(?:xs|sm)$/.test(utility))
+    return "a text step that is not a token";
   if (utility === "font-sans" || utility.startsWith("font-[")) {
     return "a font family that is not --font-ui";
   }
@@ -397,6 +400,9 @@ describe("style tokens", () => {
     expect(classProblem("shadow-menu")).toBeNull();
     expect(classProblem("text-[11px]")).not.toBeNull();
     expect(classProblem("text-[0.85em]")).toBeNull();
+    expect(classProblem("text-sm")).not.toBeNull();
+    expect(classProblem("text-ui")).toBeNull();
+    expect(classProblem("text-base")).toBeNull();
     expect(classProblem("font-sans")).not.toBeNull();
     expect(
       scanSource(join(PACKAGES, "ui/src/components/button.tsx")).filter(

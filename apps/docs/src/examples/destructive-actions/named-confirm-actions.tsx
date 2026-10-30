@@ -3,8 +3,8 @@ import { Button } from "@orz/ui/components/button";
 export function NamedConfirmActions() {
   return (
     <div className="grid gap-2">
-      <p className="font-medium text-sm">Delete 3 conversations forever?</p>
-      <p className="text-muted-foreground text-sm">
+      <p className="font-medium text-ui">Delete 3 conversations forever?</p>
+      <p className="text-muted-foreground text-ui">
         They cannot be restored. To keep them, move them back to the inbox
         instead.
       </p>

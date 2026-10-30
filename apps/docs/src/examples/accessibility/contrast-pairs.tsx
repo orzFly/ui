@@ -22,7 +22,7 @@ export function ContrastPairs() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-ui">
       <thead className="text-left text-muted-foreground">
         <tr>
           <th className="py-1.5 font-medium">Use</th>
@@ -39,7 +39,7 @@ export function ContrastPairs() {
           return (
             <tr key={`${fg} ${bg}`} className="border-t">
               <td className="py-1.5">{use}</td>
-              <td className="py-1.5 font-mono text-xs">
+              <td className="py-1.5 font-mono text-ui-sm">
                 {fg} on {bg}
               </td>
               <td className="py-1.5 text-right tabular-nums">

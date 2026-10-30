@@ -65,7 +65,7 @@ const THREAD = INBOX_THREADS.find(({ id }) => id === "touch-sizes");
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="grid min-w-0 gap-1.5">
-      <h3 className="font-medium text-muted-foreground text-xs">{title}</h3>
+      <h3 className="font-medium text-muted-foreground text-ui-sm">{title}</h3>
       <div className="min-w-0 rounded-lg border p-2">{children}</div>
     </section>
   );
@@ -158,21 +158,21 @@ export function OverlayKinds() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <span className="min-w-0 truncate px-1 text-sm">
+            <span className="min-w-0 truncate px-1 text-ui">
               {THREAD?.subject}
             </span>
           </div>
         </Panel>
         <Panel title="Access tokens">
           {revoked ? (
-            <p className="p-1 text-muted-foreground text-sm">
+            <p className="p-1 text-muted-foreground text-ui">
               No access tokens. Scripts and bots that need one get it from the
               command line.
             </p>
           ) : (
             <div className="flex items-center gap-2">
               <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1 truncate font-mono text-sm">
+              <span className="min-w-0 flex-1 truncate font-mono text-ui">
                 {token}
               </span>
               <Popover open={renaming} onOpenChange={setRenaming}>
@@ -242,7 +242,7 @@ export function OverlayKinds() {
           )}
         </Panel>
         <Panel title="Pull request">
-          <p className="px-1 text-muted-foreground text-sm">
+          <p className="px-1 text-muted-foreground text-ui">
             <HoverCard>
               <HoverCardTrigger asChild>
                 <a
@@ -252,7 +252,7 @@ export function OverlayKinds() {
                   {PULL_REQUEST.author}
                 </a>
               </HoverCardTrigger>
-              <HoverCardContent className="w-72 text-sm">
+              <HoverCardContent className="w-72 text-ui">
                 <p className="font-medium">{PULL_REQUEST.author}</p>
                 <p className="text-muted-foreground">
                   Opened #{PULL_REQUEST.number} in {PULL_REQUEST.repo.owner}/

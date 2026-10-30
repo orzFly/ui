@@ -110,7 +110,7 @@ function PopoverContent({
           // reason DropdownMenuContent gives. The width is capped the same way:
           // shift pins a surface wider than the viewport to the left padding,
           // and the rest ran off the right (ThemeMenu's w-80 at 320px, UI-54).
-          "z-50 max-h-[min(calc(100dvh-1rem),var(--radix-popover-content-available-height,100dvh))] max-w-[min(calc(100dvw-1rem),var(--radix-popover-content-available-width,100dvw))] w-72 origin-(--radix-popover-content-transform-origin) overflow-y-auto rounded-overlay border bg-popover p-1 text-popover-foreground shadow-overlay ring-1 ring-foreground/5 duration-(--duration-overlay) outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
+          "z-50 max-h-[min(calc(100dvh-1rem),var(--radix-popover-content-available-height,100dvh))] max-w-[min(calc(100dvw-1rem),var(--radix-popover-content-available-width,100dvw))] w-72 origin-(--radix-popover-content-transform-origin) overflow-y-auto rounded-overlay border bg-popover p-1 text-popover-foreground shadow-overlay duration-(--duration-overlay) outline-none data-[side=bottom]:slide-in-from-top-overlay data-[side=left]:slide-in-from-right-overlay data-[side=right]:slide-in-from-left-overlay data-[side=top]:slide-in-from-bottom-overlay data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
           className,
         )}
         {...props}

@@ -39,7 +39,7 @@ export function ReachableActions() {
             </TooltipTrigger>
             <TooltipContent>
               {label}
-              <kbd className="rounded-sm border bg-muted px-1 font-mono text-muted-foreground text-xs">
+              <kbd className="rounded-sm border bg-muted px-1 font-mono text-muted-foreground text-ui-sm">
                 {key}
               </kbd>
             </TooltipContent>

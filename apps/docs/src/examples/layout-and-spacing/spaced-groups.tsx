@@ -23,7 +23,7 @@ export function SpacedGroups() {
     <div className="grid gap-6">
       {GROUPS.map((group) => (
         <section key={group.title} className="grid gap-3">
-          <h4 className="font-medium text-muted-foreground text-xs">
+          <h4 className="font-medium text-muted-foreground text-ui-sm">
             {group.title}
           </h4>
           {group.settings.map((setting) => (

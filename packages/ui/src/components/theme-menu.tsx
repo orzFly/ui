@@ -96,7 +96,7 @@ const MODES: { mode: ThemeMode; label: string; Icon: typeof SunIcon }[] = [
 const SEGMENTS =
   "mx-2 grid gap-0.5 rounded-[min(var(--radius-control),8px)] bg-muted p-0.5";
 const SEGMENT =
-  "flex items-center justify-center gap-1.5 rounded-[min(var(--radius-control),6px)] py-1 text-muted-foreground text-xs aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-raised disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-3.5";
+  "flex items-center justify-center gap-1.5 rounded-[min(var(--radius-control),6px)] py-1 text-muted-foreground text-ui-sm aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-raised disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-3.5";
 const FOLLOW_LABEL = "Same as UI";
 const CUSTOMIZE_LABEL = "Custom themes…";
 

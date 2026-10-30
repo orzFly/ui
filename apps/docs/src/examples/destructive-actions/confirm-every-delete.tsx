@@ -10,11 +10,11 @@ export function ConfirmEveryDelete() {
   const [deleted, setDeleted] = useState(false);
   const [confirming, setConfirming] = useState(false);
   if (deleted) {
-    return <p className="text-muted-foreground text-sm">Inbox is empty.</p>;
+    return <p className="text-muted-foreground text-ui">Inbox is empty.</p>;
   }
   return (
     <div className="flex items-center gap-2">
-      <span className="min-w-0 flex-1 truncate text-sm">{thread?.subject}</span>
+      <span className="min-w-0 flex-1 truncate text-ui">{thread?.subject}</span>
       <Button variant="outline" onClick={() => setConfirming(true)}>
         <Trash2Icon />
         Delete

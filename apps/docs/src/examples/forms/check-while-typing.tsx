@@ -22,7 +22,7 @@ export function CheckWhileTyping() {
           aria-describedby={wrong ? "typing-to-error" : undefined}
         />
         {wrong && (
-          <p id="typing-to-error" className="text-destructive text-sm">
+          <p id="typing-to-error" className="text-destructive text-ui">
             No one here is called {to}.
           </p>
         )}

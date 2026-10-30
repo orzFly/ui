@@ -124,12 +124,12 @@ export function OverlayMotion() {
                 Single keys, for when the focus is not in a field.
               </DialogDescription>
             </DialogHeader>
-            <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 text-sm">
+            <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 text-ui">
               {KEYS.map(({ key, label }) => (
                 <div key={key} className="contents">
                   <dt>{label}</dt>
                   <dd className="justify-self-end">
-                    <kbd className="rounded-sm border bg-muted px-1.5 font-mono text-muted-foreground text-xs">
+                    <kbd className="rounded-sm border bg-muted px-1.5 font-mono text-muted-foreground text-ui-sm">
                       {key}
                     </kbd>
                   </dd>

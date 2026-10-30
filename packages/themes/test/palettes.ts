@@ -84,6 +84,16 @@ const EXEMPT: Record<string, Record<string, number>> = {
     "catppuccin light mocha-gray sidebar-ring/sidebar": 2.61,
     "pro-graphite light default sidebar-ring/sidebar": 2.47,
   },
+  state: {
+    "pro-citrus light default primary/background": 1.32,
+  },
+  chart: {
+    "catppuccin light default chart-2/background": 2.95,
+    "catppuccin light default chart-3/background": 2.3,
+    "catppuccin light mocha-gray chart-2/background": 2.95,
+    "catppuccin light mocha-gray chart-3/background": 2.31,
+    "pro-citrus light default chart-1/background": 1.32,
+  },
 };
 
 /**

@@ -10,10 +10,11 @@ import { AlignedTestTimes } from "../../../examples/typography/aligned-test-time
 import { RaggedTestTimes } from "../../../examples/typography/ragged-test-times.tsx";
 import { RunSummary } from "../../../examples/typography/run-summary.tsx";
 import { TruncatedSubjects } from "../../../examples/typography/truncated-subjects.tsx";
+import { font } from "../../../sizes.ts";
 
-**Set the interface in `text-sm`, step down to `text-xs` for what is secondary, and up to
-`text-base` for a title.** Hierarchy comes from size, weight and the muted colour together, never
-from a fourth size.
+**Set the interface in `text-ui`, step down to `text-ui-sm` for what is secondary and to
+`text-ui-xs` only for a count or a badge, and up to `text-title` for a title.** Hierarchy comes
+from size, weight and the muted colour together, never from a fifth size.
 
 <Example of={RunSummary} />
 
@@ -26,23 +27,25 @@ the review stops at a readable width however wide the card grows.
 
 | Role | Classes | Size |
 |---|---|---|
-| Body, labels, menu items, button text | `text-sm` | 14px |
-| A title: a card, dialog, sheet or panel | `font-heading text-title font-medium` | 16px |
-| Secondary: a timestamp, a count, a hint, a column header | `text-xs text-muted-foreground` | 12px |
-| What a user copies or compares: ids, hashes, paths, code | `font-mono` at the size around it, or `text-xs` inline | — |
+| Body, labels, menu items, button text | `text-ui` | {font("text-ui")}px |
+| A title: a dialog, a sheet or a page's panel | `font-heading text-title font-medium` | {font("text-title")}px |
+| Secondary: a timestamp, a hint, table text, a module's name in its header | `text-ui-sm text-muted-foreground` | {font("text-ui-sm")}px |
+| A count or a badge, and nothing else | `text-ui-xs` | {font("text-ui-xs")}px |
+| What a user copies or compares: ids, hashes, paths, code | `font-mono` at the size around it, or `text-ui-sm` inline | — |
 
 A page heading in a document-like view can go larger (`text-2xl`, `text-3xl`), as these docs do;
-inside a tool, a panel's title is `text-title`. The components follow the same scale: `CardTitle`,
-`DialogTitle` and `SheetTitle` are `font-heading text-title font-medium`, a `Badge` is `text-xs`.
+inside a tool, a panel's title is `text-title`. The components follow the same scale: `DialogTitle`
+and `SheetTitle` are `font-heading text-title font-medium`, a `CardTitle` is a module's name in
+its ruled header, `font-heading text-ui-sm font-bold`, and a `Badge` is `text-ui-xs`.
 
 ## Family
 
-`--font-ui` names Geist first and falls back to the system UI font, so an app that installs
-`@fontsource-variable/geist` gets Geist and one that does not gets the platform's own.
-`font-sans` and `--font-heading` are the same family; override `--font-heading` only if your app
-has a display face.
-`styles.css` sets no monospace: an app that wants one defines `--font-mono` in its `@theme`, as
-this site does with JetBrains Mono.
+`styles.css` ships Noto Sans as `--font-ui` and Noto Sans Mono as `--font-mono`; a browser fetches a script's file only when a page draws its characters. Chinese, Japanese and
+Korean come from the page's language: `lang="zh-Hans"` names Noto Sans SC, then PingFang SC and
+Microsoft YaHei, `ja` Noto Sans JP, then Hiragino Sans and Yu Gothic, and so on. None of those is
+shipped, so the system's, or one your app loads, draws them; one family for every language would
+draw Chinese with Japanese glyph shapes. `font-sans` and `--font-heading` are the same family;
+override `--font-heading` only if your app has a display face.
 
 ## Weight
 
@@ -83,12 +86,12 @@ shows it whole, wrapping where it has to: the full text is a click or a tap away
 
 ## On each platform
 
-- **Pointer.** Inputs are `md:text-sm`, the body size.
+- **Pointer.** Inputs are `md:text-ui`, the body size.
 - **Touch.** An `Input`, `Textarea` and `HighlightedInput` are `text-base` below `md`, and on a
   coarse pointer at every width, because a tablet is wider than `md`. iOS Safari zooms the page into
   any field whose text is under 16px when it takes focus
   ([how Safari decides](https://thingsthemselves.com/no-input-zoom-in-safari-on-iphone-the-pixel-perfect-way/)),
-  and does not zoom back out. Keep that in any field you build: `text-base md:text-sm touch:text-base`.
+  and does not zoom back out. Keep that in any field you build: `text-base md:text-ui touch:text-base`.
 - **Both.** Sizes are in `rem`, so a reader who raises the browser's text size gets larger text
   everywhere. Text must survive 200% without loss
   ([WCAG 1.4.4](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)); do not set a fixed

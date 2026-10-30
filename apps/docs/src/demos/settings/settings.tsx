@@ -133,7 +133,7 @@ export function Settings() {
                 aria-current={id === view.section ? "page" : undefined}
                 onClick={() => go({ section: id, open: true })}
                 className={cn(
-                  "flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm transition-colors hover:bg-accent md:min-h-8 md:px-2.5 touch:md:min-h-11",
+                  "flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-ui transition-colors hover:bg-accent md:min-h-8 md:px-2.5 touch:md:min-h-11",
                   id === view.section && "md:bg-accent md:font-medium",
                 )}
               >
@@ -166,7 +166,7 @@ export function Settings() {
         >
           {current.title}
         </h2>
-        <p className="mt-1 text-muted-foreground text-sm">
+        <p className="mt-1 text-muted-foreground text-ui">
           {current.description}
         </p>
         <div className="mt-2 max-w-2xl">

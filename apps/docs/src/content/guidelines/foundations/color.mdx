@@ -60,7 +60,8 @@ the contrast of the pair in the theme you are looking at.
 | The app's side navigation, where it meets the window's edge | `bg-sidebar` | `text-sidebar-foreground` |
 | The one main action in view | `bg-primary` | `text-primary-foreground` |
 | A second action beside it | `bg-secondary` | `text-secondary-foreground` |
-| A hovered or selected row | `bg-accent` | `text-accent-foreground` |
+| A hovered or selected row, with a `state-cue` bar on its leading edge | `bg-accent` | `text-accent-foreground` |
+| A module marker's square, behind its icon | `bg-marker` | `text-primary` |
 
 <Example of={MailSurfaces} />
 
@@ -116,8 +117,8 @@ where the grouping reads without one.
 - `diff-addition` and `diff-deletion` are the added and removed lines of a diff, the colours a
   reader already knows from code review. A diff uses them and nothing else does; a passed run is
   `success`.
-- `chart-1` to `chart-5` are series in a chart, in order. They tell series apart; they carry no
-  meaning of their own.
+- `chart-1` to `chart-5` are series in a chart, in order, each held to 3:1 against the page. They
+  tell series apart; they carry no meaning of their own.
 - There is no info token. Neutral news needs no colour: write it in `foreground` or
   `muted-foreground`, with an icon if it has to stand out.
 

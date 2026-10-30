@@ -44,9 +44,12 @@ follows.
 - **Text: 4.5:1** against what it sits on
   ([SC 1.4.3](https://www.w3.org/TR/WCAG22/#contrast-minimum)). Large text, 24px or 18.66px bold
   and up, needs 3:1.
-- **Edges and states: 3:1** — the edge that shows where a field is, the focus ring, the thumb of a
-  switch, an icon that carries meaning on its own
-  ([SC 1.4.11](https://www.w3.org/TR/WCAG22/#non-text-contrast)).
+- **Edges and states: 3:1** — the edge that shows where a field is, the focus ring, the bar that
+  marks a highlighted or selected row and the edge across the current tab, a chart's series, the
+  thumb of a switch, an icon that carries meaning on its own
+  ([SC 1.4.11](https://www.w3.org/TR/WCAG22/#non-text-contrast)). A fill alone is never the state:
+  a row's highlight measures barely over 1:1 against the list around it. The icon in a module
+  marker is held to 4.5:1 on its square, as text is.
 - **Disabled controls are exempt.** They are drawn at half opacity on purpose; do not use the same
   look for anything a reader is meant to read.
 - **Colour reads from the tokens, never a hard-coded value.** A token is held to these numbers in

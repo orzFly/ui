@@ -108,7 +108,7 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  background: var(--card);
+  background: var(--muted);
   color: var(--hex-label);
 }
 
@@ -137,6 +137,11 @@
   min-width: 4ch;
   padding-right: 0.75rem;
   color: var(--hex-label);
+}
+
+.orz-hex-header .orz-hex-addr {
+  display: flex;
+  align-items: center;
 }
 
 .orz-hex-pane-gap {

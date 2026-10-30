@@ -46,7 +46,7 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-[6rem_1fr] items-center gap-2 text-sm">
+    <div className="grid grid-cols-[6rem_1fr] items-center gap-2 text-ui">
       {id ? (
         <label htmlFor={id} className="text-muted-foreground">
           {label}
@@ -72,8 +72,8 @@ function TaskLinks({
   if (tasks.length === 0) return null;
   return (
     <section className="grid gap-2">
-      <h3 className="font-medium text-muted-foreground text-xs">{title}</h3>
-      <ul className="grid gap-1.5 text-sm">
+      <h3 className="font-medium text-muted-foreground text-ui-sm">{title}</h3>
+      <ul className="grid gap-1.5 text-ui">
         {tasks.map((task) => (
           <li key={task.id}>
             <LinkChip
@@ -176,8 +176,8 @@ export function TaskDetails({
           <Stamp at={task.updated} />
         </Field>
       </div>
-      <section className="grid gap-2 text-sm">
-        <h3 className="font-medium text-muted-foreground text-xs">
+      <section className="grid gap-2 text-ui">
+        <h3 className="font-medium text-muted-foreground text-ui-sm">
           Description
         </h3>
         {task.body === "" ? (

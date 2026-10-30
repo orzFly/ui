@@ -28,14 +28,14 @@ export function ButtonVariants() {
     <TooltipProvider>
       <div className="grid divide-y">
         <div className="flex flex-wrap items-center justify-end gap-2 pb-4">
-          <span className="mr-auto font-mono text-muted-foreground text-xs">
+          <span className="mr-auto font-mono text-muted-foreground text-ui-sm">
             default, outline
           </span>
           <Button variant="outline">Discard changes</Button>
           <Button>Save profile</Button>
         </div>
         <div className="flex items-center gap-0.5 py-4">
-          <span className="mr-auto font-mono text-muted-foreground text-xs">
+          <span className="mr-auto font-mono text-muted-foreground text-ui-sm">
             ghost
           </span>
           {TOOLBAR.map(({ label, icon: Icon }) => (
@@ -50,11 +50,11 @@ export function ButtonVariants() {
           ))}
         </div>
         <div className="flex items-center gap-3 py-4">
-          <span className="font-mono text-muted-foreground text-xs">
+          <span className="font-mono text-muted-foreground text-ui-sm">
             destructive
           </span>
           <KeyRoundIcon className="ml-auto size-4 shrink-0 text-muted-foreground" />
-          <span className="truncate font-medium font-mono text-sm">
+          <span className="truncate font-medium font-mono text-ui">
             {token?.name}
           </span>
           <Button
@@ -65,8 +65,8 @@ export function ButtonVariants() {
             Revoke…
           </Button>
         </div>
-        <div className="flex items-center gap-2 pt-4 text-sm">
-          <span className="mr-auto font-mono text-muted-foreground text-xs">
+        <div className="flex items-center gap-2 pt-4 text-ui">
+          <span className="mr-auto font-mono text-muted-foreground text-ui-sm">
             link
           </span>
           <CircleXIcon className="size-4 text-destructive" />

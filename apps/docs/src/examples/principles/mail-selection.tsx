@@ -32,7 +32,7 @@ export function MailSelection() {
   return (
     <TooltipProvider>
       <div className="overflow-hidden rounded-lg border">
-        <div className="flex items-center gap-0.5 border-b px-1.5 py-1 text-sm">
+        <div className="flex items-center gap-0.5 border-b px-1.5 py-1 text-ui">
           <span className="px-2 tabular-nums">{selected.size} selected</span>
           {ACTIONS.map(({ label, Icon }) => (
             <Tooltip key={label}>

@@ -21,7 +21,7 @@ function JobList({
     <nav aria-labelledby="checks-run" className="md:w-52 md:shrink-0">
       <p
         id="checks-run"
-        className="mb-1 flex items-center gap-2 px-2.5 font-medium text-sm"
+        className="mb-1 flex items-center gap-2 px-2.5 font-medium text-ui"
       >
         <StatusIcon status={CI_RUN.status} />
         {CI_RUN.workflow} #{CI_RUN.id}
@@ -34,13 +34,13 @@ function JobList({
               aria-current={job.id === selected ? "true" : undefined}
               onClick={() => onSelect(job.id)}
               className={cn(
-                "flex min-h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-sm transition-colors hover:bg-accent touch:min-h-11",
+                "flex min-h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-ui transition-colors hover:bg-accent touch:min-h-11",
                 job.id === selected && "bg-accent font-medium",
               )}
             >
               <StatusIcon status={job.status} />
               <span className="flex-1">{job.name}</span>
-              <span className="text-muted-foreground text-xs tabular-nums">
+              <span className="text-muted-foreground text-ui-sm tabular-nums">
                 {job.duration}s
               </span>
             </button>
@@ -90,7 +90,7 @@ export function Checks({
               <h3 id="checks-job" className="font-semibold">
                 {job.name}
               </h3>
-              <span className="text-muted-foreground text-sm">
+              <span className="text-muted-foreground text-ui">
                 {job.status} in {job.duration}s
               </span>
               {/* Only the test step was recorded: it is the one that fails. */}

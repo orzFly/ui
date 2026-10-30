@@ -11,7 +11,7 @@ import { Button } from "./button.tsx";
  * be a control, not a promise.
  *
  * `size` scales the whole row — message and button together — because `xs`
- * exists for `text-xs` surfaces sitting in 16px contexts, where an inherited
+ * exists for `text-ui-sm` surfaces sitting in 16px contexts, where an inherited
  * size would strand the message at body scale next to a proportioned button;
  * `sm` stays inheriting for body-scale surfaces. `className` merges last for
  * margins and one-off adjustments.
@@ -41,7 +41,7 @@ function FailureRow({
       className={cn(
         textClassName,
         "flex flex-wrap items-baseline gap-x-2 gap-y-1",
-        size === "xs" ? "text-xs" : null,
+        size === "xs" ? "text-ui-sm" : null,
         className,
       )}
     >

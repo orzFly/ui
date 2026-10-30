@@ -1,4 +1,5 @@
 import { Button } from "@orz/ui/components/button";
+import { ModuleMarker } from "@orz/ui/components/card";
 import {
   Popover,
   PopoverContent,
@@ -56,7 +57,7 @@ function countLines(file: FileDiffMetadata): Stat {
 
 function Counts({ plus, minus }: Stat) {
   return (
-    <span className="shrink-0 space-x-1 font-mono text-xs tabular-nums">
+    <span className="shrink-0 space-x-1 font-mono text-ui-sm tabular-nums">
       {plus > 0 && <span className="diff-addition-text">+{plus}</span>}
       {minus > 0 && <span className="diff-deletion-text">−{minus}</span>}
     </span>
@@ -69,7 +70,7 @@ function fileLabel(file: FileDiffMetadata): string {
     : file.name;
 }
 
-const HEADER_ROW = "flex min-w-0 items-center gap-2 px-3 text-sm";
+const HEADER_ROW = "flex min-w-0 items-center gap-2 px-3 text-ui";
 
 function CommitHeader({ commit }: { commit: PatchCommit }) {
   const date =
@@ -85,7 +86,7 @@ function CommitHeader({ commit }: { commit: PatchCommit }) {
       <span className="min-w-0 truncate font-medium" title={commit.subject}>
         {commit.subject === "" ? "Message" : commit.subject}
       </span>
-      <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+      <span className="ml-auto shrink-0 text-ui-sm text-muted-foreground">
         {commit.author}
         {commit.author && date ? " · " : null}
         {date && <time>{date}</time>}
@@ -144,7 +145,7 @@ function FileList({
   onJump?: (index: number) => void;
 }) {
   return (
-    <ul className="divide-y text-xs">
+    <ul className="divide-y text-ui-sm">
       {files.map((file, index) => {
         // A long path gives up its directories, never the file's own name.
         const slash = file.name.lastIndexOf("/");
@@ -376,7 +377,7 @@ export function PatchView({
     return (
       <>
         {parsed.kind === "invalid" && invalidNote && (
-          <p className="mb-2 text-xs text-muted-foreground">
+          <p className="mb-2 text-ui-sm text-muted-foreground">
             Not a valid patch — showing the text.
           </p>
         )}
@@ -452,10 +453,10 @@ export function PatchView({
     );
   }
   return (
-    <div className="overflow-hidden rounded-frame border">
-      <div className="flex items-center gap-2 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-xs text-muted-foreground">
-        <FileDiffIcon className="size-3.5" />
-        <span>patch</span>
+    <div className="overflow-hidden rounded-frame ring-1 ring-border">
+      <div className="flex items-center gap-2 border-b bg-muted py-1 pr-1.5 pl-2 text-ui-sm text-muted-foreground">
+        <ModuleMarker icon={<FileDiffIcon />} />
+        <span className="font-bold text-foreground">patch</span>
         <span className="ml-auto" />
         {controls}
       </div>

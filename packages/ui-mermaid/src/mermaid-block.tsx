@@ -135,7 +135,7 @@ export function MermaidBlock({
       )}
       {result?.ok === false && (
         <p
-          className="mt-1 truncate text-destructive text-xs"
+          className="mt-1 truncate text-destructive text-ui-sm"
           title={result.error}
         >
           {errorSummary(result.error)}

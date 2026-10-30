@@ -19,13 +19,13 @@ export function IconSizes() {
             design
           </Badge>
         </div>
-        <p className="flex items-center gap-2 text-sm">
+        <p className="flex items-center gap-2 text-ui">
           <InboxIcon className="size-4 text-muted-foreground" />
           Inbox
         </p>
         <div className="grid gap-0.5">
-          <p className="truncate text-sm">{thread?.subject}</p>
-          <p className="flex items-center gap-1 text-muted-foreground text-xs">
+          <p className="truncate text-ui">{thread?.subject}</p>
+          <p className="flex items-center gap-1 text-muted-foreground text-ui-sm">
             <StarIcon aria-label="Starred" className="size-3 fill-current" />
             <time dateTime="2026-10-27T10:50:00Z">Oct 27</time>
           </p>
@@ -33,8 +33,8 @@ export function IconSizes() {
       </div>
       <div className="grid content-center justify-items-center gap-2 px-4 py-6 text-center">
         <StarIcon className="size-8 text-muted-foreground" />
-        <p className="font-medium text-sm">Nothing in Starred</p>
-        <p className="text-muted-foreground text-xs">
+        <p className="font-medium text-ui">Nothing in Starred</p>
+        <p className="text-muted-foreground text-ui-sm">
           Star a conversation to find it here later.
         </p>
       </div>

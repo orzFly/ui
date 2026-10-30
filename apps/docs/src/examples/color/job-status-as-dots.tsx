@@ -2,7 +2,7 @@ import { CI_RUN } from "@orz/fixtures/ci-run.ts";
 
 export function JobStatusAsDots() {
   return (
-    <ul className="grid gap-2 text-sm">
+    <ul className="grid gap-2 text-ui">
       {CI_RUN.jobs.map((job) => (
         <li key={job.id} className="flex h-5.5 items-center justify-between">
           {job.name}

@@ -3,7 +3,7 @@ import type { TokenName, Tokens } from "./types.ts";
 
 /** A set of token pairs held to one WCAG floor. */
 export interface ContrastCheck {
-  id: "primary" | "text" | "field" | "focus";
+  id: "primary" | "text" | "field" | "focus" | "state" | "chart" | "marker";
   /** The lowest ratio the pairs may have. */
   floor: number;
   /** Each pair as [drawn, what it is drawn on]. */
@@ -20,6 +20,11 @@ const NON_TEXT = 3;
  * the page, on muted (an inactive tab) and in popovers (a destructive menu
  * item); a field's edge on the surfaces a field sits on; a focus ring, drawn
  * 2px off the control, on what lies behind it, never the control's own fill.
+ * The state cues are the default style's: a highlighted or selected row is
+ * marked by an ink bar on its accent fill, in a menu, on the page or in a
+ * sidebar, and the current tab by a primary edge on the page. A chart's
+ * series sits on the page; the module marker's icon, drawn in primary, on
+ * its square.
  */
 export const CONTRAST_CHECKS: readonly ContrastCheck[] = [
   {
@@ -64,6 +69,27 @@ export const CONTRAST_CHECKS: readonly ContrastCheck[] = [
       ["ring", "muted"],
       ["sidebar-ring", "sidebar"],
     ],
+  },
+  {
+    id: "state",
+    floor: NON_TEXT,
+    pairs: [
+      ["foreground", "accent"],
+      ["sidebar-accent-foreground", "sidebar-accent"],
+      ["primary", "background"],
+    ],
+  },
+  {
+    id: "chart",
+    floor: NON_TEXT,
+    pairs: (
+      ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5"] as const
+    ).map((chart) => [chart, "background"] as const),
+  },
+  {
+    id: "marker",
+    floor: TEXT,
+    pairs: [["primary", "marker"]],
   },
 ];
 

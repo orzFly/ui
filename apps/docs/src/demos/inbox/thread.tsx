@@ -63,21 +63,21 @@ function Message({ message }: { message: InboxMessage }) {
       <Avatar size="sm" className="mt-0.5">
         <AvatarFallback>{name.slice(0, 1).toUpperCase()}</AvatarFallback>
       </Avatar>
-      <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
+      <p className="flex flex-wrap items-baseline gap-x-2 text-ui">
         <span className="font-medium">{name}</span>
         {message.to && message.to.length > 0 && (
-          <span className="text-muted-foreground text-xs">
+          <span className="text-muted-foreground text-ui-sm">
             to {message.to.map(nameOf).join(", ")}
           </span>
         )}
         <time
           dateTime={message.at}
-          className="text-muted-foreground text-xs tabular-nums"
+          className="text-muted-foreground text-ui-sm tabular-nums"
         >
           {STAMP.format(new Date(message.at))} UTC
         </time>
       </p>
-      <Markdown className="col-start-2 min-w-0 text-sm">
+      <Markdown className="col-start-2 min-w-0 text-ui">
         {message.body}
       </Markdown>
     </li>

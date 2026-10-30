@@ -23,7 +23,7 @@ export function BoxedGroups() {
     <div className="grid gap-2">
       {GROUPS.map((group) => (
         <section key={group.title} className="divide-y rounded-lg border">
-          <h4 className="px-3 py-1.5 font-medium text-muted-foreground text-xs">
+          <h4 className="px-3 py-1.5 font-medium text-muted-foreground text-ui-sm">
             {group.title}
           </h4>
           {group.settings.map((setting) => (

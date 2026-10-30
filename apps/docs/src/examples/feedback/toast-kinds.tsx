@@ -47,7 +47,7 @@ export function ToastKinds() {
         </Button>
       </div>
       {details && (
-        <ul className="divide-y rounded-lg border text-sm">
+        <ul className="divide-y rounded-lg border text-ui">
           {CI_RUN.jobs.map((job) => (
             <li key={job.id} className="flex justify-between gap-2 px-3 py-2">
               <span>

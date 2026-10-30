@@ -363,7 +363,7 @@ export function ImageCanvas({
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs text-muted-foreground">
+          <DropdownMenuLabel className="text-ui-sm text-muted-foreground">
             Background
           </DropdownMenuLabel>
           <DropdownMenuRadioGroup
@@ -381,7 +381,7 @@ export function ImageCanvas({
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs text-muted-foreground">
+          <DropdownMenuLabel className="text-ui-sm text-muted-foreground">
             Scaling
           </DropdownMenuLabel>
           <DropdownMenuRadioGroup

@@ -18,7 +18,7 @@ const twMerge = extendTailwindMerge({
         "chip",
       ],
       radius: ["control", "item", "frame", "surface", "overlay", "chip"],
-      text: ["ui-sm", "ui-xs", "ui-2xs", "ui-3xs", "data", "title"],
+      text: ["ui", "ui-sm", "ui-xs", "ui-2xs", "ui-3xs", "data", "title"],
       font: ["ui"],
       shadow: ["raised", "menu", "overlay"],
     },

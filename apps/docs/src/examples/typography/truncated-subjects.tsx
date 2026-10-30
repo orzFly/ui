@@ -19,12 +19,12 @@ export function TruncatedSubjects() {
               aria-current={id === open ? "true" : undefined}
               onClick={() => setOpen(id)}
               className={cn(
-                "flex w-full items-baseline gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent",
+                "flex w-full items-baseline gap-2 px-3 py-2 text-left text-ui transition-colors hover:bg-accent",
                 id === open && "bg-accent",
               )}
             >
               <span className="min-w-0 flex-1 truncate">{subject}</span>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-ui-sm">
                 {messages.length}
               </span>
             </button>
@@ -36,7 +36,7 @@ export function TruncatedSubjects() {
           <h3 className="break-words font-heading font-medium text-base">
             {thread.subject}
           </h3>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-muted-foreground text-ui-sm">
             {[
               ...new Set(
                 thread.messages.map(({ from }) => INBOX_PEOPLE[from] ?? from),

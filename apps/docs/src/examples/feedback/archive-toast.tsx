@@ -7,7 +7,7 @@ export function ArchiveToast() {
   const [selected, setSelected] = useState(3);
   return (
     <div className="flex items-center gap-2">
-      <span className="flex-1 text-sm tabular-nums">{selected} selected</span>
+      <span className="flex-1 text-ui tabular-nums">{selected} selected</span>
       <Button
         variant="outline"
         disabled={selected === 0}

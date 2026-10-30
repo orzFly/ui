@@ -47,7 +47,7 @@ export function MailList() {
         {threads.map((thread) => (
           <li key={thread.id} className="flex items-center gap-3 px-3 py-2">
             <Checkbox aria-label={`Select “${thread.subject}”`} />
-            <div className="grid min-w-0 flex-1 text-sm">
+            <div className="grid min-w-0 flex-1 text-ui">
               <span className="truncate font-medium">{thread.from}</span>
               <span className="truncate text-muted-foreground">
                 {thread.subject}
@@ -87,7 +87,7 @@ export function MailList() {
           </li>
         ))}
         {threads.length === 0 && (
-          <li className="py-6 text-center text-muted-foreground text-sm">
+          <li className="py-6 text-center text-muted-foreground text-ui">
             Nothing in Inbox
           </li>
         )}

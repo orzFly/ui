@@ -41,11 +41,11 @@ describe("parseColor and formatColor on the shipped tokens", () => {
       }),
     ),
   );
-  const unique = [...new Set(values)];
+  // No built-in token is translucent any more, but a custom theme's may be.
+  const unique = [...new Set([...values, "oklch(1 0 0 / 10%)"])];
 
   it("finds the tokens", () => {
     expect(unique.length).toBeGreaterThan(50);
-    expect(unique).toContain("oklch(1 0 0 / 10%)");
     expect(unique.some((value) => value.startsWith("#"))).toBe(true);
   });
 

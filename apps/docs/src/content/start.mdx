@@ -30,8 +30,8 @@ app imports them too: the themes below come from `@orz/themes`, and a query box'
 `styles.css` brings the baseline tokens, the base layer, `tw-animate-css` and shadcn's Tailwind
 variants, and registers the package's own files with Tailwind, so you add no `@source` line for it.
 
-It loads no font. The sans stack names Geist first and falls back to the system UI font; install
-`@fontsource-variable/geist` and import it to get Geist.
+It loads Noto Sans and Noto Sans Mono, for Latin, Greek and Cyrillic text; Chinese, Japanese and
+Korean come from the system, or from a font your app loads.
 
 A surface that shares its document with someone else's UI imports `@orz/ui/theme.css` instead: the
 tokens and variants, with nothing that styles the page around it.

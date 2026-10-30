@@ -219,14 +219,14 @@ function insidePolygon(point: Point, polygon: readonly Point[]): boolean {
 const GRACE_MS = 300;
 
 const ROW_CLASS =
-  "group/option relative flex w-full cursor-default items-center rounded-item text-sm min-h-row touch:min-h-11 select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+  "group/option relative flex w-full cursor-default items-center rounded-item text-ui min-h-row touch:min-h-11 select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
 
 const CELL_CLASS = "gap-1.5 py-1 pl-1.5";
 
 const OPTION_CLASS = cn(
   ROW_CLASS,
   CELL_CLASS,
-  "data-highlighted:bg-accent data-highlighted:text-accent-foreground",
+  "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-highlighted:state-cue",
 );
 
 /**
@@ -236,7 +236,7 @@ const OPTION_CLASS = cn(
 const ACTION_CLASS = cn(
   "relative flex min-w-0 flex-1 items-center self-stretch rounded-item pr-6.5",
   CELL_CLASS,
-  "group-data-highlighted/option:bg-accent group-data-highlighted/option:text-accent-foreground",
+  "group-data-highlighted/option:bg-accent group-data-highlighted/option:text-accent-foreground group-data-highlighted/option:state-cue",
 );
 
 function step<R extends FilterMenuRow>(
@@ -269,7 +269,7 @@ function FilterBox({
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}
-        className="h-control-lg min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-sm touch:h-10 touch:text-base"
+        className="h-control-lg min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-ui touch:h-10 touch:text-base"
         {...props}
       />
     </div>
@@ -923,7 +923,7 @@ export function FilterMenu<R extends FilterMenuRow>({
           {rows.length === 0 && (
             <div
               role="presentation"
-              className="px-2 py-4 text-center text-muted-foreground text-sm"
+              className="px-2 py-4 text-center text-muted-foreground text-ui"
             >
               {empty(query)}
             </div>
@@ -1033,7 +1033,7 @@ export function FilterMenu<R extends FilterMenuRow>({
               <div key={section.id} role="group" aria-labelledby={labelId}>
                 <div
                   id={labelId}
-                  className="px-1.5 py-1 text-muted-foreground text-xs"
+                  className="px-1.5 py-1 text-muted-foreground text-ui-sm"
                 >
                   {section.label}
                 </div>
@@ -1145,7 +1145,7 @@ export function FilterMenu<R extends FilterMenuRow>({
               {submenuOpen && subRows.length === 0 && (
                 <div
                   role="presentation"
-                  className="px-2 py-4 text-center text-muted-foreground text-sm"
+                  className="px-2 py-4 text-center text-muted-foreground text-ui"
                 >
                   {empty(subText)}
                 </div>

@@ -93,7 +93,7 @@ function NewTaskForm({ onCreate }: { onCreate: (task: NewTask) => void }) {
           aria-describedby={error ? "new-task-title-error" : undefined}
         />
         {error && (
-          <p id="new-task-title-error" className="text-destructive text-sm">
+          <p id="new-task-title-error" className="text-destructive text-ui">
             Give the task a title.
           </p>
         )}

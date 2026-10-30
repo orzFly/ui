@@ -251,19 +251,21 @@ function TokenListView<N extends string>({
   const state = (entry: TokenEntry<N>) => {
     if (!showState) return null;
     return overridden(entry.name) ? (
-      <span className="flex shrink-0 items-center gap-0.5 text-xs">
+      <span className="flex shrink-0 items-center gap-0.5 text-ui-sm">
         overridden
         {resetButton(entry)}
       </span>
     ) : (
-      <span className="shrink-0 text-xs text-muted-foreground">inherited</span>
+      <span className="shrink-0 text-ui-sm text-muted-foreground">
+        inherited
+      </span>
     );
   };
 
   const entryRow = (entry: TokenEntry<N>) => (
     <div key={entry.name} className="flex min-h-control items-center gap-2">
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm">
+        <div className="truncate text-ui">
           <MatchedText text={entry.label} query={q} />
         </div>
         <div className="truncate font-mono text-ui-2xs text-muted-foreground">
@@ -352,14 +354,14 @@ function TokenListView<N extends string>({
               checked={onlyOverridden}
               onCheckedChange={setOnlyOverridden}
             />
-            <Label htmlFor={`${id}-only`} className="text-xs font-normal">
+            <Label htmlFor={`${id}-only`} className="text-ui-sm font-normal">
               Only overridden
             </Label>
           </div>
         )}
       </div>
       {shown.length === 0 ? (
-        <p className="py-4 text-center text-sm text-muted-foreground">
+        <p className="py-4 text-center text-ui text-muted-foreground">
           {only && q === ""
             ? "No colours are overridden."
             : "No colours match."}
@@ -372,7 +374,7 @@ function TokenListView<N extends string>({
               aria-expanded={open}
               aria-controls={`${id}-${group.id}`}
               onClick={() => toggle(group.id, !open)}
-              className="flex w-full items-center gap-1.5 rounded-[min(var(--radius-item),4px)] py-1 text-left text-sm font-medium hover:bg-accent/50"
+              className="flex w-full items-center gap-1.5 rounded-[min(var(--radius-item),4px)] py-1 text-left text-ui font-medium hover:bg-accent/50"
             >
               <ChevronRightIcon
                 aria-hidden
@@ -383,7 +385,7 @@ function TokenListView<N extends string>({
               />
               {group.label}
               {count > 0 && (
-                <span className="ml-auto text-xs font-normal text-muted-foreground">
+                <span className="ml-auto text-ui-sm font-normal text-muted-foreground">
                   {count} overridden
                 </span>
               )}

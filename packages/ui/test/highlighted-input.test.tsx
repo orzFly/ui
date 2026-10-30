@@ -60,7 +60,7 @@ describe("HighlightedInput", () => {
     // Anything that differs here moves one layer relative to the other, and
     // the caret then stands beside its character instead of on it.
     const { input, mirror } = mount();
-    for (const cls of ["px-2.5", "py-1", "text-base", "md:text-sm"]) {
+    for (const cls of ["px-2.5", "py-1", "text-base", "md:text-ui"]) {
       expect(input.className).toContain(cls);
       expect(mirror.className).toContain(cls);
     }

@@ -51,7 +51,7 @@ export function DemoCode({
 
   if (files === undefined) {
     return (
-      <p className="p-4 text-muted-foreground text-sm" role="status">
+      <p className="p-4 text-muted-foreground text-ui" role="status">
         Loading the source…
       </p>
     );
@@ -63,14 +63,14 @@ export function DemoCode({
     <div className="flex h-full min-h-0">
       <nav
         aria-label="Files"
-        className="hidden w-60 shrink-0 overflow-y-auto border-r bg-sidebar p-2 text-sm md:block"
+        className="hidden w-60 shrink-0 overflow-y-auto border-r bg-sidebar p-2 text-ui md:block"
       >
         {GROUPS.map(({ group, title }) => {
           const members = files.filter((each) => each.group === group);
           if (members.length === 0) return null;
           return (
             <div key={group}>
-              <h3 className="mt-2 mb-1 px-2 font-medium text-muted-foreground text-xs tracking-wide">
+              <h3 className="mt-2 mb-1 px-2 font-medium text-muted-foreground text-ui-sm tracking-wide">
                 {title(dir)}
               </h3>
               <ul>
@@ -83,7 +83,7 @@ export function DemoCode({
                       className="flex min-h-8 w-full items-center justify-between gap-2 rounded-md px-2 text-left text-muted-foreground hover:bg-accent hover:text-foreground aria-[current]:bg-accent aria-[current]:font-medium aria-[current]:text-foreground touch:min-h-11"
                     >
                       <span className="truncate">{shortName(each)}</span>
-                      <span className="text-muted-foreground text-xs tabular-nums">
+                      <span className="text-muted-foreground text-ui-sm tabular-nums">
                         {lineCount(each.contents)}
                       </span>
                     </button>
@@ -120,10 +120,10 @@ export function DemoCode({
               })}
             </SelectContent>
           </Select>
-          <span className="hidden truncate font-mono text-sm md:inline">
+          <span className="hidden truncate font-mono text-ui md:inline">
             {path}
           </span>
-          <span className="hidden shrink-0 text-muted-foreground text-sm md:inline">
+          <span className="hidden shrink-0 text-muted-foreground text-ui md:inline">
             {lineCount(file.contents)} lines
           </span>
           <CopyButton

@@ -17,10 +17,10 @@ export function MergeBox() {
           <h3 id="merge-box-status" className="font-medium">
             Some checks were not successful
           </h3>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-ui">
             {failed} failing and {CI_RUN.jobs.length - failed} successful checks
             on{" "}
-            <code className="rounded bg-muted px-1 font-mono text-xs">
+            <code className="rounded bg-muted px-1 font-mono text-ui-sm">
               {CI_RUN.commit}
             </code>
           </p>
@@ -29,10 +29,10 @@ export function MergeBox() {
       <ul className="divide-y">
         {CI_RUN.jobs.map((job) => (
           <li key={job.id} className="flex items-center gap-3 px-4 py-2.5">
-            <span className="min-w-0 flex-1 truncate text-sm">
+            <span className="min-w-0 flex-1 truncate text-ui">
               {CI_RUN.workflow} / {job.name}
             </span>
-            <span className="text-muted-foreground text-xs tabular-nums">
+            <span className="text-muted-foreground text-ui-sm tabular-nums">
               {job.duration}s
             </span>
             {job.status === "failed" ? (
@@ -52,7 +52,7 @@ export function MergeBox() {
           <GitMergeIcon />
           Merge pull request
         </Button>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-ui">
           Merging is blocked until every check passes.
         </p>
       </footer>

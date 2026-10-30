@@ -54,7 +54,7 @@ export function ThreadList() {
     <TooltipProvider>
       <div className="overflow-hidden rounded-xl border bg-card text-card-foreground">
         <div className="flex items-center gap-1 border-b px-3 py-1.5">
-          <span className="flex-1 font-medium text-sm">Inbox</span>
+          <span className="flex-1 font-medium text-ui">Inbox</span>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -88,7 +88,7 @@ export function ThreadList() {
           {threads.map((thread) => (
             <li
               key={thread.id}
-              className="flex min-h-9 items-center gap-2 px-3 text-sm touch:min-h-11"
+              className="flex min-h-9 items-center gap-2 px-3 text-ui touch:min-h-11"
             >
               <span className="w-20 shrink-0 truncate font-medium">
                 {thread.from}
@@ -141,7 +141,7 @@ export function ThreadList() {
           ))}
         </ul>
         {threads.length === 0 && (
-          <p className="py-6 text-center text-muted-foreground text-sm">
+          <p className="py-6 text-center text-muted-foreground text-ui">
             Nothing in Inbox
           </p>
         )}

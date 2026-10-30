@@ -124,7 +124,7 @@ syntax theme and its JSON round trip.
 - `amoled(palette)` derives the AMOLED variant of a dark palette. The panels (`background`, `card`,
   `popover`, `sidebar`) drop by the background's lightness, so the background becomes pure black
   and the rest stay near it. Highlights, fills and opaque borders (`accent`, `muted`, `secondary`,
-  `border`, …) keep their contrast with the background instead, so a hovered row or a menu
+  `border`, `marker`, …) keep their contrast with the background instead, so a hovered row or a menu
   highlight reads as clearly on black as on the dark palette. Every token keeps its hue and
   chroma. Text, primary, chart, diff and ring tokens, and values carrying
   alpha, stay as they are, and the terminal background becomes `#000000`. A theme opts in with
@@ -141,11 +141,15 @@ syntax theme and its JSON round trip.
   `CustomTerminal`, resolved exactly as a UI side's terminal is, and the result is a
   `TerminalTheme` whose palettes carry `terminal` only. A `CustomTheme` has no `kind`, or
   `kind: "ui"`; `isCustomTerminalTheme(custom)` tells the two apart in an `AnyCustomTheme` list.
+- `markerOf({ primary, muted, background })` is the module marker's square for a palette that
+  names none: `primary` tinted into `muted`, as far as the icon on it keeps 4.5:1. A custom side
+  saved before `marker` existed gets it this way.
 - `xtermTheme(terminal)` maps terminal tokens onto xterm.js's `ITheme` field names:
   `terminal.options.theme = xtermTheme(tokens)`.
 - `contrastRows(tokens)`, from `@orz/themes/contrast`, measures a palette against
   `CONTRAST_CHECKS`: the token pairs this package's tests hold every built-in theme to, each with
-  its WCAG floor (4.5:1 for text, 3:1 for a field's edge and a focus ring). A row carries the pair,
+  its WCAG floor (4.5:1 for text and the module marker's icon, 3:1 for a field's edge, a focus
+  ring, the bar on a highlighted row, the current tab's edge and a chart's series). A row carries the pair,
   its ratio and its floor, so a theme editor or a test of your own palette can list what falls
   short.
 

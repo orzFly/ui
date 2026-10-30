@@ -65,7 +65,7 @@ export function MailSurfaces() {
                   aria-current={title === folder ? "page" : undefined}
                   onClick={() => setFolder(title)}
                   className={cn(
-                    "flex min-h-8 w-full items-center gap-2 rounded-md px-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+                    "flex min-h-8 w-full items-center gap-2 rounded-md px-2 text-ui transition-colors hover:bg-accent hover:text-accent-foreground",
                     title === folder &&
                       "bg-accent font-medium text-accent-foreground",
                   )}
@@ -73,7 +73,7 @@ export function MailSurfaces() {
                   <Icon className="size-4 text-muted-foreground" />
                   <span className="flex-1 text-left">{title}</span>
                   {count && (
-                    <span className="text-muted-foreground text-xs tabular-nums">
+                    <span className="text-muted-foreground text-ui-sm tabular-nums">
                       {count}
                     </span>
                   )}
@@ -84,7 +84,7 @@ export function MailSurfaces() {
         </nav>
         <div className="min-w-0">
           <div className="flex h-11 items-center gap-2 border-b px-3">
-            <span className="font-medium text-sm">{folder}</span>
+            <span className="font-medium text-ui">{folder}</span>
           </div>
           <ul aria-label="Conversations" className="divide-y">
             {ROWS.map(({ thread, last, day }) => (
@@ -101,19 +101,19 @@ export function MailSurfaces() {
                   onClick={() => setOpen(thread.id)}
                   className="grid min-w-0 flex-1 grid-cols-[1fr_auto] gap-x-2 px-3 py-2.5 text-left"
                 >
-                  <span className="truncate font-medium text-sm">
+                  <span className="truncate font-medium text-ui">
                     {INBOX_PEOPLE[last.from] ?? last.from}
                   </span>
                   <time
                     dateTime={last.at}
-                    className="text-muted-foreground text-xs"
+                    className="text-muted-foreground text-ui-sm"
                   >
                     {day}
                   </time>
-                  <span className="col-span-2 truncate text-sm">
+                  <span className="col-span-2 truncate text-ui">
                     {thread.subject}
                   </span>
-                  <span className="col-span-2 truncate text-muted-foreground text-xs">
+                  <span className="col-span-2 truncate text-muted-foreground text-ui-sm">
                     {last.body.split("`").map((part, index) =>
                       index % 2 === 1 ? (
                         <code

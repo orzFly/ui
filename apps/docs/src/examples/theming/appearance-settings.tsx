@@ -37,7 +37,7 @@ export function AppearanceSettings() {
       <div className="flex items-center justify-between gap-4 py-3">
         <div className="grid gap-1">
           <Label htmlFor="appearance-theme">Theme</Label>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-ui">
             A pick repaints the whole page, this text included.
           </p>
         </div>
@@ -64,7 +64,7 @@ export function AppearanceSettings() {
         <div className="flex items-center justify-between gap-4">
           <div className="grid gap-1">
             <Label htmlFor="appearance-terminal-theme">Terminal theme</Label>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-ui">
               For logs and recordings. It can follow the theme or keep its own.
             </p>
           </div>
@@ -88,7 +88,7 @@ export function AppearanceSettings() {
             )}
           />
         </div>
-        <pre className="overflow-x-auto rounded-lg bg-terminal-background p-3 font-mono text-terminal-foreground text-xs leading-5">
+        <pre className="overflow-x-auto rounded-lg bg-terminal-background p-3 font-mono text-terminal-foreground text-ui-sm leading-5">
           {TEST_LOG.map((line) => (
             <div key={line.map(([text]) => text).join("")}>
               {line.map(([text, color]) => (
@@ -103,7 +103,7 @@ export function AppearanceSettings() {
       <div className="flex items-center justify-between gap-4 py-3">
         <div className="grid gap-1">
           <Label htmlFor="appearance-custom-themes">Custom themes</Label>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-ui">
             Start from a theme and change its colours, or import one.
           </p>
         </div>

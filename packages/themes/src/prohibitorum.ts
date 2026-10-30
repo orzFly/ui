@@ -11,6 +11,7 @@
  */
 import { amoled } from "./amoled.ts";
 import { contrastOf, mixOf, oklchOf } from "./color.ts";
+import { markerOf } from "./marker.ts";
 import { textMateTheme } from "./syntax.ts";
 import type {
   ColorScheme,
@@ -87,6 +88,14 @@ function fieldEdge(p: Published): string {
 }
 
 /**
+ * A chart series is a status fill, or, on a page too light for the fill to
+ * clear 3:1, that status's text colour, a darker step of the same hue.
+ */
+function series(p: Published, fill: string, text: string): string {
+  return contrastOf(fill, p.background) >= FIELD_EDGE ? fill : text;
+}
+
+/**
  * The terminal has no Prohibitorum colours either. Each theme draws its six
  * hues for its own page, or takes them from the family its page comes from,
  * normal ones at 4.5:1 and bright ones at 3:1. Black and white pair the page's
@@ -133,7 +142,8 @@ function paletteOf(
   side: ProSide,
 ): Palette {
   // Status text is Prohibitorum's `*-foreground`, which is what clears AA on
-  // the page; the 500-step fills draw the charts and the diff.
+  // the page; the 500-step fills draw the diff, and the charts where they
+  // read on the page.
   const tokens: Tokens = {
     "diff-addition": p.success,
     "diff-deletion": p.destructive,
@@ -157,10 +167,11 @@ function paletteOf(
     border: p.border,
     input: fieldEdge(p),
     ring: p.ring,
+    marker: markerOf(p),
     "chart-1": p.primary,
-    "chart-2": p.success,
-    "chart-3": p.warning,
-    "chart-4": p.destructive,
+    "chart-2": series(p, p.success, p["success-foreground"]),
+    "chart-3": series(p, p.warning, p["warning-foreground"]),
+    "chart-4": series(p, p.destructive, p["destructive-foreground"]),
     "chart-5": p.info,
     sidebar: p.sidebar,
     "sidebar-foreground": p["sidebar-foreground"],

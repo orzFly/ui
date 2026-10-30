@@ -16,4 +16,8 @@ test("cn knows the style tokens' utilities for what they are", () => {
     "text-ui-sm text-muted-foreground",
   );
   expect(cn("text-sm", "text-ui-sm")).toBe("text-ui-sm");
+  expect(cn("text-ui", "text-card-foreground")).toBe(
+    "text-ui text-card-foreground",
+  );
+  expect(cn("text-ui", "text-ui-sm")).toBe("text-ui-sm");
 });

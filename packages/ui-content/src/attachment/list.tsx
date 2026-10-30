@@ -62,7 +62,7 @@ function AttachmentRow({
     <li className="flex items-center hover:bg-muted/40">
       <a
         href={href === "" ? undefined : href}
-        className="flex min-w-0 flex-1 items-center gap-2 py-2 pl-3 text-sm"
+        className="flex min-w-0 flex-1 items-center gap-2 py-2 pl-3 text-ui"
         onClick={(e) => {
           if (viewer !== null && canPreview && isPlainLeftClick(e)) {
             e.preventDefault();
@@ -75,7 +75,7 @@ function AttachmentRow({
           {item.name}
         </span>
         {item.size !== undefined && (
-          <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+          <span className="ml-auto shrink-0 text-ui-sm text-muted-foreground">
             {formatSize(item.size)}
           </span>
         )}
@@ -84,7 +84,7 @@ function AttachmentRow({
             the one thing on the row nothing else replaces. */}
         {item.createdAt !== undefined && (
           <span
-            className="hidden shrink-0 text-xs text-muted-foreground sm:inline"
+            className="hidden shrink-0 text-ui-sm text-muted-foreground sm:inline"
             title={item.createdAt}
           >
             <time dateTime={item.createdAt}>
@@ -135,8 +135,11 @@ export function AttachmentList({
   const hiddenBefore = items.length - shown.length;
 
   return (
-    <section className={cn("rounded-frame border", className)} id={id}>
-      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-sm">
+    <section
+      className={cn("rounded-frame ring-1 ring-border", className)}
+      id={id}
+    >
+      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-ui">
         <PaperclipIcon className="size-3.5 text-muted-foreground" />
         <span className="font-medium">{title}</span>
         <span className="text-muted-foreground">{items.length}</span>
@@ -146,7 +149,7 @@ export function AttachmentList({
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
-          className="flex w-full items-center gap-1 border-b px-3 py-2 text-xs text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+          className="flex w-full items-center gap-1 border-b px-3 py-2 text-ui-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground"
           data-testid="attachment-fold-toggle"
         >
           {folded ? (

@@ -17,10 +17,10 @@ export function RevokeToken() {
           <li key={token.id} className="flex items-center gap-3 py-3">
             <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
             <div className="grid min-w-0 flex-1 gap-0.5">
-              <span className="truncate font-medium font-mono text-sm">
+              <span className="truncate font-medium font-mono text-ui">
                 {token.name}
               </span>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-ui-sm">
                 {token.scopes} · {token.lastUsed}
               </span>
             </div>
@@ -39,7 +39,7 @@ export function RevokeToken() {
         ))}
       </ul>
       {tokens.length === 0 && (
-        <p className="py-3 text-muted-foreground text-sm">
+        <p className="py-3 text-muted-foreground text-ui">
           No access tokens. Scripts and bots that need one get it from the
           command line.
         </p>
