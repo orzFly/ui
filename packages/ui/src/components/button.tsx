@@ -54,10 +54,22 @@ function Button({
   size = "default",
   asChild = false,
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean;
-  }) {
+}: React.ComponentProps<"button"> & {
+  /**
+   * The look: `default` filled in the primary colour, `outline` and
+   * `secondary` quieter, `ghost` bare until hovered, `destructive` in the
+   * destructive colour, `link` as underlined text.
+   */
+  variant?: VariantProps<typeof buttonVariants>["variant"];
+  /**
+   * The height, one of the style's control sizes (`xs`, `sm`, `default`,
+   * `lg`); an `icon` size is the square of the same height, for a button
+   * that holds only an icon.
+   */
+  size?: VariantProps<typeof buttonVariants>["size"];
+  /** Render the single child element (an `<a>`, a router's link) as the button. */
+  asChild?: boolean;
+}) {
   const Comp = asChild ? Slot.Root : "button";
 
   return (

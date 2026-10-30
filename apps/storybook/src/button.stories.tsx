@@ -13,14 +13,23 @@ const VARIANTS = [
 const TEXT_SIZES = ["xs", "sm", "default", "lg"] as const;
 const ICON_SIZES = ["icon-xs", "icon-sm", "icon", "icon-lg"] as const;
 
+// Docgen prints the props' type as written, VariantProps<…>["variant"].
+const union = (values: readonly string[]) => ({
+  type: { summary: values.map((v) => `"${v}"`).join(" | ") },
+});
+
 const meta = {
   title: "ui/Primitives/Button",
   component: Button,
   parameters: { guidelines: "/guidelines/patterns/actions-and-buttons/" },
   args: { children: "Button" },
   argTypes: {
-    variant: { control: "select", options: VARIANTS },
-    size: { control: "select", options: [...TEXT_SIZES, ...ICON_SIZES] },
+    variant: { control: "select", options: VARIANTS, table: union(VARIANTS) },
+    size: {
+      control: "select",
+      options: [...TEXT_SIZES, ...ICON_SIZES],
+      table: union([...TEXT_SIZES, ...ICON_SIZES]),
+    },
   },
 } satisfies Meta<typeof Button>;
 
