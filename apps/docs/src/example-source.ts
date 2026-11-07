@@ -5,6 +5,8 @@ export interface ExampleSource {
   source: string;
   /** Its name, `profile-form.tsx`. */
   file: string;
+  /** Its path under src/examples/, `forms/profile-form.tsx`. */
+  path: string;
 }
 
 // Filled by the orz-docs:example-source plugin, which appends a call to each
@@ -15,9 +17,13 @@ const sources = new WeakMap<ComponentType, ExampleSource>();
 export function registerExampleSource(
   component: ComponentType,
   source: string,
-  file: string,
+  path: string,
 ) {
-  sources.set(component, { source, file });
+  sources.set(component, {
+    source,
+    file: path.slice(path.lastIndexOf("/") + 1),
+    path,
+  });
 }
 
 export function exampleSource(

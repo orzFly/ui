@@ -26,11 +26,19 @@ const escapeHtml = (text: string) =>
   );
 
 /** What a prerendered page carries in `<head>` ahead of the bundle. */
-export function headOf(meta: PageMeta | undefined, base: string): string {
+export function headOf(
+  meta: PageMeta | undefined,
+  base: string,
+  route: string,
+): string {
   return [
     `<title>${escapeHtml(documentTitle(meta))}</title>`,
     meta?.description
       ? `<meta name="description" content="${escapeHtml(meta.description)}" />`
+      : "",
+    // The page's Markdown copy, which the build writes beside it, for an agent that reads this.
+    meta
+      ? `<link rel="alternate" type="text/markdown" href="${base}${route.slice(1)}index.md" />`
       : "",
     `<script>${storybookRedirectScript(base)}</script>`,
     `<script>${themePaintGuardScript({ storageKey: THEME_STORAGE_KEY })}</script>`,

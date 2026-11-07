@@ -1,5 +1,6 @@
-// Keeps what each README restates from the code in step with it: the install block, the themes
-// table, and the rows of the entry-point table.
+// Keeps what each README, and the @orz/ui skill, restates from the code in step with it: the
+// install block, the themes table, the rows of the entry-point table, and the skill's site links
+// and package list.
 //
 //   node scripts/readme.ts          rewrite what is stale
 //   node scripts/readme.ts --check  fail if anything is stale
@@ -7,6 +8,7 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { block, install, type Workspace, workspaces } from "./install.ts";
+import { siteUrl } from "./site.ts";
 import { themeMarkdown, themeTable } from "./themes.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -25,13 +27,39 @@ const GENERATORS: Record<
     source: "a built-in theme",
     text: () => themeMarkdown(themeTable()),
   },
+  site: {
+    source: "package.json's homepage",
+    text: () => {
+      const site = siteUrl();
+      return [
+        `- The site: ${site}`,
+        `- Every page as Markdown, indexed: ${site}llms.txt (all of them in one file: ${site}llms-full.txt)`,
+        `- Start, the setup: ${site}start/index.md`,
+        `- Storybook, every export with its props: ${site}storybook/`,
+      ].join("\n");
+    },
+  },
+  packages: {
+    source: "a package's description",
+    text: () =>
+      [...all.values()]
+        .map(
+          ({ manifest }) =>
+            `- \`${manifest.name}\`: ${manifest.description ?? ""} \`pnpm add ${install(manifest.name, all).packages.join(" ")}\``,
+        )
+        .join("\n"),
+  },
 };
+
+/** The @orz/ui skill, filled from the @orz/ui workspace like its README. */
+const SKILL = join(ROOT, "skills/orz-ui/SKILL.md");
 
 const opening = (kind: string) =>
   `<!-- generated:${kind} by scripts/readme.ts: run \`pnpm fmt\` after changing ${GENERATORS[kind]?.source} -->`;
 const CLOSING = "<!-- /generated -->";
+// `??`: an empty block ends at its own closing comment, not the next block's.
 const BLOCK =
-  /<!-- generated:([\w-]+) [^\n]*-->\n(?:[\s\S]*?\n)?<!-- \/generated -->/g;
+  /<!-- generated:([\w-]+) [^\n]*-->\n(?:[\s\S]*?\n)??<!-- \/generated -->/g;
 
 /** Every package needs an install block; a block of another kind is where its README put one. */
 function syncBlocks(text: string, workspace: Workspace, problems: string[]) {
@@ -158,6 +186,17 @@ function sync(check: boolean): string[] {
     if (next === text) continue;
     if (check) out.push(`${name}: stale; run \`pnpm fmt\``);
     else writeFileSync(file, next);
+  }
+  const ui = all.get("@orz/ui");
+  if (!ui) throw new Error("no @orz/ui workspace");
+  const text = readFileSync(SKILL, "utf8");
+  const problems: string[] = [];
+  const next = syncBlocks(text, ui, problems);
+  const name = relative(ROOT, SKILL);
+  out.push(...problems.map((problem) => `${name}: ${problem}`));
+  if (next !== text) {
+    if (check) out.push(`${name}: stale; run \`pnpm fmt\``);
+    else writeFileSync(SKILL, next);
   }
   return out;
 }

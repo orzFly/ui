@@ -1,8 +1,9 @@
 import { createReadStream, readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, extname, join, resolve } from "node:path";
+import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin, ViteDevServer } from "vite";
 import { installs, installText, workspaces } from "../../../scripts/install.ts";
+import { siteUrl } from "../../../scripts/site.ts";
 import { themeTable } from "../../../scripts/themes.ts";
 import { MOVED, movedPage } from "../src/redirect.ts";
 import { hrefOf, routeFromPathname } from "../src/routes.ts";
@@ -16,6 +17,8 @@ import {
   styleTokens,
 } from "./data.ts";
 import { fillTemplate } from "./html.ts";
+import { llmsFull, llmsIndex, navOrder, SKILLS } from "./llms.ts";
+import { pageMarkdown } from "./markdown.ts";
 import { closeSearch, searchIndex } from "./search.ts";
 
 const APP = fileURLToPath(new URL("..", import.meta.url));
@@ -145,6 +148,75 @@ function serveSearch(server: ViteDevServer) {
   });
 }
 
+/**
+ * What the build writes for agents, made on request in dev: `llms.txt`, `llms-full.txt`, each
+ * page's `index.md`, and the skills from the repository's skills/.
+ */
+function serveAgents(server: ViteDevServer) {
+  server.middlewares.use(async (req, res, next) => {
+    const { base } = server.config;
+    const path = decodeURIComponent((req.url ?? "").split("?")[0] ?? "");
+    if (!path.startsWith(base)) return next();
+    const rest = path.slice(base.length);
+    const isPage = path.endsWith("/index.md");
+    if (
+      rest !== "llms.txt" &&
+      rest !== "llms-full.txt" &&
+      !isPage &&
+      !rest.startsWith("skills/")
+    ) {
+      return next();
+    }
+    try {
+      if (rest.startsWith("skills/")) {
+        const file = resolve(SKILLS, `./${rest.slice("skills/".length)}`);
+        if (!file.startsWith(SKILLS)) return next();
+        res.setHeader("content-type", "text/markdown; charset=utf-8");
+        res.end(readFileSync(file));
+        return;
+      }
+      const entry = (await server.ssrLoadModule(
+        "/src/entry-server.tsx",
+      )) as DevEntry;
+      const template = readFileSync(join(APP, "index.html"), "utf8");
+      const routes = entry.routes();
+      const markdownOf = async (route: string) => {
+        const meta = routes.find((page) => page.route === route)?.meta;
+        if (!meta) return undefined;
+        const page = await entry.render(base + route.slice(1));
+        return pageMarkdown(fillTemplate(template, page), meta, base);
+      };
+      let body: string | undefined;
+      if (rest === "llms.txt") {
+        const home = routes.find(({ route }) => route === "/")?.meta;
+        body = llmsIndex({
+          nav: entry.nav,
+          home: home?.description ?? "",
+          base,
+        });
+      } else if (rest === "llms-full.txt") {
+        const pages = [];
+        for (const route of navOrder(entry.nav)) {
+          const md = await markdownOf(route);
+          if (md) pages.push(md);
+        }
+        body = llmsFull(pages);
+      } else {
+        body = await markdownOf(`/${rest.slice(0, -"index.md".length)}`);
+      }
+      if (body === undefined) return next();
+      res.setHeader(
+        "content-type",
+        `${isPage ? "text/markdown" : "text/plain"}; charset=utf-8`,
+      );
+      res.end(body);
+    } catch (error) {
+      if (error instanceof Error) server.ssrFixStacktrace(error);
+      next(error);
+    }
+  });
+}
+
 /** Renders each page on the server in dev too, so hydration is exercised before a build. */
 function serveRendered(server: ViteDevServer) {
   server.middlewares.use(async (req, res, next) => {
@@ -209,6 +281,10 @@ export function dataPlugin(): Plugin {
         join(dir, "package.json"),
       ),
     }),
+    "virtual:orz-site": () => ({
+      data: { url: siteUrl() },
+      watch: [join(APP, "../../package.json")],
+    }),
     "virtual:orz-themes": () => ({
       data: themeTable(),
       watch: filesUnder(THEMES),
@@ -265,7 +341,7 @@ export function docsPlugins(): Plugin[] {
         return `${code}
 import { registerExampleSource as __registerExampleSource } from ${JSON.stringify(REGISTRY)};
 import __exampleSource from ${JSON.stringify(`${id}?raw`)};
-__registerExampleSource(${name}, __exampleSource, ${JSON.stringify(basename(id))});
+__registerExampleSource(${name}, __exampleSource, ${JSON.stringify(id.slice(EXAMPLES.length))});
 `;
       },
     },
@@ -278,6 +354,7 @@ __registerExampleSource(${name}, __exampleSource, ${JSON.stringify(basename(id))
       configureServer(server) {
         serveStorybook(server);
         serveSearch(server);
+        serveAgents(server);
         return () => serveRendered(server);
       },
     },

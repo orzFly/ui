@@ -95,7 +95,11 @@ export function DemoPage({ children }: { children: ReactNode }) {
           >
             Demos
           </Link>
-          <span aria-hidden className="hidden text-muted-foreground sm:inline">
+          <span
+            aria-hidden
+            data-pagefind-ignore
+            className="hidden text-muted-foreground sm:inline"
+          >
             /
           </span>
           <h1 className="truncate font-semibold">{meta?.title}</h1>
@@ -171,6 +175,8 @@ export function DemoPage({ children }: { children: ReactNode }) {
         <TabsContent
           value="preview"
           forceMount
+          // The demo is fixture data and controls; its About panel is what search should find.
+          data-pagefind-ignore
           className="min-w-0 flex-1 data-[state=inactive]:hidden"
         >
           <div

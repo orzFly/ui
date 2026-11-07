@@ -9,7 +9,13 @@ import { routeFromPathname } from "./routes.ts";
 
 /** Every route the site prerenders, with its page file as the client manifest keys it. */
 export const routes = () =>
-  pages.map(({ route, file }) => ({ route, file: `src/${file.slice(2)}` }));
+  pages.map(({ route, file, meta }) => ({
+    route,
+    file: `src/${file.slice(2)}`,
+    meta,
+  }));
+
+export { nav } from "./pages.ts";
 
 /** One page as HTML, from the pathname it is served at (base included). */
 export async function render(pathname: string): Promise<RenderedPage> {
@@ -24,7 +30,7 @@ export async function render(pathname: string): Promise<RenderedPage> {
   );
   return {
     status: page ? 200 : 404,
-    head: headOf(page?.meta, BASE),
+    head: headOf(page?.meta, BASE, route),
     html,
   };
 }

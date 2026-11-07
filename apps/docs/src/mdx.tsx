@@ -130,8 +130,11 @@ function Install({ pkg }: { pkg: string }) {
 /** An install line in running text, with a button that copies it. */
 export function Command({ command }: { command: string }) {
   return (
-    <span className="inline-flex items-center gap-0.5">
-      <InlineCode>{command}</InlineCode>
+    // A line too long for its box scrolls sideways, and the button stays in view beside it.
+    <span className="inline-flex max-w-full items-center gap-0.5">
+      <span className="min-w-0 overflow-x-auto whitespace-nowrap">
+        <InlineCode>{command}</InlineCode>
+      </span>
       <Button
         type="button"
         variant="ghost"

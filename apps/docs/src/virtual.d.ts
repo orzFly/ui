@@ -8,6 +8,12 @@ declare module "virtual:orz-packages" {
   export default packages;
 }
 
+declare module "virtual:orz-site" {
+  /** The public site's address, from the root package.json's `homepage`, ending in `/`. */
+  const site: { url: string };
+  export default site;
+}
+
 declare module "virtual:orz-themes" {
   const table: import("../../../scripts/themes.ts").ThemeTable;
   export default table;

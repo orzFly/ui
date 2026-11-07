@@ -76,6 +76,8 @@ describe("the home page, prerendered", () => {
       text: a.textContent,
     }));
     expect(rows.map((row) => row.href)).toEqual([
+      "/llms.txt",
+      "/skills/orz-ui/SKILL.md",
       "/start/",
       "/guidelines/principles/",
       "/guidelines/",
@@ -87,9 +89,21 @@ describe("the home page, prerendered", () => {
       "/guidelines/principles/",
       "/guidelines/",
     ].entries()) {
-      expect(rows[index]?.text).toContain(descriptionOf(route));
+      expect(rows[index + 2]?.text).toContain(descriptionOf(route));
     }
-    expect(rows[4]?.text).toContain(descriptionOf("/demos/"));
+    expect(rows[6]?.text).toContain(descriptionOf("/demos/"));
+  });
+
+  it("installs the skill from the site's homepage, as package.json names it", () => {
+    const { homepage } = JSON.parse(
+      readFileSync(join(import.meta.dirname, "../../../package.json"), "utf8"),
+    ) as { homepage: string };
+    const command = page
+      .querySelector("ol button[aria-label^='Copy curl']")
+      ?.getAttribute("aria-label");
+    expect(command).toBe(
+      `Copy curl -fsSL --create-dirs -o .claude/skills/orz-ui/SKILL.md ${homepage}skills/orz-ui/SKILL.md`,
+    );
   });
 
   it("links each module's components to a Storybook page that exists", () => {

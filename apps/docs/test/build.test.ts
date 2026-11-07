@@ -131,6 +131,64 @@ describe("a build under /ui/", () => {
       expect(went).toBe(`/ui${to}?thread=t1#reply`);
     }
   });
+
+  it("writes every page as Markdown beside its HTML", () => {
+    for (const route of routes) {
+      const md = readFileSync(join(dist, route, "index.md"), "utf8");
+      expect(md, route).toMatch(/^# \S/);
+      // The heading anchors are search-ignored, so they stay out.
+      expect(md, route).not.toContain("Link to this section");
+    }
+  });
+
+  it("shows a live example in its page's Markdown as the example's source", () => {
+    const md = readFileSync(
+      join(dist, "guidelines/principles/index.md"),
+      "utf8",
+    );
+    const source = readFileSync(
+      join(APP, "src/examples/principles/quiet-thread.tsx"),
+      "utf8",
+    );
+    expect(md).toContain("```tsx");
+    expect(md).toContain(source.trimEnd().split("\n")[0]);
+  });
+
+  it("lists in llms.txt every page the nav shows, each link a file under /ui/", () => {
+    const llms = readFileSync(join(dist, "llms.txt"), "utf8");
+    const links = [...llms.matchAll(/\]\(([^)]+)\)/g)].map(
+      ([, url = ""]) => url,
+    );
+    for (const url of links) {
+      expect(url, url).toMatch(/^\/ui\//);
+      if (url.endsWith("/storybook/")) continue;
+      expect(existsSync(join(dist, url.slice("/ui/".length))), url).toBe(true);
+    }
+    const shown = routes.filter((route) => {
+      if (route === "/") return false;
+      const file = route === "/" ? "index" : route.slice(1, -1);
+      const mdx = [`${file}.mdx`, `${file}/index.mdx`]
+        .map((name) => join(APP, "src/content", name))
+        .find((path) => existsSync(path));
+      return !readFileSync(mdx ?? "", "utf8").includes("nav: false");
+    });
+    for (const route of shown) {
+      expect(links, route).toContain(`/ui${route}index.md`);
+    }
+    const full = readFileSync(join(dist, "llms-full.txt"), "utf8");
+    for (const route of shown) {
+      const title = readFileSync(join(dist, route, "index.md"), "utf8").split(
+        "\n",
+      )[0];
+      expect(full, route).toContain(title);
+    }
+  });
+
+  it("serves the skill from the repository's skills/", () => {
+    expect(readFileSync(join(dist, "skills/orz-ui/SKILL.md"), "utf8")).toBe(
+      readFileSync(join(APP, "../../skills/orz-ui/SKILL.md"), "utf8"),
+    );
+  });
 });
 
 // The site `pnpm build` made, when there is one: CI runs the tests after it.

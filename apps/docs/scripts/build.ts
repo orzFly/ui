@@ -12,6 +12,8 @@ import { build, type Manifest } from "vite";
 import { MOVED, movedPage } from "../src/redirect.ts";
 import { hrefOf } from "../src/routes.ts";
 import { fillTemplate } from "./html.ts";
+import { llmsFull, llmsIndex, navOrder, SKILLS } from "./llms.ts";
+import { pageMarkdown } from "./markdown.ts";
 import { closeSearch, type IndexedPage, searchIndex } from "./search.ts";
 
 const APP = fileURLToPath(new URL("..", import.meta.url));
@@ -38,8 +40,9 @@ function chunksOf(manifest: Manifest, key: string, into = new Set<string>()) {
 
 /**
  * The client build, then a server build of entry-server.tsx that renders
- * every route into `<route>/index.html` and a 404.html, then the search
- * index of those pages into pagefind/, then Storybook.
+ * every route into `<route>/index.html` and its Markdown copy `index.md`, the
+ * llms.txt over them, the skills and a 404.html, then the search index of
+ * those pages into pagefind/, then Storybook.
  */
 export async function buildSite({ base, outDir, storybook }: BuildOptions) {
   const out = resolve(APP, outDir);
@@ -84,7 +87,8 @@ export async function buildSite({ base, outDir, storybook }: BuildOptions) {
   const shared = chunksOf(manifest, "index.html");
   const template = readFileSync(join(out, "index.html"), "utf8");
   const indexed: IndexedPage[] = [];
-  for (const { route, file } of entry.routes()) {
+  const markdown = new Map<string, string>();
+  for (const { route, file, meta } of entry.routes()) {
     const page = await entry.render(base + route.slice(1));
     // The page's chunk is fetched with the entry rather than after it, since
     // hydration waits for both.
@@ -102,7 +106,20 @@ export async function buildSite({ base, outDir, storybook }: BuildOptions) {
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "index.html"), html);
     indexed.push({ route, html });
+    const md = await pageMarkdown(html, meta, base);
+    writeFileSync(join(dir, "index.md"), md);
+    markdown.set(route, md);
   }
+  const home = entry.routes().find(({ route }) => route === "/")?.meta;
+  writeFileSync(
+    join(out, "llms.txt"),
+    llmsIndex({ nav: entry.nav, home: home?.description ?? "", base }),
+  );
+  writeFileSync(
+    join(out, "llms-full.txt"),
+    llmsFull(navOrder(entry.nav).flatMap((route) => markdown.get(route) ?? [])),
+  );
+  cpSync(SKILLS, join(out, "skills"), { recursive: true });
   for (const [from, to] of Object.entries(MOVED)) {
     const dir = join(out, from);
     mkdirSync(dir, { recursive: true });

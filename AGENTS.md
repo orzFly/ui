@@ -20,6 +20,13 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   callback or a prop.
 - A dependency heavy enough to matter to a consumer's bundle (CodeMirror, unified, shiki) gets its own
   package rather than landing in `@orz/ui`.
+- An app uses the components as they are; that is the library's point, and the docs site, its
+  examples and its demos are apps like any other. A `className` places a component (position,
+  share of the space, gap to its neighbours) and never restyles it: no colour, fill, border,
+  radius, shadow, font size or weight, and no hover, current or selected look of its own. A look
+  the site needs that no component has is added to the package first, as a variant or a pattern
+  with its story and its guideline, and then used. The rule for apps is written on the Start page
+  and in `skills/orz-ui/SKILL.md`.
 - `apps/<dir>` holds workspace apps: the Storybook demo site (`apps/storybook`), the docs site
   (`apps/docs`, see **Docs site**), and the sample data both draw on (`apps/fixtures`, see
   below). They are `"private": true` and never published.

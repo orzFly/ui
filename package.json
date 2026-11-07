@@ -2,6 +2,7 @@
   "name": "orzui",
   "private": true,
   "license": "BSD-3-Clause",
+  "homepage": "https://orzfly.github.io/ui/",
   "repository": "github:orzFly/ui",
   "type": "module",
   "scripts": {

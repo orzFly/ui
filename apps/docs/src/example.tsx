@@ -108,6 +108,8 @@ export function Example({
       defaultValue="preview"
       // A demo's labels and its source would answer searches meant for the prose.
       data-pagefind-ignore
+      // The page's Markdown copy shows this file in the example's place.
+      data-example={source.path}
       className="my-6 gap-0 overflow-hidden rounded-surface border"
     >
       {/* A module's ruled header: its marker and name, then the tabs joined to the frame below. */}

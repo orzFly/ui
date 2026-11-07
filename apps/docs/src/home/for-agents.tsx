@@ -1,22 +1,49 @@
+import site from "virtual:orz-site";
 import { ListIcon } from "lucide-react";
+import { Command } from "../mdx.tsx";
 import { pages } from "../pages.ts";
 import { BASE, Link } from "../router.tsx";
 import { storybookHref } from "../routes.ts";
 import { HomeModule } from "./module.tsx";
 
-/** The routes an agent reads, in order; `null` is Storybook, which has no page here. */
-const ROUTES = [
-  "/start/",
-  "/guidelines/principles/",
-  "/guidelines/",
-  null,
-  "/demos/",
-] as const;
+const SKILL = "skills/orz-ui/SKILL.md";
 
-const STORYBOOK = {
-  title: "Storybook",
-  description: "Every export, live, with its props: the Storybook reference.",
-};
+/** What an agent reads, in order: the files written for it, then the site's pages. */
+type Step =
+  | { kind: "page"; route: string }
+  | {
+      kind: "file";
+      title: string;
+      description: string;
+      href: string;
+      command?: string;
+    };
+
+const STEPS: Step[] = [
+  {
+    kind: "file",
+    title: "llms.txt",
+    description: "Every page as Markdown, indexed: read this before the HTML.",
+    href: `${BASE}llms.txt`,
+  },
+  {
+    kind: "file",
+    title: "Skill",
+    description: "Teaches an agent to build with @orz/ui. Install it:",
+    href: `${BASE}${SKILL}`,
+    command: `curl -fsSL --create-dirs -o .claude/${SKILL} ${site.url}${SKILL}`,
+  },
+  { kind: "page", route: "/start/" },
+  { kind: "page", route: "/guidelines/principles/" },
+  { kind: "page", route: "/guidelines/" },
+  {
+    kind: "file",
+    title: "Storybook",
+    description: "Every export, live, with its props: the Storybook reference.",
+    href: storybookHref(BASE),
+  },
+  { kind: "page", route: "/demos/" },
+];
 
 function pageAt(route: string) {
   const page = pages.find((entry) => entry.route === route);
@@ -36,9 +63,9 @@ export function ForAgents({ className }: { className?: string }) {
       className={className}
     >
       <ol className="text-ui" data-pagefind-ignore>
-        {ROUTES.map((route, index) => {
+        {STEPS.map((step, index) => {
           const { title, description } =
-            route === null ? STORYBOOK : pageAt(route);
+            step.kind === "page" ? pageAt(step.route) : step;
           const body = (
             <>
               <span aria-hidden className="text-muted-foreground tabular-nums">
@@ -52,14 +79,19 @@ export function ForAgents({ className }: { className?: string }) {
           );
           return (
             <li key={title} className="border-b last:border-b-0">
-              {route === null ? (
-                <a href={storybookHref(BASE)} className={row}>
-                  {body}
-                </a>
-              ) : (
-                <Link to={route} className={row}>
+              {step.kind === "page" ? (
+                <Link to={step.route} className={row}>
                   {body}
                 </Link>
+              ) : (
+                <a href={step.href} className={row}>
+                  {body}
+                </a>
+              )}
+              {step.kind === "file" && step.command && (
+                <div className="pr-2 pb-1.5 pl-9 font-mono">
+                  <Command command={step.command} />
+                </div>
               )}
             </li>
           );

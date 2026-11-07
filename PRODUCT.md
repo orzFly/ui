@@ -100,6 +100,8 @@ a thumb, in whatever theme its user picked, without the app branching on any of 
 4. Every state is distinguishable and says what happened.
 5. A rule is written for an agent to follow as written; what the code knows is generated, not
    restated by hand.
+6. An app uses the components as they are; a missing look becomes a library pattern, not a local
+   tweak.
 
 ## Accessibility & Inclusion
 
