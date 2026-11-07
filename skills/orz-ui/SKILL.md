@@ -13,19 +13,16 @@ job is to pick the right one and leave it alone.
 
 ## Where to read
 
-<!-- generated:site by scripts/readme.ts: run `pnpm fmt` after changing package.json's homepage -->
 - The site: https://orzfly.github.io/ui/
 - Every page as Markdown, indexed: https://orzfly.github.io/ui/llms.txt (all of them in one file: https://orzfly.github.io/ui/llms-full.txt)
 - Start, the setup: https://orzfly.github.io/ui/start/index.md
 - Storybook, every export with its props: https://orzfly.github.io/ui/storybook/
-<!-- /generated -->
 
 Read the Start page before writing any code: it sets up the CSS and the theme store, which this
 skill does not repeat.
 
 ## Install
 
-<!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
 pnpm add @orz/ui @orz/query @orz/themes lucide-react radix-ui react react-dom sonner
 # only for @orz/ui/fonts.css:
@@ -33,7 +30,6 @@ pnpm add @fontsource-variable/noto-sans @fontsource-variable/noto-sans-mono
 # only for @orz/ui/hooks/use-overlay-scrollbars:
 pnpm add overlayscrollbars
 ```
-<!-- /generated -->
 
 ## Use the components as they are
 
@@ -62,7 +58,6 @@ and DropdownMenu"), so it can be added to @orz/ui rather than drawn again in the
 
 ## Packages
 
-<!-- generated:packages by scripts/readme.ts: run `pnpm fmt` after changing a package's description -->
 - `@orz/query`: The grammar of a search box and a slash-command line `pnpm add @orz/query`
 - `@orz/themes`: Theme palettes for the UI and for terminals, as plain data `pnpm add @orz/themes`
 - `@orz/ui`: React primitives, patterns, hooks and the theme store `pnpm add @orz/ui @orz/query @orz/themes lucide-react radix-ui react react-dom sonner`
@@ -74,4 +69,3 @@ and DropdownMenu"), so it can be added to @orz/ui rather than drawn again in the
 - `@orz/ui-hex`: A hex view, editor and data inspector `pnpm add @orz/ui-hex @orz/query @orz/themes @orz/ui lucide-react radix-ui react react-dom sonner`
 - `@orz/ui-markdown`: GitHub-style markdown `pnpm add @orz/ui-markdown @orz/query @orz/themes @orz/ui @orz/ui-content lucide-react radix-ui react react-dom sonner`
 - `@orz/ui-mermaid`: Mermaid diagrams in the active theme `pnpm add @orz/ui-mermaid @orz/query @orz/themes @orz/ui @orz/ui-content lucide-react radix-ui react react-dom sonner`
-<!-- /generated -->

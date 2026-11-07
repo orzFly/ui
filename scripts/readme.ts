@@ -1,10 +1,11 @@
-// Keeps what each README, and the @orz/ui skill, restates from the code in step with it: the
-// install block, the themes table, the rows of the entry-point table, and the skill's site links
-// and package list.
+// Keeps what each README, and the @orz/ui skill's template, restates from the code in step with
+// it: the install block, the themes table, the rows of the entry-point table, and the skill's
+// site links and package list; then writes skills/orz-ui/SKILL.md, the template without its
+// block markers.
 //
 //   node scripts/readme.ts          rewrite what is stale
 //   node scripts/readme.ts --check  fail if anything is stale
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { block, install, type Workspace, workspaces } from "./install.ts";
@@ -51,8 +52,15 @@ const GENERATORS: Record<
   },
 };
 
-/** The @orz/ui skill, filled from the @orz/ui workspace like its README. */
+/**
+ * The @orz/ui skill: a template filled from the @orz/ui workspace like its README, and the
+ * skill an agent reads, which is the template without the block markers. The template lives
+ * outside skills/, which an installer copies whole.
+ */
+const SKILL_TEMPLATE = join(ROOT, "scripts/templates/orz-ui-skill.md");
 const SKILL = join(ROOT, "skills/orz-ui/SKILL.md");
+
+const MARKER = /^<!-- (?:generated:[\w-]+ [^\n]*|\/generated) -->\n/gm;
 
 const opening = (kind: string) =>
   `<!-- generated:${kind} by scripts/readme.ts: run \`pnpm fmt\` after changing ${GENERATORS[kind]?.source} -->`;
@@ -189,14 +197,22 @@ function sync(check: boolean): string[] {
   }
   const ui = all.get("@orz/ui");
   if (!ui) throw new Error("no @orz/ui workspace");
-  const text = readFileSync(SKILL, "utf8");
+  const template = readFileSync(SKILL_TEMPLATE, "utf8");
   const problems: string[] = [];
-  const next = syncBlocks(text, ui, problems);
-  const name = relative(ROOT, SKILL);
-  out.push(...problems.map((problem) => `${name}: ${problem}`));
-  if (next !== text) {
-    if (check) out.push(`${name}: stale; run \`pnpm fmt\``);
-    else writeFileSync(SKILL, next);
+  const filled = syncBlocks(template, ui, problems);
+  out.push(
+    ...problems.map(
+      (problem) => `${relative(ROOT, SKILL_TEMPLATE)}: ${problem}`,
+    ),
+  );
+  for (const [file, want] of [
+    [SKILL_TEMPLATE, filled],
+    [SKILL, filled.replace(MARKER, "")],
+  ] as const) {
+    const has = existsSync(file) ? readFileSync(file, "utf8") : "";
+    if (has === want) continue;
+    if (check) out.push(`${relative(ROOT, file)}: stale; run \`pnpm fmt\``);
+    else writeFileSync(file, want);
   }
   return out;
 }

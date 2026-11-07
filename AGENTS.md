@@ -127,6 +127,9 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   Its one-line `description` is a package's summary on npm and the docs home page alike. The docs
   site generates the rest (see **Docs site**). A sentence that names data for the sake of the
   reason around it stays prose, and `apps/docs/test/facts.test.ts` holds it to the code.
+- `skills/orz-ui/SKILL.md` is generated and never edited: an agent reads it, so it carries no
+  block markers. Edit its template, `scripts/templates/orz-ui-skill.md`, which has the same
+  generated blocks as a README, and run `pnpm fmt`; `pnpm lint` fails when the two part.
 - Shipped CSS lives at the package root (`styles.css`, `vendor/`), not in `src/`. `tsc` never
   touches it, `files` lists it, and `exports` points straight at it.
 - New shadcn primitives arrive with `shadcn add` run inside `packages/ui`. It writes `@/…` imports
