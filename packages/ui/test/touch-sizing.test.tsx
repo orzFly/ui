@@ -23,6 +23,11 @@ import {
 } from "../src/components/filter-menu.tsx";
 import { HighlightedInput } from "../src/components/highlighted-input.tsx";
 import { Input } from "../src/components/input.tsx";
+import {
+  NavList,
+  NavListItem,
+  NavListLink,
+} from "../src/components/nav-list.tsx";
 import { QueryBox } from "../src/components/query-box.tsx";
 import { RadioGroup, RadioGroupItem } from "../src/components/radio-group.tsx";
 import {
@@ -34,6 +39,7 @@ import {
 } from "../src/components/select.tsx";
 import { Slider } from "../src/components/slider.tsx";
 import { Switch } from "../src/components/switch.tsx";
+import { TabNav, TabNavLink } from "../src/components/tab-nav.tsx";
 import { Tabs, TabsList, TabsTrigger } from "../src/components/tabs.tsx";
 import { Textarea } from "../src/components/textarea.tsx";
 
@@ -262,6 +268,30 @@ describe("touch sizes", () => {
     expect(classesOf(screen.getByRole("tab"))).toEqual(
       expect.arrayContaining(["relative", "touch:hit-area", "touch:min-h-10"]),
     );
+  });
+
+  it("TabNav links draw 40px with a 44px hit area", () => {
+    render(
+      <TabNav aria-label="Sections">
+        <TabNavLink href="#a" current>
+          A
+        </TabNavLink>
+      </TabNav>,
+    );
+    expect(classesOf(screen.getByRole("link"))).toEqual(
+      expect.arrayContaining(["relative", "touch:hit-area", "touch:min-h-10"]),
+    );
+  });
+
+  it("NavList links are 44px rows", () => {
+    render(
+      <NavList>
+        <NavListItem>
+          <NavListLink href="#a">A</NavListLink>
+        </NavListItem>
+      </NavList>,
+    );
+    expect(classesOf(screen.getByRole("link"))).toContain("touch:min-h-11");
   });
 
   it("Slider keeps its drawn size; its bar and its thumb have hit areas", () => {

@@ -1,5 +1,11 @@
 import { Button } from "@orz/ui/components/button";
 import {
+  NavList,
+  NavListHeading,
+  NavListItem,
+  NavListLink,
+} from "@orz/ui/components/nav-list";
+import {
   Sheet,
   SheetBody,
   SheetContent,
@@ -7,6 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@orz/ui/components/sheet";
+import { TabNav, TabNavLink } from "@orz/ui/components/tab-nav";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import { useSlashShortcut } from "@orz/ui/hooks/use-slash-shortcut";
 import { cn } from "@orz/ui/lib/utils";
@@ -60,12 +67,6 @@ function ThemeButton() {
   );
 }
 
-// The current section is the mosaic's current tab: a box in the page's colour
-// that covers the header's bottom rule, so it joins the page below, with a
-// primary edge across its top.
-const topLink =
-  "-mb-px flex items-center self-stretch px-3 text-muted-foreground transition-colors hover:text-foreground";
-
 /** Whether the phone nav is open, and whether it opened to search. */
 type NavOpen = boolean | "search";
 
@@ -91,25 +92,17 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
           searchRef={sheetBox}
         />
         <Logo />
-        <nav aria-label="Site" className="hidden self-stretch md:flex">
+        <TabNav aria-label="Site" className="hidden md:flex">
           {sections.map((node) => (
-            <Link
-              key={node.route}
-              to={firstPage(node).route}
-              className={cn(
-                topLink,
-                node === section &&
-                  "border-x bg-background font-medium text-foreground tab-cue",
-              )}
-            >
-              {node.title}
-            </Link>
+            <TabNavLink key={node.route} current={node === section} asChild>
+              <Link to={firstPage(node).route}>{node.title}</Link>
+            </TabNavLink>
           ))}
-          <a href={storybookHref(BASE)} className={topLink}>
+          <TabNavLink href={storybookHref(BASE)}>
             Storybook
-            <ArrowUpRightIcon className="ml-0.5 inline size-3.5 align-[-2px]" />
-          </a>
-        </nav>
+            <ArrowUpRightIcon />
+          </TabNavLink>
+        </TabNav>
         <div className="ml-auto flex items-center gap-1 md:gap-2">
           <SearchBox inputRef={box} className="hidden w-56 md:block lg:w-64" />
           <Button
@@ -185,32 +178,28 @@ function MobileNav({
         </SheetTitle>
         <SheetDescription className="sr-only">Site navigation</SheetDescription>
         <SheetSearch inputRef={searchRef} onPick={() => onOpenChange(false)}>
-          <nav aria-label="Site" className="mt-2 text-base">
-            {sections.map((node) => (
-              <div key={node.route}>
-                <Link
-                  to={firstPage(node).route}
-                  className={cn(
-                    rowClass("touch"),
-                    "font-medium text-foreground",
+          <nav aria-label="Site" className="mt-2">
+            <NavList>
+              {sections.map((node) => (
+                <NavListItem key={node.route}>
+                  <NavListLink
+                    asChild
+                    current={node === section && node.children.length === 0}
+                  >
+                    <Link to={firstPage(node).route}>{node.title}</Link>
+                  </NavListLink>
+                  {node === section && node.children.length > 0 && (
+                    <NavTree node={node} depth={1} />
                   )}
-                >
-                  {node.title}
-                </Link>
-                {node === section && node.children.length > 0 && (
-                  <div className="mb-2 ml-3 border-l pl-1">
-                    <NavTree node={node} size="touch" />
-                  </div>
-                )}
-              </div>
-            ))}
-            <a
-              href={storybookHref(BASE)}
-              className={cn(rowClass("touch"), "font-medium text-foreground")}
-            >
-              Storybook
-              <ArrowUpRightIcon className="ml-1 size-4" />
-            </a>
+                </NavListItem>
+              ))}
+              <NavListItem>
+                <NavListLink href={storybookHref(BASE)}>
+                  Storybook
+                  <ArrowUpRightIcon />
+                </NavListLink>
+              </NavListItem>
+            </NavList>
           </nav>
         </SheetSearch>
       </SheetContent>
@@ -218,52 +207,40 @@ function MobileNav({
   );
 }
 
-function rowClass(size: "pointer" | "touch") {
-  return cn(
-    "flex items-center px-3 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:font-medium aria-[current=page]:text-foreground aria-[current=page]:state-cue",
-    size === "touch" ? "min-h-11" : "min-h-8 touch:min-h-11",
-  );
-}
-
 /** A section's pages; a directory is a heading over its own. */
-export function NavTree({
-  node,
-  size = "pointer",
-}: {
-  node: NavNode;
-  size?: "pointer" | "touch";
-}) {
+function NavTree({ node, depth = 0 }: { node: NavNode; depth?: number }) {
+  const { route } = useRouter();
   return (
-    <ul>
+    <NavList>
       {node.children.map((child) => (
-        <li key={child.route}>
+        <NavListItem key={child.route}>
           {child.children.length === 0 ? (
-            <Link to={child.route} className={rowClass(size)}>
-              {child.title}
-            </Link>
+            <NavListLink asChild depth={depth} current={child.route === route}>
+              <Link to={child.route}>{child.title}</Link>
+            </NavListLink>
           ) : (
             <>
-              <h3 className="mt-4 mb-1 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                {child.page ? (
-                  <Link to={child.route} className="hover:text-foreground">
-                    {child.title}
-                  </Link>
-                ) : (
-                  child.title
-                )}
-              </h3>
-              <NavTree node={child} size={size} />
+              <NavListHeading asChild depth={depth}>
+                <h3>
+                  {child.page ? (
+                    <Link to={child.route}>{child.title}</Link>
+                  ) : (
+                    child.title
+                  )}
+                </h3>
+              </NavListHeading>
+              <NavTree node={child} depth={depth} />
             </>
           )}
-        </li>
+        </NavListItem>
       ))}
-    </ul>
+    </NavList>
   );
 }
 
 export function Sidebar({ section }: { section: NavNode }) {
   return (
-    <aside className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] hidden h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] w-60 shrink-0 overflow-y-auto border-r py-4 pr-2 pl-[max(0.5rem,env(safe-area-inset-left))] text-sm md:block">
+    <aside className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] hidden h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] w-60 shrink-0 overflow-y-auto border-r py-4 pr-2 pl-[max(0.5rem,env(safe-area-inset-left))] md:block">
       <nav aria-label={section.title}>
         <NavTree node={section} />
       </nav>

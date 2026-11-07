@@ -243,6 +243,8 @@ Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and c
 
 ### Navigation
 - **Tabs:** a strip-tinted list ruled underneath; tabs separated by 60% rules, 13px medium quiet ink. The current tab is a ground box that covers the list's rule to join its content, with a 2px ai edge across its top.
+- **Line tabs and tab nav:** where the panel does not lie right under the tabs (`TabsList variant="line"`), and for an app's sections in its header (`TabNav`): no fill and no separators, the current one in ink with a 2px ai underline laid on the bar's bottom rule.
+- **Nav list:** an app's places (`NavList`) tile as rows with no gap; the current place takes the state fill, medium weight and the state tick. Group headings are 12px semibold ink.
 - **Menus and rows:** the highlighted or selected row takes the state fill and a 2px tick in its own text colour on its leading edge, over the middle half of the row; table rows mark the first cell the same way.
 
 ### Module Marker

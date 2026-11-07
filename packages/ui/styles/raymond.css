@@ -210,6 +210,8 @@
     --tab-cue:
       inset 1px 1px var(--3d-highlight), inset -1px 0 var(--3d-dark-shadow),
       inset -2px 0 var(--3d-shadow);
+    /* A line of tabs is the same classic strip: raymond has no other. */
+    --tab-line-cue: var(--tab-cue);
     margin-top: 2px;
     box-shadow: var(--tab-cue);
   }

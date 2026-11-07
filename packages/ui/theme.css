@@ -160,6 +160,7 @@
     --state-cue: linear-gradient(currentColor, currentColor);
     --pressed-cue: inset 0 0 0 1px currentColor;
     --tab-cue: inset 0 2px 0 0 var(--primary);
+    --tab-line-cue: inset 0 -2px 0 0 var(--primary);
   }
 }
 
@@ -226,6 +227,12 @@
    edge across its top. */
 @utility tab-cue {
   box-shadow: var(--tab-cue);
+}
+
+/* The current tab of a line of tabs or of a tab nav: a 2px primary edge
+   along its foot, laid over the rule of the bar that holds it. */
+@utility tab-line-cue {
+  box-shadow: var(--tab-line-cue);
 }
 
 /* The same, drawn inside the edge, for a part that fills a clipping frame. */

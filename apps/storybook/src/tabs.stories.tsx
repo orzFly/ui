@@ -33,3 +33,21 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+/** `variant="line"`, for tabs in a bar whose panel has a surface of its own below. */
+export const Line: Story = {
+  render: (args) => (
+    <Tabs {...args}>
+      <TabsList variant="line">
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="activity">Activity</TabsTrigger>
+        <TabsTrigger value="settings" disabled>
+          Settings
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="overview">The overview panel.</TabsContent>
+      <TabsContent value="activity">The activity panel.</TabsContent>
+      <TabsContent value="settings">The settings panel.</TabsContent>
+    </Tabs>
+  ),
+};

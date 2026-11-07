@@ -5,6 +5,7 @@ import {
   TOKENS,
 } from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
+import { NavList, NavListItem, NavListLink } from "@orz/ui/components/nav-list";
 import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog";
 import { cn } from "@orz/ui/lib/utils";
 import {
@@ -125,25 +126,22 @@ export function Settings() {
           view.open && "max-md:hidden",
         )}
       >
-        <ul className="grid gap-0.5">
+        <NavList>
           {SECTIONS.map(({ id, title, Icon }) => (
-            <li key={id}>
-              <button
-                type="button"
-                aria-current={id === view.section ? "page" : undefined}
-                onClick={() => go({ section: id, open: true })}
-                className={cn(
-                  "flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-ui transition-colors hover:bg-accent md:min-h-8 md:px-2.5 touch:md:min-h-11",
-                  id === view.section && "md:bg-accent md:font-medium",
-                )}
-              >
-                <Icon className="size-4 text-muted-foreground" />
-                <span className="flex-1">{title}</span>
-                <ChevronRightIcon className="size-4 text-muted-foreground md:hidden" />
-              </button>
-            </li>
+            <NavListItem key={id}>
+              <NavListLink current={id === view.section} asChild>
+                <button
+                  type="button"
+                  onClick={() => go({ section: id, open: true })}
+                >
+                  <Icon />
+                  {title}
+                  <ChevronRightIcon className="ml-auto md:hidden" />
+                </button>
+              </NavListLink>
+            </NavListItem>
           ))}
-        </ul>
+        </NavList>
       </nav>
       <section
         aria-labelledby="settings-section-title"

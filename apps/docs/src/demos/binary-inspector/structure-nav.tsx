@@ -1,4 +1,10 @@
 import {
+  NavList,
+  NavListCount,
+  NavListItem,
+  NavListLink,
+} from "@orz/ui/components/nav-list";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -74,33 +80,32 @@ function RegionList({
 }) {
   const current = path.at(-1);
   return (
-    <ul aria-label={ariaLabel} className="grid gap-px">
+    <NavList aria-label={ariaLabel}>
       {regions.map((region) => {
         const open = path[depth] === region;
         return (
-          <li key={region.id}>
-            <button
-              type="button"
-              aria-current={region === current ? "location" : undefined}
-              aria-expanded={region.children ? open : undefined}
-              onClick={() => onPick(region)}
-              style={{ paddingLeft: `${0.75 + depth * 0.875}rem` }}
-              className={cn(
-                "flex min-h-7 w-full items-center gap-2 rounded-md pr-2 text-left text-ui transition-colors hover:bg-accent aria-[current]:bg-accent aria-[current]:font-medium touch:min-h-11",
-                depth > 0 &&
-                  "text-muted-foreground aria-[current]:text-foreground",
-              )}
+          <NavListItem key={region.id}>
+            <NavListLink
+              current={region === current && "location"}
+              depth={depth}
+              asChild
             >
-              <span className="shrink-0">{region.label}</span>
-              {region.value && (
-                <span className="min-w-0 flex-1 truncate text-muted-foreground text-ui-sm">
-                  {region.value}
-                </span>
-              )}
-              <span className="ml-auto shrink-0 font-mono text-muted-foreground text-ui-sm tabular-nums">
-                {formatOffset(region.offset)}
-              </span>
-            </button>
+              <button
+                type="button"
+                aria-expanded={region.children ? open : undefined}
+                onClick={() => onPick(region)}
+              >
+                <span className="shrink-0">{region.label}</span>
+                {region.value && (
+                  <span className="min-w-0 flex-1 truncate text-ui-sm">
+                    {region.value}
+                  </span>
+                )}
+                <NavListCount className="font-mono">
+                  {formatOffset(region.offset)}
+                </NavListCount>
+              </button>
+            </NavListLink>
             {open && region.children && (
               <RegionList
                 regions={region.children}
@@ -109,10 +114,10 @@ function RegionList({
                 onPick={onPick}
               />
             )}
-          </li>
+          </NavListItem>
         );
       })}
-    </ul>
+    </NavList>
   );
 }
 

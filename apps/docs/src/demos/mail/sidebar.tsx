@@ -8,6 +8,13 @@ import {
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
 import {
+  NavList,
+  NavListCount,
+  NavListHeading,
+  NavListItem,
+  NavListLink,
+} from "@orz/ui/components/nav-list";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -105,13 +112,20 @@ function PlaceLink({
 }: ComponentProps<"a"> & {
   query: string;
   onShow: (query: string) => void;
-  current: boolean;
+  /** Left out under a `NavListLink`, which marks the place itself. */
+  current?: boolean;
 }) {
   return (
     <a
       {...props}
       href={placeHref(query)}
-      aria-current={current ? "page" : undefined}
+      aria-current={
+        current === undefined
+          ? props["aria-current"]
+          : current
+            ? "page"
+            : undefined
+      }
       onClick={(event) => {
         props.onClick?.(event);
         if (!isPlainClick(event)) return;
@@ -133,8 +147,6 @@ export function Sidebar({
   onCompose,
   onKeys,
 }: SidebarProps) {
-  const item =
-    "flex min-h-8 items-center gap-3 rounded-md px-2.5 text-ui transition-colors hover:bg-accent touch:min-h-11";
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-3">
       <p className="flex items-center gap-2 px-1 font-semibold">
@@ -148,47 +160,36 @@ export function Sidebar({
         Compose
       </Button>
       <nav aria-label="Folders" className="min-h-0 flex-1 overflow-y-auto">
-        <ul className="grid gap-0.5">
+        <NavList>
           {PLACES.map(({ query: place, title, Icon }) => (
-            <li key={place}>
-              <PlaceLink
-                query={place}
-                onShow={onShow}
-                current={query === place}
-                className={cn(item, query === place && "bg-accent font-medium")}
-              >
-                <Icon className="size-4 text-muted-foreground" />
-                <span className="flex-1">{title}</span>
-                {(counts[place] ?? 0) > 0 && (
-                  <span className="text-muted-foreground text-ui-sm tabular-nums">
-                    {counts[place]}
-                  </span>
-                )}
-              </PlaceLink>
-            </li>
+            <NavListItem key={place}>
+              <NavListLink current={query === place} asChild>
+                <PlaceLink query={place} onShow={onShow}>
+                  <Icon />
+                  {title}
+                  {(counts[place] ?? 0) > 0 && (
+                    <NavListCount>{counts[place]}</NavListCount>
+                  )}
+                </PlaceLink>
+              </NavListLink>
+            </NavListItem>
           ))}
-        </ul>
-        <h2 className="mt-4 mb-1 px-2.5 font-medium text-muted-foreground text-ui-sm">
-          Labels
-        </h2>
-        <ul className="grid gap-0.5">
+        </NavList>
+        <NavListHeading asChild>
+          <h2>Labels</h2>
+        </NavListHeading>
+        <NavList>
           {INBOX_LABELS.map((label) => (
-            <li key={label}>
-              <PlaceLink
-                query={`label:${label}`}
-                onShow={onShow}
-                current={query === `label:${label}`}
-                className={cn(
-                  item,
-                  query === `label:${label}` && "bg-accent font-medium",
-                )}
-              >
-                <TagIcon className="size-4 text-muted-foreground" />
-                {label}
-              </PlaceLink>
-            </li>
+            <NavListItem key={label}>
+              <NavListLink current={query === `label:${label}`} asChild>
+                <PlaceLink query={`label:${label}`} onShow={onShow}>
+                  <TagIcon />
+                  {label}
+                </PlaceLink>
+              </NavListLink>
+            </NavListItem>
           ))}
-        </ul>
+        </NavList>
       </nav>
       <div className="flex items-center gap-2 border-t pt-3">
         <Avatar size="sm" aria-hidden>

@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@orz/ui/components/dialog";
+import { NavList, NavListItem, NavListLink } from "@orz/ui/components/nav-list";
 import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog";
 import { CodeDiffBlock } from "@orz/ui-code";
 import { CodeEditor } from "@orz/ui-codemirror/components/code-editor";
@@ -117,29 +118,27 @@ export function ConfigEditor() {
         aria-label="Files"
         className="shrink-0 border-b p-2 md:w-56 md:overflow-y-auto md:border-r md:border-b-0 md:bg-sidebar md:p-3"
       >
-        <ul className="grid grid-cols-3 gap-1 md:grid-cols-1 md:gap-0.5">
+        {/* Three across on a phone, where a column would push the editor down. */}
+        <NavList className="max-md:grid max-md:grid-cols-3">
           {CONFIG_FILES.map((file) => {
             const unsaved = drafts[file.name] !== saved[file.name];
             return (
-              <li key={file.name}>
-                <button
-                  type="button"
-                  aria-current={file.name === name ? "page" : undefined}
-                  onClick={() => open(file.name)}
-                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-2 text-left font-mono text-ui transition-colors hover:bg-accent aria-[current=page]:bg-accent aria-[current=page]:font-medium md:min-h-8 md:justify-start md:px-2.5 touch:md:min-h-11"
-                >
-                  <FileJsonIcon className="size-4 text-muted-foreground max-md:hidden" />
-                  <span className="truncate md:flex-1">{file.name}</span>
-                  {unsaved && (
-                    <span className="size-2 shrink-0 rounded-full bg-primary">
-                      <span className="sr-only">, unsaved</span>
-                    </span>
-                  )}
-                </button>
-              </li>
+              <NavListItem key={file.name} className="min-w-0">
+                <NavListLink current={file.name === name} asChild>
+                  <button type="button" onClick={() => open(file.name)}>
+                    <FileJsonIcon className="max-md:hidden" />
+                    <span className="truncate font-mono">{file.name}</span>
+                    {unsaved && (
+                      <span className="ml-auto size-2 shrink-0 rounded-full bg-primary">
+                        <span className="sr-only">, unsaved</span>
+                      </span>
+                    )}
+                  </button>
+                </NavListLink>
+              </NavListItem>
             );
           })}
-        </ul>
+        </NavList>
       </nav>
       <section
         aria-labelledby="config-file-title"

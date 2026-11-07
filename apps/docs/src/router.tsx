@@ -101,7 +101,9 @@ export function Link({
     <a
       {...props}
       href={hrefOf(to, BASE) + hash}
-      aria-current={to === route && !hash ? "page" : undefined}
+      aria-current={
+        props["aria-current"] ?? (to === route && !hash ? "page" : undefined)
+      }
       onClick={(event) => {
         onClick?.(event);
         if (

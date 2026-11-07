@@ -54,6 +54,13 @@ import {
 import { Input } from "../src/components/input.tsx";
 import { Label } from "../src/components/label.tsx";
 import {
+  NavList,
+  NavListCount,
+  NavListHeading,
+  NavListItem,
+  NavListLink,
+} from "../src/components/nav-list.tsx";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -80,6 +87,7 @@ import { Skeleton } from "../src/components/skeleton.tsx";
 import { Slider } from "../src/components/slider.tsx";
 import { Toaster } from "../src/components/sonner.tsx";
 import { Switch } from "../src/components/switch.tsx";
+import { TabNav, TabNavLink } from "../src/components/tab-nav.tsx";
 import {
   Table,
   TableBody,
@@ -269,6 +277,31 @@ const CASES: [file: string, slot: string, tree: ReactElement][] = [
         </TableRow>
       </TableFooter>
     </Table>,
+  ],
+  [
+    "nav-list",
+    "nav-list-count",
+    <NavList key="a">
+      <NavListItem>
+        <NavListHeading>Folders</NavListHeading>
+        <NavList>
+          <NavListItem>
+            <NavListLink href="#inbox" current>
+              Inbox <NavListCount>8</NavListCount>
+            </NavListLink>
+          </NavListItem>
+        </NavList>
+      </NavListItem>
+    </NavList>,
+  ],
+  [
+    "tab-nav",
+    "tab-nav-link",
+    <TabNav key="a" aria-label="Sections">
+      <TabNavLink href="#a" current>
+        A
+      </TabNavLink>
+    </TabNav>,
   ],
   [
     "tabs",

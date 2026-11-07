@@ -1,0 +1,60 @@
+export const meta = {
+  title: "Navigation",
+  description:
+    "TabNav, NavList and Tabs: where the reader is, and how they get somewhere else, drawn the same way in every app.",
+  order: 37,
+  api: ["ui/Primitives/TabNav", "ui/Primitives/NavList", "ui/Primitives/Tabs"],
+};
+
+import { AppFrame } from "../../../examples/navigation/app-frame.tsx";
+import { LineTabs } from "../../../examples/navigation/line-tabs.tsx";
+
+**Build navigation from these three and leave their look alone. A hand-made row or tab draws its
+own current state, and an app's places then read differently from screen to screen.**
+
+<Example of={AppFrame} />
+
+The header's `TabNav` holds the app's sections; the sidebar's `NavList` holds the places inside
+the one that is open, under a heading for each group. Pick a section or a folder: the current one
+is marked the same way in both, by weight, with an underline on the header's rule or a tick on the
+row's leading edge.
+
+## Which one
+
+| You need to | Use |
+|---|---|
+| Go between an app's few top-level sections, from its header | `TabNav`, with a `TabNavLink` for each |
+| Go between many places: folders, settings sections, files, a document's parts | `NavList`, a `NavListLink` for each, `NavListHeading` over each group |
+| Show one of a few views of the same thing, in place | `Tabs` |
+| The same, in a bar over a pane that has a surface of its own | `Tabs` with `TabsList variant="line"` |
+
+`Tabs` switch panels and keep the page's URL; `TabNav` and `NavList` go somewhere, and each place
+is a link wherever it has a URL. Pass a router's link with `asChild`, or a `button` where the
+place is app state rather than an address.
+
+<Example of={LineTabs} />
+
+The default tabs draw the current one as a box joined to its panel below. Where the panel does
+not lie right under the tabs, as in a bar over a demo with its own sidebar, the box would hang
+over something else: use the line variant, laid flush on the bar's bottom rule.
+
+## Marking where the reader is
+
+- Mark exactly one place with `current`. It sets `aria-current` and draws the state; a row or a tab
+  never adds a fill or a bar of its own.
+- `current` is `"page"` by default. A part of a document in view is `current="location"`.
+- A section in `TabNav` stays current on every page inside it, not only on its own first page.
+- Nest places with `depth`, one step per level, rather than wrapping a list in an indented box.
+
+## On each platform
+
+### Desktop & pointer
+
+Rows run at the dense row height, with the count, size or offset at the row's end in tabular
+figures (`NavListCount`).
+
+### Touch & mobile
+
+Under a coarse pointer every row and tab grows to a touch target by itself. A `TabNav` has no room
+on a phone: put its sections in a `Sheet` opened from the header, as a `NavList` with the open
+section's places nested under it, as this site does.

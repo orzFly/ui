@@ -101,8 +101,9 @@ export function DemoPage({ children }: { children: ReactNode }) {
           <h1 className="truncate font-semibold">{meta?.title}</h1>
         </div>
         <TabsList
+          variant="line"
           data-pagefind-ignore
-          className="ml-auto border-b-0 bg-transparent sm:ml-0"
+          className="ml-auto sm:ml-0"
         >
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="code">Code</TabsTrigger>
