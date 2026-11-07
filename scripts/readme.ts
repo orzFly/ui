@@ -33,10 +33,9 @@ const GENERATORS: Record<
     text: () => {
       const site = siteUrl();
       return [
-        `- The site: ${site}`,
-        `- Every page as Markdown, indexed: ${site}llms.txt (all of them in one file: ${site}llms-full.txt)`,
-        `- Start, the setup: ${site}start/index.md`,
-        `- Storybook, every export with its props: ${site}storybook/`,
+        `- Guidelines, every page as Markdown: ${site}llms.txt`,
+        `- Setup: ${site}start/index.md`,
+        `- Props of every export: ${site}storybook/`,
       ].join("\n");
     },
   },
@@ -46,7 +45,7 @@ const GENERATORS: Record<
       [...all.values()]
         .map(
           ({ manifest }) =>
-            `- \`${manifest.name}\`: ${manifest.description ?? ""} \`pnpm add ${install(manifest.name, all).packages.join(" ")}\``,
+            `- \`${manifest.name}\`: ${manifest.description ?? ""}`,
         )
         .join("\n"),
   },
@@ -69,8 +68,17 @@ const CLOSING = "<!-- /generated -->";
 const BLOCK =
   /<!-- generated:([\w-]+) [^\n]*-->\n(?:[\s\S]*?\n)??<!-- \/generated -->/g;
 
-/** Every package needs an install block; a block of another kind is where its README put one. */
-function syncBlocks(text: string, workspace: Workspace, problems: string[]) {
+/**
+ * Every README needs an install block; a block of another kind is where its README put one.
+ * The skill has none (`needsInstall` false): it outlives the install lines, so it sends an
+ * agent to the current ones.
+ */
+function syncBlocks(
+  text: string,
+  workspace: Workspace,
+  problems: string[],
+  needsInstall = true,
+) {
   const kinds = new Set<string>();
   const next = text.replace(BLOCK, (_whole, kind: string) => {
     const generator = GENERATORS[kind];
@@ -81,7 +89,7 @@ function syncBlocks(text: string, workspace: Workspace, problems: string[]) {
     kinds.add(kind);
     return `${opening(kind)}\n${generator.text(workspace)}\n${CLOSING}`;
   });
-  if (!kinds.has("install")) {
+  if (needsInstall && !kinds.has("install")) {
     problems.push(
       `no install block: add ${opening("install")} and ${CLOSING} under ## Install`,
     );
@@ -199,7 +207,7 @@ function sync(check: boolean): string[] {
   if (!ui) throw new Error("no @orz/ui workspace");
   const template = readFileSync(SKILL_TEMPLATE, "utf8");
   const problems: string[] = [];
-  const filled = syncBlocks(template, ui, problems);
+  const filled = syncBlocks(template, ui, problems, false);
   out.push(
     ...problems.map(
       (problem) => `${relative(ROOT, SKILL_TEMPLATE)}: ${problem}`,

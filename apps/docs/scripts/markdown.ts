@@ -58,6 +58,19 @@ function pageLink(href: string, base: string) {
   return `${path}index.md${hash === undefined ? "" : `#${hash}`}`;
 }
 
+/**
+ * A GFM table cell holds one line, so a paragraph after the cell's first content (an install
+ * line's "For <entry>: …") would run straight on from it: a semicolon keeps them apart.
+ */
+function joinParagraphs(children: ElementContent[]): ElementContent[] {
+  // Inside the paragraph: a space at its edge would be trimmed with the paragraph.
+  return children.map((child, i) =>
+    i > 0 && child.type === "element" && child.tagName === "p"
+      ? { ...child, children: [text("; "), ...child.children] }
+      : child,
+  );
+}
+
 function clean(children: ElementContent[], base: string): ElementContent[] {
   const out: ElementContent[] = [];
   for (const child of children) {
@@ -75,6 +88,9 @@ function clean(children: ElementContent[], base: string): ElementContent[] {
       child.properties.href = pageLink(href, base);
     }
     child.children = clean(child.children, base);
+    if (child.tagName === "td" || child.tagName === "th") {
+      child.children = joinParagraphs(child.children);
+    }
     out.push(child);
   }
   return out;
