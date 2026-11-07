@@ -144,8 +144,8 @@
       },
       {
         "name": "state-cue",
-        "value": "inset 3px 0 0 0 currentColor",
-        "purpose": "The highlighted or selected row's leading ink bar, paired with the state fill."
+        "value": "linear-gradient(currentColor, currentColor), 2px wide over the middle half of the row",
+        "purpose": "The highlighted or selected row's leading ink tick, paired with the state fill."
       },
       {
         "name": "tab-cue",
@@ -241,9 +241,9 @@
       "name": "Menu",
       "kind": "custom",
       "refersTo": "menu-item-highlighted",
-      "description": "A square menu; the highlighted row takes the state fill and a 3px ink bar.",
+      "description": "A square menu; the highlighted row takes the state fill and a 2px ink tick.",
       "html": "<div class=\"ds-menu\"><div class=\"ds-menu-item\">Rename</div><div class=\"ds-menu-item ds-menu-item-hl\">Duplicate</div><div class=\"ds-menu-item\">Archive</div></div>",
-      "css": ".ds-menu { display: inline-block; min-width: 128px; padding: 4px; background: var(--popover, #fff); color: var(--popover-foreground, #0f1727); box-shadow: 0 0 0 1px var(--border, #bfc8d5); font: 400 13px/20px 'Noto Sans Variable', system-ui, sans-serif; } .ds-menu-item { display: flex; align-items: center; min-height: 28px; padding: 4px 6px; cursor: default; } .ds-menu-item:hover, .ds-menu-item-hl { background: var(--accent, #e8eef7); color: var(--accent-foreground, #0f1727); box-shadow: inset 3px 0 0 0 currentColor; }"
+      "css": ".ds-menu { display: inline-block; min-width: 128px; padding: 4px; background: var(--popover, #fff); color: var(--popover-foreground, #0f1727); box-shadow: 0 0 0 1px var(--border, #bfc8d5); font: 400 13px/20px 'Noto Sans Variable', system-ui, sans-serif; } .ds-menu-item { display: flex; align-items: center; min-height: 28px; padding: 4px 6px; cursor: default; } .ds-menu-item:hover, .ds-menu-item-hl { color: var(--accent-foreground, #0f1727); background: var(--accent, #e8eef7) linear-gradient(currentColor, currentColor) left center / 2px 50% no-repeat; }"
     },
     {
       "name": "Badge",
@@ -262,7 +262,7 @@
       "Modules tiled edge to edge, sharing one 1px rule; square corners on every surface.",
       "Ruled header strip with a 16px marker square heading each module.",
       "13px body text, 28px controls and rows with a pointer; 40/44px and 16px field text under touch.",
-      "State cues in two channels: fill plus a 3px ink bar or a 2px ai top edge."
+      "State cues in two channels: fill plus a 2px ink tick or a 2px ai top edge."
     ],
     "rules": [
       {
@@ -293,7 +293,7 @@
     ],
     "dos": [
       "**Do** head every module with the ruled strip and the 16px marker square.",
-      "**Do** pair every state fill with a second cue: the 3px ink bar for rows, the 2px ai top edge for the current tab.",
+      "**Do** pair every state fill with a second cue: the 2px ink tick for rows, the 2px ai top edge for the current tab.",
       "**Do** keep touch sizes (40px, 44px hit areas) and 16px field text under a coarse pointer, whatever the style.",
       "**Do** read sizes and radii from the style tokens (`--spacing-control`, `--radius-surface`), capping a smaller part to the token rather than adding one.",
       "**Do** keep overlays at a 100ms fade with no travel; under reduced motion, translate, scale, rotate and blur reset."

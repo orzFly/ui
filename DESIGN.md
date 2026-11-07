@@ -152,7 +152,7 @@ Density is for the pointer only. Under a coarse pointer, controls grow to 40px a
 - Modules tiled edge to edge, sharing one 1px rule; square corners on every surface.
 - Ruled header strip with a 16px marker square heading each module.
 - 13px body text, 28px controls and rows with a pointer; 40/44px and 16px field text under touch.
-- State cues in two channels: fill plus a 3px ink bar or a 2px ai top edge.
+- State cues in two channels: fill plus a 2px ink tick or a 2px ai top edge.
 
 ## Colors
 
@@ -163,10 +163,10 @@ A near-monochrome ink-on-white palette with a single deep indigo accent; dark mo
 
 ### Neutral
 - **Paper White** (ground): page, card and popover ground in light. Dark: `oklch(0.18 0.014 258)` for page and card, `oklch(0.21 0.016 258)` for popovers.
-- **Dense Ink** (ink): all body text, and the colour of the 3px state bar. Dark: `oklch(0.94 0.012 258)`.
+- **Dense Ink** (ink): all body text, and the colour of the 2px state tick. Dark: `oklch(0.94 0.012 258)`.
 - **Strip Tint** (strip): module header strips, tab lists, table heads, footers, the sidebar, hover fills. Dark: `oklch(0.225 0.018 258)`.
 - **Quiet Ink** (quiet-ink): secondary text and inactive tabs; held to 4.5:1 on ground and on strip.
-- **State Fill** (state-fill): the highlighted or selected row's fill, always paired with the ink bar. Sidebar uses **Sidebar State Fill** (sidebar-state-fill).
+- **State Fill** (state-fill): the highlighted or selected row's fill, always paired with the ink tick. Sidebar uses **Sidebar State Fill** (sidebar-state-fill).
 - **Hairline Rule** (rule): every module edge, row divider and strip underline. Dark: `oklch(0.36 0.022 258)`.
 - **Field Edge** (field-edge): input borders and outline buttons; held to 3:1 on ground, card and popover.
 - **Marker Tint** (marker-tint): the marker square's fill, about 12% ai over strip. A palette that names none gets `markerOf()`'s mix, stepped down until the ai icon holds 4.5:1.
@@ -214,7 +214,7 @@ Flat by construction. Surfaces tile on the ground with no shadow (`shadow-raised
 
 ## Shapes
 
-Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and chips carry a 2px radius (`--radius` 0.125rem), and smaller parts cap the token rather than taking their own. Recurring geometry: the 16px marker square (icon 11px at stroke 2.4, or a 7 by 9 SVG play triangle when the module has no icon), the 3px leading bar, the 2px top edge.
+Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and chips carry a 2px radius (`--radius` 0.125rem), and smaller parts cap the token rather than taking their own. Recurring geometry: the 16px marker square (icon 11px at stroke 2.4, or a 7 by 9 SVG play triangle when the module has no icon), the 2px leading tick over the middle half of a row, the 2px top edge.
 
 ## Components
 
@@ -243,7 +243,7 @@ Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and c
 
 ### Navigation
 - **Tabs:** a strip-tinted list ruled underneath; tabs separated by 60% rules, 13px medium quiet ink. The current tab is a ground box that covers the list's rule to join its content, with a 2px ai edge across its top.
-- **Menus and rows:** the highlighted or selected row takes the state fill and a 3px bar in its own text colour on its leading edge; table rows mark the first cell the same way.
+- **Menus and rows:** the highlighted or selected row takes the state fill and a 2px tick in its own text colour on its leading edge, over the middle half of the row; table rows mark the first cell the same way.
 
 ### Module Marker
 The 16px square that heads a card header, a viewer's toolbar, and a dialog or sheet title: marker tint, ai icon, or a play triangle when the module has none. The square keeps the triangle distinct from a row's disclosure chevron.
@@ -252,7 +252,7 @@ The 16px square that heads a card header, a viewer's toolbar, and a dialog or sh
 
 ### Do:
 - **Do** head every module with the ruled strip and the 16px marker square.
-- **Do** pair every state fill with a second cue: the 3px ink bar for rows, the 2px ai top edge for the current tab.
+- **Do** pair every state fill with a second cue: the 2px ink tick for rows, the 2px ai top edge for the current tab.
 - **Do** keep touch sizes (40px, 44px hit areas) and 16px field text under a coarse pointer, whatever the style.
 - **Do** read sizes and radii from the style tokens (`--spacing-control`, `--radius-surface`), capping a smaller part to the token rather than adding one.
 - **Do** keep overlays at a 100ms fade with no travel; under reduced motion, translate, scale, rotate and blur reset.

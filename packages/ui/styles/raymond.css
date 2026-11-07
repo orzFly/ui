@@ -91,7 +91,7 @@
     --shadow-overlay: var(--shadow-raised);
     /* A highlighted or selected item is filled with the highlight colour;
        nothing else marks it. */
-    --state-cue: 0 0 #0000;
+    --state-cue: none;
     /* A toggle button stays sunken while it is on. */
     --pressed-cue: var(--shadow-sunken);
 
