@@ -59,7 +59,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
         // Under raymond rows carry no rules, and everything in a selected
         // row, its quiet text and outlined chips included, takes the
         // highlight's text colour, as Windows draws it.
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-accent data-[state=selected]:*:first:state-cue raymond:border-b-transparent raymond:data-[state=selected]:text-primary-foreground raymond:data-[state=selected]:[--accent:var(--primary)] raymond:data-[state=selected]:[--border:var(--primary-foreground)] raymond:data-[state=selected]:[--foreground:var(--primary-foreground)] raymond:data-[state=selected]:[--muted-foreground:var(--primary-foreground)]",
+        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-accent data-[state=selected]:text-accent-foreground data-[state=selected]:*:first:state-cue raymond:border-b-transparent raymond:data-[state=selected]:text-primary-foreground raymond:data-[state=selected]:[--accent:var(--primary)] raymond:data-[state=selected]:[--border:var(--primary-foreground)] raymond:data-[state=selected]:[--foreground:var(--primary-foreground)] raymond:data-[state=selected]:[--muted-foreground:var(--primary-foreground)]",
         className,
       )}
       {...props}

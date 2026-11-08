@@ -28,9 +28,9 @@ const NON_TEXT = 3;
  * item); a field's edge on the surfaces a field sits on; a focus ring, drawn
  * 2px off the control, on what lies behind it, never the control's own fill.
  * The state cues are each style's own. The default style marks a highlighted
- * or selected row by an ink tick on its accent fill, in a menu, on the page or
- * in a sidebar, and the current tab by a primary edge on the page; raymond
- * fills the item with primary, which must stand out from the surface and
+ * or selected row by a tick in its accent-foreground text on its accent fill,
+ * in a menu, on the page or in a sidebar, and the current tab by a primary
+ * edge on the page; raymond fills the item with primary, which must stand out from the surface and
  * carry its primary-foreground text. A chart's series sits on the page; the module marker's icon,
  * drawn in primary, on its square.
  */
@@ -89,7 +89,7 @@ export const CONTRAST_CHECKS: readonly ContrastCheck[] = [
     floor: NON_TEXT,
     styles: [DEFAULT_STYLE],
     pairs: [
-      ["foreground", "accent"],
+      ["accent-foreground", "accent"],
       ["sidebar-accent-foreground", "sidebar-accent"],
       ["primary", "background"],
     ],

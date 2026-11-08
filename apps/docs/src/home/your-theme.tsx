@@ -7,6 +7,7 @@ import {
   themesForStyle,
 } from "@orz/themes";
 import { Button } from "@orz/ui/components/button";
+import { List, ListItem } from "@orz/ui/components/list";
 import { cn } from "@orz/ui/lib/utils";
 import {
   type ThemeMode,
@@ -146,35 +147,45 @@ export function YourTheme({ className }: { className?: string }) {
             ))}
           </fieldset>
         )}
-        <fieldset
-          aria-label="Theme"
-          className="h-[calc(var(--spacing-row)*4)] overflow-y-auto border"
-          onPointerLeave={() => show(null)}
-          onBlur={(event) => leaves(event) && show(null)}
-        >
-          {rows.map((theme) => {
-            const schemes = schemesOf(theme);
-            return (
-              <button
-                key={theme.id}
-                type="button"
-                aria-pressed={theme.id === current?.id}
-                className="flex min-h-row w-full items-center gap-2 px-2 text-left text-ui outline-none transition-colors hover:bg-accent focus-visible:focus-ring-inset aria-pressed:bg-accent aria-pressed:font-medium aria-pressed:state-cue touch:min-h-11"
-                onClick={() => commitTheme(theme.id)}
-                onPointerEnter={() => show({ ui: { theme: theme.id, mode } })}
-                onFocus={() => show({ ui: { theme: theme.id, mode } })}
-              >
-                <Swatch theme={theme} />
-                <span className="min-w-0 flex-1 truncate">{theme.label}</span>
-                {schemes.length === 1 && (
-                  <span className="text-muted-foreground text-ui-sm">
-                    {schemes[0]} only
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </fieldset>
+        <List purpose="listbox" asChild>
+          <fieldset
+            aria-label="Theme"
+            className="border"
+            onPointerLeave={() => show(null)}
+            onBlur={(event) => leaves(event) && show(null)}
+          >
+            <div className="h-[calc(var(--spacing-row)*4)] overflow-y-auto">
+              {rows.map((theme) => {
+                const schemes = schemesOf(theme);
+                const picked = theme.id === current?.id;
+                return (
+                  <ListItem key={theme.id} asChild selected={picked}>
+                    <button
+                      type="button"
+                      aria-pressed={picked}
+                      className="flex min-h-row w-full items-center gap-2 px-2 text-left text-ui outline-none focus-visible:focus-ring-inset touch:min-h-11"
+                      onClick={() => commitTheme(theme.id)}
+                      onPointerEnter={() =>
+                        show({ ui: { theme: theme.id, mode } })
+                      }
+                      onFocus={() => show({ ui: { theme: theme.id, mode } })}
+                    >
+                      <Swatch theme={theme} />
+                      <span className="min-w-0 flex-1 truncate">
+                        {theme.label}
+                      </span>
+                      {schemes.length === 1 && (
+                        <span className="text-muted-foreground text-ui-sm">
+                          {schemes[0]} only
+                        </span>
+                      )}
+                    </button>
+                  </ListItem>
+                );
+              })}
+            </div>
+          </fieldset>
+        </List>
         <fieldset aria-label="Mode" className={cn(TRACK, "grid-cols-3")}>
           {MODES.map(({ mode: value, label, Icon }) => {
             const schemes = current ? schemesOf(current) : [];

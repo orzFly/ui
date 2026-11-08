@@ -16,8 +16,12 @@ const ListContext = React.createContext<{
   orientation: "vertical" | "horizontal";
 }>({ purpose: "listbox", orientation: "vertical" });
 
+// A listbox's picked row takes the accent fill, text and tick that every
+// highlighted or selected row takes, a menu's or a table's included.
 // Under raymond a listbox is a sunken white well whose picked rows fill with
-// the highlight, as a list box draws them; a menu sits on the face, its rows filling with the highlight only under the pointer. The highlight's
+// the highlight, as a list box draws them, and its bevel stands in for any
+// border the caller gave the frame; a menu sits on the face, its rows filling
+// with the highlight only under the pointer. The highlight's
 // text colour reaches a row's quiet text through --muted-foreground, and
 // inside the row primary and its text colour swap, so a mark drawn in
 // primary (an unread dot, a count) stays seen on the highlight; the swap
@@ -25,8 +29,10 @@ const ListContext = React.createContext<{
 // be a cycle and draw nothing.
 const FRAME: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
   listbox: {
-    vertical: "raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken",
-    horizontal: "raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken",
+    vertical:
+      "raymond:border-0 raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken",
+    horizontal:
+      "raymond:border-0 raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken",
   },
   menu: {
     vertical: "raymond:bg-(--3d-face)",
@@ -39,9 +45,9 @@ const FRAME: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
 const ITEM: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
   listbox: {
     vertical:
-      "transition-colors hover:bg-accent/60 data-selected:bg-accent raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
+      "transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
     horizontal:
-      "transition-colors hover:bg-accent/60 data-selected:bg-accent raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
+      "transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
   },
   menu: {
     vertical:

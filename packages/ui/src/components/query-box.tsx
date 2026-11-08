@@ -373,7 +373,7 @@ export function QueryBox<R>({
     className: cn(
       OPTION,
       idx === hl &&
-        "bg-accent state-cue raymond:bg-primary raymond:text-primary-foreground raymond:[--foreground:var(--primary-foreground)] raymond:[--muted-foreground:var(--primary-foreground)]",
+        "bg-accent text-accent-foreground state-cue raymond:bg-primary raymond:text-primary-foreground raymond:[--foreground:var(--primary-foreground)] raymond:[--muted-foreground:var(--primary-foreground)]",
     ),
     onMouseMove: () => setHighlight(idx),
     onClick: () => choose(rows[idx]),
