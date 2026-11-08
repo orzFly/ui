@@ -355,8 +355,10 @@ export function CodeEditor({
       data-read-only={readOnly ? "true" : undefined}
       className={cn(
         // text-base below md is not cosmetic: iOS auto-zooms a focused field
-        // under 16px. Same rule `@orz/ui`'s Textarea follows.
-        "flex w-full flex-col rounded-frame border border-input bg-transparent text-base transition-colors focus-within:focus-ring md:text-ui dark:bg-input/15",
+        // under 16px. Same rule `@orz/ui`'s Textarea follows. Under raymond
+        // it is a field like Input: sunken, on the window colour, its focus
+        // rectangle inside the bevel.
+        "flex w-full flex-col rounded-frame border border-input bg-transparent text-base transition-colors focus-within:focus-ring md:text-ui dark:bg-input/15 raymond:border-transparent raymond:bg-(--window) raymond:bg-clip-padding raymond:shadow-sunken raymond:[--focus-offset:-4px]",
         readOnly && "opacity-50",
         className,
       )}

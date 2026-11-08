@@ -1,5 +1,6 @@
 import { Button } from "@orz/ui/components/button";
 import { Input } from "@orz/ui/components/input";
+import { Pane } from "@orz/ui/components/pane";
 import { cn } from "@orz/ui/lib/utils";
 import {
   MarkdownEditor,
@@ -75,151 +76,168 @@ export function Compose({
   };
 
   return (
-    <section
-      aria-labelledby="compose-title"
-      className={cn(
-        "absolute z-30 flex flex-col overflow-hidden bg-background shadow-2xl",
-        // A phone has room for nothing beside it.
-        "max-md:inset-0",
-        "md:right-4 md:bottom-0 md:rounded-t-xl md:border md:border-b-0",
-        size === "docked" && "md:h-[min(30rem,calc(100%-2rem))] md:w-[30rem]",
-        size === "minimised" && "md:w-72",
-        size === "expanded" &&
-          "md:top-4 md:left-4 md:max-w-3xl md:rounded-b-xl md:border-b lg:left-auto lg:w-[48rem] md:bottom-4",
-      )}
-    >
-      <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-muted/50 pr-2 pl-1 md:h-10 md:pr-1 md:pl-3">
-        <ActionButton
-          label="Close and keep as a draft"
-          className="md:hidden"
-          onClick={() => onClose(current())}
-        >
-          <XIcon />
-        </ActionButton>
-        <h2
-          id="compose-title"
-          className="min-w-0 flex-1 truncate font-medium text-ui"
-        >
-          {subject.trim() || "New message"}
-        </h2>
-        <span data-compose-controls className="max-md:hidden">
-          <ActionButton
-            label={size === "minimised" ? "Restore" : "Minimise"}
-            size="icon-sm"
-            onClick={() =>
-              setSize(size === "minimised" ? "docked" : "minimised")
-            }
-          >
-            <MinusIcon />
-          </ActionButton>
-          <ActionButton
-            label={size === "expanded" ? "Shrink" : "Expand"}
-            size="icon-sm"
-            onClick={() => setSize(size === "expanded" ? "docked" : "expanded")}
-          >
-            {size === "expanded" ? <Minimize2Icon /> : <Maximize2Icon />}
-          </ActionButton>
-          <ActionButton
-            label="Close and keep as a draft"
-            size="icon-sm"
-            onClick={() => onClose(current())}
-          >
-            <XIcon />
-          </ActionButton>
-        </span>
-        <Button size="sm" className="md:hidden" onClick={send}>
-          Send
-        </Button>
-      </header>
-      <form
-        aria-label="New message"
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          send();
-        }}
+    <Pane purpose="window" asChild>
+      <section
+        aria-labelledby="compose-title"
         className={cn(
-          "flex min-h-0 flex-1 flex-col",
-          size === "minimised" && "md:hidden",
+          "absolute z-30 flex flex-col overflow-hidden bg-background shadow-2xl",
+          // A phone has room for nothing beside it.
+          "max-md:inset-0",
+          "md:right-4 md:bottom-0 md:rounded-t-xl md:border md:border-b-0",
+          size === "docked" && "md:h-[min(30rem,calc(100%-2rem))] md:w-[30rem]",
+          size === "minimised" && "md:w-72",
+          size === "expanded" &&
+            "md:top-4 md:left-4 md:max-w-3xl md:rounded-b-xl md:border-b lg:left-auto lg:w-[48rem] md:bottom-4",
         )}
       >
-        <div className="border-b">
-          <div className="flex items-center gap-2 px-3">
-            <label
-              htmlFor="compose-to"
-              className="w-14 text-muted-foreground text-ui"
+        <Pane purpose="titlebar" asChild>
+          <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-muted/50 pr-2 pl-1 md:h-10 md:pr-1 md:pl-3">
+            <ActionButton
+              label="Close and keep as a draft"
+              className="md:hidden"
+              onClick={() => onClose(current())}
             >
-              To
-            </label>
-            <Input
-              id="compose-to"
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              list="compose-people"
-              autoComplete="off"
-              placeholder="alice, newcomer"
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? "compose-to-error" : undefined}
-              className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
-            />
-          </div>
-          {error && (
-            <p
-              id="compose-to-error"
-              className="px-3 pb-2 text-destructive text-ui-sm"
+              <XIcon />
+            </ActionButton>
+            <h2
+              id="compose-title"
+              className="min-w-0 flex-1 truncate font-medium text-ui"
             >
-              {error}
-            </p>
+              {subject.trim() || "New message"}
+            </h2>
+            <span data-compose-controls className="max-md:hidden">
+              <ActionButton
+                label={size === "minimised" ? "Restore" : "Minimise"}
+                size="icon-sm"
+                onClick={() =>
+                  setSize(size === "minimised" ? "docked" : "minimised")
+                }
+              >
+                <MinusIcon />
+              </ActionButton>
+              <ActionButton
+                label={size === "expanded" ? "Shrink" : "Expand"}
+                size="icon-sm"
+                onClick={() =>
+                  setSize(size === "expanded" ? "docked" : "expanded")
+                }
+              >
+                {size === "expanded" ? <Minimize2Icon /> : <Maximize2Icon />}
+              </ActionButton>
+              <ActionButton
+                label="Close and keep as a draft"
+                size="icon-sm"
+                onClick={() => onClose(current())}
+              >
+                <XIcon />
+              </ActionButton>
+            </span>
+            <Button size="sm" className="md:hidden" onClick={send}>
+              Send
+            </Button>
+          </header>
+        </Pane>
+        <form
+          aria-label="New message"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            send();
+          }}
+          className={cn(
+            "flex min-h-0 flex-1 flex-col",
+            size === "minimised" && "md:hidden",
           )}
-          <datalist id="compose-people">
-            {Object.entries(INBOX_PEOPLE)
-              .filter(([login]) => login !== INBOX_ME)
-              .map(([login, name]) => (
-                <option key={login} value={login}>
-                  {name}
-                </option>
-              ))}
-          </datalist>
-        </div>
-        <div className="flex items-center gap-2 border-b px-3">
-          <label
-            htmlFor="compose-subject"
-            className="w-14 text-muted-foreground text-ui"
-          >
-            Subject
-          </label>
-          <Input
-            id="compose-subject"
-            value={subject}
-            onChange={(event) => setSubject(event.target.value)}
-            className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
+        >
+          <Pane purpose="panel" asChild>
+            <div className="border-b">
+              <div className="flex items-center gap-2 px-3">
+                <label
+                  htmlFor="compose-to"
+                  className="w-14 text-muted-foreground text-ui"
+                >
+                  To
+                </label>
+                <Input
+                  id="compose-to"
+                  value={to}
+                  onChange={(event) => setTo(event.target.value)}
+                  list="compose-people"
+                  autoComplete="off"
+                  placeholder="alice, newcomer"
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? "compose-to-error" : undefined}
+                  flush
+                />
+              </div>
+              {error && (
+                <p
+                  id="compose-to-error"
+                  className="px-3 pb-2 text-destructive text-ui-sm"
+                >
+                  {error}
+                </p>
+              )}
+              <datalist id="compose-people">
+                {Object.entries(INBOX_PEOPLE)
+                  .filter(([login]) => login !== INBOX_ME)
+                  .map(([login, name]) => (
+                    <option key={login} value={login}>
+                      {name}
+                    </option>
+                  ))}
+              </datalist>
+            </div>
+          </Pane>
+          <Pane purpose="panel" asChild>
+            <div className="flex items-center gap-2 border-b px-3">
+              <label
+                htmlFor="compose-subject"
+                className="w-14 text-muted-foreground text-ui"
+              >
+                Subject
+              </label>
+              <Input
+                id="compose-subject"
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                flush
+              />
+            </div>
+          </Pane>
+          <MarkdownEditor
+            ref={editor}
+            ariaLabel="Message"
+            placeholder="Write in markdown…"
+            initialValue={draft.body}
+            onSubmit={send}
+            className="min-h-0 flex-1 overflow-y-auto rounded-none border-0 px-1 focus-within:ring-0"
           />
-        </div>
-        <MarkdownEditor
-          ref={editor}
-          ariaLabel="Message"
-          placeholder="Write in markdown…"
-          initialValue={draft.body}
-          onSubmit={send}
-          className="min-h-0 flex-1 overflow-y-auto rounded-none border-0 px-1 focus-within:ring-0"
-        />
-        <div className="flex items-center gap-2 border-t p-2 max-md:hidden">
-          <Button type="submit">
-            <SendIcon />
-            Send
-          </Button>
-          <span className="flex-1" />
-          <ActionButton label="Discard" onClick={() => onDiscard(current())}>
-            <Trash2Icon />
-          </ActionButton>
-        </div>
-        <div className="flex border-t p-2 md:hidden">
-          <Button variant="ghost" onClick={() => onDiscard(current())}>
-            <Trash2Icon />
-            Discard
-          </Button>
-        </div>
-      </form>
-    </section>
+          <Pane purpose="panel" asChild>
+            <div className="flex items-center gap-2 border-t p-2 max-md:hidden">
+              <Button type="submit">
+                <SendIcon />
+                Send
+              </Button>
+              <span className="flex-1" />
+              <ActionButton
+                label="Discard"
+                onClick={() => onDiscard(current())}
+              >
+                <Trash2Icon />
+              </ActionButton>
+            </div>
+          </Pane>
+          <Pane purpose="panel" asChild>
+            <div className="flex border-t p-2 md:hidden">
+              <Button variant="ghost" onClick={() => onDiscard(current())}>
+                <Trash2Icon />
+                Discard
+              </Button>
+            </div>
+          </Pane>
+        </form>
+      </section>
+    </Pane>
   );
 }

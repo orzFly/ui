@@ -2,6 +2,7 @@ import demoApis from "virtual:orz-demo-api";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { ModuleMarker } from "@orz/ui/components/card";
+import { Pane } from "@orz/ui/components/pane";
 import {
   Sheet,
   SheetContent,
@@ -195,15 +196,17 @@ export function DemoPage({ children }: { children: ReactNode }) {
           <DemoCode dir={dir} source={source} onSource={setSourceParam} />
         </TabsContent>
         {/* Rendered while closed too, so search indexes the description it holds. */}
-        <aside
-          aria-label="About this demo"
-          className={cn(
-            "hidden w-80 shrink-0 overflow-y-auto border-l",
-            aboutOpen && "lg:block",
-          )}
-        >
-          {about}
-        </aside>
+        <Pane purpose="document" asChild>
+          <aside
+            aria-label="About this demo"
+            className={cn(
+              "hidden w-80 shrink-0 flex-col border-l",
+              aboutOpen && "lg:flex",
+            )}
+          >
+            <div className="min-h-0 flex-1 overflow-y-auto">{about}</div>
+          </aside>
+        </Pane>
       </div>
     </Tabs>
   );

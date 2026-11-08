@@ -136,6 +136,31 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   through `components.json`'s aliases. Rewrite them to relative `.ts`/`.tsx` paths, because the build
   only rewrites relative imports and biome rejects `@/`.
 
+## Styles
+
+A style (`data-style`, `@orz/ui/styles/<id>.css`) is a look the site can wear, picked by the user
+beside the theme. It is not a redesign of every surface.
+
+- A style redraws a part where it stands. What a surface holds and in what order stay the caller's,
+  and a style adds nothing visible: an icon button stays icon-only unless the caller gave it text.
+  Edges, fills, bevels, radii and type change, and spacing may tighten to the style's density.
+- How a style draws a part follows what the part is for, not which component drew it. A component
+  that serves several purposes takes a `purpose` prop (`List` `nav`/`listbox`/`menu`, `Pane`
+  `document`/`toolbar`/`panel`), never `role`, which is ARIA's and says nothing about looks. A
+  hand-written list, toolbar or reading pane in an app or demo uses these components rather than
+  bare markup a style cannot see.
+- A part's look under a style is written in the component's own classes under that style's variant
+  (`raymond:`, declared in `theme.css`), beside its default classes. The style's stylesheet holds
+  its tokens; its `data-slot` rules are what has not moved into the components yet, and no new ones
+  are added. Apps and demos never write a style's variant or `[data-style]` themselves: a look they
+  need is a purpose in the library.
+- A surface sizes from what it holds: padding around its controls, not a fixed height (`py-2.5`,
+  not `h-12`), so every style's control sizes, and the touch sizes, carry it.
+- A well drawn with an inset shadow (a sunken pane, a list box) is the frame around a scroller,
+  never the scroller: a scrolling element paints its content over its own inset shadow.
+- Adding a style's classes never moves the default style. Check it with `scripts/visual-check.ts`
+  (`--compare`) or a before/after capture of the demos the change touches.
+
 ## Docs site
 
 `apps/docs` is the site visitors land on: guidelines, demos and a Start page, with the Storybook

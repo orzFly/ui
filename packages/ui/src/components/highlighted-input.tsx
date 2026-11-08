@@ -84,7 +84,8 @@ export function HighlightedInput({
     <div
       data-slot="highlighted-input"
       className={cn(
-        "relative h-control rounded-control touch:h-10 border border-input bg-field transition-colors focus-within:focus-ring dark:bg-input/15",
+        // Under raymond a sunken field, its focus rectangle inside the bevel.
+        "relative h-control rounded-control touch:h-10 border border-input bg-field transition-colors focus-within:focus-ring dark:bg-input/15 raymond:border-transparent raymond:bg-clip-padding raymond:shadow-sunken raymond:[--focus-offset:-4px]",
         className,
       )}
     >

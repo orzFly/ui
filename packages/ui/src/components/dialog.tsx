@@ -212,7 +212,15 @@ function DialogCloseButton({
 }: React.ComponentProps<typeof Button>) {
   return (
     <DialogPrimitive.Close data-slot="dialog-close" asChild>
-      <Button variant="ghost" size="icon-sm" className={className} {...props}>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className={cn(
+          "raymond:[&_svg]:size-2.5 raymond:[&_svg]:stroke-3",
+          className,
+        )}
+        {...props}
+      >
         <XIcon />
         <span className="sr-only">Close</span>
       </Button>

@@ -36,7 +36,8 @@ function TabsList({
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(
-        "group/tabs-list inline-flex w-fit items-stretch border-b text-muted-foreground",
+        // Under raymond either strip is the face, its rule the lit edge.
+        "group/tabs-list inline-flex w-fit items-stretch border-b text-muted-foreground raymond:border-(--3d-highlight) raymond:bg-(--3d-face) raymond:px-0.5 raymond:pt-0.5 raymond:text-foreground",
         variant === "default" ? "bg-muted" : "-mb-px self-stretch",
         className,
       )}
@@ -60,6 +61,11 @@ function TabsTrigger({
         "group-data-[variant=default]/tabs-list:border-r group-data-[variant=default]/tabs-list:border-border/60 group-data-[variant=default]/tabs-list:first:border-l group-data-[variant=default]/tabs-list:data-[state=active]:bg-background group-data-[variant=default]/tabs-list:data-[state=active]:tab-cue",
         // A line's current tab has nothing to join, so it is underlined.
         "group-data-[variant=line]/tabs-list:hover:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:tab-line-cue",
+        // Under raymond each tab, of either strip, is raised from the strip with
+        // rounded top corners, and the current one stands two pixels larger
+        // every way but down, over its neighbours' edges: raymond has no
+        // underlined tab.
+        "raymond:mt-0.5 raymond:[--tab-line-cue:var(--tab-cue)] raymond:rounded-t-[3px] raymond:border-0 raymond:[--focus-offset:-3px] raymond:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_0_var(--3d-dark-shadow),inset_-2px_0_var(--3d-shadow)] raymond:data-[state=active]:z-1 raymond:data-[state=active]:-mx-0.5 raymond:data-[state=active]:mt-0 raymond:data-[state=active]:bg-(--3d-face) raymond:data-[state=active]:px-[calc(var(--spacing)*3+2px)] raymond:data-[state=active]:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_0_var(--3d-dark-shadow),inset_-2px_0_var(--3d-shadow)]",
         className,
       )}
       {...props}

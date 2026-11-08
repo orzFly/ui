@@ -295,8 +295,12 @@ export function ThemeMenu({
 
   // What leaving a style button shows again: the highlighted row's preview.
   const highlighted = useRef<Row | null>(null);
+  // The style button the pointer last moved over, and where it was then.
+  const styleHovered = useRef<string | null>(null);
+  const stylePointer = useRef<{ x: number; y: number } | null>(null);
   const onHighlight = (row: Row | null) => {
     highlighted.current = row;
+    styleHovered.current = null;
     cancelSettle();
     if (!open) return;
     settle(previewOf(row));
@@ -535,8 +539,25 @@ export function ThemeMenu({
           className={SEGMENT}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => pickStyle(id)}
-          onPointerEnter={() => settle({ style: id })}
-          onPointerLeave={() => settle(previewOf(highlighted.current))}
+          onPointerMove={(event) => {
+            // A move where the pointer already was is the layout's too.
+            const at = stylePointer.current;
+            if (at && at.x === event.clientX && at.y === event.clientY) return;
+            stylePointer.current = { x: event.clientX, y: event.clientY };
+            if (styleHovered.current === id) return;
+            styleHovered.current = id;
+            settle({ style: id });
+          }}
+          onPointerLeave={(event) => {
+            // The preview redraws the menu in the hovered style's sizes,
+            // which moves this button out from under a pointer that never
+            // moved; that leave is the layout's, and taking it would flip
+            // the preview back and forth for as long as the pointer rests.
+            const at = stylePointer.current;
+            if (at && at.x === event.clientX && at.y === event.clientY) return;
+            styleHovered.current = null;
+            settle(previewOf(highlighted.current));
+          }}
           onFocus={() => settle({ style: id })}
           onBlur={() => settle(previewOf(highlighted.current))}
         >

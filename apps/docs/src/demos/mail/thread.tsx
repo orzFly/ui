@@ -10,6 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { Pane } from "@orz/ui/components/pane";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -163,7 +165,10 @@ function Toolbar({
 }) {
   const folder = folderOf(thread);
   return (
-    <div className="flex h-12 shrink-0 items-center gap-0.5 border-b px-2 touch:h-14">
+    <Pane
+      purpose="toolbar"
+      className="flex shrink-0 items-center gap-0.5 border-b px-2 py-2.5"
+    >
       <ActionButton
         label="Back to inbox"
         action="back"
@@ -201,9 +206,9 @@ function Toolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Labels">
+              <ToolbarButton aria-label="Labels">
                 <TagIcon />
-              </Button>
+              </ToolbarButton>
             </DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent>Labels</TooltipContent>
@@ -237,9 +242,9 @@ function Toolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="More actions">
+              <ToolbarButton aria-label="More actions">
                 <EllipsisIcon />
-              </Button>
+              </ToolbarButton>
             </DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent>More actions</TooltipContent>
@@ -267,7 +272,7 @@ function Toolbar({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-    </div>
+    </Pane>
   );
 }
 
@@ -296,33 +301,41 @@ export function Thread({
       className="flex min-h-0 flex-1 flex-col"
     >
       <Toolbar thread={thread} actions={actions} />
-      <div
-        ref={scrollRef}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto"
-      >
-        <header className="border-b px-4 py-3">
-          <h2 id="inbox-subject" className="font-semibold text-lg leading-snug">
-            {thread.subject}
-          </h2>
-          {thread.labels.length > 0 && (
-            <p className="mt-1 flex flex-wrap gap-1">
-              {thread.labels.map((label) => (
-                <Badge key={label} variant="outline">
-                  {label}
-                </Badge>
-              ))}
-            </p>
+      <Pane purpose="document" className="flex min-h-0 flex-1 flex-col">
+        <div
+          ref={scrollRef}
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto"
+        >
+          <header className="border-b px-4 py-3">
+            <h2
+              id="inbox-subject"
+              className="font-semibold text-lg leading-snug"
+            >
+              {thread.subject}
+            </h2>
+            {thread.labels.length > 0 && (
+              <p className="mt-1 flex flex-wrap gap-1">
+                {thread.labels.map((label) => (
+                  <Badge key={label} variant="outline">
+                    {label}
+                  </Badge>
+                ))}
+              </p>
+            )}
+          </header>
+          <ol className="flex-1 divide-y">
+            {thread.messages.map((message) => (
+              <Message
+                key={`${message.from}-${message.at}`}
+                message={message}
+              />
+            ))}
+          </ol>
+          {canReply && (
+            <Composer key={thread.id} ref={composerRef} onSend={onSend} />
           )}
-        </header>
-        <ol className="flex-1 divide-y">
-          {thread.messages.map((message) => (
-            <Message key={`${message.from}-${message.at}`} message={message} />
-          ))}
-        </ol>
-        {canReply && (
-          <Composer key={thread.id} ref={composerRef} onSend={onSend} />
-        )}
-      </div>
+        </div>
+      </Pane>
     </article>
   );
 }

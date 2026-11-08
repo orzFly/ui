@@ -1,4 +1,3 @@
-import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +7,7 @@ import {
 } from "@orz/ui/components/dialog";
 import { Label } from "@orz/ui/components/label";
 import { Switch } from "@orz/ui/components/switch";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -105,7 +105,7 @@ export function ActionButton({
   action,
   children,
   ...props
-}: ComponentProps<typeof Button> & {
+}: ComponentProps<typeof ToolbarButton> & {
   label: string;
   action?: KeyAction;
 }) {
@@ -113,9 +113,9 @@ export function ActionButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={label} {...props}>
+        <ToolbarButton aria-label={label} {...props}>
           {children}
-        </Button>
+        </ToolbarButton>
       </TooltipTrigger>
       <TooltipContent>
         {label}

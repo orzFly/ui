@@ -3,7 +3,12 @@ export const meta = {
   description:
     "A style draws the components: their shape, type, density and motion. The user picks it beside the theme, and no style may move what keeps a screen usable.",
   order: 17,
-  api: ["ui/Foundations/Theme", "ui/ThemeMenu", "ui/Primitives/Card"],
+  api: [
+    "ui/Foundations/Theme",
+    "ui/ThemeMenu",
+    "ui/Primitives/Card",
+    "ui/Primitives/List",
+  ],
 };
 
 import { StyleSwitch } from "../../../examples/styles/style-switch.tsx";
@@ -70,16 +75,37 @@ the user picks a style and then one of its themes.
 
 ## Your own surfaces
 
+A style draws a part by what it is for. The same rows are a menu, a list box or a folder pane
+depending on what picking one does, and a region is a document to read, a toolbar to act on it, or
+the window's face around them; each style draws each of those its own way. Say which with
+`purpose`, and the style does the rest:
+
+- **A list** is `List` with `purpose="nav"` when its rows move between places and one is current,
+  `"listbox"` when they are things to pick, `"menu"` when they are actions. Mark its rows with
+  `ListItem`'s `current` or `selected`.
+- **A region** is `Pane` with `purpose="app"` for the box an app's panes sit side by side in,
+  `"document"` for what is read or written (a message, a diff), `"toolbar"` for the controls that
+  act on it, and `"panel"` for the rest of the window. A window of the app's own that floats over
+  the rest, a docked composer say, is `"window"`, and its caption `"titlebar"`.
+- **A command in a toolbar** is `ToolbarButton`, named with `aria-label` when it shows an icon
+  alone.
+
+A style redraws these where they stand: it keeps what they hold and in what order, adds nothing you
+did not write, and may tighten their spacing. So size a toolbar or a header by the padding around
+its controls rather than a fixed height, and a style's denser controls bring the bar in with them.
+A list or pane that scrolls puts its scroller inside, so a style's sunken edge stays drawn around
+it.
+
 <DoDont>
   <Do>
-    Build a panel from `Card`, a toolbar from `Button`, a list's rows at `min-h-row`, and round a
-    part of your own with `rounded-control` or `rounded-surface`. Under another style it changes
-    with everything around it.
+    Build a panel from `Card`, a toolbar from `Pane` and `ToolbarButton`, a list from `List`, its
+    rows at `min-h-row`, and round a part of your own with `rounded-control` or `rounded-surface`.
+    Under another style it changes with everything around it.
   </Do>
   <Dont>
-    Write `rounded-lg`, `h-8` or `shadow-md` on a part of your own, or style by
-    `[data-style="raymond"]`. The first stays as it is when the style changes; the second breaks
-    under every style you did not write it for.
+    Write `rounded-lg`, `h-8` or `shadow-md` on a part of your own, hand-roll a list or a toolbar
+    from bare markup, or style by `[data-style="raymond"]` or `raymond:`. The first two stay as they
+    are when the style changes; the last breaks under every style you did not write it for.
   </Dont>
 </DoDont>
 

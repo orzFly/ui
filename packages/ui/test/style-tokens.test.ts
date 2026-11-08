@@ -285,7 +285,10 @@ function scanSource(path: string): Finding[] {
   const found: Finding[] = [];
   for (const { text } of literals(source)) {
     for (const token of text.split(/\s+/).filter(Boolean)) {
-      const { utility } = split(token);
+      const { variants, utility } = split(token);
+      // A style's own variant is that style's drawing, as its stylesheet
+      // under styles/ is: no other style reaches it, so it needs no token.
+      if (variants.includes("raymond")) continue;
       const problem = classProblem(utility);
       if (problem) found.push({ file, utility, problem });
     }

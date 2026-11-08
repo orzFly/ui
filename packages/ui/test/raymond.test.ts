@@ -104,6 +104,12 @@ describe("raymond.css", () => {
         expect(rule.layer, rule.selector).toBe("");
         continue;
       }
+      // The scroll bars and selected text belong to no component: they are
+      // the page's, as the base layer's other rules are.
+      if (/::(-webkit-scrollbar|selection)/.test(rule.selector)) {
+        expect(rule.layer, rule.selector).toBe("base");
+        continue;
+      }
       expect(rule.layer, rule.selector).toBe("components");
       expect(rule.selector, rule.selector).toMatch(/^\[data-style="raymond"\]/);
     }
@@ -150,11 +156,13 @@ describe("raymond touch sizing", () => {
   const TITLE_BAR = '[data-style="raymond"] [data-slot="dialog-title"]';
 
   it("sets no size in a slot rule but a title bar's height", () => {
-    const sized = rules.flatMap((rule) =>
-      Object.keys(rule.declarations)
-        .filter((property) => SIZE.test(property))
-        .map((property) => `${rule.selector} ${property}`),
-    );
+    const sized = rules
+      .filter((rule) => !rule.selector.includes("::-webkit-scrollbar"))
+      .flatMap((rule) =>
+        Object.keys(rule.declarations)
+          .filter((property) => SIZE.test(property))
+          .map((property) => `${rule.selector} ${property}`),
+      );
     expect(sized).toEqual([
       `${TITLE_BAR}, [data-style="raymond"] [data-slot="sheet-title"] min-height`,
     ]);

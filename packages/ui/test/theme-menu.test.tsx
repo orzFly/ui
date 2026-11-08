@@ -629,7 +629,7 @@ describe("ThemeMenu: style switch", () => {
     open();
     fireEvent.pointerMove(row("Nord"));
     settle();
-    fireEvent.pointerEnter(segment("Bevel"));
+    fireEvent.pointerMove(segment("Bevel"), { clientX: 10, clientY: 10 });
     settle();
     expect(themes.getPreview()).toEqual({ style: "bevel" });
     expect(themes.getResolved()).toMatchObject({
@@ -639,11 +639,23 @@ describe("ThemeMenu: style switch", () => {
     expect(segment("Default").getAttribute("aria-pressed")).toBe("true");
     // Hovering leaves the list on the committed style's themes.
     expect(rows()).toContain("Nord");
-    fireEvent.pointerLeave(segment("Bevel"));
+    fireEvent.pointerLeave(segment("Bevel"), { clientX: 10, clientY: 40 });
     settle();
     expect(themes.getPreview()).toEqual({
       ui: { theme: "nord", mode: "system" },
     });
+  });
+
+  it("keeps a hovered style's preview when its new sizes move the button from under a still pointer", () => {
+    const themes = setup({ options: styled });
+    open();
+    fireEvent.pointerMove(segment("Bevel"), { clientX: 10, clientY: 10 });
+    settle();
+    // The preview redraws the menu, and the button leaves the pointer.
+    fireEvent.pointerLeave(segment("Bevel"), { clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(segment("Default"), { clientX: 10, clientY: 10 });
+    settle();
+    expect(themes.getPreview()).toEqual({ style: "bevel" });
   });
 
   it("is reachable from the keyboard, previewing on focus", () => {

@@ -2,8 +2,10 @@ import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { List, ListItem } from "@orz/ui/components/list";
 import { RefreshFailure } from "@orz/ui/components/load-failure";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
+import { Pane } from "@orz/ui/components/pane";
 import { QueryBox } from "@orz/ui/components/query-box";
 import {
   Sheet,
@@ -162,94 +164,90 @@ function ThreadRow({
     }, LONG_PRESS_MS);
   };
   return (
-    <li
-      data-thread={thread.id}
-      className={cn(
-        "group relative flex items-stretch transition-colors hover:bg-accent/60",
-        (open || selected) && "bg-accent",
-      )}
-    >
-      <span className="flex items-center pl-3">
-        <Checkbox
-          checked={selected}
-          onCheckedChange={(on) => onSelect(on === true)}
-          aria-label={`Select “${thread.subject}”`}
-        />
-      </span>
-      <a
-        href={threadHref(thread.id)}
-        aria-current={open ? "true" : undefined}
-        onPointerDown={onPointerDown}
-        onPointerUp={cancelPress}
-        onPointerLeave={cancelPress}
-        onPointerCancel={cancelPress}
-        onContextMenu={(event) => {
-          if (press.current.touch) event.preventDefault();
-        }}
-        onClick={(event) => {
-          if (!isPlainClick(event)) return;
-          event.preventDefault();
-          if (press.current.fired) return;
-          if (selecting && press.current.touch) onSelect(!selected);
-          else onOpen();
-        }}
-        className="grid min-w-0 flex-1 select-none grid-cols-[0.5rem_1fr_auto] items-baseline gap-x-2 gap-y-0.5 px-3 py-2.5 outline-none [-webkit-touch-callout:none] focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset touch:py-3.5"
-      >
-        {/* The dot carries the state for sight; the hidden word for a screen reader. */}
-        <span
-          aria-hidden
-          className={cn(
-            "size-2 self-center rounded-full",
-            thread.unread && "bg-primary",
-          )}
-        />
-        <span
-          className={cn(
-            "truncate text-ui",
-            thread.unread ? "font-semibold" : "text-muted-foreground",
-          )}
+    <ListItem asChild selected={open || selected}>
+      <li data-thread={thread.id} className="group relative flex items-stretch">
+        <span className="flex items-center pl-3">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(on) => onSelect(on === true)}
+            aria-label={`Select “${thread.subject}”`}
+          />
+        </span>
+        <a
+          href={threadHref(thread.id)}
+          aria-current={open ? "true" : undefined}
+          onPointerDown={onPointerDown}
+          onPointerUp={cancelPress}
+          onPointerLeave={cancelPress}
+          onPointerCancel={cancelPress}
+          onContextMenu={(event) => {
+            if (press.current.touch) event.preventDefault();
+          }}
+          onClick={(event) => {
+            if (!isPlainClick(event)) return;
+            event.preventDefault();
+            if (press.current.fired) return;
+            if (selecting && press.current.touch) onSelect(!selected);
+            else onOpen();
+          }}
+          className="grid min-w-0 flex-1 select-none grid-cols-[0.5rem_1fr_auto] items-baseline gap-x-2 gap-y-0.5 px-3 py-2.5 outline-none [-webkit-touch-callout:none] focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset touch:py-3.5"
         >
-          {thread.unread && <span className="sr-only">Unread: </span>}
-          {draft && (
-            <span className="mr-1 font-medium text-foreground">Draft</span>
-          )}
-          {senders(thread)}
-          {thread.messages.length > 1 && (
-            <span className="ml-1 font-normal text-muted-foreground text-ui-sm">
-              {thread.messages.length}
-            </span>
-          )}
-        </span>
-        <span className="flex items-center gap-1 text-muted-foreground text-ui-sm tabular-nums">
-          {thread.starred && (
-            <StarIcon aria-label="Starred" className="size-3 fill-current" />
-          )}
-          {last && (
-            <time dateTime={last.at}>{DAY.format(new Date(last.at))}</time>
-          )}
-        </span>
-        <span
-          className={cn(
-            "col-span-2 col-start-2 truncate text-ui",
-            thread.unread && "font-medium",
-          )}
-        >
-          {thread.subject}
-        </span>
-        <span className="col-span-2 col-start-2 line-clamp-2 text-muted-foreground text-ui-sm md:line-clamp-1">
-          {thread.labels.map((label) => (
-            <Badge
-              key={label}
-              variant="outline"
-              className="mr-1 h-4 gap-1 px-1 align-[1px] text-[0.65rem]"
-            >
-              {label}
-            </Badge>
-          ))}
-          {snippet(thread)}
-        </span>
-      </a>
-    </li>
+          {/* The dot carries the state for sight; the hidden word for a screen reader. */}
+          <span
+            aria-hidden
+            className={cn(
+              "size-2 self-center rounded-full",
+              thread.unread && "bg-primary",
+            )}
+          />
+          <span
+            className={cn(
+              "truncate text-ui",
+              thread.unread ? "font-semibold" : "text-muted-foreground",
+            )}
+          >
+            {thread.unread && <span className="sr-only">Unread: </span>}
+            {draft && (
+              <span className="mr-1 font-medium text-foreground">Draft</span>
+            )}
+            {senders(thread)}
+            {thread.messages.length > 1 && (
+              <span className="ml-1 font-normal text-muted-foreground text-ui-sm">
+                {thread.messages.length}
+              </span>
+            )}
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground text-ui-sm tabular-nums">
+            {thread.starred && (
+              <StarIcon aria-label="Starred" className="size-3 fill-current" />
+            )}
+            {last && (
+              <time dateTime={last.at}>{DAY.format(new Date(last.at))}</time>
+            )}
+          </span>
+          <span
+            className={cn(
+              "col-span-2 col-start-2 truncate text-ui",
+              thread.unread && "font-medium",
+            )}
+          >
+            {thread.subject}
+          </span>
+          <span className="col-span-2 col-start-2 line-clamp-2 text-muted-foreground text-ui-sm md:line-clamp-1">
+            {thread.labels.map((label) => (
+              <Badge
+                key={label}
+                variant="outline"
+                className="mr-1 h-4 gap-1 px-1 align-[1px] text-[0.65rem]"
+              >
+                {label}
+              </Badge>
+            ))}
+            {snippet(thread)}
+          </span>
+        </a>
+      </li>
+    </ListItem>
   );
 }
 
@@ -344,7 +342,10 @@ function ThreadList({
 
   return (
     <>
-      <div className="flex h-14 shrink-0 items-center gap-1 border-b px-2">
+      <Pane
+        purpose="toolbar"
+        className="flex shrink-0 items-center gap-1 border-b px-2 py-3.5"
+      >
         <ActionButton label="Folders" className="md:hidden" onClick={onMenu}>
           <PanelLeftIcon />
         </ActionButton>
@@ -379,8 +380,11 @@ function ThreadList({
             <XIcon />
           </ActionButton>
         )}
-      </div>
-      <div className="flex h-11 shrink-0 items-center gap-0.5 border-b px-1.5 text-ui touch:h-13">
+      </Pane>
+      <Pane
+        purpose="toolbar"
+        className="flex shrink-0 items-center gap-0.5 border-b px-1.5 py-1.5 text-ui"
+      >
         <span className="flex size-8 items-center justify-center">
           <Checkbox
             checked={all ? true : shown.length > 0 ? "indeterminate" : false}
@@ -457,7 +461,7 @@ function ThreadList({
             </span>
           </>
         )}
-      </div>
+      </Pane>
       {refresh.error && (
         <RefreshFailure
           what="the mail"
@@ -468,79 +472,82 @@ function ThreadList({
         />
       )}
       {/* Room under the last row for the phone's Compose button. */}
-      <div
-        ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto max-md:pb-20"
-      >
-        {threads.length === 0 ? (
-          <div className="grid justify-items-center gap-2 px-4 py-12 text-center">
-            <InboxIcon className="size-8 text-muted-foreground" aria-hidden />
-            {place ? (
-              <>
-                <p className="font-medium">Nothing in {place.title}</p>
-                <p className="text-muted-foreground text-ui">{place.empty}</p>
-                {(place.query === "in:sent" || place.query === "in:drafts") && (
+      <List purpose="listbox" className="flex min-h-0 flex-1 flex-col">
+        <div
+          ref={scrollRef}
+          className="min-h-0 flex-1 overflow-y-auto max-md:pb-20"
+        >
+          {threads.length === 0 ? (
+            <div className="grid justify-items-center gap-2 px-4 py-12 text-center">
+              <InboxIcon className="size-8 text-muted-foreground" aria-hidden />
+              {place ? (
+                <>
+                  <p className="font-medium">Nothing in {place.title}</p>
+                  <p className="text-muted-foreground text-ui">{place.empty}</p>
+                  {(place.query === "in:sent" ||
+                    place.query === "in:drafts") && (
+                    <Button
+                      variant="outline"
+                      className="mt-2"
+                      onClick={onCompose}
+                    >
+                      <SquarePenIcon />
+                      Compose
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">No conversations match</p>
+                  <p className="text-muted-foreground text-ui">
+                    Nothing matches{" "}
+                    <code className="font-mono">{search.query}</code>. Try fewer
+                    words, or another filter.
+                  </p>
                   <Button
                     variant="outline"
                     className="mt-2"
-                    onClick={onCompose}
+                    onClick={() => onSearch(DEFAULT_QUERY)}
                   >
-                    <SquarePenIcon />
-                    Compose
+                    Clear search
                   </Button>
-                )}
-              </>
-            ) : (
-              <>
-                <p className="font-medium">No conversations match</p>
-                <p className="text-muted-foreground text-ui">
-                  Nothing matches{" "}
-                  <code className="font-mono">{search.query}</code>. Try fewer
-                  words, or another filter.
-                </p>
-                <Button
-                  variant="outline"
-                  className="mt-2"
-                  onClick={() => onSearch(DEFAULT_QUERY)}
-                >
-                  Clear search
-                </Button>
-              </>
-            )}
-          </div>
-        ) : (
-          <ul aria-label="Conversations" className="divide-y">
-            {threads.map((thread) => (
-              <ThreadRow
-                key={thread.id}
-                thread={thread}
-                open={thread.id === open}
-                selected={selected.has(thread.id)}
-                selecting={shown.length > 0}
-                onSelect={(on) =>
-                  onSelected((was) => {
-                    const next = new Set(was);
-                    if (on) next.add(thread.id);
-                    else next.delete(thread.id);
-                    return next;
-                  })
-                }
-                onOpen={() => onOpen(thread)}
+                </>
+              )}
+            </div>
+          ) : (
+            <ul aria-label="Conversations" className="divide-y">
+              {threads.map((thread) => (
+                <ThreadRow
+                  key={thread.id}
+                  thread={thread}
+                  open={thread.id === open}
+                  selected={selected.has(thread.id)}
+                  selecting={shown.length > 0}
+                  onSelect={(on) =>
+                    onSelected((was) => {
+                      const next = new Set(was);
+                      if (on) next.add(thread.id);
+                      else next.delete(thread.id);
+                      return next;
+                    })
+                  }
+                  onOpen={() => onOpen(thread)}
+                />
+              ))}
+            </ul>
+          )}
+          {(next !== null || paged.error) && (
+            <div className="border-t p-3">
+              <LoadMoreFooter
+                pending={paged.pending}
+                error={paged.error}
+                onLoadMore={loadMore}
+                focusRequested={focusRequested}
               />
-            ))}
-          </ul>
-        )}
-        {(next !== null || paged.error) && (
-          <div className="border-t p-3">
-            <LoadMoreFooter
-              pending={paged.pending}
-              error={paged.error}
-              onLoadMore={loadMore}
-              focusRequested={focusRequested}
-            />
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      </List>
     </>
   );
 }
@@ -876,53 +883,62 @@ export function Mail() {
     <TooltipProvider>
       <ContentRenderers renderers={RENDERERS}>
         {/* Capped at a screen, so in a box with no height of its own the panes still scroll. */}
-        <div className="relative flex h-full max-h-dvh min-h-0 overflow-hidden bg-background text-foreground">
-          <aside
-            aria-label="Mail"
-            data-width="wide"
-            className="w-60 shrink-0 border-r bg-sidebar text-sidebar-foreground max-xl:hidden"
-          >
-            <Sidebar {...side} />
-          </aside>
-          <aside
-            aria-label="Mail"
-            className="w-14 shrink-0 border-r bg-sidebar text-sidebar-foreground max-md:hidden xl:hidden"
-          >
-            <Rail {...side} />
-          </aside>
-          <section
-            aria-label="Mail list"
-            className={cn(
-              "flex min-w-0 flex-col max-md:flex-1 md:w-80 md:shrink-0 md:border-r lg:w-96",
-              thread && "max-md:hidden",
-            )}
-          >
-            <ThreadList
-              search={search}
-              state={state}
-              open={open}
-              selected={selected}
-              onSelected={setSelected}
-              onSearch={onSearch}
-              refresh={refresh}
-              onRefresh={checkForMail}
-              onCompose={() => compose()}
-              onOpen={openRow}
-              onMenu={() => setMenu(true)}
-              bulk={bulk}
-              visible={visible}
-              scrollRef={listScroll}
-            />
-            {/* The phone's Compose sits under the thumb; a wide screen's is in the sidebar. */}
-            <Button
-              size="lg"
-              onClick={() => compose()}
-              className="absolute right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 rounded-2xl shadow-lg md:hidden"
+        <Pane
+          purpose="app"
+          className="relative flex h-full max-h-dvh min-h-0 overflow-hidden bg-background text-foreground"
+        >
+          <Pane purpose="panel" asChild>
+            <aside
+              aria-label="Mail"
+              data-width="wide"
+              className="w-60 shrink-0 border-r bg-sidebar text-sidebar-foreground max-xl:hidden"
             >
-              <SquarePenIcon />
-              Compose
-            </Button>
-          </section>
+              <Sidebar {...side} />
+            </aside>
+          </Pane>
+          <Pane purpose="panel" asChild>
+            <aside
+              aria-label="Mail"
+              className="w-14 shrink-0 border-r bg-sidebar text-sidebar-foreground max-md:hidden xl:hidden"
+            >
+              <Rail {...side} />
+            </aside>
+          </Pane>
+          <Pane purpose="panel" asChild>
+            <section
+              aria-label="Mail list"
+              className={cn(
+                "flex min-w-0 flex-col max-md:flex-1 md:w-80 md:shrink-0 md:border-r lg:w-96",
+                thread && "max-md:hidden",
+              )}
+            >
+              <ThreadList
+                search={search}
+                state={state}
+                open={open}
+                selected={selected}
+                onSelected={setSelected}
+                onSearch={onSearch}
+                refresh={refresh}
+                onRefresh={checkForMail}
+                onCompose={() => compose()}
+                onOpen={openRow}
+                onMenu={() => setMenu(true)}
+                bulk={bulk}
+                visible={visible}
+                scrollRef={listScroll}
+              />
+              {/* The phone's Compose sits under the thumb; a wide screen's is in the sidebar. */}
+              <Button
+                size="lg"
+                onClick={() => compose()}
+                className="absolute right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 rounded-2xl shadow-lg md:hidden"
+              >
+                <SquarePenIcon />
+                Compose
+              </Button>
+            </section>
+          </Pane>
           <div
             className={cn(
               "flex min-w-0 flex-1 flex-col",
@@ -957,10 +973,13 @@ export function Mail() {
                 }}
               />
             ) : (
-              <div className="grid flex-1 place-content-center justify-items-center gap-2 p-8 text-center text-muted-foreground">
+              <Pane
+                purpose="document"
+                className="grid flex-1 place-content-center justify-items-center gap-2 p-8 text-center text-muted-foreground"
+              >
                 <InboxIcon className="size-8" aria-hidden />
                 <p>Pick a conversation to read it.</p>
-              </div>
+              </Pane>
             )}
           </div>
           {draft && (
@@ -972,7 +991,7 @@ export function Mail() {
               onSend={send}
             />
           )}
-        </div>
+        </Pane>
         <Sheet open={menu} onOpenChange={setMenu}>
           <SheetContent side="left" className="w-72 gap-0 p-0">
             <SheetTitle className="sr-only">Folders</SheetTitle>

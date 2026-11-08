@@ -7,6 +7,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { List, ListItem } from "@orz/ui/components/list";
 import {
   NavList,
   NavListCount,
@@ -159,38 +160,40 @@ export function Sidebar({
         <SquarePenIcon />
         Compose
       </Button>
-      <nav aria-label="Folders" className="min-h-0 flex-1 overflow-y-auto">
-        <NavList>
-          {PLACES.map(({ query: place, title, Icon }) => (
-            <NavListItem key={place}>
-              <NavListLink current={query === place} asChild>
-                <PlaceLink query={place} onShow={onShow}>
-                  <Icon />
-                  {title}
-                  {(counts[place] ?? 0) > 0 && (
-                    <NavListCount>{counts[place]}</NavListCount>
-                  )}
-                </PlaceLink>
-              </NavListLink>
-            </NavListItem>
-          ))}
-        </NavList>
-        <NavListHeading asChild>
-          <h2>Labels</h2>
-        </NavListHeading>
-        <NavList>
-          {INBOX_LABELS.map((label) => (
-            <NavListItem key={label}>
-              <NavListLink current={query === `label:${label}`} asChild>
-                <PlaceLink query={`label:${label}`} onShow={onShow}>
-                  <TagIcon />
-                  {label}
-                </PlaceLink>
-              </NavListLink>
-            </NavListItem>
-          ))}
-        </NavList>
-      </nav>
+      <List purpose="nav" className="flex min-h-0 flex-1 flex-col">
+        <nav aria-label="Folders" className="min-h-0 flex-1 overflow-y-auto">
+          <NavList>
+            {PLACES.map(({ query: place, title, Icon }) => (
+              <NavListItem key={place}>
+                <NavListLink current={query === place} asChild>
+                  <PlaceLink query={place} onShow={onShow}>
+                    <Icon />
+                    {title}
+                    {(counts[place] ?? 0) > 0 && (
+                      <NavListCount>{counts[place]}</NavListCount>
+                    )}
+                  </PlaceLink>
+                </NavListLink>
+              </NavListItem>
+            ))}
+          </NavList>
+          <NavListHeading asChild>
+            <h2>Labels</h2>
+          </NavListHeading>
+          <NavList>
+            {INBOX_LABELS.map((label) => (
+              <NavListItem key={label}>
+                <NavListLink current={query === `label:${label}`} asChild>
+                  <PlaceLink query={`label:${label}`} onShow={onShow}>
+                    <TagIcon />
+                    {label}
+                  </PlaceLink>
+                </NavListLink>
+              </NavListItem>
+            ))}
+          </NavList>
+        </nav>
+      </List>
       <div className="flex items-center gap-2 border-t pt-3">
         <Avatar size="sm" aria-hidden>
           <AvatarFallback>Y</AvatarFallback>
@@ -223,7 +226,7 @@ export function Rail({
   onKeys,
 }: SidebarProps) {
   const icon =
-    "relative grid size-9 place-content-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground [&_svg]:size-4";
+    "relative grid size-9 place-content-center rounded-md text-muted-foreground hover:text-foreground [&_svg]:size-4";
   return (
     <div className="flex h-full flex-col items-center gap-1 py-3">
       <Tooltip>
@@ -234,41 +237,45 @@ export function Rail({
         </TooltipTrigger>
         <TooltipContent side="right">Compose</TooltipContent>
       </Tooltip>
-      <nav aria-label="Folders" className="mt-2">
-        <ul className="grid gap-1">
-          {PLACES.map(({ query: place, title, Icon }) => (
-            <li key={place}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <PlaceLink
-                    query={place}
-                    onShow={onShow}
-                    current={query === place}
-                    aria-label={
-                      counts[place] ? `${title}, ${counts[place]}` : title
-                    }
-                    className={cn(
-                      icon,
-                      query === place && "bg-accent text-foreground",
-                    )}
-                  >
-                    <Icon />
-                    {(counts[place] ?? 0) > 0 && (
-                      <span
-                        aria-hidden
-                        className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-primary px-1 text-[0.6rem] text-primary-foreground leading-4 tabular-nums"
+      <List purpose="nav" asChild>
+        <nav aria-label="Folders" className="mt-2">
+          <ul className="grid gap-1">
+            {PLACES.map(({ query: place, title, Icon }) => (
+              <li key={place}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <ListItem asChild current={query === place}>
+                      <PlaceLink
+                        query={place}
+                        onShow={onShow}
+                        current={query === place}
+                        aria-label={
+                          counts[place] ? `${title}, ${counts[place]}` : title
+                        }
+                        className={cn(
+                          icon,
+                          query === place && "text-foreground",
+                        )}
                       >
-                        {counts[place]}
-                      </span>
-                    )}
-                  </PlaceLink>
-                </TooltipTrigger>
-                <TooltipContent side="right">{title}</TooltipContent>
-              </Tooltip>
-            </li>
-          ))}
-        </ul>
-      </nav>
+                        <Icon />
+                        {(counts[place] ?? 0) > 0 && (
+                          <span
+                            aria-hidden
+                            className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-primary px-1 text-[0.6rem] text-primary-foreground leading-4 tabular-nums"
+                          >
+                            {counts[place]}
+                          </span>
+                        )}
+                      </PlaceLink>
+                    </ListItem>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{title}</TooltipContent>
+                </Tooltip>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </List>
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>

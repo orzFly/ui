@@ -48,8 +48,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
         } as React.CSSProperties
       }
       toastOptions={{
+        // Under raymond a toast is the period's info balloon, info yellow in
+        // a black frame, and its action a push button with the default
+        // button's frame.
         classNames: {
-          toast: "cn-toast",
+          toast:
+            "cn-toast raymond:gap-2! raymond:rounded-none! raymond:border! raymond:border-(--info-foreground)! raymond:bg-(--info)! raymond:px-2! raymond:py-1.5! raymond:text-(--info-foreground)! raymond:shadow-none!",
+          actionButton:
+            "raymond:rounded-none! raymond:bg-(--3d-face)! raymond:text-foreground! raymond:shadow-[inset_0_0_0_1px_var(--foreground),inset_-2px_-2px_var(--3d-dark-shadow),inset_2px_2px_var(--3d-highlight),inset_-3px_-3px_var(--3d-shadow),inset_3px_3px_var(--3d-light)]! raymond:active:shadow-pressed!",
         },
       }}
       {...props}

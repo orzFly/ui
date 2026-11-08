@@ -12,7 +12,11 @@
    wins; and a component's own classes win too, so a rule mostly reassigns a
    token on its slot (`--primary` on a default button, which its bg-primary
    reads) rather than setting the property the component sets. Each slot a
-   rule names exists in an @orz/ package (test/raymond.test.ts). */
+   rule names exists in an @orz/ package (test/raymond.test.ts).
+
+   A part whose look depends on what it is for, not on which component drew
+   it, carries its raymond look in its own classes under the `raymond:`
+   variant instead (Tabs, List by its purpose), and has no rule here. */
 
 @layer base {
   [data-style="raymond"] {
@@ -57,6 +61,16 @@
     --radius-surface: 0;
     --radius-overlay: 0;
     --radius-chip: 0;
+    /* Tailwind's own scale, which an app's rounded-md or rounded-2xl reads:
+       nothing is rounded in Windows 2000 but what is round (rounded-full). */
+    --radius-xs: 0;
+    --radius-sm: 0;
+    --radius-md: 0;
+    --radius-lg: 0;
+    --radius-xl: 0;
+    --radius-2xl: 0;
+    --radius-3xl: 0;
+    --radius-4xl: 0;
 
     /* Tahoma at 11px for everything a component sets; no font ships, since
        Tahoma's licence does not allow it. */
@@ -94,6 +108,10 @@
     --state-cue: none;
     /* A toggle button stays sunken while it is on. */
     --pressed-cue: var(--shadow-sunken);
+    /* The current tab is a raised tab like the rest, only larger. */
+    --tab-cue:
+      inset 1px 1px var(--3d-highlight), inset -1px 0 var(--3d-dark-shadow),
+      inset -2px 0 var(--3d-shadow);
 
     /* A modal window does not dim what it covers. */
     --color-scrim: transparent;
@@ -136,10 +154,8 @@
 
   /* Fields and list boxes: sunken, on the window colour. The border gives
      way to the bevel, which draws the edge at 3:1 in its dark shadow. */
-  [data-style="raymond"] [data-slot="input"],
   [data-style="raymond"] [data-slot="textarea"],
   [data-style="raymond"] [data-slot="select-trigger"],
-  [data-style="raymond"] [data-slot="highlighted-input"],
   [data-style="raymond"] [data-slot="ansi-search"] {
     --input: transparent;
     background-clip: padding-box;
@@ -184,41 +200,16 @@
     --accent-foreground: var(--primary-foreground);
   }
 
-  /* Check boxes and option buttons: a sunken white well, the mark in black. */
+  /* Check boxes and option buttons: a sunken white well, the mark in black.
+     The mark takes the window's own text colour, not --foreground, which a
+     highlighted row turns white around it. */
   [data-style="raymond"] [data-slot="checkbox"],
   [data-style="raymond"] [data-slot="radio-group-item"] {
     --primary: var(--window);
-    --primary-foreground: var(--foreground);
+    --primary-foreground: var(--popover-foreground);
     --input: transparent;
     background-color: var(--window);
     background-clip: padding-box;
-  }
-
-  /* The classic tab strip: tabs raised from the strip's lit edge, the
-     current one two pixels larger every way but down, covering the edge so
-     it joins what lies below. */
-  [data-style="raymond"] [data-slot="tabs-list"] {
-    --muted: var(--3d-face);
-    --muted-foreground: var(--foreground);
-    padding: 2px 2px 0;
-    border-bottom-color: var(--3d-highlight);
-  }
-  [data-style="raymond"] [data-slot="tabs-trigger"] {
-    --border: transparent;
-    --radius-item: 3px 3px 0 0;
-    --focus-offset: -3px;
-    --tab-cue:
-      inset 1px 1px var(--3d-highlight), inset -1px 0 var(--3d-dark-shadow),
-      inset -2px 0 var(--3d-shadow);
-    /* A line of tabs is the same classic strip: raymond has no other. */
-    --tab-line-cue: var(--tab-cue);
-    margin-top: 2px;
-    box-shadow: var(--tab-cue);
-  }
-  [data-style="raymond"] [data-slot="tabs-trigger"][data-state="active"] {
-    z-index: 1;
-    margin: 0 -2px -1px;
-    padding-inline: calc(var(--spacing) * 3 + 2px);
   }
 
   /* Window title bars: a dialog's or a sheet's title spans the window's top
@@ -335,6 +326,72 @@
 
   [data-style="raymond"] [data-slot="dialog-overlay"] {
     --blur-xs: 0;
+  }
+}
+
+/* Selected text, which belongs to no component: the highlight. */
+@layer base {
+  [data-style="raymond"] ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+/* Scroll bars, which belong to no component: a dithered track of the face
+   and its highlight, a raised thumb, and raised arrow buttons that sink
+   while held. The arrows are drawn in black, as Windows 2000 draws them: an
+   image cannot read a palette's colours. An element that sets
+   scrollbar-width or scrollbar-color keeps the browser's own. */
+@layer base {
+  [data-style="raymond"] ::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+  }
+  [data-style="raymond"] ::-webkit-scrollbar-track {
+    background-color: var(--3d-highlight);
+    background-image: conic-gradient(
+      var(--3d-face) 25%,
+      transparent 0 50%,
+      var(--3d-face) 0 75%,
+      transparent 0
+    );
+    background-size: 2px 2px;
+  }
+  [data-style="raymond"] ::-webkit-scrollbar-thumb {
+    background-color: var(--3d-face);
+    box-shadow: var(--shadow-raised);
+  }
+  [data-style="raymond"] ::-webkit-scrollbar-corner {
+    background-color: var(--3d-face);
+  }
+  [data-style="raymond"] ::-webkit-scrollbar-button:single-button {
+    display: block;
+    width: 16px;
+    height: 16px;
+    background-color: var(--3d-face);
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: var(--shadow-raised);
+  }
+  [data-style="raymond"] ::-webkit-scrollbar-button:single-button:active {
+    background-position: calc(50% + 1px) calc(50% + 1px);
+    box-shadow: inset 0 0 0 1px var(--3d-shadow);
+  }
+  [data-style="raymond"]
+    ::-webkit-scrollbar-button:single-button:vertical:decrement {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4'%3E%3Cpath d='M3 0h1v1H3zM2 1h3v1H2zM1 2h5v1H1zM0 3h7v1H0z'/%3E%3C/svg%3E");
+  }
+  [data-style="raymond"]
+    ::-webkit-scrollbar-button:single-button:vertical:increment {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4'%3E%3Cpath d='M0 0h7v1H0zM1 1h5v1H1zM2 2h3v1H2zM3 3h1v1H3z'/%3E%3C/svg%3E");
+  }
+  [data-style="raymond"]
+    ::-webkit-scrollbar-button:single-button:horizontal:decrement {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='7'%3E%3Cpath d='M3 0h1v7H3zM2 1h1v5H2zM1 2h1v3H1zM0 3h1v1H0z'/%3E%3C/svg%3E");
+  }
+  [data-style="raymond"]
+    ::-webkit-scrollbar-button:single-button:horizontal:increment {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='7'%3E%3Cpath d='M0 0h1v7H0zM1 1h1v5H1zM2 2h1v3H2zM3 3h1v1H3z'/%3E%3C/svg%3E");
   }
 }
 
