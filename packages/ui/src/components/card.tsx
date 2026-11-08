@@ -15,6 +15,11 @@ function Card({
         // The edge is a ring, drawn outside the box, so two cards laid edge to
         // edge paint one shared line rather than two.
         "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-surface bg-card py-(--card-spacing) text-ui text-card-foreground ring-1 ring-border [--card-spacing:--spacing(3)] has-[>[data-slot=card-header]]:pt-0 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(2)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-surface *:[img:last-child]:rounded-b-surface",
+        // Under raymond a card is a group box: the ring gives way to an
+        // etched frame, a dark line with a lit one a pixel down and right,
+        // drawn behind the content. With a header the frame's top runs
+        // through the header's middle, where the header is its legend.
+        "raymond:relative raymond:isolate raymond:ring-0 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-[0_1px_1px_0] raymond:before:-z-1 raymond:before:border raymond:before:border-(--3d-shadow) raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),1px_1px_var(--3d-highlight)] raymond:before:content-[''] raymond:has-[>[data-slot=card-header]]:before:top-[calc(var(--spacing-row)/2)]",
         className,
       )}
       {...props}
@@ -81,6 +86,11 @@ function CardHeader({
       data-slot="card-header"
       className={cn(
         "group/card-header @container/card-header flex min-h-row flex-wrap items-center gap-x-2 gap-y-0.5 border-b bg-muted px-2 py-0.5 text-ui-sm",
+        // Under raymond the header is the group box's legend, on the card's
+        // face with no rule: the frame breaks around each of its parts,
+        // which mask half the gap on either side in the card's colour. The
+        // marker keeps its own fill.
+        "raymond:border-b-transparent raymond:bg-transparent raymond:[&>:is([data-slot=card-title],[data-slot=card-description],[data-slot=card-action])]:bg-card raymond:[&>:is([data-slot=module-marker],[data-slot=card-title],[data-slot=card-description],[data-slot=card-action])]:[outline:calc(var(--spacing)*1)_solid_var(--card)]",
         className,
       )}
       {...props}
@@ -139,7 +149,8 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-footer"
       className={cn(
-        "flex items-center rounded-b-surface border-t bg-muted p-(--card-spacing)",
+        // Under raymond the footer is the group box's face, with no rule.
+        "flex items-center rounded-b-surface border-t bg-muted p-(--card-spacing) raymond:border-t-transparent raymond:bg-transparent",
         className,
       )}
       {...props}

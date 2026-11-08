@@ -153,9 +153,8 @@ describe("raymond touch sizing", () => {
   // through the tokens those utilities replace, and its slot rules sit below
   // the utilities, so nothing here can shrink a touch target.
   const SIZE = /^(min-|max-)?(height|width|block-size|inline-size)$/;
-  const TITLE_BAR = '[data-style="raymond"] [data-slot="dialog-title"]';
 
-  it("sets no size in a slot rule but a title bar's height", () => {
+  it("sets no size in a slot rule", () => {
     const sized = rules
       .filter((rule) => !rule.selector.includes("::-webkit-scrollbar"))
       .flatMap((rule) =>
@@ -163,9 +162,7 @@ describe("raymond touch sizing", () => {
           .filter((property) => SIZE.test(property))
           .map((property) => `${rule.selector} ${property}`),
       );
-    expect(sized).toEqual([
-      `${TITLE_BAR}, [data-style="raymond"] [data-slot="sheet-title"] min-height`,
-    ]);
+    expect(sized).toEqual([]);
   });
 
   it("keeps every control and row token at or under the touch sizes", () => {
@@ -195,12 +192,8 @@ describe("raymond focus", () => {
       if (rule === tokenBlock) continue;
       for (const [property, value] of Object.entries(rule.declarations)) {
         expect(property, rule.selector).not.toMatch(
-          /^(--focus-(width|style)|outline-(style|width))$/,
+          /^(--focus-(width|style)|outline(-style|-width)?)$/,
         );
-        if (property === "outline") {
-          // The legend's mask on a card header's parts, none of them focusable.
-          expect(rule.selector, value).toContain('[data-slot="card-header"]');
-        }
         if (property === "--focus-offset") {
           // Inside a push button's or a tab's bevel, never past its middle.
           expect(

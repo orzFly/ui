@@ -42,8 +42,9 @@ function SheetOverlay({
         "fixed inset-0 z-50 duration-(--duration-overlay) data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         // A clear overlay still catches the outside click, so the page behind
         // stays visible without becoming interactive.
+        // Under raymond a modal window neither dims nor blurs what it covers.
         overlay === "dim" &&
-          "bg-scrim supports-backdrop-filter:backdrop-blur-xs",
+          "bg-scrim supports-backdrop-filter:backdrop-blur-xs raymond:backdrop-blur-none",
         className,
       )}
       {...props}
@@ -92,7 +93,8 @@ function SheetContent({
           <SheetPrimitive.Close data-slot="sheet-close" asChild>
             <Button
               variant="ghost"
-              className="absolute top-3 right-3 raymond:[&_svg]:size-2.5 raymond:[&_svg]:stroke-3"
+              // Under raymond the X is the title bar's close box, as Dialog's.
+              className="absolute top-3 right-3 raymond:bg-(--3d-face) raymond:shadow-raised raymond:[--muted:var(--3d-face)] raymond:[--spacing-control-sm:0.875rem] raymond:active:shadow-pressed raymond:[&_svg]:size-2.5 raymond:[&_svg]:stroke-3"
               size="icon-sm"
             >
               <XIcon />
@@ -158,6 +160,8 @@ function SheetTitle({
       data-slot="sheet-title"
       className={cn(
         "font-heading text-title font-medium text-foreground flex items-center gap-2",
+        // Under raymond the title bar, as DialogTitle's.
+        "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=sheet-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=sheet-content]:not(:focus-within)]:text-(--caption-inactive-foreground)",
         className,
       )}
       {...props}

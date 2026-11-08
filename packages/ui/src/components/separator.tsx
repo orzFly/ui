@@ -17,7 +17,8 @@ function Separator({
       decorative={decorative}
       orientation={orientation}
       className={cn(
-        "shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch",
+        // Under raymond a rule is etched: a lit line beside the dark one.
+        "shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch raymond:data-horizontal:shadow-[0_1px_var(--3d-highlight)] raymond:data-vertical:shadow-[1px_0_var(--3d-highlight)]",
         className,
       )}
       {...props}

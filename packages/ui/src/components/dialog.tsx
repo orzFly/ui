@@ -126,7 +126,8 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-scrim duration-(--duration-overlay) supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        // Under raymond a modal window neither dims nor blurs what it covers.
+        "fixed inset-0 isolate z-50 bg-scrim duration-(--duration-overlay) supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 raymond:backdrop-blur-none",
         className,
       )}
       {...props}
@@ -193,7 +194,9 @@ function DialogContent({
       >
         {children}
         {showCloseButton && (
-          <DialogCloseButton className="absolute top-2 right-2" />
+          // Under raymond the corner X is the title bar's close box, a small
+          // raised button; held, it sinks as a push button does.
+          <DialogCloseButton className="absolute top-2 right-2 raymond:bg-(--3d-face) raymond:shadow-raised raymond:[--muted:var(--3d-face)] raymond:[--spacing-control-sm:0.875rem] raymond:active:shadow-pressed" />
         )}
       </DialogPrimitive.Content>
     </DialogPortal>
@@ -269,7 +272,8 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-surface border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        // Under raymond the buttons sit on the dialog's face, under no rule.
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-surface border-t bg-muted/50 p-4 sm:flex-row sm:justify-end raymond:border-t-transparent raymond:bg-transparent",
         className,
       )}
       {...props}
@@ -299,6 +303,10 @@ function DialogTitle({
       data-slot="dialog-title"
       className={cn(
         "font-heading text-title leading-none font-medium flex items-center gap-2",
+        // Under raymond the title is the window's title bar: it spans the
+        // top in the caption gradient, three pixels in from the frame, grey
+        // while the dialog does not hold the focus.
+        "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:text-(--caption-inactive-foreground)",
         className,
       )}
       {...props}

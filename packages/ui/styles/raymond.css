@@ -16,7 +16,8 @@
 
    A part whose look depends on what it is for, not on which component drew
    it, carries its raymond look in its own classes under the `raymond:`
-   variant instead (Tabs, List by its purpose), and has no rule here. */
+   variant instead (Tabs, List by its purpose, the title bars of Dialog and
+   Sheet, Card's group box, Tooltip, Separator), and has no rule here. */
 
 @layer base {
   [data-style="raymond"] {
@@ -212,120 +213,10 @@
     background-clip: padding-box;
   }
 
-  /* Window title bars: a dialog's or a sheet's title spans the window's top
-     in the caption gradient, grey while the window does not hold focus. */
-  [data-style="raymond"] [data-slot="dialog-title"],
-  [data-style="raymond"] [data-slot="sheet-title"] {
-    --foreground: var(--caption-foreground);
-    --font-weight-medium: 700;
-    min-height: 1.125rem;
-    margin: calc(var(--spacing) * -4 + 3px) calc(var(--spacing) * -4 + 3px) 0;
-    padding: 0 2px 0 3px;
-    color: var(--caption-foreground);
-    background-image: linear-gradient(
-      to right,
-      var(--caption),
-      color-mix(in oklab, var(--caption), var(--caption-gradient)) 60%,
-      var(--caption-gradient)
-    );
-  }
-  [data-style="raymond"]
-    :is([data-slot="dialog-content"], [data-slot="sheet-content"]):not(
-      :focus-within
-    )
-    :is([data-slot="dialog-title"], [data-slot="sheet-title"]) {
-    --foreground: var(--caption-inactive-foreground);
-    color: var(--caption-inactive-foreground);
-    background-image: linear-gradient(
-      to right,
-      var(--caption-inactive),
-      var(--caption-inactive-gradient)
-    );
-  }
-  /* A dialog's buttons sit on its face, under no rule. */
-  [data-style="raymond"] [data-slot="dialog-footer"] {
-    --muted: transparent;
-    border-top-color: transparent;
-  }
-  /* The close box sits in the title bar, a small raised button. */
-  [data-style="raymond"]
-    :is([data-slot="dialog-content"], [data-slot="sheet-content"])
-    > [data-slot="dialog-close"],
-  [data-style="raymond"]
-    [data-slot="sheet-content"]
-    > [data-slot="sheet-close"] {
-    --spacing-control-sm: 0.875rem;
-    --muted: var(--3d-face);
-    background-color: var(--3d-face);
-    box-shadow: var(--shadow-raised);
-  }
-
-  /* Group boxes: an etched frame, the header its legend on the top line. */
-  [data-style="raymond"] [data-slot="card"] {
-    /* The ring gives way to the etched frame. */
-    --tw-ring-offset-width: -1px;
-    position: relative;
-    isolation: isolate;
-  }
-  [data-style="raymond"] [data-slot="card"]::before {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    inset: 0 1px 1px 0;
-    border: 1px solid var(--3d-shadow);
-    box-shadow:
-      inset 1px 1px var(--3d-highlight),
-      1px 1px var(--3d-highlight);
-    pointer-events: none;
-  }
-  [data-style="raymond"]
-    [data-slot="card"]:has(> [data-slot="card-header"])::before {
-    top: calc(var(--spacing-row) / 2);
-  }
-  [data-style="raymond"] [data-slot="card-header"] {
-    --muted: transparent;
-    border-bottom-color: transparent;
-  }
-  /* The line breaks around the legend: each part masks half the gap on
-     either side of it with the card's colour. */
-  [data-style="raymond"]
-    [data-slot="card-header"]
-    > :is(
-      [data-slot="module-marker"],
-      [data-slot="card-title"],
-      [data-slot="card-description"],
-      [data-slot="card-action"]
-    ) {
-    outline: calc(var(--spacing) * 1) solid var(--card);
-    background-color: var(--card);
-  }
-  [data-style="raymond"] [data-slot="card-footer"] {
-    --muted: transparent;
-    border-top-color: transparent;
-  }
-
-  /* Menus and their separators: an etched line. */
+  /* A menu's separator: an etched line, as a Separator's. */
   [data-style="raymond"] [data-slot="dropdown-menu-separator"],
   [data-style="raymond"] [data-slot="select-separator"] {
     box-shadow: 0 1px var(--3d-highlight);
-  }
-  [data-style="raymond"]
-    [data-slot="separator"][data-orientation="horizontal"] {
-    box-shadow: 0 1px var(--3d-highlight);
-  }
-  [data-style="raymond"] [data-slot="separator"][data-orientation="vertical"] {
-    box-shadow: 1px 0 var(--3d-highlight);
-  }
-
-  /* Tooltips: the info colours, framed in their text colour. */
-  [data-style="raymond"] [data-slot="tooltip-content"] {
-    --foreground: var(--info);
-    --background: var(--info-foreground);
-    border: 1px solid var(--info-foreground);
-  }
-
-  [data-style="raymond"] [data-slot="dialog-overlay"] {
-    --blur-xs: 0;
   }
 }
 
