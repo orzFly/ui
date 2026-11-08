@@ -7,6 +7,7 @@ export const meta = {
     "ui/Primitives/Switch",
     "ui/Primitives/Checkbox",
     "ui/Primitives/RadioGroup",
+    "ui/Primitives/SegmentedControl",
     "ui/Primitives/Select",
     "ui/FilterMenu",
     "ui/Primitives/Slider",
@@ -69,10 +70,15 @@ one, and the box above them turns partly checked; press it to select none.
 | Any number of items from a set: filters, facets, a bulk selection | On apply or submit | `Checkbox` list |
 | Exactly one of two to five, worth seeing together | Either | `RadioGroup` |
 | Exactly one of many, or of options with long names | Either | `Select` |
+| One of two or three modes of the tool in hand, in its toolbar | Immediately | `SegmentedControl` |
 | Exactly one of a list too long to scan, or one that grows with people's own data: a task, a person, a label | Either | `FilterMenu`, behind a button that shows the pick |
 | A value along a range, where the exact number matters less than the feel | Either | `Slider` |
 | A colour | Either | `ColorPickerPopover`, with the app's palette as `swatches` |
 | One of a few views of the same thing | Immediately | `Tabs`: they switch what is shown, not a value that is saved |
+
+A `SegmentedControl` sets how the tool works rather than a value it saves: the Binary inspector's
+typing mode, Overwrite or Insert, beside the commands it changes. A setting on a form or a settings
+screen, even one of two, is a RadioGroup.
 
 The parent of a partly checked list is a Checkbox with `checked="indeterminate"`. A Switch has no
 indeterminate state and no "applies later": if the setting only takes effect once

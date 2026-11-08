@@ -464,3 +464,114 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+/* Under raymond. Rules rather than raymond: classes, because the rules above
+   are unlayered and outrank any utility.
+
+   A view is a document: a sunken well in the window colour, as Notepad's
+   edit area, its bevel on the root around the scroller, never on the
+   scroller, which would paint its rows over it. Focused, a selection fills
+   with the highlight and is lettered in the highlight's text, a modified
+   byte's included, as an edit control's; the twin pane's on the face, edged
+   in the face's shadow. Nothing marks the cell under the pointer. */
+[data-style="raymond"] .orz-hex {
+  --hex-fill: var(--primary);
+  --hex-edge: var(--primary);
+  --hex-twin-fill: var(--3d-face);
+  --hex-twin-edge: var(--3d-shadow);
+  --hex-hover: transparent;
+  padding: 2px;
+  border: 0;
+  border-radius: 0;
+  background: var(--window);
+  box-shadow: var(--shadow-sunken);
+}
+[data-style="raymond"] .orz-hex [data-hover][data-sel] {
+  --cell-bg: var(--cell-fill);
+}
+[data-style="raymond"]
+  .orz-hex:focus[data-active-pane="hex"]
+  [data-pane="hex"][data-sel],
+[data-style="raymond"]
+  .orz-hex:focus[data-active-pane="text"]
+  [data-pane="text"][data-sel] {
+  --cell-edge: var(--primary-foreground);
+  color: var(--primary-foreground);
+}
+[data-style="raymond"]
+  .orz-hex:focus[data-active-pane="hex"]
+  [data-pane="hex"][data-sel]::before,
+[data-style="raymond"]
+  .orz-hex:focus[data-active-pane="text"]
+  [data-pane="text"][data-sel]::before {
+  background: var(--primary);
+}
+
+/* The column labels are a list view's header: black on a raised band, run
+   out over the scroller's padding to the well's edges. */
+[data-style="raymond"] .orz-hex-header {
+  margin-inline: -0.625rem;
+  padding-inline: 0.625rem;
+  background: var(--3d-face);
+  box-shadow: var(--shadow-raised);
+  color: var(--foreground);
+}
+[data-style="raymond"] .orz-hex-encoding {
+  border: 0;
+  border-radius: 0;
+  color: var(--foreground);
+}
+[data-style="raymond"] .orz-hex-encoding:hover {
+  background: transparent;
+  box-shadow:
+    inset 1px 1px var(--3d-highlight),
+    inset -1px -1px var(--3d-shadow);
+}
+[data-style="raymond"] .orz-hex-encoding[data-state="open"] {
+  background: transparent;
+  box-shadow:
+    inset 1px 1px var(--3d-shadow),
+    inset -1px -1px var(--3d-highlight);
+}
+
+/* The status line is a status bar along the well's foot: the face, with one
+   shallow sunken panel inset two pixels from its edges, as Explorer's. */
+[data-style="raymond"] .orz-hex .orz-hex-status {
+  position: relative;
+  border-top: 0;
+  background: var(--3d-face);
+  color: var(--foreground);
+}
+[data-style="raymond"] .orz-hex .orz-hex-status::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  pointer-events: none;
+  box-shadow:
+    inset 1px 1px var(--3d-shadow),
+    inset -1px -1px var(--3d-highlight);
+}
+/* The typing mode is a push button, sunken while it inserts. */
+[data-style="raymond"] .orz-hex-mode {
+  border: 0;
+  border-radius: 0;
+  background: var(--3d-face);
+  box-shadow: var(--shadow-raised);
+}
+[data-style="raymond"] .orz-hex-mode[aria-pressed="true"] {
+  background: var(--3d-face);
+  box-shadow: var(--shadow-sunken);
+}
+[data-style="raymond"] .orz-hex-mode:disabled {
+  opacity: 1;
+  color: var(--3d-shadow);
+  text-shadow: 1px 1px var(--3d-highlight);
+}
+
+/* A value the selection is too short for is greyed as a disabled label is:
+   embossed, not faded. */
+[data-style="raymond"] .orz-hex-inspector-list [data-dimmed] {
+  opacity: 1;
+  color: var(--3d-shadow);
+  text-shadow: 1px 1px var(--3d-highlight);
+}

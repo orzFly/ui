@@ -1,6 +1,13 @@
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import { LoadFailure } from "@orz/ui/components/load-failure";
+import { NavListFrame } from "@orz/ui/components/nav-list";
+import { Pane } from "@orz/ui/components/pane";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@orz/ui/components/segmented-control";
 import {
   Select,
   SelectContent,
@@ -13,10 +20,12 @@ import {
   SheetBody,
   SheetContent,
   SheetDescription,
+  SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@orz/ui/components/sheet";
 import { Skeleton } from "@orz/ui/components/skeleton";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -363,128 +372,142 @@ export function BinaryInspector() {
         }}
       />
       <div className="flex min-h-0 flex-1">
-        <aside
-          aria-label="File and structure"
-          className="hidden w-64 shrink-0 flex-col border-r bg-sidebar md:flex"
-        >
-          <div className="grid gap-2 border-b p-3">{filePicker}</div>
-          <h2 className="px-3 pt-3 pb-1 font-medium text-muted-foreground text-ui-sm">
-            Structure
-          </h2>
-          <nav
-            aria-label="Structure"
-            className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-3"
+        <Pane purpose="panel" asChild>
+          <aside
+            aria-label="File and structure"
+            className="hidden w-64 shrink-0 flex-col border-r bg-sidebar md:flex"
           >
-            {doc && !fetching && (
-              <StructureList state={structureState} path={path} onPick={pick} />
-            )}
-          </nav>
-        </aside>
-        <main className="flex min-w-0 flex-1 flex-col">
-          <div className="grid gap-2 border-b p-2 md:hidden">
-            {filePicker}
-            {doc && !fetching && (
-              <StructureSelect
-                state={structureState}
-                path={path}
-                onPick={pick}
-                className="w-full"
-              />
-            )}
-          </div>
-          <div className="flex min-h-0 flex-1 p-2 md:p-3">{body}</div>
-        </main>
-        <aside
-          aria-label="Inspector"
-          className="hidden w-72 shrink-0 overflow-y-auto border-l p-3 lg:block"
-        >
-          {inspector}
-        </aside>
+            <Pane purpose="panel" className="grid gap-2 border-b p-3">
+              {filePicker}
+            </Pane>
+            <GroupHeading asChild className="px-3 pt-3 pb-1">
+              <h2>Structure</h2>
+            </GroupHeading>
+            <NavListFrame className="mx-1.5 mb-3 flex min-h-0 flex-1 flex-col">
+              <nav
+                aria-label="Structure"
+                className="min-h-0 flex-1 overflow-y-auto"
+              >
+                {doc && !fetching && (
+                  <StructureList
+                    state={structureState}
+                    path={path}
+                    onPick={pick}
+                  />
+                )}
+              </nav>
+            </NavListFrame>
+          </aside>
+        </Pane>
+        <Pane purpose="panel" asChild>
+          <main className="flex min-w-0 flex-1 flex-col">
+            <Pane purpose="panel" className="grid gap-2 border-b p-2 md:hidden">
+              {filePicker}
+              {doc && !fetching && (
+                <StructureSelect
+                  state={structureState}
+                  path={path}
+                  onPick={pick}
+                  className="w-full"
+                />
+              )}
+            </Pane>
+            <div className="flex min-h-0 flex-1 p-2 md:p-3">{body}</div>
+          </main>
+        </Pane>
+        <Pane purpose="panel" asChild>
+          <aside
+            aria-label="Inspector"
+            className="hidden w-72 shrink-0 overflow-y-auto border-l p-3 lg:block"
+          >
+            {inspector}
+          </aside>
+        </Pane>
       </div>
-      <footer className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:px-3">
-        <Segmented
-          label="Typing"
-          options={[
-            { value: "overwrite", label: "Overwrite" },
-            { value: "insert", label: "Insert" },
-          ]}
-          pressed={mode}
-          onPress={setMode}
-        />
-        <p className="min-w-0 flex-1 truncate text-muted-foreground text-ui max-sm:order-last max-sm:basis-full">
-          {doc && !fetching
-            ? [
-                dirty ? "Modified" : changes ? "Downloaded" : "Unmodified",
-                changes,
-              ]
-                .filter(Boolean)
-                .join(" · ")
-            : ""}
-        </p>
-        <TooltipProvider>
-          <div className="ml-auto flex items-center gap-1">
-            <Named label="Undo">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Undo"
-                disabled={!doc || !canUndo}
-                onClick={() => doc?.undo()}
-              >
-                <Undo2Icon />
-              </Button>
-            </Named>
-            <Named label="Redo">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Redo"
-                disabled={!doc || !canRedo}
-                onClick={() => doc?.redo()}
-              >
-                <Redo2Icon />
-              </Button>
-            </Named>
-            <Sheet>
-              <Named label="Inspector">
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Inspector"
-                    disabled={!doc}
-                    className="lg:hidden"
-                  >
-                    <ScanSearchIcon />
-                  </Button>
-                </SheetTrigger>
+      {/* The safe area pads below the bar, so a style that tightens the bar keeps clear of it. */}
+      <footer className="pb-[max(0px,calc(env(safe-area-inset-bottom)-0.5rem))]">
+        <Pane
+          purpose="toolbar"
+          className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t px-2 py-2 md:px-3"
+        >
+          <SegmentedControl
+            aria-label="Typing"
+            value={mode}
+            onValueChange={(next) => setMode(next as HexEditMode)}
+          >
+            <SegmentedControlItem value="overwrite">
+              Overwrite
+            </SegmentedControlItem>
+            <SegmentedControlItem value="insert">Insert</SegmentedControlItem>
+          </SegmentedControl>
+          <p className="min-w-0 flex-1 truncate text-muted-foreground text-ui max-sm:order-last max-sm:basis-full">
+            {doc && !fetching
+              ? [
+                  dirty ? "Modified" : changes ? "Downloaded" : "Unmodified",
+                  changes,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : ""}
+          </p>
+          <TooltipProvider>
+            <div className="ml-auto flex items-center gap-1">
+              <Named label="Undo">
+                <ToolbarButton
+                  aria-label="Undo"
+                  disabled={!doc || !canUndo}
+                  onClick={() => doc?.undo()}
+                >
+                  <Undo2Icon />
+                </ToolbarButton>
               </Named>
-              <SheetContent side="bottom" className="gap-0">
-                <SheetTitle className="px-4 pt-4 text-base">
-                  Inspector
-                </SheetTitle>
-                <SheetDescription className="sr-only">
-                  The selected bytes read as numbers and text
-                </SheetDescription>
-                <SheetBody className="p-4">{inspector}</SheetBody>
-              </SheetContent>
-            </Sheet>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={!changes || !!fetching}
-              onClick={() => setReverting(true)}
-            >
-              <RotateCcwIcon />
-              {/* Words on a phone too: nothing undoes a revert, and Download is what the bar is for. */}
-              Revert…
-            </Button>
-            <Button size="sm" disabled={!doc || !!fetching} onClick={save}>
-              <DownloadIcon />
-              Download
-            </Button>
-          </div>
-        </TooltipProvider>
+              <Named label="Redo">
+                <ToolbarButton
+                  aria-label="Redo"
+                  disabled={!doc || !canRedo}
+                  onClick={() => doc?.redo()}
+                >
+                  <Redo2Icon />
+                </ToolbarButton>
+              </Named>
+              <Sheet>
+                <Named label="Inspector">
+                  <SheetTrigger asChild>
+                    <ToolbarButton
+                      aria-label="Inspector"
+                      disabled={!doc}
+                      className="lg:hidden"
+                    >
+                      <ScanSearchIcon />
+                    </ToolbarButton>
+                  </SheetTrigger>
+                </Named>
+                <SheetContent side="bottom" className="gap-0">
+                  <SheetHeader className="pb-0">
+                    <SheetTitle>Inspector</SheetTitle>
+                    <SheetDescription className="sr-only">
+                      The selected bytes read as numbers and text
+                    </SheetDescription>
+                  </SheetHeader>
+                  <SheetBody className="p-4">{inspector}</SheetBody>
+                </SheetContent>
+              </Sheet>
+              <ToolbarButton
+                size="sm"
+                disabled={!changes || !!fetching}
+                onClick={() => setReverting(true)}
+              >
+                <RotateCcwIcon />
+                {/* Words on a phone too: nothing undoes a revert, and Download is what the bar is for. */}
+                Revert…
+              </ToolbarButton>
+              <Button size="sm" disabled={!doc || !!fetching} onClick={save}>
+                <DownloadIcon />
+                Download
+              </Button>
+            </div>
+          </TooltipProvider>
+        </Pane>
       </footer>
       {dragging && (
         <div
@@ -564,37 +587,5 @@ function Named({ label, children }: { label: string; children: ReactNode }) {
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
-  );
-}
-
-/** A segmented switch: one pressed button per choice, as the theme menu's light/dark switch. */
-function Segmented<T extends string>({
-  label,
-  options,
-  pressed,
-  onPress,
-}: {
-  label: string;
-  options: { value: T; label: string }[];
-  pressed: T;
-  onPress: (value: T) => void;
-}) {
-  return (
-    <fieldset
-      aria-label={label}
-      className="grid grid-flow-col rounded-md bg-muted p-0.5"
-    >
-      {options.map(({ value, label: text }) => (
-        <button
-          key={value}
-          type="button"
-          aria-pressed={value === pressed}
-          onClick={() => onPress(value)}
-          className="relative rounded-sm px-2.5 py-1 text-muted-foreground text-ui-sm transition-colors hover:text-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:pressed-cue touch:hit-area"
-        >
-          {text}
-        </button>
-      ))}
-    </fieldset>
   );
 }

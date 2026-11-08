@@ -342,7 +342,19 @@ function declarationProblem(property: string, value: string): string | null {
 
 function scanStylesheet(path: string): Finding[] {
   const file = relative(PACKAGES, path);
-  const css = readFileSync(path, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const css = readFileSync(path, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    // A rule every selector of which is raymond's is that style's own drawing, as a raymond:
+    // class is: no other style reaches it, so it needs no token.
+    .replace(/(?<=^|[{};])([^{};]+)\{[^{}]*\}/g, (rule, selectors: string) =>
+      selectors
+        .split(",")
+        .every((selector) =>
+          selector.trim().startsWith('[data-style="raymond"]'),
+        )
+        ? ""
+        : rule,
+    );
   const found: Finding[] = [];
   for (const match of css.matchAll(/([\w-]+):\s*([^;{}]+);/g)) {
     const [, property = "", value = ""] = match;
