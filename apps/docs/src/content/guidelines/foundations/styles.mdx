@@ -11,6 +11,7 @@ export const meta = {
     "ui/Primitives/List",
     "ui/Primitives/NavList",
     "ui/Primitives/Pane",
+    "ui/Primitives/Separator",
     "ui/Primitives/TabNav",
     "ui/Primitives/ToolbarButton",
     "ui-codemirror/CodeEditor",
@@ -103,7 +104,9 @@ the window's face around them; each style draws each of those its own way. Say w
 - **A command in a toolbar** is `ToolbarButton`, named with `aria-label` when it shows an icon
   alone.
 - **A group of controls' title** on a form or settings screen is a `GroupHeading`; a group that
-  wants a frame of its own is a `Card`.
+  wants a frame of its own is a `Card`. A rule between the group's rows is a `Separator` with
+  `purpose="row"`, and one between groups that space does not set apart keeps the default
+  `"group"`.
 
 A style redraws these where they stand: it keeps what they hold and in what order, adds nothing you
 did not write, and may tighten their spacing. So size a toolbar or a header by the padding around

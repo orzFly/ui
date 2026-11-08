@@ -63,7 +63,9 @@ label, which `Button` does by itself.
 </DoDont>
 
 A long run of rows alike, a mailbox or a group of settings, is where space is not enough: each row
-holds several parts, and a hairline `divide-y` between the rows says which parts go together.
+holds several parts, and a hairline between the rows says which parts go together. A list's rows
+take it from `List`; a group of settings puts a `Separator` with `purpose="row"` between its rows,
+which a style whose dialogs part rows by space alone leaves blank.
 
 Groups that are not rows of one list take a `Separator` when space is not enough between them:
 clusters of buttons in a toolbar, where a gap wide enough to set them apart would scatter the row.

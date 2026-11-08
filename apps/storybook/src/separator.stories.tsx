@@ -25,3 +25,15 @@ export const Vertical: Story = {
     </div>
   ),
 };
+
+/** Between the rows of one group of controls, which some styles part by space alone. */
+export const Row: Story = {
+  args: { purpose: "row" },
+  render: (args) => (
+    <div className="grid">
+      <span className="py-3">Wrap long lines</span>
+      <Separator {...args} />
+      <span className="py-3">Show line numbers</span>
+    </div>
+  ),
+};

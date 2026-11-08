@@ -114,7 +114,7 @@ function Group({ title, children }: { title?: string; children: ReactNode }) {
       <div>
         {Children.toArray(children).map((child, index) => (
           <Fragment key={isValidElement(child) ? child.key : index}>
-            {index > 0 && <Separator />}
+            {index > 0 && <Separator purpose="row" />}
             {child}
           </Fragment>
         ))}
