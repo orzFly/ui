@@ -39,7 +39,10 @@ function ToolbarSeparator({
     <Separator
       orientation="vertical"
       data-slot="toolbar-separator"
-      className={cn("mx-1 h-5", className)}
+      className={cn(
+        "mx-1 h-5 raymond:shadow-[1px_0_var(--3d-highlight)]",
+        className,
+      )}
       {...props}
     />
   );
