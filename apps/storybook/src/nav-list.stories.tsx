@@ -1,6 +1,7 @@
 import {
   NavList,
   NavListCount,
+  NavListFrame,
   NavListHeading,
   NavListItem,
   NavListLink,
@@ -14,7 +15,7 @@ import {
   StarIcon,
   TagIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { withWidth } from "./decorators.tsx";
 
 const FOLDERS = [
@@ -96,6 +97,44 @@ export const Headings: Story = {
           </NavListItem>
         ))}
       </NavList>
+    );
+  },
+};
+
+/**
+ * An app's own column of places in a `NavListFrame`, which a style may draw as a well: switch the
+ * toolbar's Style to Raymond to see it. The scroller sits inside the frame.
+ */
+export const Frame: Story = {
+  render: function Render(args) {
+    const [current, setCurrent] = useState("Inbox");
+    return (
+      <NavListFrame className="flex h-56 flex-col">
+        <nav
+          aria-label={args["aria-label"]}
+          className="min-h-0 flex-1 overflow-y-auto"
+        >
+          {GROUPS.map(({ heading, places }) => (
+            <Fragment key={heading}>
+              <NavListHeading asChild>
+                <h2>{heading}</h2>
+              </NavListHeading>
+              <NavList>
+                {places.map(({ title, Icon }) => (
+                  <NavListItem key={title}>
+                    <NavListLink current={title === current} asChild>
+                      <button type="button" onClick={() => setCurrent(title)}>
+                        <Icon />
+                        {title}
+                      </button>
+                    </NavListLink>
+                  </NavListItem>
+                ))}
+              </NavList>
+            </Fragment>
+          ))}
+        </nav>
+      </NavListFrame>
     );
   },
 };

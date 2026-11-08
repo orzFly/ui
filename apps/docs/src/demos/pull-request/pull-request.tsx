@@ -1,6 +1,7 @@
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
-import { List, ListItem } from "@orz/ui/components/list";
+import { Pane } from "@orz/ui/components/pane";
+import { TabNav, TabNavLink } from "@orz/ui/components/tab-nav";
 import {
   Tabs,
   TabsContent,
@@ -98,32 +99,28 @@ function RepoNav({
   onSelect(section: Section): void;
 }) {
   return (
-    <List asChild purpose="nav" orientation="horizontal">
-      <nav aria-label="Repository" className="border-b">
-        <ul className="flex overflow-x-auto px-1 md:px-2">
-          {SECTIONS.map(({ id, label, icon: Icon, count }) => (
-            <li key={id} className="shrink-0">
-              <ListItem asChild current={id === current}>
-                <button
-                  type="button"
-                  aria-current={id === current ? "page" : undefined}
-                  onClick={() => onSelect(id)}
-                  className="flex h-10 items-center gap-1.5 px-2.5 text-ui touch:h-11"
-                >
-                  <Icon className="size-4" />
-                  {label}
-                  {count !== undefined && (
-                    <Badge variant="secondary" className="tabular-nums">
-                      {count}
-                    </Badge>
-                  )}
-                </button>
-              </ListItem>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </List>
+    <Pane purpose="toolbar" asChild>
+      <TabNav aria-label="Repository" className="overflow-x-auto px-1 md:px-2">
+        {SECTIONS.map(({ id, label, icon: Icon, count }) => (
+          <TabNavLink
+            key={id}
+            asChild
+            current={id === current}
+            className="shrink-0"
+          >
+            <button type="button" onClick={() => onSelect(id)}>
+              <Icon />
+              {label}
+              {count !== undefined && (
+                <Badge variant="secondary" className="tabular-nums">
+                  {count}
+                </Badge>
+              )}
+            </button>
+          </TabNavLink>
+        ))}
+      </TabNav>
+    </Pane>
   );
 }
 

@@ -14,9 +14,9 @@ const row = "flex min-h-8 w-full items-center gap-2 px-2.5 text-left text-ui";
 const meta = {
   title: "ui/Primitives/List",
   component: List,
-  args: { purpose: "nav", orientation: "vertical", className: "w-56" },
+  args: { purpose: "listbox", orientation: "vertical", className: "w-56" },
   argTypes: {
-    purpose: { control: "inline-radio", options: ["nav", "listbox", "menu"] },
+    purpose: { control: "inline-radio", options: ["listbox", "menu"] },
     orientation: {
       control: "inline-radio",
       options: ["vertical", "horizontal"],
@@ -28,7 +28,7 @@ const meta = {
       <ul>
         {ROWS.map(({ label, Icon }, i) => (
           <li key={label}>
-            <ListItem asChild current={i === 0} selected={i === 1}>
+            <ListItem asChild selected={i === 1}>
               <button type="button" className={row}>
                 <Icon className="size-4 text-muted-foreground" />
                 {label}
@@ -50,17 +50,13 @@ export const Playground: Story = {};
 export const Purposes: Story = {
   render: (args) => (
     <div className="flex flex-wrap items-start gap-6">
-      {(["nav", "listbox", "menu"] as const).map((purpose) => (
+      {(["listbox", "menu"] as const).map((purpose) => (
         <List key={purpose} {...args} purpose={purpose}>
           <ListLabel className="px-2.5 py-1">{purpose}</ListLabel>
           <ul>
             {ROWS.map(({ label, Icon }, i) => (
               <li key={label}>
-                <ListItem
-                  asChild
-                  current={purpose === "nav" && i === 0}
-                  selected={purpose === "listbox" && i === 1}
-                >
+                <ListItem asChild selected={purpose === "listbox" && i === 1}>
                   <button type="button" className={row}>
                     <Icon className="size-4 text-muted-foreground" />
                     {label}

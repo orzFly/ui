@@ -13,7 +13,10 @@ function TabNav({ className, ...props }: React.ComponentProps<"nav">) {
     <nav
       data-slot="tab-nav"
       className={cn(
-        "-mb-px flex items-stretch self-stretch border-b",
+        // Under raymond the row is a links bar, as Explorer's and Internet
+        // Explorer's are: no rule, flat buttons that rise under the pointer,
+        // the current one pressed in.
+        "-mb-px flex items-stretch self-stretch border-b raymond:mb-0 raymond:border-b-0",
         className,
       )}
       {...props}
@@ -43,6 +46,7 @@ function TabNavLink({
       aria-current={current === true ? "page" : current || undefined}
       className={cn(
         "relative inline-flex min-h-control items-center gap-1.5 px-3 text-ui font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:focus-ring touch:min-h-10 touch:hit-area data-current:text-foreground data-current:tab-line-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "raymond:self-center raymond:font-normal raymond:text-foreground raymond:transition-none raymond:[--tab-line-cue:var(--shadow-sunken)] raymond:not-data-current:hover:shadow-raised",
         className,
       )}
       {...props}

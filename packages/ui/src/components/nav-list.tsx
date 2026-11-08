@@ -18,6 +18,32 @@ function NavList({ className, ...props }: React.ComponentProps<"ul">) {
   );
 }
 
+/**
+ * The frame an app's own column of places sits in, around its `nav` and every list and heading
+ * inside, which a style may draw as a well. With `asChild` it is the `nav` itself. A nav that
+ * scrolls puts its scroller inside the frame: a well's bevel is an inset shadow, which a
+ * scroller would paint its rows over.
+ */
+function NavListFrame({
+  asChild = false,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : "div";
+  return (
+    <Comp
+      data-slot="nav-list-frame"
+      // Under raymond a sunken well in the window colour, as Explorer draws
+      // its folder pane.
+      className={cn(
+        "raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 function NavListItem({ className, ...props }: React.ComponentProps<"li">) {
   return <li data-slot="nav-list-item" className={className} {...props} />;
 }
@@ -106,4 +132,11 @@ function NavListHeading({
   );
 }
 
-export { NavList, NavListCount, NavListHeading, NavListItem, NavListLink };
+export {
+  NavList,
+  NavListCount,
+  NavListFrame,
+  NavListHeading,
+  NavListItem,
+  NavListLink,
+};

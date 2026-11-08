@@ -145,10 +145,11 @@ beside the theme. It is not a redesign of every surface.
   and a style adds nothing visible: an icon button stays icon-only unless the caller gave it text.
   Edges, fills, bevels, radii and type change, and spacing may tighten to the style's density.
 - How a style draws a part follows what the part is for, not which component drew it. A component
-  that serves several purposes takes a `purpose` prop (`List` `nav`/`listbox`/`menu`, `Pane`
-  `document`/`toolbar`/`panel`), never `role`, which is ARIA's and says nothing about looks. A
-  hand-written list, toolbar or reading pane in an app or demo uses these components rather than
-  bare markup a style cannot see.
+  that serves several purposes takes a `purpose` prop (`List` `listbox`/`menu`, `Pane`
+  `document`/`toolbar`/`panel`), never `role`, which is ARIA's and says nothing about looks; one
+  purpose with an API of its own is its own component (places to go are `NavList`, framed by
+  `NavListFrame`, and `TabNav`). A hand-written list, nav, toolbar or reading pane in an app or
+  demo uses these components rather than bare markup a style cannot see.
 - A part's look under a style is written in the component's own classes under that style's variant
   (`raymond:`, declared in `theme.css`), beside its default classes. The style's stylesheet holds
   its tokens; its `data-slot` rules are what has not moved into the components yet, and no new ones

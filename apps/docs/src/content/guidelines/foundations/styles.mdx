@@ -8,6 +8,8 @@ export const meta = {
     "ui/ThemeMenu",
     "ui/Primitives/Card",
     "ui/Primitives/List",
+    "ui/Primitives/NavList",
+    "ui/Primitives/TabNav",
   ],
 };
 
@@ -78,11 +80,12 @@ the user picks a style and then one of its themes.
 A style draws a part by what it is for. The same rows are a menu, a list box or a folder pane
 depending on what picking one does, and a region is a document to read, a toolbar to act on it, or
 the window's face around them; each style draws each of those its own way. Say which with
-`purpose`, and the style does the rest:
+`purpose`, or with the component made for it, and the style does the rest:
 
-- **A list** is `List` with `purpose="nav"` when its rows move between places and one is current,
-  `"listbox"` when they are things to pick, `"menu"` when they are actions. Mark its rows with
-  `ListItem`'s `current` or `selected`.
+- **Places to go** are a `NavList`, in a `NavListFrame` when it is a pane of the app's frame, or a
+  `TabNav` for a row of sections; see [Navigation](/guidelines/patterns/navigation/).
+- **A list** is `List` with `purpose="listbox"` when its rows are things to pick and
+  `"menu"` when they are actions. Mark picked rows with `ListItem`'s `selected`.
 - **A region** is `Pane` with `purpose="app"` for the box an app's panes sit side by side in,
   `"document"` for what is read or written (a message, a diff), `"toolbar"` for the controls that
   act on it, and `"panel"` for the rest of the window. A window of the app's own that floats over

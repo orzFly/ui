@@ -28,6 +28,10 @@ row's leading edge.
 | Show one of a few views of the same thing, in place | `Tabs` |
 | The same, in a bar over a pane that has a surface of its own | `Tabs` with `TabsList variant="line"` |
 
+A `NavList` that is a pane of the app's frame, as a mail client's folders beside its messages are,
+sits in a `NavListFrame` around its `nav`, its headings and its scroller, which a style may draw as
+a well. One in a `Sheet` does not: the sheet is its frame.
+
 `Tabs` switch panels and keep the page's URL; `TabNav` and `NavList` go somewhere, and each place
 is a link wherever it has a URL. Pass a router's link with `asChild`, or a `button` where the
 place is app state rather than an address.

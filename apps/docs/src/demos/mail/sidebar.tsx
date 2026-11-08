@@ -7,10 +7,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
-import { List, ListItem } from "@orz/ui/components/list";
 import {
   NavList,
   NavListCount,
+  NavListFrame,
   NavListHeading,
   NavListItem,
   NavListLink,
@@ -20,7 +20,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@orz/ui/components/tooltip";
-import { cn } from "@orz/ui/lib/utils";
 import {
   ArchiveIcon,
   FileTextIcon,
@@ -108,25 +107,15 @@ export interface SidebarProps {
 function PlaceLink({
   query,
   onShow,
-  current,
   ...props
 }: ComponentProps<"a"> & {
   query: string;
   onShow: (query: string) => void;
-  /** Left out under a `NavListLink`, which marks the place itself. */
-  current?: boolean;
 }) {
   return (
     <a
       {...props}
       href={placeHref(query)}
-      aria-current={
-        current === undefined
-          ? props["aria-current"]
-          : current
-            ? "page"
-            : undefined
-      }
       onClick={(event) => {
         props.onClick?.(event);
         if (!isPlainClick(event)) return;
@@ -160,7 +149,7 @@ export function Sidebar({
         <SquarePenIcon />
         Compose
       </Button>
-      <List purpose="nav" className="flex min-h-0 flex-1 flex-col">
+      <NavListFrame className="flex min-h-0 flex-1 flex-col">
         <nav aria-label="Folders" className="min-h-0 flex-1 overflow-y-auto">
           <NavList>
             {PLACES.map(({ query: place, title, Icon }) => (
@@ -193,7 +182,7 @@ export function Sidebar({
             ))}
           </NavList>
         </nav>
-      </List>
+      </NavListFrame>
       <div className="flex items-center gap-2 border-t pt-3">
         <Avatar size="sm" aria-hidden>
           <AvatarFallback>Y</AvatarFallback>
@@ -225,8 +214,6 @@ export function Rail({
   onCompose,
   onKeys,
 }: SidebarProps) {
-  const icon =
-    "relative grid size-9 place-content-center rounded-md text-muted-foreground hover:text-foreground [&_svg]:size-4";
   return (
     <div className="flex h-full flex-col items-center gap-1 py-3">
       <Tooltip>
@@ -237,25 +224,24 @@ export function Rail({
         </TooltipTrigger>
         <TooltipContent side="right">Compose</TooltipContent>
       </Tooltip>
-      <List purpose="nav" asChild>
+      <NavListFrame asChild>
         <nav aria-label="Folders" className="mt-2">
-          <ul className="grid gap-1">
+          <NavList className="gap-1">
             {PLACES.map(({ query: place, title, Icon }) => (
-              <li key={place}>
+              <NavListItem key={place}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <ListItem asChild current={query === place}>
+                    <NavListLink
+                      asChild
+                      current={query === place}
+                      className="size-9 justify-center px-0 touch:w-11"
+                    >
                       <PlaceLink
                         query={place}
                         onShow={onShow}
-                        current={query === place}
                         aria-label={
                           counts[place] ? `${title}, ${counts[place]}` : title
                         }
-                        className={cn(
-                          icon,
-                          query === place && "text-foreground",
-                        )}
                       >
                         <Icon />
                         {(counts[place] ?? 0) > 0 && (
@@ -267,15 +253,15 @@ export function Rail({
                           </span>
                         )}
                       </PlaceLink>
-                    </ListItem>
+                    </NavListLink>
                   </TooltipTrigger>
                   <TooltipContent side="right">{title}</TooltipContent>
                 </Tooltip>
-              </li>
+              </NavListItem>
             ))}
-          </ul>
+          </NavList>
         </nav>
-      </List>
+      </NavListFrame>
       <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>
