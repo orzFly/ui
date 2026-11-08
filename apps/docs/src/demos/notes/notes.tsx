@@ -357,7 +357,8 @@ export function Notes() {
                       autoFocus={fresh === note.id}
                       onChange={(body) => edit(note.id, body)}
                       extensions={extensions}
-                      className="h-full min-h-0 rounded-none border-0 px-2 py-2 focus-within:ring-0 md:px-3 dark:bg-transparent"
+                      purpose="document"
+                      className="h-full min-h-0 px-2 py-2 md:px-3"
                     />
                   </section>
                   <section

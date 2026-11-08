@@ -57,6 +57,7 @@ const meta = {
   title: "ui-codemirror/CodeEditor",
   component: CodeEditor,
   decorators: [withWidth("max-w-xl")],
+  parameters: { guidelines: "/guidelines/foundations/styles/" },
   args: {
     ariaLabel: "Notes",
     placeholder: "Write something…",
@@ -68,6 +69,7 @@ const meta = {
     keymap: { control: false },
     extensions: { control: false },
     onView: { control: false },
+    purpose: { control: "inline-radio", options: ["field", "document"] },
   },
 } satisfies Meta<typeof CodeEditor>;
 
@@ -75,6 +77,39 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+/**
+ * The file a pane exists to edit, filling it with no frame of its own: the pane around it draws
+ * the edges. Under Raymond it is a sunken well, as Notepad's page is, and shows the caret alone.
+ */
+export const Document: Story = {
+  args: {
+    purpose: "document",
+    ariaLabel: "deploy.json",
+    language: jsonSupport,
+    initialValue: JSON.stringify(
+      { service: "orders-api", replicas: 3, region: "eu-west" },
+      null,
+      2,
+    ),
+    className: "min-h-0 flex-1",
+  },
+  decorators: [
+    (Story) => (
+      <div className="flex h-48 flex-col overflow-hidden rounded-surface border">
+        <Story />
+      </div>
+    ),
+  ],
+  parameters: {
+    docs: {
+      source: {
+        code: `<CodeEditor purpose="document" ariaLabel="deploy.json" language={jsonSupport} initialValue={json} className="min-h-0 flex-1" />`,
+        language: "tsx",
+      },
+    },
+  },
+};
 
 export const ReadOnly: Story = {
   args: {

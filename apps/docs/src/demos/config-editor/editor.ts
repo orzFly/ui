@@ -31,12 +31,17 @@ const problemField = StateField.define<JsonProblem | null>({
   ],
 });
 
-// CodeEditor is a prose shell: no gutter, the page's sans font. A config file reads by line.
+// CodeEditor is a prose shell: no gutter, the page's sans font. A config file reads by line, in
+// code's own type: 13px whatever size a style sets prose in, from md up, where the shell's 16px
+// (which keeps iOS from zooming into the focused editor) gives way.
 const configTheme = Prec.highest(
   EditorView.theme({
+    "@media (min-width: 48rem)": { ".cm-scroller": { fontSize: "13px" } },
     ".cm-scroller": { fontFamily: "var(--font-mono)" },
     ".cm-gutters": {
       display: "flex",
+      // The content's, so each number sits on its line's baseline.
+      lineHeight: "1.5",
       backgroundColor: "transparent",
       border: "none",
       color: "var(--muted-foreground)",

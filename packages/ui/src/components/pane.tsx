@@ -7,9 +7,10 @@ import { cn } from "../lib/utils.ts";
  * What a region of an app's frame is for, which decides how each style draws
  * it. `app` is the frame itself, the box its other panes sit side by side in;
  * `document` holds what is read or written (a message, a diff, an
- * editor); `toolbar` holds the controls that act on it; `panel` holds
- * everything else on the window's face (a sidebar, a details column, a
- * composer's rows of fields).
+ * editor); `toolbar` holds the controls that act on it; `statusbar` says
+ * how it stands, in a line along the window's foot (a line count, the
+ * first error); `panel` holds everything else on the window's face (a
+ * sidebar, a details column, a composer's rows of fields).
  * `window` is a window of the app's own that floats over the rest (a
  * composer docked in a corner), and `titlebar` its caption: its title and
  * the buttons that minimise, resize or close it.
@@ -18,6 +19,7 @@ type PanePurpose =
   | "app"
   | "document"
   | "toolbar"
+  | "statusbar"
   | "panel"
   | "window"
   | "titlebar";
@@ -31,11 +33,13 @@ type PanePurpose =
 // with the window colour too; a toolbar is a rebar band on the face, as tall
 // as its controls and three pixels more each way, whatever height the caller
 // gave it for the default style, an etched line above and below it and a
-// gripper drawn over its leading padding; a panel is the face. A window is
-// the face inside a raised frame, square; its titlebar spans it in the
-// caption gradient with its title in bold, grey while the focus is
-// elsewhere on the page, and its icon buttons are the small raised caption
-// boxes.
+// gripper drawn over its leading padding; a status bar is the face with
+// one shallow sunken panel inset two pixels from its edges, as Explorer
+// draws its own, and as tall as its text and that panel; a panel is the
+// face. A window is the face inside a raised frame, square; its titlebar
+// spans it in the caption gradient with its title in bold, grey while the
+// focus is elsewhere on the page, and its icon buttons are the small raised
+// caption boxes.
 // Each drops the caller's dividing rule, which the edges replace.
 //
 // A well's bevel is an inset shadow, which a scrolling element paints its
@@ -47,6 +51,8 @@ const PURPOSE: Record<PanePurpose, string> = {
     "raymond:border-transparent raymond:bg-(--window) raymond:bg-clip-padding raymond:p-0.5 raymond:shadow-sunken raymond:[--background:var(--window)]",
   toolbar:
     "raymond:relative raymond:h-auto raymond:min-h-0 raymond:border-transparent raymond:bg-(--3d-face) raymond:py-[3px] raymond:shadow-[inset_0_1px_var(--3d-highlight),inset_0_-1px_var(--3d-shadow)] raymond:before:absolute raymond:before:inset-y-1 raymond:before:left-0.5 raymond:before:w-[3px] raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:before:content-['']",
+  statusbar:
+    "raymond:relative raymond:min-h-0 raymond:border-transparent raymond:bg-(--3d-face) raymond:px-[5px] raymond:py-1 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-0.5 raymond:before:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:before:content-['']",
   panel: "raymond:border-transparent raymond:bg-(--3d-face)",
   window:
     "raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:p-[3px] raymond:shadow-raised",

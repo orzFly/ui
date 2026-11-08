@@ -27,6 +27,7 @@ const PURPOSES = [
   "app",
   "document",
   "toolbar",
+  "statusbar",
   "panel",
   "window",
   "titlebar",
@@ -61,8 +62,9 @@ export const Playground: Story = {};
 
 /**
  * An app's frame, each region marked with what it is for: switch the toolbar's Style to Raymond to
- * see the panes part on the face, the toolbar become a band and the document a sunken well. The
- * document's scroller sits inside it, so the well stays drawn around what scrolls.
+ * see the panes part on the face, the toolbar become a band, the document a sunken well and the
+ * status bar a shallow sunken panel along the foot. The document's scroller sits inside it, so the
+ * well stays drawn around what scrolls.
  */
 export const App: Story = {
   args: {
@@ -130,6 +132,12 @@ export const App: Story = {
                 {THREAD?.messages[0]?.body ?? ""}
               </Markdown>
             </article>
+          </Pane>
+          <Pane
+            purpose="statusbar"
+            className="flex shrink-0 items-center border-t px-3 py-1.5 text-muted-foreground text-ui-sm"
+          >
+            {current}: 1 of 3 unread
           </Pane>
         </div>
       </Pane>

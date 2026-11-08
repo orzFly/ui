@@ -13,6 +13,7 @@ export const meta = {
     "ui/Primitives/Pane",
     "ui/Primitives/TabNav",
     "ui/Primitives/ToolbarButton",
+    "ui-codemirror/CodeEditor",
   ],
 };
 
@@ -93,8 +94,12 @@ the window's face around them; each style draws each of those its own way. Say w
   `ListItem`'s `selected`.
 - **A region** is `Pane` with `purpose="app"` for the box an app's panes sit side by side in,
   `"document"` for what is read or written (a message, a diff), `"toolbar"` for the controls that
-  act on it, and `"panel"` for the rest of the window. A window of the app's own that floats over
+  act on it, `"statusbar"` for the line along the foot that says how it stands (a line count, the
+  first error), and `"panel"` for the rest of the window. A window of the app's own that floats over
   the rest, a docked composer say, is `"window"`, and its caption `"titlebar"`.
+- **An editor** is `CodeEditor` or `MarkdownEditor` with `purpose="field"`, the default, when it
+  is one input among others on a form or under a message, and `"document"` when it is the file or
+  text its pane exists to edit and fills that pane, which draws the edges.
 - **A command in a toolbar** is `ToolbarButton`, named with `aria-label` when it shows an icon
   alone.
 - **A group of controls' title** on a form or settings screen is a `GroupHeading`; a group that

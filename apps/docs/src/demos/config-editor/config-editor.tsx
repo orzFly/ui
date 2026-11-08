@@ -9,7 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@orz/ui/components/dialog";
-import { NavList, NavListItem, NavListLink } from "@orz/ui/components/nav-list";
+import {
+  NavList,
+  NavListFrame,
+  NavListItem,
+  NavListLink,
+} from "@orz/ui/components/nav-list";
+import { Pane } from "@orz/ui/components/pane";
 import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog";
 import { CodeDiffBlock } from "@orz/ui-code";
 import { CodeEditor } from "@orz/ui-codemirror/components/code-editor";
@@ -113,106 +119,121 @@ export function ConfigEditor() {
   };
 
   return (
-    <div className="flex h-full overflow-hidden max-md:flex-col">
-      <nav
-        aria-label="Files"
-        className="shrink-0 border-b p-2 md:w-56 md:overflow-y-auto md:border-r md:border-b-0 md:bg-sidebar md:p-3"
+    <Pane purpose="app" className="flex h-full overflow-hidden max-md:flex-col">
+      <Pane
+        purpose="panel"
+        className="flex shrink-0 flex-col border-b p-2 md:w-56 md:border-r md:border-b-0 md:bg-sidebar md:p-3"
       >
-        {/* Three across on a phone, where a column would push the editor down. */}
-        <NavList className="max-md:grid max-md:grid-cols-3">
-          {CONFIG_FILES.map((file) => {
-            const unsaved = drafts[file.name] !== saved[file.name];
-            return (
-              <NavListItem key={file.name} className="min-w-0">
-                <NavListLink current={file.name === name} asChild>
-                  <button type="button" onClick={() => open(file.name)}>
-                    <FileJsonIcon className="max-md:hidden" />
-                    <span className="truncate font-mono">{file.name}</span>
-                    {unsaved && (
-                      <span className="ml-auto size-2 shrink-0 rounded-full bg-primary">
-                        <span className="sr-only">, unsaved</span>
-                      </span>
-                    )}
-                  </button>
-                </NavListLink>
-              </NavListItem>
-            );
-          })}
-        </NavList>
-      </nav>
-      <section
-        aria-labelledby="config-file-title"
-        className="flex min-h-0 min-w-0 flex-1 flex-col"
-      >
-        <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-2 md:px-4">
-          <div className="flex min-w-0 items-baseline gap-2">
-            <h2
-              id="config-file-title"
-              className="truncate font-mono font-semibold text-ui"
-            >
-              {name}
-            </h2>
-            {dirty && (
-              <span className="flex items-center gap-1.5 text-muted-foreground text-ui-sm">
-                <span aria-hidden className="size-2 rounded-full bg-primary" />
-                Unsaved
-              </span>
-            )}
-          </div>
-          <div className="ml-auto flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!dirty}
-              onClick={() => setReviewing(true)}
-            >
-              Review changes
-            </Button>
-            <Button
-              size="sm"
-              disabled={!dirty || problem !== null}
-              aria-keyshortcuts="Control+S Meta+S"
-              onClick={save}
-            >
-              Save
-            </Button>
-          </div>
-        </header>
-        <CodeEditor
-          key={`${name}:${revision}`}
-          initialValue={draft}
-          ariaLabel={name}
-          language={jsonSupport}
-          extensions={configExtensions}
-          keymap={keys}
-          ownerManagedDirty
-          onChange={(text) => setDrafts((was) => ({ ...was, [name]: text }))}
-          onView={(next) => {
-            view.current = next;
-          }}
-          className="min-h-0 flex-1 rounded-none border-0 py-1 focus-within:outline-0 md:text-[13px] dark:bg-transparent"
-        />
-        <footer
-          id={PROBLEM_ID}
-          className="flex min-h-9 shrink-0 items-center border-t px-3 text-ui-sm md:px-4"
+        <NavListFrame className="flex min-h-0 flex-1 flex-col">
+          <nav aria-label="Files" className="min-h-0 flex-1 md:overflow-y-auto">
+            {/* Three across on a phone, where a column would push the editor down. */}
+            <NavList className="max-md:grid max-md:grid-cols-3">
+              {CONFIG_FILES.map((file) => {
+                const unsaved = drafts[file.name] !== saved[file.name];
+                return (
+                  <NavListItem key={file.name} className="min-w-0">
+                    <NavListLink current={file.name === name} asChild>
+                      <button type="button" onClick={() => open(file.name)}>
+                        <FileJsonIcon className="max-md:hidden" />
+                        <span className="truncate font-mono">{file.name}</span>
+                        {unsaved && (
+                          <span className="ml-auto size-2 shrink-0 rounded-full bg-primary">
+                            <span className="sr-only">, unsaved</span>
+                          </span>
+                        )}
+                      </button>
+                    </NavListLink>
+                  </NavListItem>
+                );
+              })}
+            </NavList>
+          </nav>
+        </NavListFrame>
+      </Pane>
+      <Pane purpose="panel" asChild>
+        <section
+          aria-labelledby="config-file-title"
+          className="flex min-h-0 min-w-0 flex-1 flex-col"
         >
-          {problem === null ? (
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <CircleCheckIcon className="size-3.5" />
-              Valid JSON · {draft.split("\n").length} lines
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={showProblem}
-              className="flex min-h-9 items-center gap-1.5 text-left text-destructive hover:underline touch:min-h-11"
+          <Pane purpose="toolbar" asChild>
+            <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-2 md:px-4">
+              <div className="flex min-w-0 items-baseline gap-2">
+                <h2
+                  id="config-file-title"
+                  className="truncate font-mono font-semibold text-ui"
+                >
+                  {name}
+                </h2>
+                {dirty && (
+                  <span className="flex items-center gap-1.5 text-muted-foreground text-ui-sm">
+                    <span
+                      aria-hidden
+                      className="size-2 rounded-full bg-primary"
+                    />
+                    Unsaved
+                  </span>
+                )}
+              </div>
+              <div className="ml-auto flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!dirty}
+                  onClick={() => setReviewing(true)}
+                >
+                  Review changes
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!dirty || problem !== null}
+                  aria-keyshortcuts="Control+S Meta+S"
+                  onClick={save}
+                >
+                  Save
+                </Button>
+              </div>
+            </header>
+          </Pane>
+          <CodeEditor
+            key={`${name}:${revision}`}
+            initialValue={draft}
+            ariaLabel={name}
+            language={jsonSupport}
+            extensions={configExtensions}
+            keymap={keys}
+            ownerManagedDirty
+            onChange={(text) => setDrafts((was) => ({ ...was, [name]: text }))}
+            onView={(next) => {
+              view.current = next;
+            }}
+            purpose="document"
+            className="min-h-0 flex-1 py-1"
+          />
+          <Pane purpose="statusbar" asChild>
+            <footer
+              id={PROBLEM_ID}
+              className="flex min-h-9 shrink-0 items-center border-t px-3 text-ui-sm md:px-4"
             >
-              <CircleAlertIcon className="size-3.5 shrink-0" />
-              Line {problem.line}: {problem.message}
-            </button>
-          )}
-        </footer>
-      </section>
+              {problem === null ? (
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <CircleCheckIcon className="size-3.5" />
+                  Valid JSON · {draft.split("\n").length} lines
+                </span>
+              ) : (
+                // Stretched rather than min-h-9, so a style that tightens the bar brings it in too.
+                <button
+                  type="button"
+                  onClick={showProblem}
+                  className="flex items-center gap-1.5 self-stretch text-left text-destructive hover:underline touch:min-h-11"
+                >
+                  <CircleAlertIcon className="size-3.5 shrink-0" />
+                  Line {problem.line}: {problem.message}
+                </button>
+              )}
+            </footer>
+          </Pane>
+        </section>
+      </Pane>
       <Dialog open={reviewing} onOpenChange={setReviewing}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
@@ -222,7 +243,9 @@ export function ConfigEditor() {
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <CodeDiffBlock filename={name} before={before} after={draft} />
+            <Pane purpose="document">
+              <CodeDiffBlock filename={name} before={before} after={draft} />
+            </Pane>
           </DialogBody>
           <DialogFooter className="items-center">
             {problem !== null && (
@@ -249,6 +272,6 @@ export function ConfigEditor() {
           setLeavingTo(null);
         }}
       />
-    </div>
+    </Pane>
   );
 }

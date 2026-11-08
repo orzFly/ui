@@ -25,7 +25,11 @@ import {
 } from "../extensions/paste-as.ts";
 import { toggleQuote } from "../extensions/quote-toggle.ts";
 import { trimTrailingSpaceOnEnter } from "../extensions/trim-trailing-space.ts";
-import { CodeEditor, type CodeEditorHandle } from "./code-editor.tsx";
+import {
+  CodeEditor,
+  type CodeEditorHandle,
+  type CodeEditorPurpose,
+} from "./code-editor.tsx";
 
 /**
  * GFM markdown, assembled straight from the Lezer parser rather than through
@@ -93,6 +97,8 @@ export type MarkdownEditorProps = {
   onDragOver?: (event: FileDragEvent) => void;
   /** Extra CodeMirror extensions, appended last so they can override. */
   extensions?: Extension;
+  /** What the editor is for, as `CodeEditor` takes it. Default `field`. */
+  purpose?: CodeEditorPurpose;
   /** Height is the caller's business: pass the min-height/max-height here. */
   className?: string;
   ref?: React.Ref<MarkdownEditorHandle>;
@@ -171,6 +177,7 @@ export function MarkdownEditor({
   onDrop,
   onDragOver,
   extensions,
+  purpose,
   className,
   ref,
 }: MarkdownEditorProps) {
@@ -253,6 +260,7 @@ export function MarkdownEditor({
         }),
         ...(extensions ? [extensions] : []),
       ]}
+      purpose={purpose}
       className={className}
     />
   );

@@ -58,6 +58,8 @@ export type CodeEditorHandle = {
   dismissCompletion: () => boolean;
 };
 
+export type CodeEditorPurpose = "field" | "document";
+
 export type CodeEditorProps = {
   /** Read once, at mount: the editor owns its document from then on. */
   initialValue?: string;
@@ -93,6 +95,13 @@ export type CodeEditorProps = {
    * through it; the default names the generic shell.
    */
   slot?: string;
+  /**
+   * What the editor is for. `field` is an input among others on a form or
+   * under a message, framed as one; `document` is the file or text the
+   * surrounding pane exists to edit, filling it with no frame of its own.
+   * Default `field`.
+   */
+  purpose?: CodeEditorPurpose;
   /** Height is the caller's business: pass the min-height/max-height here. */
   className?: string;
   /** The underlying EditorView, once mounted — for callers that drive the
@@ -184,6 +193,7 @@ export function CodeEditor({
   extensions,
   slot,
   onView,
+  purpose = "field",
   className,
   ref,
 }: CodeEditorProps) {
@@ -353,12 +363,17 @@ export function CodeEditor({
       ref={host}
       data-slot={slot ?? "code-editor"}
       data-read-only={readOnly ? "true" : undefined}
+      data-purpose={purpose}
       className={cn(
         // text-base below md is not cosmetic: iOS auto-zooms a focused field
         // under 16px. Same rule `@orz/ui`'s Textarea follows. Under raymond
-        // it is a field like Input: sunken, on the window colour, its focus
-        // rectangle inside the bevel.
-        "flex w-full flex-col rounded-frame border border-input bg-transparent text-base transition-colors focus-within:focus-ring md:text-ui dark:bg-input/15 raymond:border-transparent raymond:bg-(--window) raymond:bg-clip-padding raymond:shadow-sunken raymond:[--focus-offset:-4px]",
+        // both purposes are sunken wells on the window colour, as an edit
+        // control and Notepad's page are; a field draws its focus rectangle
+        // inside the bevel, and a document, like Notepad, shows the caret
+        // alone.
+        "flex w-full flex-col bg-transparent text-base transition-colors md:text-ui raymond:bg-(--window) raymond:bg-clip-padding raymond:shadow-sunken",
+        purpose === "field" &&
+          "rounded-frame border border-input focus-within:focus-ring dark:bg-input/15 raymond:border-transparent raymond:[--focus-offset:-4px]",
         readOnly && "opacity-50",
         className,
       )}

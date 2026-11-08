@@ -211,7 +211,8 @@ export function Compose({
             placeholder="Write in markdown…"
             initialValue={draft.body}
             onSubmit={send}
-            className="min-h-0 flex-1 overflow-y-auto rounded-none border-0 px-1 focus-within:ring-0"
+            purpose="document"
+            className="min-h-0 flex-1 overflow-y-auto px-1"
           />
           <Pane purpose="panel" asChild>
             <div className="flex items-center gap-2 border-t p-2 max-md:hidden">
