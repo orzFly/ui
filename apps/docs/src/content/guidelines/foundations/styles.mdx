@@ -7,6 +7,7 @@ export const meta = {
     "ui/Foundations/Theme",
     "ui/ThemeMenu",
     "ui/Primitives/Card",
+    "ui/Primitives/GroupHeading",
     "ui/Primitives/List",
     "ui/Primitives/NavList",
     "ui/Primitives/Pane",
@@ -86,14 +87,18 @@ the window's face around them; each style draws each of those its own way. Say w
 
 - **Places to go** are a `NavList`, in a `NavListFrame` when it is a pane of the app's frame, or a
   `TabNav` for a row of sections; see [Navigation](/guidelines/patterns/navigation/).
-- **A list** is `List` with `purpose="listbox"` when its rows are things to pick and
-  `"menu"` when they are actions. Mark picked rows with `ListItem`'s `selected`.
+- **A list** is `List` with `purpose="listbox"` when its rows are things to pick,
+  `"menu"` when they are actions, and `"collection"` when they are things the user keeps, each
+  row carrying its own actions (access tokens with a Revoke button). Mark picked rows with
+  `ListItem`'s `selected`.
 - **A region** is `Pane` with `purpose="app"` for the box an app's panes sit side by side in,
   `"document"` for what is read or written (a message, a diff), `"toolbar"` for the controls that
   act on it, and `"panel"` for the rest of the window. A window of the app's own that floats over
   the rest, a docked composer say, is `"window"`, and its caption `"titlebar"`.
 - **A command in a toolbar** is `ToolbarButton`, named with `aria-label` when it shows an icon
   alone.
+- **A group of controls' title** on a form or settings screen is a `GroupHeading`; a group that
+  wants a frame of its own is a `Card`.
 
 A style redraws these where they stand: it keeps what they hold and in what order, adds nothing you
 did not write, and may tighten their spacing. So size a toolbar or a header by the padding around

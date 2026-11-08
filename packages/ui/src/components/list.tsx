@@ -6,10 +6,12 @@ import { cn } from "../lib/utils.ts";
 /**
  * What a list is for, which decides how each style draws it. `listbox` holds
  * things to pick and marks the ones picked; `menu` holds actions and marks
- * only the one under the pointer. Places to go are a `NavList` or a `TabNav`.
+ * only the one under the pointer; `collection` holds things the user keeps,
+ * each row carrying its own actions, and marks none. Places to go are a
+ * `NavList` or a `TabNav`.
  * The purpose says nothing to a screen reader: the markup inside says that.
  */
-type ListPurpose = "listbox" | "menu";
+type ListPurpose = "listbox" | "menu" | "collection";
 
 const ListContext = React.createContext<{
   purpose: ListPurpose;
@@ -28,6 +30,8 @@ const ListContext = React.createContext<{
 // goes through --list-highlight, as two properties naming each other would
 // be a cycle and draw nothing. A picked row's focus rectangle takes the
 // highlight's text colour, as the black one vanishes on it.
+// A collection's rows are parted by a rule; under raymond it is a list view,
+// a sunken white well whose rows sit on it unruled.
 const FRAME: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
   listbox: {
     vertical:
@@ -38,6 +42,12 @@ const FRAME: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
   menu: {
     vertical: "raymond:bg-(--3d-face)",
     horizontal: "raymond:bg-(--3d-face)",
+  },
+  collection: {
+    vertical:
+      "raymond:border-0 raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken",
+    horizontal:
+      "raymond:border-0 raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken",
   },
 };
 
@@ -56,12 +66,18 @@ const ITEM: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
     horizontal:
       "transition-colors hover:bg-accent focus-visible:bg-accent raymond:transition-none raymond:hover:bg-primary raymond:hover:text-primary-foreground raymond:hover:[--foreground:var(--primary-foreground)] raymond:hover:[--muted-foreground:var(--primary-foreground)] raymond:hover:[--border:var(--primary-foreground)] raymond:focus-visible:bg-primary raymond:focus-visible:text-primary-foreground raymond:focus-visible:[--foreground:var(--primary-foreground)] raymond:focus-visible:[--muted-foreground:var(--primary-foreground)] raymond:focus-visible:[--border:var(--primary-foreground)]",
   },
+  collection: {
+    vertical: "not-first:border-t raymond:border-t-0 raymond:px-1.5",
+    horizontal: "not-first:border-l raymond:border-l-0 raymond:px-1.5",
+  },
 };
 
 const LABEL: Record<ListPurpose, string> = {
   listbox:
     "font-medium text-muted-foreground text-ui-sm raymond:font-bold raymond:text-foreground",
   menu: "font-medium text-muted-foreground text-ui-sm raymond:text-foreground",
+  collection:
+    "font-medium text-muted-foreground text-ui-sm raymond:font-bold raymond:text-foreground",
 };
 
 /**
@@ -103,7 +119,8 @@ function List({
 /**
  * A row. `selected` marks a listbox's picked rows; the caller still sets
  * `aria-selected` or its own state for a screen reader. With `asChild` the
- * row is the caller's button or `li`.
+ * row is the caller's button or `li`; a collection's row is the `li`, the
+ * rule between rows going on each one after the first.
  */
 function ListItem({
   selected = false,

@@ -1,3 +1,4 @@
+import { Button } from "@orz/ui/components/button";
 import { List, ListItem, ListLabel } from "@orz/ui/components/list";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { FileTextIcon, InboxIcon, SendIcon, StarIcon } from "lucide-react";
@@ -16,7 +17,10 @@ const meta = {
   component: List,
   args: { purpose: "listbox", orientation: "vertical", className: "w-56" },
   argTypes: {
-    purpose: { control: "inline-radio", options: ["listbox", "menu"] },
+    purpose: {
+      control: "inline-radio",
+      options: ["listbox", "menu", "collection"],
+    },
     orientation: {
       control: "inline-radio",
       options: ["vertical", "horizontal"],
@@ -68,5 +72,27 @@ export const Purposes: Story = {
         </List>
       ))}
     </div>
+  ),
+};
+
+/** Things the user keeps, each row with its own action and none of them picked. */
+export const Collection: Story = {
+  args: { purpose: "collection", className: "w-80" },
+  render: (args) => (
+    <List {...args}>
+      <ul>
+        {ROWS.map(({ label, Icon }) => (
+          <ListItem key={label} asChild>
+            <li className="flex items-center gap-2 py-2 text-ui">
+              <Icon className="size-4 text-muted-foreground" />
+              <span className="flex-1">{label}</span>
+              <Button variant="outline" size="sm">
+                Rename…
+              </Button>
+            </li>
+          </ListItem>
+        ))}
+      </ul>
+    </List>
   ),
 };

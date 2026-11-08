@@ -8,8 +8,10 @@ import {
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
+import { List, ListItem } from "@orz/ui/components/list";
 import { Pane } from "@orz/ui/components/pane";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
 import {
@@ -105,9 +107,9 @@ function Group({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className="grid">
       {title && (
-        <h3 className="pt-2 font-medium text-muted-foreground text-ui-sm">
-          {title}
-        </h3>
+        <GroupHeading asChild className="pt-2">
+          <h3>{title}</h3>
+        </GroupHeading>
       )}
       <div>
         {Children.toArray(children).map((child, index) => (
@@ -580,39 +582,36 @@ export function TokensSection({
           command line.
         </p>
       ) : (
-        <ul>
-          {tokens.map((token, index) => (
-            <Fragment key={token.id}>
-              {index > 0 && (
-                <Separator asChild>
-                  <li />
-                </Separator>
-              )}
-              <li className="flex items-center gap-3 py-3">
-                <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
-                <div className="grid min-w-0 flex-1 gap-0.5">
-                  <span className="truncate font-medium font-mono text-ui">
-                    {token.name}
-                  </span>
-                  <span className="text-muted-foreground text-ui-sm">
-                    {token.scopes} · {token.lastUsed}
-                  </span>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  aria-label={`Revoke ${token.name}`}
-                  onClick={() => {
-                    setRevoking(token);
-                    setOpen(true);
-                  }}
-                >
-                  Revoke…
-                </Button>
-              </li>
-            </Fragment>
-          ))}
-        </ul>
+        <List purpose="collection" asChild>
+          <ul>
+            {tokens.map((token) => (
+              <ListItem key={token.id} asChild>
+                <li className="flex items-center gap-3 py-3">
+                  <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <div className="grid min-w-0 flex-1 gap-0.5">
+                    <span className="truncate font-medium font-mono text-ui">
+                      {token.name}
+                    </span>
+                    <span className="text-muted-foreground text-ui-sm">
+                      {token.scopes} · {token.lastUsed}
+                    </span>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    aria-label={`Revoke ${token.name}`}
+                    onClick={() => {
+                      setRevoking(token);
+                      setOpen(true);
+                    }}
+                  >
+                    Revoke…
+                  </Button>
+                </li>
+              </ListItem>
+            ))}
+          </ul>
+        </List>
       )}
       <ConfirmDialog
         open={open}
