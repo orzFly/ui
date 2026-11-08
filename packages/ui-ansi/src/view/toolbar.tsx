@@ -170,7 +170,9 @@ export function SearchBox({
     <div
       data-slot="ansi-search"
       className={cn(
-        "flex min-w-0 items-center gap-0.5 rounded-[min(var(--radius-control),8px)] border border-input bg-background pl-1.5 has-[input:focus-visible]:focus-ring",
+        // Under raymond the input and its buttons sit in one sunken field
+        // on the window colour.
+        "flex min-w-0 items-center gap-0.5 rounded-[min(var(--radius-control),8px)] border border-input bg-background pl-1.5 has-[input:focus-visible]:focus-ring raymond:bg-clip-padding raymond:shadow-sunken raymond:[--background:var(--window)] raymond:[--input:transparent]",
         className,
       )}
     >

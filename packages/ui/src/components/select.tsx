@@ -43,7 +43,8 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "relative flex w-fit items-center justify-between gap-1.5 rounded-control border border-input bg-field py-2 pr-2 pl-2.5 text-ui whitespace-nowrap transition-colors outline-none select-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-control touch:data-[size=default]:h-10 data-[size=sm]:h-control-sm data-[size=sm]:rounded-[min(var(--radius-control),8px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:bg-input/15 dark:hover:bg-input/25 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 touch:hit-area",
+        // Under raymond a sunken field, as Textarea's.
+        "relative flex w-fit items-center justify-between gap-1.5 rounded-control border border-input bg-field py-2 pr-2 pl-2.5 text-ui whitespace-nowrap transition-colors outline-none select-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-control touch:data-[size=default]:h-10 data-[size=sm]:h-control-sm data-[size=sm]:rounded-[min(var(--radius-control),8px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:bg-input/15 dark:hover:bg-input/25 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 touch:hit-area raymond:bg-clip-padding raymond:shadow-sunken raymond:[--input:transparent]",
         className,
       )}
       {...props}
@@ -120,7 +121,9 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-1.5 rounded-item py-1 pr-8 min-h-row touch:min-h-11 pl-1.5 text-ui outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        // Under raymond a highlighted item takes the highlight colour, the
+        // palette's primary; accent stays the soft fill an app's rows use.
+        "relative flex w-full cursor-default items-center gap-1.5 rounded-item py-1 pr-8 min-h-row touch:min-h-11 pl-1.5 text-ui outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)]",
         className,
       )}
       {...props}
@@ -142,7 +145,11 @@ function SelectSeparator({
   return (
     <SelectPrimitive.Separator
       data-slot="select-separator"
-      className={cn("pointer-events-none -mx-1 my-1 h-px bg-border", className)}
+      className={cn(
+        // Under raymond an etched line, as a Separator's.
+        "pointer-events-none -mx-1 my-1 h-px bg-border raymond:shadow-[0_1px_var(--3d-highlight)]",
+        className,
+      )}
       {...props}
     />
   );

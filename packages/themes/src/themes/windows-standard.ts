@@ -26,7 +26,7 @@ const palette: Palette = {
     // Windows has no secondary text but the disabled grey, at 2.6:1; this is
     // the darkest step that still reads apart from black.
     "muted-foreground": "#4d4a44",
-    // The highlight colour is primary: raymond.css fills a highlighted menu
+    // The highlight colour is primary: raymond fills a highlighted menu
     // item or a selected list row with it. Accent stays what every palette
     // makes it, a soft fill under ordinary text, which an app's own hover
     // and current-item marks rely on: the highlight tinted into white.

@@ -6,7 +6,8 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      // Under raymond a table is a list box, sunken on the window colour.
+      className="relative w-full overflow-x-auto raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken"
     >
       <table
         data-slot="table"
@@ -55,7 +56,10 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-accent data-[state=selected]:*:first:state-cue",
+        // Under raymond rows carry no rules, and everything in a selected
+        // row, its quiet text and outlined chips included, takes the
+        // highlight's text colour, as Windows draws it.
+        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-accent data-[state=selected]:*:first:state-cue raymond:border-b-transparent raymond:data-[state=selected]:text-primary-foreground raymond:data-[state=selected]:[--accent:var(--primary)] raymond:data-[state=selected]:[--border:var(--primary-foreground)] raymond:data-[state=selected]:[--foreground:var(--primary-foreground)] raymond:data-[state=selected]:[--muted-foreground:var(--primary-foreground)]",
         className,
       )}
       {...props}
@@ -68,7 +72,8 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-row-head bg-muted px-2 text-left align-middle font-semibold whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        // Under raymond a column header is a raised button.
+        "h-row-head bg-muted px-2 text-left align-middle font-semibold whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 raymond:shadow-raised",
         className,
       )}
       {...props}

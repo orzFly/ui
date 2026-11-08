@@ -151,9 +151,10 @@ beside the theme. It is not a redesign of every surface.
   `NavListFrame`, and `TabNav`). A hand-written list, nav, toolbar or reading pane in an app or
   demo uses these components rather than bare markup a style cannot see.
 - A part's look under a style is written in the component's own classes under that style's variant
-  (`raymond:`, declared in `theme.css`), beside its default classes. The style's stylesheet holds
-  its tokens; its `data-slot` rules are what has not moved into the components yet, and no new ones
-  are added. Apps and demos never write a style's variant or `[data-style]` themselves: a look they
+  (`raymond:`, declared in `theme.css`), beside its default classes, in the part's own package. The
+  style's stylesheet holds its tokens and what belongs to no component (selected text, scroll bars),
+  and draws no part. An element the package does not render itself, such as pierre's
+  `diffs-container`, takes a rule in that package's own stylesheet. Apps and demos never write a style's variant or `[data-style]` themselves: a look they
   need is a purpose in the library.
 - A surface sizes from what it holds: padding around its controls, not a fixed height (`py-2.5`,
   not `h-12`), so every style's control sizes, and the touch sizes, carry it.

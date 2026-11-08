@@ -23,6 +23,13 @@ diffs-container {
 .dark diffs-container {
   color-scheme: dark;
 }
+/* Under raymond code reads on the window colour, as in an editor, not on the
+   face: a syntax colour held to the page would fall under 4.5:1 on the grey.
+   A rule rather than a raymond: class, because pierre renders the element. */
+[data-style="raymond"] diffs-container {
+  --diffs-light-bg: var(--window);
+  --diffs-dark-bg: var(--window);
+}
 
 /* A patch's +/- counts take the theme's diff colours, mixed toward the
    foreground so small text stays legible. */

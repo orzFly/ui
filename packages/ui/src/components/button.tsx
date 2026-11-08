@@ -4,17 +4,22 @@ import type * as React from "react";
 
 import { cn } from "../lib/utils.ts";
 
+// Under raymond a push button's focus rectangle sits inside its bevel.
 const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-control border border-transparent bg-clip-padding text-ui font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:focus-ring active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 touch:hit-area raymond:rounded-none",
+  "group/button relative inline-flex shrink-0 items-center justify-center rounded-control border border-transparent bg-clip-padding text-ui font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:focus-ring active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 touch:hit-area raymond:rounded-none raymond:[--focus-offset:-4px]",
   {
     variants: {
       variant: {
         // The depth tokens are no-ops in the default style; a style that
         // bevels draws its buttons raised, and pressed while held or open.
+        // Under raymond the default button is on the face, never in the
+        // highlight colour, inside the black frame of the window's default.
         default:
-          "bg-primary text-primary-foreground shadow-raised hover:bg-primary/80 active:shadow-pressed aria-expanded:shadow-pressed raymond:shadow-raised raymond:active:shadow-pressed",
+          "bg-primary text-primary-foreground shadow-raised hover:bg-primary/80 active:shadow-pressed aria-expanded:shadow-pressed raymond:shadow-raised raymond:active:shadow-pressed raymond:[--primary-foreground:var(--foreground)] raymond:[--primary:var(--3d-face)] raymond:[--shadow-raised:inset_0_0_0_1px_var(--foreground),inset_-2px_-2px_var(--3d-dark-shadow),inset_2px_2px_var(--3d-highlight),inset_-3px_-3px_var(--3d-shadow),inset_3px_3px_var(--3d-light)]",
+        // Under raymond an outline button is a plain push button: the face,
+        // its bevel and no border.
         outline:
-          "border-input bg-background shadow-raised hover:bg-muted hover:text-foreground active:shadow-pressed aria-expanded:bg-muted aria-expanded:text-foreground aria-expanded:shadow-pressed",
+          "border-input bg-background shadow-raised hover:bg-muted hover:text-foreground active:shadow-pressed aria-expanded:bg-muted aria-expanded:text-foreground aria-expanded:shadow-pressed raymond:[--background:var(--3d-face)] raymond:[--input:transparent]",
         secondary:
           "bg-secondary text-secondary-foreground shadow-raised hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] active:shadow-pressed aria-expanded:bg-secondary aria-expanded:text-secondary-foreground aria-expanded:shadow-pressed",
         ghost:
