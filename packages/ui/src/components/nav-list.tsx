@@ -83,8 +83,9 @@ function NavListLink({
         "relative flex min-h-row w-full items-center gap-2 px-3 text-left text-ui text-muted-foreground transition-colors outline-none select-none hover:bg-accent hover:text-accent-foreground focus-visible:focus-ring-inset touch:min-h-11 data-current:bg-accent data-current:font-medium data-current:text-accent-foreground data-current:state-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         // Under raymond the rows are a tree's or a list box's: black on the
         // well with no hover, the current one filled with the highlight, its
-        // quiet text and a primary mark inside swapped onto it as List's are.
-        "raymond:text-foreground raymond:transition-none raymond:not-data-current:hover:bg-transparent raymond:not-data-current:hover:text-foreground raymond:data-current:bg-primary raymond:data-current:font-normal raymond:data-current:text-primary-foreground raymond:data-current:[--foreground:var(--primary-foreground)] raymond:data-current:[--muted-foreground:var(--primary-foreground)] raymond:data-current:[--list-highlight:var(--primary)] raymond:data-current:[--list-highlight-text:var(--primary-foreground)] raymond:data-current:*:[--primary:var(--list-highlight-text)] raymond:data-current:*:[--primary-foreground:var(--list-highlight)]",
+        // quiet text and a primary mark inside swapped onto it as List's are,
+        // and its focus rectangle drawn in the highlight's text colour.
+        "raymond:text-foreground raymond:transition-none raymond:not-data-current:hover:bg-transparent raymond:not-data-current:hover:text-foreground raymond:data-current:bg-primary raymond:data-current:font-normal raymond:data-current:text-primary-foreground raymond:data-current:[--ring:var(--primary-foreground)] raymond:data-current:[--foreground:var(--primary-foreground)] raymond:data-current:[--muted-foreground:var(--primary-foreground)] raymond:data-current:[--list-highlight:var(--primary)] raymond:data-current:[--list-highlight-text:var(--primary-foreground)] raymond:data-current:*:[--primary:var(--list-highlight-text)] raymond:data-current:*:[--primary-foreground:var(--list-highlight)]",
         className,
       )}
       {...props}

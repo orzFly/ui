@@ -5,7 +5,13 @@ import {
   TOKENS,
 } from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
-import { NavList, NavListItem, NavListLink } from "@orz/ui/components/nav-list";
+import {
+  NavList,
+  NavListFrame,
+  NavListItem,
+  NavListLink,
+} from "@orz/ui/components/nav-list";
+import { Pane } from "@orz/ui/components/pane";
 import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog";
 import { cn } from "@orz/ui/lib/utils";
 import {
@@ -118,85 +124,94 @@ export function Settings() {
     setPrefs((was) => ({ ...was, ...next }));
 
   return (
-    <div className="h-full overflow-y-auto md:grid md:grid-cols-[14rem_1fr] md:overflow-hidden">
-      <nav
-        aria-label="Settings"
+    <Pane
+      purpose="app"
+      className="h-full overflow-y-auto md:grid md:grid-cols-[14rem_1fr] md:overflow-hidden"
+    >
+      <Pane
+        purpose="panel"
         className={cn(
-          "p-2 md:overflow-y-auto md:border-r md:bg-sidebar md:p-3",
+          "flex flex-col p-2 max-md:min-h-full md:min-h-0 md:border-r md:bg-sidebar md:p-3",
           view.open && "max-md:hidden",
         )}
       >
-        <NavList>
-          {SECTIONS.map(({ id, title, Icon }) => (
-            <NavListItem key={id}>
-              <NavListLink current={id === view.section} asChild>
-                <button
-                  type="button"
-                  onClick={() => go({ section: id, open: true })}
-                >
-                  <Icon />
-                  {title}
-                  <ChevronRightIcon className="ml-auto md:hidden" />
-                </button>
-              </NavListLink>
-            </NavListItem>
-          ))}
-        </NavList>
-      </nav>
-      <section
-        aria-labelledby="settings-section-title"
-        className={cn(
-          "min-w-0 p-4 md:overflow-y-auto md:p-6",
-          !view.open && "max-md:hidden",
-        )}
-      >
-        <Button
-          variant="ghost"
-          className="-ml-2 mb-2 md:hidden"
-          onClick={() => go({ section: view.section, open: false })}
+        <NavListFrame className="flex min-h-0 flex-1 flex-col">
+          <nav aria-label="Settings" className="min-h-0 flex-1 overflow-y-auto">
+            <NavList>
+              {SECTIONS.map(({ id, title, Icon }) => (
+                <NavListItem key={id}>
+                  <NavListLink current={id === view.section} asChild>
+                    <button
+                      type="button"
+                      onClick={() => go({ section: id, open: true })}
+                    >
+                      <Icon />
+                      {title}
+                      <ChevronRightIcon className="ml-auto md:hidden" />
+                    </button>
+                  </NavListLink>
+                </NavListItem>
+              ))}
+            </NavList>
+          </nav>
+        </NavListFrame>
+      </Pane>
+      <Pane purpose="panel" asChild>
+        <section
+          aria-labelledby="settings-section-title"
+          className={cn(
+            "min-w-0 p-4 md:overflow-y-auto md:p-6",
+            !view.open && "max-md:hidden",
+          )}
         >
-          <ChevronLeftIcon />
-          Settings
-        </Button>
-        <h2
-          id="settings-section-title"
-          className="font-semibold text-lg leading-snug"
-        >
-          {current.title}
-        </h2>
-        <p className="mt-1 text-muted-foreground text-ui">
-          {current.description}
-        </p>
-        <div className="mt-2 max-w-2xl">
-          {view.section === "editor" && (
-            <EditorSection prefs={prefs} onChange={onPrefs} />
-          )}
-          {view.section === "notifications" && (
-            <NotificationsSection prefs={prefs} onChange={onPrefs} />
-          )}
-          {view.section === "appearance" && <AppearanceSection />}
-          {view.section === "profile" && (
-            <ProfileSection
-              key={revision}
-              saved={saved}
-              draft={draft}
-              onDraft={(next) => setDraft((was) => ({ ...was, ...next }))}
-              onSave={(profile: Profile) => {
-                setSaved(profile);
-                setDraft(profile);
-              }}
-            />
-          )}
-          {view.section === "tokens" && (
-            <TokensSection
-              tokens={tokens}
-              onRevoke={(token) =>
-                setTokens((list) => list.filter((each) => each !== token))
-              }
-            />
-          )}
-        </div>
-      </section>
+          <Button
+            variant="ghost"
+            className="-ml-2 mb-2 md:hidden"
+            onClick={() => go({ section: view.section, open: false })}
+          >
+            <ChevronLeftIcon />
+            Settings
+          </Button>
+          <h2
+            id="settings-section-title"
+            className="font-semibold text-lg leading-snug"
+          >
+            {current.title}
+          </h2>
+          <p className="mt-1 text-muted-foreground text-ui">
+            {current.description}
+          </p>
+          <div className="mt-2 max-w-2xl">
+            {view.section === "editor" && (
+              <EditorSection prefs={prefs} onChange={onPrefs} />
+            )}
+            {view.section === "notifications" && (
+              <NotificationsSection prefs={prefs} onChange={onPrefs} />
+            )}
+            {view.section === "appearance" && <AppearanceSection />}
+            {view.section === "profile" && (
+              <ProfileSection
+                key={revision}
+                saved={saved}
+                draft={draft}
+                onDraft={(next) => setDraft((was) => ({ ...was, ...next }))}
+                onSave={(profile: Profile) => {
+                  setSaved(profile);
+                  setDraft(profile);
+                }}
+              />
+            )}
+            {view.section === "tokens" && (
+              <TokensSection
+                tokens={tokens}
+                onRevoke={(token) =>
+                  setTokens((list) => list.filter((each) => each !== token))
+                }
+              />
+            )}
+          </div>
+        </section>
+      </Pane>
       <UnsavedChangesDialog
         open={leavingTo !== null}
         onStay={() => setLeavingTo(null)}
@@ -207,6 +222,6 @@ export function Settings() {
           setLeavingTo(null);
         }}
       />
-    </div>
+    </Pane>
   );
 }

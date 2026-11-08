@@ -44,7 +44,7 @@ type PanePurpose =
 const PURPOSE: Record<PanePurpose, string> = {
   app: "raymond:gap-0.5 raymond:bg-(--3d-face) raymond:p-0.5",
   document:
-    "raymond:border-transparent raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken raymond:[--background:var(--window)]",
+    "raymond:border-transparent raymond:bg-(--window) raymond:bg-clip-padding raymond:p-0.5 raymond:shadow-sunken raymond:[--background:var(--window)]",
   toolbar:
     "raymond:relative raymond:h-auto raymond:min-h-0 raymond:border-transparent raymond:bg-(--3d-face) raymond:py-[3px] raymond:shadow-[inset_0_1px_var(--3d-highlight),inset_0_-1px_var(--3d-shadow)] raymond:before:absolute raymond:before:inset-y-1 raymond:before:left-0.5 raymond:before:w-[3px] raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:before:content-['']",
   panel: "raymond:border-transparent raymond:bg-(--3d-face)",

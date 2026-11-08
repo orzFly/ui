@@ -26,7 +26,8 @@ const ListContext = React.createContext<{
 // inside the row primary and its text colour swap, so a mark drawn in
 // primary (an unread dot, a count) stays seen on the highlight; the swap
 // goes through --list-highlight, as two properties naming each other would
-// be a cycle and draw nothing.
+// be a cycle and draw nothing. A picked row's focus rectangle takes the
+// highlight's text colour, as the black one vanishes on it.
 const FRAME: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
   listbox: {
     vertical:
@@ -45,9 +46,9 @@ const FRAME: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
 const ITEM: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
   listbox: {
     vertical:
-      "transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
+      "transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--ring:var(--primary-foreground)] raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
     horizontal:
-      "transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
+      "transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--ring:var(--primary-foreground)] raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
   },
   menu: {
     vertical:

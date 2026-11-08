@@ -10,6 +10,7 @@ import { Checkbox } from "@orz/ui/components/checkbox";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
+import { Pane } from "@orz/ui/components/pane";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
 import {
   Select,
@@ -18,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orz/ui/components/select";
+import { Separator } from "@orz/ui/components/separator";
 import { Skeleton } from "@orz/ui/components/skeleton";
 import { Slider } from "@orz/ui/components/slider";
 import { Switch } from "@orz/ui/components/switch";
@@ -26,7 +28,14 @@ import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import { cn } from "@orz/ui/lib/utils";
 import { useTerminalTheme, useTheme } from "@orz/ui/theme";
 import { KeyRoundIcon, PaletteIcon } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import {
+  Children,
+  Fragment,
+  isValidElement,
+  type ReactNode,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
 
@@ -79,7 +88,7 @@ function SettingRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3">
-      <div className={cn("grid gap-1", disabled && "opacity-50")}>
+      <div className="group grid gap-1" data-disabled={disabled}>
         <Label htmlFor={id}>{label}</Label>
         {description && (
           <p id={`${id}-description`} className="text-muted-foreground text-ui">
@@ -100,7 +109,14 @@ function Group({ title, children }: { title?: string; children: ReactNode }) {
           {title}
         </h3>
       )}
-      <div className="divide-y">{children}</div>
+      <div>
+        {Children.toArray(children).map((child, index) => (
+          <Fragment key={isValidElement(child) ? child.key : index}>
+            {index > 0 && <Separator />}
+            {child}
+          </Fragment>
+        ))}
+      </div>
     </section>
   );
 }
@@ -120,27 +136,29 @@ function EditorPreview({ prefs }: { prefs: Preferences }) {
       <figcaption className="text-muted-foreground text-ui-sm">
         Preview
       </figcaption>
-      <pre
-        className={cn(
-          "rounded-lg border bg-muted/40 p-3 font-mono leading-[1.6] [tab-size:4]",
-          prefs.wrap ? "whitespace-pre-wrap break-words" : "overflow-x-auto",
-        )}
-        style={{ fontSize: prefs.fontSize }}
-      >
-        {SAMPLE.map((line, index) => (
-          <div key={line} className="flex gap-3">
-            {prefs.lineNumbers && (
-              <span
-                aria-hidden
-                className="w-4 shrink-0 select-none text-right text-muted-foreground"
-              >
-                {index + 1}
-              </span>
-            )}
-            <code>{line.replace("\t", indent)}</code>
-          </div>
-        ))}
-      </pre>
+      <Pane purpose="document" className="rounded-lg border bg-muted/40">
+        <pre
+          className={cn(
+            "p-3 font-mono leading-[1.6] [tab-size:4]",
+            prefs.wrap ? "whitespace-pre-wrap break-words" : "overflow-x-auto",
+          )}
+          style={{ fontSize: prefs.fontSize }}
+        >
+          {SAMPLE.map((line, index) => (
+            <div key={line} className="flex gap-3">
+              {prefs.lineNumbers && (
+                <span
+                  aria-hidden
+                  className="w-4 shrink-0 select-none text-right text-muted-foreground"
+                >
+                  {index + 1}
+                </span>
+              )}
+              <code>{line.replace("\t", indent)}</code>
+            </div>
+          ))}
+        </pre>
+      </Pane>
     </figure>
   );
 }
@@ -562,30 +580,37 @@ export function TokensSection({
           command line.
         </p>
       ) : (
-        <ul className="divide-y">
-          {tokens.map((token) => (
-            <li key={token.id} className="flex items-center gap-3 py-3">
-              <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
-              <div className="grid min-w-0 flex-1 gap-0.5">
-                <span className="truncate font-medium font-mono text-ui">
-                  {token.name}
-                </span>
-                <span className="text-muted-foreground text-ui-sm">
-                  {token.scopes} · {token.lastUsed}
-                </span>
-              </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                aria-label={`Revoke ${token.name}`}
-                onClick={() => {
-                  setRevoking(token);
-                  setOpen(true);
-                }}
-              >
-                Revoke…
-              </Button>
-            </li>
+        <ul>
+          {tokens.map((token, index) => (
+            <Fragment key={token.id}>
+              {index > 0 && (
+                <Separator asChild>
+                  <li />
+                </Separator>
+              )}
+              <li className="flex items-center gap-3 py-3">
+                <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
+                <div className="grid min-w-0 flex-1 gap-0.5">
+                  <span className="truncate font-medium font-mono text-ui">
+                    {token.name}
+                  </span>
+                  <span className="text-muted-foreground text-ui-sm">
+                    {token.scopes} · {token.lastUsed}
+                  </span>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  aria-label={`Revoke ${token.name}`}
+                  onClick={() => {
+                    setRevoking(token);
+                    setOpen(true);
+                  }}
+                >
+                  Revoke…
+                </Button>
+              </li>
+            </Fragment>
           ))}
         </ul>
       )}
