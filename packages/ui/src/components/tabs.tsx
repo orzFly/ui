@@ -22,7 +22,9 @@ function Tabs({
  * The tabs' strip. `variant="line"` is for tabs whose panel does not lie directly under them, as
  * in a toolbar over a pane with its own surface: no fill and no separators, the current tab
  * underlined on the strip's rule. Laid flush against the bottom of a ruled bar, its rule lands
- * on the bar's.
+ * on the bar's. A strip that may not fit scrolls in an element around it, never on itself: the
+ * current tab reaches over the strip's rule, which the strip's own scroller would clip, and a
+ * pixel's overflow would give it a vertical scroll bar.
  */
 function TabsList({
   className,

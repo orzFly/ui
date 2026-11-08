@@ -1,5 +1,5 @@
 import { Button } from "@orz/ui/components/button";
-import { cn } from "@orz/ui/lib/utils";
+import { List, ListItem } from "@orz/ui/components/list";
 import { Content } from "@orz/ui-content";
 import {
   AttachmentList,
@@ -26,27 +26,31 @@ function JobList({
         <StatusIcon status={CI_RUN.status} />
         {CI_RUN.workflow} #{CI_RUN.id}
       </p>
-      <ul aria-label="Jobs" className="flex gap-1 overflow-x-auto md:flex-col">
-        {CI_RUN.jobs.map((job) => (
-          <li key={job.id} className="shrink-0">
-            <button
-              type="button"
-              aria-current={job.id === selected ? "true" : undefined}
-              onClick={() => onSelect(job.id)}
-              className={cn(
-                "flex min-h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-ui transition-colors hover:bg-accent touch:min-h-11",
-                job.id === selected && "bg-accent font-medium",
-              )}
-            >
-              <StatusIcon status={job.status} />
-              <span className="flex-1">{job.name}</span>
-              <span className="text-muted-foreground text-ui-sm tabular-nums">
-                {job.duration}s
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <List purpose="listbox">
+        <ul
+          aria-label="Jobs"
+          className="flex gap-1 overflow-x-auto md:flex-col"
+        >
+          {CI_RUN.jobs.map((job) => (
+            <li key={job.id} className="shrink-0">
+              <ListItem selected={job.id === selected} asChild>
+                <button
+                  type="button"
+                  aria-current={job.id === selected ? "true" : undefined}
+                  onClick={() => onSelect(job.id)}
+                  className="flex min-h-8 w-full items-center gap-2 px-2.5 text-left text-ui touch:min-h-11"
+                >
+                  <StatusIcon status={job.status} />
+                  <span className="flex-1">{job.name}</span>
+                  <span className="text-muted-foreground text-ui-sm tabular-nums">
+                    {job.duration}s
+                  </span>
+                </button>
+              </ListItem>
+            </li>
+          ))}
+        </ul>
+      </List>
     </nav>
   );
 }

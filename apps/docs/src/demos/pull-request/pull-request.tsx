@@ -75,19 +75,21 @@ const SECTIONS: {
 function AppBar() {
   const { owner, name } = PULL_REQUEST.repo;
   return (
-    <header className="flex h-12 items-center gap-2 border-b px-3 md:px-4">
-      <FolderGit2Icon className="size-5 shrink-0 text-muted-foreground" />
-      <p className="min-w-0 truncate">
-        <span className="text-muted-foreground">{owner}</span>
-        <span className="px-1 text-muted-foreground">/</span>
-        <span className="font-semibold">{name}</span>
-      </p>
-      <p className="ml-auto flex items-center gap-2 text-muted-foreground text-ui">
-        <span className="sr-only">Signed in as</span>
-        <span className="max-sm:hidden">{PULL_REQUEST_ME}</span>
-        <UserAvatar login={PULL_REQUEST_ME} size="default" />
-      </p>
-    </header>
+    <Pane purpose="panel" asChild>
+      <header className="flex items-center gap-2 border-b px-3 py-2 md:px-4">
+        <FolderGit2Icon className="size-5 shrink-0 text-muted-foreground" />
+        <p className="min-w-0 truncate">
+          <span className="text-muted-foreground">{owner}</span>
+          <span className="px-1 text-muted-foreground">/</span>
+          <span className="font-semibold">{name}</span>
+        </p>
+        <p className="ml-auto flex items-center gap-2 text-muted-foreground text-ui">
+          <span className="sr-only">Signed in as</span>
+          <span className="max-sm:hidden">{PULL_REQUEST_ME}</span>
+          <UserAvatar login={PULL_REQUEST_ME} size="default" />
+        </p>
+      </header>
+    </Pane>
   );
 }
 
@@ -229,20 +231,24 @@ export function PullRequest() {
                 className="min-w-0 gap-4"
               >
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b pb-2">
-                  <TabsList className="max-w-full overflow-x-auto">
-                    <TabsTrigger value="conversation">
-                      Conversation <Count>{comments}</Count>
-                    </TabsTrigger>
-                    <TabsTrigger value="commits">
-                      Commits <Count>{COMMITS.length}</Count>
-                    </TabsTrigger>
-                    <TabsTrigger value="checks">
-                      Checks <StatusIcon status={CI_RUN.status} />
-                    </TabsTrigger>
-                    <TabsTrigger value="files">
-                      Files changed <Count>{STATS.files}</Count>
-                    </TabsTrigger>
-                  </TabsList>
+                  {/* The scroller is around the strip, not the strip: the current tab
+                      covers the strip's rule, which a scrolling strip would clip. */}
+                  <div className="flex max-w-full overflow-x-auto">
+                    <TabsList>
+                      <TabsTrigger value="conversation">
+                        Conversation <Count>{comments}</Count>
+                      </TabsTrigger>
+                      <TabsTrigger value="commits">
+                        Commits <Count>{COMMITS.length}</Count>
+                      </TabsTrigger>
+                      <TabsTrigger value="checks">
+                        Checks <StatusIcon status={CI_RUN.status} />
+                      </TabsTrigger>
+                      <TabsTrigger value="files">
+                        Files changed <Count>{STATS.files}</Count>
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
                   <p className="ml-auto font-mono text-ui-sm tabular-nums max-sm:hidden">
                     <span className="diff-addition-text">+{STATS.plus}</span>{" "}
                     <span className="diff-deletion-text">−{STATS.minus}</span>

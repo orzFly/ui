@@ -1,5 +1,9 @@
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
+import { GroupHeading } from "@orz/ui/components/group-heading";
+import { List, ListItem } from "@orz/ui/components/list";
+import { Pane } from "@orz/ui/components/pane";
+import { Separator } from "@orz/ui/components/separator";
 import { Skeleton } from "@orz/ui/components/skeleton";
 import {
   MarkdownEditor,
@@ -40,18 +44,20 @@ function Comment({
       <span className="mt-1.5">
         <UserAvatar login={author} size="default" />
       </span>
-      <article className="min-w-0 rounded-lg border bg-card text-card-foreground">
-        <header className="flex flex-wrap items-baseline gap-x-1.5 rounded-t-lg border-b bg-muted/50 px-3 py-2 text-muted-foreground text-ui">
-          <span className="font-medium text-foreground">{author}</span>
-          {verb} <Stamp at={at} />
-          {author === PULL_REQUEST.author && (
-            <Badge variant="outline" className="ml-auto">
-              Author
-            </Badge>
-          )}
-        </header>
-        <Markdown className="min-w-0 p-3 text-ui">{body}</Markdown>
-      </article>
+      <Pane purpose="document" asChild>
+        <article className="min-w-0 rounded-lg border bg-card text-card-foreground">
+          <header className="flex flex-wrap items-baseline gap-x-1.5 rounded-t-lg border-b bg-muted/50 px-3 py-2 text-muted-foreground text-ui">
+            <span className="font-medium text-foreground">{author}</span>
+            {verb} <Stamp at={at} />
+            {author === PULL_REQUEST.author && (
+              <Badge variant="outline" className="ml-auto">
+                Author
+              </Badge>
+            )}
+          </header>
+          <Markdown className="min-w-0 p-3 text-ui">{body}</Markdown>
+        </article>
+      </Pane>
     </li>
   );
 }
@@ -127,66 +133,72 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
     }, RERUN_MS);
   };
   return (
-    <section
-      aria-labelledby="merge-status"
-      className="ml-11 rounded-lg border bg-card text-card-foreground"
-    >
-      <header className="flex flex-wrap items-start gap-3 border-b p-3">
-        <CircleXIcon className="mt-0.5 size-5 shrink-0 text-destructive" />
-        <div className="min-w-0 flex-1">
-          <h3 id="merge-status" className="font-semibold">
-            Some checks were not successful
-          </h3>
-          <p className="text-muted-foreground text-ui">
-            {failed} failing and {CI_RUN.jobs.length - failed} successful checks
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={rerunning}
-          onClick={rerun}
-          className="touch:h-10"
-        >
-          <RotateCwIcon className={rerunning ? "animate-spin" : undefined} />
-          {rerunning ? "Re-running…" : "Re-run failed jobs"}
-        </Button>
-      </header>
-      <ul className="divide-y">
-        {CI_RUN.jobs.map((job) => (
-          <li
-            key={job.id}
-            className="flex min-h-10 items-center gap-2 px-3 text-ui"
+    <Pane purpose="panel" asChild>
+      <section
+        aria-labelledby="merge-status"
+        className="ml-11 rounded-lg border bg-card text-card-foreground"
+      >
+        <header className="flex flex-wrap items-start gap-3 p-3">
+          <CircleXIcon className="mt-0.5 size-5 shrink-0 text-destructive" />
+          <div className="min-w-0 flex-1">
+            <h3 id="merge-status" className="font-semibold">
+              Some checks were not successful
+            </h3>
+            <p className="text-muted-foreground text-ui">
+              {failed} failing and {CI_RUN.jobs.length - failed} successful
+              checks
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={rerunning}
+            onClick={rerun}
+            className="touch:h-10"
           >
-            <StatusIcon status={job.status} />
-            <span className="flex-1">
-              {CI_RUN.workflow} / {job.name}
-            </span>
-            <span className="text-muted-foreground text-ui-sm tabular-nums">
-              {job.duration}s
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="touch:h-10"
-              aria-label={`Details for ${job.name}`}
-              onClick={() => onJob(job.id)}
-            >
-              Details
-            </Button>
-          </li>
-        ))}
-      </ul>
-      <footer className="flex flex-wrap items-center gap-3 border-t p-3">
-        <Button disabled>
-          <GitMergeIcon />
-          Merge pull request
-        </Button>
-        <p className="text-muted-foreground text-ui">
-          Merging is blocked until every check passes.
-        </p>
-      </footer>
-    </section>
+            <RotateCwIcon className={rerunning ? "animate-spin" : undefined} />
+            {rerunning ? "Re-running…" : "Re-run failed jobs"}
+          </Button>
+        </header>
+        <Separator purpose="row" />
+        <List purpose="collection" asChild>
+          <ul>
+            {CI_RUN.jobs.map((job) => (
+              <ListItem key={job.id} asChild>
+                <li className="flex min-h-10 items-center gap-2 px-3 text-ui">
+                  <StatusIcon status={job.status} />
+                  <span className="flex-1">
+                    {CI_RUN.workflow} / {job.name}
+                  </span>
+                  <span className="text-muted-foreground text-ui-sm tabular-nums">
+                    {job.duration}s
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="touch:h-10"
+                    aria-label={`Details for ${job.name}`}
+                    onClick={() => onJob(job.id)}
+                  >
+                    Details
+                  </Button>
+                </li>
+              </ListItem>
+            ))}
+          </ul>
+        </List>
+        <Separator purpose="row" />
+        <footer className="flex flex-wrap items-center gap-3 p-3">
+          <Button disabled>
+            <GitMergeIcon />
+            Merge pull request
+          </Button>
+          <p className="text-muted-foreground text-ui">
+            Merging is blocked until every check passes.
+          </p>
+        </footer>
+      </section>
+    </Pane>
   );
 }
 
@@ -216,7 +228,10 @@ function CommentForm({ onPost }: { onPost(body: string): void }) {
       <span className="mt-1.5">
         <UserAvatar login={PULL_REQUEST_ME} size="default" />
       </span>
-      <div className="grid min-w-0 gap-2 rounded-lg border bg-card p-2">
+      <Pane
+        purpose="panel"
+        className="grid min-w-0 gap-2 rounded-lg border bg-card p-2"
+      >
         {/* CodeMirror measures the page, which a prerender has none of. */}
         <ClientOnly fallback={<Skeleton className="h-20 w-full" />}>
           <MarkdownEditor
@@ -236,13 +251,12 @@ function CommentForm({ onPost }: { onPost(body: string): void }) {
           </p>
           <Button type="submit">Comment</Button>
         </div>
-      </div>
+      </Pane>
     </form>
   );
 }
 
 function Sidebar() {
-  const heading = "mb-1.5 font-medium text-muted-foreground text-ui-sm";
   const person = "flex min-h-8 items-center gap-2 text-ui";
   return (
     <aside
@@ -250,7 +264,9 @@ function Sidebar() {
       className="grid content-start gap-4 lg:sticky lg:top-4"
     >
       <section>
-        <h3 className={heading}>Reviewers</h3>
+        <GroupHeading asChild className="mb-1.5">
+          <h3>Reviewers</h3>
+        </GroupHeading>
         {PULL_REQUEST.reviewers.map((login) => (
           <p key={login} className={person}>
             <UserAvatar login={login} />
@@ -259,14 +275,18 @@ function Sidebar() {
         ))}
       </section>
       <section>
-        <h3 className={heading}>Assignee</h3>
+        <GroupHeading asChild className="mb-1.5">
+          <h3>Assignee</h3>
+        </GroupHeading>
         <p className={person}>
           <UserAvatar login={PULL_REQUEST.author} />
           {PULL_REQUEST.author}
         </p>
       </section>
       <section>
-        <h3 className={heading}>Labels</h3>
+        <GroupHeading asChild className="mb-1.5">
+          <h3>Labels</h3>
+        </GroupHeading>
         <p className="flex flex-wrap gap-1">
           {PULL_REQUEST.labels.map((label) => (
             <Badge key={label} variant="outline">

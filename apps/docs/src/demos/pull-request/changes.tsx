@@ -1,4 +1,4 @@
-import { cn } from "@orz/ui/lib/utils";
+import { List, ListItem } from "@orz/ui/components/list";
 import { Content } from "@orz/ui-content";
 import { useState } from "react";
 import { Pane, Stamp, UserAvatar } from "./parts.tsx";
@@ -9,34 +9,42 @@ export function Commits() {
   const [picked, setPicked] = useState(COMMITS[0]?.hash ?? "");
   return (
     <div className="grid min-w-0 gap-4">
-      <ol aria-label="Commits" className="divide-y rounded-lg border">
-        {COMMITS.map((commit) => (
-          <li key={commit.hash}>
-            <button
-              type="button"
-              aria-current={commit.hash === picked ? "true" : undefined}
-              onClick={() => setPicked(commit.hash)}
-              className={cn(
-                "grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2 text-left transition-colors first:rounded-t-lg last:rounded-b-lg hover:bg-accent",
-                commit.hash === picked && "bg-accent",
-              )}
+      <List purpose="listbox" asChild>
+        <ol
+          aria-label="Commits"
+          className="divide-y overflow-hidden rounded-lg border"
+        >
+          {COMMITS.map((commit) => (
+            <ListItem
+              key={commit.hash}
+              selected={commit.hash === picked}
+              asChild
             >
-              <span className="row-span-2">
-                <UserAvatar login={commit.author} />
-              </span>
-              <span className="min-w-0 truncate font-medium text-ui">
-                {commit.subject}
-              </span>
-              <code className="row-span-2 font-mono text-muted-foreground text-ui-sm">
-                {commit.hash}
-              </code>
-              <span className="text-muted-foreground text-ui-sm">
-                {commit.author} committed <Stamp at={commit.at} />
-              </span>
-            </button>
-          </li>
-        ))}
-      </ol>
+              <li>
+                <button
+                  type="button"
+                  aria-current={commit.hash === picked ? "true" : undefined}
+                  onClick={() => setPicked(commit.hash)}
+                  className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2 text-left"
+                >
+                  <span className="row-span-2">
+                    <UserAvatar login={commit.author} />
+                  </span>
+                  <span className="min-w-0 truncate font-medium text-ui">
+                    {commit.subject}
+                  </span>
+                  <code className="row-span-2 font-mono text-muted-foreground text-ui-sm">
+                    {commit.hash}
+                  </code>
+                  <span className="text-muted-foreground text-ui-sm">
+                    {commit.author} committed <Stamp at={commit.at} />
+                  </span>
+                </button>
+              </li>
+            </ListItem>
+          ))}
+        </ol>
+      </List>
       <Pane>
         {() => {
           const source = runFiles().commits[picked];

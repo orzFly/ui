@@ -15,11 +15,13 @@ const pushes = PULL_REQUEST.timeline.filter((event) => event.kind === "push");
 export function PullRequestTabs() {
   return (
     <Tabs defaultValue="conversation" className="min-w-0">
-      <TabsList className="max-w-full overflow-x-auto">
-        <TabsTrigger value="conversation">Conversation</TabsTrigger>
-        <TabsTrigger value="commits">Commits</TabsTrigger>
-        <TabsTrigger value="checks">Checks</TabsTrigger>
-      </TabsList>
+      <div className="flex max-w-full overflow-x-auto">
+        <TabsList>
+          <TabsTrigger value="conversation">Conversation</TabsTrigger>
+          <TabsTrigger value="commits">Commits</TabsTrigger>
+          <TabsTrigger value="checks">Checks</TabsTrigger>
+        </TabsList>
+      </div>
       <TabsContent value="conversation" className="text-ui">
         {comments.length} comments on “{PULL_REQUEST.title}”.
       </TabsContent>
