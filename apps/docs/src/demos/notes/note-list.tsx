@@ -1,6 +1,8 @@
 import { Button } from "@orz/ui/components/button";
 import { Input } from "@orz/ui/components/input";
-import { cn } from "@orz/ui/lib/utils";
+import { List, ListItem, ListLabel } from "@orz/ui/components/list";
+import { Pane } from "@orz/ui/components/pane";
+import { Toggle } from "@orz/ui/components/toggle";
 import { NotebookIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { NOTE_FOLDERS, snippetOf, titleOf } from "./notebook.ts";
 
@@ -30,28 +32,27 @@ function NoteRow({
 }) {
   return (
     <li>
-      <button
-        type="button"
-        aria-current={selected ? "true" : undefined}
-        onClick={onOpen}
-        className={cn(
-          "grid w-full grid-cols-[1fr_auto] items-baseline gap-x-2 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-accent touch:min-h-11",
-          selected && "bg-accent",
-        )}
-      >
-        <span className="truncate font-medium text-ui">
-          {titleOf(note.body)}
-        </span>
-        <time
-          dateTime={note.updated}
-          className="text-muted-foreground text-ui-sm tabular-nums"
+      <ListItem asChild selected={selected}>
+        <button
+          type="button"
+          aria-current={selected ? "true" : undefined}
+          onClick={onOpen}
+          className="grid w-full grid-cols-[1fr_auto] items-baseline gap-x-2 rounded-md px-2.5 py-2 text-left touch:min-h-11"
         >
-          {DAY.format(new Date(note.updated))}
-        </time>
-        <span className="col-span-2 line-clamp-2 text-muted-foreground text-ui-sm md:line-clamp-1">
-          {snippetOf(note.body)}
-        </span>
-      </button>
+          <span className="truncate font-medium text-ui">
+            {titleOf(note.body)}
+          </span>
+          <time
+            dateTime={note.updated}
+            className="text-muted-foreground text-ui-sm tabular-nums"
+          >
+            {DAY.format(new Date(note.updated))}
+          </time>
+          <span className="col-span-2 line-clamp-2 text-muted-foreground text-ui-sm md:line-clamp-1">
+            {snippetOf(note.body)}
+          </span>
+        </button>
+      </ListItem>
     </li>
   );
 }
@@ -88,7 +89,7 @@ export function NoteList({
   const filtered = query !== "" || chosen.size > 0;
   return (
     <>
-      <div className="grid shrink-0 gap-2 border-b p-2">
+      <Pane purpose="panel" className="grid shrink-0 gap-2 border-b p-2">
         <div className="flex items-center gap-2">
           <h2 className="flex-1 px-1 font-semibold">Notes</h2>
           <Button size="sm" variant="outline" onClick={onNew}>
@@ -114,84 +115,81 @@ export function NoteList({
         {tags.length > 0 && (
           <fieldset aria-label="Tags" className="flex min-w-0 flex-wrap gap-1">
             {tags.map(([tag, count]) => (
-              <button
+              <Toggle
                 key={tag}
-                type="button"
-                aria-pressed={chosen.has(tag)}
-                onClick={() => onToggleTag(tag)}
-                className="relative inline-flex h-6 items-center gap-1 rounded-full border px-2 text-ui-sm transition-colors hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground touch:hit-area"
+                pressed={chosen.has(tag)}
+                onPressedChange={() => onToggleTag(tag)}
               >
                 #{tag}
                 <span className="tabular-nums opacity-70">{count}</span>
-              </button>
+              </Toggle>
             ))}
           </fieldset>
         )}
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        {notes.length === 0 ? (
-          <div className="grid justify-items-center gap-2 px-4 py-10 text-center">
-            <NotebookIcon
-              className="size-8 text-muted-foreground"
-              aria-hidden
-            />
-            {filtered ? (
-              <>
-                <p className="font-medium">No notes match</p>
-                <p className="text-muted-foreground text-ui">
-                  Try fewer words, or fewer tags.
-                </p>
-                <Button variant="outline" size="sm" onClick={onClear}>
-                  Clear filter
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="font-medium">No notes yet</p>
-                <p className="text-muted-foreground text-ui">
-                  A note is markdown, kept in this tab. Start one with a #
-                  heading.
-                </p>
-                <Button variant="outline" size="sm" onClick={onNew}>
-                  <PlusIcon />
-                  New note
-                </Button>
-              </>
-            )}
-          </div>
-        ) : (
-          NOTE_FOLDERS.map((folder) => {
-            const inFolder = notes
-              .filter((note) => note.folder === folder)
-              .sort((a, b) => b.updated.localeCompare(a.updated));
-            if (inFolder.length === 0) return null;
-            return (
-              <section
-                key={folder}
-                aria-labelledby={`notes-folder-${folder}`}
-                className="mb-3"
-              >
-                <h3
-                  id={`notes-folder-${folder}`}
-                  className="px-2.5 pb-1 font-medium text-muted-foreground text-ui-sm"
+      </Pane>
+      <List purpose="listbox" className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+          {notes.length === 0 ? (
+            <div className="grid justify-items-center gap-2 px-4 py-10 text-center">
+              <NotebookIcon
+                className="size-8 text-muted-foreground"
+                aria-hidden
+              />
+              {filtered ? (
+                <>
+                  <p className="font-medium">No notes match</p>
+                  <p className="text-muted-foreground text-ui">
+                    Try fewer words, or fewer tags.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={onClear}>
+                    Clear filter
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">No notes yet</p>
+                  <p className="text-muted-foreground text-ui">
+                    A note is markdown, kept in this tab. Start one with a #
+                    heading.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={onNew}>
+                    <PlusIcon />
+                    New note
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : (
+            NOTE_FOLDERS.map((folder) => {
+              const inFolder = notes
+                .filter((note) => note.folder === folder)
+                .sort((a, b) => b.updated.localeCompare(a.updated));
+              if (inFolder.length === 0) return null;
+              return (
+                <section
+                  key={folder}
+                  aria-labelledby={`notes-folder-${folder}`}
+                  className="mb-3"
                 >
-                  {folder}
-                </h3>
-                <ul className="grid gap-0.5">
-                  {inFolder.map((note) => (
-                    <NoteRow
-                      key={note.id}
-                      note={note}
-                      selected={note.id === selected}
-                      onOpen={() => onOpen(note.id)}
-                    />
-                  ))}
-                </ul>
-              </section>
-            );
-          })
-        )}
-      </div>
+                  <ListLabel asChild className="px-2.5 pb-1">
+                    <h3 id={`notes-folder-${folder}`}>{folder}</h3>
+                  </ListLabel>
+                  <ul className="grid gap-0.5">
+                    {inFolder.map((note) => (
+                      <NoteRow
+                        key={note.id}
+                        note={note}
+                        selected={note.id === selected}
+                        onOpen={() => onOpen(note.id)}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              );
+            })
+          )}
+        </div>
+      </List>
     </>
   );
 }

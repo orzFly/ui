@@ -143,11 +143,19 @@ function ListItem({
   );
 }
 
-/** A heading between a list's groups. */
-function ListLabel({ className, ...props }: React.ComponentProps<"h2">) {
+/**
+ * A heading between a list's groups. `asChild` renders the heading element the page's outline
+ * needs (`h3`).
+ */
+function ListLabel({
+  asChild = false,
+  className,
+  ...props
+}: React.ComponentProps<"h2"> & { asChild?: boolean }) {
   const { purpose } = React.useContext(ListContext);
+  const Comp = asChild ? Slot.Root : "h2";
   return (
-    <h2
+    <Comp
       data-slot="list-label"
       className={cn(LABEL[purpose], className)}
       {...props}

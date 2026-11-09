@@ -35,8 +35,8 @@ type PanePurpose =
 // gave it for the default style, an etched line above and below it and a
 // gripper drawn over its leading padding; a status bar is the face with
 // one shallow sunken panel inset two pixels from its edges, as Explorer
-// draws its own, and as tall as its text and that panel; a panel is the
-// face. A window is the face inside a raised frame, square; its titlebar
+// draws its own, and as tall as its text and that panel, its quiet text in
+// the window text as Explorer's is; a panel is the face. A window is the face inside a raised frame, square; its titlebar
 // spans it in the caption gradient with its title in bold, grey while the
 // focus is elsewhere on the page, and its icon buttons are the small raised
 // caption boxes.
@@ -52,7 +52,7 @@ const PURPOSE: Record<PanePurpose, string> = {
   toolbar:
     "raymond:relative raymond:h-auto raymond:min-h-0 raymond:border-transparent raymond:bg-(--3d-face) raymond:py-[3px] raymond:shadow-[inset_0_1px_var(--3d-highlight),inset_0_-1px_var(--3d-shadow)] raymond:before:absolute raymond:before:inset-y-1 raymond:before:left-0.5 raymond:before:w-[3px] raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:before:content-['']",
   statusbar:
-    "raymond:relative raymond:min-h-0 raymond:border-transparent raymond:bg-(--3d-face) raymond:px-[5px] raymond:py-1 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-0.5 raymond:before:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:before:content-['']",
+    "raymond:relative raymond:min-h-0 raymond:border-transparent raymond:bg-(--3d-face) raymond:text-foreground raymond:[--muted-foreground:var(--foreground)] raymond:px-[5px] raymond:py-1 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-0.5 raymond:before:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:before:content-['']",
   panel: "raymond:border-transparent raymond:bg-(--3d-face)",
   window:
     "raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:p-[3px] raymond:shadow-raised",

@@ -1,5 +1,6 @@
 import { NOTES } from "@orz/fixtures/notes.ts";
 import { Button } from "@orz/ui/components/button";
+import { Toggle } from "@orz/ui/components/toggle";
 import { NotebookIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -24,15 +25,13 @@ export function FilteredNotes() {
     <div className="grid gap-3">
       <fieldset aria-label="Tags" className="flex flex-wrap gap-1">
         {TAGS.map((tag) => (
-          <button
+          <Toggle
             key={tag}
-            type="button"
-            aria-pressed={chosen.has(tag)}
-            onClick={() => toggle(tag)}
-            className="relative inline-flex h-6 items-center rounded-full border px-2 text-ui-sm transition-colors hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground touch:hit-area"
+            pressed={chosen.has(tag)}
+            onPressedChange={() => toggle(tag)}
           >
             #{tag}
-          </button>
+          </Toggle>
         ))}
       </fieldset>
       <div className="min-h-44 rounded-lg border p-2">

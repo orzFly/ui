@@ -1,5 +1,4 @@
 import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
-import { Button } from "@orz/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,7 +6,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { Pane } from "@orz/ui/components/pane";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@orz/ui/components/segmented-control";
 import { Skeleton } from "@orz/ui/components/skeleton";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -65,40 +70,6 @@ const STAMP = new Intl.DateTimeFormat("en", {
   hourCycle: "h23",
   timeZone: "UTC",
 });
-
-/** A segmented switch: one pressed button per choice, as the theme menu's light/dark switch. */
-function Segmented<T extends string>({
-  label,
-  options,
-  pressed,
-  onPress,
-  className,
-}: {
-  label: string;
-  options: { value: T; label: string }[];
-  pressed: T;
-  onPress: (value: T) => void;
-  className?: string;
-}) {
-  return (
-    <fieldset
-      aria-label={label}
-      className={cn("grid grid-flow-col rounded-md bg-muted p-0.5", className)}
-    >
-      {options.map(({ value, label: text }) => (
-        <button
-          key={value}
-          type="button"
-          aria-pressed={value === pressed}
-          onClick={() => onPress(value)}
-          className="relative rounded-sm px-2.5 py-1 text-muted-foreground text-ui-sm transition-colors hover:text-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:pressed-cue touch:hit-area"
-        >
-          {text}
-        </button>
-      ))}
-    </fieldset>
-  );
-}
 
 function PreviewSkeleton() {
   return (
@@ -218,181 +189,198 @@ export function Notes() {
     <TooltipProvider>
       <ContentRenderers renderers={RENDERERS}>
         <AttachmentViewerProvider>
-          <div className="flex h-full overflow-hidden">
-            <nav
-              aria-label="Notebook"
-              className={cn(
-                "flex min-w-0 flex-1 flex-col md:w-72 md:flex-none md:border-r",
-                view.open && "max-md:hidden",
-              )}
-            >
-              <NoteList
-                notes={shown}
-                selected={view.id}
-                query={query}
-                onQuery={setQuery}
-                tags={tags}
-                chosen={active}
-                onToggleTag={(tag) =>
-                  setChosen((was) => {
-                    const next = new Set(was);
-                    if (!next.delete(tag)) next.add(tag);
-                    return next;
-                  })
-                }
-                onClear={() => {
-                  setQuery("");
-                  setChosen(new Set());
-                }}
-                onOpen={open}
-                onNew={create}
-              />
-            </nav>
-            {note && (
-              <article
-                aria-labelledby="note-title"
+          <Pane purpose="app" className="flex h-full overflow-hidden">
+            <Pane purpose="panel" asChild>
+              <nav
+                aria-label="Notebook"
                 className={cn(
-                  "flex min-w-0 flex-1 flex-col",
-                  !view.open && "max-md:hidden",
+                  "flex min-w-0 flex-1 flex-col md:w-72 md:flex-none md:border-r",
+                  view.open && "max-md:hidden",
                 )}
               >
-                <header className="flex shrink-0 items-center gap-2 border-b px-2 py-2 md:px-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="md:hidden"
-                    aria-label="Back to notes"
-                    onClick={() => setView((was) => ({ ...was, open: false }))}
-                  >
-                    <ArrowLeftIcon />
-                  </Button>
-                  <div className="min-w-0 flex-1">
-                    <h2
-                      id="note-title"
-                      className="truncate font-semibold leading-snug"
-                    >
-                      {titleOf(note.body)}
-                    </h2>
-                    <p className="truncate text-muted-foreground text-ui-sm">
-                      {note.folder} · Edited{" "}
-                      <time dateTime={note.updated}>
-                        {STAMP.format(new Date(note.updated))} UTC
-                      </time>
-                    </p>
-                  </div>
-                  <Segmented
-                    label="View"
-                    options={MODES.map(({ mode: value, label }) => ({
-                      value,
-                      label,
-                    }))}
-                    pressed={mode}
-                    onPress={setMode}
-                    className="max-lg:hidden"
-                  />
-                  <Segmented
-                    label="View"
-                    options={[
-                      { value: "edit", label: "Edit" },
-                      { value: "preview", label: "Preview" },
-                    ]}
-                    pressed={phoneEditing ? "edit" : "preview"}
-                    onPress={(value) => setPhoneEditing(value === "edit")}
-                    className="lg:hidden"
-                  />
-                  <div
-                    className={cn(
-                      mode === "preview" && "lg:hidden",
-                      !phoneEditing && "max-lg:hidden",
-                    )}
-                  >
-                    <EditorShortcutsHelp />
-                  </div>
-                  <DropdownMenu>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="More actions"
-                          >
-                            <EllipsisIcon />
-                          </Button>
-                        </DropdownMenuTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>More actions</TooltipContent>
-                    </Tooltip>
-                    <DropdownMenuContent align="end" className="w-44">
-                      <DropdownMenuItem onSelect={create}>
-                        <PlusIcon />
-                        New note
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={() => remove(note.id)}
+                <NoteList
+                  notes={shown}
+                  selected={view.id}
+                  query={query}
+                  onQuery={setQuery}
+                  tags={tags}
+                  chosen={active}
+                  onToggleTag={(tag) =>
+                    setChosen((was) => {
+                      const next = new Set(was);
+                      if (!next.delete(tag)) next.add(tag);
+                      return next;
+                    })
+                  }
+                  onClear={() => {
+                    setQuery("");
+                    setChosen(new Set());
+                  }}
+                  onOpen={open}
+                  onNew={create}
+                />
+              </nav>
+            </Pane>
+            {note && (
+              <Pane purpose="panel" asChild>
+                <article
+                  aria-labelledby="note-title"
+                  className={cn(
+                    "flex min-w-0 flex-1 flex-col",
+                    !view.open && "max-md:hidden",
+                  )}
+                >
+                  <Pane purpose="toolbar" asChild>
+                    <header className="flex shrink-0 items-center gap-2 border-b px-2 py-2 md:px-4">
+                      <ToolbarButton
+                        className="md:hidden"
+                        aria-label="Back to notes"
+                        onClick={() =>
+                          setView((was) => ({ ...was, open: false }))
+                        }
                       >
-                        <Trash2Icon />
-                        Delete note
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </header>
-                <div className="flex min-h-0 flex-1">
-                  <section
-                    aria-label="Markdown"
-                    className={cn(
-                      "flex min-w-0 flex-1 flex-col",
-                      mode === "preview" && "lg:hidden",
-                      !phoneEditing && "max-lg:hidden",
-                      mode === "split" && "lg:border-r",
-                    )}
-                  >
-                    <MarkdownEditor
-                      key={note.id}
-                      initialValue={note.body}
-                      ariaLabel="Note"
-                      placeholder="Start with a # heading. Type / at the start of a line for a block."
-                      autoFocus={fresh === note.id}
-                      onChange={(body) => edit(note.id, body)}
-                      extensions={extensions}
-                      purpose="document"
-                      className="h-full min-h-0 px-2 py-2 md:px-3"
-                    />
-                  </section>
-                  <section
-                    aria-label="Preview"
-                    className={cn(
-                      "min-w-0 flex-1 overflow-y-auto px-4 py-4 md:px-6",
-                      mode === "edit" && "lg:hidden",
-                      phoneEditing && "max-lg:hidden",
-                    )}
-                  >
-                    {preview.trim() === "" ? (
-                      <p className="text-muted-foreground text-ui">
-                        Nothing to preview yet.
-                      </p>
-                    ) : (
-                      // A file a note links or embeds is addressed by a blob: URL, which the
-                      // prerender cannot mint the same as the browser.
-                      <ClientOnly fallback={<PreviewSkeleton />}>
-                        <Markdown
-                          plugins={PLUGINS}
-                          className="mx-auto max-w-prose"
+                        <ArrowLeftIcon />
+                      </ToolbarButton>
+                      <div className="min-w-0 flex-1">
+                        <h2
+                          id="note-title"
+                          className="truncate font-semibold leading-snug"
                         >
-                          {preview}
-                        </Markdown>
-                      </ClientOnly>
-                    )}
-                  </section>
-                </div>
-                <footer className="shrink-0 border-t px-4 py-1.5 text-muted-foreground text-ui-sm">
-                  {wordCount(note.body)} words · Kept in this tab only
-                </footer>
-              </article>
+                          {titleOf(note.body)}
+                        </h2>
+                        <p className="truncate text-muted-foreground text-ui-sm">
+                          {note.folder} · Edited{" "}
+                          <time dateTime={note.updated}>
+                            {STAMP.format(new Date(note.updated))} UTC
+                          </time>
+                        </p>
+                      </div>
+                      <SegmentedControl
+                        aria-label="View"
+                        value={mode}
+                        onValueChange={(value) => setMode(value as Mode)}
+                        className="max-lg:hidden"
+                      >
+                        {MODES.map(({ mode: value, label }) => (
+                          <SegmentedControlItem key={value} value={value}>
+                            {label}
+                          </SegmentedControlItem>
+                        ))}
+                      </SegmentedControl>
+                      <SegmentedControl
+                        aria-label="View"
+                        value={phoneEditing ? "edit" : "preview"}
+                        onValueChange={(value) =>
+                          setPhoneEditing(value === "edit")
+                        }
+                        className="lg:hidden"
+                      >
+                        <SegmentedControlItem value="edit">
+                          Edit
+                        </SegmentedControlItem>
+                        <SegmentedControlItem value="preview">
+                          Preview
+                        </SegmentedControlItem>
+                      </SegmentedControl>
+                      <div
+                        className={cn(
+                          mode === "preview" && "lg:hidden",
+                          !phoneEditing && "max-lg:hidden",
+                        )}
+                      >
+                        <EditorShortcutsHelp />
+                      </div>
+                      <DropdownMenu>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <DropdownMenuTrigger asChild>
+                              <ToolbarButton aria-label="More actions">
+                                <EllipsisIcon />
+                              </ToolbarButton>
+                            </DropdownMenuTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>More actions</TooltipContent>
+                        </Tooltip>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem onSelect={create}>
+                            <PlusIcon />
+                            New note
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => remove(note.id)}
+                          >
+                            <Trash2Icon />
+                            Delete note
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </header>
+                  </Pane>
+                  <div className="flex min-h-0 flex-1">
+                    <Pane purpose="panel" asChild>
+                      <section
+                        aria-label="Markdown"
+                        className={cn(
+                          "flex min-w-0 flex-1 flex-col",
+                          mode === "preview" && "lg:hidden",
+                          !phoneEditing && "max-lg:hidden",
+                          mode === "split" && "lg:border-r",
+                        )}
+                      >
+                        <MarkdownEditor
+                          key={note.id}
+                          initialValue={note.body}
+                          ariaLabel="Note"
+                          placeholder="Start with a # heading. Type / at the start of a line for a block."
+                          autoFocus={fresh === note.id}
+                          onChange={(body) => edit(note.id, body)}
+                          extensions={extensions}
+                          purpose="document"
+                          className="h-full min-h-0 px-2 py-2 md:px-3"
+                        />
+                      </section>
+                    </Pane>
+                    <Pane purpose="document" asChild>
+                      <section
+                        aria-label="Preview"
+                        className={cn(
+                          "flex min-w-0 flex-1 flex-col",
+                          mode === "edit" && "lg:hidden",
+                          phoneEditing && "max-lg:hidden",
+                        )}
+                      >
+                        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6">
+                          {preview.trim() === "" ? (
+                            <p className="text-muted-foreground text-ui">
+                              Nothing to preview yet.
+                            </p>
+                          ) : (
+                            // A file a note links or embeds is addressed by a blob: URL, which the
+                            // prerender cannot mint the same as the browser.
+                            <ClientOnly fallback={<PreviewSkeleton />}>
+                              <Markdown
+                                plugins={PLUGINS}
+                                className="mx-auto max-w-prose"
+                              >
+                                {preview}
+                              </Markdown>
+                            </ClientOnly>
+                          )}
+                        </div>
+                      </section>
+                    </Pane>
+                  </div>
+                  <Pane purpose="statusbar" asChild>
+                    <footer className="shrink-0 border-t px-4 py-1.5 text-muted-foreground text-ui-sm">
+                      {wordCount(note.body)} words · Kept in this tab only
+                    </footer>
+                  </Pane>
+                </article>
+              </Pane>
             )}
-          </div>
+          </Pane>
         </AttachmentViewerProvider>
       </ContentRenderers>
     </TooltipProvider>
