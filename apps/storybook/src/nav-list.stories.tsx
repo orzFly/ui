@@ -182,7 +182,7 @@ const SECTIONS = [
 
 /**
  * `variant="rail"`, for the sections of the page in view beside it: quiet lines off a rule, the
- * one in view marking its stretch. Its rows take the size of the text around them.
+ * one in view taking the state cue over it. Its rows take the size of the text around them.
  */
 export const Rail: Story = {
   args: { "aria-label": "On this page", variant: "rail" },

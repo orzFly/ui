@@ -400,7 +400,7 @@
   --sidebar-foreground: #0f1727;
   --sidebar-primary: #1f3d6b;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #dfe6f0;
+  --sidebar-accent: #d6dfec;
   --sidebar-accent-foreground: #0f1727;
   --sidebar-border: #bfc8d5;
   --sidebar-ring: #1f3d6b;
@@ -462,7 +462,7 @@
   --sidebar-foreground: oklch(0.94 0.012 258);
   --sidebar-primary: oklch(0.78 0.09 258);
   --sidebar-primary-foreground: oklch(0.18 0.014 258);
-  --sidebar-accent: oklch(0.285 0.028 258);
+  --sidebar-accent: oklch(0.29 0.028 258);
   --sidebar-accent-foreground: oklch(0.94 0.012 258);
   --sidebar-border: oklch(0.36 0.022 258);
   --sidebar-ring: oklch(0.78 0.09 258);

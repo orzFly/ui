@@ -6,7 +6,7 @@ import { cn } from "../lib/utils.ts";
 /**
  * How a column of places is drawn. `rows` tiles full rows, the current one in the state fill
  * and cue: an app's folders, a site's pages. `rail` hangs quiet lines off a rule down their
- * leading edge, the current one marking its stretch of the rule: the sections of the page in
+ * leading edge, the current one laying the state cue over the rule: the sections of the page in
  * view, beside the page. A rail's rows take the size of the text around them.
  */
 type NavListVariant = "rows" | "rail";
@@ -16,7 +16,7 @@ const NavListContext = React.createContext<NavListVariant>("rows");
 /**
  * A column of places to go: an app's folders, a settings screen's sections, a document's parts.
  * Rows tile with no gap; the current one takes the state fill and the state cue, or with
- * `variant="rail"` its stretch of the rule. Put it in a `nav` named with `aria-label`, and head
+ * `variant="rail"` the state cue alone, over the rule. Put it in a `nav` named with `aria-label`, and head
  * each group with a `NavListHeading`.
  */
 function NavList({
@@ -89,7 +89,7 @@ const indent = (
 
 const LINK: Record<NavListVariant, string> = {
   rows: "relative flex min-h-row w-full items-center gap-2 px-3 text-left text-ui text-muted-foreground transition-colors outline-none select-none hover:bg-accent hover:text-accent-foreground focus-visible:focus-ring-inset touch:min-h-11 data-current:bg-accent data-current:font-medium data-current:text-accent-foreground data-current:state-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-  rail: "-ml-px flex min-h-7 items-center gap-2 border-l border-transparent py-1 pl-3 text-left text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:focus-ring touch:min-h-11 data-current:border-foreground data-current:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 raymond:ml-0 raymond:min-h-row raymond:border-l-0 raymond:py-0 raymond:[--focus-offset:-1px]",
+  rail: "-ml-px flex min-h-7 items-center gap-2 py-1 pl-3 text-left text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:focus-ring touch:min-h-11 data-current:text-foreground data-current:state-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 raymond:ml-0 raymond:min-h-row raymond:py-0 raymond:[--focus-offset:-1px]",
 };
 
 function NavListLink({

@@ -118,24 +118,30 @@ const EDGE: Record<
   },
 };
 
+// A filled sidebar hands its own state fill to the rows it holds as the
+// accent they highlight and select with: the page's accent is drawn for the
+// page's ground, and on a sidebar's it can measure barely over 1:1.
 const SIDEBAR_FILL: Record<PaneBreakpoint, readonly [on: string, off: string]> =
   {
-    initial: ["bg-sidebar text-sidebar-foreground", ""],
+    initial: [
+      "bg-sidebar text-sidebar-foreground [--accent:var(--sidebar-accent)] [--accent-foreground:var(--sidebar-accent-foreground)]",
+      "",
+    ],
     sm: [
-      "sm:bg-sidebar sm:text-sidebar-foreground",
-      "sm:bg-transparent sm:text-inherit",
+      "sm:bg-sidebar sm:text-sidebar-foreground sm:[--accent:var(--sidebar-accent)] sm:[--accent-foreground:var(--sidebar-accent-foreground)]",
+      "sm:bg-transparent sm:text-inherit sm:[--accent:inherit] sm:[--accent-foreground:inherit]",
     ],
     md: [
-      "md:bg-sidebar md:text-sidebar-foreground",
-      "md:bg-transparent md:text-inherit",
+      "md:bg-sidebar md:text-sidebar-foreground md:[--accent:var(--sidebar-accent)] md:[--accent-foreground:var(--sidebar-accent-foreground)]",
+      "md:bg-transparent md:text-inherit md:[--accent:inherit] md:[--accent-foreground:inherit]",
     ],
     lg: [
-      "lg:bg-sidebar lg:text-sidebar-foreground",
-      "lg:bg-transparent lg:text-inherit",
+      "lg:bg-sidebar lg:text-sidebar-foreground lg:[--accent:var(--sidebar-accent)] lg:[--accent-foreground:var(--sidebar-accent-foreground)]",
+      "lg:bg-transparent lg:text-inherit lg:[--accent:inherit] lg:[--accent-foreground:inherit]",
     ],
     xl: [
-      "xl:bg-sidebar xl:text-sidebar-foreground",
-      "xl:bg-transparent xl:text-inherit",
+      "xl:bg-sidebar xl:text-sidebar-foreground xl:[--accent:var(--sidebar-accent)] xl:[--accent-foreground:var(--sidebar-accent-foreground)]",
+      "xl:bg-transparent xl:text-inherit xl:[--accent:inherit] xl:[--accent-foreground:inherit]",
     ],
   };
 

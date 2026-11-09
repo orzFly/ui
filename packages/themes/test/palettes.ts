@@ -104,6 +104,18 @@ const EXEMPT: Record<string, Record<string, number>> = {
     "catppuccin light mocha-gray chart-3/background": 2.31,
     "pro-citrus light default chart-1/background": 1.32,
   },
+  "sidebar-fill": {
+    "pro-graphite light default sidebar-accent/sidebar": 1.09,
+    "pro-graphite dark default sidebar-accent/sidebar": 1.09,
+    "pro-graphite dark amoled sidebar-accent/sidebar": 1.09,
+    "pro-nord light default sidebar-accent/sidebar": 1.05,
+    "pro-sand light default sidebar-accent/sidebar": 1.1,
+    "pro-matcha light default sidebar-accent/sidebar": 1.04,
+    "pro-sakura light default sidebar-accent/sidebar": 1.08,
+    "pro-lavender light default sidebar-accent/sidebar": 1,
+    "pro-lagoon light default sidebar-accent/sidebar": 1.09,
+    "pro-citrus light default sidebar-accent/sidebar": 1.05,
+  },
 };
 
 /**

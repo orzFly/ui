@@ -9,7 +9,7 @@ colors:
   strip: "#eff3f9"
   quiet-ink: "#4a5568"
   state-fill: "#e8eef7"
-  sidebar-state-fill: "#dfe6f0"
+  sidebar-state-fill: "#d6dfec"
   rule: "#bfc8d5"
   field-edge: "#7c8799"
   marker-tint: "#d3ddec"
@@ -166,7 +166,7 @@ A near-monochrome ink-on-white palette with a single deep indigo accent; dark mo
 - **Dense Ink** (ink): all body text, and the colour of the 2px state tick. Dark: `oklch(0.94 0.012 258)`.
 - **Strip Tint** (strip): module header strips, tab lists, table heads, footers, the sidebar, hover fills. Dark: `oklch(0.225 0.018 258)`.
 - **Quiet Ink** (quiet-ink): secondary text and inactive tabs; held to 4.5:1 on ground and on strip.
-- **State Fill** (state-fill): the highlighted or selected row's fill, always paired with the ink tick. Sidebar uses **Sidebar State Fill** (sidebar-state-fill).
+- **State Fill** (state-fill): the highlighted or selected row's fill, always paired with the ink tick. Rows on a sidebar take **Sidebar State Fill** (sidebar-state-fill), which a sidebar pane hands down as their accent.
 - **Hairline Rule** (rule): every module edge, row divider and strip underline. Dark: `oklch(0.36 0.022 258)`.
 - **Field Edge** (field-edge): input borders and outline buttons; held to 3:1 on ground, card and popover.
 - **Marker Tint** (marker-tint): the marker square's fill, about 12% ai over strip. A palette that names none gets `markerOf()`'s mix, stepped down until the ai icon holds 4.5:1.
@@ -244,7 +244,7 @@ Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and c
 ### Navigation
 - **Tabs:** a strip-tinted list ruled underneath; tabs separated by 60% rules, 13px medium quiet ink. The current tab is a ground box that covers the list's rule to join its content, with a 2px ai edge across its top.
 - **Line tabs and tab nav:** where the panel does not lie right under the tabs (`TabsList variant="line"`), and for an app's sections in its header (`TabNav`): no fill and no separators, the current one in ink with a 2px ai underline laid on the bar's bottom rule.
-- **Nav list:** an app's places (`NavList`) tile as rows with no gap; the current place takes the state fill, medium weight and the state tick. Group headings are 12px semibold ink.
+- **Nav list:** an app's places (`NavList`) tile as rows with no gap; the current place takes the state fill, medium weight and the state tick. On a sidebar the fill is the sidebar state fill, held 1.2:1 off the sidebar. A rail (`variant="rail"`) has no fill: the current line is ink with the same tick laid over the rule. Group headings are 12px semibold ink.
 - **Menus and rows:** the highlighted or selected row takes the state fill and a 2px tick in its own text colour on its leading edge, over the middle half of the row; table rows mark the first cell the same way.
 
 ### Module Marker

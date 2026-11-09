@@ -141,19 +141,22 @@ describe("the port from @orz/ui's styles.css", () => {
     expect(Object.keys(PORTED).sort()).toEqual(Object.keys(legacy).sort());
   });
 
-  // Darkened or lightened after the port to clear AA as text or 3:1 as a
-  // focus ring; contrast.test.ts and focus-ring.test.ts hold them instead. The
-  // fixture stays as scraped.
+  // Darkened or lightened after the port to clear AA as text, 3:1 as a
+  // focus ring, or the sidebar's state fill floor; contrast.test.ts and
+  // focus-ring.test.ts hold them instead. The fixture stays as scraped.
   const RETUNED: Record<string, string[]> = {
-    "pico-light": ["destructive"],
+    "pico-light": ["destructive", "sidebar-accent"],
     "solarized-light": [
       "muted-foreground",
       "destructive",
       "ring",
       "sidebar-ring",
+      "sidebar-accent",
     ],
     "solarized-dark": ["muted-foreground", "destructive"],
-    "gruvbox-light": ["muted-foreground"],
+    "vs-light": ["sidebar-accent"],
+    "github-light": ["sidebar-accent"],
+    "gruvbox-light": ["muted-foreground", "sidebar-accent"],
     "gruvbox-dark": ["destructive"],
     dracula: ["destructive"],
     nord: ["destructive"],

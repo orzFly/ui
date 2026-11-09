@@ -35,7 +35,7 @@ const lightPalette: Palette = {
     "sidebar-foreground": "oklch(0.46 0.03 210)",
     "sidebar-primary": "oklch(0.52 0.15 85)",
     "sidebar-primary-foreground": "oklch(0.965 0.036 92)",
-    "sidebar-accent": "oklch(0.94 0.05 85)",
+    "sidebar-accent": "oklch(0.89 0.05 85)",
     "sidebar-accent-foreground": "oklch(0.46 0.14 85)",
     "sidebar-border": "oklch(0.88 0.04 90)",
     "sidebar-ring": "oklch(0.6 0.15 85)",

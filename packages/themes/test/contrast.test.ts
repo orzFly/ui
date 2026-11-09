@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CONTRAST_CHECKS, contrastRows } from "../src/contrast.ts";
-import { builtinThemes, resolvePalette } from "../src/index.ts";
+import { builtinThemes, DEFAULT_STYLE, resolvePalette } from "../src/index.ts";
 import { contrast, rgbOf } from "../src/rgb.ts";
 import { failures, resolvedPalettes as resolved } from "./palettes.ts";
 
@@ -61,5 +61,23 @@ describe("AMOLED state contrast", () => {
         .filter((r) => r.after < r.before - 0.01)
         .map((r) => `${r.name} ${r.before.toFixed(2)} → ${r.after.toFixed(2)}`),
     ).toEqual([]);
+  });
+});
+
+// The state cue carries a selected row's contrast, but a sidebar's fill is
+// how its current place is found at a glance, and a page's accent laid on a
+// sidebar's tint all but vanished there. No WCAG floor covers a fill, so this
+// one is the library's own.
+const SIDEBAR_FILL = 1.2;
+
+describe("sidebar state fill", () => {
+  it(`stands ${SIDEBAR_FILL}:1 off the sidebar wherever the default style draws it`, () => {
+    const rows = resolved
+      .filter(({ styles }) => styles.includes(DEFAULT_STYLE))
+      .map(({ name, tokens }) => ({
+        name: `${name} sidebar-accent/sidebar`,
+        ratio: contrast(rgbOf(tokens["sidebar-accent"]), rgbOf(tokens.sidebar)),
+      }));
+    expect(failures("sidebar-fill", rows, SIDEBAR_FILL)).toEqual([]);
   });
 });

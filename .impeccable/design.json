@@ -70,8 +70,8 @@
       "sidebar-state-fill": {
         "role": "neutral",
         "displayName": "Sidebar State Fill",
-        "canonical": "#dfe6f0",
-        "dark": "oklch(0.285 0.028 258)"
+        "canonical": "#d6dfec",
+        "dark": "oklch(0.29 0.028 258)"
       },
       "rule": {
         "role": "neutral",

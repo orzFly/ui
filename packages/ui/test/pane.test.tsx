@@ -54,6 +54,22 @@ describe("Pane", () => {
     );
   });
 
+  it("hands a filled sidebar's state fill to what it holds, and the page's back where it stops", () => {
+    const filled = classes({
+      purpose: "sidebar",
+      edge: { initial: "bottom", md: "end", xl: "top" },
+    });
+    expect(filled).toEqual(
+      expect.arrayContaining([
+        "md:[--accent:var(--sidebar-accent)]",
+        "md:[--accent-foreground:var(--sidebar-accent-foreground)]",
+        "xl:[--accent:inherit]",
+        "xl:[--accent-foreground:inherit]",
+      ]),
+    );
+    expect(filled).not.toContain("[--accent:var(--sidebar-accent)]");
+  });
+
   it("frames only a window, dropping the frame on the edge it is docked against", () => {
     expect(classes({ purpose: "window" })).toEqual(
       expect.arrayContaining(["rounded-overlay", "border"]),
