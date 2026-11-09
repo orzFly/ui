@@ -1,16 +1,21 @@
+import { Checkbox } from "@orz/ui/components/checkbox";
+import { Input } from "@orz/ui/components/input";
+import { Label } from "@orz/ui/components/label";
+import { Textarea } from "@orz/ui/components/textarea";
 import { useSlashShortcut } from "@orz/ui/hooks/use-slash-shortcut";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef, useState } from "react";
 import { withWidth } from "./decorators.tsx";
 
-const USAGE = `import { useSlashShortcut } from "@orz/ui/hooks/use-slash-shortcut";
+const USAGE = `import { Input } from "@orz/ui/components/input";
+import { useSlashShortcut } from "@orz/ui/hooks/use-slash-shortcut";
 import { useRef } from "react";
 
 function Search() {
   const input = useRef<HTMLInputElement>(null);
   // Ignored while the reader is typing in an input, textarea, select or contenteditable.
   useSlashShortcut(() => input.current?.focus());
-  return <input ref={input} type="search" placeholder="Search (press /)" />;
+  return <Input ref={input} type="search" placeholder="Search (press /)" />;
 }`;
 
 const meta = {
@@ -38,18 +43,13 @@ export const Usage: Story = {
 
     return (
       <div className="grid gap-3">
-        <input
+        <Input
           ref={search}
           type="search"
           placeholder="Search (press /)"
           aria-label="Search"
-          className="rounded-md border px-2 py-1"
         />
-        <textarea
-          placeholder="Notes: / types here"
-          aria-label="Notes"
-          className="rounded-md border px-2 py-1"
-        />
+        <Textarea placeholder="Notes: / types here" aria-label="Notes" />
         <span>
           Shortcut taken: <strong>{taken}</strong>
         </span>
@@ -58,7 +58,8 @@ export const Usage: Story = {
   },
 };
 
-const ENABLED = `import { useSlashShortcut } from "@orz/ui/hooks/use-slash-shortcut";
+const ENABLED = `import { Input } from "@orz/ui/components/input";
+import { useSlashShortcut } from "@orz/ui/hooks/use-slash-shortcut";
 import { useRef } from "react";
 
 function Search({ shortcuts }: { shortcuts: boolean }) {
@@ -66,7 +67,7 @@ function Search({ shortcuts }: { shortcuts: boolean }) {
   // A single-key shortcut must be possible to turn off (WCAG 2.1.4):
   // wire \`enabled\` to the app's keyboard-shortcuts setting.
   useSlashShortcut(() => input.current?.focus(), { enabled: shortcuts });
-  return <input ref={input} type="search" placeholder="Search" />;
+  return <Input ref={input} type="search" placeholder="Search" />;
 }`;
 
 /**
@@ -82,20 +83,18 @@ export const Enabled: Story = {
 
     return (
       <div className="grid gap-3">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+        <Label>
+          <Checkbox
             checked={shortcuts}
-            onChange={(e) => setShortcuts(e.target.checked)}
+            onCheckedChange={(checked) => setShortcuts(checked === true)}
           />
           Keyboard shortcuts
-        </label>
-        <input
+        </Label>
+        <Input
           ref={search}
           type="search"
           placeholder={shortcuts ? "Search (press /)" : "Search"}
           aria-label="Search"
-          className="rounded-md border px-2 py-1"
         />
       </div>
     );

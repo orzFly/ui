@@ -1,5 +1,6 @@
 import { CI_RUN } from "@orz/fixtures/ci-run.ts";
 import { Button } from "@orz/ui/components/button";
+import { List, ListItem } from "@orz/ui/components/list";
 import { Skeleton } from "@orz/ui/components/skeleton";
 import { CircleCheckIcon, CircleXIcon, RotateCwIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -29,38 +30,41 @@ export function ArrivingJobs() {
           <RotateCwIcon data-icon="inline-start" /> Re-run all jobs
         </Button>
       </div>
-      <ol aria-label="Jobs" className="grid gap-1 text-ui">
-        {CI_RUN.jobs.slice(0, finished).map((job) => (
-          <li
-            key={job.id}
-            className="flex items-center gap-2 rounded-md bg-muted px-3 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150 ease-out"
-          >
-            {job.status === "failed" ? (
-              <CircleXIcon
-                aria-label="failed"
-                className="size-4 shrink-0 text-destructive"
-              />
-            ) : (
-              <CircleCheckIcon
-                aria-label="passed"
-                className="size-4 shrink-0 text-success"
-              />
-            )}
-            <span className="flex-1">{job.name}</span>
-            <span className="text-muted-foreground text-ui-sm tabular-nums">
-              {job.duration}s
-            </span>
-          </li>
-        ))}
-        {running && (
-          <li>
-            <Skeleton className="h-8 w-full" />
-            <span className="sr-only">
-              {CI_RUN.jobs[finished]?.name} is running
-            </span>
-          </li>
-        )}
-      </ol>
+      <List purpose="collection">
+        <ol aria-label="Jobs" className="text-ui">
+          {CI_RUN.jobs.slice(0, finished).map((job) => (
+            <ListItem key={job.id} asChild>
+              <li className="flex min-h-row items-center gap-2 px-3 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150 ease-out">
+                {job.status === "failed" ? (
+                  <CircleXIcon
+                    aria-label="failed"
+                    className="size-4 shrink-0 text-destructive"
+                  />
+                ) : (
+                  <CircleCheckIcon
+                    aria-label="passed"
+                    className="size-4 shrink-0 text-success"
+                  />
+                )}
+                <span className="flex-1">{job.name}</span>
+                <span className="text-muted-foreground text-ui-sm tabular-nums">
+                  {job.duration}s
+                </span>
+              </li>
+            </ListItem>
+          ))}
+          {running && (
+            <ListItem asChild>
+              <li className="py-0.5">
+                <Skeleton className="h-row w-full" />
+                <span className="sr-only">
+                  {CI_RUN.jobs[finished]?.name} is running
+                </span>
+              </li>
+            </ListItem>
+          )}
+        </ol>
+      </List>
     </div>
   );
 }

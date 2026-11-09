@@ -1,4 +1,5 @@
 import { PROFILE } from "@orz/fixtures/account.ts";
+import { FieldError } from "@orz/ui/components/field";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 
@@ -13,9 +14,9 @@ export function InlineFieldError() {
         aria-invalid
         aria-describedby="do-email-error"
       />
-      <p id="do-email-error" className="text-destructive text-ui">
+      <FieldError id="do-email-error">
         Enter an email address, like {PROFILE.email}.
-      </p>
+      </FieldError>
     </div>
   );
 }

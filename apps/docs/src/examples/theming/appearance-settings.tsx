@@ -1,5 +1,7 @@
 import { Button } from "@orz/ui/components/button";
+import { FieldDescription } from "@orz/ui/components/field";
 import { Label } from "@orz/ui/components/label";
+import { Separator } from "@orz/ui/components/separator";
 import { ThemeEditor } from "@orz/ui/components/theme-editor";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import { useTerminalTheme, useTheme } from "@orz/ui/theme";
@@ -33,19 +35,20 @@ export function AppearanceSettings() {
   const customize = (id: string | undefined, slot: "ui" | "terminal") =>
     setEditing({ id, slot });
   return (
-    <div className="grid divide-y">
+    <div className="grid">
       <div className="flex items-center justify-between gap-4 py-3">
         <div className="grid gap-1">
           <Label htmlFor="appearance-theme">Theme</Label>
-          <p className="text-muted-foreground text-ui">
+          <FieldDescription id="appearance-theme-description">
             A pick repaints the whole page, this text included.
-          </p>
+          </FieldDescription>
         </div>
         <ThemeMenu
           onCustomize={customize}
           trigger={({ Icon, label }) => (
             <Button
               id="appearance-theme"
+              aria-describedby="appearance-theme-description"
               variant="outline"
               aria-label={`${label}: ${theme.label}`}
               className="max-w-48"
@@ -60,13 +63,14 @@ export function AppearanceSettings() {
           )}
         />
       </div>
+      <Separator purpose="row" />
       <div className="grid gap-3 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="grid gap-1">
             <Label htmlFor="appearance-terminal-theme">Terminal theme</Label>
-            <p className="text-muted-foreground text-ui">
+            <FieldDescription id="appearance-terminal-theme-description">
               For logs and recordings. It can follow the theme or keep its own.
-            </p>
+            </FieldDescription>
           </div>
           <ThemeMenu
             slot="terminal"
@@ -74,6 +78,7 @@ export function AppearanceSettings() {
             trigger={({ Icon, label }) => (
               <Button
                 id="appearance-terminal-theme"
+                aria-describedby="appearance-terminal-theme-description"
                 variant="outline"
                 aria-label={`${label}: ${terminal.following ? "follows the theme" : terminal.theme.label}`}
                 className="max-w-48"
@@ -100,15 +105,17 @@ export function AppearanceSettings() {
           ))}
         </pre>
       </div>
+      <Separator purpose="row" />
       <div className="flex items-center justify-between gap-4 py-3">
         <div className="grid gap-1">
           <Label htmlFor="appearance-custom-themes">Custom themes</Label>
-          <p className="text-muted-foreground text-ui">
+          <FieldDescription id="appearance-custom-themes-description">
             Start from a theme and change its colours, or import one.
-          </p>
+          </FieldDescription>
         </div>
         <Button
           id="appearance-custom-themes"
+          aria-describedby="appearance-custom-themes-description"
           variant="outline"
           onClick={() => customize(undefined, "ui")}
         >

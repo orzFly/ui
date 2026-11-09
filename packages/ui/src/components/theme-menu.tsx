@@ -51,6 +51,10 @@ import {
   MatchedText,
   matchText,
 } from "./filter-menu.tsx";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "./segmented-control.tsx";
 
 export interface ThemeMenuProps {
   /**
@@ -92,11 +96,6 @@ const MODES: { mode: ThemeMode; label: string; Icon: typeof SunIcon }[] = [
   { mode: "light", label: "Light", Icon: SunIcon },
   { mode: "dark", label: "Dark", Icon: MoonIcon },
 ];
-// The Style and Mode rows: segmented buttons on a muted track.
-const SEGMENTS =
-  "mx-2 grid gap-0.5 rounded-[min(var(--radius-control),8px)] bg-muted p-0.5";
-const SEGMENT =
-  "flex items-center justify-center gap-1.5 rounded-[min(var(--radius-control),6px)] py-1 text-muted-foreground text-ui-sm aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:pressed-cue disabled:cursor-not-allowed disabled:opacity-40 [&_svg]:size-3.5";
 const FOLLOW_LABEL = "Same as UI";
 const CUSTOMIZE_LABEL = "Custom themes…";
 
@@ -527,18 +526,17 @@ export function ThemeMenu({
   };
 
   const styleRow = slot === "ui" && style.styles.length > 1 && (
-    <fieldset
+    <SegmentedControl
       aria-label="Style"
-      className={cn(SEGMENTS, "mt-2 auto-cols-fr grid-flow-col")}
+      value={style.committed}
+      onValueChange={pickStyle}
+      className="mx-2 mt-2 auto-cols-fr"
     >
       {style.styles.map(({ id, label }) => (
-        <button
+        <SegmentedControlItem
           key={id}
-          type="button"
-          aria-pressed={style.committed === id}
-          className={SEGMENT}
+          value={id}
           onMouseDown={(event) => event.preventDefault()}
-          onClick={() => pickStyle(id)}
           onPointerMove={(event) => {
             // A move where the pointer already was is the layout's too.
             const at = stylePointer.current;
@@ -562,15 +560,17 @@ export function ThemeMenu({
           onBlur={() => settle(previewOf(highlighted.current))}
         >
           {label}
-        </button>
+        </SegmentedControlItem>
       ))}
-    </fieldset>
+    </SegmentedControl>
   );
 
   const modes = (
-    <fieldset
+    <SegmentedControl
       aria-label="Mode"
-      className={cn(SEGMENTS, "mt-2 mb-1 grid-cols-3")}
+      value={following ? undefined : committed?.mode}
+      onValueChange={(mode) => setMode(mode as ThemeMode)}
+      className="mx-2 mt-2 mb-1 auto-cols-fr"
     >
       {MODES.map(({ mode, label, Icon }) => {
         const schemes = committedTheme ? schemesOf(committedTheme) : [];
@@ -583,24 +583,20 @@ export function ThemeMenu({
           : usable
             ? undefined
             : `${committedTheme?.label ?? "This theme"} has no ${missing} palette`;
-        const pressed = !following && committed?.mode === mode;
         return (
-          <button
+          <SegmentedControlItem
             key={mode}
-            type="button"
-            aria-pressed={pressed}
+            value={mode}
             disabled={!usable}
             title={title}
-            className={SEGMENT}
             onMouseDown={(event) => event.preventDefault()}
-            onClick={() => setMode(mode)}
           >
             <Icon aria-hidden />
             {label}
-          </button>
+          </SegmentedControlItem>
         );
       })}
-    </fieldset>
+    </SegmentedControl>
   );
   const header = (
     <>

@@ -54,7 +54,7 @@ function AvatarFallback({
       className={cn(
         // Under raymond the letter is the face's dark shadow, which a
         // selected row's highlight text does not reach.
-        "flex size-full items-center justify-center rounded-[inherit] bg-muted text-ui text-muted-foreground group-data-[size=sm]/avatar:text-ui-sm raymond:text-(--3d-dark-shadow)",
+        "flex size-full items-center justify-center rounded-[inherit] bg-muted text-ui text-muted-foreground group-data-[size=sm]/avatar:text-ui-sm raymond:text-(--3d-dark-shadow) raymond:group-data-[size=sm]/avatar:text-[9px] raymond:group-data-[size=sm]/avatar:leading-none",
         className,
       )}
       {...props}
@@ -83,7 +83,7 @@ function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="avatar-group"
       className={cn(
-        "group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background",
+        "group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background raymond:*:data-[slot=avatar]:ring-(--3d-face)",
         className,
       )}
       {...props}

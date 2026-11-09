@@ -181,7 +181,7 @@ const meta = {
       >
         <Button variant="outline" className="w-48 justify-between">
           {labelOf(args.selectedSubmenuId ?? args.selectedId ?? "")}
-          <ChevronDownIcon className="text-muted-foreground" />
+          <ChevronDownIcon />
         </Button>
       </FilterMenu>
     );

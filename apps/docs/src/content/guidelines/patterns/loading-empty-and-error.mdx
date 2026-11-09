@@ -5,6 +5,7 @@ export const meta = {
   order: 35,
   api: [
     "ui/Primitives/Skeleton",
+    "ui/EmptyState",
     "ui/LoadFailure",
     "ui/LoadMoreFooter",
     "ui/Hooks/usePagedAppend",
@@ -60,8 +61,8 @@ the read runs, and the notes arrive.
 |---|---|---|
 | Loading, first time | Placeholders in the shape of the content | `Skeleton` |
 | Loading, short (under about half a second) | Nothing new; show the skeleton only after a short delay, so a fast load does not flash | `Skeleton` |
-| Loaded, nothing there | What would be here, why it is empty, and the action that fills it | Your own markup |
-| Loaded, nothing matches a filter | That the filter hid everything, and a way to clear it | Your own markup |
+| Loaded, nothing there | What would be here, why it is empty, and the action that fills it | `EmptyState` |
+| Loaded, nothing matches a filter | That the filter hid everything, and a way to clear it | `EmptyState` |
 | Failed, nothing to show | The error, the server's own words in `detail`, and **Retry** | `LoadFailure` |
 | Refresh failed, older data still shown | That the data is stale, and **Retry** | `RefreshFailure` |
 | Loading more of a list | A **Load more** button that turns into its own failure and retry | `LoadMoreFooter` with `usePagedAppend` |

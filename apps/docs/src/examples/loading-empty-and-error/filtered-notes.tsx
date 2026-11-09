@@ -1,5 +1,7 @@
 import { NOTES } from "@orz/fixtures/notes.ts";
 import { Button } from "@orz/ui/components/button";
+import { EmptyState } from "@orz/ui/components/empty-state";
+import { List, ListItem } from "@orz/ui/components/list";
 import { Toggle } from "@orz/ui/components/toggle";
 import { NotebookIcon } from "lucide-react";
 import { useState } from "react";
@@ -34,38 +36,41 @@ export function FilteredNotes() {
           </Toggle>
         ))}
       </fieldset>
-      <div className="min-h-44 rounded-lg border p-2">
+      <List purpose="listbox" className="min-h-44 p-2">
         {shown.length === 0 ? (
-          <div className="grid justify-items-center gap-2 px-4 py-6 text-center">
-            <NotebookIcon
-              className="size-8 text-muted-foreground"
-              aria-hidden
-            />
-            <p className="font-medium">No notes match</p>
-            <p className="text-muted-foreground text-ui">Try fewer tags.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setChosen(new Set())}
-            >
-              Clear filter
-            </Button>
-          </div>
+          <EmptyState
+            icon={NotebookIcon}
+            title="No notes match"
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setChosen(new Set())}
+              >
+                Clear filter
+              </Button>
+            }
+            className="px-4 py-6"
+          >
+            Try fewer tags.
+          </EmptyState>
         ) : (
           <ul aria-label="Notes" className="grid gap-0.5">
             {shown.map((note) => (
-              <li key={note.id} className="grid gap-0.5 px-2.5 py-2">
-                <span className="font-medium text-ui">
-                  {titleOf(note.body)}
-                </span>
-                <span className="text-muted-foreground text-ui-sm">
-                  {note.folder}
-                </span>
-              </li>
+              <ListItem key={note.id} asChild>
+                <li className="grid min-h-row gap-0.5 px-2.5 py-2">
+                  <span className="font-medium text-ui">
+                    {titleOf(note.body)}
+                  </span>
+                  <span className="text-muted-foreground text-ui-sm">
+                    {note.folder}
+                  </span>
+                </li>
+              </ListItem>
             ))}
           </ul>
         )}
-      </div>
+      </List>
     </div>
   );
 }

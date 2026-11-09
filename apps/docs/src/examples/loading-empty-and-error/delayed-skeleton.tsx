@@ -1,5 +1,6 @@
 import { NOTES, type Note } from "@orz/fixtures/notes.ts";
 import { Button } from "@orz/ui/components/button";
+import { Pane } from "@orz/ui/components/pane";
 import { Skeleton } from "@orz/ui/components/skeleton";
 import { useEffect, useRef, useState } from "react";
 
@@ -48,25 +49,31 @@ export function DelayedSkeleton() {
           </Button>
         ))}
       </div>
-      <article
-        aria-busy={skeleton}
-        className="grid min-h-32 content-start gap-2 rounded-lg border p-4"
+      <Pane
+        purpose="document"
+        frame="card"
+        asChild
+        className="grid min-h-32 content-start gap-2 p-4"
       >
-        {skeleton ? (
-          <>
-            <Skeleton className="h-7 w-40" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-          </>
-        ) : (
-          shown && (
+        <article aria-busy={skeleton}>
+          {skeleton ? (
             <>
-              <h3 className="font-semibold text-lg">{titleOf(shown)}</h3>
-              <p className="text-ui">{openingOf(shown)}</p>
+              <Skeleton className="h-7 w-40" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
             </>
-          )
-        )}
-      </article>
+          ) : (
+            shown && (
+              <>
+                <h3 className="font-semibold text-heading-3">
+                  {titleOf(shown)}
+                </h3>
+                <p className="text-ui">{openingOf(shown)}</p>
+              </>
+            )
+          )}
+        </article>
+      </Pane>
     </div>
   );
 }

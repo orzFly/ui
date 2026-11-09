@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { List, ListItem } from "@orz/ui/components/list";
 import {
   Tooltip,
   TooltipContent,
@@ -59,76 +60,81 @@ export function ThreadRows() {
             <SquarePenIcon data-icon="inline-start" /> Compose
           </Button>
         </div>
-        <ul aria-label="Conversations" className="grid">
-          {threads.map((thread) => (
-            <li
-              key={thread.id}
-              className="flex min-h-9 items-center gap-2 rounded-md px-2 py-1 hover:bg-accent/60 touch:min-h-11"
-            >
-              <div className="grid min-w-0 flex-1">
-                <span
-                  className={cn(
-                    "truncate text-ui",
-                    thread.unread && "font-semibold",
-                  )}
-                >
-                  {thread.unread && <span className="sr-only">Unread: </span>}
-                  {thread.subject}
-                </span>
-                <span className="truncate text-muted-foreground text-ui-sm">
-                  {senders(thread)}
-                </span>
-              </div>
-              <DropdownMenu>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label={`More actions for “${thread.subject}”`}
+        <List purpose="collection">
+          <ul aria-label="Conversations">
+            {threads.map((thread) => (
+              <ListItem key={thread.id} asChild>
+                <li className="flex min-h-row items-center gap-2 px-2 py-1 touch:min-h-11">
+                  <div className="grid min-w-0 flex-1">
+                    <span
+                      className={cn(
+                        "truncate text-ui",
+                        thread.unread && "font-semibold",
+                      )}
+                    >
+                      {thread.unread && (
+                        <span className="sr-only">Unread: </span>
+                      )}
+                      {thread.subject}
+                    </span>
+                    <span className="truncate text-muted-foreground text-ui-sm">
+                      {senders(thread)}
+                    </span>
+                  </div>
+                  <DropdownMenu>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label={`More actions for “${thread.subject}”`}
+                          >
+                            <EllipsisIcon />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>More actions</TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          remove(thread.id, "Conversation archived")
+                        }
                       >
-                        <EllipsisIcon />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>More actions</TooltipContent>
-                </Tooltip>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem
-                    onSelect={() => remove(thread.id, "Conversation archived")}
-                  >
-                    <ArchiveIcon /> Archive
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() =>
-                      change(
-                        threads.map((each) =>
-                          each.id === thread.id
-                            ? { ...each, unread: !each.unread }
-                            : each,
-                        ),
-                        `Conversation marked as ${thread.unread ? "read" : "unread"}`,
-                      )
-                    }
-                  >
-                    {thread.unread ? <MailOpenIcon /> : <MailIcon />}
-                    {thread.unread ? "Mark as read" : "Mark as unread"}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={() =>
-                      remove(thread.id, "Conversation moved to Trash")
-                    }
-                  >
-                    <Trash2Icon /> Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </li>
-          ))}
-        </ul>
+                        <ArchiveIcon /> Archive
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          change(
+                            threads.map((each) =>
+                              each.id === thread.id
+                                ? { ...each, unread: !each.unread }
+                                : each,
+                            ),
+                            `Conversation marked as ${thread.unread ? "read" : "unread"}`,
+                          )
+                        }
+                      >
+                        {thread.unread ? <MailOpenIcon /> : <MailIcon />}
+                        {thread.unread ? "Mark as read" : "Mark as unread"}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={() =>
+                          remove(thread.id, "Conversation moved to Trash")
+                        }
+                      >
+                        <Trash2Icon /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </li>
+              </ListItem>
+            ))}
+          </ul>
+        </List>
       </div>
     </TooltipProvider>
   );

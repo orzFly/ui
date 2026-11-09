@@ -4,7 +4,13 @@ import {
   SAMPLE_PNG,
   syntheticSource,
 } from "@orz/fixtures/hex.ts";
-import { Button } from "@orz/ui/components/button";
+import { Input } from "@orz/ui/components/input";
+import { Pane } from "@orz/ui/components/pane";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@orz/ui/components/segmented-control";
+import { ToolbarButton, ToolbarSeparator } from "@orz/ui/components/toolbar";
 import {
   blobSource,
   bytesSource,
@@ -43,9 +49,15 @@ const doc = useMemo(() => createHexDocument(bytesSource(bytes)), [bytes]);
 
 const TOOLBAR = `const { size, dirty, canUndo, canRedo } = useHexDocumentState(doc);
 
-<Button disabled={!canUndo} onClick={() => doc.undo()}>Undo</Button>
-<Button disabled={!canRedo} onClick={() => doc.redo()}>Redo</Button>
-<Button onClick={async () => { save(await doc.toBlob()); doc.markSaved(); }}>Download</Button>
+<Pane purpose="toolbar">
+  <ToolbarButton size="sm" disabled={!canUndo} onClick={() => doc.undo()}>Undo</ToolbarButton>
+  <ToolbarButton size="sm" disabled={!canRedo} onClick={() => doc.redo()}>Redo</ToolbarButton>
+  <SegmentedControl aria-label="Typing mode" value={mode} onValueChange={setMode} disabled={!doc.resizable}>
+    <SegmentedControlItem value="overwrite">Overwrite</SegmentedControlItem>
+    <SegmentedControlItem value="insert">Insert</SegmentedControlItem>
+  </SegmentedControl>
+  <ToolbarButton size="sm" onClick={async () => { save(await doc.toBlob()); doc.markSaved(); }}>Download</ToolbarButton>
+</Pane>
 <HexEditor document={doc} mode={mode} onModeChange={setMode} />`;
 
 const FROM_FILE = `const doc = useMemo(() => createHexDocument(blobSource(file)), [file]);
@@ -114,34 +126,38 @@ export const Toolbar: Story = {
     const { size, dirty, canUndo, canRedo } = useHexDocumentState(doc);
     return (
       <div className="grid gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
+        <Pane
+          purpose="toolbar"
+          className="flex flex-wrap items-center gap-0.5 px-1.5 py-1.5"
+        >
+          <ToolbarButton
             size="sm"
             disabled={!canUndo}
             onClick={() => doc.undo()}
           >
             <Undo2 /> Undo
-          </Button>
-          <Button
-            variant="outline"
+          </ToolbarButton>
+          <ToolbarButton
             size="sm"
             disabled={!canRedo}
             onClick={() => doc.redo()}
           >
             <Redo2 /> Redo
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
+          </ToolbarButton>
+          <ToolbarSeparator />
+          <SegmentedControl
+            aria-label="Typing mode"
+            value={mode}
+            onValueChange={(next) => setMode(next as HexEditMode)}
             disabled={!doc.resizable}
-            aria-pressed={mode === "insert"}
-            onClick={() => setMode(mode === "insert" ? "overwrite" : "insert")}
           >
-            {mode === "insert" ? "Insert" : "Overwrite"}
-          </Button>
-          <Button
-            variant="outline"
+            <SegmentedControlItem value="overwrite">
+              Overwrite
+            </SegmentedControlItem>
+            <SegmentedControlItem value="insert">Insert</SegmentedControlItem>
+          </SegmentedControl>
+          <ToolbarSeparator />
+          <ToolbarButton
             size="sm"
             onClick={() =>
               download(doc, "sample.png").catch((error: unknown) =>
@@ -150,15 +166,15 @@ export const Toolbar: Story = {
             }
           >
             <Download /> Download
-          </Button>
-          <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+          </ToolbarButton>
+          <span className="ml-2 flex items-center gap-1.5 text-muted-foreground text-xs">
             <span
               aria-hidden
               className={`size-2 rounded-full ${dirty ? "bg-destructive" : "bg-muted-foreground/30"}`}
             />
             {dirty ? "Unsaved changes" : "Saved"} · {size} bytes
           </span>
-        </div>
+        </Pane>
         <HexEditor
           {...args}
           document={doc}
@@ -181,10 +197,9 @@ export const FromFile: Story = {
     );
     return (
       <div className="grid gap-3">
-        <input
+        <Input
           type="file"
           aria-label="Open a file"
-          className="text-sm"
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
         <HexEditor

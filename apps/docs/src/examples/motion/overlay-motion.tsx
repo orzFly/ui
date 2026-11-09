@@ -1,4 +1,3 @@
-import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -13,13 +12,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { Kbd } from "@orz/ui/components/kbd";
+import { NavList, NavListItem, NavListLink } from "@orz/ui/components/nav-list";
+import { Pane } from "@orz/ui/components/pane";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@orz/ui/components/sheet";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -55,39 +59,46 @@ const PLACES = [
 export function OverlayMotion() {
   return (
     <TooltipProvider>
-      <div className="flex flex-wrap items-center gap-1">
+      <Pane purpose="toolbar" className="flex flex-wrap items-center gap-1">
         <Sheet>
           <Tooltip>
             <TooltipTrigger asChild>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Folders">
+                <ToolbarButton aria-label="Folders">
                   <PanelLeftIcon />
-                </Button>
+                </ToolbarButton>
               </SheetTrigger>
             </TooltipTrigger>
             <TooltipContent>Folders</TooltipContent>
           </Tooltip>
-          <SheetContent side="left" className="w-64 p-2 pt-12">
-            <SheetTitle className="sr-only">Folders</SheetTitle>
-            <SheetDescription className="sr-only">
-              Mail's folders
-            </SheetDescription>
-            <ul className="grid gap-0.5">
-              {PLACES.map(({ title, Icon }) => (
-                <li key={title}>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Icon data-icon="inline-start" /> {title}
-                  </Button>
-                </li>
-              ))}
-            </ul>
+          <SheetContent side="left" className="w-64">
+            <SheetHeader>
+              <SheetTitle>Folders</SheetTitle>
+              <SheetDescription className="sr-only">
+                Mail's folders
+              </SheetDescription>
+            </SheetHeader>
+            <nav aria-label="Folders" className="px-2">
+              <NavList>
+                {PLACES.map(({ title, Icon }) => (
+                  <NavListItem key={title}>
+                    <NavListLink current={title === "Inbox"} asChild>
+                      <button type="button">
+                        <Icon />
+                        {title}
+                      </button>
+                    </NavListLink>
+                  </NavListItem>
+                ))}
+              </NavList>
+            </nav>
           </SheetContent>
         </Sheet>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Archive">
+            <ToolbarButton aria-label="Archive">
               <ArchiveIcon />
-            </Button>
+            </ToolbarButton>
           </TooltipTrigger>
           <TooltipContent>Archive</TooltipContent>
         </Tooltip>
@@ -95,9 +106,9 @@ export function OverlayMotion() {
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="More actions">
+                <ToolbarButton aria-label="More actions">
                   <EllipsisIcon />
-                </Button>
+                </ToolbarButton>
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent>More actions</TooltipContent>
@@ -113,9 +124,9 @@ export function OverlayMotion() {
         </DropdownMenu>
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="ghost">
+            <ToolbarButton size="default">
               <KeyboardIcon data-icon="inline-start" /> Keyboard shortcuts
-            </Button>
+            </ToolbarButton>
           </DialogTrigger>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
@@ -129,16 +140,14 @@ export function OverlayMotion() {
                 <div key={key} className="contents">
                   <dt>{label}</dt>
                   <dd className="justify-self-end">
-                    <kbd className="rounded-sm border bg-muted px-1.5 font-mono text-muted-foreground text-ui-sm">
-                      {key}
-                    </kbd>
+                    <Kbd>{key}</Kbd>
                   </dd>
                 </div>
               ))}
             </dl>
           </DialogContent>
         </Dialog>
-      </div>
+      </Pane>
     </TooltipProvider>
   );
 }

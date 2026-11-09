@@ -1,6 +1,7 @@
 import { Button } from "@orz/ui/components/button";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
+import { List, ListItem } from "@orz/ui/components/list";
 import {
   Popover,
   PopoverAnchor,
@@ -48,16 +49,23 @@ export const LongList: Story = {
         <Button variant="outline">Pick a label</Button>
       </PopoverTrigger>
       <PopoverContent>
-        {Array.from({ length: 60 }, (_, i) => (
-          <Button
-            // biome-ignore lint/suspicious/noArrayIndexKey: static filler rows
-            key={i}
-            variant="ghost"
-            className="w-full justify-start"
-          >
-            label-{i + 1}
-          </Button>
-        ))}
+        <List purpose="menu">
+          <ul>
+            {Array.from({ length: 60 }, (_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: static filler rows
+              <li key={i}>
+                <ListItem asChild>
+                  <button
+                    type="button"
+                    className="flex min-h-row w-full items-center px-2.5 text-left"
+                  >
+                    label-{i + 1}
+                  </button>
+                </ListItem>
+              </li>
+            ))}
+          </ul>
+        </List>
       </PopoverContent>
     </Popover>
   ),

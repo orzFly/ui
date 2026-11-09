@@ -1,4 +1,6 @@
 import { Input } from "@orz/ui/components/input";
+import { Kbd } from "@orz/ui/components/kbd";
+import { List, ListItem } from "@orz/ui/components/list";
 import {
   Popover,
   PopoverAnchor,
@@ -134,51 +136,46 @@ function SearchResults({
             `${state.hits.length} ${state.hits.length === 1 ? "page" : "pages"} found`)}
       </p>
       {/* Options that are links: a click, a middle click and Enter all go where a link goes. */}
-      <div id={id} role="listbox" aria-label="Results">
+      <List purpose="listbox" id={id} role="listbox" aria-label="Results">
         {options.map((option, index) => (
-          <Link
+          <ListItem
             key={`${option.route}${option.hash}`}
-            id={optionId(index)}
-            role="option"
-            aria-selected={index === active}
-            to={option.route}
-            hash={option.hash}
-            tabIndex={-1}
-            onMouseMove={() => onHover(index)}
-            onClick={onPick}
-            className={cn(
-              "flex flex-col justify-center gap-0.5 rounded-md px-3 py-1.5 aria-selected:bg-accent",
-              size === "touch" ? "min-h-11" : "min-h-8 touch:min-h-11",
-              option.section && "ml-3 border-l pl-3",
-            )}
+            selected={index === active}
+            asChild
           >
-            <span
+            <Link
+              id={optionId(index)}
+              role="option"
+              aria-selected={index === active}
+              to={option.route}
+              hash={option.hash}
+              tabIndex={-1}
+              onMouseMove={() => onHover(index)}
+              onClick={onPick}
               className={cn(
-                "text-foreground",
-                option.section ? "text-sm" : "font-medium",
+                "flex flex-col justify-center gap-0.5 px-3 py-1.5",
+                size === "touch" ? "min-h-11" : "min-h-8 touch:min-h-11",
+                option.section && "ml-3",
               )}
             >
-              {option.title}
-            </span>
-            <span className="line-clamp-2 text-muted-foreground text-xs">
-              <Excerpt parts={option.excerpt} />
-            </span>
-          </Link>
+              <span
+                className={cn(
+                  "text-foreground",
+                  option.section ? "text-prose-sm" : "font-medium",
+                )}
+              >
+                {option.title}
+              </span>
+              <span className="line-clamp-2 text-muted-foreground text-prose-xs">
+                <Excerpt parts={option.excerpt} />
+              </span>
+            </Link>
+          </ListItem>
         ))}
-      </div>
+      </List>
     </div>
   );
 }
-
-const Kbd = ({ className, ...props }: ComponentProps<"kbd">) => (
-  <kbd
-    className={cn(
-      "rounded border px-1 font-mono text-[11px] text-muted-foreground",
-      className,
-    )}
-    {...props}
-  />
-);
 
 /** The top bar's search: a box whose results drop below it. */
 export function SearchBox({
@@ -233,7 +230,7 @@ export function SearchBox({
       <PopoverContent
         ref={content}
         align="end"
-        className="w-[28rem] text-sm"
+        className="w-[28rem] text-prose-sm"
         // The reader is still typing in the box.
         onOpenAutoFocus={(event) => event.preventDefault()}
         onInteractOutside={(event) => {
@@ -266,10 +263,14 @@ export function SheetSearch({
     <>
       <div className="relative mx-1 mt-2">
         <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input {...input} ref={inputRef} className="h-11 pl-9" />
+        <Input
+          {...input}
+          ref={inputRef}
+          className="h-11 pl-9 [&::-webkit-search-cancel-button]:hidden"
+        />
       </div>
       {showing ? (
-        <div className="mt-2 text-base">
+        <div className="mt-2 text-prose">
           <SearchResults {...list} size="touch" />
         </div>
       ) : (

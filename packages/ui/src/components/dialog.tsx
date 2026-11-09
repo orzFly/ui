@@ -1,6 +1,6 @@
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import type * as React from "react";
+import * as React from "react";
 import { useRef } from "react";
 import { cn } from "../lib/utils.ts";
 import { Button } from "./button.tsx";
@@ -162,7 +162,7 @@ function DialogContent({
           // box) would be the one to give. Clipped across: the corner X's
           // touch hit area reaches past the frame, and as a scroller the
           // content would otherwise scroll sideways by that much.
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-x-hidden overflow-y-auto rounded-surface bg-popover p-4 text-ui text-popover-foreground shadow-overlay ring-1 ring-border duration-(--duration-overlay) outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom) [&>:not([data-slot=dialog-body])]:shrink-0",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-x-hidden overflow-y-auto rounded-surface bg-popover p-4 text-ui text-popover-foreground shadow-overlay ring-1 ring-border duration-(--duration-overlay) outline-none raymond:ring-0 sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom) [&>:not([data-slot=dialog-body])]:shrink-0",
           className,
         )}
         onWheel={(event) => {
@@ -196,7 +196,7 @@ function DialogContent({
         {showCloseButton && (
           // Under raymond the corner X is the title bar's close box, a small
           // raised button; held, it sinks as a push button does.
-          <DialogCloseButton className="absolute top-2 right-2 raymond:bg-(--3d-face) raymond:shadow-raised raymond:[--muted:var(--3d-face)] raymond:[--spacing-control-sm:0.875rem] raymond:active:shadow-pressed" />
+          <DialogCloseButton className="absolute top-2 right-2 raymond:top-[5px] raymond:right-[5px] raymond:h-3.5 raymond:w-4 raymond:min-w-0 raymond:bg-(--3d-face) raymond:shadow-raised raymond:hover:shadow-raised raymond:focus-visible:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[--focus-offset:-3px] raymond:[--muted:var(--3d-face)] raymond:active:shadow-pressed" />
         )}
       </DialogPrimitive.Content>
     </DialogPortal>
@@ -288,6 +288,32 @@ function DialogFooter({
   );
 }
 
+// A title inside a DialogTitleBar leaves the caption to the bar.
+const InTitleBar = React.createContext(false);
+
+/**
+ * A title row: the `DialogTitle` and the controls that act on the dialog's subject beside it,
+ * ending with a `DialogCloseButton` (pass `showCloseButton={false}` to the content).
+ */
+function DialogTitleBar({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <InTitleBar.Provider value={true}>
+      <div
+        data-slot="dialog-title-bar"
+        // Under raymond the whole row is the caption, as DialogTitle alone
+        // is, and its icon buttons the small raised caption boxes.
+        className={cn(
+          "flex items-center gap-1",
+          "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:text-(--caption-inactive-foreground) raymond:[--muted-foreground:currentColor] raymond:[&>[data-slot=module-marker]]:bg-transparent raymond:[&>[data-slot=module-marker]]:text-current raymond:gap-0.5",
+          "raymond:[&_button[data-size^=icon]]:h-3.5 raymond:[&_button[data-size^=icon]]:w-4 raymond:[&_button[data-size^=icon]]:min-w-0 raymond:[&_button[data-size^=icon]]:bg-(--3d-face) raymond:[&_button[data-size^=icon]]:text-foreground raymond:[&_button[data-size^=icon]]:shadow-raised raymond:[&_button[data-size^=icon]:active]:shadow-pressed raymond:[&_button[data-size^=icon]:hover]:bg-(--3d-face) raymond:[&_button[data-size^=icon]:hover]:shadow-raised raymond:[&_button[data-size^=icon]:focus-visible]:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[&_button[data-size^=icon]]:[--focus-offset:-3px] raymond:[&_button[data-size^=icon]_svg]:size-2.5 raymond:[&_button[data-size^=icon]_svg]:stroke-3",
+          className,
+        )}
+        {...props}
+      />
+    </InTitleBar.Provider>
+  );
+}
+
 /** The title, after the module marker. */
 function DialogTitle({
   className,
@@ -298,15 +324,19 @@ function DialogTitle({
   /** The module marker's icon; omitted, the marker draws ▶. */
   icon?: React.ReactNode;
 }) {
+  const inBar = React.useContext(InTitleBar);
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
         "font-heading text-title leading-none font-medium flex items-center gap-2",
+        inBar && "raymond:font-bold",
         // Under raymond the title is the window's title bar: it spans the
         // top in the caption gradient, three pixels in from the frame, grey
-        // while the dialog does not hold the focus.
-        "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:text-(--caption-inactive-foreground)",
+        // while the dialog does not hold the focus; quiet text in it and the
+        // module marker take the caption's text colour, on no tile.
+        !inBar &&
+          "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:text-(--caption-inactive-foreground) raymond:[--muted-foreground:currentColor] raymond:[&>[data-slot=module-marker]]:bg-transparent raymond:[&>[data-slot=module-marker]]:text-current",
         className,
       )}
       {...props}
@@ -325,7 +355,8 @@ function DialogDescription({
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(
-        "text-ui text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        // Under raymond in the window text, as a message box's.
+        "text-ui text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground raymond:text-foreground",
         className,
       )}
       {...props}
@@ -345,5 +376,6 @@ export {
   DialogOverlay,
   DialogPortal,
   DialogTitle,
+  DialogTitleBar,
   DialogTrigger,
 };

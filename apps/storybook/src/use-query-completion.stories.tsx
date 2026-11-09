@@ -1,6 +1,7 @@
 import { PROVIDERS, QUALIFIERS } from "@orz/fixtures/query.ts";
 import { defineQuerySchema } from "@orz/query";
 import { HighlightedInput } from "@orz/ui/components/highlighted-input";
+import { List, ListItem } from "@orz/ui/components/list";
 import { highlightQuery } from "@orz/ui/components/query-highlight";
 import { useQueryCompletion } from "@orz/ui/hooks/use-query-completion";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -83,6 +84,7 @@ export const Usage: Story = {
       providers: PROVIDERS,
       enabled,
     });
+    const rows = completions.flatMap((s) => s.rows);
     return (
       <div className="grid gap-3">
         <HighlightedInput
@@ -94,35 +96,39 @@ export const Usage: Story = {
           onCaretChange={(p) => setCaret(p.caret)}
           render={(text) => highlightQuery(text, parts, SCHEMA, PROVIDERS)}
         />
-        <ul className="grid gap-1">
-          {completions
-            .flatMap((s) => s.rows)
-            .map((row) => (
-              <li key={row.id}>
-                <button
-                  type="button"
-                  className="flex w-full items-baseline gap-2 rounded-md px-2 py-1 text-left hover:bg-muted"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    const at = row.apply.caret;
-                    setValue(row.apply.value);
-                    setCaret(at);
-                    requestAnimationFrame(() => {
-                      input.current?.setSelectionRange(at, at);
-                      input.current?.focus();
-                    });
-                  }}
-                >
-                  <code>{row.text}</code>
-                  {row.hint && (
-                    <span className="text-muted-foreground text-sm">
-                      {row.hint}
-                    </span>
-                  )}
-                </button>
-              </li>
-            ))}
-        </ul>
+        {rows.length > 0 && (
+          <List purpose="listbox">
+            <ul>
+              {rows.map((row) => (
+                <li key={row.id}>
+                  <ListItem asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-baseline gap-2 px-2 py-1 text-left"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        const at = row.apply.caret;
+                        setValue(row.apply.value);
+                        setCaret(at);
+                        requestAnimationFrame(() => {
+                          input.current?.setSelectionRange(at, at);
+                          input.current?.focus();
+                        });
+                      }}
+                    >
+                      <code>{row.text}</code>
+                      {row.hint && (
+                        <span className="text-muted-foreground text-sm">
+                          {row.hint}
+                        </span>
+                      )}
+                    </button>
+                  </ListItem>
+                </li>
+              ))}
+            </ul>
+          </List>
+        )}
         {loading && (
           <p className="text-muted-foreground text-sm">
             Asking the member search…

@@ -1,5 +1,5 @@
-import { Button } from "@orz/ui/components/button";
-import { Separator } from "@orz/ui/components/separator";
+import { Pane } from "@orz/ui/components/pane";
+import { ToolbarButton, ToolbarSeparator } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -38,33 +38,29 @@ const GROUPS = [
 export function FormattingToolbar() {
   return (
     <TooltipProvider>
-      <div
+      <Pane
+        purpose="toolbar"
+        frame="card"
         role="toolbar"
         aria-label="Formatting"
-        className="flex w-fit items-center gap-0.5 rounded-lg border p-1"
+        className="flex w-fit items-center gap-0.5 p-1"
       >
         {GROUPS.map((group, i) => (
           <Fragment key={group[0]?.label}>
-            {i > 0 && (
-              <Separator
-                orientation="vertical"
-                decorative={false}
-                className="mx-1 my-1.5"
-              />
-            )}
+            {i > 0 && <ToolbarSeparator decorative={false} />}
             {group.map(({ label, Icon }) => (
               <Tooltip key={label}>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label={label}>
+                  <ToolbarButton aria-label={label}>
                     <Icon />
-                  </Button>
+                  </ToolbarButton>
                 </TooltipTrigger>
                 <TooltipContent>{label}</TooltipContent>
               </Tooltip>
             ))}
           </Fragment>
         ))}
-      </div>
+      </Pane>
     </TooltipProvider>
   );
 }

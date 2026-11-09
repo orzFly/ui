@@ -1,4 +1,13 @@
 import { resolvePalette, type TokenName } from "@orz/themes";
+import { InlineCode } from "@orz/ui/components/inline-code";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@orz/ui/components/table";
 import { contrastRatio, parseColor } from "@orz/ui/lib/color";
 import { useTheme } from "@orz/ui/theme";
 import { useEffect, useState } from "react";
@@ -22,36 +31,36 @@ export function ContrastPairs() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <table className="w-full text-ui">
-      <thead className="text-left text-muted-foreground">
-        <tr>
-          <th className="py-1.5 font-medium">Use</th>
-          <th className="py-1.5 font-medium">Tokens</th>
-          <th className="py-1.5 text-right font-medium">Ratio</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Use</TableHead>
+          <TableHead>Tokens</TableHead>
+          <TableHead className="text-right">Ratio</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {PAIRS.map(({ fg, bg, min, use }) => {
           const f = tokens && parseColor(tokens[fg]);
           const b = tokens && parseColor(tokens[bg]);
           const ratio =
             mounted && f && b ? contrastRatio(f.color, b.color) : null;
           return (
-            <tr key={`${fg} ${bg}`} className="border-t">
-              <td className="py-1.5">{use}</td>
-              <td className="py-1.5 font-mono text-ui-sm">
-                {fg} on {bg}
-              </td>
-              <td className="py-1.5 text-right tabular-nums">
+            <TableRow key={`${fg} ${bg}`}>
+              <TableCell>{use}</TableCell>
+              <TableCell>
+                <InlineCode>{fg}</InlineCode> on <InlineCode>{bg}</InlineCode>
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
                 {ratio === null
                   ? "–"
                   : // Rounded down, so 4.497 never reads as a passing 4.50.
                     `${(Math.floor(ratio * 100) / 100).toFixed(2)}:1 ${ratio >= min ? "passes" : `fails ${min}:1`}`}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           );
         })}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }

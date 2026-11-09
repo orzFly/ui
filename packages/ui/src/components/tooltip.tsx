@@ -47,14 +47,15 @@ function TooltipContent({
         sideOffset={sideOffset}
         className={cn(
           // Under raymond a tooltip is in the info colours, framed in its
-          // text colour, with no arrow.
+          // text colour, with no arrow (hidden rather than undisplayed: Radix
+          // writes the arrow's display inline).
           "z-50 inline-flex w-fit max-w-xs origin-(--radix-tooltip-content-transform-origin) items-center gap-1.5 rounded-[min(var(--radius-overlay),8px)] bg-foreground px-3 py-1.5 text-ui-sm text-background has-data-[slot=kbd]:pr-1.5 data-[side=bottom]:slide-in-from-top-overlay data-[side=left]:slide-in-from-right-overlay data-[side=right]:slide-in-from-left-overlay data-[side=top]:slide-in-from-bottom-overlay **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-[min(var(--radius-chip),6px)] data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-(--overlay-zoom) data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom) raymond:border raymond:border-(--info-foreground) raymond:bg-(--info) raymond:px-1 raymond:py-px raymond:text-(--info-foreground)",
           className,
         )}
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[min(var(--radius-overlay),2px)] bg-foreground fill-foreground raymond:hidden" />
+        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[min(var(--radius-overlay),2px)] bg-foreground fill-foreground raymond:invisible" />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   );

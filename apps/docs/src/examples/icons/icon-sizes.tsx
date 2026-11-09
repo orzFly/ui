@@ -1,6 +1,7 @@
 import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
+import { EmptyState } from "@orz/ui/components/empty-state";
 import { InboxIcon, SquarePenIcon, StarIcon, TagIcon } from "lucide-react";
 
 const thread = INBOX_THREADS.find(({ id }) => id === "touch-sizes");
@@ -31,13 +32,13 @@ export function IconSizes() {
           </p>
         </div>
       </div>
-      <div className="grid content-center justify-items-center gap-2 px-4 py-6 text-center">
-        <StarIcon className="size-8 text-muted-foreground" />
-        <p className="font-medium text-ui">Nothing in Starred</p>
-        <p className="text-muted-foreground text-ui-sm">
-          Star a conversation to find it here later.
-        </p>
-      </div>
+      <EmptyState
+        icon={StarIcon}
+        title="Nothing in Starred"
+        className="content-center px-4 py-6"
+      >
+        Star a conversation to find it here later.
+      </EmptyState>
     </div>
   );
 }

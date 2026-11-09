@@ -1,4 +1,5 @@
 import { Label } from "@orz/ui/components/label";
+import { Pane } from "@orz/ui/components/pane";
 import { Slider } from "@orz/ui/components/slider";
 import { useState } from "react";
 
@@ -19,12 +20,14 @@ export function FontSizeSlider() {
         value={[fontSize]}
         onValueChange={([next]) => setFontSize(next ?? fontSize)}
       />
-      <pre
-        className="overflow-x-auto rounded-lg border bg-muted/40 p-3 font-mono leading-[1.6]"
-        style={{ fontSize }}
-      >
-        <code>{"function greet(name) {"}</code>
-      </pre>
+      <Pane purpose="document" frame="inset">
+        <pre
+          className="overflow-x-auto p-3 font-mono leading-[1.6]"
+          style={{ fontSize }}
+        >
+          <code>{"function greet(name) {"}</code>
+        </pre>
+      </Pane>
     </div>
   );
 }

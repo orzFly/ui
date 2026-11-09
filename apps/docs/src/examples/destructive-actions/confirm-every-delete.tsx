@@ -1,6 +1,7 @@
 import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { EmptyState } from "@orz/ui/components/empty-state";
 import { Trash2Icon } from "lucide-react";
 import { useState } from "react";
 
@@ -10,7 +11,7 @@ export function ConfirmEveryDelete() {
   const [deleted, setDeleted] = useState(false);
   const [confirming, setConfirming] = useState(false);
   if (deleted) {
-    return <p className="text-muted-foreground text-ui">Inbox is empty.</p>;
+    return <EmptyState title="Inbox is empty." />;
   }
   return (
     <div className="flex items-center gap-2">

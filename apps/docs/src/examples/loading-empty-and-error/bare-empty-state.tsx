@@ -1,5 +1,5 @@
+import { EmptyState } from "@orz/ui/components/empty-state";
+
 export function BareEmptyState() {
-  return (
-    <p className="py-6 text-center text-muted-foreground text-ui">No data</p>
-  );
+  return <EmptyState title="No data" className="py-6" />;
 }

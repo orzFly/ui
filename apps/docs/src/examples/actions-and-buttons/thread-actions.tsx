@@ -7,7 +7,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { Kbd } from "@orz/ui/components/kbd";
+import { Pane } from "@orz/ui/components/pane";
 import { Textarea } from "@orz/ui/components/textarea";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -79,22 +82,17 @@ export function ThreadActions() {
   return (
     <TooltipProvider>
       <div className="grid gap-3">
-        <div className="flex items-center gap-0.5">
+        <Pane purpose="toolbar" className="flex items-center gap-0.5 px-1.5">
           {ACTIONS.filter(({ from }) => from.includes(folder)).map(
             ({ label, key, icon: Icon, to }) => (
               <Tooltip key={label}>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={label}
-                    onClick={() => move(to)}
-                  >
+                  <ToolbarButton aria-label={label} onClick={() => move(to)}>
                     <Icon />
-                  </Button>
+                  </ToolbarButton>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {label} {key && <kbd className="font-mono">{key}</kbd>}
+                  {label} {key && <Kbd>{key}</Kbd>}
                 </TooltipContent>
               </Tooltip>
             ),
@@ -103,14 +101,9 @@ export function ThreadActions() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="ml-auto"
-                    aria-label="More actions"
-                  >
+                  <ToolbarButton className="ml-auto" aria-label="More actions">
                     <EllipsisIcon />
-                  </Button>
+                  </ToolbarButton>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent>More actions</TooltipContent>
@@ -126,7 +119,7 @@ export function ThreadActions() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </Pane>
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-semibold">{thread?.subject}</h3>
           {folder !== "Inbox" && <Badge variant="outline">{folder}</Badge>}

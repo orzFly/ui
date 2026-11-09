@@ -6,9 +6,11 @@ import {
   type Theme,
   themesForStyle,
 } from "@orz/themes";
-import { Button } from "@orz/ui/components/button";
 import { List, ListItem } from "@orz/ui/components/list";
-import { cn } from "@orz/ui/lib/utils";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@orz/ui/components/segmented-control";
 import {
   type ThemeMode,
   type ThemePreview,
@@ -17,7 +19,6 @@ import {
 } from "@orz/ui/theme";
 import { MonitorIcon, MoonIcon, PaletteIcon, SunIcon } from "lucide-react";
 import { type FocusEvent, useEffect, useRef } from "react";
-import { PRESSED } from "../example.tsx";
 import { SITE_STYLES } from "../head.ts";
 import { useHydrated } from "../hydrated.tsx";
 import { HomeModule } from "./module.tsx";
@@ -60,12 +61,6 @@ function Swatch({ theme }: { theme: Theme }) {
     </span>
   );
 }
-
-const TRACK = "grid gap-0.5 bg-muted p-0.5";
-const SEGMENT = cn(
-  "font-normal text-muted-foreground disabled:cursor-not-allowed",
-  PRESSED,
-);
 
 /** Leaving `event`'s group, rather than moving inside it. */
 const leaves = (event: FocusEvent<HTMLElement>) =>
@@ -124,28 +119,25 @@ export function YourTheme({ className }: { className?: string }) {
     >
       <div className="grid gap-2 p-2" data-pagefind-ignore>
         {styles.length > 1 && (
-          <fieldset
+          <SegmentedControl
             aria-label="Style"
-            className={cn(TRACK, "auto-cols-fr grid-flow-col")}
+            value={committedStyle}
+            onValueChange={commitStyle}
+            className="auto-cols-fr"
             onPointerLeave={() => show(null)}
             onBlur={(event) => leaves(event) && show(null)}
           >
             {styles.map(({ id, label }) => (
-              <Button
+              <SegmentedControlItem
                 key={id}
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={SEGMENT}
-                aria-pressed={committedStyle === id}
-                onClick={() => commitStyle(id)}
+                value={id}
                 onPointerEnter={() => show({ style: id })}
                 onFocus={() => show({ style: id })}
               >
                 {label}
-              </Button>
+              </SegmentedControlItem>
             ))}
-          </fieldset>
+          </SegmentedControl>
         )}
         <List purpose="listbox" asChild>
           <fieldset
@@ -186,7 +178,12 @@ export function YourTheme({ className }: { className?: string }) {
             </div>
           </fieldset>
         </List>
-        <fieldset aria-label="Mode" className={cn(TRACK, "grid-cols-3")}>
+        <SegmentedControl
+          aria-label="Mode"
+          value={pick?.mode}
+          onValueChange={(next) => commitMode(next as ThemeMode)}
+          className="auto-cols-fr"
+        >
           {MODES.map(({ mode: value, label, Icon }) => {
             const schemes = current ? schemesOf(current) : [];
             const usable =
@@ -195,22 +192,17 @@ export function YourTheme({ className }: { className?: string }) {
                 ? schemes.length === 2
                 : schemes.includes(value));
             return (
-              <Button
+              <SegmentedControlItem
                 key={value}
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={SEGMENT}
-                aria-pressed={pick?.mode === value}
+                value={value}
                 disabled={hydrated && !usable}
-                onClick={() => commitMode(value)}
               >
                 <Icon aria-hidden />
                 {label}
-              </Button>
+              </SegmentedControlItem>
             );
           })}
-        </fieldset>
+        </SegmentedControl>
         <p className="text-muted-foreground text-ui-sm">
           Variants, custom themes and a terminal theme of its own are in the top
           bar&rsquo;s Theme menu.

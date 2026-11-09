@@ -1,3 +1,5 @@
+import { GroupHeading } from "@orz/ui/components/group-heading";
+import { Pane } from "@orz/ui/components/pane";
 import { MermaidBlock } from "@orz/ui-mermaid";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withWidth } from "./decorators.tsx";
@@ -96,17 +98,19 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {
-  decorators: [withWidth("max-w-3xl text-sm")],
+  decorators: [withWidth("max-w-3xl")],
 };
 
 /** One diagram of each common kind. The toolbar's theme switch draws them again in its colours. */
 export const Kinds: Story = {
-  decorators: [withWidth("max-w-5xl text-sm")],
+  decorators: [withWidth("max-w-5xl")],
   render: (args) => (
     <div className="grid gap-8">
       {GALLERY.map(({ title, source }) => (
         <section key={title} className="flex flex-col gap-2">
-          <h3 className="font-medium">{title}</h3>
+          <GroupHeading asChild>
+            <h3>{title}</h3>
+          </GroupHeading>
           <MermaidBlock {...args} source={source} />
         </section>
       ))}
@@ -116,13 +120,19 @@ export const Kinds: Story = {
 
 /** Wider than its column: it shrinks down to 75% of its natural width, then scrolls. */
 export const Wide: Story = {
-  decorators: [withWidth("max-w-xl rounded-lg border p-3 text-sm")],
+  decorators: [
+    (Story) => (
+      <Pane purpose="panel" frame="card" className="max-w-xl p-3">
+        <Story />
+      </Pane>
+    ),
+  ],
   args: { source: WIDE },
 };
 
 /** A diagram that does not parse keeps its source, with the parser's message under it. */
 export const ParseError: Story = {
   tags: ["edge", "!autodocs"],
-  decorators: [withWidth("max-w-3xl text-sm")],
+  decorators: [withWidth("max-w-3xl")],
   args: { source: BROKEN },
 };

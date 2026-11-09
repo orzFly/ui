@@ -1,5 +1,6 @@
 import {
   Tabs,
+  TabsBar,
   TabsContent,
   TabsList,
   TabsTrigger,
@@ -48,6 +49,36 @@ export const Line: Story = {
       <TabsContent value="overview">The overview panel.</TabsContent>
       <TabsContent value="activity">The activity panel.</TabsContent>
       <TabsContent value="settings">The settings panel.</TabsContent>
+    </Tabs>
+  ),
+};
+
+/**
+ * `variant="framed"`: the strip on a `TabsBar` and the panels joined in one frame, which a style
+ * may draw as a property sheet. The bar holds whatever sits beside the tabs.
+ */
+export const Framed: Story = {
+  args: { variant: "framed" },
+  render: (args) => (
+    <Tabs {...args}>
+      <TabsBar>
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="settings" disabled>
+            Settings
+          </TabsTrigger>
+        </TabsList>
+      </TabsBar>
+      <TabsContent value="overview" className="p-4">
+        The overview panel.
+      </TabsContent>
+      <TabsContent value="activity" className="p-4">
+        The activity panel.
+      </TabsContent>
+      <TabsContent value="settings" className="p-4">
+        The settings panel.
+      </TabsContent>
     </Tabs>
   ),
 };

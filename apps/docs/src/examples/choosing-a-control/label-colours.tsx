@@ -1,5 +1,6 @@
 import { TASK_LABELS } from "@orz/fixtures/tasks.ts";
 import { ColorPickerPopover } from "@orz/ui/components/color-picker";
+import { List, ListItem } from "@orz/ui/components/list";
 import { useState } from "react";
 
 const PALETTE = [
@@ -25,23 +26,27 @@ export function LabelColours() {
     ),
   );
   return (
-    <ul className="grid max-w-xs divide-y rounded-lg border">
-      {TASK_LABELS.map((label) => (
-        <li key={label} className="flex items-center gap-2 px-3 py-1.5">
-          <span className="flex-1 text-ui">{label}</span>
-          <ColorPickerPopover
-            value={colours[label] ?? "#6b7280"}
-            onValueChange={(value) =>
-              setColours((all) => ({ ...all, [label]: value }))
-            }
-            format="hex"
-            alpha={false}
-            swatches={PALETTE}
-            align="end"
-            aria-label={`Colour of ${label}`}
-          />
-        </li>
-      ))}
-    </ul>
+    <List purpose="collection" className="max-w-xs">
+      <ul>
+        {TASK_LABELS.map((label) => (
+          <ListItem key={label} asChild>
+            <li className="flex min-h-row items-center gap-2 px-3 py-1.5">
+              <span className="flex-1 text-ui">{label}</span>
+              <ColorPickerPopover
+                value={colours[label] ?? "#6b7280"}
+                onValueChange={(value) =>
+                  setColours((all) => ({ ...all, [label]: value }))
+                }
+                format="hex"
+                alpha={false}
+                swatches={PALETTE}
+                align="end"
+                aria-label={`Colour of ${label}`}
+              />
+            </li>
+          </ListItem>
+        ))}
+      </ul>
+    </List>
   );
 }

@@ -2,6 +2,7 @@ import { INBOX_LABELS, INBOX_ME, INBOX_PEOPLE } from "@orz/fixtures/inbox.ts";
 import { defineQuerySchema, type ValueProviders } from "@orz/query";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
+import { FieldError } from "@orz/ui/components/field";
 import { Label } from "@orz/ui/components/label";
 import { QueryBox } from "@orz/ui/components/query-box";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
@@ -85,11 +86,7 @@ export function MailFilterForm() {
             "aria-describedby": error ? "filter-query-error" : undefined,
           }}
         />
-        {error && (
-          <p id="filter-query-error" className="text-destructive text-ui">
-            {error}
-          </p>
-        )}
+        {error && <FieldError id="filter-query-error">{error}</FieldError>}
       </div>
       <div className="grid gap-2">
         <Label id="filter-then-label">Then</Label>

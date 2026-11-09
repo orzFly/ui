@@ -109,7 +109,7 @@ function List({
         data-slot="list"
         data-purpose={purpose}
         data-orientation={orientation}
-        className={cn(FRAME[purpose][orientation], className)}
+        className={cn("text-ui", FRAME[purpose][orientation], className)}
         {...props}
       />
     </ListContext.Provider>
@@ -137,7 +137,11 @@ function ListItem({
     <Comp
       data-slot="list-item"
       data-selected={selected || undefined}
-      className={cn(ITEM[purpose][orientation], className)}
+      className={cn(
+        "outline-none focus-visible:focus-ring-inset",
+        ITEM[purpose][orientation],
+        className,
+      )}
       {...props}
     />
   );

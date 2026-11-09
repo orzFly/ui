@@ -10,7 +10,7 @@ const ROWS = [
   { label: "Drafts", Icon: FileTextIcon },
 ];
 
-const row = "flex min-h-8 w-full items-center gap-2 px-2.5 text-left text-ui";
+const row = "flex min-h-row w-full items-center gap-2 px-2.5 text-left";
 
 const meta = {
   title: "ui/Primitives/List",
@@ -34,7 +34,7 @@ const meta = {
           <li key={label}>
             <ListItem asChild selected={i === 1}>
               <button type="button" className={row}>
-                <Icon className="size-4 text-muted-foreground" />
+                <Icon className="size-4" />
                 {label}
               </button>
             </ListItem>
@@ -62,7 +62,7 @@ export const Purposes: Story = {
               <li key={label}>
                 <ListItem asChild selected={purpose === "listbox" && i === 1}>
                   <button type="button" className={row}>
-                    <Icon className="size-4 text-muted-foreground" />
+                    <Icon className="size-4" />
                     {label}
                   </button>
                 </ListItem>
@@ -83,8 +83,8 @@ export const Collection: Story = {
       <ul>
         {ROWS.map(({ label, Icon }) => (
           <ListItem key={label} asChild>
-            <li className="flex items-center gap-2 py-2 text-ui">
-              <Icon className="size-4 text-muted-foreground" />
+            <li className="flex items-center gap-2 py-2">
+              <Icon className="size-4" />
               <span className="flex-1">{label}</span>
               <Button variant="outline" size="sm">
                 Rename…

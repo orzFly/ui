@@ -1,3 +1,5 @@
+import { Card, CardContent } from "@orz/ui/components/card";
+import { Pane } from "@orz/ui/components/pane";
 import { useOverlayScrollbars } from "@orz/ui/hooks/use-overlay-scrollbars";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
@@ -31,22 +33,19 @@ export const Usage: Story = {
   render: function Render() {
     const { slot, viewport } = useOverlayScrollbars(true, NO_SIDEWAYS);
     return (
-      <div ref={slot} className="relative w-64 rounded-lg border">
+      <Pane ref={slot} purpose="panel" frame="card" className="relative w-64">
         <div
           ref={viewport}
           className="flex h-64 flex-col gap-2 overflow-y-auto p-2"
         >
           {Array.from({ length: 30 }, (_, i) => (
-            <div
-              // biome-ignore lint/suspicious/noArrayIndexKey: static filler rows
-              key={i}
-              className="rounded-md bg-muted px-2 py-1"
-            >
-              Card {i + 1}
-            </div>
+            // biome-ignore lint/suspicious/noArrayIndexKey: static filler rows
+            <Card key={i} size="sm">
+              <CardContent>Card {i + 1}</CardContent>
+            </Card>
           ))}
         </div>
-      </div>
+      </Pane>
     );
   },
 };

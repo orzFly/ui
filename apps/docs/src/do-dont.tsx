@@ -31,7 +31,7 @@ function Verdict({
       )}
       <figcaption
         className={cn(
-          "px-4 py-3 text-sm leading-6 [&>p]:my-0",
+          "px-4 py-3 text-prose-sm leading-prose-sm [&>p]:my-0",
           show === undefined ? "flex-1" : "border-t",
         )}
       >

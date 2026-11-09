@@ -1,5 +1,5 @@
 import { INBOX_PEOPLE, INBOX_THREADS } from "@orz/fixtures/inbox.ts";
-import { cn } from "@orz/ui/lib/utils";
+import { List, ListItem } from "@orz/ui/components/list";
 import { useState } from "react";
 
 const THREADS = ["flaky-retry", "docs-search", "touch-sizes"].flatMap(
@@ -11,29 +11,30 @@ export function TruncatedSubjects() {
   const thread = THREADS.find(({ id }) => id === open);
   return (
     <div className="grid gap-4 sm:grid-cols-[14rem_1fr]">
-      <ul aria-label="Conversations" className="divide-y rounded-lg border">
-        {THREADS.map(({ id, subject, messages }) => (
-          <li key={id}>
-            <button
-              type="button"
-              aria-current={id === open ? "true" : undefined}
-              onClick={() => setOpen(id)}
-              className={cn(
-                "flex w-full items-baseline gap-2 px-3 py-2 text-left text-ui transition-colors hover:bg-accent",
-                id === open && "bg-accent",
-              )}
-            >
-              <span className="min-w-0 flex-1 truncate">{subject}</span>
-              <span className="text-muted-foreground text-ui-sm">
-                {messages.length}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <List purpose="listbox" className="min-w-0">
+        <ul aria-label="Conversations">
+          {THREADS.map(({ id, subject, messages }) => (
+            <li key={id}>
+              <ListItem selected={id === open} asChild>
+                <button
+                  type="button"
+                  aria-current={id === open ? "true" : undefined}
+                  onClick={() => setOpen(id)}
+                  className="flex min-h-row w-full items-baseline gap-2 px-3 py-2 text-left text-ui"
+                >
+                  <span className="min-w-0 flex-1 truncate">{subject}</span>
+                  <span className="text-muted-foreground text-ui-sm">
+                    {messages.length}
+                  </span>
+                </button>
+              </ListItem>
+            </li>
+          ))}
+        </ul>
+      </List>
       {thread && (
         <article className="grid content-start gap-1">
-          <h3 className="break-words font-heading font-medium text-base">
+          <h3 className="break-words font-heading font-medium text-prose">
             {thread.subject}
           </h3>
           <p className="text-muted-foreground text-ui-sm">

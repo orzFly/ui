@@ -4,6 +4,16 @@ import type {
   TerminalTheme,
   TerminalTokens,
 } from "@orz/themes";
+import { Button } from "@orz/ui/components/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@orz/ui/components/card";
+import { Pane } from "@orz/ui/components/pane";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import {
   createThemeStore,
@@ -248,33 +258,41 @@ export const sampleTerminalThemes: CustomTerminalTheme[] = [
 
 export function PageSample() {
   return (
-    <section className="grid gap-3 rounded-lg border bg-card p-4 text-card-foreground">
-      <h2 className="font-heading text-sm font-medium">Sample surface</h2>
-      <p className="text-muted-foreground text-sm">
-        Everything here reads the tokens the picker writes, so a preview shows
-        at a glance.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <span className="rounded-md bg-primary px-3 py-1 text-primary-foreground text-sm">
-          Primary
-        </span>
-        <span className="rounded-md bg-secondary px-3 py-1 text-secondary-foreground text-sm">
-          Secondary
-        </span>
-        <span className="rounded-md bg-accent px-3 py-1 text-accent-foreground text-sm">
-          Accent
-        </span>
-      </div>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle>Sample surface</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        <CardDescription>
+          Everything here reads the tokens the picker writes, so a preview shows
+          at a glance.
+        </CardDescription>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button>Primary</Button>
+          <Button variant="secondary">Secondary</Button>
+          {/* No component fills with accent at rest: a swatch shows it. */}
+          <span className="rounded-control bg-accent px-2.5 py-1 text-accent-foreground text-ui">
+            Accent
+          </span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 export function Header({ children }: { children?: ReactNode }) {
   return (
-    <header className="flex items-center justify-between border-b pb-2">
-      <span className="font-medium text-sm">app.example</span>
-      <div className="flex items-center gap-1">{children}</div>
-    </header>
+    <Pane
+      purpose="banner"
+      edge="bottom"
+      asChild
+      className="flex items-center justify-between pb-2"
+    >
+      <header>
+        <span>app.example</span>
+        <div className="flex items-center gap-1">{children}</div>
+      </header>
+    </Pane>
   );
 }
 
@@ -292,44 +310,46 @@ export function TerminalPane({
     </>
   );
   return (
-    <section className="grid gap-2 rounded-lg border p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="font-heading text-sm font-medium">
-          Terminal{" "}
-          <span className="text-muted-foreground">
-            {following ? `(same as UI: ${theme.label})` : `(${theme.label})`}
-          </span>
-        </h2>
-        <ThemeMenu slot="terminal" onCustomize={onCustomize} />
-      </div>
-      <pre
-        className="overflow-x-auto rounded-md p-3 font-mono text-sm leading-relaxed"
-        style={{
-          backgroundColor: tokens["terminal-background"],
-          color: tokens["terminal-foreground"],
-        }}
-      >
-        {prompt}git status --short{"\n"}
-        <span style={c("ansi-green")}>A</span>
-        {"  "}packages/themes/src/index.ts{"\n"}{" "}
-        <span style={c("ansi-red")}>D</span> src/theme/themes.ts{"\n"}{" "}
-        <span style={c("ansi-yellow")}>M</span> styles.css{"\n"}
-        {prompt}pnpm test{"\n"} <span style={c("ansi-green")}>✓</span>{" "}
-        store.test.ts <span style={c("ansi-bright-black")}>(42)</span>{" "}
-        <span style={c("ansi-magenta")}>picker</span>{" "}
-        <span style={c("ansi-cyan")}>filter</span>{" "}
-        <span style={c("ansi-red")}>✗ 0 failed</span>
-        {"\n"}
-        {prompt}
-        <span
+    <Card>
+      <CardHeader>
+        <CardTitle>Terminal</CardTitle>
+        <CardDescription>
+          {following ? `(same as UI: ${theme.label})` : `(${theme.label})`}
+        </CardDescription>
+        <CardAction>
+          <ThemeMenu slot="terminal" onCustomize={onCustomize} />
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <pre
+          className="overflow-x-auto rounded-md p-3 font-mono text-sm leading-relaxed"
           style={{
-            backgroundColor: tokens["terminal-cursor"],
-            color: tokens["terminal-background"],
+            backgroundColor: tokens["terminal-background"],
+            color: tokens["terminal-foreground"],
           }}
         >
-          {" "}
-        </span>
-      </pre>
-    </section>
+          {prompt}git status --short{"\n"}
+          <span style={c("ansi-green")}>A</span>
+          {"  "}packages/themes/src/index.ts{"\n"}{" "}
+          <span style={c("ansi-red")}>D</span> src/theme/themes.ts{"\n"}{" "}
+          <span style={c("ansi-yellow")}>M</span> styles.css{"\n"}
+          {prompt}pnpm test{"\n"} <span style={c("ansi-green")}>✓</span>{" "}
+          store.test.ts <span style={c("ansi-bright-black")}>(42)</span>{" "}
+          <span style={c("ansi-magenta")}>picker</span>{" "}
+          <span style={c("ansi-cyan")}>filter</span>{" "}
+          <span style={c("ansi-red")}>✗ 0 failed</span>
+          {"\n"}
+          {prompt}
+          <span
+            style={{
+              backgroundColor: tokens["terminal-cursor"],
+              color: tokens["terminal-background"],
+            }}
+          >
+            {" "}
+          </span>
+        </pre>
+      </CardContent>
+    </Card>
   );
 }

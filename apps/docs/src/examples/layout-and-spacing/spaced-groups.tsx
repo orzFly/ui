@@ -1,3 +1,4 @@
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import { Label } from "@orz/ui/components/label";
 import { Switch } from "@orz/ui/components/switch";
 
@@ -23,9 +24,9 @@ export function SpacedGroups() {
     <div className="grid gap-6">
       {GROUPS.map((group) => (
         <section key={group.title} className="grid gap-3">
-          <h4 className="font-medium text-muted-foreground text-ui-sm">
-            {group.title}
-          </h4>
+          <GroupHeading asChild>
+            <h4>{group.title}</h4>
+          </GroupHeading>
           {group.settings.map((setting) => (
             <div
               key={setting.id}

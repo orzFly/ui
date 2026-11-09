@@ -1,3 +1,5 @@
+import { Pane } from "@orz/ui/components/pane";
+import { Textarea } from "@orz/ui/components/textarea";
 import {
   useVisualViewportInsets,
   VIEWPORT_CHROME_EVENT,
@@ -56,28 +58,31 @@ export const Usage: Story = {
     }, []);
     return (
       <>
-        <header
-          className="sticky z-10 border-b bg-background p-2"
+        <Pane
+          purpose="banner"
+          edge="bottom"
+          asChild
+          className="sticky z-10 p-2"
           style={{ top: "var(--vv-top, 0px)" }}
         >
-          --vv-top: <strong>{edges.top}px</strong> · --vv-bottom:{" "}
-          <strong>{edges.bottom}px</strong>
-        </header>
+          <header>
+            --vv-top: <strong>{edges.top}px</strong> · --vv-bottom:{" "}
+            <strong>{edges.bottom}px</strong>
+          </header>
+        </Pane>
         <main className="grid gap-2 p-4">
           {PARAGRAPHS.map((n) => (
             <p key={n}>Paragraph {n}</p>
           ))}
         </main>
-        <div
-          className="sticky border-t bg-background p-2"
+        <Pane
+          purpose="window"
+          docked="bottom"
+          className="sticky p-2"
           style={{ bottom: "var(--vv-bottom, 0px)" }}
         >
-          <textarea
-            aria-label="Composer"
-            placeholder="Focus me on a phone"
-            className="h-16 w-full rounded-md border px-2 py-1 text-base"
-          />
-        </div>
+          <Textarea aria-label="Composer" placeholder="Focus me on a phone" />
+        </Pane>
       </>
     );
   },

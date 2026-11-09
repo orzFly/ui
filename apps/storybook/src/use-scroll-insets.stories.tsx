@@ -1,3 +1,8 @@
+import { Button } from "@orz/ui/components/button";
+import { Checkbox } from "@orz/ui/components/checkbox";
+import { Label } from "@orz/ui/components/label";
+import { Pane } from "@orz/ui/components/pane";
+import { Textarea } from "@orz/ui/components/textarea";
 import {
   holdRevealed,
   landAtBottom,
@@ -83,76 +88,94 @@ export const Usage: Story = {
 
     return (
       <>
-        <div
+        <Pane
           ref={toolbar}
-          className="fixed inset-x-0 top-0 z-10 flex flex-wrap items-center gap-2 border-b bg-background p-2"
+          purpose="banner"
+          edge="bottom"
+          className="fixed inset-x-0 top-0 z-10 flex flex-wrap items-center gap-2 p-2"
         >
           {[3, 12, 25, FOLDED, 40].map((n) => (
-            <button
+            <Button
               key={n}
-              type="button"
-              className="rounded-md border px-2"
+              variant="outline"
+              size="sm"
               onClick={() => reveal(n)}
             >
               Reveal {n}
-            </button>
+            </Button>
           ))}
-          <label className="flex items-center gap-1">
-            <input
-              type="checkbox"
+          <Label>
+            <Checkbox
               checked={mode === "start"}
-              onChange={(e) => setMode(e.target.checked ? "start" : "auto")}
+              onCheckedChange={(checked) =>
+                setMode(checked === true ? "start" : "auto")
+              }
             />
             Align to top
-          </label>
-          <button
-            type="button"
-            className="ml-auto rounded-md border px-2"
+          </Label>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
             onClick={() => setComposing((v) => !v)}
           >
             {composing ? "Close composer" : "Open composer"}
-          </button>
-        </div>
+          </Button>
+        </Pane>
         <main className="grid gap-2 px-4 pt-16 pb-[100vh]">
           {SECTIONS.map((n) => {
             const section = (
-              <section
+              <Pane
                 key={n}
-                id={`section-${n}`}
-                className="rounded-md border p-3"
+                purpose="panel"
+                frame="card"
+                asChild
+                className="p-3"
               >
-                Section {n}
-                {n % 5 === 0 && (
-                  <p className="text-muted-foreground">
-                    A taller block, so centring and top alignment differ.
-                    <br />
-                    <br />
-                    <br />
-                  </p>
-                )}
-              </section>
+                <section id={`section-${n}`}>
+                  Section {n}
+                  {n % 5 === 0 && (
+                    <p className="text-muted-foreground">
+                      A taller block, so centring and top alignment differ.
+                      <br />
+                      <br />
+                      <br />
+                    </p>
+                  )}
+                </section>
+              </Pane>
             );
             return n === FOLDED ? (
-              <details key={n} className="rounded-md border p-2">
-                <summary>Folded</summary>
-                {section}
-              </details>
+              <Pane
+                key={n}
+                purpose="panel"
+                frame="card"
+                asChild
+                className="p-2"
+              >
+                <details>
+                  <summary>Folded</summary>
+                  {section}
+                </details>
+              </Pane>
             ) : (
               section
             );
           })}
         </main>
         {composing && (
-          <div
+          <Pane
             ref={composer}
-            className="fixed inset-x-0 bottom-0 border-t bg-background p-2"
+            purpose="window"
+            docked="bottom"
+            className="fixed inset-x-0 bottom-0 p-2"
           >
-            <textarea
+            <Textarea
               aria-label="Composer"
               placeholder="A composer pinned to the bottom edge"
-              className="h-32 w-full rounded-md border px-2 py-1"
+              className="h-32"
             />
-          </div>
+          </Pane>
         )}
       </>
     );
@@ -195,36 +218,31 @@ export const HeldLanding: Story = {
 
     return (
       <>
-        <div
+        <Pane
           ref={toolbar}
-          className="fixed inset-x-0 top-0 z-10 flex items-center gap-2 border-b bg-background p-2"
+          purpose="banner"
+          edge="bottom"
+          className="fixed inset-x-0 top-0 z-10 flex items-center gap-2 p-2"
         >
-          <button
-            type="button"
-            className="rounded-md border px-2"
-            onClick={() => landOn(20)}
-          >
+          <Button variant="outline" size="sm" onClick={() => landOn(20)}>
             Land on 20
-          </button>
-          <button
-            type="button"
-            className="rounded-md border px-2"
-            onClick={landAtEnd}
-          >
+          </Button>
+          <Button variant="outline" size="sm" onClick={landAtEnd}>
             Land at the end
-          </button>
+          </Button>
           <span className="text-muted-foreground">{late} of 6 late images</span>
-        </div>
+        </Pane>
         <main className="grid gap-2 px-4 pt-16 [overflow-anchor:none]">
-          <div
-            className="rounded-md bg-muted"
+          <Pane
+            purpose="panel"
+            frame="inset"
             style={{ height: late * 120 }}
             aria-hidden="true"
           />
           {SECTIONS.map((n) => (
-            <section key={n} id={`held-${n}`} className="rounded-md border p-3">
-              Section {n}
-            </section>
+            <Pane key={n} purpose="panel" frame="card" asChild className="p-3">
+              <section id={`held-${n}`}>Section {n}</section>
+            </Pane>
           ))}
         </main>
       </>

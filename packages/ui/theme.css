@@ -103,6 +103,34 @@
   --text-title: 0.9375rem;
   --text-title--line-height: 1.375rem;
 
+  /* Running text an app writes itself, a docs page's or a help topic's, and
+     its headings: Tailwind's base, sm, xs and lg, and its 2xl to 5xl for the
+     headings and a display line, so a style can set prose apart from the
+     controls around it. */
+  --text-prose: 1rem;
+  --text-prose--line-height: 1.5rem;
+  --text-prose-sm: 0.875rem;
+  --text-prose-sm--line-height: 1.25rem;
+  --text-prose-xs: 0.75rem;
+  --text-prose-xs--line-height: 1rem;
+  --text-prose-lg: 1.125rem;
+  --text-prose-lg--line-height: 1.75rem;
+  --text-heading-3: 1.125rem;
+  --text-heading-3--line-height: 1.75rem;
+  --text-heading-2: 1.5rem;
+  --text-heading-2--line-height: 2rem;
+  --text-heading-1: 1.875rem;
+  --text-heading-1--line-height: 2.25rem;
+  --text-heading-1-wide: 2.25rem;
+  --text-heading-1-wide--line-height: 2.5rem;
+  --text-display: 2.25rem;
+  --text-display--line-height: 2.5rem;
+  --text-display-wide: 3rem;
+  --text-display-wide--line-height: 1;
+  /* The line height of a paragraph of prose, and of a smaller one. */
+  --leading-prose: 1.75rem;
+  --leading-prose-sm: 1.5rem;
+
   --font-ui:
     "Noto Sans Variable", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji";
@@ -262,6 +290,9 @@
 
 @theme inline {
   --font-sans: var(--font-ui);
+  /* A link in prose: the text's own colour, unless a style's palette gives
+     links one. */
+  --color-link: var(--link, var(--foreground));
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -316,6 +347,13 @@
   --color-ansi-bright-magenta: var(--ansi-bright-magenta);
   --color-ansi-bright-cyan: var(--ansi-bright-cyan);
   --color-ansi-bright-white: var(--ansi-bright-white);
+}
+
+/* Tailwind's radius scale, as multiples of --radius. Not inline: an app's
+   own rounded-lg then reads --radius-lg, which a style that squares every
+   corner sets to 0; inline, the utility would read --radius itself, which
+   :root sets outside any layer, where no style's tokens reach it. */
+@theme {
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

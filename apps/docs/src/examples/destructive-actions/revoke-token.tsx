@@ -1,6 +1,8 @@
 import { type AccessToken, TOKENS } from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { EmptyState } from "@orz/ui/components/empty-state";
+import { List, ListItem } from "@orz/ui/components/list";
 import { KeyRoundIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,38 +14,42 @@ export function RevokeToken() {
   const [open, setOpen] = useState(false);
   return (
     <div className="grid">
-      <ul className="divide-y">
-        {tokens.map((token) => (
-          <li key={token.id} className="flex items-center gap-3 py-3">
-            <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
-            <div className="grid min-w-0 flex-1 gap-0.5">
-              <span className="truncate font-medium font-mono text-ui">
-                {token.name}
-              </span>
-              <span className="text-muted-foreground text-ui-sm">
-                {token.scopes} · {token.lastUsed}
-              </span>
-            </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              aria-label={`Revoke ${token.name}`}
-              onClick={() => {
-                setRevoking(token);
-                setOpen(true);
-              }}
-            >
-              Revoke…
-            </Button>
-          </li>
-        ))}
-      </ul>
-      {tokens.length === 0 && (
-        <p className="py-3 text-muted-foreground text-ui">
-          No access tokens. Scripts and bots that need one get it from the
-          command line.
-        </p>
-      )}
+      <List purpose="collection">
+        {tokens.length > 0 ? (
+          <ul>
+            {tokens.map((token) => (
+              <ListItem key={token.id} asChild>
+                <li className="flex min-h-row items-center gap-3 py-3">
+                  <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <div className="grid min-w-0 flex-1 gap-0.5">
+                    <span className="truncate font-medium font-mono text-ui">
+                      {token.name}
+                    </span>
+                    <span className="text-muted-foreground text-ui-sm">
+                      {token.scopes} · {token.lastUsed}
+                    </span>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    aria-label={`Revoke ${token.name}`}
+                    onClick={() => {
+                      setRevoking(token);
+                      setOpen(true);
+                    }}
+                  >
+                    Revoke…
+                  </Button>
+                </li>
+              </ListItem>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState title="No access tokens" className="py-3">
+            Scripts and bots that need one get it from the command line.
+          </EmptyState>
+        )}
+      </List>
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}

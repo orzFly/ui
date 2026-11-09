@@ -1,11 +1,12 @@
-import { Button } from "@orz/ui/components/button";
 import { ModuleMarker } from "@orz/ui/components/card";
 import {
   Tabs,
+  TabsBar,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@orz/ui/components/tabs";
+import { Toggle } from "@orz/ui/components/toggle";
 import { cn } from "@orz/ui/lib/utils";
 import {
   type ComponentType,
@@ -110,17 +111,18 @@ export function Example({
       data-pagefind-ignore
       // The page's Markdown copy shows this file in the example's place.
       data-example={source.path}
-      className="my-6 gap-0 overflow-hidden rounded-surface border"
+      variant="framed"
+      className="my-6"
     >
       {/* A module's ruled header: its marker and name, then the tabs joined to the frame below. */}
-      <div className="flex flex-wrap items-stretch border-b bg-muted">
+      <TabsBar>
         <div className="flex min-h-control items-center gap-2 px-3">
           <ModuleMarker />
           <span className="hidden font-mono text-ui-sm text-muted-foreground sm:inline">
             {source.file}
           </span>
         </div>
-        <TabsList className="border-b-0 bg-transparent">
+        <TabsList>
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="code">Code</TabsTrigger>
         </TabsList>
@@ -129,7 +131,7 @@ export function Example({
           onChange={setPointer}
           className="ml-auto items-center px-1.5 py-0.5"
         />
-      </div>
+      </TabsBar>
       {/* Mounted while hidden, so the preview keeps its state across a look at the code. */}
       <TabsContent
         value="preview"
@@ -153,10 +155,6 @@ export function Example({
   );
 }
 
-/** A pressed toggle: a box in the page's colour, ringed by `pressed-cue`. */
-export const PRESSED =
-  "aria-pressed:bg-background aria-pressed:font-medium aria-pressed:text-foreground aria-pressed:pressed-cue";
-
 /** Pointer and Touch: press one to force its sizes, press it again to follow the device. */
 export function PointerToggle({
   pointer,
@@ -171,16 +169,13 @@ export function PointerToggle({
     <fieldset className={cn("flex gap-1", className)}>
       <legend className="sr-only">Preview sizes for</legend>
       {POINTERS.map(({ value, label }) => (
-        <Button
+        <Toggle
           key={value}
-          variant="ghost"
-          size="sm"
-          className={PRESSED}
-          aria-pressed={pointer === value}
-          onClick={() => onChange(pointer === value ? undefined : value)}
+          pressed={pointer === value}
+          onPressedChange={(pressed) => onChange(pressed ? value : undefined)}
         >
           {label}
-        </Button>
+        </Toggle>
       ))}
     </fieldset>
   );

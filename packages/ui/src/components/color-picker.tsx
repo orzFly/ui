@@ -24,6 +24,10 @@ import { cn } from "../lib/utils.ts";
 import { Button } from "./button.tsx";
 import { Input } from "./input.tsx";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover.tsx";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "./segmented-control.tsx";
 
 // The modes these converters need are registered by ../lib/color.ts, imported above.
 const toRgb = converter("rgb");
@@ -960,26 +964,18 @@ export function ColorPicker({
       className={cn("grid w-64 gap-2 text-ui-sm", className)}
     >
       {offered.length > 1 && (
-        <fieldset
+        <SegmentedControl
           aria-label="Picking surface"
-          className="grid gap-0.5 rounded-[min(var(--radius-control),8px)] bg-muted p-0.5"
-          style={{
-            gridTemplateColumns: `repeat(${offered.length}, minmax(0, 1fr))`,
-          }}
+          value={shown}
+          onValueChange={(s) => pickSurface(s as ColorSurface)}
+          className="auto-cols-fr"
         >
           {offered.map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={shown === s}
-              disabled={disabled}
-              onClick={() => pickSurface(s)}
-              className="h-control-xs rounded-[min(var(--radius-control),5px)] text-ui-xs font-medium text-muted-foreground outline-none focus-visible:focus-ring disabled:opacity-50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:pressed-cue"
-            >
+            <SegmentedControlItem key={s} value={s} disabled={disabled}>
               {SURFACE_LABELS[s]}
-            </button>
+            </SegmentedControlItem>
           ))}
-        </fieldset>
+        </SegmentedControl>
       )}
 
       <div
@@ -1002,7 +998,11 @@ export function ColorPicker({
                 : `lightness ${round(color.l * 100, 1)}%, chroma ${round(color.c, 3)} (${Math.round(rel * 100)}% of ${gamutName} max)`
         }
         className={cn(
-          "relative h-42 cursor-crosshair touch-none overflow-hidden rounded-item outline-none focus-visible:focus-ring",
+          // Under raymond each surface the colour is shown on, the area, the
+          // strips, the before-and-after and the swatches, sits in a sunken
+          // edge drawn over it, as the Color dialog's do, and a strip's
+          // thumb is a square raised slider.
+          "relative h-42 cursor-crosshair touch-none overflow-hidden rounded-item outline-none focus-visible:focus-ring raymond:rounded-none raymond:after:pointer-events-none raymond:after:absolute raymond:after:inset-0 raymond:after:shadow-sunken raymond:after:content-['']",
           disabled && "pointer-events-none opacity-50",
         )}
         style={
@@ -1156,7 +1156,7 @@ export function ColorPicker({
           role="img"
           aria-label="Before and after"
           title="Before / after"
-          className="grid h-control-sm w-9 shrink-0 grid-cols-2 overflow-hidden rounded-[min(var(--radius-control),8px)] border"
+          className="grid h-control-sm w-9 shrink-0 grid-cols-2 overflow-hidden rounded-[min(var(--radius-control),8px)] border raymond:relative raymond:border-0 raymond:rounded-none raymond:after:pointer-events-none raymond:after:absolute raymond:after:inset-0 raymond:after:shadow-sunken raymond:after:content-['']"
           style={CHECKERBOARD}
         >
           <span
@@ -1316,7 +1316,7 @@ export function ColorPicker({
                     aria-pressed={pressed}
                     disabled={disabled}
                     onClick={() => pickSwatch(text)}
-                    className="relative aspect-square rounded-full border border-black/15 outline-none focus-visible:focus-ring focus-visible:outline-offset-0 disabled:opacity-50 aria-pressed:ring-2 aria-pressed:ring-foreground aria-pressed:ring-offset-2 aria-pressed:ring-offset-popover touch:hit-area"
+                    className="relative aspect-square rounded-full border border-black/15 outline-none focus-visible:focus-ring focus-visible:outline-offset-0 disabled:opacity-50 aria-pressed:ring-2 aria-pressed:ring-foreground aria-pressed:ring-offset-2 aria-pressed:ring-offset-popover touch:hit-area raymond:rounded-none raymond:border-0 raymond:shadow-sunken raymond:aria-pressed:ring-1 raymond:aria-pressed:ring-offset-1"
                     style={{
                       ...CHECKERBOARD,
                       backgroundImage: `linear-gradient(${css(parsed.color)}, ${css(parsed.color)}), ${CHECKERBOARD.backgroundImage}`,
@@ -1366,14 +1366,14 @@ function TrackSlider({
       className="relative flex h-3 w-full touch-none items-center select-none data-disabled:opacity-50"
     >
       <SliderPrimitive.Track
-        className="relative h-3 grow overflow-hidden rounded-full"
+        className="relative h-3 grow overflow-hidden rounded-full raymond:rounded-none raymond:after:pointer-events-none raymond:after:absolute raymond:after:inset-0 raymond:after:shadow-sunken raymond:after:content-['']"
         style={trackStyle}
       >
         {children}
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb
         aria-label={label}
-        className="block size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_0_0_1px_rgb(0_0_0/0.3)] outline-none focus-visible:focus-ring"
+        className="block size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_0_0_1px_rgb(0_0_0/0.3)] outline-none focus-visible:focus-ring raymond:h-4 raymond:w-2.5 raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:shadow-raised"
       />
     </SliderPrimitive.Root>
   );
@@ -1605,11 +1605,11 @@ export function ColorPickerPopover({
             type="button"
             variant="outline"
             size="sm"
-            className="pl-1 font-mono text-ui-sm"
+            className="pl-1 font-mono text-ui-sm raymond:pl-1.5"
           >
             <span
               aria-hidden
-              className="size-5 shrink-0 overflow-hidden rounded-[min(var(--radius-item),6px)] border border-black/15"
+              className="size-5 shrink-0 overflow-hidden rounded-[min(var(--radius-item),6px)] border border-black/15 raymond:border-(--3d-shadow)"
               style={CHECKERBOARD}
             >
               <span

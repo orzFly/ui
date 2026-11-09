@@ -1,3 +1,9 @@
+import {
+  LinkCard,
+  LinkCardDescription,
+  LinkCardTitle,
+} from "@orz/ui/components/link-card";
+import { Separator } from "@orz/ui/components/separator";
 import type { TocEntry } from "./page.ts";
 import { demosShowing } from "./pages.ts";
 import { Link } from "./router.tsx";
@@ -24,22 +30,20 @@ export function InTheDemos({ route }: { route: string }) {
     <section aria-labelledby={ID} data-pagefind-ignore>
       <h2
         id={ID}
-        className="mt-12 mb-4 scroll-mt-[calc(5rem+env(safe-area-inset-top))] border-b pb-2 font-semibold text-2xl tracking-tight"
+        className="mt-12 scroll-mt-[calc(5rem+env(safe-area-inset-top))] pb-2 font-semibold text-heading-2 tracking-tight"
       >
         {HEADING}
       </h2>
+      <Separator className="mb-4" />
       <ul className="grid gap-3">
         {demos.map(({ route: demo, meta, where }) => (
           <li key={demo}>
-            <Link
-              to={demo}
-              className="flex flex-col gap-1 rounded-lg border px-4 py-3 transition-colors hover:bg-accent"
-            >
-              <span className="font-medium">{meta.title}</span>
-              <span className="text-muted-foreground text-sm leading-6">
-                {where}
-              </span>
-            </Link>
+            <LinkCard asChild>
+              <Link to={demo}>
+                <LinkCardTitle>{meta.title}</LinkCardTitle>
+                <LinkCardDescription>{where}</LinkCardDescription>
+              </Link>
+            </LinkCard>
           </li>
         ))}
       </ul>

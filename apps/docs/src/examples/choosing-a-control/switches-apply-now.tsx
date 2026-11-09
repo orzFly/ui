@@ -1,12 +1,11 @@
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import { Label } from "@orz/ui/components/label";
 import { Switch } from "@orz/ui/components/switch";
 
 export function SwitchesApplyNow() {
   return (
     <div className="grid gap-3">
-      <p className="font-medium text-muted-foreground text-ui-sm">
-        Send them by
-      </p>
+      <GroupHeading>Send them by</GroupHeading>
       <div className="flex items-center justify-between gap-4">
         <Label htmlFor="do-email">Email</Label>
         <Switch id="do-email" defaultChecked />

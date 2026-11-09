@@ -1,5 +1,6 @@
 import { INBOX_ME, INBOX_PEOPLE } from "@orz/fixtures/inbox.ts";
 import { Button } from "@orz/ui/components/button";
+import { FieldError } from "@orz/ui/components/field";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import { useRef, useState } from "react";
@@ -50,11 +51,7 @@ export function CheckOnSubmit() {
           aria-invalid={error !== undefined}
           aria-describedby={error ? "check-to-error" : undefined}
         />
-        {error && (
-          <p id="check-to-error" className="text-destructive text-ui">
-            {error}
-          </p>
-        )}
+        {error && <FieldError id="check-to-error">{error}</FieldError>}
       </div>
       <Button type="submit" className="justify-self-end">
         Send

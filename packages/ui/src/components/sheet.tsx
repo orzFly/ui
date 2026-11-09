@@ -77,33 +77,39 @@ function SheetContent({
           // child keeps its height. Clipped across: the X's touch hit area
           // reaches past the padding box. A top or bottom sheet stops short
           // of the far edge, so a strip of overlay is still there to tap.
-          "fixed z-50 flex flex-col gap-4 overflow-x-hidden overflow-y-auto bg-popover text-ui text-popover-foreground shadow-overlay transition duration-(--duration-sheet) ease-in-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:max-h-[85dvh] data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:max-h-[85dvh] data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-[side=bottom]:data-open:slide-in-from-bottom-sheet data-[side=left]:data-open:slide-in-from-left-sheet data-[side=right]:data-open:slide-in-from-right-sheet data-[side=top]:data-open:slide-in-from-top-sheet data-closed:animate-out data-closed:fade-out-0 data-[side=bottom]:data-closed:slide-out-to-bottom-sheet data-[side=left]:data-closed:slide-out-to-left-sheet data-[side=right]:data-closed:slide-out-to-right-sheet data-[side=top]:data-closed:slide-out-to-top-sheet [&>:not([data-slot=sheet-body])]:shrink-0",
+          "fixed z-50 flex flex-col gap-4 overflow-x-hidden overflow-y-auto bg-popover outline-none text-ui text-popover-foreground shadow-overlay transition duration-(--duration-sheet) ease-in-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:max-h-[85dvh] data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:max-h-[85dvh] data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-[side=bottom]:data-open:slide-in-from-bottom-sheet data-[side=left]:data-open:slide-in-from-left-sheet data-[side=right]:data-open:slide-in-from-right-sheet data-[side=top]:data-open:slide-in-from-top-sheet data-closed:animate-out data-closed:fade-out-0 data-[side=bottom]:data-closed:slide-out-to-bottom-sheet data-[side=left]:data-closed:slide-out-to-left-sheet data-[side=right]:data-closed:slide-out-to-right-sheet data-[side=top]:data-closed:slide-out-to-top-sheet [&>:not([data-slot=sheet-body])]:shrink-0",
           // The safe-area insets are transparent borders on the edges the
           // sheet touches, not padding: a className's padding then adds to
           // them instead of replacing them, the background still runs under
           // the notch, and the close button, placed against the padding
           // box, moves clear of it with the content.
           "data-[side=bottom]:border-x-transparent data-[side=bottom]:border-b-transparent data-[side=bottom]:border-r-[length:env(safe-area-inset-right)] data-[side=bottom]:border-b-[length:env(safe-area-inset-bottom)] data-[side=bottom]:border-l-[length:env(safe-area-inset-left)] data-[side=left]:border-y-transparent data-[side=left]:border-l-transparent data-[side=left]:border-t-[length:env(safe-area-inset-top)] data-[side=left]:border-b-[length:env(safe-area-inset-bottom)] data-[side=left]:border-l-[length:env(safe-area-inset-left)] data-[side=right]:border-y-transparent data-[side=right]:border-r-transparent data-[side=right]:border-t-[length:env(safe-area-inset-top)] data-[side=right]:border-r-[length:env(safe-area-inset-right)] data-[side=right]:border-b-[length:env(safe-area-inset-bottom)] data-[side=top]:border-x-transparent data-[side=top]:border-t-transparent data-[side=top]:border-t-[length:env(safe-area-inset-top)] data-[side=top]:border-r-[length:env(safe-area-inset-right)] data-[side=top]:border-l-[length:env(safe-area-inset-left)]",
+          // Under raymond the raised frame stands in for the edge's rule.
+          "raymond:data-[side=bottom]:border-t-0 raymond:data-[side=left]:border-r-0 raymond:data-[side=right]:border-l-0 raymond:data-[side=top]:border-b-0",
           className,
         )}
         {...props}
       >
         {children}
-        {showCloseButton && (
-          <SheetPrimitive.Close data-slot="sheet-close" asChild>
-            <Button
-              variant="ghost"
-              // Under raymond the X is the title bar's close box, as Dialog's.
-              className="absolute top-3 right-3 raymond:bg-(--3d-face) raymond:shadow-raised raymond:[--muted:var(--3d-face)] raymond:[--spacing-control-sm:0.875rem] raymond:active:shadow-pressed raymond:[&_svg]:size-2.5 raymond:[&_svg]:stroke-3"
-              size="icon-sm"
-            >
-              <XIcon />
-              <span className="sr-only">Close</span>
-            </Button>
-          </SheetPrimitive.Close>
-        )}
+        {showCloseButton && <SheetCloseButton />}
       </SheetPrimitive.Content>
     </SheetPortal>
+  );
+}
+
+function SheetCloseButton() {
+  return (
+    <SheetPrimitive.Close data-slot="sheet-close" asChild>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        // Under raymond the X is the title bar's close box, as Dialog's.
+        className="absolute top-3 right-3 raymond:top-[5px] raymond:right-[5px] raymond:h-3.5 raymond:w-4 raymond:min-w-0 raymond:bg-(--3d-face) raymond:shadow-raised raymond:hover:shadow-raised raymond:focus-visible:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[--focus-offset:-3px] raymond:[--muted:var(--3d-face)] raymond:active:shadow-pressed raymond:[&_svg]:size-2.5 raymond:[&_svg]:stroke-3"
+      >
+        <XIcon />
+        <span className="sr-only">Close</span>
+      </Button>
+    </SheetPrimitive.Close>
   );
 }
 
@@ -111,7 +117,7 @@ function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-header"
-      className={cn("flex flex-col gap-0.5 p-4", className)}
+      className={cn("flex flex-col gap-0.5 p-4 raymond:gap-2", className)}
       {...props}
     />
   );
@@ -161,7 +167,7 @@ function SheetTitle({
       className={cn(
         "font-heading text-title font-medium text-foreground flex items-center gap-2",
         // Under raymond the title bar, as DialogTitle's.
-        "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=sheet-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=sheet-content]:not(:focus-within)]:text-(--caption-inactive-foreground)",
+        "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=sheet-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=sheet-content]:not(:focus-within)]:text-(--caption-inactive-foreground) raymond:[--muted-foreground:currentColor] raymond:[&>[data-slot=module-marker]]:bg-transparent raymond:[&>[data-slot=module-marker]]:text-current",
         className,
       )}
       {...props}
@@ -179,7 +185,11 @@ function SheetDescription({
   return (
     <SheetPrimitive.Description
       data-slot="sheet-description"
-      className={cn("text-ui text-muted-foreground", className)}
+      // Under raymond in the window text, as DialogDescription's.
+      className={cn(
+        "text-ui text-muted-foreground raymond:text-foreground",
+        className,
+      )}
       {...props}
     />
   );

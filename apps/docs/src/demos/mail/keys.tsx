@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@orz/ui/components/dialog";
+import { Kbd } from "@orz/ui/components/kbd";
 import { Label } from "@orz/ui/components/label";
 import { Switch } from "@orz/ui/components/switch";
 import { ToolbarButton } from "@orz/ui/components/toolbar";
@@ -13,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@orz/ui/components/tooltip";
-import { type ComponentProps, type ReactNode, useEffect, useRef } from "react";
+import { type ComponentProps, useEffect, useRef } from "react";
 import { setShortcutsEnabled, useShortcutsEnabled } from "../../shortcuts.ts";
 
 /** The keys, as `KeyboardEvent.key` spells them, and what each does. */
@@ -44,17 +45,6 @@ const printed = (key: string) => {
   const apple = /mac|iphone|ipad/i.test(navigator.platform);
   return apple ? `⇧${key}` : `Shift ${key}`;
 };
-
-function Kbd({ children }: { children: ReactNode }) {
-  return (
-    <kbd
-      data-slot="kbd"
-      className="inline-flex h-5 min-w-5 items-center justify-center rounded-sm border bg-muted px-1 font-mono text-[0.7rem] text-muted-foreground"
-    >
-      {children}
-    </kbd>
-  );
-}
 
 /** Where a single key must not act: the reader is typing, or a dialog or menu has the keys. */
 function isElsewhere(target: EventTarget | null): boolean {

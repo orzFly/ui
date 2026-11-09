@@ -5,7 +5,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { Pane } from "@orz/ui/components/pane";
 import { Textarea } from "@orz/ui/components/textarea";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -34,14 +36,18 @@ export function ThreadToolbar() {
   const [reply, setReply] = useState("");
   return (
     <TooltipProvider>
-      <div className="grid gap-3 rounded-lg border">
-        <div className="flex items-center gap-0.5 border-b p-1">
+      <Pane purpose="panel" frame="card" className="grid gap-3">
+        <Pane
+          purpose="toolbar"
+          edge="bottom"
+          className="flex items-center gap-0.5 px-1.5 py-1"
+        >
           {ACTIONS.map(({ label, Icon }) => (
             <Tooltip key={label}>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label={label}>
+                <ToolbarButton aria-label={label}>
                   <Icon />
-                </Button>
+                </ToolbarButton>
               </TooltipTrigger>
               <TooltipContent>{label}</TooltipContent>
             </Tooltip>
@@ -50,14 +56,9 @@ export function ThreadToolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="ml-auto"
-                    aria-label="More actions"
-                  >
+                  <ToolbarButton className="ml-auto" aria-label="More actions">
                     <EllipsisIcon />
-                  </Button>
+                  </ToolbarButton>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent>More actions</TooltipContent>
@@ -73,7 +74,7 @@ export function ThreadToolbar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </Pane>
         <form
           aria-label="Reply"
           className="flex items-end gap-2 px-3 pb-3"
@@ -94,7 +95,7 @@ export function ThreadToolbar() {
             Send
           </Button>
         </form>
-      </div>
+      </Pane>
     </TooltipProvider>
   );
 }

@@ -9,6 +9,15 @@ import {
   variantsOf,
 } from "@orz/themes";
 import { contrastRows } from "@orz/themes/contrast";
+import { InlineCode } from "@orz/ui/components/inline-code";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@orz/ui/components/table";
 
 interface Shortfall {
   palette: string;
@@ -67,46 +76,42 @@ function shortfalls(): Shortfall[] {
   );
 }
 
-const code = "rounded bg-muted px-1 py-0.5 font-mono text-[0.875em]";
-const cell = "border-b px-3 py-2 align-top";
-const head = "border-b px-3 py-2 text-left font-medium text-muted-foreground";
-
 /** The built-in themes' pairs below the contrast floors, measured from the palettes. */
 export function BelowFloor() {
   const rows = shortfalls();
   return (
-    <div className="my-5 overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr>
-            <th className={head}>Theme</th>
-            <th className={head}>Token</th>
-            <th className={head}>On</th>
-            <th className={head}>Lowest</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="my-5">
+      <Table purpose="prose">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Theme</TableHead>
+            <TableHead>Token</TableHead>
+            <TableHead>On</TableHead>
+            <TableHead>Lowest</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map(({ palette, token, surfaces, ratio, floor }) => (
-            <tr key={`${palette} ${token}`}>
-              <td className={cell}>{palette}</td>
-              <td className={cell}>
-                <code className={code}>{token}</code>
-              </td>
-              <td className={cell}>
+            <TableRow key={`${palette} ${token}`}>
+              <TableCell>{palette}</TableCell>
+              <TableCell>
+                <InlineCode>{token}</InlineCode>
+              </TableCell>
+              <TableCell>
                 {surfaces.map((surface, index) => (
                   <span key={surface}>
                     {index > 0 && ", "}
-                    <code className={code}>{surface}</code>
+                    <InlineCode>{surface}</InlineCode>
                   </span>
                 ))}
-              </td>
-              <td className={`${cell} tabular-nums`}>
+              </TableCell>
+              <TableCell className="tabular-nums">
                 {ratio.toFixed(2)}:1, under {floor}:1
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

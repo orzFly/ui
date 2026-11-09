@@ -374,7 +374,11 @@ export function CodeEditor({
         "flex w-full flex-col bg-transparent text-base transition-colors md:text-ui raymond:bg-(--window) raymond:bg-clip-padding raymond:shadow-sunken",
         purpose === "field" &&
           "rounded-frame border border-input focus-within:focus-ring dark:bg-input/15 raymond:border-transparent raymond:[--focus-offset:-4px]",
-        readOnly && "opacity-50",
+        // A document set in a document pane leaves the well to the pane.
+        purpose === "document" &&
+          "raymond:in-data-[purpose=document]:shadow-none",
+        // Under raymond a read-only editor keeps its bevel, on the face.
+        readOnly && "opacity-50 raymond:bg-(--3d-face) raymond:opacity-100",
         className,
       )}
     />

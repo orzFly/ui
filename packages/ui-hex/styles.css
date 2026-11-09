@@ -594,3 +594,11 @@
     text-shadow: 1px 1px var(--3d-highlight);
   }
 }
+
+/* A field's name is in the window text, as a property sheet's labels are;
+   grey there reads as disabled. */
+.orz-hex-inspector-list dt {
+  @variant raymond {
+    color: var(--foreground);
+  }
+}

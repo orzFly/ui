@@ -10,6 +10,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { EmptyState } from "@orz/ui/components/empty-state";
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import {
   HoverCard,
   HoverCardContent,
@@ -17,6 +19,8 @@ import {
 } from "@orz/ui/components/hover-card";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
+import { NavList, NavListItem, NavListLink } from "@orz/ui/components/nav-list";
+import { Pane } from "@orz/ui/components/pane";
 import {
   Popover,
   PopoverContent,
@@ -30,6 +34,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@orz/ui/components/sheet";
+import { TextLink } from "@orz/ui/components/text-link";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -65,8 +71,12 @@ const THREAD = INBOX_THREADS.find(({ id }) => id === "touch-sizes");
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="grid min-w-0 gap-1.5">
-      <h3 className="font-medium text-muted-foreground text-ui-sm">{title}</h3>
-      <div className="min-w-0 rounded-lg border p-2">{children}</div>
+      <GroupHeading asChild>
+        <h3>{title}</h3>
+      </GroupHeading>
+      <Pane purpose="panel" frame="card" className="min-w-0 p-2">
+        {children}
+      </Pane>
     </section>
   );
 }
@@ -82,14 +92,14 @@ export function OverlayKinds() {
     <TooltipProvider>
       <div className="grid min-w-0 gap-4">
         <Panel title="Mail">
-          <div className="flex items-center gap-0.5">
+          <Pane purpose="toolbar" className="flex items-center gap-0.5">
             <Sheet>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Folders">
+                    <ToolbarButton aria-label="Folders">
                       <PanelLeftIcon />
-                    </Button>
+                    </ToolbarButton>
                   </SheetTrigger>
                 </TooltipTrigger>
                 <TooltipContent>Folders</TooltipContent>
@@ -98,34 +108,33 @@ export function OverlayKinds() {
                 <SheetHeader>
                   <SheetTitle>Folders</SheetTitle>
                 </SheetHeader>
-                <ul className="grid gap-0.5 px-2">
-                  {FOLDERS.map(({ title, Icon }) => (
-                    <li key={title}>
-                      <SheetClose asChild>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                        >
-                          <Icon />
-                          {title}
-                        </Button>
-                      </SheetClose>
-                    </li>
-                  ))}
-                </ul>
+                <nav aria-label="Folders" className="px-2">
+                  <NavList>
+                    {FOLDERS.map(({ title, Icon }) => (
+                      <NavListItem key={title}>
+                        <SheetClose asChild>
+                          <NavListLink current={title === "Inbox"} asChild>
+                            <button type="button">
+                              <Icon />
+                              {title}
+                            </button>
+                          </NavListLink>
+                        </SheetClose>
+                      </NavListItem>
+                    ))}
+                  </NavList>
+                </nav>
               </SheetContent>
             </Sheet>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <ToolbarButton
                   aria-label="Star"
                   aria-pressed={starred}
                   onClick={() => setStarred(!starred)}
                 >
                   <StarIcon className={starred ? "fill-current" : undefined} />
-                </Button>
+                </ToolbarButton>
               </TooltipTrigger>
               <TooltipContent>Star</TooltipContent>
             </Tooltip>
@@ -133,9 +142,9 @@ export function OverlayKinds() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Labels">
+                    <ToolbarButton aria-label="Labels">
                       <TagIcon />
-                    </Button>
+                    </ToolbarButton>
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
                 <TooltipContent>Labels</TooltipContent>
@@ -161,14 +170,13 @@ export function OverlayKinds() {
             <span className="min-w-0 truncate px-1 text-ui">
               {THREAD?.subject}
             </span>
-          </div>
+          </Pane>
         </Panel>
         <Panel title="Access tokens">
           {revoked ? (
-            <p className="p-1 text-muted-foreground text-ui">
-              No access tokens. Scripts and bots that need one get it from the
-              command line.
-            </p>
+            <EmptyState title="No access tokens" className="p-1">
+              Scripts and bots that need one get it from the command line.
+            </EmptyState>
           ) : (
             <div className="flex items-center gap-2">
               <KeyRoundIcon className="size-4 shrink-0 text-muted-foreground" />
@@ -245,16 +253,13 @@ export function OverlayKinds() {
           <p className="px-1 text-muted-foreground text-ui">
             <HoverCard>
               <HoverCardTrigger asChild>
-                <a
-                  href={`#${PULL_REQUEST.author}`}
-                  className="font-medium text-foreground underline-offset-4 hover:underline"
-                >
+                <TextLink href={`#${PULL_REQUEST.author}`}>
                   {PULL_REQUEST.author}
-                </a>
+                </TextLink>
               </HoverCardTrigger>
-              <HoverCardContent className="w-72 text-ui">
-                <p className="font-medium">{PULL_REQUEST.author}</p>
-                <p className="text-muted-foreground">
+              <HoverCardContent className="w-72">
+                <p className="font-medium text-ui">{PULL_REQUEST.author}</p>
+                <p className="text-muted-foreground text-ui">
                   Opened #{PULL_REQUEST.number} in {PULL_REQUEST.repo.owner}/
                   {PULL_REQUEST.repo.name}: {PULL_REQUEST.title}
                 </p>

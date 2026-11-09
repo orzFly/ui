@@ -5,6 +5,7 @@ export const meta = {
   order: 20,
   api: [
     "ui/Primitives/Tooltip",
+    "ui/Primitives/Kbd",
     "ui/Primitives/HoverCard",
     "ui/Primitives/DropdownMenu",
     "ui/Primitives/Select",
@@ -117,7 +118,8 @@ item.
 - **Leave the browser's and the system's keys alone.** ⌘/Ctrl with T, W, N, L, R, Tab and the
   number keys belong to the browser; a tool that takes them strands people who reach for them.
 - **List them.** A tool with more than a handful of shortcuts shows them all in one place, a dialog
-  opened from the help menu or with `?`.
+  opened from the help menu or with `?`. Print each key as a `Kbd`, which a style may draw as a
+  keycap or as the key's name alone.
 
 <DoDont>
   <Do show={<ShortcutInTooltip />}>

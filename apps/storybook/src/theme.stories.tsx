@@ -11,6 +11,12 @@ import {
   variantsOf,
   vs,
 } from "@orz/themes";
+import { GroupHeading } from "@orz/ui/components/group-heading";
+import { Pane } from "@orz/ui/components/pane";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@orz/ui/components/segmented-control";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import {
   createThemeStore,
@@ -96,19 +102,24 @@ export const Usage: Story = {
     return (
       <div className="grid gap-8">
         <section className="grid gap-3">
-          <h2 className="font-heading text-base font-medium">
-            Active: {theme.label} ({colorScheme}
-            {variant !== "default" ? `, ${variant}` : ""}
-            {ui?.mode === "system" ? ", following the system" : ""}) · terminal:{" "}
-            {terminal.following
-              ? "following"
-              : `${terminal.theme.label} (${terminal.colorScheme})`}
-          </h2>
+          <GroupHeading asChild>
+            <h2>
+              Active: {theme.label} ({colorScheme}
+              {variant !== "default" ? `, ${variant}` : ""}
+              {ui?.mode === "system" ? ", following the system" : ""}) ·
+              terminal:{" "}
+              {terminal.following
+                ? "following"
+                : `${terminal.theme.label} (${terminal.colorScheme})`}
+            </h2>
+          </GroupHeading>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2">
             {TOKEN_NAMES.map((token) => (
-              <div
+              <Pane
                 key={token}
-                className="flex items-center gap-2 rounded-md border p-1.5"
+                purpose="panel"
+                frame="card"
+                className="flex items-center gap-2 p-1.5"
               >
                 <span
                   aria-hidden
@@ -116,23 +127,42 @@ export const Usage: Story = {
                   style={{ background: `var(--${token})` }}
                 />
                 <code className="text-xs">--{token}</code>
-              </div>
+              </Pane>
             ))}
           </div>
         </section>
         <section className="grid gap-3">
-          <h2 className="font-heading text-base font-medium">All themes</h2>
+          <GroupHeading asChild>
+            <h2>All themes</h2>
+          </GroupHeading>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-2">
             {themes.map((t) => (
-              <div
+              <Pane
                 key={t.id}
-                className="grid content-start gap-2 rounded-md border p-2"
+                purpose="panel"
+                frame="card"
+                className="grid content-start gap-2 p-2"
               >
                 <span className="grid">
                   <span className="text-sm">{t.label}</span>
                   <code className="text-xs text-muted-foreground">{t.id}</code>
                 </span>
-                <div className="flex flex-wrap gap-1">
+                <SegmentedControl
+                  aria-label={t.label}
+                  value={ui?.theme === t.id ? `${colorScheme}:${variant}` : ""}
+                  onValueChange={(key) => {
+                    const [scheme, v] = key.split(":");
+                    setPref({
+                      ...pref,
+                      ui: {
+                        theme: t.id,
+                        mode: scheme as ColorScheme,
+                        ...(v === "default" ? {} : { variant: v }),
+                      },
+                    });
+                  }}
+                  className="flex flex-wrap"
+                >
                   {schemesOf(t).flatMap((scheme: ColorScheme) =>
                     variantsOf(t)
                       .filter(
@@ -148,42 +178,24 @@ export const Usage: Story = {
                             ? {}
                             : palette?.variants?.[v.id]?.tokens),
                         };
-                        const active =
-                          ui?.theme === t.id &&
-                          colorScheme === scheme &&
-                          variant === v.id;
                         const name = `${palette?.label ?? scheme}${v.id === "default" ? "" : ` ${v.label}`}`;
                         return (
-                          <button
+                          <SegmentedControlItem
                             key={`${scheme}:${v.id}`}
-                            type="button"
+                            value={`${scheme}:${v.id}`}
                             title={`${t.label} ${name}`}
-                            data-active={active || undefined}
-                            onClick={() =>
-                              setPref({
-                                ...pref,
-                                ui: {
-                                  theme: t.id,
-                                  mode: scheme,
-                                  ...(v.id === "default"
-                                    ? {}
-                                    : { variant: v.id }),
-                                },
-                              })
-                            }
-                            className="flex items-center gap-1.5 rounded-md border px-1.5 py-1 text-xs data-active:ring-2 data-active:ring-ring"
                           >
                             <Swatch
                               surface={tokens.background ?? ""}
                               accent={tokens.primary ?? ""}
                             />
                             {name}
-                          </button>
+                          </SegmentedControlItem>
                         );
                       }),
                   )}
-                </div>
-              </div>
+                </SegmentedControl>
+              </Pane>
             ))}
           </div>
         </section>
@@ -221,10 +233,7 @@ export const ThemeProvider: Story = {
       return () => own.dispose();
     }, []);
     return (
-      <div
-        ref={ref}
-        className="grid gap-4 rounded-lg border bg-background p-4 text-foreground"
-      >
+      <Pane ref={ref} purpose="app" frame="inset" className="grid gap-4 p-4">
         {store && (
           <ThemeProviderView store={store}>
             <Header>
@@ -233,7 +242,7 @@ export const ThemeProvider: Story = {
             <PageSample />
           </ThemeProviderView>
         )}
-      </div>
+      </Pane>
     );
   },
 };
@@ -295,10 +304,7 @@ export const UseStyle: Story = {
       return () => own.dispose();
     }, []);
     return (
-      <div
-        ref={ref}
-        className="grid gap-4 rounded-lg border bg-background p-4 text-foreground"
-      >
+      <Pane ref={ref} purpose="app" frame="inset" className="grid gap-4 p-4">
         {store && (
           <ThemeProviderView store={store}>
             <Header>
@@ -307,7 +313,7 @@ export const UseStyle: Story = {
             <StyleReadout />
           </ThemeProviderView>
         )}
-      </div>
+      </Pane>
     );
   },
 };

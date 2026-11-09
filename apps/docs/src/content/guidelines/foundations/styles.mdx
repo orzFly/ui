@@ -7,6 +7,9 @@ export const meta = {
     "ui/Foundations/Theme",
     "ui/ThemeMenu",
     "ui/Primitives/Card",
+    "ui/EmptyState",
+    "ui/Primitives/Kbd",
+    "ui/Primitives/LinkCard",
     "ui/Primitives/GroupHeading",
     "ui/Primitives/List",
     "ui/Primitives/NavList",
@@ -109,6 +112,8 @@ the window's face around them; each style draws each of those its own way. Say w
   first error), `"sidebar"` for the column of places to go beside the rest, and `"panel"` for the
   rest of the window. A window of the app's own that floats over the rest, a docked composer say,
   is `"window"`, with `docked` naming the edge it sits against, and its caption `"titlebar"`. The
+  bar across the top of a site that its pages scroll under is `"banner"`, which keeps the height
+  you give it, since what sticks below it is offset by that height. The
   pane draws its own look in every style: name the side that meets its neighbour with `edge`
   rather than a border of your own, and a pane set inside another, a comment or a sample, with
   `frame`.
@@ -123,6 +128,13 @@ the window's face around them; each style draws each of those its own way. Say w
   wants a frame of its own is a `Card`. A rule between the group's rows is a `Separator` with
   `purpose="row"`, and one between groups that space does not set apart keeps the default
   `"group"`.
+- **What stands in an empty list or pane** is an `EmptyState`: its icon, its title, the line
+  under it and the next step, which a style may set in its window text.
+- **A docs page's own parts** are components too. The sections of the page in view are a
+  `NavList variant="rail"`, a link to another page with a line on what is there a `LinkCard`, a
+  live sample with its source a `Tabs variant="framed"`, a table of sentences a
+  `Table purpose="prose"`, and a key to press a `Kbd`. Set the prose itself in the prose scale
+  ([Typography](/guidelines/foundations/typography/)), which a style sizes for itself.
 
 A style redraws these where they stand: it keeps what they hold and in what order, adds nothing you
 did not write, and may tighten their spacing. So size a toolbar or a header by the padding around

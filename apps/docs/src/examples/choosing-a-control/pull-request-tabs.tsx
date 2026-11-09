@@ -1,5 +1,6 @@
 import { CI_RUN } from "@orz/fixtures/ci-run.ts";
 import { PULL_REQUEST } from "@orz/fixtures/pull-request.ts";
+import { InlineCode } from "@orz/ui/components/inline-code";
 import {
   Tabs,
   TabsContent,
@@ -22,20 +23,22 @@ export function PullRequestTabs() {
           <TabsTrigger value="checks">Checks</TabsTrigger>
         </TabsList>
       </div>
-      <TabsContent value="conversation" className="text-ui">
-        {comments.length} comments on “{PULL_REQUEST.title}”.
+      <TabsContent value="conversation">
+        <p className="text-ui">
+          {comments.length} comments on “{PULL_REQUEST.title}”.
+        </p>
       </TabsContent>
-      <TabsContent value="commits" className="text-ui">
-        <ul className="grid gap-1">
+      <TabsContent value="commits">
+        <ul className="grid gap-1 text-ui">
           {pushes.map((push) => (
             <li key={push.commit}>
-              <code>{push.commit}</code> pushed by {push.author}
+              <InlineCode>{push.commit}</InlineCode> pushed by {push.author}
             </li>
           ))}
         </ul>
       </TabsContent>
-      <TabsContent value="checks" className="text-ui">
-        <ul className="grid gap-1">
+      <TabsContent value="checks">
+        <ul className="grid gap-1 text-ui">
           {CI_RUN.jobs.map((job) => (
             <li key={job.id}>
               {CI_RUN.workflow} / {job.name}: {job.status}

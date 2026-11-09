@@ -2,3 +2,29 @@
    consumer importing this stylesheet scans the classes in the package's
    shipped JS without writing an @source of its own. */
 @source "./dist";
+
+/* Under raymond the completion list is the period's address drop-down: a
+   white list in a 1px black frame, square and flat, its picked row in the
+   highlight. CodeMirror draws the popup from completionTheme, which no
+   raymond: class reaches, so a rule does. The class is named twice to
+   outrank the theme's scoped selector, which CodeMirror inserts after this
+   sheet. */
+.cm-tooltip.cm-tooltip.cm-tooltip-autocomplete {
+  @variant raymond {
+    border-color: var(--3d-dark-shadow);
+    border-radius: 0;
+    background-color: var(--window);
+    box-shadow: none;
+  }
+}
+.cm-tooltip-autocomplete.cm-tooltip-autocomplete > ul > li {
+  @variant raymond {
+    padding-block: 0;
+  }
+}
+.cm-tooltip-autocomplete.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  @variant raymond {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+}

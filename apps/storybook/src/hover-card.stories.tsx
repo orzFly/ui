@@ -4,6 +4,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@orz/ui/components/hover-card";
+import { TextLink } from "@orz/ui/components/text-link";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 
@@ -15,9 +16,7 @@ const meta = {
   render: (args) => (
     <HoverCard {...args}>
       <HoverCardTrigger asChild>
-        <a href="#alice" className="underline underline-offset-4">
-          @alice
-        </a>
+        <TextLink href="#alice">@alice</TextLink>
       </HoverCardTrigger>
       <HoverCardContent>
         <div className="flex gap-3">
@@ -25,8 +24,8 @@ const meta = {
             <AvatarFallback>AL</AvatarFallback>
           </Avatar>
           <div className="grid gap-1">
-            <div className="font-medium">alice</div>
-            <p className="text-muted-foreground">
+            <h3>alice</h3>
+            <p>
               Hover cards cap their 28rem width to what the viewport offers.
             </p>
           </div>

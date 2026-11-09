@@ -2,6 +2,7 @@ import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { EmptyState } from "@orz/ui/components/empty-state";
 import { List, ListItem } from "@orz/ui/components/list";
 import { RefreshFailure } from "@orz/ui/components/load-failure";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
@@ -480,42 +481,42 @@ function ThreadList({
           className="min-h-0 flex-1 overflow-y-auto max-md:pb-20"
         >
           {threads.length === 0 ? (
-            <div className="grid justify-items-center gap-2 px-4 py-12 text-center">
-              <InboxIcon className="size-8 text-muted-foreground" aria-hidden />
-              {place ? (
-                <>
-                  <p className="font-medium">Nothing in {place.title}</p>
-                  <p className="text-muted-foreground text-ui">{place.empty}</p>
-                  {(place.query === "in:sent" ||
+            place ? (
+              <EmptyState
+                icon={InboxIcon}
+                title={`Nothing in ${place.title}`}
+                action={
+                  (place.query === "in:sent" ||
                     place.query === "in:drafts") && (
-                    <Button
-                      variant="outline"
-                      className="mt-2"
-                      onClick={onCompose}
-                    >
+                    <Button variant="outline" onClick={onCompose}>
                       <SquarePenIcon />
                       Compose
                     </Button>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="font-medium">No conversations match</p>
-                  <p className="text-muted-foreground text-ui">
-                    Nothing matches{" "}
-                    <code className="font-mono">{search.query}</code>. Try fewer
-                    words, or another filter.
-                  </p>
+                  )
+                }
+                className="px-4 py-12"
+              >
+                {place.empty}
+              </EmptyState>
+            ) : (
+              <EmptyState
+                icon={InboxIcon}
+                title="No conversations match"
+                action={
                   <Button
                     variant="outline"
-                    className="mt-2"
                     onClick={() => onSearch(DEFAULT_QUERY)}
                   >
                     Clear search
                   </Button>
-                </>
-              )}
-            </div>
+                }
+                className="px-4 py-12"
+              >
+                Nothing matches{" "}
+                <code className="font-mono">{search.query}</code>. Try fewer
+                words, or another filter.
+              </EmptyState>
+            )
           ) : (
             <ul aria-label="Conversations" className="divide-y">
               {threads.map((thread) => (

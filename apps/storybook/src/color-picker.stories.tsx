@@ -2,6 +2,10 @@ import {
   ColorPicker,
   ColorPickerPopover as ColorPickerPopoverView,
 } from "@orz/ui/components/color-picker";
+import { Label } from "@orz/ui/components/label";
+import { List, ListItem } from "@orz/ui/components/list";
+import { Pane } from "@orz/ui/components/pane";
+import { Slider } from "@orz/ui/components/slider";
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 import { fn } from "storybook/test";
@@ -24,9 +28,9 @@ const PRESETS = [
 
 // Per story rather than on the meta: the popover stories bring their own.
 const panel: Decorator = (Story) => (
-  <div className="w-fit rounded-lg border bg-popover p-2 shadow-sm">
+  <Pane purpose="panel" frame="card" className="w-fit p-2">
     <Story />
-  </div>
+  </Pane>
 );
 
 const meta = {
@@ -135,18 +139,18 @@ export const Extra: Story = {
           args.onValueChange?.(next);
         }}
         extra={
-          <label className="flex items-center gap-2 text-xs">
-            Blur
-            <input
-              type="range"
+          <div className="flex items-center gap-2">
+            <Label id="color-picker-blur">Blur</Label>
+            <Slider
+              aria-labelledby="color-picker-blur"
               min={0}
               max={32}
-              value={blur}
-              onChange={(event) => setBlur(Number(event.target.value))}
+              value={[blur]}
+              onValueChange={([next]) => setBlur(next ?? 0)}
               className="flex-1"
             />
             <span className="w-8 text-right font-mono">{blur}px</span>
-          </label>
+          </div>
         }
       />
     );
@@ -247,28 +251,34 @@ export const TokenList: Story = {
     // One lock for every row, as a theme editor would keep it.
     const [locked, setLocked] = useState(false);
     return (
-      <div className="w-96 divide-y rounded-lg border">
-        {TOKENS.map(([name, original, pair]) => (
-          <div key={name} className="flex items-center gap-2 px-2.5 py-1.5">
-            <span className="flex-1 text-sm">{name}</span>
-            <ColorPickerPopoverView
-              value={values[name]}
-              onValueChange={(v) => setValues((all) => ({ ...all, [name]: v }))}
-              format="oklch"
-              align="end"
-              contrastWith={values[pair]}
-              contrastLabel={pair}
-              resetValue={original}
-              chromaLock={locked}
-              onChromaLockChange={setLocked}
-              swatches={[
-                { label: "This theme", colors: Object.values(values) },
-              ]}
-              aria-label={`Edit ${name}`}
-            />
-          </div>
-        ))}
-      </div>
+      <List purpose="collection" className="w-96">
+        <ul>
+          {TOKENS.map(([name, original, pair]) => (
+            <ListItem key={name} asChild>
+              <li className="flex items-center gap-2 px-2.5 py-1.5">
+                <span className="flex-1">{name}</span>
+                <ColorPickerPopoverView
+                  value={values[name]}
+                  onValueChange={(v) =>
+                    setValues((all) => ({ ...all, [name]: v }))
+                  }
+                  format="oklch"
+                  align="end"
+                  contrastWith={values[pair]}
+                  contrastLabel={pair}
+                  resetValue={original}
+                  chromaLock={locked}
+                  onChromaLockChange={setLocked}
+                  swatches={[
+                    { label: "This theme", colors: Object.values(values) },
+                  ]}
+                  aria-label={`Edit ${name}`}
+                />
+              </li>
+            </ListItem>
+          ))}
+        </ul>
+      </List>
     );
   },
 };

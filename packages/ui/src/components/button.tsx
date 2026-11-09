@@ -5,10 +5,12 @@ import type * as React from "react";
 import { cn } from "../lib/utils.ts";
 
 // Under raymond a push button's focus rectangle sits inside its bevel, and
-// the focused button takes the black frame of the window's default. A
+// the focused button takes the black frame of the window's default; in a
+// message box the button holding the focus takes it however it got there,
+// as the period's message boxes always show one framed button. A
 // disabled one keeps its bevel and embosses its text in grey, not faded.
 const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-control border border-transparent bg-clip-padding text-ui font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:focus-ring active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 touch:hit-area raymond:rounded-none raymond:[--focus-offset:-4px] raymond:disabled:opacity-100 raymond:disabled:text-(--3d-shadow) raymond:disabled:[text-shadow:1px_1px_var(--3d-highlight)] raymond:focus-visible:[--shadow-raised:inset_0_0_0_1px_var(--foreground),inset_-2px_-2px_var(--3d-dark-shadow),inset_2px_2px_var(--3d-highlight),inset_-3px_-3px_var(--3d-shadow),inset_3px_3px_var(--3d-light)]",
+  "group/button relative inline-flex shrink-0 items-center justify-center rounded-control border border-transparent bg-clip-padding text-ui font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:focus-ring active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 touch:hit-area raymond:rounded-none raymond:[--focus-offset:-4px] raymond:disabled:opacity-100 raymond:disabled:text-(--3d-shadow) raymond:disabled:[text-shadow:1px_1px_var(--3d-highlight)] raymond:focus-visible:[--shadow-raised:inset_0_0_0_1px_var(--foreground),inset_-2px_-2px_var(--3d-dark-shadow),inset_2px_2px_var(--3d-highlight),inset_-3px_-3px_var(--3d-shadow),inset_3px_3px_var(--3d-light)] raymond:in-[[role=alertdialog]]:focus:[--shadow-raised:inset_0_0_0_1px_var(--foreground),inset_-2px_-2px_var(--3d-dark-shadow),inset_2px_2px_var(--3d-highlight),inset_-3px_-3px_var(--3d-shadow),inset_3px_3px_var(--3d-light)]",
   {
     variants: {
       variant: {
@@ -21,13 +23,19 @@ const buttonVariants = cva(
         default:
           "bg-primary text-primary-foreground shadow-raised hover:bg-primary/80 active:shadow-pressed aria-expanded:shadow-pressed raymond:shadow-raised raymond:active:shadow-pressed raymond:[--primary-foreground:var(--foreground)] raymond:[--primary:var(--3d-face)] raymond:in-[[role=dialog],[role=alertdialog]]:not-disabled:[--shadow-raised:inset_0_0_0_1px_var(--foreground),inset_-2px_-2px_var(--3d-dark-shadow),inset_2px_2px_var(--3d-highlight),inset_-3px_-3px_var(--3d-shadow),inset_3px_3px_var(--3d-light)]",
         // Under raymond an outline button is a plain push button: the face,
-        // its bevel and no border.
+        // its bevel, no border, and the window text whatever colour the
+        // line around it is set in.
         outline:
-          "border-input bg-background shadow-raised hover:bg-muted hover:text-foreground active:shadow-pressed aria-expanded:bg-muted aria-expanded:text-foreground aria-expanded:shadow-pressed raymond:[--background:var(--3d-face)] raymond:[--input:transparent]",
+          "border-input bg-background shadow-raised hover:bg-muted hover:text-foreground active:shadow-pressed aria-expanded:bg-muted aria-expanded:text-foreground aria-expanded:shadow-pressed raymond:[--background:var(--3d-face)] raymond:[--input:transparent] raymond:text-foreground",
         secondary:
           "bg-secondary text-secondary-foreground shadow-raised hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] active:shadow-pressed aria-expanded:bg-secondary aria-expanded:text-secondary-foreground aria-expanded:shadow-pressed raymond:bg-(--3d-face) raymond:text-foreground raymond:hover:bg-(--3d-face) raymond:aria-expanded:bg-(--3d-face) raymond:aria-expanded:text-foreground",
+        // A ghost button that is a link to the page on screen marks it as
+        // current. Under raymond a ghost button is a flat toolbar button, as
+        // ToolbarButton is: raised a pixel under the pointer, sunk a pixel
+        // while held or while its menu is open, and the current page's
+        // latched, sunk over the face dithered with its highlight.
         ghost:
-          "hover:bg-muted hover:text-foreground hover:shadow-raised active:shadow-pressed aria-expanded:bg-muted aria-expanded:text-foreground aria-expanded:shadow-pressed dark:hover:bg-muted/50",
+          "hover:bg-muted hover:text-foreground hover:shadow-raised active:shadow-pressed aria-expanded:bg-muted aria-expanded:text-foreground aria-expanded:shadow-pressed aria-[current=page]:bg-muted dark:hover:bg-muted/50 raymond:hover:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:active:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:aria-expanded:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:aria-[current=page]:bg-(--3d-highlight) raymond:aria-[current=page]:bg-[conic-gradient(var(--3d-face)_25%,transparent_0_50%,var(--3d-face)_0_75%,transparent_0)] raymond:aria-[current=page]:bg-size-[2px_2px] raymond:aria-[current=page]:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)]",
         // Not bare text-destructive: on its own 10-30% tint that measured
         // 3.2-4.5:1 in 15 of the 19 themes. Mixing 65% of --foreground in
         // clears 4.5:1 in every theme at rest and on hover; the tint keeps the

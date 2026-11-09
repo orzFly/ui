@@ -3,7 +3,13 @@ export const meta = {
   description:
     "One sans family at three sizes, a monospace for what is copied, and numbers that line up.",
   order: 11,
-  api: ["ui/Primitives/Input", "ui/Primitives/Card", "ui/Primitives/Table"],
+  api: [
+    "ui/Primitives/Input",
+    "ui/Primitives/Card",
+    "ui/Primitives/Table",
+    "ui/Primitives/TextLink",
+    "ui/Primitives/InlineCode",
+  ],
 };
 
 import { AlignedTestTimes } from "../../../examples/typography/aligned-test-times.tsx";
@@ -33,10 +39,16 @@ the review stops at a readable width however wide the card grows.
 | A count or a badge, and nothing else | `text-ui-xs` | {font("text-ui-xs")}px |
 | What a user copies or compares: ids, hashes, paths, code | `font-mono` at the size around it, or `text-ui-sm` inline | — |
 
-A page heading in a document-like view can go larger (`text-2xl`, `text-3xl`), as these docs do;
-inside a tool, a panel's title is `text-title`. The components follow the same scale: `DialogTitle`
-and `SheetTitle` are `font-heading text-title font-medium`, a `CardTitle` is a module's name in
-its ruled header, `font-heading text-ui-sm font-bold`, and a `Badge` is `text-ui-xs`.
+Running text you write yourself, a docs page or a help topic, is prose and has a scale of its
+own, so a style can set it apart from the controls around it: `text-prose` for its paragraphs
+with `leading-prose` between their lines, `text-prose-sm` and `text-prose-xs` for what is
+secondary, `text-prose-lg` for a lead, `text-heading-3` to `text-heading-1` for its headings, and
+`text-display` for a headline. A link in it is a `TextLink`, in `text-link`, which is the text's
+own colour until a style's palette gives links one, and a name from code in a sentence an
+`InlineCode`. These docs are set in it; inside a tool, a panel's title is `text-title`. The
+components follow the same scale: `DialogTitle` and `SheetTitle` are
+`font-heading text-title font-medium`, a `CardTitle` is a module's name in its ruled header,
+`font-heading text-ui-sm font-bold`, and a `Badge` is `text-ui-xs`.
 
 ## Family
 

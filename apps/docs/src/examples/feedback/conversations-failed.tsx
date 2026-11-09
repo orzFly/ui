@@ -1,4 +1,5 @@
 import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
+import { List, ListItem } from "@orz/ui/components/list";
 import { LoadFailure } from "@orz/ui/components/load-failure";
 import { useState } from "react";
 
@@ -26,12 +27,14 @@ export function ConversationsFailed() {
     );
   }
   return (
-    <ul aria-label="Conversations" className="divide-y text-ui">
-      {THREADS.map(({ id, subject }) => (
-        <li key={id} className="truncate py-2">
-          {subject}
-        </li>
-      ))}
-    </ul>
+    <List purpose="listbox">
+      <ul aria-label="Conversations" className="text-ui">
+        {THREADS.map(({ id, subject }) => (
+          <ListItem key={id} asChild>
+            <li className="min-h-row truncate px-2 py-2">{subject}</li>
+          </ListItem>
+        ))}
+      </ul>
+    </List>
   );
 }

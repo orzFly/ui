@@ -33,6 +33,7 @@ const meta = {
   component: NavList,
   parameters: { guidelines: "/guidelines/patterns/navigation/" },
   args: { "aria-label": "Folders" },
+  argTypes: { variant: { control: "inline-radio", options: ["rows", "rail"] } },
   decorators: [withWidth("max-w-60")],
   render: function Render(args) {
     const [current, setCurrent] = useState("Inbox");
@@ -155,6 +156,41 @@ export const Nested: Story = {
     return (
       <NavList {...args}>
         {REGIONS.map(({ id, label, depth }) => (
+          <NavListItem key={id}>
+            <NavListLink
+              current={id === current && "location"}
+              depth={depth}
+              asChild
+            >
+              <button type="button" onClick={() => setCurrent(id)}>
+                {label}
+              </button>
+            </NavListLink>
+          </NavListItem>
+        ))}
+      </NavList>
+    );
+  },
+};
+
+const SECTIONS = [
+  { id: "spacing", label: "Spacing", depth: 0 },
+  { id: "breakpoints", label: "Breakpoints", depth: 0 },
+  { id: "phone", label: "On a phone", depth: 1 },
+  { id: "width", label: "Width", depth: 0 },
+];
+
+/**
+ * `variant="rail"`, for the sections of the page in view beside it: quiet lines off a rule, the
+ * one in view marking its stretch. Its rows take the size of the text around them.
+ */
+export const Rail: Story = {
+  args: { "aria-label": "On this page", variant: "rail" },
+  render: function Render(args) {
+    const [current, setCurrent] = useState("breakpoints");
+    return (
+      <NavList {...args}>
+        {SECTIONS.map(({ id, label, depth }) => (
           <NavListItem key={id}>
             <NavListLink
               current={id === current && "location"}

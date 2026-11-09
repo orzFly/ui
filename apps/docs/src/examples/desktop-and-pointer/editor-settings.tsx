@@ -1,4 +1,5 @@
 import { LANGUAGES } from "@orz/fixtures/account.ts";
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import { Label } from "@orz/ui/components/label";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
 import {
@@ -43,9 +44,7 @@ export function EditorSettings() {
         </Select>
       </div>
       <div className="grid gap-2">
-        <span id="keys-indent" className="font-medium text-ui">
-          Indent with
-        </span>
+        <GroupHeading id="keys-indent">Indent with</GroupHeading>
         <RadioGroup aria-labelledby="keys-indent" defaultValue="2">
           {INDENTS.map(({ value, label }) => (
             <div key={value} className="flex items-center gap-2">

@@ -1,3 +1,4 @@
+import { Pane } from "@orz/ui/components/pane";
 import { useAutoHideHeader } from "@orz/ui/hooks/viewport-chrome";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef } from "react";
@@ -52,14 +53,17 @@ export const Usage: Story = {
     useAutoHideHeader(header, true);
     return (
       <>
-        <header
-          ref={header}
-          data-header-follow=""
-          className="sticky z-10 flex h-14 items-center border-b bg-background px-4 font-medium"
+        <Pane
+          purpose="banner"
+          edge="bottom"
+          asChild
+          className="sticky z-10 flex h-14 items-center px-4"
           style={{ top: "calc(var(--vv-top, 0px) - var(--header-hide, 0px))" }}
         >
-          Header
-        </header>
+          <header ref={header} data-header-follow="">
+            Header
+          </header>
+        </Pane>
         <main className="grid gap-2 p-4">
           {PARAGRAPHS.map((n) => (
             <p key={n}>Paragraph {n}</p>

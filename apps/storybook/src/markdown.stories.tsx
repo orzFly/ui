@@ -1,6 +1,12 @@
 import guideText from "@orz/fixtures/attachment/guide.md?raw";
 import { group, resolve } from "@orz/fixtures/files.ts";
 import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@orz/ui/components/card";
 import { codeContent } from "@orz/ui-code";
 import type { ContentRenderer, ContentSource } from "@orz/ui-content";
 import {
@@ -309,14 +315,16 @@ const card: ContentRenderer = {
   accepts: (source, placement) =>
     source.kind === "file" && placement === "document",
   Component: ({ Next, ...props }) => (
-    <section className="my-2 overflow-hidden rounded-lg border">
-      <div className="border-b bg-muted/40 px-3 py-1 text-sm font-medium">
-        {props.source.kind === "file" ? props.source.name : null}
-      </div>
-      <div className="p-3">
+    <Card className="my-2">
+      <CardHeader>
+        <CardTitle>
+          {props.source.kind === "file" ? props.source.name : null}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
         <Next {...props} />
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   ),
 };
 

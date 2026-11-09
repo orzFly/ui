@@ -1,4 +1,7 @@
-import { GroupHeading } from "@orz/ui/components/group-heading";
+import {
+  GroupDescription,
+  GroupHeading,
+} from "@orz/ui/components/group-heading";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withWidth } from "./decorators.tsx";
 
@@ -21,5 +24,17 @@ export const AsChild: Story = {
     <GroupHeading {...args} asChild>
       <h3>{args.children}</h3>
     </GroupHeading>
+  ),
+};
+
+/** A `GroupDescription` under the heading says what the group is for. */
+export const Description: Story = {
+  render: (args) => (
+    <div className="grid gap-1">
+      <GroupHeading {...args} />
+      <GroupDescription>
+        Spaces or tabs at the start of each new line.
+      </GroupDescription>
+    </div>
   ),
 };

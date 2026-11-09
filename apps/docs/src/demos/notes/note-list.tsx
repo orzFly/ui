@@ -1,4 +1,5 @@
 import { Button } from "@orz/ui/components/button";
+import { EmptyState } from "@orz/ui/components/empty-state";
 import { Input } from "@orz/ui/components/input";
 import { List, ListItem, ListLabel } from "@orz/ui/components/list";
 import { Pane } from "@orz/ui/components/pane";
@@ -130,35 +131,35 @@ export function NoteList({
       <List purpose="listbox" className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {notes.length === 0 ? (
-            <div className="grid justify-items-center gap-2 px-4 py-10 text-center">
-              <NotebookIcon
-                className="size-8 text-muted-foreground"
-                aria-hidden
-              />
-              {filtered ? (
-                <>
-                  <p className="font-medium">No notes match</p>
-                  <p className="text-muted-foreground text-ui">
-                    Try fewer words, or fewer tags.
-                  </p>
+            filtered ? (
+              <EmptyState
+                icon={NotebookIcon}
+                title="No notes match"
+                action={
                   <Button variant="outline" size="sm" onClick={onClear}>
                     Clear filter
                   </Button>
-                </>
-              ) : (
-                <>
-                  <p className="font-medium">No notes yet</p>
-                  <p className="text-muted-foreground text-ui">
-                    A note is markdown, kept in this tab. Start one with a #
-                    heading.
-                  </p>
+                }
+                className="px-4 py-10"
+              >
+                Try fewer words, or fewer tags.
+              </EmptyState>
+            ) : (
+              <EmptyState
+                icon={NotebookIcon}
+                title="No notes yet"
+                action={
                   <Button variant="outline" size="sm" onClick={onNew}>
                     <PlusIcon />
                     New note
                   </Button>
-                </>
-              )}
-            </div>
+                }
+                className="px-4 py-10"
+              >
+                A note is markdown, kept in this tab. Start one with a #
+                heading.
+              </EmptyState>
+            )
           ) : (
             NOTE_FOLDERS.map((folder) => {
               const inFolder = notes

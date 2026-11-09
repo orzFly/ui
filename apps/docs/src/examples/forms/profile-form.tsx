@@ -6,6 +6,7 @@ import {
 } from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
+import { FieldDescription, FieldError } from "@orz/ui/components/field";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import {
@@ -83,13 +84,11 @@ export function ProfileForm() {
           }
         />
         {error ? (
-          <p id="profile-email-error" className="text-destructive text-ui">
-            {error}
-          </p>
+          <FieldError id="profile-email-error">{error}</FieldError>
         ) : (
-          <p id="profile-email-hint" className="text-muted-foreground text-ui">
+          <FieldDescription id="profile-email-hint">
             Notifications go here.
-          </p>
+          </FieldDescription>
         )}
       </div>
       <div className="grid gap-2">

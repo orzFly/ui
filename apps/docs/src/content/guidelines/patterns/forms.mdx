@@ -5,6 +5,7 @@ export const meta = {
   order: 34,
   api: [
     "ui/Primitives/Label",
+    "ui/Primitives/FieldDescription",
     "ui/Primitives/Input",
     "ui/Primitives/Textarea",
     "ui/Primitives/Select",
@@ -77,8 +78,9 @@ most fields in a short form are required, and a reader should not have to decode
 
 ## Errors
 
-- The message goes in a paragraph under its field, the field gets `aria-invalid`, and
-  `aria-describedby` points at the message, so a screen reader reads it with the field.
+- The message is a `FieldError` under its field, the field gets `aria-invalid`, and
+  `aria-describedby` points at the message, so a screen reader reads it with the field. A hint
+  that is there before anything goes wrong is a `FieldDescription`, wired the same way.
 - After a failed submit, move focus to the first invalid field.
 - Say how to fix it: "Enter an email address, like alice@example.com", not "Invalid input".
 - An error from the server about the whole form, a lost connection or a conflict, sits above the

@@ -1,11 +1,19 @@
 import { INBOX_PEOPLE, INBOX_THREADS } from "@orz/fixtures/inbox.ts";
-import { Button } from "@orz/ui/components/button";
+import { List, ListItem } from "@orz/ui/components/list";
+import {
+  NavList,
+  NavListFrame,
+  NavListItem,
+  NavListLink,
+} from "@orz/ui/components/nav-list";
+import { Pane } from "@orz/ui/components/pane";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetTitle,
 } from "@orz/ui/components/sheet";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -24,7 +32,7 @@ import {
   StarIcon,
   Trash2Icon,
 } from "lucide-react";
-import { type ComponentProps, useState } from "react";
+import { useState } from "react";
 
 const PLACES = [
   { title: "Inbox", Icon: InboxIcon },
@@ -39,32 +47,22 @@ const THREADS = INBOX_THREADS.filter((thread) => !thread.folder).slice(0, 5);
 
 function Folders() {
   return (
-    <ul className="grid gap-0.5">
-      {PLACES.map(({ title, Icon }) => (
-        <li key={title}>
-          <Button
-            variant={title === "Inbox" ? "secondary" : "ghost"}
-            className="w-full justify-start"
-          >
-            <Icon data-icon="inline-start" /> {title}
-          </Button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function IconButton({
-  label,
-  ...props
-}: ComponentProps<typeof Button> & { label: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={label} {...props} />
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
+    <NavListFrame asChild>
+      <nav aria-label="Folders" className="h-full">
+        <NavList>
+          {PLACES.map(({ title, Icon }) => (
+            <NavListItem key={title}>
+              <NavListLink current={title === "Inbox"} asChild>
+                <button type="button">
+                  <Icon />
+                  {title}
+                </button>
+              </NavListLink>
+            </NavListItem>
+          ))}
+        </NavList>
+      </nav>
+    </NavListFrame>
   );
 }
 
@@ -74,82 +72,121 @@ export function MailPanes() {
   const thread = THREADS.find(({ id }) => id === open);
   return (
     <TooltipProvider>
-      <div className="flex h-96 overflow-hidden rounded-lg border">
-        <nav
-          aria-label="Folders"
-          className="w-40 shrink-0 border-r bg-sidebar p-2 text-sidebar-foreground max-lg:hidden"
+      <Pane purpose="app" frame="card" className="flex h-96 overflow-hidden">
+        <Pane
+          purpose="sidebar"
+          edge="end"
+          className="w-40 shrink-0 p-2 max-lg:hidden"
         >
           <Folders />
-        </nav>
-        <section
-          aria-label="Conversations"
+        </Pane>
+        <Pane
+          purpose="panel"
+          edge={{ md: "end" }}
+          asChild
           className={cn(
-            "flex min-w-0 flex-1 flex-col md:w-56 md:flex-none md:border-r",
+            "flex min-w-0 flex-1 flex-col md:w-56 md:flex-none",
             thread && "max-md:hidden",
           )}
         >
-          <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2">
-            <IconButton
-              label="Folders"
-              className="lg:hidden"
-              onClick={() => setFolders(true)}
+          <section aria-label="Conversations">
+            <Pane
+              purpose="toolbar"
+              edge="bottom"
+              className="flex shrink-0 items-center gap-1 px-2 py-1.5"
             >
-              <PanelLeftIcon />
-            </IconButton>
-            <span className="px-1 font-medium text-ui">Inbox</span>
-          </div>
-          <ul className="min-h-0 flex-1 overflow-y-auto py-1">
-            {THREADS.map((each) => (
-              <li key={each.id}>
-                <button
-                  type="button"
-                  aria-current={each.id === open ? "true" : undefined}
-                  onClick={() => setOpen(each.id)}
-                  className={cn(
-                    "grid w-full px-3 py-2 text-left transition-colors hover:bg-accent/60",
-                    each.id === open && "bg-accent",
-                  )}
-                >
-                  <span className="truncate text-muted-foreground text-ui-sm">
-                    {INBOX_PEOPLE[each.messages[0]?.from ?? ""]}
-                  </span>
-                  <span className="truncate text-ui">{each.subject}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <article
-          aria-label="Conversation"
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <ToolbarButton
+                    size="icon-sm"
+                    aria-label="Folders"
+                    className="lg:hidden"
+                    onClick={() => setFolders(true)}
+                  >
+                    <PanelLeftIcon />
+                  </ToolbarButton>
+                </TooltipTrigger>
+                <TooltipContent>Folders</TooltipContent>
+              </Tooltip>
+              <span className="px-1 font-medium text-ui">Inbox</span>
+            </Pane>
+            <List purpose="listbox" className="flex min-h-0 flex-1 flex-col">
+              <ul className="min-h-0 flex-1 overflow-y-auto py-1">
+                {THREADS.map((each) => (
+                  <li key={each.id}>
+                    <ListItem selected={each.id === open} asChild>
+                      <button
+                        type="button"
+                        aria-current={each.id === open ? "true" : undefined}
+                        onClick={() => setOpen(each.id)}
+                        className="grid w-full px-3 py-2 text-left"
+                      >
+                        <span className="truncate text-muted-foreground text-ui-sm">
+                          {INBOX_PEOPLE[each.messages[0]?.from ?? ""]}
+                        </span>
+                        <span className="truncate text-ui">{each.subject}</span>
+                      </button>
+                    </ListItem>
+                  </li>
+                ))}
+              </ul>
+            </List>
+          </section>
+        </Pane>
+        <Pane
+          purpose="panel"
+          asChild
           className={cn(
             "min-w-0 flex-1 flex-col",
             thread ? "flex" : "max-md:hidden md:flex",
           )}
         >
-          {thread ? (
-            <>
-              <div className="flex h-11 shrink-0 items-center gap-1 border-b px-2">
-                <IconButton
-                  label="Back to inbox"
-                  className="md:hidden"
-                  onClick={() => setOpen(null)}
+          <article aria-label="Conversation">
+            {thread ? (
+              <>
+                <Pane
+                  purpose="toolbar"
+                  edge="bottom"
+                  className="flex shrink-0 items-center gap-1 px-2 py-1.5"
                 >
-                  <ArrowLeftIcon />
-                </IconButton>
-                <h3 className="truncate px-1 font-medium text-ui">
-                  {thread.subject}
-                </h3>
-              </div>
-              <Markdown className="min-h-0 flex-1 overflow-y-auto p-4 text-ui">
-                {thread.messages[0]?.body ?? ""}
-              </Markdown>
-            </>
-          ) : (
-            <p className="grid flex-1 place-content-center p-4 text-muted-foreground text-ui">
-              Pick a conversation to read it.
-            </p>
-          )}
-        </article>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToolbarButton
+                        size="icon-sm"
+                        aria-label="Back to inbox"
+                        className="md:hidden"
+                        onClick={() => setOpen(null)}
+                      >
+                        <ArrowLeftIcon />
+                      </ToolbarButton>
+                    </TooltipTrigger>
+                    <TooltipContent>Back to inbox</TooltipContent>
+                  </Tooltip>
+                  <h3 className="truncate px-1 font-medium text-ui">
+                    {thread.subject}
+                  </h3>
+                </Pane>
+                <Pane
+                  purpose="document"
+                  className="flex min-h-0 flex-1 flex-col"
+                >
+                  <Markdown className="min-h-0 flex-1 overflow-y-auto p-4 text-ui">
+                    {thread.messages[0]?.body ?? ""}
+                  </Markdown>
+                </Pane>
+              </>
+            ) : (
+              <Pane
+                purpose="document"
+                className="grid flex-1 place-content-center p-4"
+              >
+                <p className="text-muted-foreground text-ui">
+                  Pick a conversation to read it.
+                </p>
+              </Pane>
+            )}
+          </article>
+        </Pane>
         <Sheet open={folders} onOpenChange={setFolders}>
           <SheetContent side="left" className="w-64 p-2 pt-12">
             <SheetTitle className="sr-only">Folders</SheetTitle>
@@ -159,7 +196,7 @@ export function MailPanes() {
             <Folders />
           </SheetContent>
         </Sheet>
-      </div>
+      </Pane>
     </TooltipProvider>
   );
 }

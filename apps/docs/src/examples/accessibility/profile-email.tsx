@@ -1,5 +1,6 @@
 import { PROFILE } from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
+import { FieldDescription, FieldError } from "@orz/ui/components/field";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import { useRef, useState } from "react";
@@ -42,13 +43,11 @@ export function ProfileEmail() {
           aria-describedby={error ? "a11y-email-error" : "a11y-email-hint"}
         />
         {error ? (
-          <p id="a11y-email-error" className="text-destructive text-ui">
-            {error}
-          </p>
+          <FieldError id="a11y-email-error">{error}</FieldError>
         ) : (
-          <p id="a11y-email-hint" className="text-muted-foreground text-ui">
+          <FieldDescription id="a11y-email-hint">
             Notifications go here.
-          </p>
+          </FieldDescription>
         )}
       </div>
       <Button type="submit" className="justify-self-start">

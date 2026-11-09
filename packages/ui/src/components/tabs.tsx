@@ -1,18 +1,57 @@
 "use client";
 
 import { Tabs as TabsPrimitive } from "radix-ui";
-import type * as React from "react";
+import * as React from "react";
 
 import { cn } from "../lib/utils.ts";
 
+/**
+ * Tabs and their panels. `variant="framed"` joins the strip and the panels in one frame, the
+ * strip on a `TabsBar` that may carry the module's marker, its name and its own controls beside
+ * the tabs: a live example and its source, a sample's states.
+ */
+// A panel reads its own set's variant: a set nested in a framed one's panel
+// is not framed.
+const TabsVariantContext = React.createContext<"default" | "framed">("default");
+
 function Tabs({
   className,
+  variant = "default",
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+}: React.ComponentProps<typeof TabsPrimitive.Root> & {
+  variant?: "default" | "framed";
+}) {
   return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      className={cn("flex flex-col gap-2", className)}
+    <TabsVariantContext.Provider value={variant}>
+      <TabsPrimitive.Root
+        data-slot="tabs"
+        data-variant={variant}
+        className={cn(
+          "group/tabs flex flex-col gap-2",
+          // Under raymond a framed set is a property sheet: the frame gives way
+          // to the raised panel the current tab stands on.
+          variant === "framed" &&
+            "gap-0 overflow-hidden rounded-surface border raymond:border-transparent raymond:bg-(--3d-face)",
+          className,
+        )}
+        {...props}
+      />
+    </TabsVariantContext.Provider>
+  );
+}
+
+/**
+ * A framed set's strip: its `TabsList`, and whatever sits beside the tabs on the same ruled bar.
+ */
+function TabsBar({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="tabs-bar"
+      // Under raymond the bar is the face, its rule the panel's raised top.
+      className={cn(
+        "flex flex-wrap items-stretch border-b bg-muted raymond:border-b-0 raymond:bg-(--3d-face)",
+        className,
+      )}
       {...props}
     />
   );
@@ -41,6 +80,9 @@ function TabsList({
         // Under raymond either strip is the face, its rule the lit edge.
         "group/tabs-list inline-flex w-fit items-stretch border-b text-muted-foreground raymond:border-(--3d-highlight) raymond:bg-(--3d-face) raymond:px-0.5 raymond:pt-0.5 raymond:text-foreground",
         variant === "default" ? "bg-muted" : "-mb-px self-stretch",
+        // On a framed set's bar the bar draws the rule and the fill; under
+        // raymond the panel's top edge is the rule.
+        "in-data-[slot=tabs-bar]:border-b-0 in-data-[slot=tabs-bar]:bg-transparent raymond:in-data-[slot=tabs-bar]:-mb-0.5 raymond:in-data-[slot=tabs-bar]:z-1",
         className,
       )}
       {...props}
@@ -79,11 +121,15 @@ function TabsContent({
   className,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Content>) {
+  const framed = React.useContext(TabsVariantContext) === "framed";
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
       className={cn(
         "flex-1 rounded-item outline-none focus-visible:focus-ring",
+        // Under raymond a framed set's panel is raised, its top edge the
+        // strip's rule.
+        framed && "rounded-none raymond:shadow-raised",
         className,
       )}
       {...props}
@@ -91,4 +137,4 @@ function TabsContent({
   );
 }
 
-export { Tabs, TabsContent, TabsList, TabsTrigger };
+export { Tabs, TabsBar, TabsContent, TabsList, TabsTrigger };

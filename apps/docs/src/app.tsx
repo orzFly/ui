@@ -1,4 +1,6 @@
+import { Pane } from "@orz/ui/components/pane";
 import { Toaster } from "@orz/ui/components/sonner";
+import { TextLink } from "@orz/ui/components/text-link";
 import { cn } from "@orz/ui/lib/utils";
 import { type ReactNode, useEffect } from "react";
 import { documentTitle } from "./head.ts";
@@ -19,12 +21,14 @@ import { trail } from "./routes.ts";
 function NotFound() {
   return (
     <main className="mx-auto max-w-3xl py-16 pr-[max(1.25rem,env(safe-area-inset-right))] pl-[max(1.25rem,env(safe-area-inset-left))] md:px-10">
-      <h1 className="font-semibold text-3xl tracking-tight">Page not found</h1>
+      <h1 className="font-semibold text-heading-1 tracking-tight">
+        Page not found
+      </h1>
       <p className="mt-3 text-muted-foreground">
         Nothing lives at this address.{" "}
-        <Link to="/" className="text-foreground underline underline-offset-4">
-          Go to the home page
-        </Link>
+        <TextLink asChild>
+          <Link to="/">Go to the home page</Link>
+        </TextLink>
         .
       </p>
     </main>
@@ -65,57 +69,64 @@ export function App() {
     body = (
       <div className="mx-auto flex w-full max-w-screen-2xl flex-1">
         {sidebar && <Sidebar section={section} />}
-        <main
-          className={cn(
-            "min-w-0 flex-1 py-8 pr-[max(1.25rem,env(safe-area-inset-right))] pl-[max(1.25rem,env(safe-area-inset-left))] md:py-10 md:pr-[max(2.5rem,env(safe-area-inset-right))]",
-            // Past md the sidebar, not the page, meets the left edge.
-            sidebar
-              ? "md:pl-10"
-              : "md:pl-[max(2.5rem,env(safe-area-inset-left))]",
-          )}
-        >
-          <article className="mx-auto max-w-3xl" data-pagefind-body>
-            {crumbs.length > 0 && (
-              <p
-                className="mb-2 text-muted-foreground text-sm"
-                data-pagefind-ignore
-              >
-                {crumbs.map((node, i) => (
-                  <span key={node.route}>
-                    {i > 0 && " / "}
-                    {node.page ? (
-                      <Link to={node.route} className="hover:text-foreground">
-                        {node.title}
-                      </Link>
-                    ) : (
-                      node.title
-                    )}
-                  </span>
-                ))}
-              </p>
-            )}
-            <h1 className="font-semibold text-3xl tracking-tight md:text-4xl">
-              {meta.title}
-            </h1>
-            {meta.description && (
-              <p className="mt-3 max-w-prose text-lg text-muted-foreground">
-                {meta.description}
-              </p>
-            )}
-            <PageContents toc={page.toc} meta={meta} route={route} />
-            <div className="mt-8">
-              <page.default components={mdxComponents} />
+        <Pane purpose="document" asChild className="min-w-0 flex-1">
+          <main>
+            <div
+              className={cn(
+                "py-8 pr-[max(1.25rem,env(safe-area-inset-right))] pl-[max(1.25rem,env(safe-area-inset-left))] md:py-10 md:pr-[max(2.5rem,env(safe-area-inset-right))]",
+                // Past md the sidebar, not the page, meets the left edge.
+                sidebar
+                  ? "md:pl-10"
+                  : "md:pl-[max(2.5rem,env(safe-area-inset-left))]",
+              )}
+            >
+              <article className="mx-auto max-w-3xl" data-pagefind-body>
+                {crumbs.length > 0 && (
+                  <p
+                    className="mb-2 text-muted-foreground text-prose-sm"
+                    data-pagefind-ignore
+                  >
+                    {crumbs.map((node, i) => (
+                      <span key={node.route}>
+                        {i > 0 && " / "}
+                        {node.page ? (
+                          <Link
+                            to={node.route}
+                            className="hover:text-foreground outline-none focus-visible:focus-ring"
+                          >
+                            {node.title}
+                          </Link>
+                        ) : (
+                          node.title
+                        )}
+                      </span>
+                    ))}
+                  </p>
+                )}
+                <h1 className="font-semibold text-heading-1 tracking-tight md:text-heading-1-wide">
+                  {meta.title}
+                </h1>
+                {meta.description && (
+                  <p className="mt-3 max-w-prose text-prose-lg text-muted-foreground">
+                    {meta.description}
+                  </p>
+                )}
+                <PageContents toc={page.toc} meta={meta} route={route} />
+                <div className="mt-8">
+                  <page.default components={mdxComponents} />
+                </div>
+                <InTheDemos route={route} />
+                {section && <PageFooter section={section} route={route} />}
+              </article>
             </div>
-            <InTheDemos route={route} />
-            {section && <PageFooter section={section} route={route} />}
-          </article>
-        </main>
+          </main>
+        </Pane>
         <Toc toc={page.toc} meta={meta} route={route} />
       </div>
     );
   }
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col text-prose">
       <SiteHeader section={section} />
       {body}
       {/* Here rather than beside App, so the server and the client render

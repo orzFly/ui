@@ -1,6 +1,7 @@
 import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { EmptyState } from "@orz/ui/components/empty-state";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,7 +11,7 @@ export function QuestionDialog() {
   const [open, setOpen] = useState(false);
   const [deleted, setDeleted] = useState(false);
   if (!THREAD || deleted) {
-    return <p className="text-muted-foreground text-ui">Nothing in Trash</p>;
+    return <EmptyState title="Nothing in Trash" />;
   }
   return (
     <div className="grid min-w-0 gap-3">

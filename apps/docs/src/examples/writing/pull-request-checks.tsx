@@ -1,5 +1,9 @@
 import { CI_RUN } from "@orz/fixtures/ci-run.ts";
 import { Button } from "@orz/ui/components/button";
+import {
+  GroupDescription,
+  GroupHeading,
+} from "@orz/ui/components/group-heading";
 import { Label } from "@orz/ui/components/label";
 import {
   Table,
@@ -52,10 +56,12 @@ export function PullRequestChecks() {
       </TabsContent>
       <TabsContent value="checks" className="grid gap-3">
         <div>
-          <h3 className="font-medium">Some checks were not successful</h3>
-          <p className="text-muted-foreground text-ui">
+          <GroupHeading asChild>
+            <h3>Some checks were not successful</h3>
+          </GroupHeading>
+          <GroupDescription>
             Merging is blocked until every check passes.
-          </p>
+          </GroupDescription>
         </div>
         <Table>
           <TableHeader>

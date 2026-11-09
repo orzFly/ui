@@ -8,16 +8,16 @@ import {
 
 export function LineTabs() {
   return (
-    <Tabs defaultValue="summary" className="text-ui">
+    <Tabs defaultValue="summary">
       <TabsList variant="line">
         <TabsTrigger value="summary">Summary</TabsTrigger>
         <TabsTrigger value="jobs">Jobs</TabsTrigger>
       </TabsList>
       <TabsContent value="summary">
-        {CI_RUN.jobs.length} jobs ran on this push.
+        <p className="text-ui">{CI_RUN.jobs.length} jobs ran on this push.</p>
       </TabsContent>
       <TabsContent value="jobs">
-        <ul className="grid gap-1">
+        <ul className="grid gap-1 text-ui">
           {CI_RUN.jobs.map((job) => (
             <li key={job.id}>
               {job.name}: {job.status}

@@ -221,7 +221,7 @@ const GRACE_MS = 300;
 // Under raymond the highlighted row fills with the highlight colour, the
 // palette's primary, as DropdownMenu's items do.
 const ROW_CLASS =
-  "group/option relative flex w-full cursor-default items-center rounded-item text-ui min-h-row touch:min-h-11 select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+  "group/option relative flex w-full cursor-default items-center rounded-item text-ui min-h-row touch:min-h-11 select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
 
 const CELL_CLASS = "gap-1.5 py-1 pl-1.5";
 
@@ -258,7 +258,9 @@ function FilterBox({
   ...props
 }: ComponentProps<"input"> & { expanded: boolean }) {
   return (
-    <div className="flex items-center gap-2 border-b px-2.5">
+    // Under raymond a text box: a sunken well in the window colour, inset
+    // from the menu's frame, with no rule under it.
+    <div className="flex items-center gap-2 border-b px-2.5 raymond:m-1 raymond:gap-1 raymond:border-b-0 raymond:bg-(--window) raymond:px-1 raymond:shadow-sunken">
       <SearchIcon
         aria-hidden
         className="size-4 shrink-0 text-muted-foreground"

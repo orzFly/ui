@@ -1,6 +1,13 @@
 import { file } from "@orz/fixtures/files.ts";
 import { Button } from "@orz/ui/components/button";
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@orz/ui/components/card";
+import {
   Content,
   type ContentRenderer,
   type ContentSource,
@@ -172,19 +179,19 @@ export const Playground: Story = {
   render: function Render(args) {
     const [target, setTarget] = useState<HTMLElement | null>(null);
     return (
-      <section className="overflow-hidden rounded-lg border">
-        <div className="flex items-center gap-2 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-sm">
-          <span className="flex-1 font-medium">
+      <Card>
+        <CardHeader>
+          <CardTitle>
             {args.source.kind === "file" ? args.source.name : "inline"}
-          </span>
-          <span ref={setTarget} className="contents" />
-        </div>
-        <div className="p-3">
+          </CardTitle>
+          <CardAction ref={setTarget} />
+        </CardHeader>
+        <CardContent>
           <ContentTitleBar source={args.source} target={target}>
             <Content source={args.source} placement="document" />
           </ContentTitleBar>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
     );
   },
   parameters: code(PLAYGROUND),

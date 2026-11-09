@@ -8,7 +8,8 @@ export const defaultStyle: Style = { id: DEFAULT_STYLE, label: "Default" };
 /**
  * Windows 2000, drawn by `@orz/ui/styles/raymond.css`. Its palettes supply the
  * 3D face and its four edge colours, the window (field) colour, the active and
- * inactive caption gradients, and the tooltip's info colours.
+ * inactive caption gradients, the tooltip's info colours, and the colour of a
+ * link in prose.
  */
 export const raymondStyle: Style = {
   id: "raymond",
@@ -28,6 +29,7 @@ export const raymondStyle: Style = {
     "caption-inactive-foreground",
     "info",
     "info-foreground",
+    "link",
   ],
 };
 

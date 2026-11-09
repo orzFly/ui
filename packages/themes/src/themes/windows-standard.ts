@@ -70,6 +70,7 @@ const palette: Palette = {
     "caption-inactive-foreground": FACE,
     info: "#ffffe1",
     "info-foreground": "#000000",
+    link: "#0000ff",
   },
   // Visual C++ 6's editor: blue keywords on the window white, the rest kept
   // near black.

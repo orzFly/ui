@@ -1,6 +1,9 @@
 import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { EmptyState } from "@orz/ui/components/empty-state";
+import { List, ListItem } from "@orz/ui/components/list";
+import { Separator } from "@orz/ui/components/separator";
 import {
   Tooltip,
   TooltipContent,
@@ -43,48 +46,53 @@ export function DeleteWithUndo() {
   return (
     <TooltipProvider>
       <div className="grid gap-3">
-        <ul className="grid divide-y">
-          {inbox.map(({ id, subject }) => (
-            <li key={id} className="flex min-h-10 items-center gap-1">
-              <span className="min-w-0 flex-1 truncate text-ui">{subject}</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`Archive “${subject}”`}
-                    onClick={() => move(id, "archive")}
-                  >
-                    <ArchiveIcon />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Archive</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={`Delete “${subject}”`}
-                    onClick={() => move(id, "trash")}
-                  >
-                    <Trash2Icon />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Delete</TooltipContent>
-              </Tooltip>
-            </li>
-          ))}
-          {inbox.length === 0 && (
-            <li className="grid gap-0.5 py-2 text-ui">
-              <p className="font-medium">Nothing in Inbox</p>
-              <p className="text-muted-foreground">
-                New mail lands here. Archive what you have dealt with.
-              </p>
-            </li>
+        <List purpose="collection">
+          {inbox.length > 0 ? (
+            <ul>
+              {inbox.map(({ id, subject }) => (
+                <ListItem key={id} asChild>
+                  <li className="flex min-h-row items-center gap-1">
+                    <span className="min-w-0 flex-1 truncate text-ui">
+                      {subject}
+                    </span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`Archive “${subject}”`}
+                          onClick={() => move(id, "archive")}
+                        >
+                          <ArchiveIcon />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Archive</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`Delete “${subject}”`}
+                          onClick={() => move(id, "trash")}
+                        >
+                          <Trash2Icon />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete</TooltipContent>
+                    </Tooltip>
+                  </li>
+                </ListItem>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState title="Nothing in Inbox" className="py-2">
+              New mail lands here. Archive what you have dealt with.
+            </EmptyState>
           )}
-        </ul>
-        <div className="flex items-center gap-2 border-t pt-3">
+        </List>
+        <Separator />
+        <div className="flex items-center gap-2">
           <span className="flex-1 text-muted-foreground text-ui">
             Trash:{" "}
             {trash.length === 0

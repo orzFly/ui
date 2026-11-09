@@ -1,3 +1,11 @@
+import { Button } from "@orz/ui/components/button";
+import { Checkbox } from "@orz/ui/components/checkbox";
+import { Label } from "@orz/ui/components/label";
+import { List, ListItem } from "@orz/ui/components/list";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@orz/ui/components/segmented-control";
 import { usePagedAppend } from "@orz/ui/hooks/use-paged-append";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
@@ -31,9 +39,9 @@ const LISTS = {
   fruit: ["Apple", "Banana", "Cherry", "Damson", "Elderberry", "Fig"],
   vegetables: ["Artichoke", "Bean", "Carrot", "Daikon", "Endive", "Fennel"],
 };
-type List = keyof typeof LISTS;
+type ListName = keyof typeof LISTS;
 
-function fetchPage(list: List, page: number, fail: boolean) {
+function fetchPage(list: ListName, page: number, fail: boolean) {
   return new Promise<string[]>((resolve, reject) =>
     setTimeout(() => {
       if (fail) reject(new Error("503 Service Unavailable"));
@@ -49,44 +57,45 @@ function fetchPage(list: List, page: number, fail: boolean) {
 export const Usage: Story = {
   parameters: { docs: { source: { code: USAGE, language: "tsx" } } },
   render: function Render() {
-    const [list, setList] = useState<List>("fruit");
+    const [list, setList] = useState<ListName>("fruit");
     const [fail, setFail] = useState(false);
     const { pages, pending, error, append } = usePagedAppend<string[]>(list);
     const exhausted = pages.length * 2 >= LISTS[list].length;
     return (
       <div className="grid gap-3">
         <div className="flex items-center gap-2">
-          {(Object.keys(LISTS) as List[]).map((name) => (
-            <button
-              key={name}
-              type="button"
-              aria-pressed={list === name}
-              className="rounded-md border px-2 aria-pressed:bg-accent aria-pressed:pressed-cue"
-              onClick={() => setList(name)}
-            >
-              {name}
-            </button>
-          ))}
-          <label className="ml-auto flex items-center gap-1">
-            <input
-              type="checkbox"
+          <SegmentedControl
+            aria-label="List"
+            value={list}
+            onValueChange={(name) => setList(name as ListName)}
+          >
+            {(Object.keys(LISTS) as ListName[]).map((name) => (
+              <SegmentedControlItem key={name} value={name}>
+                {name}
+              </SegmentedControlItem>
+            ))}
+          </SegmentedControl>
+          <Label className="ml-auto">
+            <Checkbox
               checked={fail}
-              onChange={(e) => setFail(e.target.checked)}
+              onCheckedChange={(checked) => setFail(checked === true)}
             />
             Fail the next load
-          </label>
+          </Label>
         </div>
-        <ul className="grid gap-1">
-          {pages.flat().map((item) => (
-            <li key={item} className="rounded-md border px-2 py-1">
-              {item}
-            </li>
-          ))}
-        </ul>
+        <List purpose="collection">
+          <ul>
+            {pages.flat().map((item) => (
+              <ListItem key={item} asChild>
+                <li className="px-2 py-1">{item}</li>
+              </ListItem>
+            ))}
+          </ul>
+        </List>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="rounded-md border px-2 disabled:opacity-50"
+          <Button
+            variant="outline"
+            size="sm"
             disabled={pending || exhausted}
             onClick={() => {
               const page = pages.length;
@@ -96,7 +105,7 @@ export const Usage: Story = {
             }}
           >
             {exhausted ? "No more" : "Load page"}
-          </button>
+          </Button>
           <span className="text-muted-foreground">
             {pages.length} page{pages.length === 1 ? "" : "s"}
             {pending && " · loading…"}

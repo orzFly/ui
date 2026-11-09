@@ -7,6 +7,7 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@orz/ui/components/sheet";
@@ -16,6 +17,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@orz/ui/components/tabs";
+import { Toggle } from "@orz/ui/components/toggle";
 import { cn } from "@orz/ui/lib/utils";
 import {
   ArrowUpRightIcon,
@@ -24,12 +26,7 @@ import {
   MinimizeIcon,
 } from "lucide-react";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
-import {
-  type Pointer,
-  PointerToggle,
-  PRESSED,
-  useOverlaysFollow,
-} from "../example.tsx";
+import { type Pointer, PointerToggle, useOverlaysFollow } from "../example.tsx";
 import type { PageMeta } from "../page.ts";
 import { loadedPage, pages } from "../pages.ts";
 import { BASE, Link, useRouter } from "../router.tsx";
@@ -124,16 +121,14 @@ export function DemoPage({ children }: { children: ReactNode }) {
               className="hidden md:flex"
             />
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-pressed={aboutOpen}
-            className={cn("hidden lg:inline-flex", PRESSED)}
-            onClick={() => setAboutOpen(!aboutOpen)}
+          <Toggle
+            pressed={aboutOpen}
+            onPressedChange={setAboutOpen}
+            className="hidden lg:inline-flex"
           >
             <InfoIcon />
             About
-          </Button>
+          </Toggle>
           <Sheet>
             <SheetTrigger asChild>
               <Button
@@ -149,12 +144,12 @@ export function DemoPage({ children }: { children: ReactNode }) {
               side="bottom"
               className="max-h-[85dvh] gap-0 overflow-y-auto"
             >
-              <SheetTitle className="px-5 pt-5 text-base">
-                {meta?.title}
-              </SheetTitle>
-              <SheetDescription className="sr-only">
-                What the demo shows, and the guidelines it puts into practice
-              </SheetDescription>
+              <SheetHeader className="pb-0">
+                <SheetTitle>{meta?.title}</SheetTitle>
+                <SheetDescription className="sr-only">
+                  What the demo shows, and the guidelines it puts into practice
+                </SheetDescription>
+              </SheetHeader>
               {about}
             </SheetContent>
           </Sheet>
@@ -224,7 +219,7 @@ function About({
   return (
     <div className="p-5 text-ui">
       {meta?.description && (
-        <p className="text-base text-muted-foreground">{meta.description}</p>
+        <p className="text-prose text-muted-foreground">{meta.description}</p>
       )}
       {guidelines.length > 0 && (
         <section aria-labelledby={`${id}-guidelines`} className="mt-6">

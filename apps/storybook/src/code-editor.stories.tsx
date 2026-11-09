@@ -1,5 +1,6 @@
 import type { EditorView } from "@codemirror/view";
 import { Button } from "@orz/ui/components/button";
+import { Pane } from "@orz/ui/components/pane";
 import {
   CodeEditor,
   type CodeEditorHandle,
@@ -96,9 +97,13 @@ export const Document: Story = {
   },
   decorators: [
     (Story) => (
-      <div className="flex h-48 flex-col overflow-hidden rounded-surface border">
+      <Pane
+        purpose="panel"
+        frame="card"
+        className="flex h-48 flex-col overflow-hidden"
+      >
         <Story />
-      </div>
+      </Pane>
     ),
   ],
   parameters: {

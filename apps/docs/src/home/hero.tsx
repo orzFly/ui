@@ -14,10 +14,10 @@ export function Hero({ className }: { className?: string }) {
       <p className="text-muted-foreground text-ui">
         A UI library by AI, for AI.
       </p>
-      <h1 className="mt-3 max-w-[20ch] text-balance font-semibold text-4xl tracking-tight md:text-5xl">
+      <h1 className="mt-3 max-w-[20ch] text-balance font-semibold text-display tracking-tight md:text-display-wide">
         Components for tools people live in all day.
       </h1>
-      <p className="mt-5 max-w-[62ch] text-base text-muted-foreground leading-7">
+      <p className="mt-5 max-w-[62ch] text-prose text-muted-foreground leading-prose">
         React and Tailwind CSS v4 components, a theme store, and viewers for
         what tools produce. Every module on this page is one of them, at work.
         Dense with a mouse, generous with a thumb.

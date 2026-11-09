@@ -1,3 +1,8 @@
+import {
+  LinkCard,
+  LinkCardDescription,
+  LinkCardTitle,
+} from "@orz/ui/components/link-card";
 import { nav } from "./pages.ts";
 import { Link } from "./router.tsx";
 import { type NavNode, pagesIn, trail } from "./routes.ts";
@@ -17,18 +22,17 @@ function runs(children: NavNode[]): NavNode[][] {
 /** One line per page: its title, then what it says, beside it from sm up. */
 function PageList({ nodes }: { nodes: NavNode[] }) {
   return (
-    <ul className="border-t text-sm">
+    <ul>
       {nodes.map((node) => (
-        <li key={node.route} className="border-b">
-          <Link
-            to={node.route}
-            className="grid min-h-row gap-x-6 gap-y-0.5 px-2 py-2 transition-colors hover:bg-accent sm:grid-cols-[11rem_1fr] touch:min-h-11"
-          >
-            <span className="font-medium">{node.title}</span>
-            {node.description && (
-              <span className="text-muted-foreground">{node.description}</span>
-            )}
-          </Link>
+        <li key={node.route}>
+          <LinkCard variant="row" asChild>
+            <Link to={node.route}>
+              <LinkCardTitle>{node.title}</LinkCardTitle>
+              {node.description && (
+                <LinkCardDescription>{node.description}</LinkCardDescription>
+              )}
+            </Link>
+          </LinkCard>
         </li>
       ))}
     </ul>
@@ -54,7 +58,7 @@ export function SectionPages({ route }: { route: string }) {
         }
         return (
           <section key={first.route}>
-            <h3 className="mb-2 font-semibold text-lg tracking-tight">
+            <h3 className="mb-2 font-semibold text-heading-3 tracking-tight">
               {first.title}
             </h3>
             <PageList nodes={pagesIn(first)} />

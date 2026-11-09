@@ -67,7 +67,7 @@ export const Actions: Story = {
       <Button
         variant="ghost"
         size="icon-xs"
-        className="mr-1.5 text-muted-foreground"
+        className="mr-1.5"
         aria-label={`delete ${item.name}`}
       >
         <Trash2Icon />

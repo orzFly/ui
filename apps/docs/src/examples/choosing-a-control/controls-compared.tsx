@@ -2,7 +2,11 @@ import { LANGUAGES } from "@orz/fixtures/account.ts";
 import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
+import { EmptyState } from "@orz/ui/components/empty-state";
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import { Label } from "@orz/ui/components/label";
+import { List, ListItem } from "@orz/ui/components/list";
+import { Pane } from "@orz/ui/components/pane";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
 import {
   Select,
@@ -44,7 +48,7 @@ export function ControlsCompared() {
   return (
     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
       <div className="grid grid-cols-1 content-start gap-3">
-        <p className="font-medium text-ui">Editor</p>
+        <GroupHeading>Editor</GroupHeading>
         <div className="flex items-center justify-between gap-4">
           <Label htmlFor="cc-wrap">Wrap long lines</Label>
           <Switch id="cc-wrap" defaultChecked />
@@ -68,9 +72,7 @@ export function ControlsCompared() {
             </SelectContent>
           </Select>
         </div>
-        <p className="font-medium text-ui" id="cc-indent">
-          Indent with
-        </p>
+        <GroupHeading id="cc-indent">Indent with</GroupHeading>
         <RadioGroup defaultValue="2" aria-labelledby="cc-indent">
           {INDENTS.map(({ value, label }) => (
             <div key={value} className="flex items-center gap-2">
@@ -81,7 +83,10 @@ export function ControlsCompared() {
         </RadioGroup>
       </div>
       <div className="grid grid-cols-1 content-start gap-3">
-        <div className="flex min-h-8 items-center gap-2">
+        <Pane
+          purpose="toolbar"
+          className="flex min-h-control-sm items-center gap-2 px-2"
+        >
           <Checkbox
             aria-label={selected.length > 0 ? "Select none" : "Select all"}
             checked={all ? true : selected.length > 0 ? "indeterminate" : false}
@@ -100,36 +105,40 @@ export function ControlsCompared() {
               Archive
             </Button>
           )}
-        </div>
-        {threads.map(({ id, subject }) => (
-          <div key={id} className="flex items-center gap-2">
-            <Checkbox
-              id={`cc-${id}`}
-              checked={selected.includes(id)}
-              onCheckedChange={(checked) =>
-                setSelected(
-                  checked
-                    ? [...selected, id]
-                    : selected.filter((each) => each !== id),
-                )
-              }
-            />
-            <Label
-              htmlFor={`cc-${id}`}
-              className="block min-w-0 truncate font-normal"
-            >
-              {subject}
-            </Label>
-          </div>
-        ))}
-        {threads.length === 0 && (
-          <div className="grid gap-0.5 text-ui">
-            <p className="font-medium">Nothing in Inbox</p>
-            <p className="text-muted-foreground">
+        </Pane>
+        <List purpose="listbox">
+          {threads.length > 0 ? (
+            <ul>
+              {threads.map(({ id, subject }) => (
+                <ListItem key={id} selected={selected.includes(id)} asChild>
+                  <li className="flex min-h-row items-center gap-2 px-2">
+                    <Checkbox
+                      id={`cc-${id}`}
+                      checked={selected.includes(id)}
+                      onCheckedChange={(checked) =>
+                        setSelected(
+                          checked
+                            ? [...selected, id]
+                            : selected.filter((each) => each !== id),
+                        )
+                      }
+                    />
+                    <Label
+                      htmlFor={`cc-${id}`}
+                      className="block min-w-0 truncate font-normal"
+                    >
+                      {subject}
+                    </Label>
+                  </li>
+                </ListItem>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState title="Nothing in Inbox" className="py-4">
               New mail lands here. Archive what you have dealt with.
-            </p>
-          </div>
-        )}
+            </EmptyState>
+          )}
+        </List>
       </div>
     </div>
   );

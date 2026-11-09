@@ -1,8 +1,10 @@
 import { PROFILE } from "@orz/fixtures/account.ts";
 import { CI_RUN } from "@orz/fixtures/ci-run.ts";
 import { Button } from "@orz/ui/components/button";
+import { FieldDescription, FieldError } from "@orz/ui/components/field";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
+import { List, ListItem } from "@orz/ui/components/list";
 import { RefreshFailure } from "@orz/ui/components/load-failure";
 import { LinkIcon } from "lucide-react";
 import { useState } from "react";
@@ -55,13 +57,11 @@ export function FeedbackKinds() {
           <Button type="submit">Save profile</Button>
         </div>
         {error ? (
-          <p id="fb-email-error" className="text-destructive text-ui">
-            {error}
-          </p>
+          <FieldError id="fb-email-error">{error}</FieldError>
         ) : (
-          <p id="fb-email-hint" className="text-muted-foreground text-ui">
+          <FieldDescription id="fb-email-hint">
             Notifications go here.
-          </p>
+          </FieldDescription>
         )}
       </form>
       <div className="grid gap-2">
@@ -79,16 +79,20 @@ export function FeedbackKinds() {
             }}
           />
         )}
-        <ul className="divide-y rounded-lg border text-ui">
-          {CI_RUN.jobs.map((job) => (
-            <li key={job.id} className="flex justify-between gap-2 px-3 py-2">
-              <span>
-                {CI_RUN.workflow} / {job.name}
-              </span>
-              <span className="text-muted-foreground">{job.status}</span>
-            </li>
-          ))}
-        </ul>
+        <List purpose="collection">
+          <ul className="text-ui">
+            {CI_RUN.jobs.map((job) => (
+              <ListItem key={job.id} asChild>
+                <li className="flex min-h-row items-center justify-between gap-2 px-3 py-2">
+                  <span>
+                    {CI_RUN.workflow} / {job.name}
+                  </span>
+                  <span className="text-muted-foreground">{job.status}</span>
+                </li>
+              </ListItem>
+            ))}
+          </ul>
+        </List>
       </div>
     </div>
   );

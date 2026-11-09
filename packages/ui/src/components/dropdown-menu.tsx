@@ -77,7 +77,7 @@ function DropdownMenuContent({
           // cn(), and two max-height declarations would settle by cascade
           // order rather than by value. dvh, because the term that matters is
           // the one the mobile address bar moves.
-          "z-50 max-h-[min(calc(100dvh-1rem),var(--radix-dropdown-menu-content-available-height,100dvh))] w-(--radix-dropdown-menu-trigger-width) min-w-32 origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-overlay bg-popover p-1 text-popover-foreground shadow-menu ring-1 ring-border duration-(--duration-overlay) data-[side=bottom]:slide-in-from-top-overlay data-[side=left]:slide-in-from-right-overlay data-[side=right]:slide-in-from-left-overlay data-[side=top]:slide-in-from-bottom-overlay data-[state=closed]:overflow-hidden data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
+          "z-50 max-h-[min(calc(100dvh-1rem),var(--radix-dropdown-menu-content-available-height,100dvh))] w-(--radix-dropdown-menu-trigger-width) min-w-32 origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-overlay bg-popover p-1 text-popover-foreground shadow-menu ring-1 ring-border duration-(--duration-overlay) raymond:ring-0 data-[side=bottom]:slide-in-from-top-overlay data-[side=left]:slide-in-from-right-overlay data-[side=right]:slide-in-from-left-overlay data-[side=top]:slide-in-from-bottom-overlay data-[state=closed]:overflow-hidden data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
           className,
         )}
         {...props}
@@ -118,7 +118,7 @@ function DropdownMenuItem({
         // palette's primary; accent stays the soft fill an app's rows use.
         // A destructive item is drawn as any other, as Button's destructive
         // is: the wording carries the danger.
-        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-11 raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive raymond:data-[variant=destructive]:text-foreground raymond:data-[variant=destructive]:*:[svg]:text-current raymond:data-[variant=destructive]:focus:bg-accent raymond:data-[variant=destructive]:focus:text-accent-foreground raymond:data-[variant=destructive]:focus:**:text-accent-foreground",
+        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-11 raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive raymond:data-[variant=destructive]:text-foreground raymond:data-[variant=destructive]:*:[svg]:text-current raymond:data-[variant=destructive]:focus:bg-accent raymond:data-[variant=destructive]:focus:text-accent-foreground raymond:data-[variant=destructive]:focus:**:text-accent-foreground",
         className,
       )}
       {...props}
@@ -140,7 +140,7 @@ function DropdownMenuCheckboxItem({
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-item py-1 pr-8 pl-1.5 text-ui min-h-row touch:min-h-11 raymond:py-0.5 raymond:pr-2 raymond:pl-6 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex cursor-default items-center gap-1.5 rounded-item py-1 pr-8 pl-1.5 text-ui min-h-row touch:min-h-11 raymond:py-0.5 raymond:pr-2 raymond:pl-6 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       checked={checked}
@@ -183,7 +183,7 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-item py-1 pr-8 pl-1.5 text-ui min-h-row touch:min-h-11 raymond:py-0.5 raymond:pr-2 raymond:pl-6 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex cursor-default items-center gap-1.5 rounded-item py-1 pr-8 pl-1.5 text-ui min-h-row touch:min-h-11 raymond:py-0.5 raymond:pr-2 raymond:pl-6 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -233,7 +233,7 @@ function DropdownMenuSeparator({
       data-slot="dropdown-menu-separator"
       className={cn(
         // Under raymond an etched line, as a Separator's.
-        "-mx-1 my-1 h-px bg-border raymond:shadow-[0_1px_var(--3d-highlight)]",
+        "-mx-1 my-1 h-px bg-border raymond:-mx-px raymond:shadow-[0_1px_var(--3d-highlight)]",
         className,
       )}
       {...props}
@@ -321,7 +321,7 @@ function DropdownMenuSubContent({
         // overflow-y-auto rather than the plain overflow-hidden this used to
         // carry: a height cap with the overflow clipped only hides the items
         // it cuts off, which is the symptom being fixed rather than a fix.
-        "z-50 max-h-[calc(100dvh-1rem)] max-w-[min(calc(100dvw-1rem),var(--radix-dropdown-menu-content-available-width,100dvw))] min-w-[96px] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-overlay bg-popover p-1 text-popover-foreground shadow-overlay ring-1 ring-border duration-(--duration-overlay) data-[side=bottom]:slide-in-from-top-overlay data-[side=left]:slide-in-from-right-overlay data-[side=right]:slide-in-from-left-overlay data-[side=top]:slide-in-from-bottom-overlay data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
+        "z-50 max-h-[calc(100dvh-1rem)] max-w-[min(calc(100dvw-1rem),var(--radix-dropdown-menu-content-available-width,100dvw))] min-w-[96px] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-overlay bg-popover p-1 text-popover-foreground shadow-overlay ring-1 ring-border raymond:ring-0 duration-(--duration-overlay) data-[side=bottom]:slide-in-from-top-overlay data-[side=left]:slide-in-from-right-overlay data-[side=right]:slide-in-from-left-overlay data-[side=top]:slide-in-from-bottom-overlay data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
         className,
       )}
       {...props}

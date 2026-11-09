@@ -1,6 +1,7 @@
 import { PROFILE, TIME_ZONES } from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
@@ -81,9 +82,7 @@ export function AccountSettings() {
       </TabsContent>
       <TabsContent value="notifications" className="grid gap-4 pt-2">
         <div className="grid gap-2">
-          <span id="touch-notify" className="font-medium text-ui">
-            Notify me about
-          </span>
+          <GroupHeading id="touch-notify">Notify me about</GroupHeading>
           <RadioGroup aria-labelledby="touch-notify" defaultValue="mentions">
             {NOTIFY.map(({ value, label }) => (
               <div key={value} className="flex items-center gap-2">

@@ -1,3 +1,4 @@
+import { FieldDescription } from "@orz/ui/components/field";
 import { Label } from "@orz/ui/components/label";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -63,12 +64,9 @@ export const Descriptions: Story = {
           />
           <div className="grid gap-1">
             <Label htmlFor={`described-${value}`}>{label}</Label>
-            <p
-              id={`described-${value}-hint`}
-              className="text-muted-foreground text-sm"
-            >
+            <FieldDescription id={`described-${value}-hint`}>
               {description}
-            </p>
+            </FieldDescription>
           </div>
         </div>
       ))}

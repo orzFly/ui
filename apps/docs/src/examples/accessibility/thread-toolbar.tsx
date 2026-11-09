@@ -4,7 +4,6 @@ import {
   type InboxThread,
 } from "@orz/fixtures/inbox.ts";
 import { Badge } from "@orz/ui/components/badge";
-import { Button } from "@orz/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -12,6 +11,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { Pane } from "@orz/ui/components/pane";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -35,11 +36,11 @@ const thread = INBOX_THREADS.find(
 function IconButton({
   label,
   ...props
-}: ComponentProps<typeof Button> & { label: string }) {
+}: ComponentProps<typeof ToolbarButton> & { label: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={label} {...props} />
+        <ToolbarButton aria-label={label} {...props} />
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
@@ -59,7 +60,7 @@ export function ThreadToolbar() {
   return (
     <TooltipProvider>
       <div className="grid gap-3">
-        <div className="flex items-center gap-0.5">
+        <Pane purpose="toolbar" className="flex items-center gap-0.5 px-1.5">
           <IconButton
             label={archived ? "Move to Inbox" : "Archive"}
             onClick={() => move(!archived)}
@@ -76,9 +77,9 @@ export function ThreadToolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="Labels">
+                  <ToolbarButton aria-label="Labels">
                     <TagIcon />
-                  </Button>
+                  </ToolbarButton>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent>Labels</TooltipContent>
@@ -109,8 +110,8 @@ export function ThreadToolbar() {
           >
             <StarIcon className={starred ? "fill-current" : undefined} />
           </IconButton>
-        </div>
-        <h3 className="font-medium">{thread.subject}</h3>
+        </Pane>
+        <h3 className="font-semibold">{thread.subject}</h3>
         <p className="flex flex-wrap gap-1">
           {archived && <Badge>Archive</Badge>}
           {labels.map((label) => (

@@ -8,7 +8,6 @@ import {
   type TerminalTokens,
   type Theme,
 } from "@orz/themes";
-import { XIcon } from "lucide-react";
 import {
   type RefObject,
   useEffect,
@@ -122,7 +121,6 @@ export function ThemeEditor(props: ThemeEditorProps) {
       <SheetContent
         side="right"
         overlay="clear"
-        showCloseButton={false}
         className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[460px]"
         onEscapeKeyDown={(event) => {
           // An Esc that clears the colour filter or ends an IME composition is not a close.
@@ -642,18 +640,7 @@ function EditorSession({
   return (
     <>
       <SheetHeader className="gap-3 border-b">
-        <div className="flex items-center gap-2">
-          <SheetTitle className="flex-1">Custom themes</SheetTitle>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Close"
-            onClick={close}
-          >
-            <XIcon />
-          </Button>
-        </div>
+        <SheetTitle className="pr-8">Custom themes</SheetTitle>
         <SheetDescription className="sr-only">
           Edit a custom theme. The page previews every change until you save or
           close.

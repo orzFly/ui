@@ -9,6 +9,10 @@ import { Checkbox } from "@orz/ui/components/checkbox";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@orz/ui/components/segmented-control";
+import {
   Tabs,
   TabsContent,
   TabsList,
@@ -21,19 +25,18 @@ export function StyleSwitch() {
   const { committed, styles, setStyle } = useStyle();
   return (
     <div className="grid gap-4">
-      <fieldset className="flex flex-wrap items-center gap-2">
-        <legend className="sr-only">Style</legend>
+      <SegmentedControl
+        aria-label="Style"
+        value={committed}
+        onValueChange={setStyle}
+        className="justify-self-start"
+      >
         {styles.map(({ id, label }) => (
-          <Button
-            key={id}
-            variant={committed === id ? "default" : "outline"}
-            aria-pressed={committed === id}
-            onClick={() => setStyle(id)}
-          >
+          <SegmentedControlItem key={id} value={id}>
             {label}
-          </Button>
+          </SegmentedControlItem>
         ))}
-      </fieldset>
+      </SegmentedControl>
       <Card className="max-w-md">
         <CardHeader icon={<FilterIcon />}>
           <CardTitle>New filter</CardTitle>

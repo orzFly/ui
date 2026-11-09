@@ -11,8 +11,8 @@
    reassigned, and the colours its palettes supply. It draws no part. Each
    part carries its raymond look in its own classes under the `raymond:`
    variant, in its own package, since the component knows what the part is
-   for. Only what belongs to no component is drawn here: selected text and
-   the scroll bars. */
+   for. Only what belongs to no component is drawn here: the size of text
+   no component sets, selected text and the scroll bars. */
 
 /* The real variant, replacing the one theme.css declares to draw nothing.
    The later definition wins, so this file comes after @orz/ui/styles.css:
@@ -48,6 +48,7 @@
     --caption-inactive-foreground: var(--muted);
     --info: var(--popover);
     --info-foreground: var(--popover-foreground);
+    --link: var(--primary);
 
     /* 23px push buttons at a fine pointer; a coarse one grows every control
        to the literal touch: sizes, which no token reaches. */
@@ -60,7 +61,6 @@
     --spacing-row-dense: 1rem;
     --spacing-chip: 1rem;
 
-    --radius: 0;
     --radius-control: 0;
     --radius-item: 0;
     --radius-frame: 0;
@@ -91,6 +91,31 @@
     --text-data: 0.75rem;
     --text-title: 0.6875rem;
     --text-title--line-height: 0.8125rem;
+    /* A help topic's prose: a little larger than the controls, its
+       headings bold and only a step or two above it, as HTML Help sets
+       them. */
+    --text-prose: 0.8125rem;
+    --text-prose--line-height: 1.125rem;
+    --text-prose-sm: 0.75rem;
+    --text-prose-sm--line-height: 1rem;
+    --text-prose-xs: 0.6875rem;
+    --text-prose-xs--line-height: 0.8125rem;
+    --text-prose-lg: 0.875rem;
+    --text-prose-lg--line-height: 1.25rem;
+    --text-heading-3: 0.8125rem;
+    --text-heading-3--line-height: 1.125rem;
+    --text-heading-2: 1rem;
+    --text-heading-2--line-height: 1.375rem;
+    --text-heading-1: 1.25rem;
+    --text-heading-1--line-height: 1.625rem;
+    --text-heading-1-wide: 1.25rem;
+    --text-heading-1-wide--line-height: 1.625rem;
+    --text-display: 1.5rem;
+    --text-display--line-height: 1.875rem;
+    --text-display-wide: 1.75rem;
+    --text-display-wide--line-height: 2.125rem;
+    --leading-prose: 1.25rem;
+    --leading-prose-sm: 1.125rem;
     --font-ui:
       Tahoma, "Segoe UI", Verdana, ui-sans-serif, system-ui, sans-serif,
       "Apple Color Emoji", "Segoe UI Emoji";
@@ -134,6 +159,15 @@
     --translate-overlay: 0;
     --duration-sheet: 100ms;
     --translate-sheet: 0;
+  }
+}
+
+/* Text that no component sets, which takes the page's own size: the
+   controls' 11px. */
+@layer base {
+  [data-style="raymond"] body {
+    font-size: var(--text-ui);
+    line-height: var(--text-ui--line-height);
   }
 }
 

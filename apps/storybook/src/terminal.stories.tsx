@@ -1,4 +1,6 @@
 import { TERMINAL_TOKEN_NAMES } from "@orz/themes";
+import { GroupHeading } from "@orz/ui/components/group-heading";
+import { Pane } from "@orz/ui/components/pane";
 import { useTerminalTheme } from "@orz/ui/theme";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
@@ -33,16 +35,20 @@ export const Usage: Story = {
     return (
       <div className="grid gap-8">
         <section className="grid gap-3">
-          <h2 className="font-heading text-base font-medium">
-            {terminal.theme.label} ({terminal.colorScheme}
-            {terminal.variant !== "default" ? `, ${terminal.variant}` : ""}
-            {terminal.following ? ", following the theme" : ""})
-          </h2>
+          <GroupHeading asChild>
+            <h2>
+              {terminal.theme.label} ({terminal.colorScheme}
+              {terminal.variant !== "default" ? `, ${terminal.variant}` : ""}
+              {terminal.following ? ", following the theme" : ""})
+            </h2>
+          </GroupHeading>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2">
             {ANSI.map((name) => (
-              <div
+              <Pane
                 key={name}
-                className="flex items-center gap-2 rounded-md border p-1.5"
+                purpose="panel"
+                frame="card"
+                className="flex items-center gap-2 p-1.5"
               >
                 <span
                   aria-hidden
@@ -55,12 +61,14 @@ export const Usage: Story = {
                     {terminal.tokens[name]}
                   </code>
                 </span>
-              </div>
+              </Pane>
             ))}
           </div>
         </section>
         <section className="grid gap-3">
-          <h2 className="font-heading text-base font-medium">Sample</h2>
+          <GroupHeading asChild>
+            <h2>Sample</h2>
+          </GroupHeading>
           <pre className="overflow-x-auto rounded-md bg-terminal-background p-4 font-mono text-sm leading-relaxed text-terminal-foreground">
             <span className="text-ansi-green">user@host</span>:
             <span className="text-ansi-blue">~/project</span>$ ls --color{"\n"}

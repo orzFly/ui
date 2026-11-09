@@ -1,5 +1,6 @@
 import { file, PATCHES } from "@orz/fixtures/files.ts";
 import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
+import { Pane } from "@orz/ui/components/pane";
 import { codeContent } from "@orz/ui-code";
 import {
   Content,
@@ -41,12 +42,14 @@ const framed: ContentRenderer = {
   name: "framed",
   accepts: (source) => source.kind === "file",
   Component: ({ Next, ...props }) => (
-    <figure className="my-2 rounded-lg border p-3">
-      <Next {...props} />
-      <figcaption className="mt-2 text-xs text-muted-foreground">
-        drawn by “framed”, then handed to Next
-      </figcaption>
-    </figure>
+    <Pane purpose="panel" frame="card" asChild className="my-2 p-3">
+      <figure>
+        <Next {...props} />
+        <figcaption className="mt-2 text-xs text-muted-foreground">
+          drawn by “framed”, then handed to Next
+        </figcaption>
+      </figure>
+    </Pane>
   ),
 };
 

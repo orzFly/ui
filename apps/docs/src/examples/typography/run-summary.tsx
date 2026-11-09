@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@orz/ui/components/card";
+import { InlineCode } from "@orz/ui/components/inline-code";
 import {
   Table,
   TableBody,
@@ -34,23 +35,17 @@ export function RunSummary() {
         </CardTitle>
         <CardDescription>
           Started <time dateTime={CI_RUN.startedAt}>Oct 21, 09:14 UTC</time> on{" "}
-          <code className="font-mono text-ui-sm">{CI_RUN.branch}</code> at{" "}
-          <code className="font-mono text-ui-sm">{CI_RUN.commit}</code>
+          <InlineCode>{CI_RUN.branch}</InlineCode> at{" "}
+          <InlineCode>{CI_RUN.commit}</InlineCode>
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-muted-foreground text-ui-sm">
-                Job
-              </TableHead>
-              <TableHead className="text-muted-foreground text-ui-sm">
-                Status
-              </TableHead>
-              <TableHead className="text-right text-muted-foreground text-ui-sm">
-                Time (s)
-              </TableHead>
+              <TableHead>Job</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Time (s)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -76,15 +71,15 @@ export function RunSummary() {
         </Table>
         <blockquote className="grid max-w-prose gap-1 text-ui leading-6">
           <p>
-            {paragraph.split("`").map((part, index) =>
-              index % 2 === 1 ? (
-                <code key={part} className="font-mono text-ui-sm">
-                  {part}
-                </code>
-              ) : (
-                part
-              ),
-            )}
+            {paragraph
+              .split("`")
+              .map((part, index) =>
+                index % 2 === 1 ? (
+                  <InlineCode key={part}>{part}</InlineCode>
+                ) : (
+                  part
+                ),
+              )}
           </p>
           <footer className="text-muted-foreground text-ui-sm">
             claude-agent, reviewing #{PULL_REQUEST.number}

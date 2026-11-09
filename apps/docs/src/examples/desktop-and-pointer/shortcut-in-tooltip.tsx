@@ -1,4 +1,6 @@
-import { Button } from "@orz/ui/components/button";
+import { Kbd } from "@orz/ui/components/kbd";
+import { Pane } from "@orz/ui/components/pane";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -16,20 +18,20 @@ const ACTIONS = [
 export function ShortcutInTooltip() {
   return (
     <TooltipProvider>
-      <div className="flex gap-0.5">
+      <Pane purpose="toolbar" className="flex gap-0.5 px-1.5">
         {ACTIONS.map(({ label, key, Icon }) => (
           <Tooltip key={label}>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label={label}>
+              <ToolbarButton aria-label={label}>
                 <Icon />
-              </Button>
+              </ToolbarButton>
             </TooltipTrigger>
             <TooltipContent>
-              {label} <kbd className="font-mono">{key}</kbd>
+              {label} <Kbd>{key}</Kbd>
             </TooltipContent>
           </Tooltip>
         ))}
-      </div>
+      </Pane>
     </TooltipProvider>
   );
 }

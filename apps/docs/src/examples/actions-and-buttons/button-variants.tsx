@@ -1,6 +1,8 @@
 import { TOKENS } from "@orz/fixtures/account.ts";
 import { CI_RUN } from "@orz/fixtures/ci-run.ts";
 import { Button } from "@orz/ui/components/button";
+import { Separator } from "@orz/ui/components/separator";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -26,7 +28,7 @@ const TOOLBAR = [
 export function ButtonVariants() {
   return (
     <TooltipProvider>
-      <div className="grid divide-y">
+      <div className="grid">
         <div className="flex flex-wrap items-center justify-end gap-2 pb-4">
           <span className="mr-auto font-mono text-muted-foreground text-ui-sm">
             default, outline
@@ -34,6 +36,7 @@ export function ButtonVariants() {
           <Button variant="outline">Discard changes</Button>
           <Button>Save profile</Button>
         </div>
+        <Separator />
         <div className="flex items-center gap-0.5 py-4">
           <span className="mr-auto font-mono text-muted-foreground text-ui-sm">
             ghost
@@ -41,14 +44,15 @@ export function ButtonVariants() {
           {TOOLBAR.map(({ label, icon: Icon }) => (
             <Tooltip key={label}>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label={label}>
+                <ToolbarButton aria-label={label}>
                   <Icon />
-                </Button>
+                </ToolbarButton>
               </TooltipTrigger>
               <TooltipContent>{label}</TooltipContent>
             </Tooltip>
           ))}
         </div>
+        <Separator />
         <div className="flex items-center gap-3 py-4">
           <span className="font-mono text-muted-foreground text-ui-sm">
             destructive
@@ -65,6 +69,7 @@ export function ButtonVariants() {
             Revoke…
           </Button>
         </div>
+        <Separator />
         <div className="flex items-center gap-2 pt-4 text-ui">
           <span className="mr-auto font-mono text-muted-foreground text-ui-sm">
             link

@@ -29,4 +29,19 @@ function GroupHeading({
   );
 }
 
-export { GroupHeading };
+/** A line under a `GroupHeading` that says what the group is for. */
+function GroupDescription({ className, ...props }: React.ComponentProps<"p">) {
+  return (
+    <p
+      data-slot="group-description"
+      // Under raymond in the window text, as GroupHeading's caption is.
+      className={cn(
+        "text-ui text-muted-foreground raymond:text-foreground",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export { GroupDescription, GroupHeading };

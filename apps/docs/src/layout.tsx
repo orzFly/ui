@@ -1,15 +1,24 @@
 import { Button } from "@orz/ui/components/button";
 import {
+  LinkCard,
+  LinkCardLabel,
+  LinkCardTitle,
+} from "@orz/ui/components/link-card";
+import {
   NavList,
+  NavListFrame,
   NavListHeading,
   NavListItem,
   NavListLink,
 } from "@orz/ui/components/nav-list";
+import { Pane } from "@orz/ui/components/pane";
+import { Separator } from "@orz/ui/components/separator";
 import {
   Sheet,
   SheetBody,
   SheetContent,
   SheetDescription,
+  SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@orz/ui/components/sheet";
@@ -48,7 +57,10 @@ const sections = nav.children;
 
 function Logo() {
   return (
-    <Link to="/" className="font-semibold tracking-tight">
+    <Link
+      to="/"
+      className="font-semibold tracking-tight outline-none focus-visible:focus-ring"
+    >
       @orz<span className="font-medium text-muted-foreground">/ui</span>
     </Link>
   );
@@ -83,51 +95,56 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
     { enabled: useShortcutsEnabled() },
   );
   return (
-    <header className="sticky top-0 z-40 h-(--site-header) border-b pt-[env(safe-area-inset-top)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-full max-w-screen-2xl items-center gap-2 pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-6 md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))]">
-        <MobileNav
-          section={section}
-          open={nav}
-          onOpenChange={setNav}
-          searchRef={sheetBox}
-        />
-        <Logo />
-        <TabNav aria-label="Site" className="hidden md:flex">
-          {sections.map((node) => (
-            <TabNavLink key={node.route} current={node === section} asChild>
-              <Link to={firstPage(node).route}>{node.title}</Link>
+    <Pane
+      purpose="banner"
+      edge="bottom"
+      asChild
+      className="sticky top-0 z-40 h-(--site-header) pt-[env(safe-area-inset-top)]"
+    >
+      <header>
+        <div className="mx-auto flex h-full max-w-screen-2xl items-center gap-2 pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-6 md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))]">
+          <MobileNav
+            section={section}
+            open={nav}
+            onOpenChange={setNav}
+            searchRef={sheetBox}
+          />
+          <Logo />
+          <TabNav aria-label="Site" className="hidden md:flex">
+            {sections.map((node) => (
+              <TabNavLink key={node.route} current={node === section} asChild>
+                <Link to={firstPage(node).route}>{node.title}</Link>
+              </TabNavLink>
+            ))}
+            <TabNavLink href={storybookHref(BASE)}>
+              Storybook
+              <ArrowUpRightIcon />
             </TabNavLink>
-          ))}
-          <TabNavLink href={storybookHref(BASE)}>
-            Storybook
-            <ArrowUpRightIcon />
-          </TabNavLink>
-        </TabNav>
-        <div className="ml-auto flex items-center gap-1 md:gap-2">
-          <SearchBox inputRef={box} className="hidden w-56 md:block lg:w-64" />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-11 md:hidden"
-            aria-label="Search"
-            onClick={() => setNav("search")}
-          >
-            <SearchIcon className="size-5" />
-          </Button>
-          <ThemeButton />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="aria-[current=page]:bg-muted"
-            asChild
-          >
-            <Link to="/settings/" aria-label="Settings">
-              <SettingsIcon />
-            </Link>
-          </Button>
+          </TabNav>
+          <div className="ml-auto flex items-center gap-1 md:gap-2">
+            <SearchBox
+              inputRef={box}
+              className="hidden w-56 md:block lg:w-64"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11 md:hidden"
+              aria-label="Search"
+              onClick={() => setNav("search")}
+            >
+              <SearchIcon className="size-5" />
+            </Button>
+            <ThemeButton />
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/settings/" aria-label="Settings">
+                <SettingsIcon />
+              </Link>
+            </Button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </Pane>
   );
 }
 
@@ -164,7 +181,7 @@ function MobileNav({
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="gap-0 p-2 pb-8"
+        className="gap-0 pb-8"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           // Focus on the box would raise a phone's keyboard over a nav the
@@ -173,35 +190,41 @@ function MobileNav({
           else (event.currentTarget as HTMLElement).focus();
         }}
       >
-        <SheetTitle className="flex h-11 items-center px-3">
-          <Logo />
-        </SheetTitle>
-        <SheetDescription className="sr-only">Site navigation</SheetDescription>
-        <SheetSearch inputRef={searchRef} onPick={() => onOpenChange(false)}>
-          <nav aria-label="Site" className="mt-2">
-            <NavList>
-              {sections.map((node) => (
-                <NavListItem key={node.route}>
-                  <NavListLink
-                    asChild
-                    current={node === section && node.children.length === 0}
-                  >
-                    <Link to={firstPage(node).route}>{node.title}</Link>
+        <SheetHeader>
+          <SheetTitle>
+            <Logo />
+          </SheetTitle>
+          <SheetDescription className="sr-only">
+            Site navigation
+          </SheetDescription>
+        </SheetHeader>
+        <div className="px-2">
+          <SheetSearch inputRef={searchRef} onPick={() => onOpenChange(false)}>
+            <nav aria-label="Site" className="mt-2">
+              <NavList>
+                {sections.map((node) => (
+                  <NavListItem key={node.route}>
+                    <NavListLink
+                      asChild
+                      current={node === section && node.children.length === 0}
+                    >
+                      <Link to={firstPage(node).route}>{node.title}</Link>
+                    </NavListLink>
+                    {node === section && node.children.length > 0 && (
+                      <NavTree node={node} depth={1} />
+                    )}
+                  </NavListItem>
+                ))}
+                <NavListItem>
+                  <NavListLink href={storybookHref(BASE)}>
+                    Storybook
+                    <ArrowUpRightIcon />
                   </NavListLink>
-                  {node === section && node.children.length > 0 && (
-                    <NavTree node={node} depth={1} />
-                  )}
                 </NavListItem>
-              ))}
-              <NavListItem>
-                <NavListLink href={storybookHref(BASE)}>
-                  Storybook
-                  <ArrowUpRightIcon />
-                </NavListLink>
-              </NavListItem>
-            </NavList>
-          </nav>
-        </SheetSearch>
+              </NavList>
+            </nav>
+          </SheetSearch>
+        </div>
       </SheetContent>
     </Sheet>
   );
@@ -240,11 +263,23 @@ function NavTree({ node, depth = 0 }: { node: NavNode; depth?: number }) {
 
 export function Sidebar({ section }: { section: NavNode }) {
   return (
-    <aside className="sticky top-(--site-header) hidden h-[calc(100dvh-var(--site-header))] w-60 shrink-0 overflow-y-auto border-r py-4 pr-2 pl-[max(0.5rem,env(safe-area-inset-left))] md:block">
-      <nav aria-label={section.title}>
-        <NavTree node={section} />
-      </nav>
-    </aside>
+    <Pane
+      purpose="sidebar"
+      edge="end"
+      asChild
+      className="sticky top-(--site-header) hidden h-[calc(100dvh-var(--site-header))] w-60 shrink-0 flex-col pr-2 pl-[max(0.5rem,env(safe-area-inset-left))] md:flex"
+    >
+      <aside>
+        <NavListFrame className="flex min-h-0 flex-1 flex-col">
+          <nav
+            aria-label={section.title}
+            className="min-h-0 flex-1 overflow-y-auto py-4"
+          >
+            <NavTree node={section} />
+          </nav>
+        </NavListFrame>
+      </aside>
+    </Pane>
   );
 }
 
@@ -285,23 +320,20 @@ function TocList({
   onPick?: (event: MouseEvent<HTMLAnchorElement>, id: string) => void;
 }) {
   return (
-    <ul className="border-l">
+    <NavList variant="rail">
       {toc.map((entry) => (
-        <li key={entry.id}>
-          <a
+        <NavListItem key={entry.id}>
+          <NavListLink
             href={`#${entry.id}`}
+            current={entry.id === active ? "location" : undefined}
+            depth={entry.depth === 3 ? 1 : 0}
             onClick={onPick && ((event) => onPick(event, entry.id))}
-            className={cn(
-              "-ml-px flex min-h-7 items-center border-l border-transparent py-1 text-muted-foreground transition-colors hover:text-foreground touch:min-h-11",
-              entry.depth === 3 ? "pl-6" : "pl-3",
-              entry.id === active && "border-foreground text-foreground",
-            )}
           >
             {entry.text}
-          </a>
-        </li>
+          </NavListLink>
+        </NavListItem>
       ))}
-    </ul>
+    </NavList>
   );
 }
 
@@ -319,11 +351,13 @@ export function Toc({
   const api = meta.api ?? [];
   if (toc.length === 0 && api.length === 0) return null;
   return (
-    <aside className="sticky top-(--site-header) hidden max-h-[calc(100dvh-var(--site-header))] w-56 shrink-0 overflow-y-auto px-4 py-8 text-sm xl:block">
+    <aside className="sticky top-(--site-header) hidden max-h-[calc(100dvh-var(--site-header))] w-56 shrink-0 overflow-y-auto px-4 py-8 text-prose-sm xl:block">
       {toc.length > 0 && (
         <nav aria-label="On this page">
           <p className="mb-2 font-medium">On this page</p>
-          <TocList toc={toc} active={active} />
+          <NavListFrame>
+            <TocList toc={toc} active={active} />
+          </NavListFrame>
         </nav>
       )}
       {api.length > 0 && <ApiLinks titles={api} className="mt-6" />}
@@ -352,7 +386,7 @@ export function PageContents({
   const api = meta.api ?? [];
   if (toc.length === 0 && api.length === 0) return null;
   return (
-    <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm xl:hidden">
+    <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-prose-sm xl:hidden">
       {toc.length > 0 && (
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -372,13 +406,13 @@ export function PageContents({
               location.hash = id;
             }}
           >
-            <SheetTitle icon={<ListIcon />} className="px-5 pt-5">
-              On this page
-            </SheetTitle>
-            <SheetDescription className="sr-only">
-              The sections of {meta.title}
-            </SheetDescription>
-            <SheetBody className="px-5 pt-3 text-base">
+            <SheetHeader className="pb-0">
+              <SheetTitle icon={<ListIcon />}>On this page</SheetTitle>
+              <SheetDescription className="sr-only">
+                The sections of {meta.title}
+              </SheetDescription>
+            </SheetHeader>
+            <SheetBody className="px-5 pt-3 text-prose">
               <nav aria-label="On this page">
                 <TocList
                   toc={toc}
@@ -401,7 +435,7 @@ export function PageContents({
             <a
               key={title}
               href={storybookHref(BASE, title)}
-              className="inline-flex min-h-7 items-center text-muted-foreground hover:text-foreground touch:min-h-11"
+              className="inline-flex min-h-7 items-center text-muted-foreground hover:text-foreground touch:min-h-11 outline-none focus-visible:focus-ring"
             >
               {title.split("/").at(-1)}
               <ArrowUpRightIcon className="ml-0.5 size-3.5" />
@@ -422,8 +456,10 @@ export function ApiLinks({
   className?: string;
 }) {
   return (
-    <div
-      className={cn("rounded-lg border p-3", className)}
+    <Pane
+      purpose="panel"
+      frame="card"
+      className={cn("p-3", className)}
       data-pagefind-ignore
     >
       <p className="mb-1 font-medium">API</p>
@@ -432,7 +468,7 @@ export function ApiLinks({
           <li key={title}>
             <a
               href={storybookHref(BASE, title)}
-              className="inline-flex items-center py-0.5 text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center py-0.5 text-muted-foreground hover:text-foreground outline-none focus-visible:focus-ring"
             >
               {title.split("/").at(-1)}
               <ArrowUpRightIcon className="ml-0.5 size-3.5" />
@@ -440,7 +476,7 @@ export function ApiLinks({
           </li>
         ))}
       </ul>
-    </div>
+    </Pane>
   );
 }
 
@@ -457,32 +493,37 @@ export function PageFooter({
   if (index < 0 || order.length < 2) return null;
   const previous = order[index - 1];
   const next = order[index + 1];
-  const card =
-    "flex min-h-11 flex-col gap-0.5 rounded-lg border px-4 py-3 transition-colors hover:bg-accent";
   return (
-    <nav
-      aria-label="Previous and next"
-      data-pagefind-ignore
-      className="mt-16 grid gap-3 border-t pt-6 sm:grid-cols-2"
-    >
-      {previous ? (
-        <Link to={previous.route} className={card}>
-          <span className="flex items-center gap-1 text-muted-foreground text-xs">
-            <ArrowLeftIcon className="size-3.5" /> Previous
-          </span>
-          <span className="font-medium">{previous.title}</span>
-        </Link>
-      ) : (
-        <span />
-      )}
-      {next && (
-        <Link to={next.route} className={cn(card, "items-end text-right")}>
-          <span className="flex items-center gap-1 text-muted-foreground text-xs">
-            Next <ArrowRightIcon className="size-3.5" />
-          </span>
-          <span className="font-medium">{next.title}</span>
-        </Link>
-      )}
-    </nav>
+    <>
+      <Separator className="mt-16 mb-6" />
+      <nav
+        aria-label="Previous and next"
+        data-pagefind-ignore
+        className="grid gap-3 sm:grid-cols-2"
+      >
+        {previous ? (
+          <LinkCard asChild>
+            <Link to={previous.route}>
+              <LinkCardLabel>
+                <ArrowLeftIcon /> Previous
+              </LinkCardLabel>
+              <LinkCardTitle>{previous.title}</LinkCardTitle>
+            </Link>
+          </LinkCard>
+        ) : (
+          <span />
+        )}
+        {next && (
+          <LinkCard asChild className="items-end text-right">
+            <Link to={next.route}>
+              <LinkCardLabel>
+                Next <ArrowRightIcon />
+              </LinkCardLabel>
+              <LinkCardTitle>{next.title}</LinkCardTitle>
+            </Link>
+          </LinkCard>
+        )}
+      </nav>
+    </>
   );
 }

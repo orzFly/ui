@@ -1,5 +1,6 @@
 import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
 import { Button } from "@orz/ui/components/button";
+import { EmptyState } from "@orz/ui/components/empty-state";
 import { Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,12 +11,9 @@ export function TrashWithUndo() {
   const [deleted, setDeleted] = useState(false);
   if (deleted) {
     return (
-      <div className="grid gap-0.5 text-ui">
-        <p className="font-medium">Nothing in Inbox</p>
-        <p className="text-muted-foreground">
-          New mail lands here. Archive what you have dealt with.
-        </p>
-      </div>
+      <EmptyState title="Nothing in Inbox">
+        New mail lands here. Archive what you have dealt with.
+      </EmptyState>
     );
   }
   return (

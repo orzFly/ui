@@ -1,10 +1,12 @@
-import { Button } from "@orz/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { Kbd } from "@orz/ui/components/kbd";
+import { Pane } from "@orz/ui/components/pane";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -29,19 +31,17 @@ const ACTIONS = [
 export function ReachableActions() {
   return (
     <TooltipProvider>
-      <div className="flex gap-0.5">
+      <Pane purpose="toolbar" className="flex gap-0.5">
         {ACTIONS.map(({ label, key, Icon }) => (
           <Tooltip key={label}>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label={label}>
+              <ToolbarButton aria-label={label}>
                 <Icon />
-              </Button>
+              </ToolbarButton>
             </TooltipTrigger>
             <TooltipContent>
               {label}
-              <kbd className="rounded-sm border bg-muted px-1 font-mono text-muted-foreground text-ui-sm">
-                {key}
-              </kbd>
+              <Kbd>{key}</Kbd>
             </TooltipContent>
           </Tooltip>
         ))}
@@ -49,9 +49,9 @@ export function ReachableActions() {
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="More actions">
+                <ToolbarButton aria-label="More actions">
                   <EllipsisIcon />
-                </Button>
+                </ToolbarButton>
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent>More actions</TooltipContent>
@@ -65,7 +65,7 @@ export function ReachableActions() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </Pane>
     </TooltipProvider>
   );
 }

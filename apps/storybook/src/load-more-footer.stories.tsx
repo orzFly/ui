@@ -1,3 +1,4 @@
+import { List, ListItem } from "@orz/ui/components/list";
 import {
   LoadMoreFailure as LoadMoreFailureView,
   LoadMoreFooter,
@@ -95,13 +96,17 @@ export const WithPaging: Story = {
     };
     return (
       <div className="grid gap-3">
-        <ul className="grid gap-1">
-          {pages.flat().map((row) => (
-            <li key={row} className="rounded-md border px-2 py-1">
-              {row}
-            </li>
-          ))}
-        </ul>
+        {pages.length > 0 && (
+          <List purpose="collection">
+            <ul>
+              {pages.flat().map((row) => (
+                <ListItem key={row} asChild>
+                  <li className="px-2 py-1">{row}</li>
+                </ListItem>
+              ))}
+            </ul>
+          </List>
+        )}
         <LoadMoreFooter
           pending={pending}
           error={error}

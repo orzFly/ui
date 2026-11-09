@@ -1,6 +1,7 @@
 import { TASKS, type Task } from "@orz/fixtures/tasks.ts";
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { EmptyState } from "@orz/ui/components/empty-state";
 import { Input } from "@orz/ui/components/input";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
 import { Pane } from "@orz/ui/components/pane";
@@ -268,26 +269,22 @@ export function Tasks() {
             </Pane>
             <div className="flex min-h-0 flex-1 flex-col *:data-[slot=table-container]:min-h-0 *:data-[slot=table-container]:flex-1 *:data-[slot=table-container]:overflow-auto">
               {rows.length === 0 ? (
-                <Pane
-                  purpose="document"
-                  className="grid flex-1 content-start justify-items-center gap-2 px-4 py-12 text-center"
-                >
-                  <ListTodoIcon
-                    aria-hidden
-                    className="size-8 text-muted-foreground"
-                  />
-                  <p className="font-medium">No tasks match</p>
-                  <p className="text-muted-foreground text-ui">
-                    Try another filter, or fewer words.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => run(DEFAULT_FILTERS)}
+                <Pane purpose="document" className="flex-1 px-4 py-12">
+                  <EmptyState
+                    icon={ListTodoIcon}
+                    title="No tasks match"
+                    action={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => run(DEFAULT_FILTERS)}
+                      >
+                        Clear filters
+                      </Button>
+                    }
                   >
-                    Clear filters
-                  </Button>
+                    Try another filter, or fewer words.
+                  </EmptyState>
                 </Pane>
               ) : (
                 <TaskTable

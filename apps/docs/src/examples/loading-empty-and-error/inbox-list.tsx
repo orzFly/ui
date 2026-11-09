@@ -3,9 +3,12 @@ import {
   INBOX_THREADS,
   type InboxThread,
 } from "@orz/fixtures/inbox.ts";
-import { Button } from "@orz/ui/components/button";
+import { List, ListItem } from "@orz/ui/components/list";
 import { RefreshFailure } from "@orz/ui/components/load-failure";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
+import { Pane } from "@orz/ui/components/pane";
+import { Separator } from "@orz/ui/components/separator";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -52,13 +55,15 @@ export function InboxList() {
 
   return (
     <TooltipProvider>
-      <div className="min-w-0 overflow-hidden rounded-lg border">
-        <div className="flex h-11 items-center gap-1 border-b px-1.5 text-ui">
+      <Pane purpose="panel" frame="card" className="min-w-0 overflow-hidden">
+        <Pane
+          purpose="toolbar"
+          edge="bottom"
+          className="flex items-center gap-1 px-1.5 py-1.5"
+        >
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
+              <ToolbarButton
                 aria-label="Refresh"
                 disabled={refreshing}
                 onClick={refresh}
@@ -68,47 +73,57 @@ export function InboxList() {
                     refreshing ? "motion-safe:animate-spin" : undefined
                   }
                 />
-              </Button>
+              </ToolbarButton>
             </TooltipTrigger>
             <TooltipContent>Refresh</TooltipContent>
           </Tooltip>
-          <span className="flex-1 font-medium">Inbox</span>
+          <span className="flex-1 font-medium text-ui">Inbox</span>
           <span className="px-2 text-muted-foreground text-ui-sm tabular-nums">
             {threads.length} of {INBOX.length}
           </span>
-        </div>
+        </Pane>
         {stale && (
-          <RefreshFailure
-            what="the inbox"
-            detail="503 Service Unavailable"
-            retrying={refreshing}
-            onRetry={refresh}
-            className="border-b px-3 py-2"
-          />
-        )}
-        <ul aria-label="Conversations" className="divide-y">
-          {threads.map((thread) => (
-            <li key={thread.id} className="grid gap-0.5 px-3 py-2.5">
-              <span className="truncate font-medium text-ui">
-                {INBOX_PEOPLE[thread.messages[0]?.from ?? ""]}
-              </span>
-              <span className="truncate text-muted-foreground text-ui">
-                {thread.subject}
-              </span>
-            </li>
-          ))}
-        </ul>
-        {threads.length < INBOX.length && (
-          <div className="border-t p-3">
-            <LoadMoreFooter
-              pending={paged.pending}
-              error={paged.error}
-              onLoadMore={loadMore}
-              focusRequested={focusRequested}
+          <>
+            <RefreshFailure
+              what="the inbox"
+              detail="503 Service Unavailable"
+              retrying={refreshing}
+              onRetry={refresh}
+              className="px-3 py-2"
             />
-          </div>
+            <Separator />
+          </>
         )}
-      </div>
+        <List purpose="listbox">
+          <ul aria-label="Conversations">
+            {threads.map((thread) => (
+              <ListItem key={thread.id} asChild>
+                <li className="grid min-h-row gap-0.5 px-3 py-2.5">
+                  <span className="truncate font-medium text-ui">
+                    {INBOX_PEOPLE[thread.messages[0]?.from ?? ""]}
+                  </span>
+                  <span className="truncate text-muted-foreground text-ui">
+                    {thread.subject}
+                  </span>
+                </li>
+              </ListItem>
+            ))}
+          </ul>
+        </List>
+        {threads.length < INBOX.length && (
+          <>
+            <Separator />
+            <div className="p-3">
+              <LoadMoreFooter
+                pending={paged.pending}
+                error={paged.error}
+                onLoadMore={loadMore}
+                focusRequested={focusRequested}
+              />
+            </div>
+          </>
+        )}
+      </Pane>
     </TooltipProvider>
   );
 }

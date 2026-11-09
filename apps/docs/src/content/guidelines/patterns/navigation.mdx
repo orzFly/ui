@@ -3,7 +3,12 @@ export const meta = {
   description:
     "TabNav, NavList and Tabs: where the reader is, and how they get somewhere else, drawn the same way in every app.",
   order: 37,
-  api: ["ui/Primitives/TabNav", "ui/Primitives/NavList", "ui/Primitives/Tabs"],
+  api: [
+    "ui/Primitives/TabNav",
+    "ui/Primitives/NavList",
+    "ui/Primitives/Tabs",
+    "ui/Primitives/LinkCard",
+  ],
 };
 
 import { AppFrame } from "../../../examples/navigation/app-frame.tsx";
@@ -25,8 +30,11 @@ row's leading edge.
 |---|---|
 | Go between an app's few top-level sections, from its header | `TabNav`, with a `TabNavLink` for each |
 | Go between many places: folders, settings sections, files, a document's parts | `NavList`, a `NavListLink` for each, `NavListHeading` over each group |
+| Go to a section of the page in view, from a column beside it | `NavList variant="rail"` |
+| Send the reader to another page from inside the prose, saying what is there | `LinkCard`, with a `LinkCardTitle` and a `LinkCardDescription`; `variant="row"` for a list of pages |
 | Show one of a few views of the same thing, in place | `Tabs` |
 | The same, in a bar over a pane that has a surface of its own | `Tabs` with `TabsList variant="line"` |
+| The same, framed with its panels as one module, other controls beside the tabs | `Tabs variant="framed"`, the strip on a `TabsBar` |
 
 A `NavList` that is a pane of the app's frame, as a mail client's folders beside its messages are,
 sits in a `NavListFrame` around its `nav`, its headings and its scroller, which a style may draw as

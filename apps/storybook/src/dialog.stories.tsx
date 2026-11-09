@@ -9,6 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTitleBar,
   DialogTrigger,
 } from "@orz/ui/components/dialog";
 import { Input } from "@orz/ui/components/input";
@@ -97,7 +98,7 @@ export const TitleBarCloseButton: Story = {
         <Button variant="outline">Open</Button>
       </DialogTrigger>
       <DialogContent showCloseButton={false}>
-        <div className="flex items-center gap-1">
+        <DialogTitleBar>
           <DialogTitle className="min-w-0 flex-1 truncate">
             report.pdf
           </DialogTitle>
@@ -105,7 +106,7 @@ export const TitleBarCloseButton: Story = {
             Download
           </Button>
           <DialogCloseButton />
-        </div>
+        </DialogTitleBar>
         <DialogDescription>
           The X is the last control of the title row, sharing its centre and
           right edge, instead of pinned to the corner.

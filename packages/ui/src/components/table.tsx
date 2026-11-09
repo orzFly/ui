@@ -2,7 +2,19 @@ import type * as React from "react";
 
 import { cn } from "../lib/utils.ts";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+/**
+ * What a table holds, which decides how it is set. `data` holds rows of records, one line each,
+ * that a reader scans, points at and picks. `prose` holds sentences laid out in columns, a docs
+ * page's comparison: its cells wrap, sit at the top of their row, and take the size of the prose
+ * around them, and its rows take no hover.
+ */
+type TablePurpose = "data" | "prose";
+
+function Table({
+  purpose = "data",
+  className,
+  ...props
+}: React.ComponentProps<"table"> & { purpose?: TablePurpose }) {
   return (
     <div
       data-slot="table-container"
@@ -11,7 +23,12 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-ui-sm", className)}
+        data-purpose={purpose}
+        className={cn(
+          "group/table w-full caption-bottom",
+          purpose === "prose" ? "border-collapse text-prose-sm" : "text-ui-sm",
+          className,
+        )}
         {...props}
       />
     </div>
@@ -33,7 +50,11 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   return (
     <tbody
       data-slot="table-body"
-      className={cn("[&_tr:last-child]:border-0", className)}
+      // Prose keeps the rule under its last row.
+      className={cn(
+        "[&_tr:last-child]:border-0 group-data-[purpose=prose]/table:[&_tr:last-child]:border-b raymond:group-data-[purpose=prose]/table:[&_tr:last-child]:border-b-transparent",
+        className,
+      )}
       {...props}
     />
   );
@@ -64,7 +85,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
         // box is its own mark. Everything in the highlight, its quiet text,
         // outlined chips and primary dots included, takes the highlight's
         // text colour, as Windows draws it.
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 aria-[current=true]:bg-accent aria-[current=true]:hover:bg-accent data-[state=selected]:bg-accent data-[state=selected]:text-accent-foreground data-[state=selected]:*:first:state-cue raymond:border-b-transparent raymond:[&:not([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:bg-transparent raymond:[&:not([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:hover:bg-transparent raymond:[&:not([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:has-aria-expanded:bg-transparent raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:text-primary-foreground raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--accent:var(--primary)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--border:var(--primary-foreground)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--foreground:var(--primary-foreground)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--muted-foreground:var(--primary-foreground)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:*:[--primary:var(--primary-foreground)]",
+        "border-b transition-colors hover:bg-muted/50 group-data-[purpose=prose]/table:hover:bg-transparent has-aria-expanded:bg-muted/50 aria-[current=true]:bg-accent aria-[current=true]:hover:bg-accent data-[state=selected]:bg-accent data-[state=selected]:text-accent-foreground data-[state=selected]:*:first:state-cue raymond:border-b-transparent raymond:[&:not([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:bg-transparent raymond:[&:not([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:hover:bg-transparent raymond:[&:not([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:has-aria-expanded:bg-transparent raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:text-primary-foreground raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--accent:var(--primary)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--border:var(--primary-foreground)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--foreground:var(--primary-foreground)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--muted-foreground:var(--primary-foreground)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:*:[--primary:var(--primary-foreground)]",
         className,
       )}
       {...props}
@@ -79,6 +100,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
       className={cn(
         // Under raymond a column header is a raised button in regular weight.
         "h-row-head bg-muted px-2 text-left align-middle font-semibold whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 raymond:font-normal raymond:shadow-raised",
+        "group-data-[purpose=prose]/table:h-auto group-data-[purpose=prose]/table:bg-transparent group-data-[purpose=prose]/table:px-3 group-data-[purpose=prose]/table:py-2 group-data-[purpose=prose]/table:font-medium group-data-[purpose=prose]/table:whitespace-normal group-data-[purpose=prose]/table:text-muted-foreground raymond:group-data-[purpose=prose]/table:bg-(--3d-face) raymond:group-data-[purpose=prose]/table:py-0.5 raymond:group-data-[purpose=prose]/table:text-foreground",
         className,
       )}
       {...props}
@@ -93,6 +115,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
       className={cn(
         // Under raymond a row is as tight as what it holds.
         "h-row px-2 py-1 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 raymond:py-0",
+        "group-data-[purpose=prose]/table:h-auto group-data-[purpose=prose]/table:px-3 group-data-[purpose=prose]/table:py-2 group-data-[purpose=prose]/table:align-top group-data-[purpose=prose]/table:whitespace-normal raymond:group-data-[purpose=prose]/table:py-1",
         className,
       )}
       {...props}
@@ -121,5 +144,6 @@ export {
   TableFooter,
   TableHead,
   TableHeader,
+  type TablePurpose,
   TableRow,
 };

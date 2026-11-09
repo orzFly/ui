@@ -1,5 +1,6 @@
 import { CI_RUN } from "@orz/fixtures/ci-run.ts";
 import { Button } from "@orz/ui/components/button";
+import { List, ListItem } from "@orz/ui/components/list";
 import { ArchiveIcon, RotateCwIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -47,16 +48,20 @@ export function ToastKinds() {
         </Button>
       </div>
       {details && (
-        <ul className="divide-y rounded-lg border text-ui">
-          {CI_RUN.jobs.map((job) => (
-            <li key={job.id} className="flex justify-between gap-2 px-3 py-2">
-              <span>
-                {CI_RUN.workflow} / {job.name}
-              </span>
-              <span className="text-muted-foreground">{job.status}</span>
-            </li>
-          ))}
-        </ul>
+        <List purpose="collection">
+          <ul className="text-ui">
+            {CI_RUN.jobs.map((job) => (
+              <ListItem key={job.id} asChild>
+                <li className="flex min-h-row items-center justify-between gap-2 px-3 py-2">
+                  <span>
+                    {CI_RUN.workflow} / {job.name}
+                  </span>
+                  <span className="text-muted-foreground">{job.status}</span>
+                </li>
+              </ListItem>
+            ))}
+          </ul>
+        </List>
       )}
     </div>
   );

@@ -1,5 +1,4 @@
 import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
-import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
 import {
   DropdownMenu,
@@ -8,6 +7,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { Pane } from "@orz/ui/components/pane";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -31,12 +32,12 @@ export function TrashThreadMenu() {
   return (
     <TooltipProvider>
       <div className="grid gap-3">
-        <div className="flex items-center gap-0.5">
+        <Pane purpose="toolbar" className="flex items-center gap-0.5 px-1.5">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Move to Inbox">
+              <ToolbarButton aria-label="Move to Inbox">
                 <Undo2Icon />
-              </Button>
+              </ToolbarButton>
             </TooltipTrigger>
             <TooltipContent>Move to Inbox</TooltipContent>
           </Tooltip>
@@ -44,14 +45,9 @@ export function TrashThreadMenu() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="ml-auto"
-                    aria-label="More actions"
-                  >
+                  <ToolbarButton className="ml-auto" aria-label="More actions">
                     <EllipsisIcon />
-                  </Button>
+                  </ToolbarButton>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent>More actions</TooltipContent>
@@ -75,7 +71,7 @@ export function TrashThreadMenu() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </Pane>
         <h3 className="font-semibold">{thread?.subject}</h3>
       </div>
       <ConfirmDialog

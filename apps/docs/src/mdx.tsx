@@ -2,6 +2,17 @@ import installs from "virtual:orz-install";
 import packages from "virtual:orz-packages";
 import themeTable from "virtual:orz-themes";
 import { Button, buttonVariants } from "@orz/ui/components/button";
+import { InlineCode } from "@orz/ui/components/inline-code";
+import { Separator } from "@orz/ui/components/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@orz/ui/components/table";
+import { TextLink } from "@orz/ui/components/text-link";
 import { copyToClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
 import { CopyIcon } from "lucide-react";
@@ -19,32 +30,28 @@ import { BASE, Link } from "./router.tsx";
 import { storybookHref } from "./routes.ts";
 
 function Anchor({ href = "", children, ...props }: ComponentProps<"a">) {
-  const className = "font-medium underline underline-offset-4";
   // A site path is written from the root, as the spec's URLs are; the base
   // goes on here, so no page writes /ui/.
   if (href.startsWith("/")) {
     const [path = "", hash] = href.split("#");
     return (
-      <Link
-        {...props}
-        to={path}
-        hash={hash ? `#${hash}` : ""}
-        className={className}
-      >
-        {children}
-      </Link>
+      <TextLink asChild>
+        <Link {...props} to={path} hash={hash ? `#${hash}` : ""}>
+          {children}
+        </Link>
+      </TextLink>
     );
   }
   return (
-    <a {...props} href={href} className={className}>
+    <TextLink {...props} href={href}>
       {children}
-    </a>
+    </TextLink>
   );
 }
 
-function heading(Tag: "h2" | "h3", className: string) {
+function heading(Tag: "h2" | "h3", className: string, ruled = false) {
   return function Heading({ id, children }: ComponentProps<"h2">) {
-    return (
+    const title = (
       <Tag
         id={id}
         className={cn(
@@ -58,12 +65,19 @@ function heading(Tag: "h2" | "h3", className: string) {
             href={`#${id}`}
             aria-label="Link to this section"
             data-pagefind-ignore
-            className="ml-2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 touch:hidden"
+            className="ml-2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 touch:hidden outline-none focus-visible:focus-ring"
           >
             #
           </a>
         )}
       </Tag>
+    );
+    if (!ruled) return title;
+    return (
+      <>
+        {title}
+        <Separator className="mb-4" />
+      </>
     );
   };
 }
@@ -80,40 +94,18 @@ function Pre({ children }: ComponentProps<"pre">) {
 
 function CodeFrame(props: { lang: string; contents: string }) {
   return (
-    <div className="my-5 overflow-hidden rounded-lg border text-sm">
+    <div className="my-5 overflow-hidden rounded-lg border text-prose-sm">
       <Code {...props} />
     </div>
   );
 }
 
-function InlineCode(props: ComponentProps<"code">) {
+function ProseTable(props: ComponentProps<"table">) {
   return (
-    <code
-      className="rounded bg-muted px-1 py-0.5 font-mono text-[0.875em]"
-      {...props}
-    />
-  );
-}
-
-function Table(props: ComponentProps<"table">) {
-  return (
-    <div className="my-5 overflow-x-auto">
-      <table className="w-full border-collapse text-sm" {...props} />
+    <div className="my-5">
+      <Table purpose="prose" {...props} />
     </div>
   );
-}
-
-function Th(props: ComponentProps<"th">) {
-  return (
-    <th
-      className="border-b px-3 py-2 text-left font-medium text-muted-foreground"
-      {...props}
-    />
-  );
-}
-
-function Td(props: ComponentProps<"td">) {
-  return <td className="border-b px-3 py-2 align-top" {...props} />;
 }
 
 export function installOf(pkg: string) {
@@ -153,22 +145,22 @@ export function Command({ command }: { command: string }) {
 /** Every package but `except`, each with its install line and the optional ones. */
 function PackageInstalls({ except }: { except: string }) {
   return (
-    <Table>
-      <thead>
-        <tr>
-          <Th>Package</Th>
-          <Th>Install</Th>
-        </tr>
-      </thead>
-      <tbody>
+    <ProseTable>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Package</TableHead>
+          <TableHead>Install</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {installs
           .filter(({ name }) => name !== except)
           .map((install) => (
-            <tr key={install.name}>
-              <Td>
+            <TableRow key={install.name}>
+              <TableCell>
                 <InlineCode>{install.name}</InlineCode>
-              </Td>
-              <Td>
+              </TableCell>
+              <TableCell>
                 <Command command={install.command} />
                 {install.optional.map((group) => (
                   <p key={group.command} className="mt-1.5">
@@ -182,35 +174,35 @@ function PackageInstalls({ except }: { except: string }) {
                     : <Command command={group.command} />
                   </p>
                 ))}
-              </Td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-      </tbody>
-    </Table>
+      </TableBody>
+    </ProseTable>
   );
 }
 
 /** Every package with its package.json description. */
 function Packages() {
   return (
-    <Table>
-      <thead>
-        <tr>
-          <Th>Package</Th>
-          <Th>What it is</Th>
-        </tr>
-      </thead>
-      <tbody>
+    <ProseTable>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Package</TableHead>
+          <TableHead>What it is</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {packages.map(({ name, description }) => (
-          <tr key={name}>
-            <Td>
+          <TableRow key={name}>
+            <TableCell>
               <InlineCode>{name}</InlineCode>
-            </Td>
-            <Td>{description}</Td>
-          </tr>
+            </TableCell>
+            <TableCell>{description}</TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </Table>
+      </TableBody>
+    </ProseTable>
   );
 }
 
@@ -218,21 +210,21 @@ function Packages() {
 function BuiltinThemes() {
   return (
     <>
-      <Table>
-        <thead>
-          <tr>
-            <Th>Theme</Th>
-            <Th>Import</Th>
-            <Th>Style</Th>
-            <Th>Light</Th>
-            <Th>Dark</Th>
-          </tr>
-        </thead>
-        <tbody>
+      <ProseTable>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Theme</TableHead>
+            <TableHead>Import</TableHead>
+            <TableHead>Style</TableHead>
+            <TableHead>Light</TableHead>
+            <TableHead>Dark</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {themeTable.rows.map(({ label, id, name, styles, light, dark }) => (
-            <tr key={id}>
-              <Td>{label}</Td>
-              <Td>
+            <TableRow key={id}>
+              <TableCell>{label}</TableCell>
+              <TableCell>
                 <InlineCode>{name}</InlineCode>
                 {name !== id && (
                   <>
@@ -240,16 +232,16 @@ function BuiltinThemes() {
                     (<InlineCode>{id}</InlineCode>)
                   </>
                 )}
-              </Td>
-              <Td>{styles.join(", ")}</Td>
-              <Td>{light}</Td>
-              <Td>{dark}</Td>
-            </tr>
+              </TableCell>
+              <TableCell>{styles.join(", ")}</TableCell>
+              <TableCell>{light}</TableCell>
+              <TableCell>{dark}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </Table>
+        </TableBody>
+      </ProseTable>
       {themeTable.amoledEverywhere && (
-        <p className="my-4 leading-7">
+        <p className="my-4 leading-prose">
           Every dark palette also has an AMOLED variant, which makes the
           background true black.
         </p>
@@ -284,35 +276,29 @@ function StorybookLink({
   title?: string;
   children: ReactNode;
 }) {
-  return (
-    <a
-      href={storybookHref(BASE, title)}
-      className="font-medium underline underline-offset-4"
-    >
-      {children}
-    </a>
-  );
+  return <TextLink href={storybookHref(BASE, title)}>{children}</TextLink>;
 }
 
 export const mdxComponents = {
   a: Anchor,
   h2: heading(
     "h2",
-    "mt-12 mb-4 border-b pb-2 font-semibold text-2xl tracking-tight first:mt-0",
+    "mt-12 pb-2 font-semibold text-heading-2 tracking-tight first:mt-0",
+    true,
   ),
-  h3: heading("h3", "mt-8 mb-3 font-semibold text-lg tracking-tight"),
+  h3: heading("h3", "mt-8 mb-3 font-semibold text-heading-3 tracking-tight"),
   p: (props: ComponentProps<"p">) => (
-    <p className="my-4 max-w-prose leading-7" {...props} />
+    <p className="my-4 max-w-prose leading-prose" {...props} />
   ),
   ul: (props: ComponentProps<"ul">) => (
     <ul
-      className="my-4 ml-6 max-w-prose list-disc space-y-1.5 leading-7"
+      className="my-4 ml-6 max-w-prose list-disc space-y-1.5 leading-prose"
       {...props}
     />
   ),
   ol: (props: ComponentProps<"ol">) => (
     <ol
-      className="my-4 ml-6 max-w-prose list-decimal space-y-1.5 leading-7"
+      className="my-4 ml-6 max-w-prose list-decimal space-y-1.5 leading-prose"
       {...props}
     />
   ),
@@ -325,9 +311,12 @@ export const mdxComponents = {
   hr: () => <hr className="my-10" />,
   code: InlineCode,
   pre: Pre,
-  table: Table,
-  th: Th,
-  td: Td,
+  table: ProseTable,
+  thead: TableHeader,
+  tbody: TableBody,
+  tr: TableRow,
+  th: TableHead,
+  td: TableCell,
   Do,
   DoDont,
   Dont,

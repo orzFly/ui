@@ -25,6 +25,7 @@ import { useState } from "react";
 
 const PURPOSES = [
   "app",
+  "banner",
   "document",
   "toolbar",
   "statusbar",
@@ -47,7 +48,7 @@ const meta = {
   parameters: { guidelines: "/guidelines/foundations/styles/" },
   args: {
     purpose: "document",
-    className: "max-w-md p-4 text-ui",
+    className: "max-w-md p-4",
     children: "What is read or written: a message, a diff, an editor.",
   },
   argTypes: {
@@ -164,9 +165,7 @@ export const Window: Story = {
     <Pane {...args}>
       <Pane purpose="titlebar" asChild>
         <header className="flex shrink-0 items-center gap-1 py-1 pr-1 pl-3">
-          <h2 className="min-w-0 flex-1 truncate font-medium text-ui">
-            New message
-          </h2>
+          <h2 className="min-w-0 flex-1 truncate">New message</h2>
           <Button variant="ghost" size="icon-sm" aria-label="Minimise">
             <MinusIcon />
           </Button>

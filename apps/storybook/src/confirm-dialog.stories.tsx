@@ -56,7 +56,7 @@ export const Children: Story = {
     title: "Delete report.pdf?",
     description: "Two places still link it; they will show it as deleted.",
     children: (
-      <ul className="list-disc pl-5 text-sm">
+      <ul className="list-disc pl-5">
         <li>The description</li>
         <li>A comment from alice</li>
       </ul>

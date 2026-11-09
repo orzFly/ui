@@ -28,7 +28,7 @@ function ratio(foreground?: string, background?: string): number | null {
 
 function Value({ text }: { text: string | undefined }) {
   return (
-    <span className="block min-h-4 truncate font-mono text-muted-foreground text-xs">
+    <span className="block min-h-4 truncate font-mono text-muted-foreground text-prose-xs">
       {text}
     </span>
   );
@@ -60,16 +60,16 @@ export function TokenPairs({
                 color: `var(--${text})`,
               }}
             >
-              <span className="font-medium text-lg">Aa</span>
+              <span className="font-medium text-prose-lg">Aa</span>
               {typeof contrast === "number" && (
-                <span className="font-mono text-sm tabular-nums">
+                <span className="font-mono text-prose-sm tabular-nums">
                   {contrast.toFixed(1)}:1
                   {contrast < 4.5 && " · under 4.5"}
                 </span>
               )}
             </div>
-            <div className="grid gap-1 border-t px-4 py-2 text-sm">
-              <code className="font-mono text-xs">
+            <div className="grid gap-1 border-t px-4 py-2 text-prose-sm">
+              <code className="font-mono text-prose-xs">
                 {surface} / {text}
               </code>
               <Value text={values?.[surface]} />
@@ -92,7 +92,7 @@ export function TokenSwatches({ tokens }: { tokens: readonly Token[] }) {
             className="h-10 rounded-md border"
             style={{ background: `var(--${token})` }}
           />
-          <code className="mt-1.5 block truncate font-mono text-xs">
+          <code className="mt-1.5 block truncate font-mono text-prose-xs">
             {token}
           </code>
           <Value text={values?.[token]} />

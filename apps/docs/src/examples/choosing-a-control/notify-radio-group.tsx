@@ -1,3 +1,5 @@
+import { FieldDescription } from "@orz/ui/components/field";
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import { Label } from "@orz/ui/components/label";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
 
@@ -18,9 +20,7 @@ const NOTIFY = [
 export function NotifyRadioGroup() {
   return (
     <div className="grid gap-3">
-      <p className="font-medium text-ui" id="do-notify">
-        Notify me about
-      </p>
+      <GroupHeading id="do-notify">Notify me about</GroupHeading>
       <RadioGroup defaultValue="mentions" aria-labelledby="do-notify">
         {NOTIFY.map(({ value, label, description }) => (
           <div key={value} className="flex items-start gap-2">
@@ -32,12 +32,9 @@ export function NotifyRadioGroup() {
             />
             <div className="grid gap-1">
               <Label htmlFor={`do-notify-${value}`}>{label}</Label>
-              <p
-                id={`do-notify-${value}-description`}
-                className="text-muted-foreground text-ui"
-              >
+              <FieldDescription id={`do-notify-${value}-description`}>
                 {description}
-              </p>
+              </FieldDescription>
             </div>
           </div>
         ))}
