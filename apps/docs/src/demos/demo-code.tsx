@@ -1,5 +1,14 @@
 import { Button } from "@orz/ui/components/button";
 import {
+  NavList,
+  NavListCount,
+  NavListFrame,
+  NavListHeading,
+  NavListItem,
+  NavListLink,
+} from "@orz/ui/components/nav-list";
+import { Pane } from "@orz/ui/components/pane";
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -8,11 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orz/ui/components/select";
+import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import { CodeBlock } from "@orz/ui-code";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { type DemoFile, loadDemoFiles } from "./demo-source.ts";
+import { sourceHref } from "./demo-state.ts";
 
 const GROUPS: { group: DemoFile["group"]; title: (dir: string) => string }[] = [
   { group: "demo", title: (dir) => `demos/${dir}` },
@@ -61,39 +72,48 @@ export function DemoCode({
   const path = file.group === "demo" ? `demos/${dir}/${file.name}` : file.name;
   return (
     <div className="flex h-full min-h-0">
-      <nav
-        aria-label="Files"
-        className="hidden w-60 shrink-0 overflow-y-auto border-r bg-sidebar p-2 text-ui md:block"
+      <Pane
+        purpose="sidebar"
+        edge="end"
+        className="hidden w-60 shrink-0 flex-col p-2 md:flex"
       >
-        {GROUPS.map(({ group, title }) => {
-          const members = files.filter((each) => each.group === group);
-          if (members.length === 0) return null;
-          return (
-            <div key={group}>
-              <h3 className="mt-2 mb-1 px-2 font-medium text-muted-foreground text-ui-sm tracking-wide">
-                {title(dir)}
-              </h3>
-              <ul>
-                {members.map((each) => (
-                  <li key={each.name}>
-                    <button
-                      type="button"
-                      aria-current={each === file ? "true" : undefined}
-                      onClick={() => onSource(each.name)}
-                      className="flex min-h-8 w-full items-center justify-between gap-2 rounded-md px-2 text-left text-muted-foreground hover:bg-accent hover:text-foreground aria-[current]:bg-accent aria-[current]:font-medium aria-[current]:text-foreground touch:min-h-11"
-                    >
-                      <span className="truncate">{shortName(each)}</span>
-                      <span className="text-muted-foreground text-ui-sm tabular-nums">
-                        {lineCount(each.contents)}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </nav>
+        <NavListFrame className="flex min-h-0 flex-1 flex-col">
+          <nav aria-label="Files" className="min-h-0 flex-1 overflow-y-auto">
+            {GROUPS.map(({ group, title }) => {
+              const members = files.filter((each) => each.group === group);
+              if (members.length === 0) return null;
+              return (
+                <Fragment key={group}>
+                  <NavListHeading asChild>
+                    <h3>{title(dir)}</h3>
+                  </NavListHeading>
+                  <NavList>
+                    {members.map((each) => (
+                      <NavListItem key={each.name}>
+                        <NavListLink current={each === file} asChild>
+                          <a
+                            href={sourceHref(each.name)}
+                            onClick={(event) => {
+                              if (!isPlainClick(event)) return;
+                              event.preventDefault();
+                              onSource(each.name);
+                            }}
+                          >
+                            <span className="truncate">{shortName(each)}</span>
+                            <NavListCount>
+                              {lineCount(each.contents)}
+                            </NavListCount>
+                          </a>
+                        </NavListLink>
+                      </NavListItem>
+                    ))}
+                  </NavList>
+                </Fragment>
+              );
+            })}
+          </nav>
+        </NavListFrame>
+      </Pane>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-11 shrink-0 items-center gap-2 border-b px-2 md:px-4">
           <Select value={file.name} onValueChange={onSource}>

@@ -27,6 +27,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@orz/ui/components/tooltip";
+import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import {
   CircleCheckIcon,
@@ -37,7 +38,7 @@ import {
   Trash2Icon,
   UserIcon,
 } from "lucide-react";
-import type { MouseEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { isOpen, taskKey } from "./board.ts";
 import { taskHref } from "./location.ts";
 import { Assignee, StatusDot } from "./parts.tsx";
@@ -54,14 +55,6 @@ export interface RowActions {
   onDelete: (ids: number[]) => void;
   onShowTheirs: (login: string) => void;
 }
-
-/** A click the browser should keep: a new tab, a download, a middle button. */
-const isPlainClick = (event: MouseEvent) =>
-  event.button === 0 &&
-  !event.metaKey &&
-  !event.ctrlKey &&
-  !event.shiftKey &&
-  !event.altKey;
 
 function RowMenu({ task, actions }: { task: Task; actions: RowActions }) {
   const key = taskKey(task.id);

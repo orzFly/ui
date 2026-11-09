@@ -17,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@orz/ui/components/tooltip";
+import { isPlainClick } from "@orz/ui/lib/link";
 import {
   MarkdownEditor,
   type MarkdownEditorHandle,
@@ -38,6 +39,7 @@ import {
 } from "lucide-react";
 import { type Ref, useImperativeHandle, useRef } from "react";
 import { ActionButton } from "./keys.tsx";
+import { mailHref } from "./location.ts";
 import {
   folderOf,
   INBOX_LABELS,
@@ -174,9 +176,18 @@ function Toolbar({
         label="Back to inbox"
         action="back"
         className="md:hidden"
-        onClick={actions.onBack}
+        asChild
       >
-        <ArrowLeftIcon />
+        <a
+          href={mailHref({ thread: null })}
+          onClick={(event) => {
+            if (!isPlainClick(event)) return;
+            event.preventDefault();
+            actions.onBack();
+          }}
+        >
+          <ArrowLeftIcon />
+        </a>
       </ActionButton>
       {folder === "archive" || folder === "trash" ? (
         <ActionButton label="Move to Inbox" onClick={actions.onRestore}>

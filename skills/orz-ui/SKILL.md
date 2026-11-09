@@ -26,6 +26,10 @@ install line from the Start page (**Install**, and the **Packages** table), or f
 - A `className` places a component (position, size in its parent, gaps) first of all.
 - Never hand-draw a control the library has (nav rows are `NavList`, sections `TabNav`, menus
   `DropdownMenu`, confirmations `ConfirmDialog`).
+- Anything that goes somewhere (a folder, a section, an item, Back) is an `a[href]` to its URL,
+  never a `button` that navigates in JS. Pass the router's link with `asChild`, or keep the `href`
+  and take over only clicks `isPlainClick` from `@orz/ui/lib/link` passes, so middle-click,
+  Ctrl/⌘/Shift-click and the context menu still work.
 - Never pass sizes for touch, and never write a colour: use the theme's tokens.
 - No component for what you need? Compose it from library components before drawing your own.
 - A light tweak on top (a token colour, a size, a weight) is fine when it holds up in every style

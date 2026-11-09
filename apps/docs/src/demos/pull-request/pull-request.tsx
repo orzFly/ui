@@ -24,6 +24,7 @@ import {
   SettingsIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { useHash } from "../demo-state.ts";
 import { Commits, FilesChanged } from "./changes.tsx";
 import { Checks } from "./checks.tsx";
 import { Conversation } from "./conversation.tsx";
@@ -93,13 +94,8 @@ function AppBar() {
   );
 }
 
-function RepoNav({
-  current,
-  onSelect,
-}: {
-  current: Section;
-  onSelect(section: Section): void;
-}) {
+/** The repository's sections, each a link to its own `#` place. */
+function RepoNav({ current }: { current: Section }) {
   return (
     <Pane purpose="toolbar" asChild>
       <TabNav aria-label="Repository" className="overflow-x-auto px-1 md:px-2">
@@ -110,7 +106,7 @@ function RepoNav({
             current={id === current}
             className="shrink-0"
           >
-            <button type="button" onClick={() => onSelect(id)}>
+            <a href={`#${id}`}>
               <Icon />
               {label}
               {count !== undefined && (
@@ -118,7 +114,7 @@ function RepoNav({
                   {count}
                 </Badge>
               )}
-            </button>
+            </a>
           </TabNavLink>
         ))}
       </TabNav>
@@ -127,13 +123,7 @@ function RepoNav({
 }
 
 /** What a repository tab outside the demo shows: what would be there, and the way back. */
-function NotInDemo({
-  section,
-  onBack,
-}: {
-  section: (typeof SECTIONS)[number];
-  onBack(): void;
-}) {
+function NotInDemo({ section }: { section: (typeof SECTIONS)[number] }) {
   const Icon = section.icon;
   return (
     <div className="grid flex-1 place-content-center justify-items-center gap-3 px-4 py-16 text-center">
@@ -145,8 +135,8 @@ function NotInDemo({
         The demo is one pull request: its conversation, its commits, the CI run
         on it and the files it changes.
       </p>
-      <Button variant="outline" onClick={onBack}>
-        Open pull request #{PULL_REQUEST.number}
+      <Button variant="outline" asChild>
+        <a href="#pulls">Open pull request #{PULL_REQUEST.number}</a>
       </Button>
     </div>
   );
@@ -198,7 +188,8 @@ function Count({ children }: { children: number }) {
  * `ContentSource`, and `Content` picks the package that draws it.
  */
 export function PullRequest() {
-  const [section, setSection] = useState<Section>("pulls");
+  const hash = useHash();
+  const section = SECTIONS.find((each) => each.id === hash)?.id ?? "pulls";
   const [tab, setTab] = useState("conversation");
   // The failed job first: it is why anyone opens a run.
   const [job, setJob] = useState(
@@ -218,9 +209,9 @@ export function PullRequest() {
       <AttachmentViewerProvider>
         <div className="flex min-h-full flex-col bg-background text-foreground">
           <AppBar />
-          <RepoNav current={section} onSelect={setSection} />
+          <RepoNav current={section} />
           {section !== "pulls" && other ? (
-            <NotInDemo section={other} onBack={() => setSection("pulls")} />
+            <NotInDemo section={other} />
           ) : (
             <div className="mx-auto grid w-full min-w-0 max-w-7xl flex-1 content-start gap-4 p-3 md:p-6">
               <PullRequestHeader />

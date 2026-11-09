@@ -13,6 +13,7 @@ import {
 } from "@orz/ui/components/nav-list";
 import { Pane } from "@orz/ui/components/pane";
 import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog";
+import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import {
   BellIcon,
@@ -25,6 +26,8 @@ import {
   UserIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { hrefOf } from "../../routes.ts";
+import { setHash, useHash } from "../demo-state.ts";
 import {
   AppearanceSection,
   EditorSection,
@@ -34,6 +37,9 @@ import {
   ProfileSection,
   TokensSection,
 } from "./sections.tsx";
+
+// The list of sections, for the phone's Back. Absolute, so a prerendered link carries the base.
+const LIST = hrefOf("/demos/settings/", import.meta.env.BASE_URL);
 
 type SectionId =
   | "editor"
@@ -89,6 +95,31 @@ interface View {
   open: boolean;
 }
 
+/** Marks the history entry `show` pushed for a section, so the in-page Back can step back over it. */
+interface Pushed {
+  settingsSection: true;
+}
+
+/**
+ * Show `next`, kept in the URL as `#<section>`: none is the list. From the list a section pushes an
+ * entry, which Back pops; from another section it replaces the entry, so Back never walks through
+ * every section looked at.
+ */
+function show(next: View) {
+  const pushed = (history.state as Partial<Pushed> | null)?.settingsSection;
+  if (!next.open) {
+    if (pushed) history.back();
+    else setHash("", { push: false });
+  } else if (location.hash === "") {
+    setHash(next.section, {
+      push: true,
+      state: { settingsSection: true } satisfies Pushed,
+    });
+  } else {
+    setHash(next.section, { push: false, state: history.state });
+  }
+}
+
 /**
  * A settings screen as an app would write one: Switches that apply as they flip, a profile form
  * that saves and guards its unsaved edits, the user's theme, and a destructive step that asks
@@ -96,7 +127,9 @@ interface View {
  * section, as the phone's own settings do.
  */
 export function Settings() {
-  const [view, setView] = useState<View>({ section: "editor", open: false });
+  const hash = useHash();
+  const shown = SECTIONS.find(({ id }) => id === hash);
+  const view: View = { section: shown?.id ?? "editor", open: !!shown };
   const [prefs, setPrefs] = useState(PREFERENCES);
   const [saved, setSaved] = useState(PROFILE);
   const [draft, setDraft] = useState(PROFILE);
@@ -116,7 +149,7 @@ export function Settings() {
   const go = (next: View) => {
     const staying = next.section === "profile" && next.open;
     if (dirty && view.section === "profile" && !staying) setLeavingTo(next);
-    else setView(next);
+    else show(next);
   };
 
   const current = SECTIONS.find(({ id }) => id === view.section) ?? SECTIONS[0];
@@ -141,15 +174,18 @@ export function Settings() {
             <NavList>
               {SECTIONS.map(({ id, title, Icon }) => (
                 <NavListItem key={id}>
-                  <NavListLink current={id === view.section} asChild>
-                    <button
-                      type="button"
-                      onClick={() => go({ section: id, open: true })}
-                    >
-                      <Icon />
-                      {title}
-                      <ChevronRightIcon className="ml-auto md:hidden" />
-                    </button>
+                  <NavListLink
+                    href={`#${id}`}
+                    current={id === view.section}
+                    onClick={(event) => {
+                      if (!isPlainClick(event)) return;
+                      event.preventDefault();
+                      go({ section: id, open: true });
+                    }}
+                  >
+                    <Icon />
+                    {title}
+                    <ChevronRightIcon className="ml-auto md:hidden" />
                   </NavListLink>
                 </NavListItem>
               ))}
@@ -165,13 +201,18 @@ export function Settings() {
             !view.open && "max-md:hidden",
           )}
         >
-          <Button
-            variant="ghost"
-            className="-ml-2 mb-2 md:hidden"
-            onClick={() => go({ section: view.section, open: false })}
-          >
-            <ChevronLeftIcon />
-            Settings
+          <Button variant="ghost" className="-ml-2 mb-2 md:hidden" asChild>
+            <a
+              href={LIST}
+              onClick={(event) => {
+                if (!isPlainClick(event)) return;
+                event.preventDefault();
+                go({ section: view.section, open: false });
+              }}
+            >
+              <ChevronLeftIcon />
+              Settings
+            </a>
           </Button>
           <h2
             id="settings-section-title"
@@ -219,7 +260,7 @@ export function Settings() {
         onProceed={() => {
           setDraft(saved);
           setRevision((count) => count + 1);
-          if (leavingTo) setView(leavingTo);
+          if (leavingTo) show(leavingTo);
           setLeavingTo(null);
         }}
       />

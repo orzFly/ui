@@ -18,6 +18,13 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
 - Nothing app-specific belongs here: no API clients, no router or data-fetching library as a hard
   dependency, no app names in storage keys or labels. Where a component needs the app, it takes a
   callback or a prop.
+- Anything that goes somewhere is an `a[href]`, never a `button` that navigates in JS, so a middle
+  click, a modified click and the context menu open it as they open any link. A component that
+  renders a place takes an `href`, or a router's link through `asChild`; one that also acts in
+  place on a click (opens a viewer, switches a folder) keeps the `href` and takes over only a
+  click `isPlainClick` from `lib/link.ts` passes. A place held only in app state may stay a
+  `button`; the demos give theirs a `#` address instead. The principle is written on the
+  Principles page and in `skills/orz-ui/SKILL.md`.
 - A dependency heavy enough to matter to a consumer's bundle (CodeMirror, unified, shiki) gets its own
   package rather than landing in `@orz/ui`.
 - An app uses the components as they are; that is the library's point, and the docs site, its

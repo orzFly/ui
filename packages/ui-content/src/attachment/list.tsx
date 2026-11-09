@@ -1,4 +1,4 @@
-import { isPlainLeftClick } from "@orz/ui/components/link-chip";
+import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import {
   ChevronDownIcon,
@@ -64,7 +64,7 @@ function AttachmentRow({
         href={href === "" ? undefined : href}
         className="flex min-w-0 flex-1 items-center gap-2 py-2 pl-3 text-ui"
         onClick={(e) => {
-          if (viewer !== null && canPreview && isPlainLeftClick(e)) {
+          if (viewer !== null && canPreview && isPlainClick(e)) {
             e.preventDefault();
             viewer.open(items, index);
           }

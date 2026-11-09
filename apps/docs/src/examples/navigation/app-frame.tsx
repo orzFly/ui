@@ -8,6 +8,7 @@ import {
 } from "@orz/ui/components/nav-list";
 import { Pane } from "@orz/ui/components/pane";
 import { TabNav, TabNavLink } from "@orz/ui/components/tab-nav";
+import { isPlainClick } from "@orz/ui/lib/link";
 import {
   ArchiveIcon,
   FileTextIcon,
@@ -50,6 +51,7 @@ export function AppFrame() {
                 href={`#${name.toLowerCase()}`}
                 current={name === section}
                 onClick={(event) => {
+                  if (!isPlainClick(event)) return;
                   event.preventDefault();
                   setSection(name);
                 }}
@@ -71,12 +73,18 @@ export function AppFrame() {
               <NavList>
                 {FOLDERS.map(({ title, Icon, count }) => (
                   <NavListItem key={title}>
-                    <NavListLink current={title === place} asChild>
-                      <button type="button" onClick={() => setPlace(title)}>
-                        <Icon />
-                        {title}
-                        {count > 0 && <NavListCount>{count}</NavListCount>}
-                      </button>
+                    <NavListLink
+                      href={`#${title.toLowerCase()}`}
+                      current={title === place}
+                      onClick={(event) => {
+                        if (!isPlainClick(event)) return;
+                        event.preventDefault();
+                        setPlace(title);
+                      }}
+                    >
+                      <Icon />
+                      {title}
+                      {count > 0 && <NavListCount>{count}</NavListCount>}
                     </NavListLink>
                   </NavListItem>
                 ))}
@@ -87,11 +95,17 @@ export function AppFrame() {
                   <NavList>
                     {LABELS.map((label) => (
                       <NavListItem key={label}>
-                        <NavListLink current={label === place} asChild>
-                          <button type="button" onClick={() => setPlace(label)}>
-                            <TagIcon />
-                            {label}
-                          </button>
+                        <NavListLink
+                          href={`#${label}`}
+                          current={label === place}
+                          onClick={(event) => {
+                            if (!isPlainClick(event)) return;
+                            event.preventDefault();
+                            setPlace(label);
+                          }}
+                        >
+                          <TagIcon />
+                          {label}
                         </NavListLink>
                       </NavListItem>
                     ))}

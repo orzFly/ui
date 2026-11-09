@@ -6,7 +6,7 @@ import {
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { GroupHeading } from "@orz/ui/components/group-heading";
-import { isPlainLeftClick, LinkChip } from "@orz/ui/components/link-chip";
+import { LinkChip } from "@orz/ui/components/link-chip";
 import {
   Select,
   SelectContent,
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@orz/ui/components/select";
 import { Separator } from "@orz/ui/components/separator";
+import { isPlainClick } from "@orz/ui/lib/link";
 import {
   CircleCheckIcon,
   CircleDotIcon,
@@ -85,7 +86,7 @@ function TaskLinks({
               icon={isOpen(task) ? CircleDotIcon : CircleCheckIcon}
               href={taskHref(task.id)}
               onClick={(event) => {
-                if (!isPlainLeftClick(event)) return;
+                if (!isPlainClick(event)) return;
                 event.preventDefault();
                 onOpen(task.id);
               }}

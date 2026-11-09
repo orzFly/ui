@@ -167,12 +167,13 @@ describe("pull-request", () => {
     act(async () => element?.click());
   const wait = () =>
     act(() => new Promise((resolve) => setTimeout(resolve, 50)));
-  const button = (root: ParentNode, name: string) =>
-    [...root.querySelectorAll<HTMLElement>("button")].find(
+  const link = (root: ParentNode, name: string) =>
+    [...root.querySelectorAll<HTMLElement>("a")].find(
       (each) => each.textContent === name,
     );
   const selectedTab = (container: HTMLElement) =>
     container.querySelector("[role=tab][aria-selected=true]")?.textContent;
+  afterEach(() => history.replaceState(null, "", "/demos/pull-request/"));
 
   it("opens on the conversation, and a check's Details opens its log", async () => {
     const container = await draw(PullRequest, WIDTHS.desktop);
@@ -213,9 +214,13 @@ describe("pull-request", () => {
 
   it("says which repository tabs are not in the demo, and leads back", async () => {
     const container = await draw(PullRequest, WIDTHS.phone);
-    await click(button(container, "Issues4"));
+    expect(link(container, "Issues4")?.getAttribute("href")).toBe("#issues");
+    await click(link(container, "Issues4"));
+    await wait();
+    expect(location.hash).toBe("#issues");
     expect(container.textContent).toContain("Issues is not part of this demo");
-    await click(button(container, "Open pull request #12"));
+    await click(link(container, "Open pull request #12"));
+    await wait();
     expect(selectedTab(container)).toContain("Conversation");
   });
 });
@@ -224,10 +229,8 @@ describe("settings", () => {
   mountToaster();
   const section = (container: HTMLElement, name: string) =>
     [
-      ...container.querySelectorAll<HTMLElement>(
-        "nav[aria-label=Settings] button",
-      ),
-    ].find((button) => button.textContent === name);
+      ...container.querySelectorAll<HTMLElement>("nav[aria-label=Settings] a"),
+    ].find((link) => link.textContent === name);
   const click = (element: HTMLElement | null | undefined) =>
     act(async () => element?.click());
   const dialog = () => document.querySelector<HTMLElement>("[role=dialog]");
@@ -235,6 +238,7 @@ describe("settings", () => {
     [...root.querySelectorAll<HTMLElement>("button")].find(
       (each) => each.textContent === name,
     );
+  afterEach(() => history.replaceState(null, "", "/demos/settings/"));
   const type = (input: HTMLInputElement, value: string) =>
     act(async () => {
       Object.getOwnPropertyDescriptor(
@@ -248,7 +252,7 @@ describe("settings", () => {
     for (const width of Object.values(WIDTHS)) {
       const container = await draw(Settings, width);
       const names = [
-        ...container.querySelectorAll("nav[aria-label=Settings] button"),
+        ...container.querySelectorAll("nav[aria-label=Settings] a"),
       ].map((each) => each.textContent ?? "");
       expect(names).toHaveLength(5);
       for (const name of names) {
@@ -258,6 +262,7 @@ describe("settings", () => {
         ).toBe(name);
       }
       unmount();
+      history.replaceState(null, "", "/demos/settings/");
     }
   });
 
@@ -285,6 +290,24 @@ describe("settings", () => {
     expect(
       container.querySelector<HTMLInputElement>("#settings-name")?.value,
     ).toBe("alice");
+  });
+
+  it("keeps the section in the hash, and the phone's Back pops it", async () => {
+    const container = await draw(Settings, WIDTHS.phone);
+    const profile = section(container, "Profile");
+    expect(profile?.getAttribute("href")).toBe("#profile");
+    await click(profile);
+    expect(location.hash).toBe("#profile");
+    await click(section(container, "Access tokens"));
+    expect(location.hash).toBe("#tokens");
+    const back = [...container.querySelectorAll<HTMLElement>("a")].find(
+      (each) => each.textContent === "Settings",
+    );
+    await act(async () => {
+      back?.click();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(location.hash).toBe("");
   });
 
   it("leaves a saved profile without asking", async () => {

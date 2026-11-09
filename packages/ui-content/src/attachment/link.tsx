@@ -1,4 +1,5 @@
-import { isPlainLeftClick, LinkChip } from "@orz/ui/components/link-chip";
+import { LinkChip } from "@orz/ui/components/link-chip";
+import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import type { ReactNode } from "react";
 import { fileIcon } from "./icon.ts";
@@ -60,7 +61,7 @@ export function AttachmentLink({
       boxed={boxed}
       className={className}
       onClick={(e) => {
-        if (viewer !== null && canPreview && isPlainLeftClick(e)) {
+        if (viewer !== null && canPreview && isPlainClick(e)) {
           e.preventDefault();
           viewer.show(file);
         }

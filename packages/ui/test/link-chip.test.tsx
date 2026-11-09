@@ -1,9 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { FileTextIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { describe, expect, it } from "vitest";
 import {
-  isPlainLeftClick,
   LinkChip,
   RICH_CHIP_ICON,
   RICH_CHIP_LABEL,
@@ -68,28 +67,4 @@ describe("LinkChip", () => {
     expect(link.querySelector("svg")).not.toBeNull();
     expect((link.lastElementChild as HTMLElement).textContent).toBe("Issue 7");
   });
-});
-
-describe("isPlainLeftClick", () => {
-  it.each(["ctrlKey", "metaKey", "shiftKey", "altKey"])(
-    "is false with %s held",
-    (modifier) => {
-      let plain: boolean | undefined;
-      render(
-        <LinkChip
-          href="#"
-          onClick={(e) => {
-            plain = isPlainLeftClick(e);
-            e.preventDefault();
-          }}
-        >
-          x
-        </LinkChip>,
-      );
-      fireEvent.click(screen.getByRole("link"), { [modifier]: true });
-      expect(plain).toBe(false);
-      fireEvent.click(screen.getByRole("link"));
-      expect(plain).toBe(true);
-    },
-  );
 });

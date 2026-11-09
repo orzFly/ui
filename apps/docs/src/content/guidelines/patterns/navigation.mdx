@@ -41,8 +41,12 @@ sits in a `NavListFrame` around its `nav`, its headings and its scroller, which 
 a well. One in a `Sheet` does not: the sheet is its frame.
 
 `Tabs` switch panels and keep the page's URL; `TabNav` and `NavList` go somewhere, and each place
-is a link wherever it has a URL. Pass a router's link with `asChild`, or a `button` where the
-place is app state rather than an address.
+is a link to its URL, so a middle click, a modified click and the context menu all work as they
+do on any link ([A place is a link](/guidelines/principles/#a-place-is-a-link)). Pass a router's
+link with `asChild`; an app that moves in place by hand keeps the `href` and returns early from
+its click handler unless `isPlainClick(event)` from `@orz/ui/lib/link`. The same holds off these
+components: a row that opens an item, a **Back** to the list, a **Clear search** that returns to
+a folder, each is a link, drawn by `Button asChild` or `ListItem asChild` around the `a`.
 
 <Example of={LineTabs} />
 

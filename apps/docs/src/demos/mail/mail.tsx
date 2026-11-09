@@ -17,6 +17,7 @@ import {
 import { TooltipProvider } from "@orz/ui/components/tooltip";
 import { usePagedAppend } from "@orz/ui/hooks/use-paged-append";
 import { useVisualViewportInsets } from "@orz/ui/hooks/viewport-chrome";
+import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import { codeContent } from "@orz/ui-code";
 import { ContentRenderers } from "@orz/ui-content";
@@ -84,7 +85,7 @@ import {
   type ThreadChange,
   unreadIn,
 } from "./mailbox.ts";
-import { isPlainClick, PLACES, Rail, Sidebar } from "./sidebar.tsx";
+import { PLACES, PlaceLink, Rail, Sidebar } from "./sidebar.tsx";
 import { type ComposerHandle, nameOf, Thread } from "./thread.tsx";
 
 // Fenced code in a message is drawn through the content registry.
@@ -375,11 +376,10 @@ function ThreadList({
           className="min-w-0 flex-1"
         />
         {search.query !== DEFAULT_QUERY && (
-          <ActionButton
-            label="Clear search"
-            onClick={() => onSearch(DEFAULT_QUERY)}
-          >
-            <XIcon />
+          <ActionButton label="Clear search" asChild>
+            <PlaceLink query={DEFAULT_QUERY} onShow={onSearch}>
+              <XIcon />
+            </PlaceLink>
           </ActionButton>
         )}
       </Pane>
@@ -503,11 +503,10 @@ function ThreadList({
                 icon={InboxIcon}
                 title="No conversations match"
                 action={
-                  <Button
-                    variant="outline"
-                    onClick={() => onSearch(DEFAULT_QUERY)}
-                  >
-                    Clear search
+                  <Button variant="outline" asChild>
+                    <PlaceLink query={DEFAULT_QUERY} onShow={onSearch}>
+                      Clear search
+                    </PlaceLink>
                   </Button>
                 }
                 className="px-4 py-12"

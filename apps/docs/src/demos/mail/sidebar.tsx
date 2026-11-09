@@ -20,6 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@orz/ui/components/tooltip";
+import { isPlainClick } from "@orz/ui/lib/link";
 import {
   ArchiveIcon,
   FileTextIcon,
@@ -33,7 +34,7 @@ import {
   TagIcon,
   Trash2Icon,
 } from "lucide-react";
-import type { ComponentProps, MouseEvent } from "react";
+import type { ComponentProps } from "react";
 import { placeHref } from "./location.ts";
 import { INBOX_LABELS } from "./mailbox.ts";
 
@@ -85,14 +86,6 @@ export const PLACES: readonly Place[] = [
   },
 ];
 
-/** A plain click opens in place; a modified one is the browser's, a new tab say. */
-export const isPlainClick = (event: MouseEvent) =>
-  event.button === 0 &&
-  !event.metaKey &&
-  !event.ctrlKey &&
-  !event.shiftKey &&
-  !event.altKey;
-
 export interface SidebarProps {
   /** The search on screen, to mark the place it is. */
   query: string;
@@ -104,7 +97,7 @@ export interface SidebarProps {
 }
 
 /** A place as a link, so it opens in a new tab too; a plain click stays in the app. */
-function PlaceLink({
+export function PlaceLink({
   query,
   onShow,
   ...props

@@ -1,6 +1,7 @@
 import { Slot } from "radix-ui";
 import * as React from "react";
 
+import { isPlainClick } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
 
 /**
@@ -54,10 +55,8 @@ export const RICH_CHIP_ICON = "inline size-[1em] self-center";
  */
 export const RICH_CHIP_LABEL = "min-w-0 flex-initial truncate";
 
-/** Modifier-clicks (new tab, forced download) keep native link behavior. */
-export function isPlainLeftClick(e: React.MouseEvent): boolean {
-  return !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey;
-}
+/** @deprecated Use `isPlainClick` from `@orz/ui/lib/link`. */
+export const isPlainLeftClick = isPlainClick;
 
 export type LinkChipProps = React.ComponentProps<"a"> & {
   /** Drawn before the label, at the label's font size. */

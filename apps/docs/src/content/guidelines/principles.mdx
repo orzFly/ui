@@ -1,9 +1,10 @@
 export const meta = {
   title: "Principles",
   description:
-    "Six rules the rest of the guidelines follow from. When a page is silent, these decide.",
+    "Seven rules the rest of the guidelines follow from. When a page is silent, these decide.",
   order: 1,
   api: [
+    "ui/Primitives/NavList",
     "ui/Primitives/Tooltip",
     "ui/Primitives/DropdownMenu",
     "ui/ConfirmDialog",
@@ -12,6 +13,7 @@ export const meta = {
   ],
 };
 
+import { MailFolders } from "../../examples/principles/mail-folders.tsx";
 import { MailSelection } from "../../examples/principles/mail-selection.tsx";
 import { MailStates } from "../../examples/principles/mail-states.tsx";
 import { QuietThread } from "../../examples/principles/quiet-thread.tsx";
@@ -60,6 +62,27 @@ Tab and used with the keys a native control would take.
 
 Tab through Mail's thread toolbar. Each tooltip opens on focus as it does on hover, and repeats the
 button's name with its shortcut; **More actions** opens with Enter or Space.
+
+## A place is a link
+
+**Whatever has an address is an `a[href]`; the app takes over a plain click and no other.**
+
+A folder, a section, a file, an open item: anything the reader can go to has a URL, and the control
+that goes there is a link to it. The browser then does the rest by itself. A middle click or
+⌘/Ctrl-click opens it in a new tab, Shift-click in a new window, the context menu copies its address,
+and hovering it shows where it leads. A `button` that calls the router does none of that. An app that
+moves in place keeps the link and takes over only the plain left click, through its router's link
+passed with `asChild` or `isPlainClick` from `@orz/ui/lib/link`.
+
+What acts rather than goes stays a button: Archive, Save, a menu's trigger. So does picking a row in
+a list box, which chooses in place, and a place held only in app state, with no address to give;
+a hash (`#profile`) is often address enough to make it a link. [Navigation](/guidelines/patterns/navigation/) has the
+components.
+
+<Example of={MailFolders} />
+
+Click a folder and it opens here, as an app's would. Middle-click it, or open it from the context
+menu, and Mail opens on that folder in a new tab.
 
 ## Undo over confirm
 

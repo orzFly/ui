@@ -1,3 +1,4 @@
+import { isPlainClick } from "@orz/ui/lib/link";
 import {
   type ComponentProps,
   createContext,
@@ -106,18 +107,7 @@ export function Link({
       }
       onClick={(event) => {
         onClick?.(event);
-        if (
-          event.defaultPrevented ||
-          event.button !== 0 ||
-          event.metaKey ||
-          event.ctrlKey ||
-          event.shiftKey ||
-          event.altKey ||
-          props.target ||
-          !hasPage(to)
-        ) {
-          return;
-        }
+        if (!isPlainClick(event) || !hasPage(to)) return;
         event.preventDefault();
         navigate(to, hash);
       }}
