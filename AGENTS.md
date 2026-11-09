@@ -157,11 +157,17 @@ beside the theme. It is not a redesign of every surface.
   `NavListFrame`, and `TabNav`). A hand-written list, nav, toolbar or reading pane in an app or
   demo uses these components rather than bare markup a style cannot see.
 - A part's look under a style is written in the component's own classes under that style's variant
-  (`raymond:`, declared in `theme.css`), beside its default classes, in the part's own package. The
-  style's stylesheet holds its tokens and what belongs to no component (selected text, scroll bars),
-  and draws no part. An element the package does not render itself, such as pierre's
-  `diffs-container`, takes a rule in that package's own stylesheet. Apps and demos never write a style's variant or `[data-style]` themselves: a look they
-  need is a purpose in the library.
+  (`raymond:`), beside its default classes, in the part's own package. The style's stylesheet
+  (`styles/<id>.css`) defines the variant and holds its tokens and what belongs to no component
+  (selected text, scroll bars), and draws no part. `theme.css` declares the variant to draw nothing,
+  so an app that does not import the style's stylesheet carries none of its CSS. An element the
+  package does not render itself, such as pierre's `diffs-container`, takes a rule in that
+  package's own stylesheet, written as `@variant <id> { … }` nested in the element's selector, a
+  pseudo-element inside the variant (`@variant raymond { &::before { … } }`), never a
+  `[data-style]` selector. A new style adds the same three: the empty variant in `theme.css`, the
+  real one atop its stylesheet, and its `<id>:` classes and `@variant <id>` blocks. Apps and demos never
+  write a style's variant or `[data-style]` themselves: a look they need is a purpose in the
+  library.
 - A surface sizes from what it holds: padding around its controls, not a fixed height (`py-2.5`,
   not `h-12`), so every style's control sizes, and the touch sizes, carry it.
 - A well drawn with an inset shadow (a sunken pane, a list box) is the frame around a scroller,

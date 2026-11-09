@@ -21,12 +21,20 @@
 
 /* A part's look under the raymond style, written beside its default classes
    rather than as an override in styles/raymond.css: the component knows what
-   the part is for, and the stylesheet does not. Keyed on data-style, which
-   the paint guard sets before first paint, so a prerendered page needs no
-   second render to draw it. `:is()` rather than `:where()`: the attribute
-   outranks a default class under the same variants, so a raymond class wins
-   whatever order Tailwind sorts the variants in. */
-@custom-variant raymond (&:is([data-style="raymond"] *));
+   the part is for, and the stylesheet does not.
+
+   Declared here to draw nothing; styles/raymond.css, imported later,
+   defines it for real. A variant with no @slot makes Tailwind drop all that
+   is written under it, the raymond: classes and every package stylesheet's
+   `@variant raymond` blocks alike, so an app that does not import the
+   style's stylesheet carries none of its CSS. An empty body is an error,
+   hence the empty rule. Tailwind does not document the drop;
+   apps/docs/test/raymond-opt-in.test.ts fails if it stops. */
+@custom-variant raymond {
+  /* biome-ignore lint/suspicious/noEmptyBlock: the variant must draw nothing */
+  &:not(*) {
+  }
+}
 
 /* A 44px hit area around a control drawn smaller, for `touch:hit-area`. It is
    a transparent ::after, so the drawn size, and the layout around it, stay

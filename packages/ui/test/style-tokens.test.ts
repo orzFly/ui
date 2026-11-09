@@ -340,21 +340,32 @@ function declarationProblem(property: string, value: string): string | null {
   }
 }
 
+/** `css` with every `@variant <name> { … }` block cut out, nested rules and all. */
+function withoutVariant(css: string, name: string): string {
+  const head = new RegExp(`@variant\\s+${name}\\s*\\{`, "g");
+  let out = "";
+  let from = 0;
+  for (let match = head.exec(css); match; match = head.exec(css)) {
+    let end = match.index + match[0].length;
+    for (let open = 1; open > 0; end++) {
+      if (css[end] === "{") open++;
+      if (css[end] === "}") open--;
+    }
+    out += css.slice(from, match.index);
+    from = end;
+    head.lastIndex = end;
+  }
+  return out + css.slice(from);
+}
+
 function scanStylesheet(path: string): Finding[] {
   const file = relative(PACKAGES, path);
-  const css = readFileSync(path, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    // A rule every selector of which is raymond's is that style's own drawing, as a raymond:
-    // class is: no other style reaches it, so it needs no token.
-    .replace(/(?<=^|[{};])([^{};]+)\{[^{}]*\}/g, (rule, selectors: string) =>
-      selectors
-        .split(",")
-        .every((selector) =>
-          selector.trim().startsWith('[data-style="raymond"]'),
-        )
-        ? ""
-        : rule,
-    );
+  // A `@variant raymond` block is that style's own drawing, as a raymond: class is: no other
+  // style reaches it, so it needs no token.
+  const css = withoutVariant(
+    readFileSync(path, "utf8").replace(/\/\*[\s\S]*?\*\//g, ""),
+    "raymond",
+  );
   const found: Finding[] = [];
   for (const match of css.matchAll(/([\w-]+):\s*([^;{}]+);/g)) {
     const [, property = "", value = ""] = match;

@@ -131,7 +131,9 @@ style alone. A theme belongs to the styles it lists in `styles` (the default sty
 none), and the UI pick is always one of the current style's themes.
 
 One more style ships: raymond, Windows 2000, with its own theme, Windows Standard, among
-`builtinThemes`. Import its stylesheet after `styles.css` and offer it beside the default one:
+`builtinThemes`. Its stylesheet turns on every part's raymond look, in every package, and an app
+that does not import it carries none of raymond's CSS. Import it after `styles.css` (before it,
+only its tokens apply) and offer it beside the default one:
 
 ```css
 @import "@orz/ui/styles.css";

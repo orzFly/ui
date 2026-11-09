@@ -19,7 +19,10 @@ interface Rule {
 
 /** The style rules of a stylesheet with no nesting beyond @layer, comments dropped. */
 function rulesOf(css: string): Rule[] {
-  const text = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const text = css
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    // A statement at-rule has no block; left in, it would join the next prelude.
+    .replace(/@custom-variant[^;{]*;/g, "");
   const rules: Rule[] = [];
   const layers: (string | null)[] = [];
   let head = "";
@@ -85,6 +88,20 @@ describe("raymond.css", () => {
       );
     }
     expect(CSS).not.toContain("!important");
+  });
+
+  it("defines the raymond variant that theme.css declares to draw nothing", () => {
+    expect(CSS).toContain(
+      '@custom-variant raymond (&:is([data-style="raymond"] *));',
+    );
+    const theme = readFileSync(
+      join(import.meta.dirname, "../theme.css"),
+      "utf8",
+    ).replace(/\/\*[\s\S]*?\*\//g, "");
+    const placeholder =
+      /@custom-variant raymond\s*\{([^}]*\{[^}]*\})?\s*\}/.exec(theme);
+    expect(placeholder).not.toBeNull();
+    expect(placeholder?.[0]).not.toContain("@slot");
   });
 
   it("falls back for every colour its palettes supply", () => {

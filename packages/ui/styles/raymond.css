@@ -4,7 +4,8 @@
    dialogs and sheets, a classic tab strip, group boxes and a dotted focus
    rectangle. Import it after @orz/ui/styles.css; it draws only under
    data-style="raymond", which the theme store writes when a user picks the
-   style.
+   style. Importing it is what turns on every part's raymond look, in every
+   package: an app that leaves it out carries no raymond CSS at all.
 
    This file holds the style's tokens: the ones theme.css declares,
    reassigned, and the colours its palettes supply. It draws no part. Each
@@ -12,6 +13,16 @@
    variant, in its own package, since the component knows what the part is
    for. Only what belongs to no component is drawn here: selected text and
    the scroll bars. */
+
+/* The real variant, replacing the one theme.css declares to draw nothing.
+   The later definition wins, so this file comes after @orz/ui/styles.css:
+   imported before it, the tokens apply and no part draws in raymond. Keyed
+   on data-style, which the paint guard sets before first paint, so a
+   prerendered page needs no second render to draw it. `:is()` rather than
+   `:where()`: the attribute outranks a default class under the same
+   variants, so a raymond class wins whatever order Tailwind sorts the
+   variants in. */
+@custom-variant raymond (&:is([data-style="raymond"] *));
 
 @layer base {
   [data-style="raymond"] {
