@@ -139,10 +139,9 @@ export function YourTheme({ className }: { className?: string }) {
             ))}
           </SegmentedControl>
         )}
-        <List purpose="listbox" asChild>
+        <List purpose="listbox" framed asChild>
           <fieldset
             aria-label="Theme"
-            className="border"
             onPointerLeave={() => show(null)}
             onBlur={(event) => leaves(event) && show(null)}
           >
