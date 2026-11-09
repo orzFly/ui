@@ -1,12 +1,12 @@
 ---
 name: orz-ui
-description: Use when building or changing UI in an app that depends on @orz/ui or an @orz/ui-* package. Says how the components are meant to be used (as they are, never restyled) and where the guidelines are.
+description: Use when building or changing UI in an app that depends on @orz/ui or an @orz/ui-* package. Says how the components are meant to be used (as they are, composed before tweaked) and where the guidelines are.
 ---
 
 # Building with @orz/ui
 
 Every component already carries its density, touch sizes, states and the user's theme. Pick the
-right one and leave it alone.
+right one and prefer it as it is.
 
 - Guidelines, every page as Markdown: https://orzfly.github.io/ui/llms.txt
 - Setup: https://orzfly.github.io/ui/start/index.md
@@ -23,13 +23,14 @@ install line from the Start page (**Install**, and the **Packages** table), or f
 ## Rules
 
 - Use the component a guideline names for the job; read that page first and do what it says.
-- A `className` only places a component (position, size in its parent, gaps). Never restyle it:
-  no colour, fill, border, radius, shadow, font size or weight, no hover/current/selected look.
+- A `className` places a component (position, size in its parent, gaps) first of all.
 - Never hand-draw a control the library has (nav rows are `NavList`, sections `TabNav`, menus
   `DropdownMenu`, confirmations `ConfirmDialog`).
 - Never pass sizes for touch, and never write a colour: use the theme's tokens.
-- No pattern for what you need? Compose it from library components under the same rules, then
-  tell your user which pattern is missing so it can be added to @orz/ui.
+- No component for what you need? Compose it from library components before drawing your own.
+- A light tweak on top (a token colour, a size, a weight) is fine when it holds up in every style
+  and theme; check it in each. Prefer leaving a component's hover/current/selected look to it:
+  a style redraws it.
 
 ## Packages
 

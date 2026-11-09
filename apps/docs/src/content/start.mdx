@@ -84,18 +84,20 @@ whichever device you are reading on.
 
 ## Build from the components
 
-**Use the components as they are.** The library's point is that an app does not draw its own
+**Prefer the components as they are.** The library's point is that an app does not draw its own
 controls: it picks the component a guideline names for the job, and gets the density, the touch
 sizes, the states and the user's theme with it.
 
-- A `className` places a component: its position, its share of the space, the gap to its
-  neighbours. It never restyles one: no colour, fill, border, radius, shadow, font size or weight
-  of its own, and no look of its own for hover, the current place or a selection.
 - Before using a component, read the guideline page that names it, and do what it says. The
   component's props are in <StorybookLink>Storybook</StorybookLink>.
-- Where the library has no pattern for what you need, compose it from library components under
-  the same rule, and say which pattern is missing, so it can be added to @orz/ui rather than
-  drawn again in the next app.
+- A `className` places a component: its position, its share of the space, the gap to its
+  neighbours.
+- Where no component fits, compose one from the library's components before drawing anything of
+  your own.
+- A light tweak on top, a muted colour from the theme's tokens, a size or a weight, is fine when it
+  holds up in every style and theme: look at it in each. A component's own look for hover, the
+  current place and a selection is best left to it; a style redraws those, and yours would fight
+  it.
 
 [Navigation](/guidelines/patterns/navigation/) is the worked case: a hand-made nav row draws its
 own current state, and an app's places then read differently from screen to screen; `NavList`
