@@ -372,12 +372,12 @@ export function BinaryInspector() {
         }}
       />
       <div className="flex min-h-0 flex-1">
-        <Pane purpose="panel" asChild>
+        <Pane purpose="sidebar" edge="end" asChild>
           <aside
             aria-label="File and structure"
-            className="hidden w-64 shrink-0 flex-col border-r bg-sidebar md:flex"
+            className="hidden w-64 shrink-0 flex-col md:flex"
           >
-            <Pane purpose="panel" className="grid gap-2 border-b p-3">
+            <Pane purpose="panel" edge="bottom" className="grid gap-2 p-3">
               {filePicker}
             </Pane>
             <GroupHeading asChild className="px-3 pt-3 pb-1">
@@ -401,7 +401,11 @@ export function BinaryInspector() {
         </Pane>
         <Pane purpose="panel" asChild>
           <main className="flex min-w-0 flex-1 flex-col">
-            <Pane purpose="panel" className="grid gap-2 border-b p-2 md:hidden">
+            <Pane
+              purpose="panel"
+              edge="bottom"
+              className="grid gap-2 p-2 md:hidden"
+            >
               {filePicker}
               {doc && !fetching && (
                 <StructureSelect
@@ -415,10 +419,10 @@ export function BinaryInspector() {
             <div className="flex min-h-0 flex-1 p-2 md:p-3">{body}</div>
           </main>
         </Pane>
-        <Pane purpose="panel" asChild>
+        <Pane purpose="panel" edge="start" asChild>
           <aside
             aria-label="Inspector"
-            className="hidden w-72 shrink-0 overflow-y-auto border-l p-3 lg:block"
+            className="hidden w-72 shrink-0 overflow-y-auto p-3 lg:block"
           >
             {inspector}
           </aside>
@@ -428,7 +432,8 @@ export function BinaryInspector() {
       <footer className="pb-[max(0px,calc(env(safe-area-inset-bottom)-0.5rem))]">
         <Pane
           purpose="toolbar"
-          className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t px-2 py-2 md:px-3"
+          edge="top"
+          className="flex flex-wrap items-center gap-x-3 gap-y-2 px-2 py-2 md:px-3"
         >
           <SegmentedControl
             aria-label="Typing"

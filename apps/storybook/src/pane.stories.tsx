@@ -47,18 +47,27 @@ const meta = {
   parameters: { guidelines: "/guidelines/foundations/styles/" },
   args: {
     purpose: "document",
-    className: "max-w-md border p-4 text-ui",
+    className: "max-w-md p-4 text-ui",
     children: "What is read or written: a message, a diff, an editor.",
   },
   argTypes: {
     purpose: { control: "inline-radio", options: PURPOSES },
+    edge: {
+      control: "inline-radio",
+      options: ["none", "top", "bottom", "start", "end"],
+    },
+    docked: {
+      control: "inline-radio",
+      options: ["none", "top", "bottom", "start", "end", "fill"],
+    },
+    frame: { control: "inline-radio", options: [undefined, "card", "inset"] },
   },
 } satisfies Meta<typeof Pane>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Playground: Story = {};
+export const Playground: Story = { args: { frame: "card" } };
 
 /**
  * An app's frame, each region marked with what it is for: switch the toolbar's Style to Raymond to
@@ -69,18 +78,14 @@ export const Playground: Story = {};
 export const App: Story = {
   args: {
     purpose: "app",
-    className:
-      "flex h-80 max-w-2xl overflow-hidden rounded-surface border bg-background",
+    className: "flex h-80 max-w-2xl overflow-hidden",
   },
   render: function Render(args) {
     const [current, setCurrent] = useState("Inbox");
     return (
       <Pane {...args}>
-        <Pane purpose="panel" asChild>
-          <aside
-            aria-label="Mail"
-            className="flex w-40 shrink-0 flex-col border-r bg-sidebar p-2 text-sidebar-foreground"
-          >
+        <Pane purpose="sidebar" edge="end" asChild>
+          <aside aria-label="Mail" className="flex w-40 shrink-0 flex-col p-2">
             <NavListFrame className="flex min-h-0 flex-1 flex-col">
               <nav
                 aria-label="Folders"
@@ -105,7 +110,8 @@ export const App: Story = {
         <div className="flex min-w-0 flex-1 flex-col">
           <Pane
             purpose="toolbar"
-            className="flex shrink-0 items-center gap-0.5 border-b px-1.5 py-1.5"
+            edge="bottom"
+            className="flex shrink-0 items-center gap-0.5 px-1.5 py-1.5"
           >
             <ToolbarButton size="sm">
               <ReplyIcon />
@@ -135,7 +141,7 @@ export const App: Story = {
           </Pane>
           <Pane
             purpose="statusbar"
-            className="flex shrink-0 items-center border-t px-3 py-1.5 text-muted-foreground text-ui-sm"
+            className="flex shrink-0 items-center px-3 py-1.5"
           >
             {current}: 1 of 3 unread
           </Pane>
@@ -152,13 +158,12 @@ export const App: Story = {
 export const Window: Story = {
   args: {
     purpose: "window",
-    className:
-      "flex w-80 flex-col overflow-hidden rounded-surface border bg-background shadow-lg",
+    className: "flex w-80 flex-col overflow-hidden",
   },
   render: (args) => (
     <Pane {...args}>
       <Pane purpose="titlebar" asChild>
-        <header className="flex shrink-0 items-center gap-1 border-b bg-muted/50 py-1 pr-1 pl-3">
+        <header className="flex shrink-0 items-center gap-1 py-1 pr-1 pl-3">
           <h2 className="min-w-0 flex-1 truncate font-medium text-ui">
             New message
           </h2>
@@ -176,7 +181,7 @@ export const Window: Story = {
           look before Friday?
         </p>
       </Pane>
-      <Pane purpose="panel" className="flex border-t p-2">
+      <Pane purpose="panel" edge="top" className="flex p-2">
         <Button>
           <SendIcon />
           Send

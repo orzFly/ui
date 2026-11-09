@@ -44,9 +44,9 @@ function Comment({
       <span className="mt-1.5">
         <UserAvatar login={author} size="default" />
       </span>
-      <Pane purpose="document" asChild>
-        <article className="min-w-0 rounded-lg border bg-card text-card-foreground">
-          <header className="flex flex-wrap items-baseline gap-x-1.5 rounded-t-lg border-b bg-muted/50 px-3 py-2 text-muted-foreground text-ui">
+      <Pane purpose="document" frame="card" asChild>
+        <article className="min-w-0">
+          <header className="flex flex-wrap items-baseline gap-x-1.5 border-b bg-muted/50 px-3 py-2 text-muted-foreground text-ui">
             <span className="font-medium text-foreground">{author}</span>
             {verb} <Stamp at={at} />
             {author === PULL_REQUEST.author && (
@@ -133,11 +133,8 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
     }, RERUN_MS);
   };
   return (
-    <Pane purpose="panel" asChild>
-      <section
-        aria-labelledby="merge-status"
-        className="ml-11 rounded-lg border bg-card text-card-foreground"
-      >
+    <Pane purpose="panel" frame="card" asChild>
+      <section aria-labelledby="merge-status" className="ml-11">
         <header className="flex flex-wrap items-start gap-3 p-3">
           <CircleXIcon className="mt-0.5 size-5 shrink-0 text-destructive" />
           <div className="min-w-0 flex-1">
@@ -228,10 +225,7 @@ function CommentForm({ onPost }: { onPost(body: string): void }) {
       <span className="mt-1.5">
         <UserAvatar login={PULL_REQUEST_ME} size="default" />
       </span>
-      <Pane
-        purpose="panel"
-        className="grid min-w-0 gap-2 rounded-lg border bg-card p-2"
-      >
+      <Pane purpose="panel" frame="card" className="grid min-w-0 gap-2 p-2">
         {/* CodeMirror measures the page, which a prerender has none of. */}
         <ClientOnly fallback={<Skeleton className="h-20 w-full" />}>
           <MarkdownEditor

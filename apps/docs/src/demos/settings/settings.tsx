@@ -129,9 +129,10 @@ export function Settings() {
       className="h-full overflow-y-auto md:grid md:grid-cols-[14rem_1fr] md:overflow-hidden"
     >
       <Pane
-        purpose="panel"
+        purpose="sidebar"
+        edge={{ md: "end" }}
         className={cn(
-          "flex flex-col p-2 max-md:min-h-full md:min-h-0 md:border-r md:bg-sidebar md:p-3",
+          "flex flex-col p-2 max-md:min-h-full md:min-h-0 md:p-3",
           view.open && "max-md:hidden",
         )}
       >

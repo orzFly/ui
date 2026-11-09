@@ -76,22 +76,26 @@ export function Compose({
   };
 
   return (
-    <Pane purpose="window" asChild>
+    <Pane
+      purpose="window"
+      docked={{ initial: "fill", md: size === "expanded" ? "none" : "bottom" }}
+      asChild
+    >
       <section
         aria-labelledby="compose-title"
         className={cn(
-          "absolute z-30 flex flex-col overflow-hidden bg-background shadow-2xl",
+          "absolute z-30 flex flex-col overflow-hidden",
           // A phone has room for nothing beside it.
           "max-md:inset-0",
-          "md:right-4 md:bottom-0 md:rounded-t-xl md:border md:border-b-0",
+          "md:right-4 md:bottom-0",
           size === "docked" && "md:h-[min(30rem,calc(100%-2rem))] md:w-[30rem]",
           size === "minimised" && "md:w-72",
           size === "expanded" &&
-            "md:top-4 md:left-4 md:max-w-3xl md:rounded-b-xl md:border-b lg:left-auto lg:w-[48rem] md:bottom-4",
+            "md:top-4 md:left-4 md:max-w-3xl lg:left-auto lg:w-[48rem] md:bottom-4",
         )}
       >
         <Pane purpose="titlebar" asChild>
-          <header className="flex h-12 shrink-0 items-center gap-1 border-b bg-muted/50 pr-2 pl-1 md:h-10 md:pr-1 md:pl-3">
+          <header className="flex h-12 shrink-0 items-center gap-1 pr-2 pl-1 md:h-10 md:pr-1 md:pl-3">
             <ActionButton
               label="Close and keep as a draft"
               className="md:hidden"
@@ -149,8 +153,8 @@ export function Compose({
             size === "minimised" && "md:hidden",
           )}
         >
-          <Pane purpose="panel" asChild>
-            <div className="border-b">
+          <Pane purpose="panel" edge="bottom" asChild>
+            <div>
               <div className="flex items-center gap-2 px-3">
                 <label
                   htmlFor="compose-to"
@@ -189,8 +193,8 @@ export function Compose({
               </datalist>
             </div>
           </Pane>
-          <Pane purpose="panel" asChild>
-            <div className="flex items-center gap-2 border-b px-3">
+          <Pane purpose="panel" edge="bottom" asChild>
+            <div className="flex items-center gap-2 px-3">
               <label
                 htmlFor="compose-subject"
                 className="w-14 text-muted-foreground text-ui"
@@ -214,8 +218,8 @@ export function Compose({
             purpose="document"
             className="min-h-0 flex-1 overflow-y-auto px-1"
           />
-          <Pane purpose="panel" asChild>
-            <div className="flex items-center gap-2 border-t p-2 max-md:hidden">
+          <Pane purpose="panel" edge="top" asChild>
+            <div className="flex items-center gap-2 p-2 max-md:hidden">
               <Button type="submit">
                 <SendIcon />
                 Send
@@ -229,8 +233,8 @@ export function Compose({
               </ActionButton>
             </div>
           </Pane>
-          <Pane purpose="panel" asChild>
-            <div className="flex border-t p-2 md:hidden">
+          <Pane purpose="panel" edge="top" asChild>
+            <div className="flex p-2 md:hidden">
               <Button variant="ghost" onClick={() => onDiscard(current())}>
                 <Trash2Icon />
                 Discard

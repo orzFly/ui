@@ -167,7 +167,8 @@ function Toolbar({
   return (
     <Pane
       purpose="toolbar"
-      className="flex shrink-0 items-center gap-0.5 border-b px-2 py-2.5"
+      edge="bottom"
+      className="flex shrink-0 items-center gap-0.5 px-2 py-2.5"
     >
       <ActionButton
         label="Back to inbox"

@@ -103,8 +103,12 @@ the window's face around them; each style draws each of those its own way. Say w
 - **A region** is `Pane` with `purpose="app"` for the box an app's panes sit side by side in,
   `"document"` for what is read or written (a message, a diff), `"toolbar"` for the controls that
   act on it, `"statusbar"` for the line along the foot that says how it stands (a line count, the
-  first error), and `"panel"` for the rest of the window. A window of the app's own that floats over
-  the rest, a docked composer say, is `"window"`, and its caption `"titlebar"`.
+  first error), `"sidebar"` for the column of places to go beside the rest, and `"panel"` for the
+  rest of the window. A window of the app's own that floats over the rest, a docked composer say,
+  is `"window"`, with `docked` naming the edge it sits against, and its caption `"titlebar"`. The
+  pane draws its own look in every style: name the side that meets its neighbour with `edge`
+  rather than a border of your own, and a pane set inside another, a comment or a sample, with
+  `frame`.
 - **An editor** is `CodeEditor` or `MarkdownEditor` with `purpose="field"`, the default, when it
   is one input among others on a form or under a message, and `"document"` when it is the file or
   text its pane exists to edit and fills that pane, which draws the edges.

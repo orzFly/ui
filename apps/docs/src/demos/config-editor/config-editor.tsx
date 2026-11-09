@@ -121,8 +121,9 @@ export function ConfigEditor() {
   return (
     <Pane purpose="app" className="flex h-full overflow-hidden max-md:flex-col">
       <Pane
-        purpose="panel"
-        className="flex shrink-0 flex-col border-b p-2 md:w-56 md:border-r md:border-b-0 md:bg-sidebar md:p-3"
+        purpose="sidebar"
+        edge={{ initial: "bottom", md: "end" }}
+        className="flex shrink-0 flex-col p-2 md:w-56 md:p-3"
       >
         <NavListFrame className="flex min-h-0 flex-1 flex-col">
           <nav aria-label="Files" className="min-h-0 flex-1 md:overflow-y-auto">
@@ -155,8 +156,8 @@ export function ConfigEditor() {
           aria-labelledby="config-file-title"
           className="flex min-h-0 min-w-0 flex-1 flex-col"
         >
-          <Pane purpose="toolbar" asChild>
-            <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-2 md:px-4">
+          <Pane purpose="toolbar" edge="bottom" asChild>
+            <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 md:px-4">
               <div className="flex min-w-0 items-baseline gap-2">
                 <h2
                   id="config-file-title"
@@ -212,7 +213,7 @@ export function ConfigEditor() {
           <Pane purpose="statusbar" asChild>
             <footer
               id={PROBLEM_ID}
-              className="flex min-h-9 shrink-0 items-center border-t px-3 text-ui-sm md:px-4"
+              className="flex min-h-9 shrink-0 items-center px-3 md:px-4"
             >
               {problem === null ? (
                 <span className="flex items-center gap-1.5 text-muted-foreground">

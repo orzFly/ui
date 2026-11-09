@@ -138,7 +138,7 @@ function EditorPreview({ prefs }: { prefs: Preferences }) {
       <figcaption className="text-muted-foreground text-ui-sm">
         Preview
       </figcaption>
-      <Pane purpose="document" className="rounded-lg border bg-muted/40">
+      <Pane purpose="document" frame="inset">
         <pre
           className={cn(
             "p-3 font-mono leading-[1.6] [tab-size:4]",

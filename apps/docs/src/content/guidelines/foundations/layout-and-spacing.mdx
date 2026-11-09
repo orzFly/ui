@@ -71,7 +71,8 @@ Groups that are not rows of one list take a `Separator` when space is not enough
 clusters of buttons in a toolbar, where a gap wide enough to set them apart would scatter the row.
 It is an element of the layout, so the parent's `gap` spaces it like any other child, and
 `orientation="vertical"` stands it between the items of a row. A pane's own edge, such as a
-sidebar's, is that pane's `border-r` instead: the line belongs to the pane and goes with it.
+sidebar's, is that `Pane`'s `edge` instead: the line belongs to the pane and goes with it, and
+`edge={{ md: "end" }}` draws it only from the breakpoint where the panes stand side by side.
 
 <Example of={FormattingToolbar} />
 

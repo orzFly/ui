@@ -196,11 +196,11 @@ export function DemoPage({ children }: { children: ReactNode }) {
           <DemoCode dir={dir} source={source} onSource={setSourceParam} />
         </TabsContent>
         {/* Rendered while closed too, so search indexes the description it holds. */}
-        <Pane purpose="document" asChild>
+        <Pane purpose="document" edge="start" asChild>
           <aside
             aria-label="About this demo"
             className={cn(
-              "hidden w-80 shrink-0 flex-col border-l",
+              "hidden w-80 shrink-0 flex-col",
               aboutOpen && "lg:flex",
             )}
           >

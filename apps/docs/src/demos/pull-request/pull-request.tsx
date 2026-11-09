@@ -75,8 +75,8 @@ const SECTIONS: {
 function AppBar() {
   const { owner, name } = PULL_REQUEST.repo;
   return (
-    <Pane purpose="panel" asChild>
-      <header className="flex items-center gap-2 border-b px-3 py-2 md:px-4">
+    <Pane purpose="panel" edge="bottom" asChild>
+      <header className="flex items-center gap-2 px-3 py-2 md:px-4">
         <FolderGit2Icon className="size-5 shrink-0 text-muted-foreground" />
         <p className="min-w-0 truncate">
           <span className="text-muted-foreground">{owner}</span>

@@ -190,11 +190,11 @@ export function Notes() {
       <ContentRenderers renderers={RENDERERS}>
         <AttachmentViewerProvider>
           <Pane purpose="app" className="flex h-full overflow-hidden">
-            <Pane purpose="panel" asChild>
+            <Pane purpose="panel" edge={{ md: "end" }} asChild>
               <nav
                 aria-label="Notebook"
                 className={cn(
-                  "flex min-w-0 flex-1 flex-col md:w-72 md:flex-none md:border-r",
+                  "flex min-w-0 flex-1 flex-col md:w-72 md:flex-none",
                   view.open && "max-md:hidden",
                 )}
               >
@@ -230,8 +230,8 @@ export function Notes() {
                     !view.open && "max-md:hidden",
                   )}
                 >
-                  <Pane purpose="toolbar" asChild>
-                    <header className="flex shrink-0 items-center gap-2 border-b px-2 py-2 md:px-4">
+                  <Pane purpose="toolbar" edge="bottom" asChild>
+                    <header className="flex shrink-0 items-center gap-2 px-2 py-2 md:px-4">
                       <ToolbarButton
                         className="md:hidden"
                         aria-label="Back to notes"
@@ -319,14 +319,17 @@ export function Notes() {
                     </header>
                   </Pane>
                   <div className="flex min-h-0 flex-1">
-                    <Pane purpose="panel" asChild>
+                    <Pane
+                      purpose="panel"
+                      edge={mode === "split" ? { lg: "end" } : "none"}
+                      asChild
+                    >
                       <section
                         aria-label="Markdown"
                         className={cn(
                           "flex min-w-0 flex-1 flex-col",
                           mode === "preview" && "lg:hidden",
                           !phoneEditing && "max-lg:hidden",
-                          mode === "split" && "lg:border-r",
                         )}
                       >
                         <MarkdownEditor
@@ -373,7 +376,7 @@ export function Notes() {
                     </Pane>
                   </div>
                   <Pane purpose="statusbar" asChild>
-                    <footer className="shrink-0 border-t px-4 py-1.5 text-muted-foreground text-ui-sm">
+                    <footer className="shrink-0 px-4 py-1.5">
                       {wordCount(note.body)} words · Kept in this tab only
                     </footer>
                   </Pane>

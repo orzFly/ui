@@ -344,7 +344,8 @@ function ThreadList({
     <>
       <Pane
         purpose="toolbar"
-        className="flex shrink-0 items-center gap-1 border-b px-2 py-3.5"
+        edge="bottom"
+        className="flex shrink-0 items-center gap-1 px-2 py-3.5"
       >
         <ActionButton label="Folders" className="md:hidden" onClick={onMenu}>
           <PanelLeftIcon />
@@ -383,7 +384,8 @@ function ThreadList({
       </Pane>
       <Pane
         purpose="toolbar"
-        className="flex shrink-0 items-center gap-0.5 border-b px-1.5 py-1.5 text-ui"
+        edge="bottom"
+        className="flex shrink-0 items-center gap-0.5 px-1.5 py-1.5 text-ui"
       >
         <span className="flex size-8 items-center justify-center">
           <Checkbox
@@ -885,30 +887,30 @@ export function Mail() {
         {/* Capped at a screen, so in a box with no height of its own the panes still scroll. */}
         <Pane
           purpose="app"
-          className="relative flex h-full max-h-dvh min-h-0 overflow-hidden bg-background text-foreground"
+          className="relative flex h-full max-h-dvh min-h-0 overflow-hidden"
         >
-          <Pane purpose="panel" asChild>
+          <Pane purpose="sidebar" edge="end" asChild>
             <aside
               aria-label="Mail"
               data-width="wide"
-              className="w-60 shrink-0 border-r bg-sidebar text-sidebar-foreground max-xl:hidden"
+              className="w-60 shrink-0 max-xl:hidden"
             >
               <Sidebar {...side} />
             </aside>
           </Pane>
-          <Pane purpose="panel" asChild>
+          <Pane purpose="sidebar" edge="end" asChild>
             <aside
               aria-label="Mail"
-              className="w-14 shrink-0 border-r bg-sidebar text-sidebar-foreground max-md:hidden xl:hidden"
+              className="w-14 shrink-0 max-md:hidden xl:hidden"
             >
               <Rail {...side} />
             </aside>
           </Pane>
-          <Pane purpose="panel" asChild>
+          <Pane purpose="panel" edge={{ md: "end" }} asChild>
             <section
               aria-label="Mail list"
               className={cn(
-                "flex min-w-0 flex-col max-md:flex-1 md:w-80 md:shrink-0 md:border-r lg:w-96",
+                "flex min-w-0 flex-col max-md:flex-1 md:w-80 md:shrink-0 lg:w-96",
                 thread && "max-md:hidden",
               )}
             >
@@ -975,10 +977,15 @@ export function Mail() {
             ) : (
               <Pane
                 purpose="document"
-                className="grid flex-1 place-content-center justify-items-center gap-2 p-8 text-center text-muted-foreground"
+                className="grid flex-1 place-content-center justify-items-center gap-2 p-8 text-center"
               >
-                <InboxIcon className="size-8" aria-hidden />
-                <p>Pick a conversation to read it.</p>
+                <InboxIcon
+                  className="size-8 text-muted-foreground"
+                  aria-hidden
+                />
+                <p className="text-muted-foreground">
+                  Pick a conversation to read it.
+                </p>
               </Pane>
             )}
           </div>

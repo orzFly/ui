@@ -224,7 +224,7 @@ export function Tasks() {
       {/* Capped at a screen, so in a box with no height of its own the table still scrolls. */}
       <Pane
         purpose="app"
-        className="flex h-full max-h-dvh min-h-0 overflow-hidden bg-background text-foreground"
+        className="flex h-full max-h-dvh min-h-0 overflow-hidden"
       >
         <Pane purpose="panel" asChild>
           <section
@@ -233,7 +233,8 @@ export function Tasks() {
           >
             <Pane
               purpose="toolbar"
-              className="flex flex-wrap items-center gap-2 border-b px-2 py-2 md:px-4"
+              edge="bottom"
+              className="flex flex-wrap items-center gap-2 px-2 py-2 md:px-4"
             >
               <h2 id="tasks-title" className="mr-2 font-semibold">
                 Tasks
@@ -317,7 +318,8 @@ export function Tasks() {
             <footer className="shrink-0 pb-[max(0px,calc(env(safe-area-inset-bottom)-9.5px))]">
               <Pane
                 purpose="toolbar"
-                className="flex items-center gap-2 border-t px-2 py-[9.5px] text-ui md:px-4"
+                edge="top"
+                className="flex items-center gap-2 px-2 py-[9.5px] text-ui md:px-4"
               >
                 {picked.length > 0 ? (
                   <>
@@ -363,10 +365,10 @@ export function Tasks() {
           </section>
         </Pane>
         {task && detailActions && wide && (
-          <Pane purpose="panel" asChild>
+          <Pane purpose="panel" edge="start" asChild>
             <aside
               aria-labelledby="task-details-title"
-              className="flex w-96 shrink-0 flex-col border-l"
+              className="flex w-96 shrink-0 flex-col"
             >
               <div className="flex items-start gap-2 p-4">
                 <div className="grid min-w-0 flex-1 gap-1">

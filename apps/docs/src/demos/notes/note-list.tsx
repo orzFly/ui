@@ -89,7 +89,7 @@ export function NoteList({
   const filtered = query !== "" || chosen.size > 0;
   return (
     <>
-      <Pane purpose="panel" className="grid shrink-0 gap-2 border-b p-2">
+      <Pane purpose="panel" edge="bottom" className="grid shrink-0 gap-2 p-2">
         <div className="flex items-center gap-2">
           <h2 className="flex-1 px-1 font-semibold">Notes</h2>
           <Button size="sm" variant="outline" onClick={onNew}>
