@@ -18,6 +18,10 @@ const ListContext = React.createContext<{
   orientation: "vertical" | "horizontal";
 }>({ purpose: "listbox", orientation: "vertical" });
 
+// A framed list clips its rows' fills to its corners. Under raymond a
+// listbox's or a collection's well already is its frame, and drops the border.
+const FRAMED = "overflow-hidden rounded-frame border";
+
 // A listbox's picked row takes the accent fill, text and tick that every
 // highlighted or selected row takes, a menu's or a table's included.
 // Under raymond a listbox is a sunken white well whose picked rows fill with
@@ -56,15 +60,15 @@ const FRAME: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
 const ITEM: Record<ListPurpose, Record<"vertical" | "horizontal", string>> = {
   listbox: {
     vertical:
-      "transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--ring:var(--primary-foreground)] raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
+      "rounded-item transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--ring:var(--primary-foreground)] raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
     horizontal:
-      "transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--ring:var(--primary-foreground)] raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
+      "rounded-item transition-colors hover:bg-accent/60 data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue raymond:border-transparent raymond:transition-none raymond:not-data-selected:hover:bg-transparent raymond:data-selected:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--ring:var(--primary-foreground)] raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)] raymond:data-selected:[--list-highlight:var(--primary)] raymond:data-selected:[--list-highlight-text:var(--primary-foreground)] raymond:data-selected:*:[--primary:var(--list-highlight-text)] raymond:data-selected:*:[--primary-foreground:var(--list-highlight)]",
   },
   menu: {
     vertical:
-      "transition-colors hover:bg-accent focus-visible:bg-accent raymond:transition-none raymond:hover:bg-primary raymond:hover:text-primary-foreground raymond:hover:[--foreground:var(--primary-foreground)] raymond:hover:[--muted-foreground:var(--primary-foreground)] raymond:hover:[--border:var(--primary-foreground)] raymond:focus-visible:bg-primary raymond:focus-visible:text-primary-foreground raymond:focus-visible:[--foreground:var(--primary-foreground)] raymond:focus-visible:[--muted-foreground:var(--primary-foreground)] raymond:focus-visible:[--border:var(--primary-foreground)]",
+      "rounded-item transition-colors hover:bg-accent focus-visible:bg-accent raymond:transition-none raymond:hover:bg-primary raymond:hover:text-primary-foreground raymond:hover:[--foreground:var(--primary-foreground)] raymond:hover:[--muted-foreground:var(--primary-foreground)] raymond:hover:[--border:var(--primary-foreground)] raymond:focus-visible:bg-primary raymond:focus-visible:text-primary-foreground raymond:focus-visible:[--foreground:var(--primary-foreground)] raymond:focus-visible:[--muted-foreground:var(--primary-foreground)] raymond:focus-visible:[--border:var(--primary-foreground)]",
     horizontal:
-      "transition-colors hover:bg-accent focus-visible:bg-accent raymond:transition-none raymond:hover:bg-primary raymond:hover:text-primary-foreground raymond:hover:[--foreground:var(--primary-foreground)] raymond:hover:[--muted-foreground:var(--primary-foreground)] raymond:hover:[--border:var(--primary-foreground)] raymond:focus-visible:bg-primary raymond:focus-visible:text-primary-foreground raymond:focus-visible:[--foreground:var(--primary-foreground)] raymond:focus-visible:[--muted-foreground:var(--primary-foreground)] raymond:focus-visible:[--border:var(--primary-foreground)]",
+      "rounded-item transition-colors hover:bg-accent focus-visible:bg-accent raymond:transition-none raymond:hover:bg-primary raymond:hover:text-primary-foreground raymond:hover:[--foreground:var(--primary-foreground)] raymond:hover:[--muted-foreground:var(--primary-foreground)] raymond:hover:[--border:var(--primary-foreground)] raymond:focus-visible:bg-primary raymond:focus-visible:text-primary-foreground raymond:focus-visible:[--foreground:var(--primary-foreground)] raymond:focus-visible:[--muted-foreground:var(--primary-foreground)] raymond:focus-visible:[--border:var(--primary-foreground)]",
   },
   collection: {
     vertical: "not-first:border-t raymond:border-t-0 raymond:px-1.5",
@@ -90,12 +94,15 @@ const LABEL: Record<ListPurpose, string> = {
 function List({
   purpose,
   orientation = "vertical",
+  framed = false,
   asChild = false,
   className,
   ...props
 }: React.ComponentProps<"div"> & {
   purpose: ListPurpose;
   orientation?: "vertical" | "horizontal";
+  /** Set in the flow of a page rather than filling a column, framed on its own. */
+  framed?: boolean;
   asChild?: boolean;
 }) {
   const Comp = asChild ? Slot.Root : "div";
@@ -109,7 +116,12 @@ function List({
         data-slot="list"
         data-purpose={purpose}
         data-orientation={orientation}
-        className={cn("text-ui", FRAME[purpose][orientation], className)}
+        className={cn(
+          "text-ui",
+          framed && FRAMED,
+          FRAME[purpose][orientation],
+          className,
+        )}
         {...props}
       />
     </ListContext.Provider>

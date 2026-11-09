@@ -101,7 +101,8 @@ the window's face around them; each style draws each of those its own way. Say w
 - **A list** is `List` with `purpose="listbox"` when its rows are things to pick,
   `"menu"` when they are actions, and `"collection"` when they are things the user keeps, each
   row carrying its own actions (access tokens with a Revoke button). Mark picked rows with
-  `ListItem`'s `selected`.
+  `ListItem`'s `selected`. A list set in the flow of a page rather than filling a column, a pull
+  request's commits say, takes `framed` instead of a border of its own.
 - **A table's rows** are marked by `TableRow`'s attributes, never a fill of your own: the row
   whose details are open beside the table takes `aria-current="true"`, and rows picked for an
   action take `data-state="selected"`. A style may draw a picked row that shows a ticked checkbox

@@ -96,3 +96,8 @@ export const Collection: Story = {
     </List>
   ),
 };
+
+/** A list set in the flow of a page, rather than filling a column, draws its own frame. */
+export const Framed: Story = {
+  args: { framed: true },
+};

@@ -38,7 +38,7 @@ function NoteRow({
           type="button"
           aria-current={selected ? "true" : undefined}
           onClick={onOpen}
-          className="grid w-full grid-cols-[1fr_auto] items-baseline gap-x-2 rounded-md px-2.5 py-2 text-left touch:min-h-11"
+          className="grid w-full grid-cols-[1fr_auto] items-baseline gap-x-2 px-2.5 py-2 text-left touch:min-h-11"
         >
           <span className="truncate font-medium text-ui">
             {titleOf(note.body)}

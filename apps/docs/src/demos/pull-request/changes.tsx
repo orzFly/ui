@@ -9,11 +9,8 @@ export function Commits() {
   const [picked, setPicked] = useState(COMMITS[0]?.hash ?? "");
   return (
     <div className="grid min-w-0 gap-4">
-      <List purpose="listbox" asChild>
-        <ol
-          aria-label="Commits"
-          className="divide-y overflow-hidden rounded-lg border"
-        >
+      <List purpose="listbox" framed asChild>
+        <ol aria-label="Commits">
           {COMMITS.map((commit) => (
             <ListItem
               key={commit.hash}
