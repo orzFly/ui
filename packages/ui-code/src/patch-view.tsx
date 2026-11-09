@@ -79,7 +79,8 @@ function CommitHeader({ commit }: { commit: PatchCommit }) {
     <div className={HEADER_ROW} style={{ height: PATCH_HEADER_HEIGHT }}>
       <GitCommitHorizontalIcon className="size-4 shrink-0 text-muted-foreground" />
       {commit.series !== undefined && (
-        <span className="shrink-0 rounded-chip border px-1.5 text-ui-2xs leading-4 text-muted-foreground tabular-nums">
+        // Under raymond a static edge, Windows 2000's one-pixel sunken border.
+        <span className="shrink-0 rounded-chip border px-1.5 text-ui-2xs leading-4 text-muted-foreground tabular-nums raymond:border-transparent raymond:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)]">
           {commit.series}
         </span>
       )}
@@ -420,6 +421,9 @@ export function PatchView({
         className={cn(
           "font-normal text-muted-foreground",
           raw && "bg-muted text-foreground pressed-cue",
+          // Under raymond a toolbar button that latches, sunk by a pixel
+          // over the dithered face while on, as @orz/ui's Toggle is.
+          "raymond:aria-pressed:bg-(--3d-highlight) raymond:aria-pressed:bg-[conic-gradient(var(--3d-face)_25%,transparent_0_50%,var(--3d-face)_0_75%,transparent_0)] raymond:aria-pressed:bg-size-[2px_2px] raymond:aria-pressed:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:aria-pressed:hover:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)]",
         )}
         onClick={() => setRaw((shown) => !shown)}
       >
@@ -454,15 +458,18 @@ export function PatchView({
       </>
     );
   }
+  // Under raymond the patch is one document: a sunken well in the window
+  // colour, its bar a band of the face along the top, its files run together
+  // on the well (styles.css parts them).
   return (
-    <div className="overflow-hidden rounded-frame ring-1 ring-border">
-      <div className="flex items-center gap-2 border-b bg-muted py-1 pr-1.5 pl-2 text-ui-sm text-muted-foreground">
+    <div className="overflow-hidden rounded-frame ring-1 ring-border raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken raymond:ring-0 raymond:[--background:var(--window)]">
+      <div className="flex items-center gap-2 border-b bg-muted py-1 pr-1.5 pl-2 text-ui-sm text-muted-foreground raymond:border-b-0 raymond:bg-(--3d-face)">
         <ModuleMarker icon={<FileDiffIcon />} />
         <span className="font-bold text-foreground">patch</span>
         <span className="ml-auto" />
         {controls}
       </div>
-      <div className="p-2">{body}</div>
+      <div className="p-2 raymond:p-0">{body}</div>
     </div>
   );
 }

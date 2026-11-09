@@ -76,6 +76,13 @@ const VIRTUAL_HEIGHT = "32rem";
 
 const CONTENT_PADDING = 8;
 
+// Under raymond a view is a document, a sunken well as a console window's
+// client area is, its bevel on the root around the scroller and never on the
+// scroller, which would paint its rows over it. The bar, in the window
+// chrome, is the face inside the well's edge, its two rows parted by an
+// etched line.
+const RAYMOND_WELL = "raymond:p-0.5 raymond:shadow-sunken raymond:ring-0";
+
 /**
  * The line between the gutter and the text, as a background of the rows'
  * container: it spans the padding too, and adds no node a selection could
@@ -907,6 +914,7 @@ export function AnsiView({
       <div
         className={cn(
           "ansi-view group relative flex flex-col overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border font-mono text-terminal-foreground",
+          RAYMOND_WELL,
           className,
         )}
         style={rootStyle}
@@ -928,6 +936,7 @@ export function AnsiView({
     <div
       className={cn(
         "ansi-view flex flex-col overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border font-mono text-terminal-foreground",
+        RAYMOND_WELL,
         className,
       )}
       style={rootStyle}
@@ -935,7 +944,7 @@ export function AnsiView({
     >
       {/* One child before the scroller, as in a pane, so that switching
           chrome keeps the scroller mounted and measured. */}
-      <div className="shrink-0 border-b border-border bg-muted font-ui text-foreground text-ui-sm">
+      <div className="shrink-0 border-b border-border bg-muted font-ui text-foreground text-ui-sm raymond:border-b-0 raymond:bg-(--3d-face)">
         <div className="flex items-center gap-2 py-1 pr-1 pl-2">
           <ModuleMarker icon={<SquareTerminalIcon />} />
           {filename !== undefined && (
@@ -960,7 +969,7 @@ export function AnsiView({
             )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border border-dashed py-1 pr-1 pl-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border border-dashed py-1 pr-1 pl-2 raymond:border-t-0 raymond:pt-1.5 raymond:shadow-[inset_0_1px_var(--3d-shadow),inset_0_2px_var(--3d-highlight)]">
           {parse.levelCounts && text !== "" && (
             <LevelChips
               counts={parse.levelCounts}

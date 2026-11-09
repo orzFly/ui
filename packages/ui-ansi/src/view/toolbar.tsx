@@ -20,6 +20,12 @@ export const LEVEL_KEYS: readonly LevelKey[] = [...LEVELS, "other"];
 
 const formatCount = (n: number) => n.toLocaleString("en-US");
 
+// Under raymond a button that latches is a toolbar button, as WordPad's bold
+// is, and while on sunk by a pixel over the face dithered with its highlight,
+// as @orz/ui's Toggle is.
+const RAYMOND_LATCH =
+  "raymond:aria-pressed:bg-(--3d-highlight) raymond:aria-pressed:bg-[conic-gradient(var(--3d-face)_25%,transparent_0_50%,var(--3d-face)_0_75%,transparent_0)] raymond:aria-pressed:bg-size-[2px_2px] raymond:aria-pressed:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:aria-pressed:hover:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)]";
+
 /**
  * The filter after a click on the chip of `key`: a click toggles it, a
  * shift+click shows it alone, or everything again when it already was.
@@ -63,7 +69,10 @@ export function LevelChips({ counts, hidden, onChange }: LevelChipsProps) {
           title="Click to show or hide; shift+click to show only this level"
           // styles.css gives [data-level] its --log-level, which colours the dot.
           data-level={key === "other" ? undefined : key}
-          className="rounded-chip font-mono text-muted-foreground line-through opacity-60 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:pressed-cue aria-pressed:no-underline aria-pressed:opacity-100"
+          className={cn(
+            "rounded-chip font-mono text-muted-foreground line-through opacity-60 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:pressed-cue aria-pressed:no-underline aria-pressed:opacity-100",
+            RAYMOND_LATCH,
+          )}
           onClick={onClick(key)}
         >
           <span
@@ -133,7 +142,10 @@ function Toggle({
       aria-label={label}
       title={label}
       aria-pressed={pressed}
-      className="aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:pressed-cue"
+      className={cn(
+        "aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:pressed-cue",
+        RAYMOND_LATCH,
+      )}
       onClick={() => onPressed(!pressed)}
     >
       {children}

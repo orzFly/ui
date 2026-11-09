@@ -30,6 +30,29 @@ diffs-container {
   @variant raymond {
     --diffs-light-bg: var(--window);
     --diffs-dark-bg: var(--window);
+    /* "N unmodified lines" is a square band of the face. pierre rounds it
+       in its shadow root, which no rule out here reaches; --orz-diffs-square
+       is what the patch view's own shadow CSS squares it on. */
+    --diffs-bg-separator-override: var(--3d-face);
+    --orz-diffs-square: 1;
+  }
+}
+/* A patch's files run together on one well, each after the first parted by
+   an etched line across the gap pierre leaves between them. On the header
+   row, which is ours, rather than the item, which pierre measures. */
+diffs-container + diffs-container > [slot="header-custom"] {
+  @variant raymond {
+    position: relative;
+    &::before {
+      content: "";
+      position: absolute;
+      inset-inline: 0;
+      top: -5px;
+      height: 2px;
+      box-shadow:
+        inset 0 1px var(--3d-shadow),
+        inset 0 -1px var(--3d-highlight);
+    }
   }
 }
 

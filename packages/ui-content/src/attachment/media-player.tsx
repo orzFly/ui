@@ -202,7 +202,8 @@ function MediaFrame({
       data-slot={video ? "video-player" : "audio-player"}
       title={title}
       className={cn(
-        "overflow-hidden rounded-frame ring-1 ring-border [&:fullscreen]:rounded-none [&:fullscreen]:ring-0",
+        // Under raymond a sunken well, as every viewer is, until it fills the screen.
+        "overflow-hidden rounded-frame ring-1 ring-border [&:fullscreen]:rounded-none [&:fullscreen]:ring-0 raymond:p-0.5 raymond:shadow-sunken raymond:ring-0 raymond:[&:fullscreen]:p-0 raymond:[&:fullscreen]:shadow-none",
         video ? "bg-black" : "bg-card",
         fullscreen && "flex flex-col",
         className,

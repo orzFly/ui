@@ -289,4 +289,33 @@
     border-radius: 0;
     background-color: transparent;
   }
+
+  /* Under raymond. Each rule nests `@variant raymond` inside its selector, so
+     it is generated only in an app that imports @orz/ui/styles/raymond.css.
+     Inline code keeps the body's size, since Courier New at 85% of 11px
+     drops under nine pixels, and its chip is a static edge, Windows 2000's
+     one-pixel sunken border, which reads on the face and the window alike.
+     The unrendered fence is a read-only field: sunken, on the window
+     colour. */
+  .markdown-body code {
+    @variant raymond {
+      padding: 0 0.25em;
+      font-size: 1em;
+      box-shadow:
+        inset 1px 1px var(--3d-shadow),
+        inset -1px -1px var(--3d-highlight);
+    }
+  }
+  .markdown-body pre {
+    @variant raymond {
+      background-color: var(--window);
+      box-shadow: var(--shadow-sunken);
+    }
+  }
+  .markdown-body pre code {
+    @variant raymond {
+      padding: 0;
+      box-shadow: none;
+    }
+  }
 }

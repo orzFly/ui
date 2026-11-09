@@ -317,7 +317,8 @@ function CastPlayer({
       ref={frameRef}
       data-orz-cast={id}
       className={cn(
-        "overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border [&:fullscreen]:rounded-none [&:fullscreen]:ring-0",
+        // Under raymond a sunken well, as every viewer is, until it fills the screen.
+        "overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border [&:fullscreen]:rounded-none [&:fullscreen]:ring-0 raymond:p-0.5 raymond:shadow-sunken raymond:ring-0 raymond:[&:fullscreen]:p-0 raymond:[&:fullscreen]:shadow-none",
         className,
       )}
       onKeyDownCapture={onKeyDownCapture}

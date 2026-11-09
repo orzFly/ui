@@ -59,7 +59,7 @@ function AttachmentRow({
   const href = useViewHref(item);
   const Icon = fileIcon(item);
   return (
-    <li className="flex items-center hover:bg-muted/40">
+    <li className="flex items-center hover:bg-muted/40 raymond:hover:bg-transparent">
       <a
         href={href === "" ? undefined : href}
         className="flex min-w-0 flex-1 items-center gap-2 py-2 pl-3 text-ui"
@@ -135,11 +135,17 @@ export function AttachmentList({
   const hiddenBefore = items.length - shown.length;
 
   return (
+    // Under raymond the list is a list view: a sunken well in the window
+    // colour, its title on a band of the face across the top, and its rows
+    // on the well unruled, as Explorer's details view draws files.
     <section
-      className={cn("rounded-frame ring-1 ring-border", className)}
+      className={cn(
+        "rounded-frame ring-1 ring-border raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken raymond:ring-0",
+        className,
+      )}
       id={id}
     >
-      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-ui">
+      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-ui raymond:border-b-0 raymond:bg-(--3d-face)">
         <PaperclipIcon className="size-3.5 text-muted-foreground" />
         <span className="font-medium">{title}</span>
         <span className="text-muted-foreground">{items.length}</span>
@@ -149,7 +155,7 @@ export function AttachmentList({
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
-          className="flex w-full items-center gap-1 border-b px-3 py-2 text-ui-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+          className="flex w-full items-center gap-1 border-b px-3 py-2 text-ui-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground raymond:border-b-0 raymond:hover:bg-transparent"
           data-testid="attachment-fold-toggle"
         >
           {folded ? (
@@ -165,7 +171,7 @@ export function AttachmentList({
           )}
         </button>
       )}
-      <ul className="divide-y">
+      <ul className="divide-y raymond:divide-y-0">
         {shown.map((item, shownIndex) => (
           // The viewer pages through the whole list, so a row hands it its
           // place in `items` — the fold's offset put the first visible row

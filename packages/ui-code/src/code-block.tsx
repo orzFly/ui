@@ -363,6 +363,18 @@ const COMMIT_MESSAGE_CSS = `
 [data-file] [data-line] { min-height: 1lh; }
 `;
 
+// pierre rounds "N unmodified lines" in its own layers, and a value from
+// outside reaches its shadow root only through a custom property: a style
+// that sets --orz-diffs-square on the container (styles.css) gets the band
+// square. Where style queries are unsupported it stays rounded.
+const SQUARE_SEPARATOR_CSS = `
+@container style(--orz-diffs-square: 1) {
+  [data-separator-wrapper], [data-separator-content], [data-expand-button] {
+    border-radius: 0;
+  }
+}
+`;
+
 /** px; the header rows `PatchFiles` callers draw must be exactly this tall. */
 export const PATCH_HEADER_HEIGHT = 36;
 
@@ -380,7 +392,7 @@ function patchOptions(
     overflow: "wrap",
     preferredHighlighter: PIERRE_HIGHLIGHTER,
     onPostRender: handlePostRender,
-    unsafeCSS: COMMIT_MESSAGE_CSS,
+    unsafeCSS: COMMIT_MESSAGE_CSS + SQUARE_SEPARATOR_CSS,
     layout: { paddingTop: 0, paddingBottom: 0, gap: 8 },
     itemMetrics: { diffHeaderHeight: PATCH_HEADER_HEIGHT },
   } as const;
@@ -626,8 +638,18 @@ export function CodeBlock({
     </CodeViewBoundary>
   );
   if (!copy) return block;
+  // Under raymond a snippet is a read-only field set in the page around it,
+  // sunken on the window colour, where a file with its line numbers fills
+  // the document it is shown in; Copy is a push button either way.
   return (
-    <div data-slot="code-block" className="flex">
+    <div
+      data-slot="code-block"
+      className={cn(
+        "flex",
+        !lineNumbers &&
+          "raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken",
+      )}
+    >
       <div className="min-w-0 flex-1">{block}</div>
       <Button
         type="button"
@@ -635,10 +657,10 @@ export function CodeBlock({
         size="icon-sm"
         aria-label="Copy code"
         title="Copy code"
-        className="m-1 shrink-0 text-muted-foreground touch:hit-area"
+        className="m-1 shrink-0 text-muted-foreground touch:hit-area raymond:bg-(--3d-face) raymond:text-foreground raymond:shadow-raised raymond:hover:bg-(--3d-face) raymond:active:shadow-pressed"
         onClick={() => void copyToClipboard(contents, "Code copied")}
       >
-        <CopyIcon />
+        <CopyIcon className="size-4 raymond:size-3" />
       </Button>
     </div>
   );
