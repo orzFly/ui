@@ -15,6 +15,7 @@ export const meta = {
     "ui/Primitives/Toggle",
     "ui/Primitives/Separator",
     "ui/Primitives/TabNav",
+    "ui/Primitives/Table",
     "ui/Primitives/ToolbarButton",
     "ui-codemirror/CodeEditor",
   ],
@@ -95,6 +96,10 @@ the window's face around them; each style draws each of those its own way. Say w
   `"menu"` when they are actions, and `"collection"` when they are things the user keeps, each
   row carrying its own actions (access tokens with a Revoke button). Mark picked rows with
   `ListItem`'s `selected`.
+- **A table's rows** are marked by `TableRow`'s attributes, never a fill of your own: the row
+  whose details are open beside the table takes `aria-current="true"`, and rows picked for an
+  action take `data-state="selected"`. A style may draw a picked row that shows a ticked checkbox
+  by the tick alone, and keep its highlight for the current one.
 - **A region** is `Pane` with `purpose="app"` for the box an app's panes sit side by side in,
   `"document"` for what is read or written (a message, a diff), `"toolbar"` for the controls that
   act on it, `"statusbar"` for the line along the foot that says how it stands (a line count, the

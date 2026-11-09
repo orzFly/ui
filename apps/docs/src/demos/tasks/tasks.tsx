@@ -3,11 +3,14 @@ import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
 import { Input } from "@orz/ui/components/input";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
+import { Pane } from "@orz/ui/components/pane";
+import { Separator } from "@orz/ui/components/separator";
 import {
   Sheet,
   SheetBody,
   SheetContent,
   SheetDescription,
+  SheetHeader,
   SheetTitle,
 } from "@orz/ui/components/sheet";
 import { TooltipProvider } from "@orz/ui/components/tooltip";
@@ -219,155 +222,180 @@ export function Tasks() {
   return (
     <TooltipProvider>
       {/* Capped at a screen, so in a box with no height of its own the table still scrolls. */}
-      <div className="flex h-full max-h-dvh min-h-0 overflow-hidden bg-background text-foreground">
-        <section
-          aria-labelledby="tasks-title"
-          className="flex min-w-0 flex-1 flex-col"
-        >
-          <div className="flex flex-wrap items-center gap-2 border-b px-2 py-2 md:px-4">
-            <h2 id="tasks-title" className="mr-2 font-semibold">
-              Tasks
-            </h2>
-            <div className="relative order-last w-full sm:order-none sm:w-56 md:w-64">
-              <SearchIcon
-                aria-hidden
-                className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-2.5 size-4 text-muted-foreground"
-              />
-              <Input
-                type="search"
-                aria-label="Search tasks"
-                placeholder="Search…"
-                value={filters.text}
-                onChange={(event) => filter({ text: event.target.value })}
-                className="pl-8"
-              />
-            </div>
-            <Button
-              size="sm"
-              className="ml-auto sm:order-last"
-              onClick={() => setCreating(true)}
+      <Pane
+        purpose="app"
+        className="flex h-full max-h-dvh min-h-0 overflow-hidden bg-background text-foreground"
+      >
+        <Pane purpose="panel" asChild>
+          <section
+            aria-labelledby="tasks-title"
+            className="flex min-w-0 flex-1 flex-col"
+          >
+            <Pane
+              purpose="toolbar"
+              className="flex flex-wrap items-center gap-2 border-b px-2 py-2 md:px-4"
             >
-              <PlusIcon />
-              New task…
-            </Button>
-            {/* One row that scrolls sideways on a phone, rather than three that wrap. */}
-            <div className="-mx-2 order-last flex w-[calc(100%+1rem)] gap-2 overflow-x-auto px-2 [scrollbar-width:none] sm:order-none sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">
-              <FilterBar filters={filters} onChange={filter} />
-            </div>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col *:data-[slot=table-container]:min-h-0 *:data-[slot=table-container]:flex-1 *:data-[slot=table-container]:overflow-auto">
-            {rows.length === 0 ? (
-              <div className="grid justify-items-center gap-2 px-4 py-12 text-center">
-                <ListTodoIcon
+              <h2 id="tasks-title" className="mr-2 font-semibold">
+                Tasks
+              </h2>
+              <div className="relative order-last w-full sm:order-none sm:w-56 md:w-64">
+                <SearchIcon
                   aria-hidden
-                  className="size-8 text-muted-foreground"
+                  className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-2.5 size-4 text-muted-foreground"
                 />
-                <p className="font-medium">No tasks match</p>
-                <p className="text-muted-foreground text-ui">
-                  Try another filter, or fewer words.
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => run(DEFAULT_FILTERS)}
-                >
-                  Clear filters
-                </Button>
+                <Input
+                  type="search"
+                  aria-label="Search tasks"
+                  placeholder="Search…"
+                  value={filters.text}
+                  onChange={(event) => filter({ text: event.target.value })}
+                  className="pl-8"
+                />
               </div>
-            ) : (
-              <TaskTable
-                tasks={rows}
-                selected={selected}
-                openId={openId}
-                openCounts={openCounts}
-                actions={actions}
-                footer={
-                  (next !== null || paged.error) && (
-                    <div className="grid justify-items-center gap-1">
-                      <LoadMoreFooter
-                        pending={paged.pending}
-                        error={paged.error}
-                        onLoadMore={loadMore}
-                        focusRequested={focusRequested}
-                      />
-                      <span className="text-muted-foreground text-ui-sm tabular-nums">
-                        {first.total - loaded} more
-                      </span>
-                    </div>
-                  )
-                }
-              />
-            )}
-          </div>
-          <div className="flex min-h-12 shrink-0 items-center gap-2 border-t px-2 pb-[env(safe-area-inset-bottom)] text-ui md:px-4">
-            {picked.length > 0 ? (
-              <>
-                <IconButton
-                  label="Clear selection"
-                  onClick={() => setSelected(new Set())}
+              <Button
+                size="sm"
+                className="ml-auto sm:order-last"
+                onClick={() => setCreating(true)}
+              >
+                <PlusIcon />
+                New task…
+              </Button>
+              {/* One row that scrolls sideways on a phone, rather than three that wrap. */}
+              <div className="-mx-2 order-last flex w-[calc(100%+1rem)] gap-2 overflow-x-auto px-2 [scrollbar-width:none] sm:order-none sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">
+                <FilterBar filters={filters} onChange={filter} />
+              </div>
+            </Pane>
+            <div className="flex min-h-0 flex-1 flex-col *:data-[slot=table-container]:min-h-0 *:data-[slot=table-container]:flex-1 *:data-[slot=table-container]:overflow-auto">
+              {rows.length === 0 ? (
+                <Pane
+                  purpose="document"
+                  className="grid flex-1 content-start justify-items-center gap-2 px-4 py-12 text-center"
                 >
+                  <ListTodoIcon
+                    aria-hidden
+                    className="size-8 text-muted-foreground"
+                  />
+                  <p className="font-medium">No tasks match</p>
+                  <p className="text-muted-foreground text-ui">
+                    Try another filter, or fewer words.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => run(DEFAULT_FILTERS)}
+                  >
+                    Clear filters
+                  </Button>
+                </Pane>
+              ) : (
+                <TaskTable
+                  tasks={rows}
+                  selected={selected}
+                  openId={openId}
+                  openCounts={openCounts}
+                  actions={actions}
+                  footer={
+                    (next !== null || paged.error) && (
+                      <div className="grid justify-items-center gap-1">
+                        <LoadMoreFooter
+                          pending={paged.pending}
+                          error={paged.error}
+                          onLoadMore={loadMore}
+                          focusRequested={focusRequested}
+                        />
+                        <span className="text-muted-foreground text-ui-sm tabular-nums">
+                          {first.total - loaded} more
+                        </span>
+                      </div>
+                    )
+                  }
+                />
+              )}
+            </div>
+            {/* The safe area pads below the bar, so a style that tightens the bar keeps clear of it. */}
+            <footer className="shrink-0 pb-[max(0px,calc(env(safe-area-inset-bottom)-9.5px))]">
+              <Pane
+                purpose="toolbar"
+                className="flex items-center gap-2 border-t px-2 py-[9.5px] text-ui md:px-4"
+              >
+                {picked.length > 0 ? (
+                  <>
+                    <IconButton
+                      label="Clear selection"
+                      onClick={() => setSelected(new Set())}
+                    >
+                      <XIcon />
+                    </IconButton>
+                    {allClosed ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => reopen(picked)}
+                      >
+                        Reopen {pickedName}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => close(picked)}
+                      >
+                        Close {pickedName}
+                      </Button>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => askDelete(picked)}
+                    >
+                      Delete {pickedName}…
+                    </Button>
+                  </>
+                ) : (
+                  // As tall as the buttons it stands for, so the bar keeps its height.
+                  <span className="flex min-h-control items-center text-muted-foreground tabular-nums">
+                    {rows.length} of {first.total} tasks
+                  </span>
+                )}
+              </Pane>
+            </footer>
+          </section>
+        </Pane>
+        {task && detailActions && wide && (
+          <Pane purpose="panel" asChild>
+            <aside
+              aria-labelledby="task-details-title"
+              className="flex w-96 shrink-0 flex-col border-l"
+            >
+              <div className="flex items-start gap-2 p-4">
+                <div className="grid min-w-0 flex-1 gap-1">
+                  <span className="font-mono text-muted-foreground text-ui-sm">
+                    {taskKey(task.id)}
+                  </span>
+                  <h2
+                    id="task-details-title"
+                    className="font-semibold text-lg leading-snug"
+                  >
+                    {task.title}
+                  </h2>
+                </div>
+                <IconButton label="Close details" onClick={closeTask}>
                   <XIcon />
                 </IconButton>
-                {allClosed ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => reopen(picked)}
-                  >
-                    Reopen {pickedName}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => close(picked)}
-                  >
-                    Close {pickedName}
-                  </Button>
-                )}
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => askDelete(picked)}
-                >
-                  Delete {pickedName}…
-                </Button>
-              </>
-            ) : (
-              <span className="text-muted-foreground tabular-nums">
-                {rows.length} of {first.total} tasks
-              </span>
-            )}
-          </div>
-        </section>
-        {task && detailActions && wide && (
-          <aside
-            aria-labelledby="task-details-title"
-            className="flex w-96 shrink-0 flex-col border-l"
-          >
-            <div className="flex items-start gap-2 border-b p-4">
-              <div className="grid min-w-0 flex-1 gap-1">
-                <span className="font-mono text-muted-foreground text-ui-sm">
-                  {taskKey(task.id)}
-                </span>
-                <h2
-                  id="task-details-title"
-                  className="font-semibold text-lg leading-snug"
-                >
-                  {task.title}
-                </h2>
               </div>
-              <IconButton label="Close details" onClick={closeTask}>
-                <XIcon />
-              </IconButton>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
-              <TaskDetails task={task} tasks={tasks} actions={detailActions} />
-            </div>
-          </aside>
+              <Separator />
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <TaskDetails
+                  task={task}
+                  tasks={tasks}
+                  actions={detailActions}
+                />
+              </div>
+            </aside>
+          </Pane>
         )}
-      </div>
+      </Pane>
       <Sheet
         open={task !== undefined && !wide}
         onOpenChange={(open) => {
@@ -377,14 +405,14 @@ export function Tasks() {
         <SheetContent side="right" className="w-full gap-0 sm:max-w-md">
           {task && detailActions && (
             <>
-              <div className="grid gap-1 border-b p-4 pr-12">
+              <SheetHeader>
+                {/* Clear of the close button, which sits over the header's corner. */}
+                <SheetTitle className="pr-8">{task.title}</SheetTitle>
                 <SheetDescription className="font-mono text-ui-sm">
                   {taskKey(task.id)}
                 </SheetDescription>
-                <SheetTitle className="text-lg leading-snug">
-                  {task.title}
-                </SheetTitle>
-              </div>
+              </SheetHeader>
+              <Separator />
               <SheetBody className="flex-1 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <TaskDetails
                   task={task}

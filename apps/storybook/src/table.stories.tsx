@@ -1,4 +1,5 @@
 import { Badge } from "@orz/ui/components/badge";
+import { Checkbox } from "@orz/ui/components/checkbox";
 import {
   Table,
   TableBody,
@@ -54,9 +55,42 @@ const meta = {
       </TableFooter>
     </Table>
   ),
+  parameters: { guidelines: "/guidelines/foundations/styles/" },
 } satisfies Meta<typeof Table>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+/** Picked rows tick their box; the current row, whose details are open, is `aria-current`. */
+export const CurrentAndSelected: Story = {
+  render: (args) => (
+    <Table {...args}>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-8">
+            <Checkbox aria-label="Select all" checked="indeterminate" />
+          </TableHead>
+          <TableHead>Package</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {ROWS.map((row, i) => (
+          <TableRow
+            key={row.name}
+            data-state={i < 2 ? "selected" : undefined}
+            aria-current={i === 1 ? "true" : undefined}
+          >
+            <TableCell>
+              <Checkbox aria-label={`Select ${row.name}`} checked={i < 2} />
+            </TableCell>
+            <TableCell className="font-medium">{row.name}</TableCell>
+            <TableCell>{row.status}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  ),
+};

@@ -72,9 +72,8 @@ function RowMenu({ task, actions }: { task: Task; actions: RowActions }) {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               aria-label={`Actions for ${key}`}
-              className="size-8 touch:size-11"
             >
               <EllipsisIcon />
             </Button>
@@ -164,8 +163,8 @@ export function TaskTable({
   const all = tasks.length > 0 && picked === tasks.length;
   return (
     <Table>
-      <TableHeader className="sticky top-0 z-10 bg-background">
-        <TableRow className="hover:bg-transparent">
+      <TableHeader className="sticky top-0 z-10">
+        <TableRow>
           <TableHead className="w-px pl-4">
             <Checkbox
               checked={all ? true : picked > 0 ? "indeterminate" : false}
@@ -200,10 +199,7 @@ export function TaskTable({
                 if (target.closest("a, button, [role=checkbox]")) return;
                 actions.onOpen(task.id);
               }}
-              className={cn(
-                "cursor-default touch:h-14",
-                task.id === openId && "bg-accent hover:bg-accent",
-              )}
+              className="cursor-default touch:h-14"
             >
               <TableCell className="pl-4">
                 <Checkbox
@@ -226,7 +222,7 @@ export function TaskTable({
                     actions.onOpen(task.id);
                   }}
                   className={cn(
-                    "block truncate font-medium outline-none hover:underline focus-visible:underline focus-visible:ring-2 focus-visible:ring-ring",
+                    "block truncate font-medium outline-none hover:underline focus-visible:underline focus-visible:focus-ring",
                     !isOpen(task) && "text-muted-foreground line-through",
                   )}
                 >

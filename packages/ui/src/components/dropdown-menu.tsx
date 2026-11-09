@@ -116,7 +116,9 @@ function DropdownMenuItem({
         // test/destructive-contrast.test.ts pins both. Under raymond this
         // and every other item highlights in the highlight colour, the
         // palette's primary; accent stays the soft fill an app's rows use.
-        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-11 raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        // A destructive item is drawn as any other, as Button's destructive
+        // is: the wording carries the danger.
+        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-11 raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive raymond:data-[variant=destructive]:text-foreground raymond:data-[variant=destructive]:*:[svg]:text-current raymond:data-[variant=destructive]:focus:bg-accent raymond:data-[variant=destructive]:focus:text-accent-foreground raymond:data-[variant=destructive]:focus:**:text-accent-foreground",
         className,
       )}
       {...props}
@@ -191,7 +193,10 @@ function DropdownMenuRadioItem({
         data-slot="dropdown-menu-radio-item-indicator"
       >
         <DropdownMenuPrimitive.ItemIndicator>
-          <CheckIcon />
+          {/* Under raymond the chosen one of a group takes a bullet, the check
+              staying with a checkbox item. */}
+          <CheckIcon className="raymond:hidden" />
+          <span className="hidden size-1.5 rounded-full bg-current raymond:block" />
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}
@@ -280,7 +285,12 @@ function DropdownMenuSubTrigger({
           child, and the arrow beside `children` would be a second one. Wrapped,
           the arrow renders inside whatever element the caller passes in. */}
       <Slot.Slottable>{children}</Slot.Slottable>
-      <ChevronRightIcon className="ml-auto" />
+      {/* Under raymond the arrow is a solid triangle, as the period's menus draw it. */}
+      <ChevronRightIcon className="ml-auto raymond:hidden" />
+      <span
+        aria-hidden
+        className="ml-auto hidden border-y-4 border-l-4 border-y-transparent border-l-current raymond:block"
+      />
     </DropdownMenuPrimitive.SubTrigger>
   );
 }

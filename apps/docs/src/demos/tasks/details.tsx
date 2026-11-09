@@ -5,6 +5,7 @@ import {
 } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
+import { GroupHeading } from "@orz/ui/components/group-heading";
 import { isPlainLeftClick, LinkChip } from "@orz/ui/components/link-chip";
 import {
   Select,
@@ -13,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@orz/ui/components/select";
+import { Separator } from "@orz/ui/components/separator";
 import {
   CircleCheckIcon,
   CircleDotIcon,
@@ -72,7 +74,9 @@ function TaskLinks({
   if (tasks.length === 0) return null;
   return (
     <section className="grid gap-2">
-      <h3 className="font-medium text-muted-foreground text-ui-sm">{title}</h3>
+      <GroupHeading asChild>
+        <h3>{title}</h3>
+      </GroupHeading>
       <ul className="grid gap-1.5 text-ui">
         {tasks.map((task) => (
           <li key={task.id}>
@@ -177,9 +181,9 @@ export function TaskDetails({
         </Field>
       </div>
       <section className="grid gap-2 text-ui">
-        <h3 className="font-medium text-muted-foreground text-ui-sm">
-          Description
-        </h3>
+        <GroupHeading asChild>
+          <h3>Description</h3>
+        </GroupHeading>
         {task.body === "" ? (
           <p className="text-muted-foreground">No description yet.</p>
         ) : (
@@ -194,30 +198,33 @@ export function TaskDetails({
         tasks={mentionedBy}
         onOpen={actions.onOpen}
       />
-      <div className="flex flex-wrap gap-2 border-t pt-4">
-        {isOpen(task) ? (
-          <Button variant="outline" onClick={actions.onClose}>
-            <CircleCheckIcon />
-            Close task
+      <div className="grid gap-4">
+        <Separator />
+        <div className="flex flex-wrap gap-2">
+          {isOpen(task) ? (
+            <Button variant="outline" onClick={actions.onClose}>
+              <CircleCheckIcon />
+              Close task
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={actions.onReopen}>
+              <CircleDotIcon />
+              Reopen task
+            </Button>
+          )}
+          <Button variant="ghost" onClick={actions.onCopyLink}>
+            <LinkIcon />
+            Copy link
           </Button>
-        ) : (
-          <Button variant="outline" onClick={actions.onReopen}>
-            <CircleDotIcon />
-            Reopen task
+          <Button
+            variant="destructive"
+            className="ml-auto"
+            onClick={actions.onDelete}
+          >
+            <Trash2Icon />
+            Delete…
           </Button>
-        )}
-        <Button variant="ghost" onClick={actions.onCopyLink}>
-          <LinkIcon />
-          Copy link
-        </Button>
-        <Button
-          variant="destructive"
-          className="ml-auto"
-          onClick={actions.onDelete}
-        >
-          <Trash2Icon />
-          Delete…
-        </Button>
+        </div>
       </div>
     </div>
   );

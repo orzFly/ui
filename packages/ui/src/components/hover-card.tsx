@@ -37,7 +37,7 @@ function HoverCardContent({
         // `w-[28rem]` needs the cap beside it to survive a 390px viewport;
         // Radix has already deducted the padding from that variable.
         className={cn(
-          "z-50 w-[28rem] max-w-(--radix-hover-card-content-available-width) origin-(--radix-hover-card-content-transform-origin) rounded-overlay border bg-popover p-3 text-popover-foreground shadow-overlay duration-(--duration-overlay) outline-none data-[side=bottom]:slide-in-from-top-overlay data-[side=left]:slide-in-from-right-overlay data-[side=right]:slide-in-from-left-overlay data-[side=top]:slide-in-from-bottom-overlay data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
+          "z-50 w-[28rem] max-w-(--radix-hover-card-content-available-width) origin-(--radix-hover-card-content-transform-origin) rounded-overlay border bg-popover p-3 text-popover-foreground shadow-overlay duration-(--duration-overlay) outline-none data-[side=bottom]:slide-in-from-top-overlay data-[side=left]:slide-in-from-right-overlay data-[side=right]:slide-in-from-left-overlay data-[side=top]:slide-in-from-bottom-overlay data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom) raymond:text-ui",
           className,
         )}
         {...props}

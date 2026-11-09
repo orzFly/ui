@@ -15,10 +15,11 @@ const buttonVariants = cva(
         // The depth tokens are no-ops in the default style; a style that
         // bevels draws its buttons raised, and pressed while held or open.
         // Under raymond the default button is on the face, never in the
-        // highlight colour, inside the black frame of the window's default,
-        // which a disabled one gives up.
+        // highlight colour. Inside a dialog it is the one Enter presses, so
+        // it wears the black frame of the window's default, which a
+        // disabled one gives up; elsewhere it is a plain push button.
         default:
-          "bg-primary text-primary-foreground shadow-raised hover:bg-primary/80 active:shadow-pressed aria-expanded:shadow-pressed raymond:shadow-raised raymond:active:shadow-pressed raymond:[--primary-foreground:var(--foreground)] raymond:[--primary:var(--3d-face)] raymond:[--shadow-raised:inset_0_0_0_1px_var(--foreground),inset_-2px_-2px_var(--3d-dark-shadow),inset_2px_2px_var(--3d-highlight),inset_-3px_-3px_var(--3d-shadow),inset_3px_3px_var(--3d-light)] raymond:disabled:[--shadow-raised:inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)]",
+          "bg-primary text-primary-foreground shadow-raised hover:bg-primary/80 active:shadow-pressed aria-expanded:shadow-pressed raymond:shadow-raised raymond:active:shadow-pressed raymond:[--primary-foreground:var(--foreground)] raymond:[--primary:var(--3d-face)] raymond:in-[[role=dialog],[role=alertdialog]]:not-disabled:[--shadow-raised:inset_0_0_0_1px_var(--foreground),inset_-2px_-2px_var(--3d-dark-shadow),inset_2px_2px_var(--3d-highlight),inset_-3px_-3px_var(--3d-shadow),inset_3px_3px_var(--3d-light)]",
         // Under raymond an outline button is a plain push button: the face,
         // its bevel and no border.
         outline:

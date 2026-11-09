@@ -20,7 +20,7 @@ function Avatar({
       data-shape={shape}
       className={cn(
         "group/avatar relative flex size-8 shrink-0 select-none after:absolute after:inset-0 after:border after:border-border after:mix-blend-darken data-[size=lg]:size-10 data-[size=sm]:size-6 dark:after:mix-blend-lighten",
-        "data-[shape=circle]:rounded-full data-[shape=circle]:after:rounded-full data-[shape=square]:rounded-item data-[shape=square]:after:rounded-item raymond:rounded-none raymond:after:rounded-none raymond:after:border-0 raymond:after:mix-blend-normal raymond:after:shadow-sunken",
+        "data-[shape=circle]:rounded-full data-[shape=circle]:after:rounded-full data-[shape=square]:rounded-item data-[shape=square]:after:rounded-item raymond:rounded-none raymond:after:rounded-none raymond:after:border-0 raymond:after:mix-blend-normal raymond:after:shadow-sunken raymond:data-[size=sm]:size-4",
         className,
       )}
       {...props}
@@ -52,7 +52,9 @@ function AvatarFallback({
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
-        "flex size-full items-center justify-center rounded-[inherit] bg-muted text-ui text-muted-foreground group-data-[size=sm]/avatar:text-ui-sm",
+        // Under raymond the letter is the face's dark shadow, which a
+        // selected row's highlight text does not reach.
+        "flex size-full items-center justify-center rounded-[inherit] bg-muted text-ui text-muted-foreground group-data-[size=sm]/avatar:text-ui-sm raymond:text-(--3d-dark-shadow)",
         className,
       )}
       {...props}

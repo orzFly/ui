@@ -218,15 +218,17 @@ function insidePolygon(point: Point, polygon: readonly Point[]): boolean {
 /** How long the pointer may take crossing other rows toward an open submenu. */
 const GRACE_MS = 300;
 
+// Under raymond the highlighted row fills with the highlight colour, the
+// palette's primary, as DropdownMenu's items do.
 const ROW_CLASS =
-  "group/option relative flex w-full cursor-default items-center rounded-item text-ui min-h-row touch:min-h-11 select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+  "group/option relative flex w-full cursor-default items-center rounded-item text-ui min-h-row touch:min-h-11 select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
 
 const CELL_CLASS = "gap-1.5 py-1 pl-1.5";
 
 const OPTION_CLASS = cn(
   ROW_CLASS,
   CELL_CLASS,
-  "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-highlighted:state-cue",
+  "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-highlighted:state-cue raymond:data-highlighted:**:text-accent-foreground",
 );
 
 /**
@@ -236,7 +238,7 @@ const OPTION_CLASS = cn(
 const ACTION_CLASS = cn(
   "relative flex min-w-0 flex-1 items-center self-stretch rounded-item pr-6.5",
   CELL_CLASS,
-  "group-data-highlighted/option:bg-accent group-data-highlighted/option:text-accent-foreground group-data-highlighted/option:state-cue",
+  "group-data-highlighted/option:bg-accent group-data-highlighted/option:text-accent-foreground group-data-highlighted/option:state-cue raymond:group-data-highlighted/option:**:text-accent-foreground",
 );
 
 function step<R extends FilterMenuRow>(

@@ -22,7 +22,8 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      // Its row is not one to point at, so it takes no hover.
+      className={cn("[&_tr]:border-b [&_tr]:hover:bg-transparent", className)}
       {...props}
     />
   );
@@ -56,10 +57,14 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        // Under raymond rows carry no rules, and everything in a selected
-        // row, its quiet text and outlined chips included, takes the
-        // highlight's text colour, as Windows draws it.
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-accent data-[state=selected]:text-accent-foreground data-[state=selected]:*:first:state-cue raymond:border-b-transparent raymond:data-[state=selected]:text-primary-foreground raymond:data-[state=selected]:[--accent:var(--primary)] raymond:data-[state=selected]:[--border:var(--primary-foreground)] raymond:data-[state=selected]:[--foreground:var(--primary-foreground)] raymond:data-[state=selected]:[--muted-foreground:var(--primary-foreground)]",
+        // The current row (aria-current, the one whose details are shown)
+        // takes the selection's fill without its cue. Under raymond rows
+        // carry no rules and no hover, and only the highlight is filled: the
+        // current row, or a selected one with no checkbox, since a ticked
+        // box is its own mark. Everything in the highlight, its quiet text,
+        // outlined chips and primary dots included, takes the highlight's
+        // text colour, as Windows draws it.
+        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 aria-[current=true]:bg-accent aria-[current=true]:hover:bg-accent data-[state=selected]:bg-accent data-[state=selected]:text-accent-foreground data-[state=selected]:*:first:state-cue raymond:border-b-transparent raymond:[&:not([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:bg-transparent raymond:[&:not([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:hover:bg-transparent raymond:[&:not([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:has-aria-expanded:bg-transparent raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:text-primary-foreground raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--accent:var(--primary)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--border:var(--primary-foreground)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--foreground:var(--primary-foreground)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:[--muted-foreground:var(--primary-foreground)] raymond:[&:is([aria-current=true],[data-state=selected]:not(:has([role=checkbox])))]:*:[--primary:var(--primary-foreground)]",
         className,
       )}
       {...props}
@@ -72,8 +77,8 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        // Under raymond a column header is a raised button.
-        "h-row-head bg-muted px-2 text-left align-middle font-semibold whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 raymond:shadow-raised",
+        // Under raymond a column header is a raised button in regular weight.
+        "h-row-head bg-muted px-2 text-left align-middle font-semibold whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 raymond:font-normal raymond:shadow-raised",
         className,
       )}
       {...props}
@@ -86,7 +91,8 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "h-row px-2 py-1 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        // Under raymond a row is as tight as what it holds.
+        "h-row px-2 py-1 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 raymond:py-0",
         className,
       )}
       {...props}
