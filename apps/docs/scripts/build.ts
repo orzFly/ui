@@ -9,6 +9,7 @@ import {
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build, type Manifest } from "vite";
+import { siteUrl } from "../../../scripts/site.ts";
 import { MOVED, movedPage } from "../src/redirect.ts";
 import { hrefOf } from "../src/routes.ts";
 import { fillTemplate } from "./html.ts";
@@ -25,6 +26,11 @@ export interface BuildOptions {
   outDir: string;
   /** Copy Storybook's build into storybook/. A deploy needs it; a test of the docs app alone skips it. */
   storybook: boolean;
+  /**
+   * Where to write the copy of every page @orz/ui ships, into docs/ with its own llms.txt.
+   * Only `build:package` and the tests ask for it, so the deployed site carries none.
+   */
+  packageDir?: string;
 }
 
 /** A chunk and the chunks it imports statically: what the page needs before it can hydrate. */
@@ -44,8 +50,16 @@ function chunksOf(manifest: Manifest, key: string, into = new Set<string>()) {
  * llms.txt over them, the skills and a 404.html, then the search index of
  * those pages into pagefind/, then Storybook.
  */
-export async function buildSite({ base, outDir, storybook }: BuildOptions) {
+export async function buildSite({
+  base,
+  outDir,
+  storybook,
+  packageDir,
+}: BuildOptions) {
   const out = resolve(APP, outDir);
+  const packageDocs = packageDir && join(resolve(APP, packageDir), "docs");
+  if (packageDir)
+    rmSync(resolve(APP, packageDir), { recursive: true, force: true });
   if (storybook && !existsSync(join(STORYBOOK, "index.html"))) {
     throw new Error(
       `${STORYBOOK} has no build: pnpm -r build builds @orz/storybook first`,
@@ -109,12 +123,35 @@ export async function buildSite({ base, outDir, storybook }: BuildOptions) {
     const md = await pageMarkdown(html, meta, base);
     writeFileSync(join(dir, "index.md"), md);
     markdown.set(route, md);
+    if (packageDocs) {
+      const into = join(packageDocs, route);
+      mkdirSync(into, { recursive: true });
+      writeFileSync(
+        join(into, "index.md"),
+        await pageMarkdown(html, meta, base, {
+          kind: "package",
+          route,
+          site: siteUrl(),
+        }),
+      );
+    }
   }
   const home = entry.routes().find(({ route }) => route === "/")?.meta;
   writeFileSync(
     join(out, "llms.txt"),
     llmsIndex({ nav: entry.nav, home: home?.description ?? "", base }),
   );
+  if (packageDocs) {
+    writeFileSync(
+      join(packageDocs, "llms.txt"),
+      llmsIndex({
+        nav: entry.nav,
+        home: home?.description ?? "",
+        base,
+        target: { kind: "package", site: siteUrl() },
+      }),
+    );
+  }
   writeFileSync(
     join(out, "llms-full.txt"),
     llmsFull(navOrder(entry.nav).flatMap((route) => markdown.get(route) ?? [])),

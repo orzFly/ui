@@ -12,6 +12,7 @@ const WIDTH = 100;
 export interface Manifest {
   name: string;
   description?: string;
+  keywords?: string[];
   private?: boolean;
   dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;

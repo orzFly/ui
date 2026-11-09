@@ -1,9 +1,13 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, sep } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { beforeAll, describe, expect, it } from "vitest";
+import { skillText } from "../../../scripts/readme.ts";
+import { siteUrl } from "../../../scripts/site.ts";
 import { buildSite } from "../scripts/build.ts";
+import { navOrder, SKILL_PATH } from "../scripts/llms.ts";
+import { nav } from "../src/pages.ts";
 import { MOVED } from "../src/redirect.ts";
 import { routeOf } from "../src/routes.ts";
 
@@ -48,7 +52,15 @@ function expectEveryRoute(dist: string) {
 // so this build is what holds every URL to the base.
 describe("a build under /ui/", () => {
   const dist = join(APP, "node_modules/.cache/docs-prefix-test/dist");
-  beforeAll(() => buildSite({ base: "/ui/", outDir: dist, storybook: false }));
+  const pkg = join(APP, "node_modules/.cache/docs-prefix-test/package");
+  beforeAll(() =>
+    buildSite({
+      base: "/ui/",
+      outDir: dist,
+      storybook: false,
+      packageDir: pkg,
+    }),
+  );
 
   it("prerenders every route", () => expectEveryRoute(dist));
 
@@ -182,6 +194,70 @@ describe("a build under /ui/", () => {
       )[0];
       expect(full, route).toContain(title);
     }
+  });
+
+  describe("the copy @orz/ui ships", () => {
+    const docs = join(pkg, "docs");
+    /** The Markdown links in `text`, without the ones inside code. */
+    const linksIn = (text: string) =>
+      [...text.replace(/```[\s\S]*?```/g, "").matchAll(/\]\(([^)\s]+)\)/g)].map(
+        ([, url = ""]) => url,
+      );
+    const site = siteUrl();
+
+    it("writes every route's page into docs/", () => {
+      for (const route of routes) {
+        expect(existsSync(join(docs, route, "index.md")), route).toBe(true);
+      }
+    });
+
+    it("lists in llms.txt every page in nav order, relatively", () => {
+      const links = linksIn(readFileSync(join(docs, "llms.txt"), "utf8"));
+      expect(links.filter((url) => url.endsWith("index.md"))).toEqual(
+        navOrder(nav)
+          .filter((route) => route !== "/")
+          .map((route) => `${route.slice(1)}index.md`),
+      );
+      expect(links).toContain(`../${SKILL_PATH}`);
+    });
+
+    it("links within docs/ relatively, and elsewhere on the site by its address", () => {
+      const files = filesUnder(docs).filter((file) =>
+        /\.(?:md|txt)$/.test(file),
+      );
+      for (const file of files) {
+        for (const url of linksIn(readFileSync(file, "utf8"))) {
+          const where = `${file}: ${url}`;
+          expect(url, where).not.toMatch(/^\//);
+          if (/^[a-z]+:/.test(url)) {
+            if (new URL(url).host === new URL(site).host) {
+              expect(url.startsWith(site), where).toBe(true);
+            }
+            continue;
+          }
+          if (url.startsWith("#") || url === `../${SKILL_PATH}`) continue;
+          const path = url.split("#")[0] ?? "";
+          expect(existsSync(join(dirname(file), path)), where).toBe(true);
+        }
+      }
+    });
+
+    it("ships a skill whose links stay in the package", () => {
+      const skill = skillText("package");
+      expect(skill).not.toContain("<!-- generated");
+      expect(skill).not.toContain("<!-- /generated");
+      const links = linksIn(skill).filter((url) => !/^[a-z]+:/.test(url));
+      expect(links.length).toBeGreaterThan(0);
+      for (const url of links) {
+        // dist/ is the package's build, which this test does not make.
+        if (url === "../../dist/") continue;
+        expect(url, url).toMatch(/^\.\.\/\.\.\/docs\//);
+        expect(
+          existsSync(join(docs, url.slice("../../docs/".length))),
+          url,
+        ).toBe(true);
+      }
+    });
   });
 
   it("serves the skill from the repository's skills/", () => {

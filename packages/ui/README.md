@@ -404,6 +404,18 @@ const { "data-style": style } = themePaintCookieRootAttributes(value);
 html`<html${style ? ` data-style="${style}"` : ""}><head><style>${css}</style>…</head>`;
 ```
 
+## For agents
+
+The package ships its agent skill, beside every page of the docs site as Markdown, written for
+this version: `node_modules/@orz/ui/skills/orz-ui/SKILL.md`, and the `docs/` next to `skills/`.
+One line in your project's `AGENTS.md` points a coding agent at them:
+
+```md
+Before changing UI, read node_modules/@orz/ui/skills/orz-ui/SKILL.md and follow it.
+```
+
+`npx @tanstack/intent@latest install` can write that into your agent's configuration for you.
+
 ## Query input
 
 A search box that colours its own query and completes it, driven by an `@orz/query` schema.

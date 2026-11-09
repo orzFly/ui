@@ -16,9 +16,13 @@ right one and leave it alone.
 
 ## Install
 
-This skill may be older than the packages, so it holds no install line. Take the current one from
-the Start page (**Install**, and the **Packages** table), or from
+<!-- generated:skill-source by scripts/readme.ts: run `pnpm fmt` after changing the skill's target -->
+This skill may be older than the packages, so it holds no install line. When the project already
+depends on @orz/ui, read `node_modules/@orz/ui/skills/orz-ui/SKILL.md` and the `docs/` beside it
+first: they ship with the package and match the installed version. Otherwise take the current
+install line from the Start page (**Install**, and the **Packages** table), or from
 `npm view <package> peerDependencies dependencies`. Then follow Start for the CSS and theme store.
+<!-- /generated -->
 
 ## Rules
 

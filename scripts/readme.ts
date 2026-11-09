@@ -1,7 +1,8 @@
 // Keeps what each README, and the @orz/ui skill's template, restates from the code in step with
 // it: the install block, the themes table, the rows of the entry-point table, and the skill's
 // site links and package list; then writes skills/orz-ui/SKILL.md, the template without its
-// block markers.
+// block markers. The copy @orz/ui ships, whose links point into the package, is
+// `skillText("package")`, written by apps/docs' `build:package` rather than committed.
 //
 //   node scripts/readme.ts          rewrite what is stale
 //   node scripts/readme.ts --check  fail if anything is stale
@@ -14,11 +15,10 @@ import { themeMarkdown, themeTable } from "./themes.ts";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 
+type Text = (workspace: Workspace) => string;
+
 /** What fills a generated block, by the kind its opening comment names. */
-const GENERATORS: Record<
-  string,
-  { source: string; text: (workspace: Workspace) => string }
-> = {
+const GENERATORS: Record<string, { source: string; text: Text }> = {
   install: {
     source: "a peer",
     text: ({ manifest }) =>
@@ -38,6 +38,17 @@ const GENERATORS: Record<
         `- Props of every export: ${site}storybook/`,
       ].join("\n");
     },
+  },
+  "skill-source": {
+    source: "the skill's target",
+    text: () =>
+      [
+        "This skill may be older than the packages, so it holds no install line. When the project already",
+        "depends on @orz/ui, read `node_modules/@orz/ui/skills/orz-ui/SKILL.md` and the `docs/` beside it",
+        "first: they ship with the package and match the installed version. Otherwise take the current",
+        "install line from the Start page (**Install**, and the **Packages** table), or from",
+        "`npm view <package> peerDependencies dependencies`. Then follow Start for the CSS and theme store.",
+      ].join("\n"),
   },
   packages: {
     source: "a package's description",
@@ -59,6 +70,25 @@ const GENERATORS: Record<
 const SKILL_TEMPLATE = join(ROOT, "scripts/templates/orz-ui-skill.md");
 const SKILL = join(ROOT, "skills/orz-ui/SKILL.md");
 
+/**
+ * The blocks that differ in the skill @orz/ui ships: it sits at skills/orz-ui/ in the package,
+ * beside docs/ (every page of this version as Markdown) and dist/.
+ */
+const PACKAGE_SKILL: Record<string, Text> = {
+  site: () =>
+    [
+      "- Guidelines for this version, every page as Markdown: [docs/llms.txt](../../docs/llms.txt)",
+      "- Setup: [docs/start/index.md](../../docs/start/index.md)",
+      `- Props: the \`.d.ts\` beside each entry in [dist/](../../dist/), with JSDoc; Storybook (${siteUrl()}storybook/) shows master's.`,
+    ].join("\n"),
+  "skill-source": () =>
+    [
+      "This skill and the pages under `docs/` ship inside @orz/ui, so they match the installed version;",
+      `the site, ${siteUrl()}, follows master. Take the install line for another package, the CSS`,
+      "and the theme store from [docs/start/index.md](../../docs/start/index.md).",
+    ].join("\n"),
+};
+
 const MARKER = /^<!-- (?:generated:[\w-]+ [^\n]*|\/generated) -->\n/gm;
 
 const opening = (kind: string) =>
@@ -78,6 +108,8 @@ function syncBlocks(
   workspace: Workspace,
   problems: string[],
   needsInstall = true,
+  /** Blocks this copy fills its own way. */
+  texts: Record<string, Text> = {},
 ) {
   const kinds = new Set<string>();
   const next = text.replace(BLOCK, (_whole, kind: string) => {
@@ -87,7 +119,8 @@ function syncBlocks(
       return _whole;
     }
     kinds.add(kind);
-    return `${opening(kind)}\n${generator.text(workspace)}\n${CLOSING}`;
+    const fill = texts[kind] ?? generator.text;
+    return `${opening(kind)}\n${fill(workspace)}\n${CLOSING}`;
   });
   if (needsInstall && !kinds.has("install")) {
     problems.push(
@@ -186,6 +219,24 @@ function syncEntryPoints(
 
 const all = workspaces();
 
+function filledSkill(texts: Record<string, Text>, problems: string[]) {
+  const ui = all.get("@orz/ui");
+  if (!ui) throw new Error("no @orz/ui workspace");
+  const template = readFileSync(SKILL_TEMPLATE, "utf8");
+  return syncBlocks(template, ui, problems, false, texts);
+}
+
+/**
+ * The skill an agent reads: the repository's and the site's (`site`), or the one @orz/ui
+ * ships (`package`), whose links stay inside the package.
+ */
+export function skillText(target: "site" | "package"): string {
+  const problems: string[] = [];
+  const filled = filledSkill(target === "site" ? {} : PACKAGE_SKILL, problems);
+  if (problems.length > 0) throw new Error(problems.join("\n"));
+  return filled.replace(MARKER, "");
+}
+
 function sync(check: boolean): string[] {
   const out: string[] = [];
   for (const workspace of all.values()) {
@@ -203,11 +254,8 @@ function sync(check: boolean): string[] {
     if (check) out.push(`${name}: stale; run \`pnpm fmt\``);
     else writeFileSync(file, next);
   }
-  const ui = all.get("@orz/ui");
-  if (!ui) throw new Error("no @orz/ui workspace");
-  const template = readFileSync(SKILL_TEMPLATE, "utf8");
   const problems: string[] = [];
-  const filled = syncBlocks(template, ui, problems, false);
+  const filled = filledSkill({}, problems);
   out.push(
     ...problems.map(
       (problem) => `${relative(ROOT, SKILL_TEMPLATE)}: ${problem}`,

@@ -52,6 +52,8 @@ jobs:
             echo "dist-tag=master" >> "$GITHUB_OUTPUT"
           fi
       - run: pnpm -r --filter "./packages/**" build
+      # @orz/ui ships this commit's guidelines and skill; its prepack fails the publish without them.
+      - run: pnpm --filter @orz/docs build:package
       # A detached tag checkout and the snapshot's rewritten manifests both fail pnpm's git
       # checks. Versions already on npm are skipped, so a rerun publishes only what is missing.
       - run: pnpm -r publish --no-git-checks --tag "${{ steps.version.outputs.dist-tag }}"

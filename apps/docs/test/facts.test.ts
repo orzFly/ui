@@ -12,6 +12,7 @@ import { createThemeStore, useStyle } from "@orz/ui/theme";
 import { describe, expect, it } from "vitest";
 import { workspaces } from "../../../scripts/install.ts";
 import { classOf } from "../scripts/data.ts";
+import { SKILL_PATH } from "../scripts/llms.ts";
 
 const read = (path: string) =>
   readFileSync(new URL(`../../../${path}`, import.meta.url), "utf8");
@@ -52,6 +53,17 @@ describe.each([
 
   it("names @orz/ui's @orz/ dependencies", () => {
     expect(named(text, dependencies)).toEqual(orzDependencies.sort());
+  });
+
+  it("names the skill where @orz/ui packs it, beside its docs/", () => {
+    const skill = `node_modules/${ui?.name}/${SKILL_PATH}`;
+    const paths = [...text.matchAll(/node_modules\/\S+?\/SKILL\.md/g)];
+    expect(paths.length).toBeGreaterThan(0);
+    for (const [path] of paths) expect(path).toBe(skill);
+    expect(text).toContain("`docs/`");
+    expect(ui?.files).toEqual(expect.arrayContaining(["docs", "skills"]));
+    // How TanStack Intent finds a package's skills.
+    expect(ui?.keywords).toContain("tanstack-intent");
   });
 });
 

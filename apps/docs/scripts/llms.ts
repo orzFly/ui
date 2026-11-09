@@ -28,16 +28,29 @@ function list(nodes: readonly NavNode[], base: string, depth = 0): string[] {
   ]);
 }
 
+/**
+ * The index the site serves (`site`), or the one @orz/ui ships at docs/llms.txt (`package`):
+ * its pages beside it, the skill at ../skills/, and Storybook at the public site's address.
+ */
+export type LlmsTarget = { kind: "site" } | { kind: "package"; site: string };
+
 export function llmsIndex({
   nav,
   home,
-  base,
+  base: siteBase,
+  target = { kind: "site" },
 }: {
   nav: NavNode;
   /** The home page's description: what the site is, in one sentence. */
   home: string;
   base: string;
+  target?: LlmsTarget;
 }): string {
+  const packaged = target.kind === "package";
+  // In the package, a page's route is its path from docs/.
+  const base = packaged ? "" : siteBase;
+  const skill = packaged ? `../${SKILL_PATH}` : `${base}${SKILL_PATH}`;
+  const storybook = `${packaged ? target.site : base}storybook/`;
   const sections = nav.children.map((section) => {
     const items = [
       ...(section.page ? [`- ${entry(section, base)}`] : []),
@@ -50,13 +63,18 @@ export function llmsIndex({
     "",
     `> ${home}`,
     "",
-    `Every page below is Markdown, at its route's \`index.md\`. To build an app with @orz/ui, load the skill at [${SKILL_PATH}](${base}${SKILL_PATH}) first: it says how the components are meant to be used. Storybook documents every export with its props.`,
+    `Every page below is Markdown, at its route's \`index.md\`. To build an app with @orz/ui, load the skill at [${SKILL_PATH}](${skill}) first: it says how the components are meant to be used. Storybook documents every export with its props.`,
     "",
     ...sections.flatMap((section) => [section, ""]),
     "## Optional",
     "",
-    `- [Every page in one file](${base}llms-full.txt): the pages above, in this order.`,
-    `- [Storybook](${base}storybook/): every export, live, with its props.`,
+    // The package leaves it out: it is these files again, which a reader there greps instead.
+    ...(packaged
+      ? []
+      : [
+          `- [Every page in one file](${base}llms-full.txt): the pages above, in this order.`,
+        ]),
+    `- [Storybook](${storybook}): every export, live, with its props.`,
   ].join("\n")}\n`;
 }
 

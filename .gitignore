@@ -37,3 +37,7 @@ storybook-static/
 **/.impeccable/live/deferred-svelte-component-accepts.json
 **/.impeccable/live/*.png
 # impeccable-ignore-end
+
+# Written by `pnpm --filter @orz/docs build:package`, packed with @orz/ui.
+/packages/ui/docs/
+/packages/ui/skills/

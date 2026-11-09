@@ -130,6 +130,12 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
 - `skills/orz-ui/SKILL.md` is generated and never edited: an agent reads it, so it carries no
   block markers. Edit its template, `scripts/templates/orz-ui-skill.md`, which has the same
   generated blocks as a README, and run `pnpm fmt`; `pnpm lint` fails when the two part.
+- `@orz/ui` ships the guidance for its own version: `skills/orz-ui/SKILL.md`, the same template
+  with links into the package (`skillText("package")` in `scripts/readme.ts`), and `docs/`, every
+  page of the site as Markdown with relative links and its own `llms.txt`. Both are written by
+  `pnpm --filter @orz/docs build:package` and never committed, so the repository holds one
+  `orz-ui` skill; `prepack` fails when they are missing. `keywords` carries `tanstack-intent`,
+  which is how TanStack Intent finds a package's skills.
 - Shipped CSS lives at the package root (`styles.css`, `vendor/`), not in `src/`. `tsc` never
   touches it, `files` lists it, and `exports` points straight at it.
 - New shadcn primitives arrive with `shadcn add` run inside `packages/ui`. It writes `@/…` imports
@@ -288,6 +294,8 @@ with no `gh-pages` branch.
 - `publish.yml` first runs `ci.yml` as a reusable workflow; npm publishing and the Pages deploy both
   wait for it, so nothing ships from a push whose checks fail. `ci.yml` triggers on its own only for
   pull requests, so a master push is checked once.
+- The publish job runs `build:package` after building the packages, so `@orz/ui` packs the
+  skill and the pages of the commit it is published from.
 - Every package shares one version, set with `node scripts/version.mjs set <version>`.
 - Each master push publishes a snapshot, `<next patch>-master.<commit time>.g<hash>`, under the
   `master` dist-tag, so `latest` and ordinary ranges never pick it up.

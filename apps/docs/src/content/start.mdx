@@ -101,6 +101,17 @@ sizes, the states and the user's theme with it.
 own current state, and an app's places then read differently from screen to screen; `NavList`
 draws them the same everywhere.
 
+These rules travel with the package. `@orz/ui` ships them as an agent skill, beside every page of
+this site as Markdown, written for the version you installed:
+`node_modules/@orz/ui/skills/orz-ui/SKILL.md`, and the `docs/` next to `skills/`. One line in
+your project's `AGENTS.md` points a coding agent at them:
+
+```md
+Before changing UI, read node_modules/@orz/ui/skills/orz-ui/SKILL.md and follow it.
+```
+
+`npx @tanstack/intent@latest install` can write that into your agent's configuration for you.
+
 ## Packages
 
 Each package installs on its own, with its peers and the `@orz/` packages your app imports beside

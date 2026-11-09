@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/build.ts",
+    "build:package": "node scripts/build-package.ts",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

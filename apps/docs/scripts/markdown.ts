@@ -3,7 +3,7 @@
 // anchors) left out. Read from the HTML rather than the MDX, so the facts the site generates
 // (sizes, install lines, the packages table) arrive filled in.
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Element, ElementContent, Root } from "hast";
 import type { Root as MdRoot } from "mdast";
@@ -46,16 +46,35 @@ function findBody(node: Root | Element): Element | undefined {
 }
 
 /**
- * A link to one of the site's pages points at its Markdown copy; Storybook and anything off the
- * site keep their address.
+ * How a page's links are written: as the site serves them (`site`), or for the copy @orz/ui
+ * ships (`package`), where a page links to another relatively and to the rest of the site by
+ * its public address, so the copy reads the same whatever base the site was built under.
  */
-function pageLink(href: string, base: string) {
-  if (!href.startsWith(base) || href.startsWith(`${base}storybook/`)) {
-    return href;
-  }
+export type PageLinks =
+  | { kind: "site" }
+  | {
+      kind: "package";
+      /** The page's own route. */
+      route: string;
+      /** The public site's address, ending in a slash. */
+      site: string;
+    };
+
+/**
+ * A link to one of the site's pages points at its Markdown copy; Storybook and anything off the
+ * site keep their address, which in a `package` copy is the public one.
+ */
+function pageLink(href: string, base: string, links: PageLinks) {
+  if (!href.startsWith(base)) return href;
   const [path = "", hash] = href.split("#");
-  if (!path.endsWith("/")) return href;
-  return `${path}index.md${hash === undefined ? "" : `#${hash}`}`;
+  const anchor = hash === undefined ? "" : `#${hash}`;
+  const page = path.endsWith("/") && !href.startsWith(`${base}storybook/`);
+  if (links.kind === "package") {
+    if (!page) return links.site + href.slice(base.length);
+    const dir = posix.relative(links.route, `/${path.slice(base.length)}`);
+    return `${dir ? `${dir}/` : ""}index.md${anchor}`;
+  }
+  return page ? `${path}index.md${anchor}` : href;
 }
 
 /**
@@ -71,7 +90,11 @@ function joinParagraphs(children: ElementContent[]): ElementContent[] {
   );
 }
 
-function clean(children: ElementContent[], base: string): ElementContent[] {
+function clean(
+  children: ElementContent[],
+  base: string,
+  links: PageLinks,
+): ElementContent[] {
   const out: ElementContent[] = [];
   for (const child of children) {
     if (child.type !== "element") {
@@ -85,9 +108,9 @@ function clean(children: ElementContent[], base: string): ElementContent[] {
     }
     if (dataPagefindIgnore !== undefined) continue;
     if (child.tagName === "a" && typeof href === "string") {
-      child.properties.href = pageLink(href, base);
+      child.properties.href = pageLink(href, base, links);
     }
-    child.children = clean(child.children, base);
+    child.children = clean(child.children, base, links);
     if (child.tagName === "td" || child.tagName === "th") {
       child.children = joinParagraphs(child.children);
     }
@@ -109,11 +132,12 @@ export async function pageMarkdown(
   html: string,
   meta: MarkdownMeta,
   base: string,
+  links: PageLinks = { kind: "site" },
 ): Promise<string> {
   const tree = unified().use(rehypeParse).parse(html);
   const body = findBody(tree);
   if (!body) throw new Error(`${meta.title}: no [data-pagefind-body]`);
-  let children = clean(body.children, base);
+  let children = clean(body.children, base, links);
   // A bare page names itself in data-title; its own h1, if any, is a headline (the home page)
   // or the name again (a demo's bar), and a demo's About panel says the description again.
   if (body.properties.dataTitle !== undefined) {
