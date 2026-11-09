@@ -83,7 +83,7 @@ export function DemoPage({ children }: { children: ReactNode }) {
         "gap-0 bg-background",
         fullScreen.on
           ? "fixed inset-0 z-50"
-          : "h-[calc(100dvh-3.5rem-env(safe-area-inset-top))]",
+          : "h-[calc(100dvh-var(--site-header))]",
       )}
     >
       <div className="flex min-h-11 shrink-0 items-stretch gap-2 border-b bg-muted px-2 md:gap-3 md:px-4">

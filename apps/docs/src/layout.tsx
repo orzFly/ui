@@ -83,8 +83,8 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
     { enabled: useShortcutsEnabled() },
   );
   return (
-    <header className="sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-2 pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-6 md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))]">
+    <header className="sticky top-0 z-40 h-(--site-header) border-b pt-[env(safe-area-inset-top)] bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="mx-auto flex h-full max-w-screen-2xl items-center gap-2 pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-6 md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))]">
         <MobileNav
           section={section}
           open={nav}
@@ -240,7 +240,7 @@ function NavTree({ node, depth = 0 }: { node: NavNode; depth?: number }) {
 
 export function Sidebar({ section }: { section: NavNode }) {
   return (
-    <aside className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] hidden h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] w-60 shrink-0 overflow-y-auto border-r py-4 pr-2 pl-[max(0.5rem,env(safe-area-inset-left))] md:block">
+    <aside className="sticky top-(--site-header) hidden h-[calc(100dvh-var(--site-header))] w-60 shrink-0 overflow-y-auto border-r py-4 pr-2 pl-[max(0.5rem,env(safe-area-inset-left))] md:block">
       <nav aria-label={section.title}>
         <NavTree node={section} />
       </nav>
@@ -319,7 +319,7 @@ export function Toc({
   const api = meta.api ?? [];
   if (toc.length === 0 && api.length === 0) return null;
   return (
-    <aside className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] hidden max-h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] w-56 shrink-0 overflow-y-auto px-4 py-8 text-sm xl:block">
+    <aside className="sticky top-(--site-header) hidden max-h-[calc(100dvh-var(--site-header))] w-56 shrink-0 overflow-y-auto px-4 py-8 text-sm xl:block">
       {toc.length > 0 && (
         <nav aria-label="On this page">
           <p className="mb-2 font-medium">On this page</p>

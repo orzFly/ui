@@ -15,3 +15,9 @@
 @source "../../../packages/*/src/**/*.{ts,tsx}";
 @source "./";
 @source "../../fixtures/src";
+
+/* The site header's full height: its 3.5rem row, its 1px rule and the safe area above it. The
+   header is drawn at this height, and what fills the window below it subtracts it. */
+:root {
+  --site-header: calc(3.5rem + 1px + env(safe-area-inset-top));
+}
