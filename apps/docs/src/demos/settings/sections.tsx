@@ -12,6 +12,7 @@ import { GroupHeading } from "@orz/ui/components/group-heading";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import { List, ListItem } from "@orz/ui/components/list";
+import { NumberInput } from "@orz/ui/components/number-input";
 import { Pane } from "@orz/ui/components/pane";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
 import {
@@ -23,7 +24,6 @@ import {
 } from "@orz/ui/components/select";
 import { Separator } from "@orz/ui/components/separator";
 import { Skeleton } from "@orz/ui/components/skeleton";
-import { Slider } from "@orz/ui/components/slider";
 import { Switch } from "@orz/ui/components/switch";
 import { ThemeEditor } from "@orz/ui/components/theme-editor";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
@@ -195,23 +195,25 @@ export function EditorSection({ prefs, onChange }: PreferenceProps) {
             aria-describedby="settings-format-description"
           />
         </SettingRow>
-        <div className="grid gap-3 py-3">
-          <div className="flex items-baseline justify-between gap-4">
-            <Label id="settings-font-size">Font size</Label>
-            <span className="text-muted-foreground text-ui tabular-nums">
-              {prefs.fontSize}px
+        <SettingRow id="settings-font-size" label="Font size">
+          <div className="flex items-center gap-2">
+            <NumberInput
+              id="settings-font-size"
+              min={11}
+              max={20}
+              value={prefs.fontSize}
+              onValueChange={(fontSize) => onChange({ fontSize })}
+              aria-describedby="settings-font-size-unit"
+              className="w-20"
+            />
+            <span
+              id="settings-font-size-unit"
+              className="text-muted-foreground text-ui"
+            >
+              px
             </span>
           </div>
-          <Slider
-            aria-labelledby="settings-font-size"
-            min={11}
-            max={20}
-            value={[prefs.fontSize]}
-            onValueChange={([fontSize]) =>
-              onChange({ fontSize: fontSize ?? PREFERENCES.fontSize })
-            }
-          />
-        </div>
+        </SettingRow>
         <SettingRow id="settings-language" label="New files open as">
           <Select
             value={prefs.language}

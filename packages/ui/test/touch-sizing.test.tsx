@@ -28,6 +28,7 @@ import {
   NavListItem,
   NavListLink,
 } from "../src/components/nav-list.tsx";
+import { NumberInput } from "../src/components/number-input.tsx";
 import { QueryBox } from "../src/components/query-box.tsx";
 import { RadioGroup, RadioGroupItem } from "../src/components/radio-group.tsx";
 import {
@@ -139,6 +140,25 @@ describe("touch sizes", () => {
     expect(classesOf(screen.getByRole("textbox"))).toEqual(
       expect.arrayContaining(["touch:h-10", "touch:text-base"]),
     );
+  });
+
+  it("NumberInput draws 40px with 16px text, its step buttons side by side and 40px wide", () => {
+    const { container } = render(<NumberInput aria-label="N" />);
+    expect(
+      classesOf(
+        container.querySelector('[data-slot="number-input"]') as Element,
+      ),
+    ).toEqual(expect.arrayContaining(["touch:h-10", "touch:text-base"]));
+    expect(
+      classesOf(
+        container.querySelector('[data-slot="number-input-steps"]') as Element,
+      ),
+    ).toContain("touch:flex-row-reverse");
+    for (const name of ["Increase", "Decrease"]) {
+      expect(classesOf(screen.getByRole("button", { name }))).toContain(
+        "touch:w-10",
+      );
+    }
   });
 
   it("Textarea keeps 16px text at every width", () => {

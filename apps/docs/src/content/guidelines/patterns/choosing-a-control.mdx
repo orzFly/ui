@@ -11,6 +11,7 @@ export const meta = {
     "ui/Primitives/Toggle",
     "ui/Primitives/Select",
     "ui/FilterMenu",
+    "ui/Primitives/NumberInput",
     "ui/Primitives/Slider",
     "ui/ColorPicker",
     "ui/Primitives/Tabs",
@@ -21,7 +22,7 @@ export const meta = {
 
 import { ControlsCompared } from "../../../examples/choosing-a-control/controls-compared.tsx";
 import { DuplicateOf } from "../../../examples/choosing-a-control/duplicate-of.tsx";
-import { FontSizeSlider } from "../../../examples/choosing-a-control/font-size-slider.tsx";
+import { FontSizeNumberInput } from "../../../examples/choosing-a-control/font-size-number-input.tsx";
 import { LabelColours } from "../../../examples/choosing-a-control/label-colours.tsx";
 import { NotifyRadioGroup } from "../../../examples/choosing-a-control/notify-radio-group.tsx";
 import { NotifySelect } from "../../../examples/choosing-a-control/notify-select.tsx";
@@ -74,6 +75,7 @@ one, and the box above them turns partly checked; press it to select none.
 | One of two or three modes of the tool in hand, in its toolbar | Immediately | `SegmentedControl` |
 | Any number of tags or filters over a list, each on or off | Immediately | `Toggle`s, side by side |
 | Exactly one of a list too long to scan, or one that grows with people's own data: a task, a person, a label | Either | `FilterMenu`, behind a button that shows the pick |
+| A number people know exactly: a count, a port, a font size | Either | `NumberInput` |
 | A value along a range, where the exact number matters less than the feel | Either | `Slider` |
 | A colour | Either | `ColorPickerPopover`, with the app's palette as `swatches` |
 | One of a few views of the same thing | Immediately | `Tabs`: they switch what is shown, not a value that is saved |
@@ -103,10 +105,15 @@ button that names the pick, and the menu closes on it. Use it once a list runs p
 one screen, or holds things people add themselves, whose number nobody can promise; a fixed set
 that fits, like the time zones above, stays a Select.
 
-<Example of={FontSizeSlider} />
+<Example of={FontSizeNumberInput} />
 
-The Settings demo's font size is picked by how the code looks, not by its number, so it is a
-Slider, and the line of code under it follows as it drags.
+People know their font size by its number, and pick it a pixel at a time, so the Settings demo's
+is a `NumberInput`: type it, or step it with the arrows beside it or the arrow keys, and the line
+of code under it follows each step. A Slider of a few stops would hide the number under a feel
+nobody asked for. Put the unit in a word after the field, as here, not in the label.
+
+A Slider is for what is judged by eye or by ear rather than read off: the place in a recording, a
+volume. In the pull request demo's Checks, press **Recording**: its seek bar is a Slider.
 
 <Example of={LabelColours} />
 

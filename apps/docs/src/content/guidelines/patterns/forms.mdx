@@ -7,6 +7,7 @@ export const meta = {
     "ui/Primitives/Label",
     "ui/Primitives/FieldDescription",
     "ui/Primitives/Input",
+    "ui/Primitives/NumberInput",
     "ui/Primitives/Textarea",
     "ui/Primitives/Select",
     "ui/Primitives/Checkbox",
@@ -62,7 +63,8 @@ saved.
 
 | The value | Use |
 |---|---|
-| One line of text, a number, an email, a URL | `Input` with the matching `type` and `autoComplete` |
+| One line of text, an email, a URL | `Input` with the matching `type` and `autoComplete` |
+| A number: a count, a port | `NumberInput`, with `min` and `max` where there are limits |
 | Several lines of text | `Textarea` |
 | One of a fixed list | `Select`, or a `RadioGroup` for two to five, see [Choosing a control](/guidelines/patterns/choosing-a-control/) |
 | Yes or no, applied on submit | `Checkbox` |
