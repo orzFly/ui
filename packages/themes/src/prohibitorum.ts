@@ -6,12 +6,14 @@
  * as a browser reads it (Tailwind CSS 4.3.3's palette, then Graphite's base,
  * then the scheme) and stored as opaque hex, Graphite's translucent fills laid
  * over the surface they sit on; Prohibitorum's names are mapped onto these
- * tokens; and the field edge, charts, diff colours, terminal and syntax
- * theme, which Prohibitorum does not define, are derived here.
+ * tokens; the sidebar accent is moved in lightness until a current place
+ * shows on the sidebar; and the field edge, charts, diff colours, terminal
+ * and syntax theme, which Prohibitorum does not define, are derived here.
  */
 import { amoled } from "./amoled.ts";
 import { contrastOf, mixOf, oklchOf } from "./color.ts";
 import { markerOf } from "./marker.ts";
+import { contrast, type Rgb, rgbOf } from "./rgb.ts";
 import { textMateTheme } from "./syntax.ts";
 import type {
   ColorScheme,
@@ -66,6 +68,9 @@ export interface ProSide {
   ansi: AnsiHues;
 }
 
+const hex = (rgb: Rgb) =>
+  `#${rgb.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+
 /** WCAG 1.4.11's floor for the edge that identifies a field. */
 const FIELD_EDGE = 3;
 
@@ -85,6 +90,33 @@ function fieldEdge(p: Published): string {
       return edge;
   }
   return p.foreground;
+}
+
+/**
+ * The fill a current place stands out with on a sidebar, the library's own
+ * floor; see test/contrast.test.ts. Prohibitorum's own reads at 1.0–1.1:1
+ * there.
+ */
+const SIDEBAR_FILL = 1.2;
+
+/**
+ * Prohibitorum's sidebar accent, moved in OKLCH lightness only (deeper on a
+ * light side, lighter on a dark one) in steps of 0.005 until it clears
+ * `SIDEBAR_FILL` on the sidebar, so it keeps its hue and chroma.
+ */
+function sidebarAccent(p: Published, scheme: ColorScheme): string {
+  const [lightness, chroma, hue] = oklchOf(p["sidebar-accent"])
+    .slice("oklch(".length, -1)
+    .split(" ")
+    .map(Number);
+  const sidebar = rgbOf(p.sidebar);
+  const step = scheme === "light" ? -0.005 : 0.005;
+  for (let i = 0; i <= 200; i++) {
+    const l = Math.min(1, Math.max(0, lightness + i * step));
+    const fill = rgbOf(`oklch(${l} ${chroma} ${hue})`);
+    if (contrast(fill, sidebar) >= SIDEBAR_FILL) return hex(fill);
+  }
+  return p["sidebar-foreground"];
 }
 
 /**
@@ -177,7 +209,7 @@ function paletteOf(
     "sidebar-foreground": p["sidebar-foreground"],
     "sidebar-primary": p.primary,
     "sidebar-primary-foreground": p["primary-foreground"],
-    "sidebar-accent": p["sidebar-accent"],
+    "sidebar-accent": sidebarAccent(p, scheme),
     "sidebar-accent-foreground": p.foreground,
     "sidebar-border": p["sidebar-border"],
     "sidebar-ring": p["sidebar-ring"],

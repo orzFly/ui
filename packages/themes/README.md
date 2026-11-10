@@ -101,9 +101,11 @@ the contrast floors the tests hold every other theme to; `test/palettes.ts` list
 
 The eight Pro themes are the colour schemes of [Prohibitorum](https://github.com/TundraWork/Prohibitorum)'s
 console, in its order: Graphite, Nord, Sand and Matcha, then Sakura, Lavender, Lagoon and Citrus.
-They paint its colours as the browser resolves them, with no value adjusted, so ProCitrus's yellow
-primary is a fill too light to read as text and ProGraphite keeps a light sidebar ring; the tests
-list both. Prohibitorum draws a field's edge with its border, so `input` is the border mixed toward
+They paint its colours as the browser resolves them, so ProCitrus's yellow primary is a fill too
+light to read as text and ProGraphite keeps a light sidebar ring; the tests list both. The one
+value adjusted is the sidebar's accent, which Prohibitorum draws at 1.0–1.1:1 against the sidebar:
+it moves in lightness only, deeper on a light side and lighter on a dark one, until a current place
+stands 1.2:1 off the sidebar as it does in every other theme. Prohibitorum draws a field's edge with its border, so `input` is the border mixed toward
 the foreground until it clears 3:1. Prohibitorum has no code or terminal colours, so each Pro
 theme carries its own syntax theme and ANSI colours, drawn for its page; ProMatcha, ProNord and
 ProLavender, whose pages are Everforest's, Nord's and Catppuccin's, take that family's accents.
