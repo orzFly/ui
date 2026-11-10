@@ -208,6 +208,11 @@ file per route.
   lists that directory, then the text fixtures its files import. The demo's root takes `h-full`
   and lays itself out in the box `DemoPage` gives it, the window below the site header; it draws
   no card or border of its own.
+- The site header runs the window's full width. Every page that is not bare, the 404 included,
+  goes through `ReadingPage` in `app.tsx`: a grid whose text column centres in the window, whose
+  first column keeps the sidebar's room whether or not the page has one (so the text starts at
+  one place on every page), and whose contents sit right against the text. A bare page lays
+  itself out; the home page's mosaic caps itself at `max-w-screen-2xl`.
 - A page states no number or list the code holds. The packages table, the built-in themes and the
   pairs below the contrast floors are components (`<Packages />`, `<BuiltinThemes />`,
   `<BelowFloor />`) over virtual modules that `apps/docs/scripts/data.ts` works out at build

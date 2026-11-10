@@ -121,7 +121,14 @@ the components already grow on a coarse pointer by themselves.
   two-dimensional by nature, a table, a log, a diff, scrolls inside its own box.
 - A row that holds a long label gives that label `min-w-0 flex-1` and `truncate`, so the label
   shrinks and its neighbours keep their size.
-- Prose stops at a readable measure (`max-w-prose`, `max-w-3xl`); a tool's panes fill the window.
+- The window's frame meets its edges: the header, a sidebar and a toolbar run to the window's sides,
+  and a tool's panes fill the window. A filled pane never sits inside a centred box, where its fill
+  would stop short of the edge and float.
+- Prose stops at a readable measure (`max-w-prose`, `max-w-3xl`) and centres in the window. A
+  sidebar pushes it aside only when the window is too narrow to centre it clear of the sidebar. A
+  page's contents sit right against the text.
+- Pages that read alike keep the text in one place: a page without a sidebar leaves the sidebar's
+  room free all the same, so its text starts where a page with one starts.
 
 ## Corners
 

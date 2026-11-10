@@ -102,7 +102,7 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
       className="sticky top-0 z-40 h-(--site-header) pt-[env(safe-area-inset-top)]"
     >
       <header>
-        <div className="mx-auto flex h-full max-w-screen-2xl items-center gap-2 pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-6 md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))]">
+        <div className="flex h-full items-center gap-2 pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-6 md:pr-[max(1.25rem,env(safe-area-inset-right))] md:pl-[max(1.25rem,env(safe-area-inset-left))]">
           <MobileNav
             section={section}
             open={nav}
