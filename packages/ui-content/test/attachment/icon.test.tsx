@@ -20,6 +20,8 @@ const FILES = [
   ["bundle.zip", "application/zip", "lucide-file-archive"],
   ["take.mp3", "audio/mpeg", "lucide-file-headphone"],
   ["clip.mp4", "video/mp4", "lucide-file-play"],
+  ["series.eml", "application/octet-stream", "lucide-mail"],
+  ["forwarded", "message/rfc822", "lucide-mail"],
   ["paper.pdf", "application/pdf", "lucide-file"],
   ["blob.bin", "application/octet-stream", "lucide-file"],
 ] as const;
@@ -61,6 +63,7 @@ const SHARED = [
   "tone.ogg",
   "clip.webm",
   "clip.mp4",
+  "series.eml",
 ] as const;
 
 describe("fileIcon and the file tree's fileTypeIcon", () => {

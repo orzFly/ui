@@ -5,6 +5,7 @@ import {
   isAudioFile,
   isHtmlFile,
   isImageFile,
+  isMailFile,
   isMarkdownFile,
   isPatchFile,
   isPdfFile,
@@ -120,6 +121,30 @@ describe("isPdfFile", () => {
 
   it("does not let the extension override a declared type", () => {
     expect(isPdfFile(file("paper.pdf", "text/plain"))).toBe(false);
+  });
+});
+
+describe("isMailFile", () => {
+  it("trusts message/rfc822", () => {
+    expect(isMailFile(file("forwarded", "message/rfc822"))).toBe(true);
+  });
+
+  it("falls back to the filename for generic types", () => {
+    expect(isMailFile(file("series.eml", "application/octet-stream"))).toBe(
+      true,
+    );
+    expect(isMailFile(file("SERIES.EML", ""))).toBe(true);
+  });
+
+  it("does not let the extension override a declared type", () => {
+    expect(isMailFile(file("series.eml", "text/plain"))).toBe(false);
+  });
+
+  it("is neither text nor an image", () => {
+    const eml = file("series.eml", "application/octet-stream");
+    expect(isTextFile(eml)).toBe(false);
+    expect(isImageFile(eml)).toBe(false);
+    expect(isTextFile(file("forwarded", "message/rfc822"))).toBe(false);
   });
 });
 

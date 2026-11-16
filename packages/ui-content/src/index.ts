@@ -5,6 +5,7 @@ export {
   isAudioFile,
   isHtmlFile,
   isImageFile,
+  isMailFile,
   isMarkdownFile,
   isPatchFile,
   isPdfFile,

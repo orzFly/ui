@@ -174,6 +174,7 @@ import { isImageFile, isTextFile, isMarkdownFile, formatSize } from "@orz/ui-con
 isImageFile(f)  isTextFile(f)     isMarkdownFile(f)  isHtmlFile(f)
 isPdfFile(f)    isArchiveFile(f)  isAudioFile(f)     isVideoFile(f)
 isPatchFile(f)  // text/x-patch, text/x-diff, or .patch / .diff under a generic type
+isMailFile(f)   // message/rfc822, or .eml under a generic type; neither text nor an image
 isTextEmbed(f)  // a text file that is not also an image (.svg is both)
 formatSize(bytes) // "512 B", "1.5 KB", "20 KB"
 TEXT_PREVIEW_MAX_BYTES      // 1 MiB: text past this previews only when asked, and plain
@@ -393,11 +394,14 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
   file `useCanPreview` accepts opens the viewer. `boxed` draws it as a bordered chip. It is a
   `LinkChip` from `@orz/ui/components/link-chip`, which also exports the chip's classes. A file
   marked `deleted` is its name struck through, with no link.
-- **`<AttachmentList items actions? title? id? className?>`** lists files (`FileSource` plus a
-  `key` and an optional ISO `createdAt`) with their icon, size, time and a download button.
-  `actions(item)` draws the app's own controls at the end of a row, such as a delete button. A list
-  of eight or more keeps its newest five rows and folds the rest behind a toggle. A plain click on a
-  row opens the viewer on the whole list. An empty list renders nothing.
+- **`<AttachmentList items actions? title? id? fold? thumbnails? className?>`** lists files
+  (`FileSource` plus a `key` and an optional ISO `createdAt`) with their icon, size, time and a
+  download button. `actions(item)` draws the app's own controls at the end of a row, such as a
+  delete button. A list of eight or more rows keeps its newest five and folds the rest behind a
+  toggle; `fold={false}` keeps them all, for a list whose order is the point. `thumbnails` draws
+  each image that has a `url` as a thumbnail under the rows instead of as a row. A plain click on
+  a row or a thumbnail opens the viewer on the whole list, in its own order. An empty list renders
+  nothing.
 - **`<DeletedAttachmentMark name className?>`** is what a document shows for a link or embed of a
   deleted file: the name struck through, with the word "deleted". `@orz/ui-markdown`'s
   `attachmentLinks` and `markdownEmbeds` draw it for a file their `resolve` marks `deleted`.
@@ -407,7 +411,7 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
   document" when it overflows. Without `onExpand` it draws no expand controls. With `titleBarFor`,
   it lends a spot in the header, after the name, to the renderer drawing that source.
 - **`fileIcon(file)`** is the lucide icon for a file's kind: image, HTML, patch, text, archive,
-  audio, video, else a generic file.
+  audio, video, mail, else a generic file.
 
 `@orz/ui-markdown`'s `attachmentLinks` plugin draws markdown links to files as `AttachmentLink`s.
 
