@@ -1,10 +1,4 @@
 import {
-  NavList,
-  NavListCount,
-  NavListItem,
-  NavListLink,
-} from "@orz/ui/components/nav-list";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -12,6 +6,7 @@ import {
   SelectValue,
 } from "@orz/ui/components/select";
 import { Skeleton } from "@orz/ui/components/skeleton";
+import { Tree, TreeCount, TreeItem, TreeLabel } from "@orz/ui/components/tree";
 import { cn } from "@orz/ui/lib/utils";
 import { formatOffset } from "@orz/ui-hex";
 import { flatten, type Region, type Structure } from "./structure.ts";
@@ -23,9 +18,9 @@ export type StructureState =
   | { kind: "parsed"; structure: Structure };
 
 /**
- * The file's regions as a list, beside the bytes on a wide screen. A region opens to its fields
- * while the caret is inside it, so the list follows the caret as it moves, and a click on a
- * region selects its bytes.
+ * The file's regions as a tree, beside the bytes on a wide screen. A region opens to its fields
+ * when the caret moves into it, and stays open until the reader closes it; a click on a region
+ * selects its bytes.
  */
 export function StructureList({
   state,
@@ -54,70 +49,30 @@ export function StructureList({
       </p>
     );
   }
+  const { structure } = state;
   return (
-    <RegionList
-      regions={state.structure.regions}
-      path={path}
-      depth={0}
-      onPick={onPick}
-      aria-label={state.structure.format}
-    />
-  );
-}
-
-function RegionList({
-  regions,
-  path,
-  depth,
-  onPick,
-  "aria-label": ariaLabel,
-}: {
-  regions: readonly Region[];
-  path: readonly Region[];
-  depth: number;
-  onPick: (region: Region) => void;
-  "aria-label"?: string;
-}) {
-  const current = path.at(-1);
-  return (
-    <NavList aria-label={ariaLabel}>
-      {regions.map((region) => {
-        const open = path[depth] === region;
-        return (
-          <NavListItem key={region.id}>
-            <NavListLink
-              current={region === current && "location"}
-              depth={depth}
-              asChild
-            >
-              <button
-                type="button"
-                aria-expanded={region.children ? open : undefined}
-                onClick={() => onPick(region)}
-              >
-                <span className="shrink-0">{region.label}</span>
-                {region.value && (
-                  <span className="min-w-0 flex-1 truncate text-ui-sm">
-                    {region.value}
-                  </span>
-                )}
-                <NavListCount className="font-mono">
-                  {formatOffset(region.offset)}
-                </NavListCount>
-              </button>
-            </NavListLink>
-            {open && region.children && (
-              <RegionList
-                regions={region.children}
-                path={path}
-                depth={depth + 1}
-                onPick={onPick}
-              />
+    <Tree
+      aria-label={structure.format}
+      items={structure.regions}
+      current={path.at(-1)?.id}
+      currentToken="location"
+    >
+      {(region) => (
+        <TreeItem asChild>
+          <button type="button" onClick={() => onPick(region)}>
+            <TreeLabel className="shrink-0">{region.label}</TreeLabel>
+            {region.value && (
+              <span className="min-w-0 flex-1 truncate text-ui-sm">
+                {region.value}
+              </span>
             )}
-          </NavListItem>
-        );
-      })}
-    </NavList>
+            <TreeCount className="font-mono">
+              {formatOffset(region.offset)}
+            </TreeCount>
+          </button>
+        </TreeItem>
+      )}
+    </Tree>
   );
 }
 

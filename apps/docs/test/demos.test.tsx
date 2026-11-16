@@ -881,7 +881,7 @@ describe("binary-inspector", () => {
     const container = await open();
     expect(
       container
-        .querySelector("nav[aria-label=Structure] ul")
+        .querySelector("nav[aria-label=Structure] [role=tree]")
         ?.getAttribute("aria-label"),
     ).toBe("PNG image");
     expect(region(container, "Width")).toBeUndefined();
@@ -903,6 +903,10 @@ describe("binary-inspector", () => {
     await click(region(container, "Width"));
     expect(inspector(container)).toContain("Offset 0x10 · 4 bytes");
     expect(inspector(container)).toContain("320");
+    // The chunk stays open around the field now current.
+    expect(region(container, "IHDR")?.getAttribute("aria-expanded")).toBe(
+      "true",
+    );
   });
 
   it("counts an edit, and reverts it only once that is confirmed", async () => {
