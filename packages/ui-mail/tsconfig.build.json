@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    // On source, the workspace peers' src/ would join this program and break
+    // rootDir; `pnpm -r build` builds them first, so their dist/ is there.
+    "customConditions": []
+  },
+  "include": ["src"]
+}
