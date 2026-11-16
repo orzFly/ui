@@ -79,7 +79,7 @@ function NavListFrame({
       // Under raymond a sunken well in the window colour, as Explorer draws
       // its folder pane.
       className={cn(
-        "raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken",
+        "raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken raymond:[--tree-ground:var(--window)]",
         className,
       )}
       {...props}

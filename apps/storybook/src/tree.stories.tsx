@@ -14,7 +14,7 @@ import { FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { fn } from "storybook/test";
 import { argsUpdater } from "./args.ts";
-import { withWidth } from "./decorators.tsx";
+import { withScroller, withWidth } from "./decorators.tsx";
 
 interface FileNode extends TreeNode<FileNode> {
   name: string;
@@ -101,6 +101,7 @@ const meta: Meta<typeof Tree<FileNode>> = {
   },
   argTypes: {
     currentToken: { control: "inline-radio", options: ["page", "location"] },
+    virtualize: { control: "inline-radio", options: ["auto", true, false] },
   },
   decorators: [withFrame, withWidth("max-w-64")],
 };
@@ -387,6 +388,93 @@ const filter = useMemo(
   },
 };
 
+/** About 2000 rows: 40 folders of 49 files. */
+const LARGE: FileNode[] = Array.from({ length: 40 }, (_, d) =>
+  dir(
+    `package-${d + 1}`,
+    Array.from({ length: 49 }, (_, f) => file(`module-${f + 1}.ts`)),
+  ),
+);
+
+/**
+ * Only the rows near the screen are mounted, the rest standing as empty space in the scroller:
+ * `virtualize` turns it on or off, and by default a tree turns it on past a few hundred rows. The
+ * current place, scrolled into sight, and the row with the focus stay mounted wherever they are.
+ */
+export const Virtualize: Story = {
+  args: {
+    items: LARGE,
+    current: "package-20/module-25.ts",
+    defaultExpanded: LARGE.map((n) => n.id),
+    virtualize: true,
+  },
+  decorators: [withScroller(320)],
+  parameters: {
+    docs: {
+      source: {
+        code: `<div className="h-80 overflow-y-auto">
+  <Tree
+    aria-label="Files"
+    items={packages}
+    current="package-20/module-25.ts"
+    defaultExpanded={packages.map((p) => p.id)}
+    virtualize
+  >
+    ${FILE_ROW}
+  </Tree>
+</div>`,
+      },
+    },
+  },
+};
+
+/** Three packages, three parts in each, three modules in each part, six files in each module. */
+const NESTED: FileNode[] = ["app", "core", "plugins"].map((pkg) =>
+  dir(
+    pkg,
+    ["src", "test", "docs"].map((part) =>
+      dir(
+        part,
+        ["alpha", "beta", "gamma"].map((mod) =>
+          dir(
+            mod,
+            Array.from({ length: 6 }, (_, f) => file(`${mod}-${f + 1}.ts`)),
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+
+const allBranches = (nodes: readonly FileNode[]): string[] =>
+  nodes.flatMap((n) => (n.children ? [n.id, ...allBranches(n.children)] : []));
+
+/**
+ * `stickyBranches` keeps the folders above the rows on screen at the top of the scroller, one
+ * under the other, so the reader always sees which folder the rows belong to; the next folder
+ * pushes the last one out. A pin's toggle closes its folder and leaves it under the pointer.
+ */
+export const StickyBranches: Story = {
+  args: {
+    items: NESTED,
+    current: undefined,
+    defaultExpanded: allBranches(NESTED),
+    stickyBranches: true,
+  },
+  decorators: [withScroller(320)],
+  parameters: {
+    docs: {
+      source: {
+        code: `<div className="h-80 overflow-y-auto">
+  <Tree aria-label="Files" items={files} defaultExpanded={folders} stickyBranches>
+    ${FILE_ROW}
+  </Tree>
+</div>`,
+      },
+    },
+  },
+};
+
 /** Ten levels, every one open: the indent and the guides at depth. */
 function deep(level: number, path: string): FileNode[] {
   const name = `level-${level}`;
@@ -410,14 +498,7 @@ export const Deep: Story = {
   },
 };
 
-/** About 2000 rows, all on screen at once. */
-const LARGE: FileNode[] = Array.from({ length: 40 }, (_, d) =>
-  dir(
-    `package-${d + 1}`,
-    Array.from({ length: 49 }, (_, f) => file(`module-${f + 1}.ts`)),
-  ),
-);
-
+/** About 2000 rows in a box that scrolls, virtualized as `"auto"` has it. */
 export const Large: Story = {
   tags: ["edge", "!autodocs"],
   args: {
@@ -425,6 +506,7 @@ export const Large: Story = {
     current: "package-20/module-25.ts",
     defaultExpanded: LARGE.map((n) => n.id),
   },
+  decorators: [withScroller(480)],
 };
 
 export const LongLabels: Story = {

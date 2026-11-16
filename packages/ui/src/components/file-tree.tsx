@@ -15,7 +15,7 @@ import {
 } from "../lib/file-tree.ts";
 import { cn } from "../lib/utils.ts";
 import { MatchedText } from "./filter-menu.tsx";
-import type { TreeRowState } from "./tree.tsx";
+import type { TreeHandle, TreeRowState } from "./tree.tsx";
 import { Tree, TreeItem, TreeLabel } from "./tree.tsx";
 
 export interface FileStatusLabels {
@@ -59,7 +59,8 @@ type TreeProps = React.ComponentProps<typeof Tree<FileNode>>;
  * row. `status` marks files by path, a folder holding a change takes a dot, and an ignored folder
  * passes ignored down. `query` filters by path as `filterMode` says. `current`, `expanded` and
  * `defaultExpanded` take paths, a merged folder's standing for its row; `onExpandedChange`
- * hands back row ids. Memoize `paths`.
+ * hands back row ids, and `handle`'s `scrollToItem` takes a path. Typing jumps to a row by its
+ * name. Memoize `paths`.
  */
 function FileTree({
   paths,
@@ -72,8 +73,9 @@ function FileTree({
   current,
   expanded,
   defaultExpanded,
+  handle,
   ...props
-}: Omit<TreeProps, "items" | "filter" | "children"> & {
+}: Omit<TreeProps, "items" | "filter" | "children" | "textValue"> & {
   paths: readonly string[];
   children: (file: FileNode, row: TreeRowState) => React.ReactNode;
   status?: Readonly<Record<string, FileStatus>>;
@@ -108,6 +110,16 @@ function FileTree({
     () => ({ statuses, query: query.trim(), labels }),
     [statuses, query, labels],
   );
+  const tree = React.useRef<TreeHandle>(null);
+  React.useImperativeHandle(
+    handle,
+    () => ({
+      scrollToItem(path, align) {
+        tree.current?.scrollToItem(resolveFileRow(nodes, path) ?? path, align);
+      },
+    }),
+    [nodes],
+  );
   return (
     <FileTreeContext.Provider value={context}>
       <Tree
@@ -120,6 +132,8 @@ function FileTree({
         }
         expanded={expandedRows}
         defaultExpanded={resolve(defaultExpanded)}
+        textValue={textValue}
+        handle={tree}
         {...props}
       >
         {(file, row) => (
@@ -131,6 +145,8 @@ function FileTree({
     </FileTreeContext.Provider>
   );
 }
+
+const textValue = (file: FileNode) => file.segments.join(" / ");
 
 /**
  * The status lane's mark: a letter, a dot for a folder holding changes, nothing for ignored.

@@ -29,6 +29,15 @@ export function withHeight(height: number): Decorator {
   );
 }
 
+/** A fixed height that scrolls, for a view that scrolls in its nearest scroller (a long tree). */
+export function withScroller(height: number): Decorator {
+  return (Story) => (
+    <div className="overflow-y-auto" style={{ height }}>
+      <Story />
+    </div>
+  );
+}
+
 /**
  * Registers `renderers` around the story. Call it at module scope: the array it
  * closes over then stays the same across renders, as ContentRenderers asks.

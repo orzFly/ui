@@ -238,6 +238,7 @@ export function Repository() {
                         current={path === "" ? undefined : path}
                         query={query}
                         filterMode={mode}
+                        stickyBranches
                       >
                         {(file) => (
                           <FileTreeItem

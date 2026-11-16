@@ -70,6 +70,19 @@ describe("Pane", () => {
     expect(filled).not.toContain("[--accent:var(--sidebar-accent)]");
   });
 
+  it("hands a filled sidebar's fill to a tree as the ground its pins paint", () => {
+    const filled = classes({
+      purpose: "sidebar",
+      edge: { initial: "bottom", md: "end", xl: "top" },
+    });
+    expect(filled).toEqual(
+      expect.arrayContaining([
+        "md:[--tree-ground:var(--sidebar)]",
+        "xl:[--tree-ground:inherit]",
+      ]),
+    );
+  });
+
   it("frames only a window, dropping the frame on the edge it is docked against", () => {
     expect(classes({ purpose: "window" })).toEqual(
       expect.arrayContaining(["rounded-overlay", "border"]),

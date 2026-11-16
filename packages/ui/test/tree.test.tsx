@@ -1,14 +1,16 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import type * as React from "react";
+import * as React from "react";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   Tree,
   TreeCount,
+  type TreeHandle,
   TreeItem,
   TreeLabel,
 } from "../src/components/tree.tsx";
 import type { TreeNode } from "../src/lib/tree-rows.ts";
+import { H, type Layout, stubLayout, VIEWPORT } from "./stub-tree-layout.ts";
 
 interface Node extends TreeNode<Node> {
   name: string;
@@ -540,5 +542,378 @@ describe("Tree", () => {
     }
     expect(html).not.toContain(`href="#button"`);
     expect(html).toContain('aria-current="page"');
+  });
+});
+
+// Twenty folders of 49 files each, all open, then a lone "zebra": 1001 rows.
+const BIG: Node[] = [
+  ...Array.from({ length: 20 }, (_, f) =>
+    n(
+      `f${f}`,
+      Array.from({ length: 49 }, (_, i) => n(`f${f}.${i}`)),
+      { name: `folder ${f}` },
+    ),
+  ),
+  n("zebra"),
+];
+const BIG_OPEN = BIG.flatMap((node) => (node.children ? [node.id] : []));
+/** The row index of `f<f>.<i>`. */
+const at = (f: number, i: number) => f * 50 + 1 + i;
+
+// Five roots, three branches under each, three under each of those, ten
+// files under each of those: 103 rows a root.
+const deepIds: string[] = [];
+const deepNode = (id: string, depth: number): Node => {
+  if (depth === 3) return n(id);
+  deepIds.push(id);
+  const count = depth === 2 ? 10 : 3;
+  return n(
+    id,
+    Array.from({ length: count }, (_, i) => deepNode(`${id}.${i}`, depth + 1)),
+  );
+};
+const DEEP = Array.from({ length: 5 }, (_, i) => deepNode(`d${i}`, 0));
+
+describe("Tree, scrolled", () => {
+  let layout: Layout;
+  beforeEach(() => {
+    layout = stubLayout();
+  });
+  afterEach(() => layout.restore());
+
+  const scroller = () =>
+    document.querySelector("[data-scroller]") as HTMLElement;
+  const scrollTo = (top: number) => {
+    act(() => {
+      layout.state.scrollTop = top;
+      fireEvent.scroll(scroller());
+    });
+  };
+  const mounted = () =>
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        "[data-slot=tree-row]:not([data-pinned])",
+      ),
+    ].map((el) => Number(el.dataset.index));
+  const gaps = () =>
+    [...document.querySelectorAll<HTMLElement>("[data-slot=tree-gap]")].map(
+      (el) => Number(/\*\s*(\d+)/.exec(el.style.height)?.[1]),
+    );
+  const rowItem = (index: number) =>
+    document.querySelector(
+      `[data-slot=tree-row][data-index="${index}"] [data-slot=tree-item]`,
+    ) as HTMLElement;
+  const range = (start: number, end: number) =>
+    Array.from({ length: end - start }, (_, i) => start + i);
+
+  function big(props: Props = {}, inScroller = true) {
+    const tree = (
+      <Tree
+        aria-label="Files"
+        items={BIG}
+        defaultExpanded={BIG_OPEN}
+        {...props}
+      >
+        {(node) => (
+          <TreeItem href={`#${node.id}`}>
+            <TreeLabel>{node.name}</TreeLabel>
+          </TreeItem>
+        )}
+      </Tree>
+    );
+    return inScroller ? (
+      <div data-scroller="" style={{ overflowY: "auto" }}>
+        {tree}
+      </div>
+    ) : (
+      tree
+    );
+  }
+
+  describe("virtualized", () => {
+    it("mounts the rows on screen and the overscan, a gap standing for the rest", () => {
+      render(big());
+      expect(screen.getByRole("tree").hasAttribute("data-virtual")).toBe(true);
+      expect(mounted()).toEqual(range(0, 20));
+      expect(gaps()).toEqual([1001 - 20]);
+    });
+
+    it("follows the scroll", () => {
+      render(big());
+      scrollTo(5000);
+      // The tab stop stays mounted, at the top.
+      expect(mounted()).toEqual([0, ...range(490, 520)]);
+      expect(gaps()).toEqual([489, 1001 - 520]);
+    });
+
+    it("keeps the current place mounted wherever it is, in its order", () => {
+      render(big({ current: "f14.0", revealCurrent: false }));
+      expect(mounted()).toEqual([...range(0, 20), at(14, 0)]);
+      const rows = [
+        ...document.querySelectorAll<HTMLElement>("[data-slot=tree-row]"),
+      ];
+      expect(rows.at(-1)?.dataset.index).toBe(String(at(14, 0)));
+    });
+
+    it("mounts every row with virtualize off, and splits a small tree with it on", () => {
+      const { unmount } = render(big({ virtualize: false }));
+      expect(mounted()).toHaveLength(1001);
+      expect(gaps()).toEqual([]);
+      unmount();
+      render(big({ virtualize: true, defaultExpanded: [] }));
+      expect(mounted()).toEqual(range(0, 20));
+      expect(gaps()).toEqual([1]);
+      expect(screen.getByRole("tree").hasAttribute("data-virtual")).toBe(true);
+    });
+
+    it("renders the first rows and the current place on the server, with no pins", () => {
+      const html = renderToString(
+        big({ current: "f14.0", stickyBranches: true }),
+      );
+      const indexes = [...html.matchAll(/data-index="(\d+)"/g)].map((m) =>
+        Number(m[1]),
+      );
+      expect(indexes).toEqual([...range(0, 40), at(14, 0)]);
+      expect(html).not.toContain("tree-pins");
+    });
+  });
+
+  describe("the keyboard", () => {
+    it("goes to the last row with End, mounting it and scrolling to it", () => {
+      render(big());
+      rowItem(0).focus();
+      key(rowItem(0), "End");
+      expect(document.activeElement).toBe(item("zebra"));
+      expect(layout.state.scrollTop).toBe(1000 * H + H - VIEWPORT);
+    });
+
+    it("scrolls a row on with ↓ as it passes the bottom", () => {
+      render(big());
+      rowItem(9).focus();
+      key(rowItem(9), "ArrowDown");
+      expect(document.activeElement).toBe(rowItem(10));
+      expect(layout.state.scrollTop).toBe(H);
+    });
+
+    it("keeps the focused row mounted and focused when scrolled away", () => {
+      render(big());
+      rowItem(3).focus();
+      const focused = document.activeElement;
+      scrollTo(5000);
+      expect(mounted()).toContain(3);
+      expect(document.activeElement).toBe(focused);
+    });
+
+    it("jumps to an unmounted row by its textValue", () => {
+      render(big({ textValue: (node) => node.name }));
+      rowItem(0).focus();
+      key(rowItem(0), "z");
+      expect(document.activeElement).toBe(item("zebra"));
+    });
+
+    it("keeps a row it moves to clear of the pins", () => {
+      render(
+        <div data-scroller="" style={{ overflowY: "auto" }}>
+          <Tree
+            aria-label="Deep"
+            items={DEEP}
+            defaultExpanded={deepIds}
+            stickyBranches
+          >
+            {(node) => (
+              <TreeItem href={`#${node.id}`}>
+                <TreeLabel>{node.name}</TreeLabel>
+              </TreeItem>
+            )}
+          </Tree>
+        </div>,
+      );
+      scrollTo(25);
+      rowItem(6).focus();
+      key(rowItem(6), "ArrowUp");
+      expect(document.activeElement).toBe(rowItem(5));
+      // Row 5 has three ancestors pinned above it.
+      expect(layout.state.scrollTop).toBe(5 * H - 3 * H);
+    });
+  });
+
+  describe("the current place", () => {
+    it("scrolls into sight on mount, and stays put when in sight", () => {
+      const { unmount } = render(big({ current: "f10.0" }));
+      expect(layout.state.scrollTop).toBe(at(10, 0) * H + H - VIEWPORT);
+      unmount();
+      layout.state.scrollTop = 0;
+      render(big({ current: "f0.3" }));
+      expect(layout.state.scrollTop).toBe(0);
+    });
+
+    it("scrolls to a new current place, unless revealCurrent is off", () => {
+      const { rerender } = render(big({ current: "f0.0" }));
+      rerender(big({ current: "f2.0" }));
+      expect(layout.state.scrollTop).toBe(at(2, 0) * H + H - VIEWPORT);
+      rerender(big({ current: "f5.0", revealCurrent: false }));
+      expect(layout.state.scrollTop).toBe(at(2, 0) * H + H - VIEWPORT);
+    });
+
+    it("never scrolls the page itself, which scrollToItem does", () => {
+      const handle = React.createRef<TreeHandle>();
+      const { rerender } = render(big({ current: "f0.0", handle }, false));
+      rerender(big({ current: "f12.0", handle }, false));
+      expect(layout.scrollBy).not.toHaveBeenCalled();
+      act(() => handle.current?.scrollToItem("f12.0"));
+      expect(layout.scrollBy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("scrollToItem", () => {
+    it("opens the way to the row, then scrolls to it", () => {
+      const handle = React.createRef<TreeHandle>();
+      const onExpandedChange = vi.fn();
+      const { rerender } = render(
+        big({ expanded: [], onExpandedChange, handle }),
+      );
+      act(() => handle.current?.scrollToItem("f5.20"));
+      expect(onExpandedChange).toHaveBeenLastCalledWith(["f5"]);
+      expect(layout.state.scrollTop).toBe(0);
+      rerender(big({ expanded: ["f5"], onExpandedChange, handle }));
+      // f5 is the sixth root; f5.20 the 21st row below it.
+      expect(layout.state.scrollTop).toBe((5 + 1 + 20) * H + H - VIEWPORT);
+    });
+
+    it("puts the row at the top or the middle", () => {
+      const handle = React.createRef<TreeHandle>();
+      render(big({ handle }));
+      act(() => handle.current?.scrollToItem("f3.0", "start"));
+      expect(layout.state.scrollTop).toBe(at(3, 0) * H);
+      act(() => handle.current?.scrollToItem("f6.0", "center"));
+      expect(layout.state.scrollTop).toBe(at(6, 0) * H - (VIEWPORT - H) / 2);
+    });
+
+    it("does nothing for an unknown id, and never moves the focus", () => {
+      const handle = React.createRef<TreeHandle>();
+      render(big({ handle }));
+      rowItem(2).focus();
+      act(() => handle.current?.scrollToItem("nowhere"));
+      expect(layout.state.scrollTop).toBe(0);
+      act(() => handle.current?.scrollToItem("f8.8"));
+      expect(layout.state.scrollTop).toBeGreaterThan(0);
+      expect(document.activeElement).toBe(rowItem(2));
+    });
+  });
+
+  describe("sticky branches", () => {
+    function deep(
+      props: Partial<React.ComponentProps<typeof Tree<Node>>> = {},
+    ) {
+      return (
+        <div data-scroller="" style={{ overflowY: "auto" }}>
+          <Tree
+            aria-label="Deep"
+            items={DEEP}
+            defaultExpanded={deepIds}
+            stickyBranches
+            {...props}
+          >
+            {(node, row) => (
+              <TreeItem
+                href={`#${node.id}`}
+                data-pinned-state={row.pinned ? "" : undefined}
+              >
+                <TreeLabel>{node.name}</TreeLabel>
+              </TreeItem>
+            )}
+          </Tree>
+        </div>
+      );
+    }
+    const pins = () =>
+      [...document.querySelectorAll<HTMLElement>("[data-slot=tree-pin]")].map(
+        (el) => ({
+          name: el.querySelector("[data-slot=tree-label]")?.textContent,
+          top: Number.parseFloat(el.style.top),
+        }),
+      );
+    const pinToggle = (name: string) =>
+      [...document.querySelectorAll("[data-slot=tree-pin]")]
+        .find((el) => el.textContent === name)
+        ?.querySelector("[data-slot=tree-toggle]") as HTMLElement;
+
+    it("pins each open branch above the rows on screen, out of the tree's semantics", () => {
+      render(deep());
+      scrollTo(25);
+      expect(pins()).toEqual([
+        { name: "d0", top: 0 },
+        { name: "d0.0", top: 10 },
+        { name: "d0.0.0", top: 20 },
+      ]);
+      const layer = document.querySelector("[data-slot=tree-pins]");
+      expect(layer?.getAttribute("aria-hidden")).toBe("true");
+      const copies = layer?.querySelectorAll<HTMLElement>(
+        "[data-slot=tree-item]",
+      );
+      expect(copies).toHaveLength(3);
+      for (const copy of copies ?? []) {
+        expect(copy.hasAttribute("role")).toBe(false);
+        expect(copy.tabIndex).toBe(-1);
+        expect(copy.hasAttribute("data-pinned-state")).toBe(true);
+      }
+      expect(screen.getAllByRole("treeitem")).toHaveLength(mounted().length);
+    });
+
+    it("lets the next branch push the deepest pin up", () => {
+      render(deep());
+      scrollTo(105);
+      expect(pins().at(-1)).toEqual({ name: "d0.0.0", top: 15 });
+    });
+
+    it("closes from a pin's toggle, leaving the branch's row where the pin was", () => {
+      const onExpandedChange = vi.fn();
+      render(deep({ onExpandedChange }));
+      // d1 is row 103, d1.0 104, d1.0.0 105.
+      scrollTo(1065);
+      expect(pins().at(-1)).toEqual({ name: "d1.0.0", top: 20 });
+      fireEvent.click(pinToggle("d1.0.0"));
+      const last = onExpandedChange.mock.lastCall?.[0] as string[];
+      expect(last).not.toContain("d1.0.0");
+      expect(last).toContain("d1.0");
+      expect(layout.state.scrollTop).toBe(105 * H - 20);
+    });
+
+    it("clicks through a pin's link as through the row's own", () => {
+      const onClick = vi.fn((event: React.MouseEvent) =>
+        event.preventDefault(),
+      );
+      render(
+        <div data-scroller="" style={{ overflowY: "auto" }}>
+          <Tree
+            aria-label="Deep"
+            items={DEEP}
+            defaultExpanded={deepIds}
+            stickyBranches
+          >
+            {(node) => (
+              <TreeItem href={`#${node.id}`} onClick={onClick}>
+                <TreeLabel>{node.name}</TreeLabel>
+              </TreeItem>
+            )}
+          </Tree>
+        </div>,
+      );
+      scrollTo(25);
+      const copy = document.querySelector(
+        "[data-slot=tree-pin] [data-slot=tree-item]",
+      ) as HTMLElement;
+      expect(copy.getAttribute("href")).toBe("#d0");
+      fireEvent.click(copy);
+      expect(onClick).toHaveBeenCalledTimes(1);
+      // A place's click opens and never closes, so the branch stays.
+      expect(pins()[0]).toEqual({ name: "d0", top: 0 });
+    });
+
+    it("pins nothing without stickyBranches", () => {
+      render(deep({ stickyBranches: false }));
+      scrollTo(25);
+      expect(document.querySelector("[data-slot=tree-pins]")).toBeNull();
+    });
   });
 });

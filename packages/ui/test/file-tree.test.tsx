@@ -1,13 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import type * as React from "react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import * as React from "react";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   FileStatusMark,
   FileTree,
   FileTreeItem,
 } from "../src/components/file-tree.tsx";
+import type { TreeHandle } from "../src/components/tree.tsx";
 import type { FileStatus } from "../src/lib/file-tree.ts";
+import { H, type Layout, stubLayout, VIEWPORT } from "./stub-tree-layout.ts";
 
 const PATHS = [
   ".github/workflows/ci.yml",
@@ -205,5 +207,79 @@ describe("FileStatusMark", () => {
     expect(marks[0]?.textContent).toBe("R");
     expect(marks[1]?.querySelector("span")).toBeTruthy();
     expect(marks[2]?.textContent).toBe("");
+  });
+});
+
+// src (row 0) and its 300 files, then the merged "zz / inner" (row 301).
+const MANY = [
+  ...Array.from(
+    { length: 300 },
+    (_, i) => `src/file-${String(i).padStart(3, "0")}.ts`,
+  ),
+  "zz/inner/last.ts",
+];
+
+describe("FileTree, scrolled", () => {
+  let layout: Layout;
+  beforeEach(() => {
+    layout = stubLayout();
+  });
+  afterEach(() => layout.restore());
+
+  const rowItem = (index: number) =>
+    document.querySelector(
+      `[data-slot=tree-row][data-index="${index}"] [data-slot=tree-item]`,
+    ) as HTMLElement;
+
+  function many(props: Props = {}) {
+    return (
+      <div data-scroller="" style={{ overflowY: "auto" }}>
+        <FileTree
+          aria-label="Files"
+          paths={MANY}
+          status={{ "src/file-001.ts": "modified" }}
+          defaultExpanded={["src"]}
+          {...props}
+        >
+          {(file) => <FileTreeItem href={`#${file.path}`} />}
+        </FileTree>
+      </div>
+    );
+  }
+
+  it("jumps to an unmounted row by its name", () => {
+    render(many());
+    expect(rowItem(301)).toBeNull();
+    rowItem(0).focus();
+    fireEvent.keyDown(rowItem(0), { key: "z" });
+    expect(document.activeElement).toBe(item("zz / inner"));
+  });
+
+  it("scrolls to a path, a merged folder's own included", () => {
+    const handle = React.createRef<TreeHandle>();
+    render(many({ handle }));
+    act(() => handle.current?.scrollToItem("zz/"));
+    expect(layout.state.scrollTop).toBe(301 * H + H - VIEWPORT);
+    act(() => handle.current?.scrollToItem("zz/inner/last.ts", "start"));
+    expect(labels()).toContain("last.ts");
+    expect(layout.state.scrollTop).toBe(302 * H);
+  });
+
+  it("pins a folder drawn with its icon and its status", () => {
+    render(many({ stickyBranches: true }));
+    act(() => {
+      layout.state.scrollTop = 25;
+      fireEvent.scroll(document.querySelector("[data-scroller]") as Element);
+    });
+    const pin = document.querySelector("[data-slot=tree-pin]");
+    expect(pin?.querySelector("[data-slot=tree-label]")?.textContent).toBe(
+      "src",
+    );
+    expect(pin?.querySelector("svg")).toBeTruthy();
+    expect(
+      pin
+        ?.querySelector("[data-slot=file-status-mark]")
+        ?.getAttribute("data-status"),
+    ).toBe("changes");
   });
 });

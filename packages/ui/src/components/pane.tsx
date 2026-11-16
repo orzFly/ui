@@ -120,28 +120,29 @@ const EDGE: Record<
 
 // A filled sidebar hands its own state fill to the rows it holds as the
 // accent they highlight and select with: the page's accent is drawn for the
-// page's ground, and on a sidebar's it can measure barely over 1:1.
+// page's ground, and on a sidebar's it can measure barely over 1:1. Its fill
+// goes along too, as the ground a tree paints its pinned branches on.
 const SIDEBAR_FILL: Record<PaneBreakpoint, readonly [on: string, off: string]> =
   {
     initial: [
-      "bg-sidebar text-sidebar-foreground [--accent:var(--sidebar-accent)] [--accent-foreground:var(--sidebar-accent-foreground)]",
+      "bg-sidebar text-sidebar-foreground [--accent:var(--sidebar-accent)] [--accent-foreground:var(--sidebar-accent-foreground)] [--tree-ground:var(--sidebar)]",
       "",
     ],
     sm: [
-      "sm:bg-sidebar sm:text-sidebar-foreground sm:[--accent:var(--sidebar-accent)] sm:[--accent-foreground:var(--sidebar-accent-foreground)]",
-      "sm:bg-transparent sm:text-inherit sm:[--accent:inherit] sm:[--accent-foreground:inherit]",
+      "sm:bg-sidebar sm:text-sidebar-foreground sm:[--accent:var(--sidebar-accent)] sm:[--accent-foreground:var(--sidebar-accent-foreground)] sm:[--tree-ground:var(--sidebar)]",
+      "sm:bg-transparent sm:text-inherit sm:[--accent:inherit] sm:[--accent-foreground:inherit] sm:[--tree-ground:inherit]",
     ],
     md: [
-      "md:bg-sidebar md:text-sidebar-foreground md:[--accent:var(--sidebar-accent)] md:[--accent-foreground:var(--sidebar-accent-foreground)]",
-      "md:bg-transparent md:text-inherit md:[--accent:inherit] md:[--accent-foreground:inherit]",
+      "md:bg-sidebar md:text-sidebar-foreground md:[--accent:var(--sidebar-accent)] md:[--accent-foreground:var(--sidebar-accent-foreground)] md:[--tree-ground:var(--sidebar)]",
+      "md:bg-transparent md:text-inherit md:[--accent:inherit] md:[--accent-foreground:inherit] md:[--tree-ground:inherit]",
     ],
     lg: [
-      "lg:bg-sidebar lg:text-sidebar-foreground lg:[--accent:var(--sidebar-accent)] lg:[--accent-foreground:var(--sidebar-accent-foreground)]",
-      "lg:bg-transparent lg:text-inherit lg:[--accent:inherit] lg:[--accent-foreground:inherit]",
+      "lg:bg-sidebar lg:text-sidebar-foreground lg:[--accent:var(--sidebar-accent)] lg:[--accent-foreground:var(--sidebar-accent-foreground)] lg:[--tree-ground:var(--sidebar)]",
+      "lg:bg-transparent lg:text-inherit lg:[--accent:inherit] lg:[--accent-foreground:inherit] lg:[--tree-ground:inherit]",
     ],
     xl: [
-      "xl:bg-sidebar xl:text-sidebar-foreground xl:[--accent:var(--sidebar-accent)] xl:[--accent-foreground:var(--sidebar-accent-foreground)]",
-      "xl:bg-transparent xl:text-inherit xl:[--accent:inherit] xl:[--accent-foreground:inherit]",
+      "xl:bg-sidebar xl:text-sidebar-foreground xl:[--accent:var(--sidebar-accent)] xl:[--accent-foreground:var(--sidebar-accent-foreground)] xl:[--tree-ground:var(--sidebar)]",
+      "xl:bg-transparent xl:text-inherit xl:[--accent:inherit] xl:[--accent-foreground:inherit] xl:[--tree-ground:inherit]",
     ],
   };
 
@@ -241,8 +242,9 @@ function dockedClasses(docked: PaneResponsive<PaneDocked>) {
 // gripper drawn over its leading padding; a status bar is the face with
 // one shallow sunken panel inset two pixels from its edges, as Explorer
 // draws its own, and as tall as its text and that panel, its quiet text in
-// the window text as Explorer's is; a sidebar and a panel are the face. A
-// window is the face inside a raised frame, square, docked or not; its
+// the window text as Explorer's is; a sidebar and a panel are the face, the
+// ground a tree pins its branches on too. A window is the face inside a
+// raised frame, square, docked or not; its
 // titlebar spans it in the caption gradient with its title in bold, grey
 // while the focus is elsewhere on the page, and its icon buttons are the
 // small raised caption boxes. A banner is a rebar band too, opaque, but
@@ -262,8 +264,10 @@ const PURPOSE: Record<PanePurpose, string> = {
     "raymond:relative raymond:h-auto raymond:min-h-0 raymond:border-transparent raymond:bg-(--3d-face) raymond:py-[3px] raymond:shadow-[inset_0_1px_var(--3d-highlight),inset_0_-1px_var(--3d-shadow)] raymond:before:absolute raymond:before:inset-y-1 raymond:before:left-0.5 raymond:before:w-[3px] raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:before:content-['']",
   statusbar:
     "raymond:relative raymond:min-h-0 raymond:border-transparent raymond:bg-(--3d-face) raymond:text-foreground raymond:[--muted-foreground:var(--foreground)] raymond:px-[5px] raymond:py-1 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-0.5 raymond:before:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:before:content-['']",
-  sidebar: "raymond:border-transparent raymond:bg-(--3d-face)",
-  panel: "raymond:border-transparent raymond:bg-(--3d-face)",
+  sidebar:
+    "raymond:border-transparent raymond:bg-(--3d-face) raymond:[--tree-ground:var(--3d-face)]",
+  panel:
+    "raymond:border-transparent raymond:bg-(--3d-face) raymond:[--tree-ground:var(--3d-face)]",
   window:
     "raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:p-[3px] raymond:shadow-raised",
   titlebar:

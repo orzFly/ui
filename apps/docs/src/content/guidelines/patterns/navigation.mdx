@@ -91,6 +91,13 @@ there. An app that holds the open branches itself starts them from `ancestorsOf`
 frame already shows the place. When a filter leaves no row, the tree draws nothing; show an
 `EmptyState` in its place.
 
+A long tree mounts only the rows near the screen, so the browser's find in page cannot reach the
+rest: give it a filter box. Give a deep one, a file tree above all, a scroller of its own and
+`stickyBranches`, so the folders the reader has scrolled into stay pinned at its top and they
+always see where they are. The tree scrolls `current` into sight as it changes; an app that keeps
+the scroll position itself turns that off with `revealCurrent={false}`, and scrolls with the
+`scrollToItem` of the tree's `handle` when it means to.
+
 ### Files
 
 <Example of={RepositoryFiles} />

@@ -6,7 +6,7 @@ import { isPlainClick } from "@orz/ui/lib/link";
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 import { argsUpdater } from "./args.ts";
-import { withWidth } from "./decorators.tsx";
+import { withScroller, withWidth } from "./decorators.tsx";
 
 const PATHS = [
   ".github/workflows/ci.yml",
@@ -70,6 +70,7 @@ const meta = {
       control: "inline-radio",
       options: ["hide", "expand", "collapse"],
     },
+    virtualize: { control: "inline-radio", options: ["auto", true, false] },
     children: { control: false },
   },
   decorators: [withFrame, withWidth("max-w-72")],
@@ -235,19 +236,50 @@ const LARGE = Array.from(
   (_, i) =>
     `packages/package-${(i % 12) + 1}/src/module-${(i % 5) + 1}/file-${i + 1}.ts`,
 );
+const LARGE_OPEN = [
+  "packages/",
+  ...Array.from({ length: 12 }, (_, p) => [
+    `packages/package-${p + 1}/src/`,
+    ...Array.from(
+      { length: 5 },
+      (_, m) => `packages/package-${p + 1}/src/module-${m + 1}/`,
+    ),
+  ]).flat(),
+];
+
+/**
+ * `stickyBranches` keeps the folders above the rows on screen at the top of the scroller, so the
+ * reader always sees which folder the files belong to; the next folder pushes the last one out.
+ */
+export const StickyBranches: Story = {
+  args: {
+    paths: LARGE,
+    current: undefined,
+    defaultExpanded: LARGE_OPEN,
+    stickyBranches: true,
+  },
+  decorators: [withScroller(320)],
+  parameters: {
+    docs: {
+      source: {
+        code: `<div className="h-80 overflow-y-auto">
+  <FileTree aria-label="Files" paths={paths} defaultExpanded={folders} stickyBranches>
+    ${ROW}
+  </FileTree>
+</div>`,
+      },
+    },
+  },
+};
 
 export const Large: Story = {
   tags: ["edge", "!autodocs"],
   args: {
     paths: LARGE,
     current: "packages/package-6/src/module-3/file-1498.ts",
-    defaultExpanded: Array.from({ length: 12 }, (_, p) =>
-      Array.from(
-        { length: 5 },
-        (_, m) => `packages/package-${p + 1}/src/module-${m + 1}/`,
-      ),
-    ).flat(),
+    defaultExpanded: LARGE_OPEN,
   },
+  decorators: [withScroller(480)],
 };
 
 export const LongNames: Story = {
