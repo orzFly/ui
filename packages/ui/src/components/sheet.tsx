@@ -1,6 +1,7 @@
 import { XIcon } from "lucide-react";
 import { Dialog as SheetPrimitive } from "radix-ui";
 import type * as React from "react";
+import { rememberOpener, returnToOpener } from "../lib/focus-return.ts";
 import { cn } from "../lib/utils.ts";
 import { Button } from "./button.tsx";
 import { ModuleMarker } from "./card.tsx";
@@ -58,6 +59,8 @@ function SheetContent({
   side = "right",
   showCloseButton = true,
   overlay = "dim",
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
@@ -88,6 +91,14 @@ function SheetContent({
           "raymond:data-[side=bottom]:border-t-0 raymond:data-[side=left]:border-r-0 raymond:data-[side=right]:border-l-0 raymond:data-[side=top]:border-b-0",
           className,
         )}
+        onOpenAutoFocus={(event) => {
+          onOpenAutoFocus?.(event);
+          rememberOpener(event);
+        }}
+        onCloseAutoFocus={(event) => {
+          onCloseAutoFocus?.(event);
+          returnToOpener(event);
+        }}
         {...props}
       >
         {children}

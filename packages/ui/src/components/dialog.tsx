@@ -2,6 +2,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import * as React from "react";
 import { useRef } from "react";
+import { rememberOpener, returnToOpener } from "../lib/focus-return.ts";
 import { cn } from "../lib/utils.ts";
 import { Button } from "./button.tsx";
 import { ModuleMarker } from "./card.tsx";
@@ -142,6 +143,8 @@ function DialogContent({
   onWheel,
   onTouchStart,
   onTouchMove,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
@@ -189,6 +192,14 @@ function DialogContent({
           onTouchMove?.(event);
           if (!event.isPropagationStopped())
             releaseShadowDrag(event, dragOrigin.current);
+        }}
+        onOpenAutoFocus={(event) => {
+          onOpenAutoFocus?.(event);
+          rememberOpener(event);
+        }}
+        onCloseAutoFocus={(event) => {
+          onCloseAutoFocus?.(event);
+          returnToOpener(event);
         }}
         {...props}
       >

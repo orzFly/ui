@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogTrigger,
 } from "../src/components/dialog.tsx";
 import {
   DropdownMenu,
@@ -16,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../src/components/popover.tsx";
+import { Sheet, SheetContent, SheetTitle } from "../src/components/sheet.tsx";
 
 /**
  * The release `dialog.tsx` performs for a finger (T-450, T-471) needs two
@@ -294,4 +297,64 @@ describe("overlay focus restore stands aside for an outside interaction", () => 
 
     expect(document.activeElement).toBe(trigger);
   });
+});
+
+/** A row that opens an overlay through `open` alone, with no Trigger. */
+function OpenedByState({ as }: { as: "dialog" | "sheet" }) {
+  const [open, setOpen] = useState(false);
+  const Root = as === "dialog" ? Dialog : Sheet;
+  const Content = as === "dialog" ? DialogContent : SheetContent;
+  const Title = as === "dialog" ? DialogTitle : SheetTitle;
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        notes.txt
+      </button>
+      <Root open={open} onOpenChange={setOpen}>
+        <Content aria-describedby={undefined}>
+          <Title>notes.txt</Title>
+        </Content>
+      </Root>
+    </>
+  );
+}
+
+describe.each(["dialog", "sheet"] as const)(
+  "%s opened without a trigger",
+  (as) => {
+    it("hands focus back to what opened it on close (UI-183)", async () => {
+      render(<OpenedByState as={as} />);
+      const row = screen.getByRole("button", { name: "notes.txt" });
+      row.focus();
+      fireEvent.click(row);
+      await waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
+      const calls = watchFocus(row);
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      await waitFor(() => expect(document.activeElement).toBe(row));
+      expect(calls.every((options) => options?.preventScroll === true)).toBe(
+        true,
+      );
+    });
+  },
+);
+
+it("still hands a dialog's focus to its trigger", async () => {
+  render(
+    <Dialog>
+      <DialogTrigger>Rename</DialogTrigger>
+      <DialogContent aria-describedby={undefined}>
+        <DialogTitle>Rename</DialogTitle>
+      </DialogContent>
+    </Dialog>,
+  );
+  const trigger = screen.getByRole("button", { name: "Rename" });
+  trigger.focus();
+  fireEvent.click(trigger);
+  await waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
+
+  fireEvent.keyDown(document, { key: "Escape" });
+
+  await waitFor(() => expect(document.activeElement).toBe(trigger));
 });
