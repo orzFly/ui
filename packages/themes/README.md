@@ -88,6 +88,7 @@ import { github } from "@orz/themes/themes/github";
 | Tokyo Night | `tokyoNight` (`tokyo-night`) | Default |  | ✓ |
 | One Dark | `oneDark` (`one-dark`) | Default |  | ✓ |
 | Monokai | `monokai` | Default |  | ✓ |
+| Afterglow | `afterglow` | Default |  | ✓ |
 | Windows Standard | `windowsStandard` (`windows-standard`) | Raymond | ✓ |  |
 
 Every dark palette also has an `amoled` variant.
@@ -168,7 +169,7 @@ syntax theme and its JSON round trip.
 |---|---|
 | `@orz/themes` | `builtinThemes`, each built-in theme, the functions above but `contrastRows`, `TOKEN_NAMES`, `TERMINAL_TOKEN_NAMES`, `LATE_TOKEN_NAMES`, `DEFAULT_VARIANT`, types |
 | `@orz/themes/contrast` | `contrastRows`, `CONTRAST_CHECKS`, `ContrastCheck`, `ContrastRow` |
-| `@orz/themes/themes/<name>` | `catppuccin`, `default`, `dracula`, `github`, `gruvbox`, `monokai`, `nord`, `one-dark`, `picotera`, `pro-citrus`, `pro-graphite`, `pro-lagoon`, `pro-lavender`, `pro-matcha`, `pro-nord`, `pro-sakura`, `pro-sand`, `solarized`, `tokyo-night`, `vs`, `windows-standard` |
+| `@orz/themes/themes/<name>` | `afterglow`, `catppuccin`, `default`, `dracula`, `github`, `gruvbox`, `monokai`, `nord`, `one-dark`, `picotera`, `pro-citrus`, `pro-graphite`, `pro-lagoon`, `pro-lavender`, `pro-matcha`, `pro-nord`, `pro-sakura`, `pro-sand`, `solarized`, `tokyo-night`, `vs`, `windows-standard` |
 
 ## Sources
 
@@ -178,6 +179,11 @@ palette's own background and foreground, so a terminal sits on the page's surfac
 sets no cursor, the cursor is the foreground (Monokai takes its editor cursor, `#f8f8f0`), and
 where it sets no selection, the selection is VS Code's fallback. Windows Standard's terminal keeps
 the Windows console's own black, on which its sixteen colours were drawn.
+
+Afterglow is a terminal scheme with no UI of its own, so its UI tokens were drawn here: its
+neutral greys for the surfaces, its amber for the accent, and its red, green, orange and magenta
+lifted in lightness until they clear the contrast floors as status text and chart series. Its code
+colours are its Sublime Text theme's, the editor scheme the terminal one was made from.
 
 A ported theme's selected text on the page is its editor selection, the terminal's, laid over the
 page and darkened or lightened by `selectionOf` where it all but vanished into a fill: Solarized's
@@ -200,3 +206,4 @@ Standard selects in its highlight, as Windows does.
 | ProGraphite … ProCitrus | none upstream; Tailwind CSS 4.3.3's palette, UI tokens from [Prohibitorum](https://github.com/TundraWork/Prohibitorum) `6d3bc42` (see `src/prohibitorum.ts`); code and terminal colours drawn here, ProMatcha's, ProNord's and ProLavender's from [Everforest](https://github.com/sainnhe/everforest)'s, Nord's and Catppuccin's accents | Apache-2.0, see `NOTICE`; Tailwind CSS, Everforest, Nord and Catppuccin are MIT |
 | Windows Standard | the Windows 2000 console's sixteen colours | — |
 | Monokai | [VS Code's built-in Monokai](https://github.com/microsoft/vscode/tree/main/extensions/theme-monokai) | MIT |
+| Afterglow | [YabataDesign/afterglow-itermcolors](https://github.com/YabataDesign/afterglow-itermcolors) `acdd71f`, code colours from [YabataDesign/afterglow-theme](https://github.com/YabataDesign/afterglow-theme) `8af113f`; UI tokens drawn here | none stated upstream; credited in `NOTICE` |

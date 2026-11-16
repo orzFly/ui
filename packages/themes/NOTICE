@@ -17,3 +17,15 @@ Prohibitorum's NOTICE reads:
 Prohibitorum
 Copyright 2026 Prohibitorum Authors (Jesse Cheng et al.)
 --------------------------------------------------------------------------------
+
+The Afterglow theme (src/themes/afterglow.ts) contains colour values from
+Afterglow by yabatadesign: the terminal colours from Afterglow.itermcolors,
+https://github.com/YabataDesign/afterglow-itermcolors at commit acdd71f, and
+the code colours from Afterglow.tmTheme,
+https://github.com/YabataDesign/afterglow-theme at commit 8af113f. Neither
+repository states a licence; this package takes only the colour values and
+credits their author here.
+
+They were modified: the UI tokens, which Afterglow does not define, were
+derived from them, with its red, green, orange and magenta lifted in
+lightness to clear WCAG contrast on the page.

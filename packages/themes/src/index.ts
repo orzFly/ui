@@ -23,6 +23,7 @@ export {
   themesForStyle,
 } from "./styles.ts";
 export { textMateTheme } from "./syntax.ts";
+export { afterglow } from "./themes/afterglow.ts";
 export { catppuccin } from "./themes/catppuccin.ts";
 export { defaultTheme } from "./themes/default.ts";
 export { dracula } from "./themes/dracula.ts";

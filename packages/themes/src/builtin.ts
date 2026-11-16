@@ -1,3 +1,4 @@
+import { afterglow } from "./themes/afterglow.ts";
 import { catppuccin } from "./themes/catppuccin.ts";
 import { defaultTheme } from "./themes/default.ts";
 import { dracula } from "./themes/dracula.ts";
@@ -46,5 +47,6 @@ export const builtinThemes: readonly Theme[] = [
   tokyoNight,
   oneDark,
   monokai,
+  afterglow,
   windowsStandard,
 ];
