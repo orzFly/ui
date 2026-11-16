@@ -101,7 +101,7 @@ const darkColours: ProSide = {
 
 export const proSakura: Theme = prohibitorumTheme(
   "pro-sakura",
-  "ProSakura",
+  "Pro Sakura",
   light,
   dark,
   { light: lightColours, dark: darkColours },

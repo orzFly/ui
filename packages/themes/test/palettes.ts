@@ -41,9 +41,9 @@ export const resolvedPalettes: {
  * Pairs kept below a test's floor on purpose, by test and row name, each
  * holding the lowest ratio it may fall to: the palette's own, rounded down, so
  * a change that makes one worse still fails. Catppuccin is used as published;
- * see src/themes/catppuccin.ts. So are the Prohibitorum themes: ProCitrus's
+ * see src/themes/catppuccin.ts. So are the Prohibitorum themes: Pro Citrus's
  * primary is a yellow fill that Prohibitorum never sets as text, and
- * ProGraphite keeps Prohibitorum's lighter sidebar ring.
+ * Pro Graphite keeps Prohibitorum's lighter sidebar ring.
  */
 // On the light side "default" is Latte and "mocha-gray" is Latte Gray, which
 // every Gray variant paints; on the dark side each id is its own flavour.

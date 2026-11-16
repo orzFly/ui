@@ -75,14 +75,14 @@ import { github } from "@orz/themes/themes/github";
 | GitHub | `github` | Default | ✓ | ✓ |
 | Catppuccin | `catppuccin` | Default | Latte; Mocha (Gray), Frappé (Gray), Macchiato (Gray) | Mocha; Frappé, Macchiato, Mocha (Gray), Frappé (Gray), Macchiato (Gray) |
 | Gruvbox | `gruvbox` | Default | ✓ | ✓ |
-| ProGraphite | `proGraphite` (`pro-graphite`) | Default | ✓ | ✓ |
-| ProNord | `proNord` (`pro-nord`) | Default | ✓ | ✓ |
-| ProSand | `proSand` (`pro-sand`) | Default | ✓ | ✓ |
-| ProMatcha | `proMatcha` (`pro-matcha`) | Default | ✓ | ✓ |
-| ProSakura | `proSakura` (`pro-sakura`) | Default | ✓ | ✓ |
-| ProLavender | `proLavender` (`pro-lavender`) | Default | ✓ | ✓ |
-| ProLagoon | `proLagoon` (`pro-lagoon`) | Default | ✓ | ✓ |
-| ProCitrus | `proCitrus` (`pro-citrus`) | Default | ✓ | ✓ |
+| Pro Graphite | `proGraphite` (`pro-graphite`) | Default | ✓ | ✓ |
+| Pro Nord | `proNord` (`pro-nord`) | Default | ✓ | ✓ |
+| Pro Sand | `proSand` (`pro-sand`) | Default | ✓ | ✓ |
+| Pro Matcha | `proMatcha` (`pro-matcha`) | Default | ✓ | ✓ |
+| Pro Sakura | `proSakura` (`pro-sakura`) | Default | ✓ | ✓ |
+| Pro Lavender | `proLavender` (`pro-lavender`) | Default | ✓ | ✓ |
+| Pro Lagoon | `proLagoon` (`pro-lagoon`) | Default | ✓ | ✓ |
+| Pro Citrus | `proCitrus` (`pro-citrus`) | Default | ✓ | ✓ |
 | Dracula | `dracula` | Default |  | ✓ |
 | Nord | `nord` | Default |  | ✓ |
 | Tokyo Night | `tokyoNight` (`tokyo-night`) | Default |  | ✓ |
@@ -102,14 +102,14 @@ the contrast floors the tests hold every other theme to; `test/palettes.ts` list
 
 The eight Pro themes are the colour schemes of [Prohibitorum](https://github.com/TundraWork/Prohibitorum)'s
 console, in its order: Graphite, Nord, Sand and Matcha, then Sakura, Lavender, Lagoon and Citrus.
-They paint its colours as the browser resolves them, so ProCitrus's yellow primary is a fill too
-light to read as text and ProGraphite keeps a light sidebar ring; the tests list both. The one
+They paint its colours as the browser resolves them, so Pro Citrus's yellow primary is a fill too
+light to read as text and Pro Graphite keeps a light sidebar ring; the tests list both. The one
 value adjusted is the sidebar's accent, which Prohibitorum draws at 1.0–1.1:1 against the sidebar:
 it moves in lightness only, deeper on a light side and lighter on a dark one, until a current place
 stands 1.2:1 off the sidebar as it does in every other theme. Prohibitorum draws a field's edge with its border, so `input` is the border mixed toward
 the foreground until it clears 3:1. Prohibitorum has no code or terminal colours, so each Pro
-theme carries its own syntax theme and ANSI colours, drawn for its page; ProMatcha, ProNord and
-ProLavender, whose pages are Everforest's, Nord's and Catppuccin's, take that family's accents.
+theme carries its own syntax theme and ANSI colours, drawn for its page; Pro Matcha, Pro Nord and
+Pro Lavender, whose pages are Everforest's, Nord's and Catppuccin's, take that family's accents.
 Every syntax colour clears 4.5:1 on the page, each normal ANSI colour 4.5:1 and each bright one
 3:1. `src/prohibitorum.ts` holds the mapping and what it derives.
 
@@ -203,7 +203,7 @@ Standard selects in its highlight, as Windows does.
 | Nord | [nordtheme/alacritty](https://github.com/nordtheme/alacritty) | MIT |
 | Tokyo Night | [folke/tokyonight.nvim](https://github.com/folke/tokyonight.nvim) "night" | MIT header on the generated extras; the repository is Apache-2.0 |
 | One Dark | [One Dark Pro](https://github.com/Binaryify/OneDark-Pro) | MIT |
-| ProGraphite … ProCitrus | none upstream; Tailwind CSS 4.3.3's palette, UI tokens from [Prohibitorum](https://github.com/TundraWork/Prohibitorum) `6d3bc42` (see `src/prohibitorum.ts`); code and terminal colours drawn here, ProMatcha's, ProNord's and ProLavender's from [Everforest](https://github.com/sainnhe/everforest)'s, Nord's and Catppuccin's accents | Apache-2.0, see `NOTICE`; Tailwind CSS, Everforest, Nord and Catppuccin are MIT |
+| Pro Graphite … Pro Citrus | none upstream; Tailwind CSS 4.3.3's palette, UI tokens from [Prohibitorum](https://github.com/TundraWork/Prohibitorum) `6d3bc42` (see `src/prohibitorum.ts`); code and terminal colours drawn here, Pro Matcha's, Pro Nord's and Pro Lavender's from [Everforest](https://github.com/sainnhe/everforest)'s, Nord's and Catppuccin's accents | Apache-2.0, see `NOTICE`; Tailwind CSS, Everforest, Nord and Catppuccin are MIT |
 | Windows Standard | the Windows 2000 console's sixteen colours | — |
 | Monokai | [VS Code's built-in Monokai](https://github.com/microsoft/vscode/tree/main/extensions/theme-monokai) | MIT |
 | Afterglow | [YabataDesign/afterglow-itermcolors](https://github.com/YabataDesign/afterglow-itermcolors) `acdd71f`, code colours from [YabataDesign/afterglow-theme](https://github.com/YabataDesign/afterglow-theme) `8af113f`; UI tokens drawn here | none stated upstream; credited in `NOTICE` |

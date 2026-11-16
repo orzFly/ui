@@ -102,7 +102,7 @@ const darkColours: ProSide = {
 
 export const proMatcha: Theme = prohibitorumTheme(
   "pro-matcha",
-  "ProMatcha",
+  "Pro Matcha",
   light,
   dark,
   { light: lightColours, dark: darkColours },

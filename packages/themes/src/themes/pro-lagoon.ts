@@ -101,7 +101,7 @@ const darkColours: ProSide = {
 
 export const proLagoon: Theme = prohibitorumTheme(
   "pro-lagoon",
-  "ProLagoon",
+  "Pro Lagoon",
   light,
   dark,
   { light: lightColours, dark: darkColours },

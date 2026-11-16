@@ -102,7 +102,7 @@ const darkColours: ProSide = {
 
 export const proLavender: Theme = prohibitorumTheme(
   "pro-lavender",
-  "ProLavender",
+  "Pro Lavender",
   light,
   dark,
   { light: lightColours, dark: darkColours },

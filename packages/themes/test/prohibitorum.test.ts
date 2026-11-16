@@ -51,11 +51,11 @@ const SWATCHES = {
 const prohibitorum = builtinThemes.filter((t) => t.id.startsWith("pro-"));
 
 describe("the Prohibitorum themes", () => {
-  it("lists the eight schemes in Prohibitorum's order, as Pro<Name>", () => {
+  it("lists the eight schemes in Prohibitorum's order, as Pro <Name>", () => {
     expect(prohibitorum.map((t) => [t.id, t.label])).toEqual(
       Object.keys(SWATCHES).map((slug) => [
         `pro-${slug}`,
-        `Pro${slug[0].toUpperCase()}${slug.slice(1)}`,
+        `Pro ${slug[0].toUpperCase()}${slug.slice(1)}`,
       ]),
     );
   });

@@ -123,8 +123,8 @@ const MIX = MIX_CLASS.exec(BUTTON);
  * lowest ratio it may fall to: the palette's own, rounded down, so a change
  * that makes one worse still fails. Catppuccin paints its published colours
  * unadjusted (@orz/themes' src/themes/catppuccin.ts), and so do the
- * Prohibitorum themes (src/prohibitorum.ts there), whose ProMatcha foreground
- * and ProLavender's Latte one pull the label toward the tint. On Catppuccin's
+ * Prohibitorum themes (src/prohibitorum.ts there), whose Pro Matcha foreground
+ * and Pro Lavender's Latte one pull the label toward the tint. On Catppuccin's
  * light side "default" is Latte and "mocha-gray" is Latte Gray.
  */
 const EXEMPT: Record<string, Record<string, number>> = {

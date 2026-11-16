@@ -101,7 +101,7 @@ const darkColours: ProSide = {
 
 export const proGraphite: Theme = prohibitorumTheme(
   "pro-graphite",
-  "ProGraphite",
+  "Pro Graphite",
   light,
   dark,
   { light: lightColours, dark: darkColours },

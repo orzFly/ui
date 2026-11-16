@@ -101,7 +101,7 @@ const darkColours: ProSide = {
 
 export const proSand: Theme = prohibitorumTheme(
   "pro-sand",
-  "ProSand",
+  "Pro Sand",
   light,
   dark,
   { light: lightColours, dark: darkColours },
