@@ -8,6 +8,7 @@ import { RefreshFailure } from "@orz/ui/components/load-failure";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
 import { Pane } from "@orz/ui/components/pane";
 import { QueryBox } from "@orz/ui/components/query-box";
+import { SelectionBar } from "@orz/ui/components/selection-bar";
 import {
   Sheet,
   SheetContent,
@@ -335,7 +336,6 @@ function ThreadList({
   visible.current = threads.map((thread) => thread.id);
 
   const shown = threads.filter((thread) => selected.has(thread.id));
-  const all = threads.length > 0 && shown.length === threads.length;
   const ids = shown.map((thread) => thread.id);
   const folders = new Set(shown.map(folderOf));
   const allTrash = folders.size === 1 && folders.has("trash");
@@ -383,69 +383,13 @@ function ThreadList({
           </ActionButton>
         )}
       </Pane>
-      <Pane
-        purpose="toolbar"
+      <SelectionBar
         edge="bottom"
-        className="flex shrink-0 items-center gap-0.5 px-1.5 py-1.5 text-ui"
-      >
-        <span className="flex size-8 items-center justify-center">
-          <Checkbox
-            checked={all ? true : shown.length > 0 ? "indeterminate" : false}
-            onCheckedChange={() =>
-              onSelected(
-                new Set(all || shown.length > 0 ? [] : visible.current),
-              )
-            }
-            aria-label={all || shown.length > 0 ? "Select none" : "Select all"}
-          />
-        </span>
-        {shown.length > 0 ? (
-          <>
-            <span className="px-1 tabular-nums">{shown.length} selected</span>
-            {folders.has("archive") || folders.has("trash") ? (
-              <ActionButton
-                label="Move to Inbox"
-                onClick={() => bulk.onRestore(ids)}
-              >
-                <InboxIcon />
-              </ActionButton>
-            ) : (
-              <ActionButton
-                label="Archive"
-                action="archive"
-                onClick={() => bulk.onArchive(ids)}
-              >
-                <ArchiveIcon />
-              </ActionButton>
-            )}
-            {!folders.has("trash") && (
-              <ActionButton
-                label="Delete"
-                action="trash"
-                onClick={() => bulk.onTrash(ids)}
-              >
-                <Trash2Icon />
-              </ActionButton>
-            )}
-            <ActionButton
-              label={anyUnread ? "Mark as read" : "Mark as unread"}
-              action={anyUnread ? "read" : "unread"}
-              onClick={() => bulk.onRead(ids, !anyUnread)}
-            >
-              {anyUnread ? <MailOpenIcon /> : <MailIcon />}
-            </ActionButton>
-            {allTrash && (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="ml-auto"
-                onClick={() => bulk.onDeleteForever(ids)}
-              >
-                Delete forever…
-              </Button>
-            )}
-          </>
-        ) : (
+        count={shown.length}
+        total={threads.length}
+        onSelectAll={() => onSelected(new Set(visible.current))}
+        onClear={() => onSelected(new Set())}
+        idle={
           <>
             <ActionButton
               label="Refresh"
@@ -463,8 +407,51 @@ function ThreadList({
               {threads.length} of {first.total}
             </span>
           </>
+        }
+      >
+        {folders.has("archive") || folders.has("trash") ? (
+          <ActionButton
+            label="Move to Inbox"
+            onClick={() => bulk.onRestore(ids)}
+          >
+            <InboxIcon />
+          </ActionButton>
+        ) : (
+          <ActionButton
+            label="Archive"
+            action="archive"
+            onClick={() => bulk.onArchive(ids)}
+          >
+            <ArchiveIcon />
+          </ActionButton>
         )}
-      </Pane>
+        {!folders.has("trash") && (
+          <ActionButton
+            label="Delete"
+            action="trash"
+            onClick={() => bulk.onTrash(ids)}
+          >
+            <Trash2Icon />
+          </ActionButton>
+        )}
+        <ActionButton
+          label={anyUnread ? "Mark as read" : "Mark as unread"}
+          action={anyUnread ? "read" : "unread"}
+          onClick={() => bulk.onRead(ids, !anyUnread)}
+        >
+          {anyUnread ? <MailOpenIcon /> : <MailIcon />}
+        </ActionButton>
+        {allTrash && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="ml-1"
+            onClick={() => bulk.onDeleteForever(ids)}
+          >
+            Delete forever…
+          </Button>
+        )}
+      </SelectionBar>
       {refresh.error && (
         <RefreshFailure
           what="the mail"

@@ -10,6 +10,7 @@ export const meta = {
     "ui/Primitives/Textarea",
     "ui/Primitives/Badge",
     "ui/ConfirmDialog",
+    "ui/SelectionBar",
   ],
 };
 
@@ -17,6 +18,7 @@ import { ButtonVariants } from "../../../examples/actions-and-buttons/button-var
 import { CompetingPrimaryActions } from "../../../examples/actions-and-buttons/competing-primary-actions.tsx";
 import { NamedButtons } from "../../../examples/actions-and-buttons/named-buttons.tsx";
 import { OnePrimaryAction } from "../../../examples/actions-and-buttons/one-primary-action.tsx";
+import { SelectedThreads } from "../../../examples/actions-and-buttons/selected-threads.tsx";
 import { ThreadActions } from "../../../examples/actions-and-buttons/thread-actions.tsx";
 import { TrashThreadMenu } from "../../../examples/actions-and-buttons/trash-thread-menu.tsx";
 import { VagueButtons } from "../../../examples/actions-and-buttons/vague-buttons.tsx";
@@ -90,6 +92,26 @@ asks before it acts.
 
 Do not hide the primary action in a menu, and do not put a single action in one: a menu with one
 item is a button that costs two taps.
+
+## Acting on a selection
+
+A list or tree whose rows can be selected heads them with a `SelectionBar`. While nothing is
+selected it holds the list's own toolbar after a select-all checkbox; once a row is selected it
+says how many, offers the actions that take the whole selection, and ends with **Clear
+selection**.
+
+<Example of={SelectedThreads} />
+
+Select a second conversation, then press the checkbox in the bar: a partly checked box selects the
+rest, and a full one clears. Escape inside the bar clears too, and the focus stays on the checkbox.
+
+- Put only the actions that apply to every selected row in the bar, icons first, a text action
+  such as **Delete forever…** after them. The bar swaps them as the selection changes, as Mail's
+  swaps **Archive** for **Move to Inbox** when the selection is archived.
+- A list with no toolbar of its own mounts the bar only while something is selected. It is still
+  there: on a touch screen, once a row is selected a tap selects too, and the bar's **Clear
+  selection** is the visible way back.
+- Select-all selects the rows the list holds now, never the ones still behind **Load more**.
 
 ## On each platform
 

@@ -219,7 +219,7 @@ useAutoHideHeader(header, !useMediaQuery(SM_UP));
 | Swipe from the left or right edge | The system: back and forward | Nothing within 20px or so of the edge, so the back swipe always works |
 | Pull down at the top | The browser: refresh | Leaves the page's overscroll alone; `overscroll-contain` on a panel that scrolls inside the page |
 | Pinch | The browser: zoom | Never disabled; a canvas that zooms its own content (an image viewer) takes it only inside itself |
-| Long press | The system: select text, preview a link | Nothing a control does not also do: a long press that selects a row repeats the row's checkbox |
+| Long press | The system: select text, preview a link | Nothing a control does not also do: a long press that selects a row repeats the row's checkbox, and a [`SelectionBar`](/guidelines/patterns/actions-and-buttons/#acting-on-a-selection) leads back out |
 | Swipe on a toast, a row | The app | Only as a shortcut: the toast also leaves on its own, the row's action is also in its menu, a delete still offers **Undo** |
 
 Every gesture an app adds has a control that does the same thing with one tap, and anything that
