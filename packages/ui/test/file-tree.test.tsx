@@ -8,7 +8,8 @@ import {
   FileTreeItem,
 } from "../src/components/file-tree.tsx";
 import type { TreeHandle } from "../src/components/tree.tsx";
-import type { FileStatus } from "../src/lib/file-tree.ts";
+import { type FileStatus, movePath } from "../src/lib/file-tree.ts";
+import { FakeDataTransfer, fireDrag } from "./fake-data-transfer.ts";
 import { H, type Layout, stubLayout, VIEWPORT } from "./stub-tree-layout.ts";
 
 const PATHS = [
@@ -281,5 +282,151 @@ describe("FileTree, scrolled", () => {
         ?.querySelector("[data-slot=file-status-mark]")
         ?.getAttribute("data-status"),
     ).toBe("changes");
+  });
+});
+
+describe("FileTree, edited", () => {
+  const field = () =>
+    document.querySelector(
+      "[data-slot=tree-rename]",
+    ) as HTMLInputElement | null;
+  const key = (el: Element, k: string, init: KeyboardEventInit = {}) =>
+    fireEvent.keyDown(el, { key: k, ...init });
+  const type = (value: string) =>
+    fireEvent.change(field() as HTMLInputElement, { target: { value } });
+  const message = () =>
+    document.querySelector("[data-slot=tree-rename-message]")?.textContent;
+
+  it("renames a file in its folder, its stem selected", () => {
+    const onRename = vi.fn();
+    render(renderFiles({ onRename, current: "src/retry.ts" }));
+    key(item("retry.ts, Added"), "F2");
+    const input = field() as HTMLInputElement;
+    expect(input.value).toBe("retry.ts");
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, 5]);
+    type("backoff.ts");
+    key(input, "Enter");
+    expect(onRename).toHaveBeenCalledWith("src/retry.ts", "src/backoff.ts");
+  });
+
+  it("renames a merged row's deepest folder, the folders before it in sight", () => {
+    const onRename = vi.fn();
+    render(renderFiles({ onRename }));
+    key(item(".github / workflows"), "F2");
+    const input = field() as HTMLInputElement;
+    expect(input.value).toBe("workflows");
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, 9]);
+    type("actions");
+    key(input, "Enter");
+    expect(onRename).toHaveBeenCalledWith(
+      ".github/workflows/",
+      ".github/actions/",
+    );
+  });
+
+  it("refuses a name holding a slash, or one the folder has", () => {
+    const onRename = vi.fn();
+    render(
+      renderFiles({
+        onRename,
+        labels: { nameTaken: (name) => `${name} is taken` },
+      }),
+    );
+    key(item("README.md"), "F2");
+    type("a/b.md");
+    expect(message()).toBe("A name cannot contain “/”.");
+    type("src");
+    // A file and a folder may share a name.
+    expect(message()).toBeUndefined();
+    type("docs ");
+    expect(message()).toBeUndefined();
+    key(field() as HTMLInputElement, "Escape");
+    key(item("src, Contains changes"), "F2");
+    type("docs");
+    expect(message()).toBe("docs is taken");
+    key(field() as HTMLInputElement, "Enter");
+    expect(onRename).not.toHaveBeenCalled();
+  });
+
+  it("keeps a renamed folder open under its new path", () => {
+    function Files() {
+      const [paths, setPaths] = React.useState(PATHS);
+      return renderFiles({
+        paths,
+        defaultExpanded: ["src/"],
+        onRename: (from, to) =>
+          setPaths((list) => list.map((p) => movePath(p, from, to))),
+      });
+    }
+    render(<Files />);
+    expect(item("src, Contains changes").getAttribute("aria-expanded")).toBe(
+      "true",
+    );
+    key(item("src, Contains changes"), "F2");
+    type("lib");
+    key(field() as HTMLInputElement, "Enter");
+    expect(item("lib").getAttribute("aria-expanded")).toBe("true");
+    expect(document.activeElement).toBe(item("lib"));
+    expect(labels()).toContain("retry.ts");
+  });
+
+  it("moves a row pasted on a file into that file's folder", () => {
+    const onMove = vi.fn();
+    render(renderFiles({ onMove, current: "src/retry.ts" }));
+    key(item("README.md"), "x", { ctrlKey: true });
+    key(item("retry.ts, Added"), "v", { ctrlKey: true });
+    expect(onMove).toHaveBeenCalledWith("README.md", "src/README.md");
+  });
+
+  it("moves a row into a folder, never into its own or beside a row", () => {
+    const onMove = vi.fn();
+    const canMove = vi.fn(() => true);
+    render(renderFiles({ onMove, canMove, current: "src/retry.ts" }));
+    key(item("retry.ts, Added"), "x", { ctrlKey: true });
+    // Its own folder, and a file there: nothing to do.
+    key(item("fetch-task.ts, Modified"), "v", { ctrlKey: true });
+    key(item("src, Contains changes"), "v", { ctrlKey: true });
+    expect(onMove).not.toHaveBeenCalled();
+    key(item("docs, Contains changes"), "v", { ctrlKey: true });
+    expect(onMove).toHaveBeenCalledWith("src/retry.ts", "docs/retry.ts");
+    expect(canMove).toHaveBeenCalledWith("src/retry.ts", "docs/retry.ts");
+  });
+
+  it("refuses a move onto a name the folder has, and what canMove refuses", () => {
+    const onMove = vi.fn();
+    const { rerender } = render(
+      renderFiles({
+        onMove,
+        paths: [...PATHS, "docs/README.md"],
+      }),
+    );
+    key(item("README.md"), "x", { ctrlKey: true });
+    key(item("docs, Contains changes"), "v", { ctrlKey: true });
+    expect(onMove).not.toHaveBeenCalled();
+    rerender(renderFiles({ onMove, canMove: () => false }));
+    key(item("docs, Contains changes"), "v", { ctrlKey: true });
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("drops a dragged row on a file into its folder", () => {
+    const layout = stubLayout();
+    const onMove = vi.fn();
+    render(renderFiles({ onMove, current: "src/retry.ts" }));
+    const data = new FakeDataTransfer();
+    fireDrag("dragStart", item("README.md"), data);
+    const row = item("retry.ts, Added").closest(
+      "[data-slot=tree-row]",
+    ) as HTMLElement;
+    const index = Number(row.getAttribute("data-index"));
+    fireDrag("dragOver", row, data, { clientY: index * H + 2 });
+    expect(
+      item("src, Contains changes")
+        .closest("[data-slot=tree-row]")
+        ?.hasAttribute("data-drop-target"),
+    ).toBe(true);
+    fireDrag("drop", row, data, { clientY: index * H + 2 });
+    fireDrag("dragEnd", item("README.md"), data);
+    layout.restore();
+    expect(onMove).toHaveBeenCalledWith("README.md", "src/README.md");
   });
 });

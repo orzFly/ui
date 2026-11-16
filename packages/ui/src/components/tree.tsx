@@ -1,4 +1,4 @@
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
 import { Slot } from "radix-ui";
 import * as React from "react";
 
@@ -6,8 +6,11 @@ import { isPlainPress } from "../lib/link.ts";
 import {
   ancestorsOf,
   matchAncestors,
+  moveTarget,
+  type TreeDropZone,
   type TreeFilterMode,
   type TreeLoadingRow,
+  type TreeMoveTarget,
   type TreeNode,
   type TreeRow,
   visibleRows,
@@ -24,6 +27,14 @@ import {
   windowRange,
 } from "../lib/tree-window.ts";
 import { cn } from "../lib/utils.ts";
+import { Button } from "./button.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "./dropdown-menu.tsx";
+import { Input } from "./input.tsx";
+import { Popover, PopoverAnchor, PopoverContent } from "./popover.tsx";
 import { Skeleton } from "./skeleton.tsx";
 
 /** What a row's render function knows about the row it draws. */
@@ -47,7 +58,31 @@ export interface TreeHandle {
    * focus nor `current`; does nothing for an id the tree does not hold.
    */
   scrollToItem(id: string, align?: TreeAlign): void;
+  /** Opens the rename field on `id`: its ancestors open, it scrolls into view, the field takes the focus. */
+  rename(id: string): void;
 }
+
+/** What a row's menu can do to its row, each present only when the tree can do it there. */
+export interface TreeMenuActions {
+  rename?: () => void;
+  cut?: () => void;
+  paste?: () => void;
+}
+
+export interface TreeLabels {
+  /** The rename field's name. Default `Rename ${name}`. */
+  renameItem: (name: string) => string;
+  /** raymond's balloon heading over a refused name. Default `Cannot rename ${name}`. */
+  renameFailed: (name: string) => string;
+  /** The ⋯ button's name. Default `Actions for ${name}`. */
+  rowActions: (name: string) => string;
+}
+
+const LABELS: TreeLabels = {
+  renameItem: (name) => `Rename ${name}`,
+  renameFailed: (name) => `Cannot rename ${name}`,
+  rowActions: (name) => `Actions for ${name}`,
+};
 
 interface RowContext {
   row: TreeRow<unknown>;
@@ -56,6 +91,9 @@ interface RowContext {
   currentToken: "page" | "location";
   tabStop: boolean;
   busy: boolean;
+  /** A grouping node takes `draggable`; a link drags already. */
+  draggable: boolean;
+  menu: boolean;
   register: (id: string, el: HTMLElement | null) => void;
   activate: (event: React.MouseEvent<HTMLElement>, place: boolean) => void;
 }
@@ -64,8 +102,33 @@ const TreeRowContext = React.createContext<RowContext | null>(null);
 
 /** How long typed characters add up to one search, as the APG's tree view waits. */
 const TYPEAHEAD_MS = 500;
+/** How long a drag rests on a closed branch before it opens. */
+const HOVER_OPEN_MS = 700;
+/** The band along the scroller's edges where a drag scrolls it, and its top speed per frame. */
+const EDGE_PX = 40;
+const EDGE_SPEED = 18;
+/** The type a drag from a tree carries, so a tree knows its own drags from any other. */
+const DRAG_TYPE = "application/x-orz-tree";
+
+/** The label's text, the name a row shows when the app gives no `textValue`. */
+const labelText = (el: Element | null | undefined) =>
+  (
+    (el?.querySelector("[data-slot=tree-label]") ?? el)?.textContent ?? ""
+  ).trim();
 
 const idOf = (row: TreeRow<unknown>) => (row.item as TreeNode<unknown>).id;
+
+function nodeOf<T extends TreeNode<T>>(
+  nodes: readonly T[],
+  id: string,
+): T | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const below = node.children && nodeOf(node.children, id);
+    if (below) return below;
+  }
+  return undefined;
+}
 
 /**
  * The nearest ancestor that scrolls, or none when the document does. Looked
@@ -206,6 +269,14 @@ function useTreeViewport(
  * on the real rows. `current` scrolls into sight in the scrolling ancestor, never the page,
  * unless `revealCurrent` is false. `handle` takes a `TreeHandle` to scroll to a row, the page
  * included.
+ *
+ * The tree changes no data of its own. `onRename` lets the reader rename a row in place (F2,
+ * the menu's `rename`, `handle.rename`), the field starting from `renameValue` with
+ * `renameSelection` selected and showing what `validateName` says against a name. `onMove` lets
+ * the reader drag a row, or cut and paste it, to a `TreeMoveTarget` that `canDrop` accepts.
+ * `menu` draws a ⋯ button at each row's end that opens the items it returns, and Shift+F10 and
+ * the menu key open it on the focused row; a right click stays the browser's. Each callback
+ * may return the row's new id, which the focus follows.
  */
 function Tree<T extends TreeNode<T>>({
   items,
@@ -223,9 +294,26 @@ function Tree<T extends TreeNode<T>>({
   textValue,
   revealCurrent = true,
   handle,
+  onRename,
+  canRename,
+  renameValue,
+  renameSelection,
+  validateName,
+  onMove,
+  canDrag,
+  canDrop,
+  menu,
+  labels: labelsProp,
   className,
   onKeyDown,
   onFocus,
+  onBlur,
+  onContextMenu,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
   ref,
   ...props
 }: Omit<React.ComponentProps<"div">, "children" | "role"> & {
@@ -244,6 +332,21 @@ function Tree<T extends TreeNode<T>>({
   textValue?: (item: T) => string;
   revealCurrent?: boolean;
   handle?: React.Ref<TreeHandle>;
+  /** Called with the trimmed name, never an empty or unchanged one; may return the new id. */
+  // biome-ignore lint/suspicious/noConfusingVoidType: a callback that changes no id returns nothing
+  onRename?: (item: T, name: string) => string | void;
+  canRename?: (item: T) => boolean;
+  renameValue?: (item: T) => string;
+  /** The `[start, end]` selected when the field opens; all of it by default. */
+  renameSelection?: (item: T, value: string) => readonly [number, number];
+  validateName?: (item: T, name: string) => string | undefined;
+  /** May return the item's new id. */
+  // biome-ignore lint/suspicious/noConfusingVoidType: as onRename
+  onMove?: (item: T, target: TreeMoveTarget) => string | void;
+  canDrag?: (item: T) => boolean;
+  canDrop?: (item: T, target: TreeMoveTarget) => boolean;
+  menu?: (item: T, actions: TreeMenuActions) => React.ReactNode;
+  labels?: Partial<TreeLabels>;
 }) {
   // Opened to the current place in the first render, so a page rendered on
   // the server already shows it.
@@ -324,6 +427,41 @@ function Tree<T extends TreeNode<T>>({
   }>(undefined);
   const typed = React.useRef({ text: "", at: 0 });
 
+  const labels = { ...LABELS, ...labelsProp };
+  const [renaming, setRenaming] = React.useState<string>();
+  // A rename asked for before its row shows, until a commit opens the way.
+  const pendingRename = React.useRef<string>(undefined);
+  const [cut, setCut] = React.useState<string>();
+  const [menuFor, setMenuFor] = React.useState<string>();
+  // A menu's rename waits for the menu to close, which would take the focus
+  // back from the field.
+  const renameAfterMenu = React.useRef<string>(undefined);
+  // A Shift+F10 or menu key the browser follows with a contextmenu event.
+  const keyMenu = React.useRef(false);
+  const [hasFocus, setHasFocus] = React.useState(false);
+  // An id a rename or a move gave the row, which the focus waits for; not
+  // pendingFocus, which moves to a row the tree already holds.
+  const follow = React.useRef<{
+    id: string;
+    focus: boolean;
+    items: readonly T[];
+  }>(undefined);
+  const dragToken = React.useId();
+  const drag = React.useRef<{
+    source: string;
+    y: number;
+    hover?: { key: string; timer: ReturnType<typeof setTimeout> };
+    frame?: number;
+    image?: HTMLElement;
+  }>(undefined);
+  const [dragSource, setDragSource] = React.useState<string>();
+  const [drop, setDrop] = React.useState<{
+    target: TreeMoveTarget;
+    /** The row whose upper edge takes the line for a drop first into an open branch. */
+    first?: string;
+  }>();
+  const pinsBottom = React.useRef(0);
+
   const visible = (id: string | undefined) =>
     id !== undefined && itemRows.some((r) => r.item.id === id);
   const tabStop = visible(focusId)
@@ -331,6 +469,23 @@ function Tree<T extends TreeNode<T>>({
     : visible(current)
       ? current
       : (itemRows.find((r) => r.match) ?? itemRows[0])?.item.id;
+
+  // A row leaving the screen takes its rename, cut and menu with it; seen in
+  // the render, as a new search is, so no frame draws them on nothing.
+  if (renaming !== undefined && !indexOf.has(renaming)) setRenaming(undefined);
+  if (cut !== undefined && !indexOf.has(cut)) setCut(undefined);
+  if (menuFor !== undefined && !indexOf.has(menuFor)) setMenuFor(undefined);
+
+  const itemOf = (id: string) => {
+    const row = rows[indexOf.get(id) ?? -1];
+    return row?.kind === "item" ? row.item : undefined;
+  };
+  const renamable = (item: T) =>
+    onRename !== undefined && canRename?.(item) !== false;
+  const movable = (item: T) =>
+    onMove !== undefined && canDrag?.(item) !== false;
+  const accepts = (item: T, target: TreeMoveTarget) =>
+    canDrop?.(item, target) ?? true;
 
   const commit = (next: Set<string>) => {
     if (!controlled) setInner(next);
@@ -438,12 +593,121 @@ function Tree<T extends TreeNode<T>>({
     reveal(pending.id, pending.align, pending.page);
   });
 
-  const latest = React.useRef({ items, expanded, commit, indexOf, reveal });
-  latest.current = { items, expanded, commit, indexOf, reveal };
+  // Opens the way to the row first, as scrollToItem does; the field mounts
+  // once the row shows.
+  const startRename = (id: string) => {
+    const item = nodeOf(items, id);
+    if (!item || !renamable(item)) return;
+    setMenuFor(undefined);
+    if (indexOf.has(id)) {
+      reveal(id, "nearest", true);
+      setRenaming(id);
+      return;
+    }
+    const missing = (ancestorsOf(items, id) ?? []).filter((a) => !shown.has(a));
+    if (locked || missing.length === 0) return;
+    pendingRename.current = id;
+    pendingReveal.current = { id, align: "nearest", page: true };
+    change(new Set([...shown, ...missing]));
+  };
+
+  React.useLayoutEffect(() => {
+    const id = pendingRename.current;
+    if (id === undefined || !indexOf.has(id)) return;
+    pendingRename.current = undefined;
+    setRenaming(id);
+  });
+
+  // The focus, kept in the tree only if it was there, goes where the row
+  // went: under its new id, or its own.
+  const followTo = (id: string, focus: boolean) => {
+    follow.current = { id, focus, items };
+  };
+
+  React.useLayoutEffect(() => {
+    const next = follow.current;
+    if (!next) return;
+    if (indexOf.has(next.id)) {
+      follow.current = undefined;
+      if (next.focus) moveFocus(next.id);
+      else setFocusId(next.id);
+    } else if (next.items !== items) {
+      follow.current = undefined;
+    }
+  });
+
+  const finishRename = (
+    id: string,
+    name: string | undefined,
+    focus: boolean,
+  ) => {
+    setRenaming(undefined);
+    const item = itemOf(id);
+    const next =
+      item && name !== undefined ? onRename?.(item, name) : undefined;
+    followTo(typeof next === "string" ? next : id, focus);
+  };
+
+  const move = (item: T, target: TreeMoveTarget) => {
+    const next = onMove?.(item, target);
+    followTo(typeof next === "string" ? next : item.id, focusInTree());
+  };
+
+  const paste = (overId: string) => {
+    const source = cut === undefined ? undefined : itemOf(cut);
+    const index = indexOf.get(overId);
+    if (!source || index === undefined) return false;
+    const target = moveTarget(rows, items, source, index, undefined, accepts);
+    if (!target) return false;
+    setCut(undefined);
+    move(source, target);
+    return true;
+  };
+
+  const actionsFor = (item: T): TreeMenuActions => {
+    const source = cut === undefined ? undefined : itemOf(cut);
+    const index = indexOf.get(item.id);
+    return {
+      rename: renamable(item)
+        ? () => {
+            renameAfterMenu.current = item.id;
+          }
+        : undefined,
+      cut: movable(item) ? () => setCut(item.id) : undefined,
+      paste:
+        source &&
+        index !== undefined &&
+        moveTarget(rows, items, source, index, undefined, accepts)
+          ? () => paste(item.id)
+          : undefined,
+    };
+  };
+
+  const latest = React.useRef({
+    items,
+    expanded,
+    commit,
+    indexOf,
+    reveal,
+    startRename,
+    setOpen,
+  });
+  latest.current = {
+    items,
+    expanded,
+    commit,
+    indexOf,
+    reveal,
+    startRename,
+    setOpen,
+  };
 
   React.useImperativeHandle(
     handle,
     () => ({
+      rename(id) {
+        latest.current.startRename(id);
+      },
       scrollToItem(id, align = "nearest") {
         const { items, expanded, commit, indexOf, reveal } = latest.current;
         const ancestors = ancestorsOf(items, id);
@@ -529,6 +793,7 @@ function Tree<T extends TreeNode<T>>({
   // However a row got the focus, it is the one kept mounted and the tab stop.
   const handleFocus = (event: React.FocusEvent<HTMLDivElement>) => {
     onFocus?.(event);
+    setHasFocus(true);
     for (const [id, el] of elements) {
       if (el === event.target) {
         if (id !== focusId) setFocusId(id);
@@ -537,7 +802,72 @@ function Tree<T extends TreeNode<T>>({
     }
   };
 
+  const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    onBlur?.(event);
+    const to = event.relatedTarget;
+    if (!(to instanceof Node && root.current?.contains(to))) setHasFocus(false);
+  };
+
+  const idAt = (target: EventTarget | null) => {
+    const el =
+      target instanceof Element
+        ? target.closest("[data-slot=tree-item]")
+        : null;
+    for (const [id, item] of elements) if (item === el) return id;
+    return undefined;
+  };
+
+  // A right click is the link's, the browser's menu; only the keyboard's
+  // contextmenu opens the row's. A Mac's control-click is a right click.
+  const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+    onContextMenu?.(event);
+    const fromKey = keyMenu.current;
+    keyMenu.current = false;
+    if (event.defaultPrevented || !menu) return;
+    if (fromKey) {
+      event.preventDefault();
+      return;
+    }
+    if (event.button === 2 || event.ctrlKey) return;
+    const id = idAt(event.target);
+    if (id === undefined) return;
+    event.preventDefault();
+    setMenuFor(id);
+  };
+
+  // The keys that rename, open the menu, cut and paste; true when one did.
+  const editKey = (event: React.KeyboardEvent, row: TreeRow<T>) => {
+    const id = row.item.id;
+    const mod = event.ctrlKey || event.metaKey;
+    const only = (ctrl: boolean, shift: boolean) =>
+      mod === ctrl && event.shiftKey === shift && !event.altKey;
+    const letter = event.key.toLowerCase();
+    if (event.key === "F2" && only(false, false)) {
+      if (!renamable(row.item)) return false;
+      startRename(id);
+    } else if (
+      menu &&
+      (event.key === "ContextMenu" ||
+        (event.key === "F10" && only(false, true)))
+    ) {
+      keyMenu.current = true;
+      setMenuFor(id);
+    } else if (letter === "x" && only(true, false)) {
+      if (!movable(row.item)) return false;
+      setCut(id);
+    } else if (letter === "v" && only(true, false)) {
+      if (cut === undefined) return false;
+      paste(id);
+    } else if (event.key === "Escape" && cut !== undefined) {
+      setCut(undefined);
+    } else {
+      return false;
+    }
+    return true;
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    keyMenu.current = false;
     onKeyDown?.(event);
     if (event.defaultPrevented) return;
     const index = itemRows.findIndex(
@@ -545,6 +875,10 @@ function Tree<T extends TreeNode<T>>({
     );
     const row = itemRows[index];
     if (!row) return;
+    if (editKey(event, row)) {
+      event.preventDefault();
+      return;
+    }
     const id = row.item.id;
     const go = (to: TreeRow<T> | undefined) => {
       if (to) moveFocus(to.item.id);
@@ -615,29 +949,336 @@ function Tree<T extends TreeNode<T>>({
     event.preventDefault();
   };
 
+  const rowIds = React.useRef(new WeakMap<Element, string>()).current;
+
+  // Where a drag over `target` would drop: by the pointer's height on a row,
+  // and only into the branch a pinned copy stands for, since its real row is
+  // under the pins.
+  const dropAt = (target: EventTarget | null, clientY: number): typeof drop => {
+    const session = drag.current;
+    const source = session && itemOf(session.source);
+    const el =
+      target instanceof Element ? target.closest("[data-slot=tree-row]") : null;
+    if (!source || !el || !root.current?.contains(el)) return undefined;
+    if (el.hasAttribute("data-pinned")) {
+      const id = rowIds.get(el);
+      const index = id === undefined ? undefined : indexOf.get(id);
+      if (index === undefined) return undefined;
+      const found = moveTarget(
+        rows,
+        items,
+        source,
+        index,
+        "middle",
+        (item, t) =>
+          t.position === "into" && t.parentId === id && accepts(item, t),
+      );
+      return found && { target: found };
+    }
+    const index = Number(el.getAttribute("data-index"));
+    const row = rows[index];
+    if (!row) return undefined;
+    let zone: TreeDropZone = "middle";
+    if (row.kind === "item") {
+      const rect = el.getBoundingClientRect();
+      const y = (clientY - rect.top) / rect.height;
+      zone = row.branch
+        ? y < 0.25
+          ? "top"
+          : y > 0.75
+            ? "bottom"
+            : "middle"
+        : y < 0.5
+          ? "top"
+          : "bottom";
+    }
+    const found = moveTarget(rows, items, source, index, zone, accepts);
+    if (!found) return undefined;
+    const next = rows[index + 1];
+    const first =
+      zone === "bottom" &&
+      found.position === "into" &&
+      found.parentId === found.over &&
+      found.index === 0 &&
+      next?.kind === "item" &&
+      next.parentId === found.over
+        ? next.item.id
+        : undefined;
+    return { target: found, first };
+  };
+
+  const stopHover = () => {
+    const session = drag.current;
+    if (session?.hover) clearTimeout(session.hover.timer);
+    if (session) session.hover = undefined;
+  };
+
+  const stopScroll = () => {
+    const session = drag.current;
+    if (session?.frame !== undefined) cancelAnimationFrame(session.frame);
+    if (session) session.frame = undefined;
+  };
+
+  // Scrolls while the pointer rests near the scroller's edge, the top one
+  // below the pins, faster the nearer it is.
+  const edgeScroll = () => {
+    const el = root.current;
+    const session = drag.current;
+    if (!el || !session || session.frame !== undefined) return;
+    const step = () => {
+      const now = drag.current;
+      if (!now) return;
+      now.frame = undefined;
+      const scroller = scrollerOf(el);
+      const top = scroller
+        ? scroller.getBoundingClientRect().top + scroller.clientTop
+        : 0;
+      const bottom = scroller
+        ? top + scroller.clientHeight
+        : (el.ownerDocument.defaultView?.innerHeight ?? 0);
+      const speed = (distance: number) =>
+        Math.ceil(((EDGE_PX - Math.max(0, distance)) / EDGE_PX) * EDGE_SPEED);
+      const upper = top + pinsBottom.current;
+      const by =
+        now.y < upper + EDGE_PX
+          ? -speed(now.y - upper)
+          : now.y > bottom - EDGE_PX
+            ? speed(bottom - now.y)
+            : 0;
+      if (by === 0) return;
+      scrollBy(el, scroller, by);
+      now.frame = requestAnimationFrame(step);
+    };
+    session.frame = requestAnimationFrame(step);
+  };
+
+  const clearDrop = () => {
+    stopHover();
+    stopScroll();
+    setDrop(undefined);
+  };
+
+  const handleDragStart = (event: React.DragEvent<HTMLDivElement>) => {
+    onDragStart?.(event);
+    if (event.defaultPrevented || !onMove) return;
+    const id = idAt(event.target);
+    const item = id === undefined ? undefined : itemOf(id);
+    const el = id === undefined ? undefined : elements.get(id);
+    if (!item || !el || !movable(item)) return;
+    const data = event.dataTransfer;
+    // Dragged out of the tree, a row is the link it is.
+    const href = el instanceof HTMLAnchorElement ? el.href : "";
+    if (href) data.setData("text/uri-list", href);
+    data.setData("text/plain", href || (textValue?.(item) ?? labelText(el)));
+    data.setData(DRAG_TYPE, dragToken);
+    data.effectAllowed = "all";
+    // The row as the drag image, drawn off screen; raymond's is its
+    // highlighted label.
+    const rect = el.getBoundingClientRect();
+    const image = el.ownerDocument.createElement("div");
+    image.setAttribute("aria-hidden", "true");
+    image.setAttribute("data-current", "");
+    image.className = DRAG_IMAGE;
+    image.style.width = `${rect.width}px`;
+    image.style.height = `${rect.height}px`;
+    image.append(el.cloneNode(true));
+    el.ownerDocument.body.append(image);
+    data.setDragImage?.(
+      image,
+      event.clientX - rect.left,
+      event.clientY - rect.top,
+    );
+    drag.current = { source: id as string, y: event.clientY, image };
+    setDragSource(id);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    onDragOver?.(event);
+    const session = drag.current;
+    // Another tree's drag, a file from the desktop, text from a page: not
+    // this tree's to take.
+    if (
+      event.defaultPrevented ||
+      !session ||
+      !event.dataTransfer.types.includes(DRAG_TYPE)
+    )
+      return;
+    session.y = event.clientY;
+    edgeScroll();
+    const found = dropAt(event.target, event.clientY);
+    if (!found) {
+      stopHover();
+      setDrop(undefined);
+      event.dataTransfer.dropEffect = "none";
+      return;
+    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const { target } = found;
+    setDrop((prev) =>
+      prev &&
+      prev.first === found.first &&
+      prev.target.parentId === target.parentId &&
+      prev.target.index === target.index &&
+      prev.target.over === target.over &&
+      prev.target.position === target.position
+        ? prev
+        : found,
+    );
+    // Resting on a closed branch the drop goes into opens it.
+    const parent =
+      target.position === "into" && target.parentId !== undefined
+        ? rows[indexOf.get(target.parentId) ?? -1]
+        : undefined;
+    const opens =
+      !locked &&
+      parent?.kind === "item" &&
+      parent.branch &&
+      !parent.expanded &&
+      target.parentId;
+    if (!opens) stopHover();
+    else if (session.hover?.key !== opens) {
+      stopHover();
+      session.hover = {
+        key: opens,
+        timer: setTimeout(
+          () => latest.current.setOpen(opens, true),
+          HOVER_OPEN_MS,
+        ),
+      };
+    }
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    onDragLeave?.(event);
+    const to = event.relatedTarget;
+    if (drag.current && !(to instanceof Node && root.current?.contains(to)))
+      clearDrop();
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    onDrop?.(event);
+    const session = drag.current;
+    if (
+      event.defaultPrevented ||
+      !session ||
+      !event.dataTransfer.types.includes(DRAG_TYPE)
+    )
+      return;
+    event.preventDefault();
+    const found = dropAt(event.target, event.clientY);
+    const source = itemOf(session.source);
+    clearDrop();
+    if (found && source) move(source, found.target);
+  };
+
+  const handleDragEnd = (event: React.DragEvent<HTMLDivElement>) => {
+    onDragEnd?.(event);
+    if (!drag.current) return;
+    clearDrop();
+    drag.current.image?.remove();
+    drag.current = undefined;
+    setDragSource(undefined);
+  };
+
+  // What a drop would do, drawn on the rows: the branch it goes into and
+  // what that branch holds, or the line where it goes between two rows.
+  const dropInto =
+    drop?.target.position === "into" ? drop.target.parentId : undefined;
+  const inside = new Set<string>();
+  if (dropInto !== undefined) {
+    const at = indexOf.get(dropInto);
+    const level = at === undefined ? 0 : (rows[at]?.level ?? 0);
+    for (let i = (at ?? rows.length) + 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.level <= level) break;
+      inside.add(r.kind === "item" ? r.item.id : `loading:${r.parentId}`);
+    }
+  }
+  const lineBefore =
+    drop?.first ??
+    (drop?.target.position === "before" ? drop.target.over : undefined);
+  const lineAfter =
+    drop?.target.position === "after" ? drop.target.over : undefined;
+
   // `pin` is the copy's top within the pins, for a row drawn pinned.
   const renderItem = (row: TreeRow<T>, pin?: number) => {
     const pinned = pin !== undefined;
-    const isCurrent = row.item.id === current;
+    const { item } = row;
+    const id = item.id;
+    const isCurrent = id === current;
+    const isRenaming = !pinned && id === renaming;
+    const name = textValue?.(item);
     return (
       <ItemRow
-        key={row.item.id}
+        key={id}
         row={row}
-        index={pinned ? undefined : indexOf.get(row.item.id)}
+        index={pinned ? undefined : indexOf.get(id)}
         virtual={virtual}
         toggle={() => toggle(row, pin)}
+        rowRef={(el) => {
+          if (el) rowIds.set(el, id);
+        }}
+        marks={{
+          "data-focused": !pinned && hasFocus && id === focusId,
+          "data-renaming": isRenaming,
+          "data-cut": !pinned && id === cut,
+          "data-dragging": !pinned && id === dragSource,
+          "data-drop-target": id === dropInto,
+          "data-drop-inside": !pinned && inside.has(id),
+          "data-drop-before": !pinned && id === lineBefore,
+          "data-drop-after": !pinned && id === lineAfter,
+        }}
         context={{
           row,
           pinned,
           current: isCurrent,
           currentToken,
-          tabStop: !pinned && row.item.id === tabStop,
-          busy: row.expanded && !locked && row.item.children === undefined,
+          tabStop: !pinned && !isRenaming && id === tabStop,
+          busy: row.expanded && !locked && item.children === undefined,
+          draggable: !pinned && movable(item),
+          menu: !pinned && menu !== undefined,
           register,
           activate: (event, place) => activate(row, event, place, pin),
         }}
+        after={
+          <>
+            {isRenaming && (
+              <RenameField
+                initial={
+                  renameValue?.(item) ?? name ?? labelText(elements.get(id))
+                }
+                selection={(value) =>
+                  renameSelection?.(item, value) ?? [0, value.length]
+                }
+                validate={(value) => validateName?.(item, value)}
+                labels={labels}
+                onFinish={(value, focus) => finishRename(id, value, focus)}
+              />
+            )}
+            {menu && (
+              <RowMenu
+                pinned={pinned}
+                shown={!isRenaming}
+                name={name}
+                labels={labels}
+                open={!pinned && menuFor === id}
+                onOpenChange={(open) => setMenuFor(open ? id : undefined)}
+                items={() => menu(item, actionsFor(item))}
+                onCloseAutoFocus={(event) => {
+                  event.preventDefault();
+                  const renameId = renameAfterMenu.current;
+                  renameAfterMenu.current = undefined;
+                  if (renameId !== undefined)
+                    latest.current.startRename(renameId);
+                  else elements.get(id)?.focus({ preventScroll: true });
+                }}
+              />
+            )}
+          </>
+        }
       >
-        {children(row.item, {
+        {children(item, {
           level: row.level,
           branch: row.branch,
           expanded: row.expanded,
@@ -657,6 +1298,7 @@ function Tree<T extends TreeNode<T>>({
         index={index}
         virtual={virtual}
         label={loadingLabel}
+        dropInside={inside.has(`loading:${row.parentId}`)}
       />
     ) : (
       renderItem(row)
@@ -672,15 +1314,26 @@ function Tree<T extends TreeNode<T>>({
       view && rowHeight
         ? windowRange(rows.length, rowHeight, view)
         : { start: 0, end: Math.min(rows.length, TREE_INITIAL_ROWS) };
-    const keep = [tabStop, current, focusId, pendingFocus.current].flatMap(
-      (id) => (id === undefined ? [] : (indexOf.get(id) ?? [])),
-    );
+    // The rows a rename, a drag and a menu stand on stay mounted too, so
+    // none loses its field, its source or its focus to a scroll.
+    const keep = [
+      tabStop,
+      current,
+      focusId,
+      pendingFocus.current,
+      renaming,
+      dragSource,
+      menuFor,
+      follow.current?.id,
+    ].flatMap((id) => (id === undefined ? [] : (indexOf.get(id) ?? [])));
     segments = mountedSegments(rows.length, range, keep);
   }
   const pins =
     stickyBranches && view && rowHeight
       ? pinnedRows(rows, rowHeight, view, maxPins(rowHeight, view.height))
       : [];
+  const lastPin = pins.at(-1);
+  pinsBottom.current = lastPin && rowHeight ? lastPin.top + rowHeight : 0;
 
   return (
     <div
@@ -699,7 +1352,14 @@ function Tree<T extends TreeNode<T>>({
         className,
       )}
       onFocus={handleFocus}
+      onBlur={handleBlur}
       onKeyDown={handleKeyDown}
+      onContextMenu={handleContextMenu}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      onDragEnd={handleDragEnd}
       {...props}
       ref={setRoot}
     >
@@ -789,12 +1449,31 @@ function Guides({ continues }: { continues: readonly boolean[] }) {
 const TOGGLE =
   "relative flex w-(--tree-toggle) shrink-0 items-center justify-center raymond:before:absolute raymond:before:inset-y-0 raymond:before:left-(--tree-line) raymond:before:border-l raymond:before:border-dotted raymond:before:border-(--3d-shadow) raymond:group-data-first/tree-row:before:top-[calc(50%-1px)] raymond:group-data-last/tree-row:before:bottom-[calc(50%+1px)] raymond:after:absolute raymond:after:top-[calc(50%-1px)] raymond:after:right-0 raymond:after:left-(--tree-line) raymond:after:border-t raymond:after:border-dotted raymond:after:border-(--3d-shadow)";
 
+/**
+ * What a drop would do, on the row: the branch it goes into (a primary wash
+ * and frame) and what that branch holds (a fainter wash), or a line on the
+ * row's upper or lower edge, from where its item starts. raymond fills only
+ * the target's label, as a tree view's drop highlight, and draws the line
+ * black with a short upright at each end.
+ */
+const DROP =
+  "data-drop-inside:bg-primary/5 data-drop-target:bg-[color-mix(in_oklab,var(--primary)_12%,var(--background))] data-drop-target:inset-ring data-drop-target:inset-ring-primary raymond:data-drop-inside:bg-transparent raymond:data-drop-target:bg-transparent raymond:data-drop-target:inset-ring-0 before:pointer-events-none before:absolute before:-top-[3px] before:right-0 before:left-[calc(var(--tree-inset)+(var(--tree-level)-1)*var(--tree-step)+var(--tree-toggle))] before:z-10 before:h-1.5 before:bg-no-repeat before:bg-position-[left_center,center] before:bg-size-[6px_6px,100%_2px] raymond:before:bg-position-[left_center,right_center,center] raymond:before:bg-size-[2px_6px,2px_6px,100%_2px] data-drop-before:before:bg-[image:linear-gradient(var(--primary),var(--primary)),linear-gradient(var(--primary),var(--primary))] raymond:data-drop-before:before:bg-[image:linear-gradient(var(--foreground),var(--foreground)),linear-gradient(var(--foreground),var(--foreground)),linear-gradient(var(--foreground),var(--foreground))] after:pointer-events-none after:absolute after:-bottom-[3px] after:right-0 after:left-[calc(var(--tree-inset)+(var(--tree-level)-1)*var(--tree-step)+var(--tree-toggle))] after:z-10 after:h-1.5 after:bg-no-repeat after:bg-position-[left_center,center] after:bg-size-[6px_6px,100%_2px] raymond:after:bg-position-[left_center,right_center,center] raymond:after:bg-size-[2px_6px,2px_6px,100%_2px] data-drop-after:after:bg-[image:linear-gradient(var(--primary),var(--primary)),linear-gradient(var(--primary),var(--primary))] raymond:data-drop-after:after:bg-[image:linear-gradient(var(--foreground),var(--foreground)),linear-gradient(var(--foreground),var(--foreground)),linear-gradient(var(--foreground),var(--foreground))]";
+
+/** A dragged row's image, off screen; raymond's is its label, highlighted and faint. */
+const DRAG_IMAGE =
+  "group/tree-row pointer-events-none fixed -top-[1000px] left-0 flex rounded-control bg-background text-ui text-foreground raymond:rounded-none raymond:bg-transparent raymond:opacity-70";
+
+type RowMarks = Record<`data-${string}`, boolean>;
+
 function ItemRow({
   row,
   index,
   virtual,
   toggle,
+  rowRef,
+  marks,
   context,
+  after,
   children,
 }: {
   row: TreeRow<{ id: string; children?: readonly unknown[] }>;
@@ -802,14 +1481,22 @@ function ItemRow({
   index: number | undefined;
   virtual: boolean;
   toggle: () => void;
+  rowRef: (el: HTMLDivElement | null) => void;
+  marks: RowMarks;
   context: RowContext;
+  /** The rename field and the ⋯ button, beside the item rather than in it. */
+  after: React.ReactNode;
   children: React.ReactNode;
 }) {
   const kids = row.item.children;
   const opens = row.branch && (kids === undefined || kids.length > 0);
   return (
     <div
+      ref={rowRef}
       role="none"
+      {...Object.fromEntries(
+        Object.entries(marks).map(([k, on]) => [k, on ? "" : undefined]),
+      )}
       data-slot="tree-row"
       data-index={index}
       data-pinned={context.pinned ? "" : undefined}
@@ -824,10 +1511,12 @@ function ItemRow({
       className={cn(
         ROW,
         virtual && "h-(--tree-row)",
-        "text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground has-focus-visible:focus-ring-inset data-current:bg-accent data-current:font-medium data-current:text-accent-foreground data-current:state-cue",
+        // The rename field draws its own ring.
+        "text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground has-focus-visible:not-data-renaming:focus-ring-inset data-current:bg-accent data-current:font-medium data-current:text-accent-foreground data-current:state-cue",
         // Under raymond a tree view's rows: black on the well with no hover
         // and no fill, the highlight and focus rectangle on the label alone.
         "raymond:text-foreground raymond:transition-none raymond:hover:bg-transparent raymond:hover:text-foreground raymond:has-focus-visible:outline-none raymond:data-current:bg-transparent raymond:data-current:bg-none raymond:data-current:font-normal raymond:data-current:text-foreground",
+        DROP,
       )}
     >
       <Guides continues={row.continues} />
@@ -859,6 +1548,7 @@ function ItemRow({
       <TreeRowContext.Provider value={context}>
         {children}
       </TreeRowContext.Provider>
+      {after}
     </div>
   );
 }
@@ -868,11 +1558,13 @@ function LoadingRow({
   index,
   virtual,
   label,
+  dropInside,
 }: {
   row: TreeLoadingRow;
   index: number;
   virtual: boolean;
   label: string;
+  dropInside: boolean;
 }) {
   return (
     <div
@@ -882,8 +1574,9 @@ function LoadingRow({
       data-loading=""
       data-level={row.level}
       data-last=""
+      data-drop-inside={dropInside ? "" : undefined}
       style={{ "--tree-level": row.level } as React.CSSProperties}
-      className={cn(ROW, virtual && "h-(--tree-row)")}
+      className={cn(ROW, virtual && "h-(--tree-row)", DROP)}
     >
       <Guides continues={row.continues} />
       <span aria-hidden className={TOGGLE} />
@@ -903,6 +1596,256 @@ function LoadingRow({
     </div>
   );
 }
+
+/**
+ * The rename field, over the row's label from its start to whatever follows the name (a count,
+ * a status), or the item's end. A sibling of the item, not inside it: an `a` holds no field, and
+ * an `asChild` link is the app's to keep whole.
+ */
+function RenameField({
+  initial,
+  selection,
+  validate,
+  labels,
+  onFinish,
+}: {
+  initial: string;
+  selection: (value: string) => readonly [number, number];
+  validate: (name: string) => string | undefined;
+  labels: TreeLabels;
+  /** The name to commit, or undefined to put the old one back; `focus` returns it to the row. */
+  onFinish: (name: string | undefined, focus: boolean) => void;
+}) {
+  const [value, setValue] = React.useState(initial);
+  const [place, setPlace] = React.useState<{ left: number; right: number }>();
+  const box = React.useRef<HTMLSpanElement>(null);
+  const input = React.useRef<HTMLInputElement>(null);
+  const done = React.useRef(false);
+  const messageId = React.useId();
+
+  const name = value.trim();
+  // An empty or unchanged name is no error: it puts the old one back.
+  const unchanged = name === "" || name === initial;
+  const message = unchanged ? undefined : validate(name);
+
+  const finish = (how: "enter" | "blur" | "escape") => {
+    if (done.current || (how === "enter" && message !== undefined)) return;
+    done.current = true;
+    const keep = how !== "escape" && !unchanged && message === undefined;
+    onFinish(keep ? name : undefined, how !== "blur");
+  };
+  const latest = React.useRef(finish);
+  latest.current = finish;
+
+  React.useLayoutEffect(() => {
+    const row = box.current?.parentElement;
+    const item = row?.querySelector("[data-slot=tree-item]");
+    if (!row || !item) return;
+    const measure = () => {
+      const label = item.querySelector("[data-slot=tree-label]");
+      const start = label?.querySelector("[data-rename-from]") ?? label;
+      const rowRect = row.getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+      const left = start
+        ? start.getBoundingClientRect().left
+        : (item.firstElementChild?.getBoundingClientRect().right ??
+          itemRect.left);
+      let right =
+        itemRect.right -
+        (Number.parseFloat(getComputedStyle(item).paddingRight) || 0);
+      // The first thing drawn after the name; a screen reader's text
+      // (sr-only, absolute) takes no room.
+      for (let el = label?.nextElementSibling; el; el = el.nextElementSibling) {
+        if (getComputedStyle(el).position === "absolute") continue;
+        right = el.getBoundingClientRect().left - RENAME_GAP;
+        break;
+      }
+      setPlace({
+        // Over a whole label its text starts where the name's did; from a
+        // part of one it keeps clear of the part before.
+        left: left - rowRect.left - (start === label ? RENAME_INSET : 0),
+        right: rowRect.right - right,
+      });
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    observer.observe(item);
+    return () => observer.disconnect();
+  }, []);
+
+  // Mounted to be typed in, with the part of the name a reader most often
+  // changes selected.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, as it opens
+  React.useLayoutEffect(() => {
+    const el = input.current;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    const [start, end] = selection(initial);
+    el.setSelectionRange(start, end);
+  }, []);
+
+  // Escape is the field's alone: heard before a dialog or sheet around the
+  // tree, which listens on the document, can close.
+  React.useEffect(() => {
+    const el = input.current;
+    const win = el?.ownerDocument.defaultView;
+    if (!el || !win) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.target !== el) return;
+      event.stopPropagation();
+      event.preventDefault();
+      latest.current("escape");
+    };
+    win.addEventListener("keydown", onKey, true);
+    return () => win.removeEventListener("keydown", onKey, true);
+  }, []);
+
+  return (
+    <span
+      ref={box}
+      className="absolute inset-y-0 z-10 flex items-center"
+      style={place}
+    >
+      <Popover open={message !== undefined}>
+        <PopoverAnchor asChild>
+          <Input
+            ref={input}
+            data-slot="tree-rename"
+            aria-label={labels.renameItem(initial)}
+            aria-invalid={message !== undefined || undefined}
+            aria-describedby={message === undefined ? undefined : messageId}
+            autoComplete="off"
+            spellCheck={false}
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.nativeEvent.isComposing)
+                return;
+              event.preventDefault();
+              finish("enter");
+            }}
+            // Leaving for another window is not leaving the field: it is
+            // still open on the way back.
+            onBlur={(event) => {
+              if (event.currentTarget.ownerDocument.hasFocus()) finish("blur");
+            }}
+            // A field of the row's size, its ring drawn on its edge so it
+            // stays inside the row; raymond's is a tree view's label edit,
+            // a black frame on the window colour with no bevel.
+            className="h-control-xs bg-background px-1 text-ui select-text [--focus-offset:0px] aria-invalid:ring-0 md:text-ui dark:bg-background raymond:rounded-none raymond:border-foreground raymond:bg-(--window) raymond:px-0.5 raymond:shadow-none raymond:focus-visible:outline-none"
+          />
+        </PopoverAnchor>
+        <PopoverContent
+          side="bottom"
+          align="start"
+          role="status"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          // The default style's message is a quiet card ruled in the
+          // destructive colour; raymond's is the balloon Explorer shows
+          // over a bad file name, headed in bold.
+          className="w-auto max-w-72 border-destructive bg-background px-2 py-1.5 text-ui-sm text-destructive raymond:rounded-none raymond:border raymond:border-foreground raymond:bg-(--info) raymond:text-foreground raymond:shadow-none"
+        >
+          <p className="hidden font-bold raymond:block">
+            {labels.renameFailed(initial)}
+          </p>
+          <p id={messageId} data-slot="tree-rename-message">
+            {message}
+          </p>
+        </PopoverContent>
+      </Popover>
+    </span>
+  );
+}
+
+/** The field's edge against the name's, so its text starts where the name's did. */
+const RENAME_INSET = 5;
+/** The room kept between the field and what follows the name. */
+const RENAME_GAP = 4;
+
+/**
+ * The ⋯ button at a row's end and the one menu it opens. Its column stays when it is not drawn,
+ * so what the row shows at its end keeps still, and a pinned copy keeps it empty.
+ */
+function RowMenu({
+  pinned,
+  shown,
+  name,
+  labels,
+  open,
+  onOpenChange,
+  items,
+  onCloseAutoFocus,
+}: {
+  pinned: boolean;
+  shown: boolean;
+  /** The row's `textValue`; read from its label when the app gives none. */
+  name: string | undefined;
+  labels: TreeLabels;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  items: () => React.ReactNode;
+  onCloseAutoFocus: (event: Event) => void;
+}) {
+  const button = React.useRef<HTMLButtonElement>(null);
+  const [read, setRead] = React.useState("");
+  React.useLayoutEffect(() => {
+    if (name !== undefined) return;
+    const text = labelText(
+      button.current
+        ?.closest("[data-slot=tree-row]")
+        ?.querySelector("[data-slot=tree-item]"),
+    );
+    if (text !== read) setRead(text);
+  });
+  // The items are asked for only while the menu is open, and kept through
+  // its closing.
+  const content = React.useRef<React.ReactNode>(null);
+  if (open) content.current = items();
+
+  if (pinned) {
+    return (
+      <span aria-hidden className={MENU_CELL}>
+        <span className="block size-control-xs" />
+      </span>
+    );
+  }
+  return (
+    <span className={MENU_CELL}>
+      <DropdownMenu open={open} onOpenChange={onOpenChange}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            ref={button}
+            variant="ghost"
+            size="icon-xs"
+            tabIndex={-1}
+            aria-label={labels.rowActions(name ?? read)}
+            data-slot="tree-row-menu"
+            // As the toggle: a press leaves the focus on the row.
+            onMouseDown={(event) => event.preventDefault()}
+            // Drawn on the current row, the row under the pointer, the
+            // focused row and on every row for touch; the rest keep the
+            // column empty.
+            className={cn(
+              "invisible",
+              shown &&
+                "group-hover/tree-row:visible group-data-current/tree-row:visible group-data-focused/tree-row:visible group-has-focus-visible/tree-row:visible aria-expanded:visible touch:visible",
+            )}
+          >
+            <MoreHorizontalIcon />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onCloseAutoFocus={onCloseAutoFocus}>
+          {content.current}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
+  );
+}
+
+const MENU_CELL = "flex shrink-0 items-center pr-1";
 
 /**
  * A row's place, rendered by a `Tree`'s `children`: an `a` given `href`, a router's link or a
@@ -958,6 +1901,8 @@ function TreeItem({
             "aria-expanded": row.branch ? row.expanded : undefined,
             "aria-current": context.current ? context.currentToken : undefined,
             "aria-busy": context.busy || undefined,
+            "aria-haspopup": context.menu ? "menu" : undefined,
+            draggable: context.draggable && !place ? true : undefined,
           })}
       data-slot="tree-item"
       onClick={(event) => {
@@ -966,6 +1911,8 @@ function TreeItem({
       }}
       className={cn(
         "flex min-w-0 flex-1 items-center gap-2 self-stretch pr-3 text-left text-inherit outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        // A row cut or being dragged fades, as Explorer fades a cut file.
+        "group-data-cut/tree-row:[&_svg]:opacity-50 group-data-dragging/tree-row:[&_svg]:opacity-50",
         // A row drawn without a TreeLabel takes raymond's highlight and focus
         // rectangle across its item instead.
         "raymond:not-has-data-[slot=tree-label]:group-data-current/tree-row:bg-primary raymond:not-has-data-[slot=tree-label]:group-data-current/tree-row:text-primary-foreground raymond:not-has-data-[slot=tree-label]:group-has-focus-visible/tree-row:focus-ring-inset raymond:not-has-data-[slot=tree-label]:group-data-current/tree-row:[--ring:var(--primary-foreground)]",
@@ -977,7 +1924,8 @@ function TreeItem({
 
 /**
  * The row's text, truncated to fit. raymond draws the current place's highlight and the focus
- * rectangle on it alone, as a tree view does.
+ * rectangle on it alone, as a tree view does. A rename field covers it, starting at a
+ * descendant marked `data-rename-from` when there is one.
  */
 function TreeLabel({ className, ...props }: React.ComponentProps<"span">) {
   return (
@@ -985,6 +1933,10 @@ function TreeLabel({ className, ...props }: React.ComponentProps<"span">) {
       data-slot="tree-label"
       className={cn(
         "truncate raymond:px-0.5 raymond:[--focus-offset:-1px] raymond:[--ring:var(--foreground)] raymond:group-has-focus-visible/tree-row:focus-ring raymond:group-data-current/tree-row:bg-primary raymond:group-data-current/tree-row:text-primary-foreground raymond:group-data-current/tree-row:[--ring:var(--primary-foreground)]",
+        // Hidden under the rename field so it cannot show through; faded
+        // while cut or dragged, which raymond leaves to the icon. raymond's
+        // drop target is its label, highlighted.
+        "group-data-renaming/tree-row:invisible group-data-cut/tree-row:opacity-50 group-data-dragging/tree-row:opacity-50 raymond:group-data-cut/tree-row:opacity-100 raymond:group-data-dragging/tree-row:opacity-100 raymond:group-data-drop-target/tree-row:bg-primary raymond:group-data-drop-target/tree-row:text-primary-foreground",
         className,
       )}
       {...props}

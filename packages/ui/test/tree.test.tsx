@@ -1,15 +1,24 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import * as React from "react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DropdownMenuItem } from "../src/components/dropdown-menu.tsx";
 import {
   Tree,
   TreeCount,
   type TreeHandle,
   TreeItem,
   TreeLabel,
+  type TreeMenuActions,
 } from "../src/components/tree.tsx";
-import type { TreeNode } from "../src/lib/tree-rows.ts";
+import type { TreeMoveTarget, TreeNode } from "../src/lib/tree-rows.ts";
+import { FakeDataTransfer, fireDrag } from "./fake-data-transfer.ts";
 import { H, type Layout, stubLayout, VIEWPORT } from "./stub-tree-layout.ts";
 
 interface Node extends TreeNode<Node> {
@@ -915,5 +924,507 @@ describe("Tree, scrolled", () => {
       scrollTo(25);
       expect(document.querySelector("[data-slot=tree-pins]")).toBeNull();
     });
+  });
+});
+
+/** The tree with `id` named `name`, under its old id or `next`. */
+function renamed(
+  nodes: readonly Node[],
+  id: string,
+  name: string,
+  next = id,
+): Node[] {
+  return nodes.map((node) =>
+    node.id === id
+      ? { ...node, id: next, name }
+      : node.children
+        ? { ...node, children: renamed(node.children, id, name, next) }
+        : node,
+  );
+}
+
+const rowOf = (name: string) =>
+  item(name).closest("[data-slot=tree-row]") as HTMLElement;
+const field = () =>
+  document.querySelector("[data-slot=tree-rename]") as HTMLInputElement | null;
+
+describe("Tree, renamed", () => {
+  it("opens a field on F2 holding the name, all of it selected, focused", () => {
+    render(renderTree({ onRename: vi.fn() }));
+    key(item("readme"), "F2");
+    const input = field() as HTMLInputElement;
+    expect(input.value).toBe("readme");
+    expect(document.activeElement).toBe(input);
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, 6]);
+    expect(input.getAttribute("aria-label")).toBe("Rename readme");
+    expect(rowOf("readme").hasAttribute("data-renaming")).toBe(true);
+    expect(item("readme").tabIndex).toBe(-1);
+  });
+
+  it("starts from renameValue and selects what renameSelection says", () => {
+    render(
+      renderTree({
+        onRename: vi.fn(),
+        renameValue: (node) => `${node.name}.md`,
+        renameSelection: () => [0, 6],
+      }),
+    );
+    key(item("readme"), "F2");
+    const input = field() as HTMLInputElement;
+    expect(input.value).toBe("readme.md");
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, 6]);
+  });
+
+  it("commits the trimmed name on Enter and gives the focus back to the row", () => {
+    const onRename = vi.fn();
+    render(renderTree({ onRename }));
+    key(item("readme"), "F2");
+    fireEvent.change(field() as HTMLInputElement, {
+      target: { value: "  notes " },
+    });
+    key(field() as HTMLInputElement, "Enter");
+    expect(onRename).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "readme" }),
+      "notes",
+    );
+    expect(field()).toBeNull();
+    expect(document.activeElement).toBe(item("readme"));
+  });
+
+  it("puts the name back on Escape, which goes no further", () => {
+    const onRename = vi.fn();
+    const outside = vi.fn();
+    render(renderTree({ onRename }));
+    key(item("readme"), "F2");
+    fireEvent.change(field() as HTMLInputElement, { target: { value: "x" } });
+    document.addEventListener("keydown", outside);
+    key(field() as HTMLInputElement, "Escape");
+    document.removeEventListener("keydown", outside);
+    expect(onRename).not.toHaveBeenCalled();
+    expect(outside).not.toHaveBeenCalled();
+    expect(field()).toBeNull();
+    expect(document.activeElement).toBe(item("readme"));
+  });
+
+  it("commits on blur, but not while the window is away", () => {
+    const onRename = vi.fn();
+    render(renderTree({ onRename }));
+    key(item("readme"), "F2");
+    fireEvent.change(field() as HTMLInputElement, { target: { value: "x" } });
+    const away = vi.spyOn(document, "hasFocus").mockReturnValue(false);
+    fireEvent.blur(field() as HTMLInputElement);
+    expect(field()).not.toBeNull();
+    away.mockReturnValue(true);
+    fireEvent.blur(field() as HTMLInputElement);
+    away.mockRestore();
+    expect(onRename).toHaveBeenCalledWith(expect.anything(), "x");
+    expect(field()).toBeNull();
+  });
+
+  it("says why a name is refused, keeps it on Enter, and puts the old one back on blur", () => {
+    const onRename = vi.fn();
+    render(
+      renderTree({
+        onRename,
+        validateName: (_, name) => (name === "src" ? "Taken" : undefined),
+      }),
+    );
+    key(item("readme"), "F2");
+    const input = field() as HTMLInputElement;
+    expect(input.hasAttribute("aria-invalid")).toBe(false);
+    fireEvent.change(input, { target: { value: "src" } });
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    const message = document.getElementById(
+      input.getAttribute("aria-describedby") as string,
+    );
+    expect(message?.textContent).toBe("Taken");
+    key(input, "Enter");
+    expect(field()).not.toBeNull();
+    fireEvent.blur(input);
+    expect(onRename).not.toHaveBeenCalled();
+    expect(field()).toBeNull();
+  });
+
+  it("puts an empty or unchanged name back without a word", () => {
+    const onRename = vi.fn();
+    const validateName = vi.fn(() => "never");
+    render(renderTree({ onRename, validateName }));
+    for (const value of ["   ", "readme"]) {
+      key(item("readme"), "F2");
+      fireEvent.change(field() as HTMLInputElement, { target: { value } });
+      expect(field()?.hasAttribute("aria-invalid")).toBe(false);
+      key(field() as HTMLInputElement, "Enter");
+      expect(field()).toBeNull();
+    }
+    expect(onRename).not.toHaveBeenCalled();
+    expect(validateName).not.toHaveBeenCalled();
+  });
+
+  it("does nothing on F2 without onRename, or where canRename says no", () => {
+    const { rerender } = render(renderTree());
+    key(item("readme"), "F2");
+    expect(field()).toBeNull();
+    rerender(
+      renderTree({
+        onRename: vi.fn(),
+        canRename: (node) => node.id !== "readme",
+      }),
+    );
+    key(item("readme"), "F2");
+    expect(field()).toBeNull();
+    key(item("lazy"), "F2");
+    expect(field()).not.toBeNull();
+  });
+
+  it("puts the name back when the row leaves the screen", () => {
+    const onRename = vi.fn();
+    const { rerender } = render(renderTree({ onRename }));
+    key(item("readme"), "F2");
+    rerender(renderTree({ onRename, filter: (node) => node.id === "lazy" }));
+    expect(field()).toBeNull();
+    rerender(renderTree({ onRename }));
+    expect(field()).toBeNull();
+    expect(onRename).not.toHaveBeenCalled();
+  });
+
+  it("moves the focus to the row's new id", () => {
+    function Renaming() {
+      const [items, setItems] = React.useState(ITEMS);
+      return renderTree({
+        items,
+        onRename: (node, name) => {
+          setItems((list) => renamed(list, node.id, name, name));
+          return name;
+        },
+      });
+    }
+    render(<Renaming />);
+    key(item("readme"), "F2");
+    fireEvent.change(field() as HTMLInputElement, {
+      target: { value: "notes" },
+    });
+    key(field() as HTMLInputElement, "Enter");
+    expect(document.activeElement).toBe(item("notes"));
+    expect(item("notes").getAttribute("href")).toBe("#notes");
+    expect(item("notes").tabIndex).toBe(0);
+  });
+
+  it("opens the way on handle.rename, then the field", () => {
+    const handle = React.createRef<TreeHandle>();
+    render(renderTree({ onRename: vi.fn(), handle }));
+    act(() => handle.current?.rename("utils"));
+    expect(field()?.value).toBe("utils");
+    expect(document.activeElement).toBe(field());
+    act(() => handle.current?.rename("nowhere"));
+    expect(field()?.value).toBe("utils");
+  });
+});
+
+const MENU = (node: Node, actions: TreeMenuActions) => (
+  <>
+    {actions.rename && (
+      <DropdownMenuItem onSelect={actions.rename}>
+        Rename {node.name}
+      </DropdownMenuItem>
+    )}
+    {actions.cut && (
+      <DropdownMenuItem onSelect={actions.cut}>Cut</DropdownMenuItem>
+    )}
+    {actions.paste && (
+      <DropdownMenuItem onSelect={actions.paste}>Paste</DropdownMenuItem>
+    )}
+    <DropdownMenuItem>Delete</DropdownMenuItem>
+  </>
+);
+
+const menuButton = (name: string) =>
+  rowOf(name).querySelector("[data-slot=tree-row-menu]") as HTMLElement | null;
+
+describe("Tree, a row's menu", () => {
+  it("draws ⋯ only with menu, and marks the items as opening one", () => {
+    const { rerender } = render(renderTree());
+    expect(menuButton("readme")).toBeNull();
+    expect(item("readme").hasAttribute("aria-haspopup")).toBe(false);
+    rerender(renderTree({ menu: MENU }));
+    expect(menuButton("readme")?.getAttribute("aria-label")).toBe(
+      "Actions for readme",
+    );
+    expect(menuButton("readme")?.tabIndex).toBe(-1);
+    expect(item("readme").getAttribute("aria-haspopup")).toBe("menu");
+  });
+
+  it("opens from ⋯, asking for the items of that row alone", () => {
+    const menu = vi.fn(MENU);
+    render(renderTree({ menu }));
+    expect(menu).not.toHaveBeenCalled();
+    fireEvent.pointerDown(menuButton("readme") as HTMLElement, {
+      button: 0,
+      pointerType: "mouse",
+    });
+    expect(screen.getByRole("menu")).toBeTruthy();
+    expect(new Set(menu.mock.calls.map(([node]) => node.id))).toEqual(
+      new Set(["readme"]),
+    );
+  });
+
+  it("opens on Shift+F10 and on the keyboard's contextmenu, never on a right click", () => {
+    render(renderTree({ menu: MENU }));
+    fireEvent.keyDown(item("readme"), { key: "F10", shiftKey: true });
+    expect(screen.getByRole("menu")).toBeTruthy();
+    key(screen.getByRole("menu"), "Escape");
+    expect(screen.queryByRole("menu")).toBeNull();
+    // A right click keeps the browser's menu: the link's.
+    expect(fireEvent.contextMenu(item("lazy"), { button: 2 })).toBe(true);
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(fireEvent.contextMenu(item("lazy"), { button: 0 })).toBe(false);
+    expect(screen.getByRole("menu")).toBeTruthy();
+  });
+
+  it("gives the focus back to the row on closing", async () => {
+    render(renderTree({ menu: MENU }));
+    item("readme").focus();
+    key(item("readme"), "ContextMenu");
+    expect(screen.getByRole("menu")).toBeTruthy();
+    key(screen.getByRole("menu"), "Escape");
+    await waitFor(() => expect(document.activeElement).toBe(item("readme")));
+  });
+
+  it("opens the rename field from the menu's rename", async () => {
+    render(renderTree({ menu: MENU, onRename: vi.fn() }));
+    key(item("readme"), "ContextMenu");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Rename readme" }));
+    await waitFor(() => expect(document.activeElement).toBe(field()));
+    expect(field()?.value).toBe("readme");
+  });
+
+  it("offers an action only where the tree can take it", () => {
+    const seen: TreeMenuActions[] = [];
+    const menu = (node: Node, actions: TreeMenuActions) => {
+      seen.push(actions);
+      return MENU(node, actions);
+    };
+    const { rerender } = render(renderTree({ menu }));
+    key(item("readme"), "ContextMenu");
+    expect(seen.at(-1)).toEqual({
+      rename: undefined,
+      cut: undefined,
+      paste: undefined,
+    });
+    key(screen.getByRole("menu"), "Escape");
+    rerender(renderTree({ menu, onRename: vi.fn(), onMove: vi.fn() }));
+    key(item("readme"), "ContextMenu");
+    expect(seen.at(-1)?.rename).toBeTypeOf("function");
+    expect(seen.at(-1)?.cut).toBeTypeOf("function");
+    // Nothing is cut yet.
+    expect(seen.at(-1)?.paste).toBeUndefined();
+  });
+});
+
+describe("Tree, cut and pasted", () => {
+  it("marks the row on Ctrl+X and on ⌘+X, one row at a time", () => {
+    render(renderTree({ onMove: vi.fn() }));
+    fireEvent.keyDown(item("readme"), { key: "x", ctrlKey: true });
+    expect(rowOf("readme").hasAttribute("data-cut")).toBe(true);
+    fireEvent.keyDown(item("lazy"), { key: "x", metaKey: true });
+    expect(rowOf("readme").hasAttribute("data-cut")).toBe(false);
+    expect(rowOf("lazy").hasAttribute("data-cut")).toBe(true);
+  });
+
+  it("moves the cut row into a branch it is pasted on, last", () => {
+    const onMove = vi.fn();
+    render(renderTree({ onMove, defaultExpanded: ["src"] }));
+    fireEvent.keyDown(item("readme"), { key: "x", ctrlKey: true });
+    fireEvent.keyDown(item("lib 1"), { key: "v", ctrlKey: true });
+    expect(onMove).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "readme" }),
+      { parentId: "lib", index: 1, over: "lib", position: "into" },
+    );
+    expect(rowOf("readme").hasAttribute("data-cut")).toBe(false);
+  });
+
+  it("moves the cut row after a leaf it is pasted on", () => {
+    const onMove = vi.fn();
+    render(renderTree({ onMove, defaultExpanded: ["src", "components"] }));
+    fireEvent.keyDown(item("readme"), { key: "x", metaKey: true });
+    fireEvent.keyDown(item("button"), { key: "v", metaKey: true });
+    expect(onMove).toHaveBeenCalledWith(expect.anything(), {
+      parentId: "components",
+      index: 1,
+      over: "button",
+      position: "after",
+    });
+  });
+
+  it("keeps the cut when canDrop takes no place there, and drops it on Escape", () => {
+    const onMove = vi.fn();
+    render(renderTree({ onMove, canDrop: () => false }));
+    fireEvent.keyDown(item("readme"), { key: "x", ctrlKey: true });
+    fireEvent.keyDown(item("lazy"), { key: "v", ctrlKey: true });
+    expect(onMove).not.toHaveBeenCalled();
+    expect(rowOf("readme").hasAttribute("data-cut")).toBe(true);
+    key(item("lazy"), "Escape");
+    expect(rowOf("readme").hasAttribute("data-cut")).toBe(false);
+  });
+
+  it("leaves Ctrl+X to the browser where canDrag says no, and Ctrl+V with nothing cut", () => {
+    render(renderTree({ onMove: vi.fn(), canDrag: () => false }));
+    expect(fireEvent.keyDown(item("readme"), { key: "x", ctrlKey: true })).toBe(
+      true,
+    );
+    expect(fireEvent.keyDown(item("readme"), { key: "v", ctrlKey: true })).toBe(
+      true,
+    );
+  });
+});
+
+describe("Tree, dragged", () => {
+  let layout: Layout;
+  let data: FakeDataTransfer;
+  beforeEach(() => {
+    layout = stubLayout();
+    data = new FakeDataTransfer();
+  });
+  afterEach(() => {
+    const tree = document.querySelector("[data-slot=tree]");
+    if (tree) fireDrag("dragEnd", tree, data);
+    layout.restore();
+  });
+
+  // All open: src 0, components 1, button 2, dialog 3, lib 4, utils 5,
+  // archive 6, old 7, lazy 8, loading 9, readme 10.
+  const OPEN = ["src", "components", "lib", "archive", "lazy"];
+  const rowAt = (index: number) =>
+    document.querySelector(
+      `[data-slot=tree-row][data-index="${index}"]`,
+    ) as HTMLElement;
+  /** A point `part` of the way down row `index`. */
+  const y = (index: number, part: number) => index * H + part * H;
+  const marked = (mark: string) =>
+    [...document.querySelectorAll(`[data-slot=tree-row][${mark}]`)].map((el) =>
+      Number(el.getAttribute("data-index")),
+    );
+
+  it("carries the row's link, and the tree's own mark", () => {
+    render(renderTree({ onMove: vi.fn(), expanded: OPEN }));
+    fireDrag("dragStart", item("readme"), data);
+    expect(data.getData("text/uri-list")).toMatch(/#readme$/);
+    expect(data.getData("text/plain")).toMatch(/#readme$/);
+    expect(data.types).toContain("application/x-orz-tree");
+    expect(data.effectAllowed).toBe("all");
+    expect(data.image?.textContent).toBe("readme");
+    expect(rowOf("readme").hasAttribute("data-dragging")).toBe(true);
+  });
+
+  it("makes a grouping node draggable, and nothing without onMove", () => {
+    const { rerender } = render(renderTree({ expanded: OPEN }));
+    expect(item("archive").hasAttribute("draggable")).toBe(false);
+    fireDrag("dragStart", item("readme"), data);
+    expect(data.types).toEqual([]);
+    rerender(renderTree({ onMove: vi.fn(), expanded: OPEN }));
+    expect(item("archive").getAttribute("draggable")).toBe("true");
+    // A link drags as it is.
+    expect(item("readme").hasAttribute("draggable")).toBe(false);
+  });
+
+  it("drops before, into or after a branch by the pointer's height", () => {
+    render(renderTree({ onMove: vi.fn(), expanded: OPEN }));
+    fireDrag("dragStart", item("readme"), data);
+    expect(fireDrag("dragOver", rowAt(6), data, { clientY: y(6, 0.1) })).toBe(
+      false,
+    );
+    expect(data.dropEffect).toBe("move");
+    expect(marked("data-drop-before")).toEqual([6]);
+    fireDrag("dragOver", rowAt(6), data, { clientY: y(6, 0.5) });
+    expect(marked("data-drop-before")).toEqual([]);
+    expect(marked("data-drop-target")).toEqual([6]);
+    expect(marked("data-drop-inside")).toEqual([7]);
+    // archive is open: below it is first among its children.
+    fireDrag("dragOver", rowAt(6), data, { clientY: y(6, 0.9) });
+    expect(marked("data-drop-target")).toEqual([6]);
+    expect(marked("data-drop-before")).toEqual([7]);
+  });
+
+  it("drops before or after a leaf by its half", () => {
+    render(renderTree({ onMove: vi.fn(), expanded: OPEN }));
+    fireDrag("dragStart", item("readme"), data);
+    fireDrag("dragOver", rowAt(2), data, { clientY: y(2, 0.4) });
+    expect(marked("data-drop-before")).toEqual([2]);
+    fireDrag("dragOver", rowAt(2), data, { clientY: y(2, 0.6) });
+    expect(marked("data-drop-after")).toEqual([2]);
+  });
+
+  it("falls back to into when canDrop takes nothing else", () => {
+    const onMove = vi.fn();
+    render(
+      renderTree({
+        onMove,
+        canDrop: (_, t: TreeMoveTarget) => t.position === "into",
+        expanded: OPEN,
+      }),
+    );
+    fireDrag("dragStart", item("readme"), data);
+    fireDrag("dragOver", rowAt(2), data, { clientY: y(2, 0.1) });
+    expect(marked("data-drop-target")).toEqual([1]);
+    expect(marked("data-drop-inside")).toEqual([2, 3]);
+    fireDrag("drop", rowAt(2), data, { clientY: y(2, 0.1) });
+    expect(onMove).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "readme" }),
+      { parentId: "components", index: 1, over: "button", position: "into" },
+    );
+    expect(marked("data-drop-target")).toEqual([]);
+  });
+
+  it("takes no drop into the dragged row itself", () => {
+    render(renderTree({ onMove: vi.fn(), expanded: OPEN }));
+    fireDrag("dragStart", item("src 2"), data);
+    expect(fireDrag("dragOver", rowAt(1), data, { clientY: y(1, 0.5) })).toBe(
+      true,
+    );
+    expect(data.dropEffect).toBe("none");
+    expect(marked("data-drop-target")).toEqual([]);
+  });
+
+  it("opens a closed branch the drag rests on", () => {
+    vi.useFakeTimers();
+    const onExpandedChange = vi.fn();
+    render(
+      renderTree({ onMove: vi.fn(), expanded: ["src"], onExpandedChange }),
+    );
+    fireDrag("dragStart", item("readme"), data);
+    // src 0, components 1, lib 2, archive 3.
+    fireDrag("dragOver", rowAt(1), data, { clientY: y(1, 0.5) });
+    act(() => vi.advanceTimersByTime(699));
+    expect(onExpandedChange).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(onExpandedChange).toHaveBeenCalledWith(["src", "components"]);
+    vi.useRealTimers();
+  });
+
+  it("leaves another drag alone", () => {
+    render(renderTree({ onMove: vi.fn(), expanded: OPEN }));
+    const foreign = new FakeDataTransfer();
+    foreign.setData("text/plain", "hello");
+    expect(
+      fireDrag("dragOver", rowAt(6), foreign, { clientY: y(6, 0.5) }),
+    ).toBe(true);
+    expect(marked("data-drop-target")).toEqual([]);
+  });
+
+  it("scrolls near the scroller's edge", () => {
+    vi.useFakeTimers();
+    render(
+      <div data-scroller="" style={{ overflowY: "auto" }}>
+        {renderTree({ onMove: vi.fn(), expanded: OPEN })}
+      </div>,
+    );
+    fireDrag("dragStart", item("readme"), data);
+    fireDrag("dragOver", rowAt(9), data, { clientY: VIEWPORT - 4 });
+    act(() => vi.advanceTimersByTime(20));
+    expect(layout.state.scrollTop).toBe(Math.ceil((36 / 40) * 18));
+    fireDrag("dragEnd", item("readme"), data);
+    const top = layout.state.scrollTop;
+    act(() => vi.advanceTimersByTime(100));
+    expect(layout.state.scrollTop).toBe(top);
+    vi.useRealTimers();
   });
 });

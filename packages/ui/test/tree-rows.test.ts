@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   ancestorsOf,
   matchAncestors,
+  moveTarget,
+  type TreeDropZone,
   type TreeLoadingRow,
+  type TreeMoveTarget,
   type TreeNode,
   type TreeRow,
   visibleRows,
@@ -221,5 +224,181 @@ describe("ancestorsOf", () => {
 
   it("is undefined for an id no node has", () => {
     expect(ancestorsOf(ITEMS, "missing")).toBeUndefined();
+  });
+});
+
+describe("moveTarget", () => {
+  // ITEMS, then a leaf at the root:
+  // readme
+  const TREE: Node[] = [...ITEMS, node("readme")];
+  const find = (
+    id: string,
+    nodes: readonly Node[] = TREE,
+  ): Node | undefined => {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      const below = find(id, n.children ?? []);
+      if (below) return below;
+    }
+    return undefined;
+  };
+  const target = (
+    open: string[],
+    moved: string,
+    over: string,
+    zone: TreeDropZone | undefined,
+    canDrop: (item: Node, t: TreeMoveTarget) => boolean = () => true,
+  ) => {
+    const rows = visibleRows(TREE, new Set(open));
+    const index = rows.findIndex((r) =>
+      r.kind === "item" ? r.item.id === over : `loading:${r.parentId}` === over,
+    );
+    return moveTarget(rows, TREE, find(moved) as Node, index, zone, canDrop);
+  };
+  const onlyInto = (_: Node, t: TreeMoveTarget) => t.position === "into";
+
+  it("takes a branch's three zones as before it, into it last, and after it", () => {
+    const open = ["src"];
+    expect(target(open, "readme", "lib", "top")).toEqual({
+      parentId: "src",
+      index: 1,
+      over: "lib",
+      position: "before",
+    });
+    expect(target(open, "readme", "lib", "middle")).toEqual({
+      parentId: "lib",
+      index: 1,
+      over: "lib",
+      position: "into",
+    });
+    expect(target(open, "readme", "lib", "bottom")).toEqual({
+      parentId: "src",
+      index: 2,
+      over: "lib",
+      position: "after",
+    });
+  });
+
+  it("takes a leaf's two halves as before and after it", () => {
+    const open = ["src", "components"];
+    expect(target(open, "readme", "dialog", "top")).toMatchObject({
+      parentId: "components",
+      index: 1,
+      position: "before",
+    });
+    expect(target(open, "readme", "dialog", "bottom")).toMatchObject({
+      parentId: "components",
+      index: 2,
+      position: "after",
+    });
+  });
+
+  it("puts a drop below an open branch first among its children", () => {
+    expect(target(["src"], "readme", "src", "bottom")).toEqual({
+      parentId: "src",
+      index: 0,
+      over: "src",
+      position: "into",
+    });
+    expect(target([], "readme", "src", "bottom")).toMatchObject({
+      parentId: undefined,
+      index: 1,
+      position: "after",
+    });
+  });
+
+  it("falls back to into, so a tree taking only that drops into a branch, or a leaf's parent", () => {
+    const open = ["src", "components"];
+    for (const zone of ["top", "middle", "bottom"] as const) {
+      expect(target(open, "readme", "lib", zone, onlyInto)).toMatchObject({
+        parentId: "lib",
+        position: "into",
+      });
+    }
+    expect(target(open, "readme", "dialog", "top", onlyInto)).toEqual({
+      parentId: "components",
+      index: 2,
+      over: "dialog",
+      position: "into",
+    });
+    expect(target([], "src", "readme", "top", onlyInto)).toMatchObject({
+      parentId: undefined,
+      position: "into",
+    });
+  });
+
+  it("is undefined when canDrop refuses every candidate", () => {
+    expect(
+      target(["src"], "readme", "lib", "middle", () => false),
+    ).toBeUndefined();
+  });
+
+  it("never asks about a drop into the moved node or below it", () => {
+    const seen: TreeMoveTarget[] = [];
+    const record = (_: Node, t: TreeMoveTarget) => {
+      seen.push(t);
+      return false;
+    };
+    const open = ["src", "components"];
+    target(open, "src", "src", "middle", record);
+    target(open, "src", "button", "top", record);
+    target(open, "src", "components", "middle", record);
+    expect(seen).toEqual([]);
+  });
+
+  it("refuses a drop that leaves the node where it is", () => {
+    const open = ["src", "components"];
+    expect(
+      target(open, "dialog", "button", "bottom", onlyInto),
+    ).toBeUndefined();
+    expect(target(open, "dialog", "dialog", "top")).toBeUndefined();
+    expect(
+      target(open, "button", "dialog", "top", (_, t) => t.position !== "into"),
+    ).toBeUndefined();
+  });
+
+  it("counts the index with the moved node taken out", () => {
+    const open = ["src", "components"];
+    expect(target(open, "button", "dialog", "bottom")).toMatchObject({
+      parentId: "components",
+      index: 1,
+      position: "after",
+    });
+    expect(target(open, "components", "src", "middle")).toMatchObject({
+      parentId: "src",
+      index: 1,
+    });
+  });
+
+  it("tries a paste into a branch then after it, and after a leaf then into its parent", () => {
+    const open = ["src", "components"];
+    expect(target(open, "readme", "lib", undefined)).toMatchObject({
+      parentId: "lib",
+      index: 1,
+      position: "into",
+    });
+    expect(
+      target(open, "readme", "lib", undefined, (_, t) => t.position !== "into"),
+    ).toMatchObject({ parentId: "src", index: 2, position: "after" });
+    expect(target(open, "readme", "button", undefined)).toMatchObject({
+      parentId: "components",
+      index: 1,
+      position: "after",
+    });
+    expect(target(open, "readme", "button", undefined, onlyInto)).toEqual({
+      parentId: "components",
+      index: 1,
+      over: "button",
+      position: "into",
+    });
+  });
+
+  it("takes a loading row as the middle of its branch, which counts from 0", () => {
+    expect(target(["lazy"], "readme", "loading:lazy", "top")).toEqual({
+      parentId: "lazy",
+      index: 0,
+      over: "lazy",
+      position: "into",
+    });
   });
 });

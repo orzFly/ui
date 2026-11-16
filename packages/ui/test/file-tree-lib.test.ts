@@ -16,8 +16,10 @@ import {
   type FileNode,
   fileMatcher,
   fileStatuses,
+  fileStem,
   fileTreeNodes,
   fileTypeIcon,
+  movePath,
   normalizePath,
   resolveFileRow,
 } from "../src/lib/file-tree.ts";
@@ -280,5 +282,32 @@ describe("fileMatcher", () => {
   it("is undefined for a blank query", () => {
     expect(fileMatcher("")).toBeUndefined();
     expect(fileMatcher("   ")).toBeUndefined();
+  });
+});
+
+describe("movePath", () => {
+  it("moves the file itself", () => {
+    expect(movePath("a/b.ts", "a/b.ts", "c/b.ts")).toBe("c/b.ts");
+    expect(movePath("a/b.ts", "a/b.ts", "b.ts")).toBe("b.ts");
+  });
+
+  it("moves a folder and every path under it", () => {
+    expect(movePath("a/x/", "a/x/", "b/x/")).toBe("b/x/");
+    expect(movePath("a/x/y.ts", "a/x/", "b/x/")).toBe("b/x/y.ts");
+  });
+
+  it("leaves a path not under the folder as it is", () => {
+    expect(movePath("a/xy.ts", "a/x/", "b/x/")).toBe("a/xy.ts");
+    expect(movePath("a/x", "a/x/", "b/x/")).toBe("a/x");
+    expect(movePath("c/d.ts", "a/b.ts", "c/b.ts")).toBe("c/d.ts");
+  });
+});
+
+describe("fileStem", () => {
+  it("ends before the last dot, or at the end with none or only a leading one", () => {
+    expect(fileStem("button.tsx")).toBe(6);
+    expect(fileStem(".gitignore")).toBe(10);
+    expect(fileStem("archive.tar.gz")).toBe(11);
+    expect(fileStem("Makefile")).toBe(8);
   });
 });

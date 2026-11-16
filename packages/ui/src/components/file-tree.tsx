@@ -9,14 +9,57 @@ import {
   type FileTreeOptions,
   fileMatcher,
   fileStatuses,
+  fileStem,
   fileTreeNodes,
   fileTypeIcon,
+  movePath,
   resolveFileRow,
 } from "../lib/file-tree.ts";
+import { ancestorsOf, type TreeMoveTarget } from "../lib/tree-rows.ts";
 import { cn } from "../lib/utils.ts";
 import { MatchedText } from "./filter-menu.tsx";
-import type { TreeHandle, TreeRowState } from "./tree.tsx";
+import type {
+  TreeHandle,
+  TreeLabels,
+  TreeMenuActions,
+  TreeRowState,
+} from "./tree.tsx";
 import { Tree, TreeItem, TreeLabel } from "./tree.tsx";
+
+export interface FileTreeLabels {
+  /** Default "A name cannot contain “/”." */
+  nameHasSlash: string;
+  /** Default `A file or folder named ${name} is already here.` */
+  nameTaken: (name: string) => string;
+}
+
+const FILE_LABELS: FileTreeLabels = {
+  nameHasSlash: "A name cannot contain “/”.",
+  nameTaken: (name) => `A file or folder named ${name} is already here.`,
+};
+
+/** The folder a path sits in, with its "/"; "" at the root. */
+const folderOf = (path: string) =>
+  path.slice(0, path.lastIndexOf("/", path.length - 2) + 1);
+
+/** Every path a row shows, a merged row's folders included. */
+function pathsOf(nodes: readonly FileNode[]): Set<string> {
+  const found = new Set<string>();
+  const visit = (node: FileNode, parent: string) => {
+    if (!node.directory) {
+      found.add(node.id);
+      return;
+    }
+    let path = parent;
+    for (const segment of node.segments) {
+      path += `${segment}/`;
+      found.add(path);
+    }
+    for (const child of node.children ?? []) visit(child, node.id);
+  };
+  for (const node of nodes) visit(node, "");
+  return found;
+}
 
 export interface FileStatusLabels {
   added: string;
@@ -59,8 +102,13 @@ type TreeProps = React.ComponentProps<typeof Tree<FileNode>>;
  * row. `status` marks files by path, a folder holding a change takes a dot, and an ignored folder
  * passes ignored down. `query` filters by path as `filterMode` says. `current`, `expanded` and
  * `defaultExpanded` take paths, a merged folder's standing for its row; `onExpandedChange`
- * hands back row ids, and `handle`'s `scrollToItem` takes a path. Typing jumps to a row by its
- * name. Memoize `paths`.
+ * hands back row ids, and `handle`'s `scrollToItem` and `rename` take a path. Typing jumps to a
+ * row by its name. Memoize `paths`.
+ *
+ * `onRename` and `onMove` hand over the path before and after, a folder's ending in "/"; apply
+ * them to `paths` and `status` with `movePath`. The tree refuses a name holding "/" or one its
+ * folder already has, and drops into a folder, never beside a row, since it sorts; `canMove`
+ * refuses more.
  */
 function FileTree({
   paths,
@@ -73,9 +121,32 @@ function FileTree({
   current,
   expanded,
   defaultExpanded,
+  onExpandedChange,
   handle,
+  onRename,
+  onMove,
+  canRename,
+  canDrag,
+  canMove,
+  labels: labelsProp,
   ...props
-}: Omit<TreeProps, "items" | "filter" | "children" | "textValue"> & {
+}: Omit<
+  TreeProps,
+  | "items"
+  | "filter"
+  | "children"
+  | "textValue"
+  | "onRename"
+  | "onMove"
+  | "canRename"
+  | "canDrag"
+  | "canDrop"
+  | "renameValue"
+  | "renameSelection"
+  | "validateName"
+  | "menu"
+  | "labels"
+> & {
   paths: readonly string[];
   children: (file: FileNode, row: TreeRowState) => React.ReactNode;
   status?: Readonly<Record<string, FileStatus>>;
@@ -83,6 +154,13 @@ function FileTree({
   flatten?: boolean;
   sort?: FileTreeOptions["sort"];
   statusLabels?: Partial<FileStatusLabels>;
+  onRename?: (from: string, to: string) => void;
+  onMove?: (from: string, to: string) => void;
+  canRename?: (path: string) => boolean;
+  canDrag?: (path: string) => boolean;
+  canMove?: (from: string, to: string) => boolean;
+  menu?: (file: FileNode, actions: TreeMenuActions) => React.ReactNode;
+  labels?: Partial<TreeLabels & FileTreeLabels>;
 }) {
   const nodes = React.useMemo(
     () => fileTreeNodes(paths, { flatten, sort }),
@@ -98,18 +176,31 @@ function FileTree({
       list?.flatMap((path) => resolveFileRow(nodes, path) ?? []),
     [nodes],
   );
+  const currentRow =
+    current === undefined
+      ? undefined
+      : (resolveFileRow(nodes, current) ?? current);
+  // Held here unless the app holds them, so a folder renamed or moved stays
+  // open under its new path; opened to the current place from the first
+  // render, as the tree would.
+  const [inner, setInner] = React.useState<readonly string[]>(() => [
+    ...(resolve(defaultExpanded) ?? []),
+    ...((currentRow !== undefined && ancestorsOf(nodes, currentRow)) || []),
+  ]);
   const expandedRows = React.useMemo(
-    () => resolve(expanded),
-    [resolve, expanded],
+    () => resolve(expanded ?? inner),
+    [resolve, expanded, inner],
   );
   const labels = React.useMemo(
     () => ({ ...STATUS_LABELS, ...statusLabels }),
     [statusLabels],
   );
+  const editLabels = { ...FILE_LABELS, ...labelsProp };
   const context = React.useMemo(
     () => ({ statuses, query: query.trim(), labels }),
     [statuses, query, labels],
   );
+  const taken = React.useMemo(() => pathsOf(nodes), [nodes]);
   const tree = React.useRef<TreeHandle>(null);
   React.useImperativeHandle(
     handle,
@@ -117,23 +208,84 @@ function FileTree({
       scrollToItem(path, align) {
         tree.current?.scrollToItem(resolveFileRow(nodes, path) ?? path, align);
       },
+      rename(path) {
+        tree.current?.rename(resolveFileRow(nodes, path) ?? path);
+      },
     }),
     [nodes],
   );
+
+  const pathIn = (folder: string, file: FileNode, name = file.name) =>
+    `${folder}${name}${file.directory ? "/" : ""}`;
+  const moved = (from: string, to: string) => {
+    if (expanded === undefined)
+      setInner((open) => open.map((path) => movePath(path, from, to)));
+  };
+  const intoFolder = (file: FileNode, target: TreeMoveTarget) => {
+    const folder = target.parentId ?? "";
+    return target.position === "into" && (folder === "" || folder.endsWith("/"))
+      ? pathIn(folder, file)
+      : undefined;
+  };
+
   return (
     <FileTreeContext.Provider value={context}>
       <Tree
         items={nodes}
         filter={filter}
-        current={
-          current === undefined
-            ? undefined
-            : (resolveFileRow(nodes, current) ?? current)
-        }
+        current={currentRow}
         expanded={expandedRows}
-        defaultExpanded={resolve(defaultExpanded)}
+        onExpandedChange={(next) => {
+          if (expanded === undefined) setInner(next);
+          onExpandedChange?.(next);
+        }}
         textValue={textValue}
         handle={tree}
+        labels={editLabels}
+        onRename={
+          onRename &&
+          ((file, name) => {
+            const to = pathIn(folderOf(file.id), file, name);
+            moved(file.id, to);
+            onRename(file.id, to);
+            return to;
+          })
+        }
+        canRename={canRename && ((file) => canRename(file.id))}
+        renameValue={(file) => file.name}
+        renameSelection={(file, value) => [
+          0,
+          file.directory ? value.length : fileStem(value),
+        ]}
+        validateName={(file, name) => {
+          if (name.includes("/")) return editLabels.nameHasSlash;
+          const to = pathIn(folderOf(file.id), file, name);
+          return to !== file.id && taken.has(to)
+            ? editLabels.nameTaken(name)
+            : undefined;
+        }}
+        onMove={
+          onMove &&
+          ((file, target) => {
+            const to = intoFolder(file, target);
+            if (to === undefined) return;
+            moved(file.id, to);
+            onMove(file.id, to);
+            return to;
+          })
+        }
+        canDrag={canDrag && ((file) => canDrag(file.id))}
+        // It sorts its rows, so a drop goes into a folder and nowhere
+        // beside a row; one back into its own folder does nothing.
+        canDrop={(file, target) => {
+          const to = intoFolder(file, target);
+          return (
+            to !== undefined &&
+            to !== file.id &&
+            !taken.has(to) &&
+            (canMove?.(file.id, to) ?? true)
+          );
+        }}
         {...props}
       >
         {(file, row) => (
@@ -254,15 +406,25 @@ function FileTreeItem({
           status === "deleted" && "line-through",
         )}
       >
-        {file.segments.map((segment, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: one per merged folder, never reordered; two may share a name
-          <React.Fragment key={index}>
-            {index > 0 && (
+        {/* A rename changes the deepest folder alone: the field covers it
+            and the folders before it stay in sight. */}
+        {file.segments.map((segment, index) =>
+          index < file.segments.length - 1 ? (
+            // biome-ignore lint/suspicious/noArrayIndexKey: one per merged folder, never reordered; two may share a name
+            <span key={index} className="group-data-renaming/tree-row:visible">
+              <MatchedText text={segment} query={tree.query} />
               <span className="text-muted-foreground/70">{" / "}</span>
-            )}
-            <MatchedText text={segment} query={tree.query} />
-          </React.Fragment>
-        ))}
+            </span>
+          ) : (
+            <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: as above
+              key={index}
+              data-rename-from={file.segments.length > 1 ? "" : undefined}
+            >
+              <MatchedText text={segment} query={tree.query} />
+            </span>
+          ),
+        )}
       </TreeLabel>
       {asChild ? <Slot.Slottable>{children}</Slot.Slottable> : children}
       {status && (

@@ -280,6 +280,21 @@ export function fileTypeIcon(name: string): LucideIcon {
   return FileIcon;
 }
 
+/** `path` after one rename or move of `from` to `to`; a path not under `from` is returned as it is. */
+export function movePath(path: string, from: string, to: string): string {
+  if (path === from) return to;
+  // Only a folder holds other paths; `a/x` is not under `a/x/`.
+  if (from.endsWith("/") && path.startsWith(from))
+    return to + path.slice(from.length);
+  return path;
+}
+
+/** The end of a file name's stem: before its last ".", or its length when it has none or only a leading one. */
+export function fileStem(name: string): number {
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? dot : name.length;
+}
+
 /** Matches a node whose path holds `query`, trimmed, in any case; undefined for a blank query. */
 export function fileMatcher(
   query: string,
