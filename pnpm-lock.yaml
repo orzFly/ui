@@ -268,6 +268,9 @@ importers:
       '@orz/ui-hex':
         specifier: workspace:*
         version: link:../../packages/ui-hex
+      '@orz/ui-mail':
+        specifier: workspace:*
+        version: link:../../packages/ui-mail
       '@orz/ui-markdown':
         specifier: workspace:*
         version: link:../../packages/ui-markdown
@@ -717,6 +720,46 @@ importers:
       sonner:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@22.20.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0))
+
+  packages/ui-mail:
+    dependencies:
+      postal-mime:
+        specifier: ^4.2.1
+        version: 4.2.1
+    devDependencies:
+      '@orz/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@orz/ui-content':
+        specifier: workspace:*
+        version: link:../ui-content
+      '@testing-library/react':
+        specifier: ^16.3.2
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@types/react':
+        specifier: ^19.2.18
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.2.4
+        version: 19.3.0(@types/react@19.3.0)
+      happy-dom:
+        specifier: ^21.0.3
+        version: 21.0.3
+      lucide-react:
+        specifier: ^1.31.0
+        version: 1.59.0(@types/react@19.3.0)(react@19.3.1)
+      radix-ui:
+        specifier: ^1.6.7
+        version: 1.8.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      react:
+        specifier: ^19.2.8
+        version: 19.3.1
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.3.1(react@19.3.1)
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@22.20.5)(happy-dom@21.0.3)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0))
@@ -4859,6 +4902,10 @@ packages:
 
   points-on-path@0.2.1:
     resolution: {integrity: sha512-25ClnWWuw7JbWZcgqY/gJ4FQWadKxGWk+3kR/7kD0tCaDtPPMj7oHu2ToLaVhfpnHrZzYby2w6tUA0eOIuUg8g==}
+
+  postal-mime@4.2.1:
+    resolution: {integrity: sha512-uFQnu6TPJe5IGzj3ZIjzAYCk7qnVYM3KFvo0JpRFftJKtxJcUSMgTaWsIXDakTKfN71fUULhjNNVbNonim5f0Q==}
+    engines: {node: '>=20'}
 
   postcss-selector-parser@7.1.6:
     resolution: {integrity: sha512-7qASPzhKF2l2KLboRZux8CCTRMdGiV08vWmyKzPz22qZ7ZjQBOeY7rNzNoCLSUiftJ7HUq0GERHmxw/t0dCdMw==}
@@ -9894,6 +9941,8 @@ snapshots:
     dependencies:
       path-data-parser: 0.1.0
       points-on-curve: 0.2.0
+
+  postal-mime@4.2.1: {}
 
   postcss-selector-parser@7.1.6:
     dependencies:

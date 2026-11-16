@@ -7,6 +7,7 @@ import {
   FilePlayIcon,
   FileTextIcon,
   ImageIcon,
+  MailIcon,
 } from "lucide-react";
 import {
   type FileLike,
@@ -14,6 +15,7 @@ import {
   isAudioFile,
   isHtmlFile,
   isImageFile,
+  isMailFile,
   isPatchFile,
   isTextFile,
   isVideoFile,
@@ -41,5 +43,6 @@ export function fileIcon(file: FileLike) {
   // DOM says, and what the tests therefore have to match.
   if (isAudioFile(file)) return FileHeadphoneIcon;
   if (isVideoFile(file)) return FilePlayIcon;
+  if (isMailFile(file)) return MailIcon;
   return FileIcon;
 }

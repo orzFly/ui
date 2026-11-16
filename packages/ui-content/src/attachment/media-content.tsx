@@ -128,6 +128,8 @@ export function htmlContent(
       // Never add allow-same-origin: a file served from the app's own origin
       // could then run scripts that call the app's API with the reader's
       // cookies. allow-scripts alone keeps the document on an opaque origin.
+      // @orz/ui-mail's HTML body is the reverse, allow-same-origin without
+      // allow-scripts: mail never needs a script, and the page measures it.
       <iframe
         src={options.src?.(file) ?? viewHref}
         sandbox="allow-scripts"

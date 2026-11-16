@@ -43,7 +43,7 @@ type Point = { x: number; y: number };
 
 // In screen pixels, never scaled with the image: at 800% a scaled checker
 // would be squares bigger than the pixels it is meant to show through.
-const CHECKER =
+export const CHECKER =
   "repeating-conic-gradient(#d4d4d4 0 25%, #fff 0 50%) 0 0 / 16px 16px";
 
 /** A fitted image's corner, and its checkerboard's. */

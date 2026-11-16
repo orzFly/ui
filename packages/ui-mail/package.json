@@ -1,0 +1,58 @@
+{
+  "name": "@orz/ui-mail",
+  "version": "0.1.1",
+  "description": "Mail messages (.eml): headers, body and attachments",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orzFly/ui.git",
+    "directory": "packages/ui-mail"
+  },
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "@orz/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./styles.css"
+  },
+  "files": [
+    "dist",
+    "styles.css"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "postal-mime": "^4.2.1"
+  },
+  "peerDependencies": {
+    "@orz/ui": "workspace:^",
+    "@orz/ui-content": "workspace:^",
+    "lucide-react": "^1",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@orz/ui": "workspace:*",
+    "@orz/ui-content": "workspace:*",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "happy-dom": "^21.0.3",
+    "lucide-react": "^1.31.0",
+    "radix-ui": "^1.6.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vitest": "^5.0.5"
+  }
+}

@@ -16,6 +16,7 @@ import {
   FileTypeIcon,
   ImageIcon,
   type LucideIcon,
+  MailIcon,
 } from "lucide-react";
 import type { TreeNode } from "./tree-rows.ts";
 
@@ -201,7 +202,7 @@ export function fileStatuses(
   return shown;
 }
 
-// The image, HTML, patch, archive, audio and video names are @orz/ui-content's
+// The image, HTML, patch, archive, audio, video and mail names are @orz/ui-content's
 // (src/file-kind.ts), which @orz/ui cannot import; its icon test holds the
 // two tables to one icon for each.
 const IMAGE = /^(png|jpe?g|gif|webp|avif|svg)$/;
@@ -245,6 +246,7 @@ const EXTENSIONS: Record<string, LucideIcon> = {
   ...table(FileKeyIcon, "pem key crt cer p12"),
   ...table(FileTerminalIcon, "sh bash zsh fish ps1 bat cmd"),
   ...table(FileSpreadsheetIcon, "csv tsv xls xlsx ods"),
+  ...table(MailIcon, "eml"),
 };
 
 function table(icon: LucideIcon, extensions: string) {

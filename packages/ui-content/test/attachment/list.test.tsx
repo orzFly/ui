@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   type AttachmentItem,
   AttachmentList,
+  type AttachmentListProps,
   AttachmentViewerProvider,
   type AttachmentViewerProviderProps,
   imageContent,
@@ -213,5 +214,70 @@ describe("the attachment list's upload time", () => {
     const { container } = draw(shots(1));
     const time = container.querySelector("li time");
     expect(time?.getAttribute("dateTime")).toBe("2026-09-01T00:01:00Z");
+  });
+});
+
+const patch = (n: number): AttachmentItem => ({
+  kind: "file",
+  key: `p${n}`,
+  name: `000${n}-fix.patch`,
+  mime: "application/octet-stream",
+  size: 512,
+  url: `https://app.example/files/p${n}/000${n}-fix.patch`,
+});
+
+function drawWith(
+  items: AttachmentItem[],
+  props: Omit<AttachmentListProps, "items">,
+) {
+  return render(
+    <ContentRenderers renderers={RENDERERS}>
+      <AttachmentViewerProvider>
+        <AttachmentList items={items} {...props} />
+      </AttachmentViewerProvider>
+    </ContentRenderers>,
+  );
+}
+
+describe("an unfolded attachment list", () => {
+  it("keeps every row and draws no toggle", () => {
+    const { container } = drawWith(shots(10), { fold: false });
+    expect(container.querySelectorAll("li")).toHaveLength(10);
+    expect(screen.queryByTestId("attachment-fold-toggle")).toBeNull();
+  });
+});
+
+describe("attachment thumbnails", () => {
+  // A series in the order a message carries it: a screenshot between two
+  // patches.
+  const series = [patch(1), shot(1), patch(2)];
+
+  it("draws images under the rows, not as rows", () => {
+    const { container } = drawWith(series, { thumbnails: true });
+    expect(names(container)).toEqual(["0001-fix.patch", "0002-fix.patch"]);
+    const thumbnail = container.querySelector("img") as HTMLImageElement;
+    expect(thumbnail.closest("li")).toBeNull();
+    expect(thumbnail.getAttribute("src")).toBe(shot(1).url);
+    expect(
+      container.querySelector('a[download="shot-1.png"]')?.closest("li"),
+    ).toBeNull();
+  });
+
+  it("opens the viewer at the image's place in the whole list", () => {
+    const { container } = drawWith(series, { thumbnails: true });
+    const thumbnail = container.querySelector("img") as HTMLImageElement;
+    fireEvent.click(thumbnail.closest("a") as HTMLAnchorElement);
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("heading").textContent).toBe("shot-1.png");
+    expect(within(dialog).getByText("2 / 3")).toBeTruthy();
+  });
+
+  it("leaves images as rows when not asked", () => {
+    const { container } = drawWith(series, {});
+    expect(names(container)).toEqual([
+      "0001-fix.patch",
+      "shot-1.png",
+      "0002-fix.patch",
+    ]);
   });
 });

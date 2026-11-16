@@ -7,8 +7,9 @@ import {
   PaperclipIcon,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { formatSize } from "../file-kind.ts";
+import { formatSize, isImageFile } from "../file-kind.ts";
 import { fileIcon } from "./icon.ts";
+import { CHECKER } from "./image-canvas.tsx";
 import {
   type FileSource,
   useAttachmentViewer,
@@ -30,6 +31,16 @@ export type AttachmentListProps = {
   title?: ReactNode;
   /** The section's id, for links that jump to it. */
   id?: string;
+  /**
+   * Whether a long list folds to its newest five. Default true; false keeps every row on screen,
+   * for a list whose order is the point (a patch series' numbered files).
+   */
+  fold?: boolean;
+  /**
+   * Draw images that have a `url` as thumbnails under the rows rather than as rows. Default
+   * false. The viewer still pages through the whole list in its own order.
+   */
+  thumbnails?: boolean;
   className?: string;
 };
 
@@ -108,6 +119,64 @@ function AttachmentRow({
   );
 }
 
+function AttachmentThumbnail({
+  items,
+  index,
+}: {
+  items: AttachmentItem[];
+  index: number;
+}) {
+  const item = items[index] as AttachmentItem;
+  const viewer = useAttachmentViewer();
+  const canPreview = useCanPreview(item);
+  const href = useViewHref(item);
+  return (
+    <div className="flex w-40 min-w-0 flex-col">
+      <a
+        href={href === "" ? undefined : href}
+        className="group flex min-w-0 flex-col gap-1"
+        onClick={(e) => {
+          if (viewer !== null && canPreview && isPlainClick(e)) {
+            e.preventDefault();
+            viewer.open(items, index);
+          }
+        }}
+      >
+        {/* The checker shows where a transparent image has no pixels, as
+            the viewer's canvas does; the image keeps its own proportions. */}
+        <span
+          className="flex h-24 items-center justify-center overflow-hidden rounded-item ring-1 ring-border group-hover:ring-foreground/40 raymond:rounded-none raymond:p-0.5 raymond:shadow-sunken raymond:ring-0"
+          style={{ background: CHECKER }}
+        >
+          <img
+            src={item.url}
+            alt=""
+            loading="lazy"
+            draggable={false}
+            className="max-h-full max-w-full object-contain"
+          />
+        </span>
+        <span className="truncate font-medium text-ui-sm group-hover:underline">
+          {item.name}
+        </span>
+      </a>
+      <span className="flex items-center gap-1 text-muted-foreground text-ui-sm">
+        {item.size !== undefined && <span>{formatSize(item.size)}</span>}
+        {item.url !== undefined && (
+          <a
+            href={item.url}
+            download={item.name}
+            aria-label={`download ${item.name}`}
+            className="ml-auto p-0.5 hover:text-foreground"
+          >
+            <DownloadIcon className="size-3.5" />
+          </a>
+        )}
+      </span>
+    </div>
+  );
+}
+
 /**
  * A list of files. Every row is a real link (so copy-link and middle-click
  * keep working), pointing at the provider's `viewHref` — hence the separate
@@ -120,19 +189,28 @@ export function AttachmentList({
   actions,
   title = "Attachments",
   id,
+  fold = true,
+  thumbnails = false,
   className,
 }: AttachmentListProps) {
   // Not persisted anywhere: expanding is "show me now", not a preference.
   const [expanded, setExpanded] = useState(false);
   if (items.length === 0) return null;
 
-  const collapsible = items.length >= CAP + MIN_HIDDEN;
+  // Each entry keeps its place in `items`, which is what the viewer pages
+  // through, whether it is drawn as a row or as a thumbnail.
+  const entries = items.map((item, index) => ({ item, index }));
+  const isThumbnail = (item: AttachmentItem) =>
+    thumbnails && item.url !== undefined && isImageFile(item);
+  const rows = entries.filter(({ item }) => !isThumbnail(item));
+  const pictures = entries.filter(({ item }) => isThumbnail(item));
+
+  const collapsible = fold && rows.length >= CAP + MIN_HIDDEN;
   const folded = collapsible && !expanded;
   // The fold takes the head off an unchanged ascending list rather than
   // reversing it: the same array is what the viewer's previous/next page
   // through, and a list that read newest-first here would contradict it.
-  const shown = folded ? items.slice(-CAP) : items;
-  const hiddenBefore = items.length - shown.length;
+  const shown = folded ? rows.slice(-CAP) : rows;
 
   return (
     // Under raymond the list is a list view: a sunken well in the window
@@ -161,7 +239,7 @@ export function AttachmentList({
           {folded ? (
             <>
               <ChevronDownIcon className="size-3.5" />
-              Show {items.length - CAP} more
+              Show {rows.length - CAP} more
             </>
           ) : (
             <>
@@ -171,19 +249,33 @@ export function AttachmentList({
           )}
         </button>
       )}
-      <ul className="divide-y raymond:divide-y-0">
-        {shown.map((item, shownIndex) => (
-          // The viewer pages through the whole list, so a row hands it its
-          // place in `items` — the fold's offset put the first visible row
-          // somewhere in the middle.
-          <AttachmentRow
-            key={item.key}
-            items={items}
-            index={shownIndex + hiddenBefore}
-            actions={actions}
-          />
-        ))}
-      </ul>
+      {shown.length > 0 && (
+        <ul className="divide-y raymond:divide-y-0">
+          {shown.map(({ item, index }) => (
+            // The viewer pages through the whole list, so a row hands it its
+            // place in `items` — the fold's offset put the first visible row
+            // somewhere in the middle.
+            <AttachmentRow
+              key={item.key}
+              items={items}
+              index={index}
+              actions={actions}
+            />
+          ))}
+        </ul>
+      )}
+      {pictures.length > 0 && (
+        <div
+          className={cn(
+            "flex flex-wrap gap-3 p-3",
+            shown.length > 0 && "border-t raymond:border-t-0",
+          )}
+        >
+          {pictures.map(({ item, index }) => (
+            <AttachmentThumbnail key={item.key} items={items} index={index} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

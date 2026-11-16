@@ -124,6 +124,17 @@ const AUDIO_EXTENSION = /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|wma|aif|aiff)$/i;
  */
 const VIDEO_EXTENSION = /\.(mp4|m4v|webm|mov|mkv|avi|wmv|flv|mpg|mpeg)$/i;
 
+/**
+ * A mail message (RFC 5322), by declared type, or by filename when the type is generic. A `.eml`
+ * is neither text nor an image: its body may be base64 or 8bit in any charset, so only a mail
+ * renderer reads it.
+ */
+export function isMailFile(file: FileLike): boolean {
+  const type = mimeOf(file);
+  if (type === "message/rfc822") return true;
+  return hasGenericType(type) && /\.eml$/i.test(file.name);
+}
+
 /** Archive by declared type, or by filename when the type is generic. */
 export function isArchiveFile(file: FileLike): boolean {
   const type = mimeOf(file);

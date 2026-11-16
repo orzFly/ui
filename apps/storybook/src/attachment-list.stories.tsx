@@ -78,3 +78,31 @@ export const Actions: Story = {
     docs: { source: { code: ACTIONS_SNIPPET, language: "tsx" } },
   },
 };
+
+/** `fold={false}` keeps every row on screen, for a list whose order is the point. */
+export const Unfolded: Story = {
+  args: {
+    items: [
+      ...LISTED,
+      ...["series.patch", "pause.diff"].map((name) => ({
+        ...file(name),
+        key: name,
+      })),
+    ],
+    fold: false,
+  },
+};
+
+/** `thumbnails` draws the images under the rows; the viewer still pages in the list's order. */
+export const Thumbnails: Story = {
+  args: {
+    items: [
+      "series.patch",
+      "gradient.png",
+      "guide.md",
+      "sprite.png",
+      "logo.svg",
+    ].map((name) => ({ ...file(name), key: name })),
+    thumbnails: true,
+  },
+};
