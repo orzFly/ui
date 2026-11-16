@@ -18,7 +18,7 @@ import { MailPanes } from "../../../examples/layout-and-spacing/mail-panes.tsx";
 import { MailToolbar } from "../../../examples/layout-and-spacing/mail-toolbar.tsx";
 import { SpacedGroups } from "../../../examples/layout-and-spacing/spaced-groups.tsx";
 import { MD_UP, SM_UP } from "@orz/ui/hooks/use-media-query";
-import { minWidth } from "../../../sizes.ts";
+import { minWidth, radius } from "../../../sizes.ts";
 
 **Space things by how closely they belong together, in steps of Tailwind's 4px scale, and lay the
 screen out for a phone first, then add `md:` for the rest.**
@@ -132,7 +132,7 @@ the components already grow on a coarse pointer by themselves.
 
 ## Corners
 
-`--radius` is the theme's corner, 10px by default, and the `rounded-*` steps scale from it:
+`--radius` is the theme's corner, {radius}px by default, and the `rounded-*` steps scale from it:
 `rounded-lg` is `--radius` itself, `rounded-md` and `rounded-sm` are smaller, `rounded-xl` and up
 are larger. Use the steps rather than pixel values, so a theme that squares its corners squares
 yours too. A box inside a rounded box takes a smaller step than its parent, so the two curves stay

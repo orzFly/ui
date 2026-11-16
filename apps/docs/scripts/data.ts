@@ -220,6 +220,8 @@ export function internalClasses(): InternalClasses {
 const LENGTHS = {
   /** The `hit-area` utility's minimum, in px. */
   hitArea: ["theme.css", /@utility hit-area \{[^}]*min-height: (\d+)px/],
+  /** `--radius`, the default palette's corner, in rem. */
+  radius: ["theme.css", /--radius: (\d*\.?\d+)rem;/],
   /** The auto-hiding header settling in or out, in ms. */
   headerSettle: ["styles.css", /transition: top (\d+)ms/],
   /** `revealBlock`'s tint, in s. */

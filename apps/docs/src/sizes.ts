@@ -12,10 +12,13 @@ import { buttonVariants } from "@orz/ui/components/button";
 type ButtonSize = NonNullable<Parameters<typeof buttonVariants>[0]>["size"];
 
 /**
- * Lengths from the stylesheets that no class carries: `hitArea` in px, `headerSettle` in ms,
- * `anchorFlash` and tw-animate-css's `animateDefault` in s.
+ * Lengths from the stylesheets that no class carries: `hitArea` in px, `radius` in rem,
+ * `headerSettle` in ms, `anchorFlash` and tw-animate-css's `animateDefault` in s.
  */
 export const css = source.css;
+
+/** `--radius`, the theme's corner and `rounded-lg`, in px. */
+export const radius = css.radius * 16;
 
 export type Pointer = "fine" | "coarse";
 
