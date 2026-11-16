@@ -1,10 +1,15 @@
+import {
+  DropdownMenuItem,
+  DropdownMenuShortcut,
+} from "@orz/ui/components/dropdown-menu";
 import { FileTree, FileTreeItem } from "@orz/ui/components/file-tree";
 import { Input } from "@orz/ui/components/input";
 import { NavListFrame } from "@orz/ui/components/nav-list";
-import type { FileStatus } from "@orz/ui/lib/file-tree";
+import { type FileStatus, movePath } from "@orz/ui/lib/file-tree";
 import { isPlainClick } from "@orz/ui/lib/link";
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
+import { fn } from "storybook/test";
 import { argsUpdater } from "./args.ts";
 import { withScroller, withWidth } from "./decorators.tsx";
 
@@ -267,6 +272,127 @@ export const StickyBranches: Story = {
     ${ROW}
   </FileTree>
 </div>`,
+      },
+    },
+  },
+};
+
+/** `paths` and `status` with every path in them carried from `from` to `to`. */
+function carried(
+  paths: readonly string[],
+  status: Readonly<Record<string, FileStatus>>,
+  from: string,
+  to: string,
+) {
+  return {
+    paths: paths.map((path) => movePath(path, from, to)),
+    status: Object.fromEntries(
+      Object.entries(status).map(([path, s]) => [movePath(path, from, to), s]),
+    ),
+  };
+}
+
+/**
+ * F2 renames a file in place, with its name up to the extension selected; a file or a folder
+ * dragged onto a folder, or onto a file in it, moves there, and Ctrl+X and Ctrl+V do the same
+ * without a pointer. The ⋯ menu holds both. Each hands over the path before and after, which
+ * `movePath` applies to `paths` and `status`.
+ */
+export const Editing: Story = {
+  args: {
+    status: STATUS,
+    defaultExpanded: ["docs"],
+    onRename: fn(),
+    onMove: fn(),
+  },
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
+    const [files, setFiles] = useState({
+      paths: args.paths,
+      status: args.status ?? {},
+    });
+    const change = (from: string, to: string) => {
+      setFiles((now) => carried(now.paths, now.status, from, to));
+      if (args.current !== undefined)
+        updateArgs({ current: movePath(args.current, from, to) });
+    };
+    return (
+      <FileTree
+        {...args}
+        paths={files.paths}
+        status={files.status}
+        onRename={(from, to) => {
+          change(from, to);
+          args.onRename?.(from, to);
+        }}
+        onMove={(from, to) => {
+          change(from, to);
+          args.onMove?.(from, to);
+        }}
+        menu={(_, actions) => (
+          <>
+            <DropdownMenuItem
+              disabled={!actions.rename}
+              onSelect={actions.rename}
+            >
+              Rename
+              <DropdownMenuShortcut>F2</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!actions.cut} onSelect={actions.cut}>
+              Cut
+              <DropdownMenuShortcut>Ctrl+X</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!actions.paste}
+              onSelect={actions.paste}
+            >
+              Paste
+              <DropdownMenuShortcut>Ctrl+V</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </>
+        )}
+      >
+        {(file) => (
+          <FileTreeItem
+            href={`#${file.path}`}
+            onClick={(event) => {
+              if (isPlainClick(event)) updateArgs({ current: file.path });
+            }}
+          />
+        )}
+      </FileTree>
+    );
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `const [paths, setPaths] = useState(initialPaths);
+const [status, setStatus] = useState(initialStatus);
+const change = (from, to) => {
+  setPaths((paths) => paths.map((path) => movePath(path, from, to)));
+  setStatus((status) =>
+    Object.fromEntries(
+      Object.entries(status).map(([path, s]) => [movePath(path, from, to), s]),
+    ),
+  );
+};
+
+<FileTree
+  aria-label="Files"
+  paths={paths}
+  status={status}
+  onRename={change}
+  onMove={change}
+  menu={(file, actions) => (
+    <>
+      <DropdownMenuItem disabled={!actions.rename} onSelect={actions.rename}>Rename</DropdownMenuItem>
+      <DropdownMenuItem disabled={!actions.cut} onSelect={actions.cut}>Cut</DropdownMenuItem>
+      <DropdownMenuItem disabled={!actions.paste} onSelect={actions.paste}>Paste</DropdownMenuItem>
+    </>
+  )}
+>
+  ${ROW}
+</FileTree>`,
       },
     },
   },

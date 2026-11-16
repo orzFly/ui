@@ -1,3 +1,8 @@
+import {
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+} from "@orz/ui/components/dropdown-menu";
 import { MatchedText } from "@orz/ui/components/filter-menu";
 import { Input } from "@orz/ui/components/input";
 import { NavListFrame } from "@orz/ui/components/nav-list";
@@ -8,7 +13,7 @@ import {
   TreeLabel,
   type TreeRowState,
 } from "@orz/ui/components/tree";
-import type { TreeNode } from "@orz/ui/lib/tree-rows";
+import type { TreeMoveTarget, TreeNode } from "@orz/ui/lib/tree-rows";
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -472,6 +477,175 @@ export const StickyBranches: Story = {
 </div>`,
       },
     },
+  },
+};
+
+/** The tree with node `id` given by `change`, or taken out where it returns nothing. */
+function edit(
+  nodes: readonly FileNode[],
+  id: string,
+  change: (node: FileNode) => FileNode | undefined,
+): FileNode[] {
+  return nodes.flatMap((node) => {
+    if (node.id === id) return change(node) ?? [];
+    return node.children
+      ? [{ ...node, children: edit(node.children, id, change) }]
+      : [node];
+  });
+}
+
+/** The tree with `item` taken from its place and put where `target` says. */
+function moved(
+  nodes: readonly FileNode[],
+  item: FileNode,
+  target: TreeMoveTarget,
+): FileNode[] {
+  const rest = edit(nodes, item.id, () => undefined);
+  const put = (list: readonly FileNode[]) =>
+    list.toSpliced(target.index, 0, item);
+  return target.parentId === undefined
+    ? put(rest)
+    : edit(rest, target.parentId, (parent) => ({
+        ...parent,
+        children: put(parent.children ?? []),
+      }));
+}
+
+/**
+ * F2 on the focused row, or a call to `handle.rename`, opens a field over its name. Enter or
+ * leaving the field gives the name to `onRename`, which changes the items; Escape puts it back.
+ * `validateName` says why a name will not do.
+ */
+export const Rename: Story = {
+  args: {
+    onRename: fn(),
+    validateName: (_, name) =>
+      name.includes("/") ? "A name cannot contain “/”." : undefined,
+  },
+  render: function Render(args) {
+    const [items, setItems] = useState(args.items);
+    return (
+      <Tree
+        {...args}
+        items={items}
+        onRename={(item, name) => {
+          setItems((now) => edit(now, item.id, (n) => ({ ...n, name })));
+          args.onRename?.(item, name);
+        }}
+      />
+    );
+  },
+};
+
+const OUTLINE: FileNode[] = [
+  file("Introduction"),
+  dir("Getting started", [file("Install"), file("First steps")]),
+  dir("Guides", [file("Forms"), file("Tables"), file("Navigation")]),
+  file("Changelog"),
+];
+
+/**
+ * A tree the reader orders by hand: a row dragged onto another goes before it, into it or after
+ * it by the pointer's height, and `onMove` puts it there. Ctrl+X and Ctrl+V move the focused row
+ * without a pointer.
+ */
+export const Move: Story = {
+  args: {
+    "aria-label": "Outline",
+    items: OUTLINE,
+    current: undefined,
+    defaultExpanded: ["Getting started", "Guides"],
+    onMove: fn(),
+  },
+  render: function Render(args) {
+    const [items, setItems] = useState(args.items);
+    return (
+      <Tree
+        {...args}
+        items={items}
+        onMove={(item, target) => {
+          setItems((now) => moved(now, item, target));
+          args.onMove?.(item, target);
+        }}
+      />
+    );
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `const [items, setItems] = useState(outline);
+
+<Tree
+  aria-label="Outline"
+  items={items}
+  defaultExpanded={["Getting started", "Guides"]}
+  onMove={(item, { parentId, index }) => {
+    // Take the item out, then put it at index among parentId's children.
+    const rest = remove(items, item.id);
+    setItems(insert(rest, parentId, index, item));
+  }}
+>
+  ${FILE_ROW}
+</Tree>`,
+      },
+    },
+  },
+};
+
+/**
+ * `menu` draws a ⋯ button at the end of the current row, the focused one and the one under the
+ * pointer, and of every row on a touch screen; Shift+F10 opens it on the focused row. A right
+ * click stays the link's.
+ */
+export const Menu: Story = {
+  args: { onRename: fn(), onMove: fn() },
+  render: function Render(args) {
+    const [items, setItems] = useState(args.items);
+    return (
+      <Tree
+        {...args}
+        items={items}
+        onRename={(item, name) => {
+          setItems((now) => edit(now, item.id, (n) => ({ ...n, name })));
+          args.onRename?.(item, name);
+        }}
+        onMove={(item, target) => {
+          setItems((now) => moved(now, item, target));
+          args.onMove?.(item, target);
+        }}
+        menu={(item, actions) => (
+          <>
+            <DropdownMenuItem
+              disabled={!actions.rename}
+              onSelect={actions.rename}
+            >
+              Rename
+              <DropdownMenuShortcut>F2</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!actions.cut} onSelect={actions.cut}>
+              Cut
+              <DropdownMenuShortcut>Ctrl+X</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!actions.paste}
+              onSelect={actions.paste}
+            >
+              Paste
+              <DropdownMenuShortcut>Ctrl+V</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() =>
+                setItems((now) => edit(now, item.id, () => undefined))
+              }
+            >
+              Delete
+            </DropdownMenuItem>
+          </>
+        )}
+      />
+    );
   },
 };
 

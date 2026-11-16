@@ -98,6 +98,21 @@ always see where they are. The tree scrolls `current` into sight as it changes; 
 the scroll position itself turns that off with `revealCurrent={false}`, and scrolls with the
 `scrollToItem` of the tree's `handle` when it means to.
 
+### Renaming, moving and a row's menu
+
+When the places in a tree are the reader's own (their folders, their notes, their files), let
+them rename and move them where they stand: `onRename` renames a row in place on F2, and
+`onMove` takes a dragged row, or one cut and pasted with Ctrl+X and Ctrl+V, which is how the
+keyboard and a touch screen move one. The tree changes nothing itself; the app changes its data
+and passes it back. A tree the reader orders by hand accepts a row before, into or after
+another; a tree that sorts itself accepts one only into a branch, as a `FileTree` does.
+
+A right click stays the browser's, with the link's own menu; put the app's actions for a row in
+`menu`, which draws a ⋯ button at the row's end and opens on Shift+F10 too. Do not ask before a
+rename, a move or a delete: do it, then say what was done in a toast with **Undo**, as the
+[Repository demo](/demos/repository/) does. A `FileTree` hands over each change as the path
+before and after; `movePath` applies it to the app's paths and statuses.
+
 ### Files
 
 <Example of={RepositoryFiles} />

@@ -3,9 +3,12 @@ import { Badge } from "@orz/ui/components/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
 import { EmptyState } from "@orz/ui/components/empty-state";
@@ -33,9 +36,11 @@ import {
 import {
   type FileNode,
   type FileRowStatus,
+  type FileStatus,
   fileStatuses,
   fileTreeNodes,
   fileTypeIcon,
+  movePath,
 } from "@orz/ui/lib/file-tree";
 import { isPlainClick } from "@orz/ui/lib/link";
 import type { TreeFilterMode } from "@orz/ui/lib/tree-rows";
@@ -59,6 +64,7 @@ import {
   SearchXIcon,
 } from "lucide-react";
 import { type MouseEvent, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
 import { hrefOf as pageHref } from "../../routes.ts";
 import { setHash, useHash } from "../demo-state.ts";
@@ -108,15 +114,69 @@ const BADGE = {
   changes: "outline",
 } as const;
 
-// One row per folder, for the listings: a merged row would hide the folders
-// a listing steps through.
-const NODES = fileTreeNodes(REPOSITORY_PATHS, { flatten: false });
-const ROW_STATUS = fileStatuses(NODES, STATUS);
-const FILES = REPOSITORY_PATHS.filter((path) => !path.endsWith("/"));
+/**
+ * The working tree as the reader has left it: its paths, git's status of each, and where each
+ * renamed or moved file came from, whose contents and diff the fixtures keep under that path.
+ */
+interface WorkTree {
+  paths: readonly string[];
+  status: Readonly<Record<string, FileStatus>>;
+  origin: Readonly<Record<string, string>>;
+}
 
-function findFolder(path: string): readonly FileNode[] | undefined {
-  if (path === "") return NODES;
-  let nodes: readonly FileNode[] = NODES;
+const INITIAL: WorkTree = {
+  paths: REPOSITORY_PATHS,
+  status: STATUS,
+  origin: {},
+};
+
+const under = (path: string, from: string) =>
+  path === from || (from.endsWith("/") && path.startsWith(from));
+
+/** `work` after `from` goes to `to`: each file that moves is renamed to git, unless git never had it. */
+function carry(work: WorkTree, from: string, to: string): WorkTree {
+  const status: Record<string, FileStatus> = {};
+  for (const [path, value] of Object.entries(work.status))
+    status[movePath(path, from, to)] = value;
+  const origin: Record<string, string> = {};
+  for (const [path, first] of Object.entries(work.origin))
+    if (!under(path, from)) origin[path] = first;
+  for (const path of work.paths) {
+    if (path.endsWith("/") || !under(path, from)) continue;
+    const next = movePath(path, from, to);
+    origin[next] = work.origin[path] ?? path;
+    const was = work.status[path];
+    if (was !== "added" && was !== "untracked") status[next] = "renamed";
+  }
+  return {
+    paths: work.paths.map((path) => movePath(path, from, to)),
+    status,
+    origin,
+  };
+}
+
+/** `work` without `gone` and, for a folder, what it holds. */
+const without = (work: WorkTree, gone: string): WorkTree => ({
+  ...work,
+  paths: work.paths.filter((path) => !under(path, gone)),
+});
+
+/** A path's last name, a folder's without its "/". */
+function nameOf(path: string) {
+  const bare = path.endsWith("/") ? path.slice(0, -1) : path;
+  return bare.slice(bare.lastIndexOf("/") + 1);
+}
+
+/** The folder a path sits in, with its "/"; "" at the root. */
+const folderOf = (path: string) =>
+  path.slice(0, path.lastIndexOf("/", path.length - 2) + 1);
+
+function findFolder(
+  tree: readonly FileNode[],
+  path: string,
+): readonly FileNode[] | undefined {
+  if (path === "") return tree;
+  let nodes: readonly FileNode[] = tree;
   let found: FileNode | undefined;
   for (const id of path
     .slice(0, -1)
@@ -148,14 +208,65 @@ export function Repository() {
   const path = useHash();
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<TreeFilterMode>("hide");
+  const [work, setWork] = useState(INITIAL);
+  // One row per folder, for the listings: a merged row would hide the
+  // folders a listing steps through.
+  const nodes = useMemo(
+    () => fileTreeNodes(work.paths, { flatten: false }),
+    [work.paths],
+  );
+  const rowStatus = useMemo(
+    () => fileStatuses(nodes, work.status),
+    [nodes, work.status],
+  );
+  const files = useMemo(
+    () => work.paths.filter((p) => !p.endsWith("/")),
+    [work.paths],
+  );
   const needle = query.trim().toLowerCase();
   const matches = useMemo(
     () =>
       needle === ""
         ? 0
-        : FILES.filter((file) => file.toLowerCase().includes(needle)).length,
-    [needle],
+        : files.filter((file) => file.toLowerCase().includes(needle)).length,
+    [needle, files],
   );
+
+  // Each change says what it did and can be taken back; none asks first.
+  const change = (next: WorkTree, to: string, message: string) => {
+    const before = { work, path };
+    setWork(next);
+    if (to !== path) setHash(to, { push: false });
+    toast(message, {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setWork(before.work);
+          setHash(before.path, { push: false });
+        },
+      },
+    });
+  };
+  const rename = (from: string, to: string) =>
+    change(
+      carry(work, from, to),
+      movePath(path, from, to),
+      `“${nameOf(from)}” renamed to “${nameOf(to)}”`,
+    );
+  const move = (from: string, to: string) => {
+    const folder = folderOf(to);
+    change(
+      carry(work, from, to),
+      movePath(path, from, to),
+      `“${nameOf(from)}” moved to ${folder === "" ? PROJECT : `“${nameOf(folder)}”`}`,
+    );
+  };
+  const remove = (gone: string) =>
+    change(
+      without(work, gone),
+      under(path, gone) ? folderOf(gone) : path,
+      `“${nameOf(gone)}” deleted`,
+    );
 
   return (
     <TooltipProvider>
@@ -233,12 +344,50 @@ export function Repository() {
                     ) : (
                       <FileTree
                         aria-label="Files"
-                        paths={REPOSITORY_PATHS}
-                        status={STATUS}
+                        paths={work.paths}
+                        status={work.status}
                         current={path === "" ? undefined : path}
                         query={query}
                         filterMode={mode}
                         stickyBranches
+                        onRename={rename}
+                        onMove={move}
+                        menu={(file, actions) => (
+                          <>
+                            <DropdownMenuItem
+                              disabled={!actions.rename}
+                              onSelect={actions.rename}
+                            >
+                              Rename
+                              <DropdownMenuShortcut>F2</DropdownMenuShortcut>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={!actions.cut}
+                              onSelect={actions.cut}
+                            >
+                              Cut
+                              <DropdownMenuShortcut>
+                                Ctrl+X
+                              </DropdownMenuShortcut>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={!actions.paste}
+                              onSelect={actions.paste}
+                            >
+                              Paste
+                              <DropdownMenuShortcut>
+                                Ctrl+V
+                              </DropdownMenuShortcut>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => remove(file.id)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       >
                         {(file) => (
                           <FileTreeItem
@@ -256,7 +405,14 @@ export function Repository() {
           <div
             className={`flex min-w-0 flex-1 flex-col ${path === "" ? "max-md:hidden" : ""}`}
           >
-            <Place key={path} path={path} />
+            <Place
+              key={path}
+              path={path}
+              nodes={nodes}
+              rowStatus={rowStatus}
+              files={files}
+              origin={work.origin}
+            />
           </div>
         </Pane>
       </ContentRenderers>
@@ -265,12 +421,26 @@ export function Repository() {
 }
 
 /** The file or folder at `path`: a bar with where it is, and what it holds. */
-function Place({ path }: { path: string }) {
+function Place({
+  path,
+  nodes,
+  rowStatus,
+  files,
+  origin,
+}: {
+  path: string;
+  nodes: readonly FileNode[];
+  rowStatus: ReadonlyMap<string, FileRowStatus>;
+  files: readonly string[];
+  /** Where a renamed or moved file came from, the path its contents are kept under. */
+  origin: Readonly<Record<string, string>>;
+}) {
   const folder = path === "" || path.endsWith("/");
-  const children = folder ? findFolder(path) : undefined;
-  const known = folder ? children !== undefined : FILES.includes(path);
-  const status = ROW_STATUS.get(path);
-  const change = CHANGES.get(path);
+  const children = folder ? findFolder(nodes, path) : undefined;
+  const known = folder ? children !== undefined : files.includes(path);
+  const status = rowStatus.get(path);
+  const first = origin[path] ?? path;
+  const change = CHANGES.get(first);
   const [view, setView] = useState<"file" | "changes">(
     status === "deleted" && change ? "changes" : "file",
   );
@@ -322,10 +492,10 @@ function Place({ path }: { path: string }) {
             No file or folder of {PROJECT} is at “{path}”.
           </EmptyState>
         ) : children ? (
-          <Listing path={path} items={children} />
+          <Listing path={path} items={children} rowStatus={rowStatus} />
         ) : view === "changes" && change ? (
           <ClientOnly fallback={<Skeleton className="m-4 h-40" />}>
-            <Viewed source={changeFile(path)} />
+            <Viewed source={changeFile(first)} />
           </ClientOnly>
         ) : status === "deleted" ? (
           <EmptyState
@@ -337,7 +507,7 @@ function Place({ path }: { path: string }) {
           </EmptyState>
         ) : (
           <ClientOnly fallback={<Skeleton className="m-4 h-40" />}>
-            <Viewed source={repositoryFile(path)} />
+            <Viewed source={repositoryFile(first)} />
           </ClientOnly>
         )}
       </Pane>
@@ -400,9 +570,11 @@ function Breadcrumbs({ path }: { path: string }) {
 function Listing({
   path,
   items,
+  rowStatus,
 }: {
   path: string;
   items: readonly FileNode[];
+  rowStatus: ReadonlyMap<string, FileRowStatus>;
 }) {
   if (items.length === 0) {
     return (
@@ -420,7 +592,7 @@ function Listing({
       <ul aria-label={path === "" ? PROJECT : path.slice(0, -1)}>
         {items.map((item) => {
           const Icon = item.directory ? FolderIcon : fileTypeIcon(item.name);
-          const status = ROW_STATUS.get(item.id);
+          const status = rowStatus.get(item.id);
           return (
             <ListItem key={item.id} asChild>
               <li>

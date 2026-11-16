@@ -48,7 +48,9 @@ Hover tells a person what they are about to press; it never holds the only way t
 - A `HoverCard` previews what a link points to. Whatever it shows is also on the page the link
   opens.
 - Actions do not wait for hover to appear. A row's secondary actions sit behind a visible `⋯`
-  button; a keyboard user and a phone have no hover to bring them out.
+  button; a keyboard user and a phone have no hover to bring them out. A `Tree` is one Tab stop,
+  so its `menu` draws `⋯` on the current row, the focused row and the row under the pointer, and
+  on every row on a touch screen; Shift+F10 opens it from the keyboard. That is not hover-only.
 
 <DoDont>
   <Do show={<VisibleRowActions />}>
