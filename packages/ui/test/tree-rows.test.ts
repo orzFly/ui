@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ancestorsOf,
+  matchAncestors,
   type TreeLoadingRow,
   type TreeNode,
   type TreeRow,
@@ -156,6 +157,56 @@ describe("visibleRows", () => {
         last: true,
       });
     });
+
+    it("marks the matches and nothing else", () => {
+      const rows = visibleRows(ITEMS, new Set(), byName("dialog"));
+      expect(row(rows, "dialog").match).toBe(true);
+      expect(row(rows, "components").match).toBe(false);
+      expect(row(rows, "src").match).toBe(false);
+    });
+
+    it.each(["expand", "collapse"] as const)(
+      "in %s mode, shows every row as expanded holds and marks the matches",
+      (mode) => {
+        const open = new Set(["src", "lib", "test"]);
+        const rows = visibleRows(ITEMS, open, byName("utils"), mode);
+        expect(ids(rows)).toEqual(ids(visibleRows(ITEMS, open)));
+        expect(row(rows, "src").expanded).toBe(true);
+        expect(row(rows, "components").expanded).toBe(false);
+        expect(row(rows, "test").expanded).toBe(true);
+        expect(row(rows, "utils").match).toBe(true);
+        expect(rows.filter((r) => r.kind === "item" && r.match).length).toBe(1);
+      },
+    );
+  });
+
+  it("matches nothing and gives the same rows when called without a filter", () => {
+    const open = new Set(["src", "components", "lazy"]);
+    const rows = visibleRows(ITEMS, open);
+    expect(rows.every((r) => r.kind === "loading" || !r.match)).toBe(true);
+    expect(visibleRows(ITEMS, open, undefined, "collapse")).toEqual(rows);
+    expect(visibleRows(ITEMS, open, undefined, "expand")).toEqual(rows);
+  });
+});
+
+describe("matchAncestors", () => {
+  const byName = (text: string) => (n: Node) => n.name.includes(text);
+
+  it("lists each ancestor of the matches once, root first", () => {
+    expect(
+      matchAncestors(ITEMS, (n) => n.id === "button" || n.id === "dialog"),
+    ).toEqual(["src", "components"]);
+    expect(matchAncestors(ITEMS, byName("t"))).toEqual([
+      "src",
+      "components",
+      "lib",
+      "test",
+    ]);
+  });
+
+  it("is empty when only roots match, or nothing does", () => {
+    expect(matchAncestors(ITEMS, byName("src"))).toEqual([]);
+    expect(matchAncestors(ITEMS, byName("nothing"))).toEqual([]);
   });
 });
 

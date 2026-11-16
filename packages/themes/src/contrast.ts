@@ -35,7 +35,9 @@ const NON_TEXT = 3;
  * the page, on muted (an inactive tab) and in popovers (a destructive menu
  * item); selected text on its fill; a field's edge on the surfaces a field
  * sits on; a focus ring, drawn 2px off the control, on what lies behind it,
- * never the control's own fill.
+ * never the control's own fill. Under the default style a file tree's row
+ * keeps its status colour, or an ignored file's muted one, on the accent of a
+ * hovered or current row, and on a sidebar and its accent.
  * The state cues are each style's own. The default style marks a highlighted
  * or selected row by a tick in its accent-foreground text on its accent fill,
  * in a menu, on the page or in a sidebar, and the current tab by a primary
@@ -66,6 +68,21 @@ export const CONTRAST_CHECKS: readonly ContrastCheck[] = [
           ] as const,
       ),
     ],
+  },
+  {
+    id: "text",
+    floor: TEXT,
+    styles: [DEFAULT_STYLE],
+    pairs: (
+      ["destructive", "success", "warning", "muted-foreground"] as const
+    ).flatMap(
+      (status) =>
+        [
+          [status, "accent"],
+          [status, "sidebar"],
+          [status, "sidebar-accent"],
+        ] as const,
+    ),
   },
   {
     id: "selection",

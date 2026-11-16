@@ -5,6 +5,8 @@ import * as React from "react";
 import { isPlainPress } from "../lib/link.ts";
 import {
   ancestorsOf,
+  matchAncestors,
+  type TreeFilterMode,
   type TreeLoadingRow,
   type TreeNode,
   type TreeRow,
@@ -19,6 +21,8 @@ export interface TreeRowState {
   branch: boolean;
   expanded: boolean;
   current: boolean;
+  /** The filter matches the row's node. */
+  match: boolean;
 }
 
 interface RowContext {
@@ -49,7 +53,11 @@ const idOf = (row: TreeRow<unknown>) => (row.item as TreeNode<unknown>).id;
  * the keyboard first. `expanded` with `onExpandedChange` holds the open branches, or
  * `defaultExpanded` seeds them. A branch with `hasChildren` and no `children` calls
  * `onExpandedChange` when opened and shows a row reading `loadingLabel` until its children
- * come. `filter` shows the nodes it matches and their ancestors, opened, and nothing else.
+ * come. `filter` shows the nodes it matches and their ancestors, opened, and nothing else; with
+ * `filterMode` `"expand"` every node stays, the matches' ancestors opened as well as the reader's
+ * own branches, and with `"collapse"` only theirs. In those two the reader opens and closes
+ * branches for the search alone, and clearing the filter brings back the branches from before.
+ * Each new `filter` function is a new search, so memoize it.
  */
 function Tree<T extends TreeNode<T>>({
   items,
@@ -60,6 +68,7 @@ function Tree<T extends TreeNode<T>>({
   defaultExpanded,
   onExpandedChange,
   filter,
+  filterMode = "hide",
   loadingLabel = "Loading…",
   className,
   onKeyDown,
@@ -73,6 +82,7 @@ function Tree<T extends TreeNode<T>>({
   defaultExpanded?: readonly string[];
   onExpandedChange?: (expanded: string[]) => void;
   filter?: (item: T) => boolean;
+  filterMode?: TreeFilterMode;
   loadingLabel?: string;
 }) {
   // Opened to the current place in the first render, so a page rendered on
@@ -89,9 +99,32 @@ function Tree<T extends TreeNode<T>>({
     () => (expandedProp ? new Set(expandedProp) : inner),
     [expandedProp, inner],
   );
+  // The branches open for the search alone. Worked out in the render a new
+  // search starts, not an effect after it, so no frame shows the old ones.
+  const [search, setSearch] = React.useState<{
+    filter: (item: T) => boolean;
+    mode: TreeFilterMode;
+    open: ReadonlySet<string>;
+  }>();
+  const locked = filter !== undefined && filterMode === "hide";
+  let searchOpen: ReadonlySet<string> | undefined;
+  if (filter && !locked) {
+    if (search?.filter === filter && search.mode === filterMode) {
+      searchOpen = search.open;
+    } else {
+      const ancestors = matchAncestors(items, filter);
+      searchOpen = new Set(
+        filterMode === "expand" ? [...expanded, ...ancestors] : ancestors,
+      );
+      setSearch({ filter, mode: filterMode, open: searchOpen });
+    }
+  } else if (search) {
+    setSearch(undefined);
+  }
+  const shown = searchOpen ?? expanded;
   const rows = React.useMemo(
-    () => visibleRows(items, expanded, filter),
-    [items, expanded, filter],
+    () => visibleRows(items, shown, filter, filterMode),
+    [items, shown, filter, filterMode],
   );
   const itemRows = React.useMemo(
     () => rows.filter((r): r is TreeRow<T> => r.kind === "item"),
@@ -110,11 +143,34 @@ function Tree<T extends TreeNode<T>>({
     ? focusId
     : visible(current)
       ? current
-      : itemRows[0]?.item.id;
+      : (itemRows.find((r) => r.match) ?? itemRows[0])?.item.id;
 
   const commit = (next: Set<string>) => {
     if (!controlled) setInner(next);
     onExpandedChange?.([...next]);
+  };
+
+  // While searching, the search's own branches change; a branch opened with
+  // its children still to load opens for the reader too, so the app hears
+  // to load them.
+  const change = (next: Set<string>) => {
+    if (!search || !searchOpen) {
+      commit(next);
+      return;
+    }
+    const before = searchOpen;
+    setSearch({ ...search, open: next });
+    const unloaded = itemRows
+      .filter(
+        (r) =>
+          next.has(r.item.id) &&
+          !before.has(r.item.id) &&
+          !expanded.has(r.item.id) &&
+          r.item.hasChildren === true &&
+          r.item.children === undefined,
+      )
+      .map((r) => r.item.id);
+    if (unloaded.length > 0) commit(new Set([...expanded, ...unloaded]));
   };
 
   const focusInTree = () =>
@@ -126,8 +182,8 @@ function Tree<T extends TreeNode<T>>({
   };
 
   const setOpen = (id: string, open: boolean) => {
-    if (expanded.has(id) === open) return;
-    const next = new Set(expanded);
+    if (shown.has(id) === open) return;
+    const next = new Set(shown);
     if (open) next.add(id);
     else {
       next.delete(id);
@@ -139,7 +195,7 @@ function Tree<T extends TreeNode<T>>({
         if (focusInTree()) pendingFocus.current = id;
       }
     }
-    commit(next);
+    change(next);
   };
 
   React.useLayoutEffect(() => {
@@ -176,7 +232,7 @@ function Tree<T extends TreeNode<T>>({
     place: boolean,
   ) => {
     setFocusId(row.item.id);
-    if (filter || !row.branch) return;
+    if (locked || !row.branch) return;
     if (!place) {
       setOpen(row.item.id, !row.expanded);
       return;
@@ -187,7 +243,7 @@ function Tree<T extends TreeNode<T>>({
   };
 
   const toggle = (row: TreeRow<T>) => {
-    if (filter) return;
+    if (locked) return;
     setOpen(row.item.id, !row.expanded);
     if (focusInTree()) moveFocus(row.item.id);
     else setFocusId(row.item.id);
@@ -211,7 +267,7 @@ function Tree<T extends TreeNode<T>>({
     const go = (to: TreeRow<T> | undefined) => {
       if (to) moveFocus(to.item.id);
     };
-    const opens = row.branch && !filter;
+    const opens = row.branch && !locked;
 
     switch (event.key) {
       case "ArrowDown":
@@ -239,12 +295,12 @@ function Tree<T extends TreeNode<T>>({
         else go(itemRows.find((r) => r.item.id === row.parentId));
         break;
       case "*": {
-        if (filter) break;
-        const next = new Set(expanded);
+        if (locked) break;
+        const next = new Set(shown);
         for (const r of itemRows) {
           if (r.parentId === row.parentId && r.branch) next.add(r.item.id);
         }
-        if (next.size !== expanded.size) commit(next);
+        if (next.size !== shown.size) change(next);
         break;
       }
       case "Enter":
@@ -312,7 +368,7 @@ function Tree<T extends TreeNode<T>>({
               current: row.item.id === current,
               currentToken,
               tabStop: row.item.id === tabStop,
-              busy: row.expanded && !filter && row.item.children === undefined,
+              busy: row.expanded && !locked && row.item.children === undefined,
               register,
               activate: (event, place) => activate(row, event, place),
             }}
@@ -322,6 +378,7 @@ function Tree<T extends TreeNode<T>>({
               branch: row.branch,
               expanded: row.expanded,
               current: row.item.id === current,
+              match: row.match,
             })}
           </ItemRow>
         ),
@@ -381,6 +438,7 @@ function ItemRow({
       role="none"
       data-slot="tree-row"
       data-current={context.current ? "" : undefined}
+      data-match={row.match ? "" : undefined}
       data-level={row.level}
       data-first={row.level === 1 && row.posinset === 1 ? "" : undefined}
       data-last={row.last ? "" : undefined}

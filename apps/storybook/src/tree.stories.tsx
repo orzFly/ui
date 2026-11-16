@@ -1,3 +1,4 @@
+import { MatchedText } from "@orz/ui/components/filter-menu";
 import { Input } from "@orz/ui/components/input";
 import { NavListFrame } from "@orz/ui/components/nav-list";
 import {
@@ -301,6 +302,85 @@ const filter = text
 <Input aria-label="Filter files" value={text} onChange={(e) => setText(e.target.value)} />
 <Tree aria-label="Files" items={files} filter={filter}>
   ${FILE_ROW}
+</Tree>`,
+      },
+    },
+  },
+};
+
+/**
+ * `filterMode` keeps every row while filtering: `expand` opens the folders on the way to each
+ * match on top of the reader's own, `collapse` opens only those. A row's `match` says it
+ * matches, here drawn with `MatchedText`. The reader opens and closes folders for the search
+ * alone, and clearing it brings back the folders as they were.
+ */
+export const FilterMode: Story = {
+  args: { filterMode: "expand" },
+  argTypes: {
+    filterMode: {
+      control: "inline-radio",
+      options: ["hide", "expand", "collapse"],
+    },
+  },
+  render: function Render(args) {
+    const [text, setText] = useState("utils");
+    const filter = useMemo(() => {
+      const needle = text.trim().toLowerCase();
+      return needle
+        ? (item: FileNode) => item.name.toLowerCase().includes(needle)
+        : undefined;
+    }, [text]);
+    return (
+      <div className="flex flex-col gap-2">
+        <Input
+          aria-label="Filter files"
+          placeholder="Filter"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+        />
+        <Tree {...args} filter={filter}>
+          {(item, row) => (
+            <TreeItem href={`#${item.id}`}>
+              {!row.branch ? (
+                <FileIcon />
+              ) : row.expanded ? (
+                <FolderOpenIcon />
+              ) : (
+                <FolderIcon />
+              )}
+              <TreeLabel>
+                {row.match ? (
+                  <MatchedText text={item.name} query={text.trim()} />
+                ) : (
+                  item.name
+                )}
+              </TreeLabel>
+            </TreeItem>
+          )}
+        </Tree>
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `const [text, setText] = useState("utils");
+// A new function is a new search: memoize it.
+const filter = useMemo(
+  () => (text ? (item) => item.name.toLowerCase().includes(text.toLowerCase()) : undefined),
+  [text],
+);
+
+<Input aria-label="Filter files" value={text} onChange={(e) => setText(e.target.value)} />
+<Tree aria-label="Files" items={files} filter={filter} filterMode="expand">
+  {(item, row) => (
+    <TreeItem href={\`#\${item.id}\`}>
+      {!row.branch ? <FileIcon /> : row.expanded ? <FolderOpenIcon /> : <FolderIcon />}
+      <TreeLabel>
+        {row.match ? <MatchedText text={item.name} query={text} /> : item.name}
+      </TreeLabel>
+    </TreeItem>
+  )}
 </Tree>`,
       },
     },

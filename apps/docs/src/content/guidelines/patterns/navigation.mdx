@@ -7,6 +7,7 @@ export const meta = {
     "ui/Primitives/TabNav",
     "ui/Primitives/NavList",
     "ui/Primitives/Tree",
+    "ui/FileTree",
     "ui/Primitives/Tabs",
     "ui/Primitives/LinkCard",
   ],
@@ -16,6 +17,7 @@ import { AppFrame } from "../../../examples/navigation/app-frame.tsx";
 import { CollapsibleGroups } from "../../../examples/navigation/collapsible-groups.tsx";
 import { FolderTree } from "../../../examples/navigation/folder-tree.tsx";
 import { LineTabs } from "../../../examples/navigation/line-tabs.tsx";
+import { RepositoryFiles } from "../../../examples/navigation/repository-files.tsx";
 
 **Build navigation from these and leave their look alone. A hand-made row or tab draws its
 own current state, and an app's places then read differently from screen to screen.**
@@ -35,6 +37,7 @@ row's leading edge.
 | Go between many places: folders, settings sections, files, a document's parts | `NavList`, a `NavListLink` for each, `NavListHeading` over each group |
 | Let the reader close a group of places they seldom need | `NavListGroup`, headed by a `NavListHeading` holding a `NavListGroupToggle`, or by a `NavListGroupRow` when the group has a page of its own |
 | Go between places in a hierarchy the reader opens and closes: folders, machines, a file's parts | `Tree`, a `TreeItem` for each place |
+| Go between a repository's files and folders, by path | `FileTree`, a `FileTreeItem` for each |
 | Go to a section of the page in view, from a column beside it | `NavList variant="rail"` |
 | Send the reader to another page from inside the prose, saying what is there | `LinkCard`, with a `LinkCardTitle` and a `LinkCardDescription`; `variant="row"` for a list of pages |
 | Show one of a few views of the same thing, in place | `Tabs` |
@@ -87,6 +90,28 @@ Mark the place on screen with `current`: the tree opens the way to it, and the k
 there. An app that holds the open branches itself starts them from `ancestorsOf`, so the first
 frame already shows the place. When a filter leaves no row, the tree draws nothing; show an
 `EmptyState` in its place.
+
+### Files
+
+<Example of={RepositoryFiles} />
+
+When the places are files known by their paths, as a repository's or a folder's are, use a
+`FileTree`: it takes the paths as they come, puts folders first, merges a chain of folders that
+hold one folder each into one row, and draws each file's type as its icon. Use a plain `Tree`
+when the data is not paths, or when its folders load as the reader opens them.
+
+Give it each file's status, and it marks the row: a letter at the end in the status's colour
+(**A**dded, **M**odified, **D**eleted, **R**enamed, **U**ntracked), the name in that colour too
+and struck through when deleted, a dot on a folder holding a change, and an ignored file or
+folder faded, with everything under an ignored folder. The current file's name keeps the tree's
+own colour, the place outranking its status; the letter still says it.
+
+A filter by text can leave only the matches (`filterMode="hide"`, the default), for finding one
+file. It can keep every row and open the folders on the way to each match (`"expand"`), to see the
+matches among their neighbours, or open those folders alone and close the rest (`"collapse"`), to
+see which parts of the tree the matches fall in. Under either of the last two the reader opens and
+closes folders for the search alone, and clearing it brings back the folders as they were. Say
+how many files match, and say it when none do.
 
 ## Marking where the reader is
 

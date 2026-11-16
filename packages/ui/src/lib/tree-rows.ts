@@ -9,6 +9,12 @@ export interface TreeNode<T> {
   hasChildren?: boolean;
 }
 
+/**
+ * How a filter shows the tree: only the matches and their ancestors, or every row with the
+ * matches' ancestors opened on top of the reader's own branches, or in place of them.
+ */
+export type TreeFilterMode = "hide" | "expand" | "collapse";
+
 /** A node on screen, with where it stands among the rows around it. */
 export interface TreeRow<T> {
   kind: "item";
@@ -28,6 +34,8 @@ export interface TreeRow<T> {
    */
   continues: readonly boolean[];
   parentId: string | undefined;
+  /** `filter` matches this node; false with no filter. */
+  match: boolean;
 }
 
 /** The row an open branch shows until its children arrive. */
@@ -44,14 +52,17 @@ const isBranch = (node: TreeNode<unknown>) =>
 /**
  * The rows a tree shows, in order: every root, and the children of each open branch. With
  * `filter`, the nodes it matches and their ancestors, each ancestor open whatever `expanded`
- * holds, so clearing the filter brings back the reader's own branches.
+ * holds, so clearing the filter brings back the reader's own branches. In the `"expand"` and
+ * `"collapse"` modes every row shows, opened as `expanded` holds, which the caller works out
+ * for the search (`matchAncestors`); the filter only marks the matches.
  */
 export function visibleRows<T extends TreeNode<T>>(
   items: readonly T[],
   expanded: ReadonlySet<string>,
   filter?: (item: T) => boolean,
+  mode: TreeFilterMode = "hide",
 ): (TreeRow<T> | TreeLoadingRow)[] {
-  const shown = filter ? matching(items, filter) : undefined;
+  const shown = filter && mode === "hide" ? matching(items, filter) : undefined;
   const rows: (TreeRow<T> | TreeLoadingRow)[] = [];
 
   const walk = (
@@ -79,6 +90,7 @@ export function visibleRows<T extends TreeNode<T>>(
         last,
         continues,
         parentId,
+        match: filter?.(item) ?? false,
       });
       if (!open) return;
       const below = [...continues, !last];
@@ -113,6 +125,27 @@ function matching<T extends TreeNode<T>>(
   };
   for (const item of items) visit(item);
   return shown;
+}
+
+/** The ids of every ancestor of a node `filter` matches, root first, each once. */
+export function matchAncestors<T extends TreeNode<T>>(
+  items: readonly T[],
+  filter: (item: T) => boolean,
+): string[] {
+  const found: string[] = [];
+  const visit = (node: T): boolean => {
+    // Known only once its children are seen; the place before them keeps
+    // the parent ahead of its children.
+    const at = found.length;
+    let below = false;
+    for (const child of node.children ?? []) {
+      if (visit(child)) below = true;
+    }
+    if (below) found.splice(at, 0, node.id);
+    return below || filter(node);
+  };
+  for (const item of items) visit(item);
+  return found;
 }
 
 /**

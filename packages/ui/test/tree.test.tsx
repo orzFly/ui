@@ -366,6 +366,171 @@ describe("Tree", () => {
       act(() => fireEvent.click(toggleOf("src 2")));
       expect(items()).toContain("utils");
     });
+
+    it("marks the matching rows", () => {
+      render(renderTree({ filter }));
+      const matched = document.querySelectorAll(
+        "[data-slot=tree-row][data-match]",
+      );
+      expect([...matched].map((el) => el.textContent)).toEqual(["dialog"]);
+    });
+  });
+
+  describe("a filter that keeps every row", () => {
+    const filter = (node: Node) => node.name === "dialog";
+
+    it("opens the matches' ancestors on top of the reader's branches with expand", () => {
+      render(
+        renderTree({
+          filter,
+          filterMode: "expand",
+          defaultExpanded: ["archive"],
+        }),
+      );
+      expect(items()).toEqual([
+        "src",
+        "components",
+        "button",
+        "dialog",
+        "lib",
+        "archive",
+        "old",
+        "lazy",
+        "readme",
+      ]);
+    });
+
+    it("opens only the matches' ancestors with collapse", () => {
+      render(
+        renderTree({
+          filter,
+          filterMode: "collapse",
+          defaultExpanded: ["archive"],
+        }),
+      );
+      expect(items()).toEqual([
+        "src",
+        "components",
+        "button",
+        "dialog",
+        "lib",
+        "archive",
+        "lazy",
+        "readme",
+      ]);
+    });
+
+    it.each(["expand", "collapse"] as const)(
+      "lets the reader open and close branches in %s mode, for the search alone",
+      (filterMode) => {
+        const onExpandedChange = vi.fn();
+        const { rerender } = render(
+          renderTree({ filter, filterMode, onExpandedChange }),
+        );
+        fireEvent.click(toggleOf("components 2"));
+        expect(items()).not.toContain("button");
+        item("lib 1").focus();
+        act(() => key(item("lib 1"), "ArrowRight"));
+        expect(items()).toContain("utils");
+        act(() => key(item("lib 1"), "ArrowLeft"));
+        expect(items()).not.toContain("utils");
+        act(() => key(item("lib 1"), "*"));
+        expect(items()).toContain("utils");
+        expect(items()).toContain("button");
+        expect(onExpandedChange).not.toHaveBeenCalled();
+        rerender(renderTree({ filterMode, onExpandedChange }));
+        expect(items()).toEqual(["src", "archive", "lazy", "readme"]);
+        expect(onExpandedChange).not.toHaveBeenCalled();
+      },
+    );
+
+    it("does the same for a controlled tree", () => {
+      const onExpandedChange = vi.fn();
+      const { rerender } = render(
+        renderTree({
+          filter,
+          filterMode: "expand",
+          expanded: ["archive"],
+          onExpandedChange,
+        }),
+      );
+      fireEvent.click(toggleOf("archive"));
+      expect(items()).not.toContain("old");
+      fireEvent.click(toggleOf("lib 1"));
+      expect(items()).toContain("utils");
+      expect(onExpandedChange).not.toHaveBeenCalled();
+      rerender(
+        renderTree({
+          expanded: ["archive"],
+          onExpandedChange,
+          filterMode: "expand",
+        }),
+      );
+      expect(items()).toEqual(["src", "archive", "old", "lazy", "readme"]);
+    });
+
+    it("tells the app to load a branch the reader opens while searching", () => {
+      const onExpandedChange = vi.fn();
+      render(renderTree({ filter, filterMode: "collapse", onExpandedChange }));
+      fireEvent.click(toggleOf("lazy"));
+      expect(onExpandedChange).toHaveBeenCalledTimes(1);
+      expect(onExpandedChange).toHaveBeenLastCalledWith(["lazy"]);
+      expect(screen.getByRole("treeitem", { name: "Loading…" })).toBeTruthy();
+    });
+
+    it("starts each new filter function from the matches again", () => {
+      const { rerender } = render(
+        renderTree({ filter, filterMode: "collapse" }),
+      );
+      fireEvent.click(toggleOf("lib 1"));
+      expect(items()).toContain("utils");
+      rerender(
+        renderTree({
+          filter: (node) => node.name === "dialog",
+          filterMode: "collapse",
+        }),
+      );
+      expect(items()).not.toContain("utils");
+      expect(items()).toContain("dialog");
+    });
+
+    it("puts the tab stop on the first match when the current place is no match", () => {
+      render(renderTree({ filter, filterMode: "collapse", current: "readme" }));
+      const stops = screen
+        .getAllByRole("treeitem")
+        .filter((el) => el.tabIndex === 0);
+      expect(stops).toEqual([item("readme")]);
+    });
+
+    it("puts the tab stop on the first match with no current place", () => {
+      render(renderTree({ filter, filterMode: "collapse" }));
+      const stops = screen
+        .getAllByRole("treeitem")
+        .filter((el) => el.tabIndex === 0);
+      expect(stops).toEqual([item("dialog")]);
+    });
+
+    it("tells the render function which rows match", () => {
+      const seen: string[] = [];
+      render(
+        <Tree
+          aria-label="Files"
+          items={ITEMS}
+          filter={filter}
+          filterMode="expand"
+        >
+          {(node, row) => {
+            if (row.match) seen.push(node.id);
+            return (
+              <TreeItem href={`#${node.id}`}>
+                <TreeLabel>{node.name}</TreeLabel>
+              </TreeItem>
+            );
+          }}
+        </Tree>,
+      );
+      expect([...new Set(seen)]).toEqual(["dialog"]);
+    });
   });
 
   it("renders on the server, opened to the current place", () => {

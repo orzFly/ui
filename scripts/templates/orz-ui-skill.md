@@ -29,7 +29,8 @@ install line from the Start page (**Install**, and the **Packages** table), or f
 - Use the component a guideline names for the job; read that page first and do what it says.
 - A `className` places a component (position, size in its parent, gaps) first of all.
 - Never hand-draw a control the library has (nav rows are `NavList`, a tree of places `Tree`,
-  sections `TabNav`, menus `DropdownMenu`, confirmations `ConfirmDialog`).
+  a tree of files `FileTree`, sections `TabNav`, menus `DropdownMenu`, confirmations
+  `ConfirmDialog`).
 - Anything that goes somewhere (a folder, a section, an item, Back) is an `a[href]` to its URL,
   never a `button` that navigates in JS. Pass the router's link with `asChild`, or keep the `href`
   and take over only clicks `isPlainClick` from `@orz/ui/lib/link` passes, so middle-click,

@@ -24,6 +24,7 @@ import { LATENCY_MS, PAGE_SIZE } from "../src/demos/mail/mailbox.ts";
 import { tagsOf, titleOf } from "../src/demos/notes/notebook.ts";
 import { Notes } from "../src/demos/notes/notes.tsx";
 import { PullRequest } from "../src/demos/pull-request/pull-request.tsx";
+import { Repository } from "../src/demos/repository/repository.tsx";
 import { Settings } from "../src/demos/settings/settings.tsx";
 import { LATENCY_MS as TASKS_LATENCY_MS } from "../src/demos/tasks/board.ts";
 import { Tasks } from "../src/demos/tasks/tasks.tsx";
@@ -55,6 +56,7 @@ const DEMOS: Record<string, ComponentType> = {
   mail: Mail,
   notes: Notes,
   "pull-request": PullRequest,
+  repository: Repository,
   settings: Settings,
   tasks: Tasks,
 };
@@ -222,6 +224,89 @@ describe("pull-request", () => {
     await click(link(container, "Open pull request #12"));
     await wait();
     expect(selectedTab(container)).toContain("Conversation");
+  });
+});
+
+describe("repository", () => {
+  const wait = () =>
+    act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+  const row = (container: HTMLElement, name: string) =>
+    [...container.querySelectorAll<HTMLElement>("[role=treeitem]")].find(
+      (each) =>
+        each.querySelector("[data-slot=tree-label]")?.textContent === name,
+    );
+  const rows = (container: HTMLElement) =>
+    [
+      ...container.querySelectorAll("[role=treeitem] [data-slot=tree-label]"),
+    ].map((each) => each.textContent);
+  const type = (input: HTMLInputElement | null, value: string) =>
+    act(async () => {
+      if (!input) throw new Error("no field");
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  afterEach(() => history.replaceState(null, "", "/demos/repository/"));
+
+  it("opens a file from the tree at its own address", async () => {
+    const container = await draw(Repository, WIDTHS.desktop);
+    const readme = row(container, "README.md");
+    expect(readme?.getAttribute("href")).toBe("#README.md");
+    await act(async () => readme?.click());
+    await wait();
+    expect(location.hash).toBe("#README.md");
+    expect(row(container, "README.md")?.getAttribute("aria-current")).toBe(
+      "page",
+    );
+    expect(
+      container.querySelector("nav[aria-label=Path] [aria-current]")
+        ?.textContent,
+    ).toBe("README.md");
+    expect(container.textContent).toContain("A network error is retried once");
+  });
+
+  it("lists a folder, each entry a link", async () => {
+    history.replaceState(null, "", "/demos/repository/#docs/");
+    const container = await draw(Repository, WIDTHS.desktop);
+    const listing = container.querySelector("ul[aria-label=docs]");
+    const links = [...(listing?.querySelectorAll("a") ?? [])].map((a) =>
+      a.getAttribute("href"),
+    );
+    expect(links).toContain("#docs/assets/");
+    expect(links).toContain("#docs/old-guide.md");
+  });
+
+  it("filters the files and counts the matches", async () => {
+    const container = await draw(Repository, WIDTHS.desktop);
+    await type(
+      container.querySelector("input[aria-label='Filter files']"),
+      "retry",
+    );
+    expect(rows(container)).toEqual(["src", "retry.ts"]);
+    expect(container.textContent).toContain("1 file matches");
+    await type(
+      container.querySelector("input[aria-label='Filter files']"),
+      "zzz",
+    );
+    expect(container.textContent).toContain("No files match");
+  });
+
+  it("shows a changed file's diff under Changes", async () => {
+    history.replaceState(null, "", "/demos/repository/#src/retry.ts");
+    const container = await draw(Repository, WIDTHS.desktop);
+    await wait();
+    expect(container.textContent).toContain("Added");
+    const changes = [
+      ...container.querySelectorAll<HTMLElement>("button[aria-pressed]"),
+    ].find((each) => each.textContent === "Changes");
+    await act(async () => changes?.click());
+    await wait();
+    expect(changes?.getAttribute("aria-pressed")).toBe("true");
+    expect(
+      container.querySelector("[data-purpose=document] .lucide-file-diff"),
+    ).not.toBeNull();
   });
 });
 

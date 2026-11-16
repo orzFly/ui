@@ -1,0 +1,36 @@
+export const meta = {
+  title: "Repository",
+  description:
+    "A repository's working tree in a code-hosting app: its files in a tree marked with what git says of each, a filter that hides, opens or closes folders around the matches, and the file or folder picked beside it, a changed file with its diff a click away.",
+  order: 4.5,
+  layout: "bare",
+  guidelines: [
+    {
+      route: "/guidelines/patterns/navigation/",
+      where:
+        "The files are a FileTree, each file and folder a link to its path, so a middle click opens it in a new tab and a reload stays on it. The path above the file links each folder on the way. Type retry in the filter, then switch the filter mode from the menu beside it: Hide other files keeps the matches, Open folders with matches keeps every row, and Close other folders opens only the matches' folders.",
+    },
+    {
+      route: "/guidelines/foundations/color/",
+      where:
+        "A changed file's name and letter take the status colour, and the letter says it without the colour: M for README.md, A for src/retry.ts, D for docs/old-guide.md, struck through.",
+    },
+    {
+      route: "/guidelines/patterns/loading-empty-and-error/",
+      where:
+        "Open scripts/ for an empty folder, docs/old-guide.md for a file deleted from disk, and filter for a word no path holds.",
+    },
+    {
+      route: "/guidelines/platforms/touch-and-mobile/",
+      where:
+        "On a phone the tree fills the screen; a file or folder replaces it, with a link back to the files at the top.",
+    },
+  ],
+};
+
+import { DemoPage } from "../../demos/demo-page.tsx";
+import { Repository } from "../../demos/repository/repository.tsx";
+
+<DemoPage>
+  <Repository />
+</DemoPage>

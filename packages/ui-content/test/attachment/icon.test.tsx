@@ -1,3 +1,4 @@
+import { fileTypeIcon } from "@orz/ui/lib/file-tree";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { fileIcon } from "../../src/attachment/index.ts";
@@ -38,5 +39,32 @@ describe("fileIcon", () => {
     const Icon = fileIcon({ name, mime });
     const { container } = render(<Icon />);
     expect(identityOf(container.querySelector("svg"))).toBe(identity);
+  });
+});
+
+/**
+ * `@orz/ui`'s file tree keeps its own copy of these kinds' names, since it
+ * cannot import this package; on the kinds both tables know, a file wears one
+ * icon in a tree and in an attachment list.
+ */
+const SHARED = [
+  "shot.png",
+  "photo.JPEG",
+  "logo.svg",
+  "demo.html",
+  "page.htm",
+  "fix.patch",
+  "fix.diff",
+  "bundle.zip",
+  "backup.tar.gz",
+  "take.mp3",
+  "tone.ogg",
+  "clip.webm",
+  "clip.mp4",
+] as const;
+
+describe("fileIcon and the file tree's fileTypeIcon", () => {
+  it.each(SHARED)("agree on %s", (name) => {
+    expect(fileTypeIcon(name)).toBe(fileIcon({ name, mime: "" }));
   });
 });
