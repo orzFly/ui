@@ -82,10 +82,10 @@ describe("raymond.css", () => {
       expect(rule.layer, rule.selector).toBe("base");
       if (rule === tokenBlock) continue;
       // A part's look is its component's own raymond: classes. What is left
-      // belongs to no component: the page's own text, the scroll bars and
-      // selected text.
+      // belongs to no component: the page's own text and the scroll bars.
+      // Selected text is the palette's selection pair.
       expect(rule.selector, rule.selector).toMatch(
-        /^\[data-style="raymond"\] (?:body$|::(-webkit-scrollbar|selection))/,
+        /^\[data-style="raymond"\] (?:body$|::-webkit-scrollbar)/,
       );
     }
     expect(CSS).not.toContain("!important");

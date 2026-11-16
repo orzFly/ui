@@ -46,6 +46,7 @@ describe("amoled", () => {
       "accent",
       "sidebar-accent",
       "sidebar-border",
+      "selection",
     ] as const) {
       const lifted = variant.tokens?.[name] ?? "";
       expect(lifted.split(" ").slice(1), name).toEqual(
@@ -66,6 +67,7 @@ describe("amoled", () => {
         "background",
         "card",
         "marker",
+        "selection",
         "muted",
         "popover",
         "secondary",

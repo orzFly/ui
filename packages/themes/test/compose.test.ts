@@ -7,6 +7,7 @@ import {
   markerOf,
   type Palette,
   resolvePalette,
+  selectionOf,
   type TokenName,
   type Tokens,
 } from "../src/index.ts";
@@ -72,7 +73,7 @@ describe("composeTheme", () => {
     });
   });
 
-  it("gives a detached side saved before success, warning and marker its own diff-addition, yellow and primary-tinted fill", () => {
+  it("gives a detached side saved before the late tokens its own diff-addition, yellow, primary-tinted fills and text", () => {
     const saved = Object.fromEntries(
       Object.entries(tokens(0.7, { "diff-addition": "#18a46c" })).filter(
         ([name]) => !LATE_TOKEN_NAMES.includes(name as TokenName),
@@ -96,6 +97,8 @@ describe("composeTheme", () => {
       success: "#18a46c",
       warning: "#b58900",
       marker: markerOf(saved),
+      selection: selectionOf(saved),
+      "selection-foreground": saved.foreground,
     });
   });
 

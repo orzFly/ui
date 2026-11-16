@@ -165,10 +165,12 @@ const editorTheme = EditorView.theme({
   },
   ".cm-line": { padding: "0" },
   ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--foreground)" },
-  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection":
-    {
-      backgroundColor: "color-mix(in oklab, var(--primary) 22%, transparent)",
-    },
+  // The page's selection fill, on selectors as specific as CodeMirror's base
+  // theme's, which otherwise keeps its own lavender. The text colour reaches
+  // the lines through the native selection, which drawSelection keeps under
+  // its own layer.
+  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
+    { backgroundColor: "var(--selection)" },
   ".cm-placeholder": { color: "var(--muted-foreground)" },
   ".cm-gutters": { display: "none" },
 });

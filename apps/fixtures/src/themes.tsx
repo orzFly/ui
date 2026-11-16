@@ -107,6 +107,8 @@ export const sampleCustomThemes: CustomTheme[] = [
         input: "oklch(0.38 0.04 235)",
         ring: "oklch(0.76 0.12 200)",
         marker: "oklch(0.36 0.05 222.19)",
+        selection: "oklch(0.358 0.054 211.834)",
+        "selection-foreground": "oklch(0.93 0.02 220)",
         "chart-1": "oklch(0.76 0.12 200)",
         "chart-2": "oklch(0.74 0.14 160)",
         "chart-3": "oklch(0.8 0.13 85)",

@@ -4,8 +4,12 @@
 @source "./dist";
 
 @layer components {
+  /* A terminal's selection, as a terminal draws it: its palette's own fill,
+     which may come from another theme than the page's, under text that keeps
+     its ANSI colours. currentColor is the selected element's own colour. */
   .ansi-view ::selection {
     background: var(--terminal-selection);
+    color: currentColor;
   }
 
   .ansi-view [data-level="fatal"] {

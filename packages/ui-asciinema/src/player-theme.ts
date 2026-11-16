@@ -32,8 +32,8 @@ function hex(token: string): string | undefined {
 
 /**
  * Terminal tokens as asciinema-player's custom properties, each `#rrggbb`. A token that does not
- * parse is left out, so the player keeps its own default for that colour. The cursor and
- * selection tokens have no counterpart in the player.
+ * parse is left out, so the player keeps its own default for that colour. The cursor token has
+ * no counterpart in the player, and the selection is drawn by this package's styles.css.
  */
 export function playerThemeVars(
   tokens: TerminalTokens,

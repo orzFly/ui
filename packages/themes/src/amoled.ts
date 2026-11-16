@@ -15,6 +15,7 @@ const LIFTED: readonly TokenName[] = [
   "border",
   "input",
   "marker",
+  "selection",
   "sidebar-border",
 ];
 

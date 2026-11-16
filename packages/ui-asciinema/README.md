@@ -113,4 +113,4 @@ Apache-2.0.
 | Import | Contents |
 |---|---|
 | `@orz/ui-asciinema` | `asciinemaContent`, `CAST_MAX_BYTES`, `AsciinemaPlayer`, `scanCast`, `playerThemeVars` |
-| `@orz/ui-asciinema/styles.css` | asciinema-player's stylesheet and the frame's overrides |
+| `@orz/ui-asciinema/styles.css` | asciinema-player's stylesheet, the frame's overrides and the terminal's selection |

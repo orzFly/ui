@@ -20,7 +20,9 @@ const METRICS = "px-2.5 py-1 text-base md:text-ui touch:text-base";
  *
  * The border and background belong to the wrapper; the mirror draws the
  * coloured text inside it; the input lies on top with no background and no
- * text colour, contributing only its caret and its selection. That order is
+ * text colour, contributing only its caret and its selection, whose fill
+ * covers the mirror and whose text colour draws the selected text over it,
+ * as any selection on the page is drawn. That order is
  * what keeps native selection, undo, IME composition, autofill and every
  * keyboard behaviour intact — a `contenteditable` or an array of chips would
  * have to reimplement all of them, and Chinese composition is exactly where
@@ -161,12 +163,6 @@ export function HighlightedInput({
         className={cn(
           "relative h-full w-full min-w-0 bg-transparent caret-foreground outline-none placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
           composing ? "text-foreground" : "text-transparent",
-          // Translucent, or the selection paints over the mirror and the
-          // reader loses sight of the very text they are selecting.
-          "selection:bg-primary/30",
-          composing
-            ? "selection:text-foreground"
-            : "selection:text-transparent",
           METRICS,
           padding,
         )}

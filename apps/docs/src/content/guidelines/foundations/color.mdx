@@ -73,6 +73,18 @@ The Mail demo in miniature, on the surfaces in the table: the folders on `sideba
 The components already make these choices: a `Card` is `bg-card`, a `Button` is `bg-primary`. Reach
 for the tokens yourself for the surfaces you build.
 
+## Selected text
+
+<TokenPairs pairs={[["selection", "selection-foreground"]]} />
+
+Text the user selects is drawn in `selection-foreground` on `selection`, on every surface: the
+page, a card, a menu, a field and an editor alike. The base layer sets it once, so leave
+`::selection` alone in what you build; a coloured span, a link or a muted line turns
+`selection-foreground` while selected, so the selection reads as one run. The fill stands off the
+page, the cards, the popovers, `muted` and the sidebar, and its text keeps 4.5:1 on it. A terminal
+is the exception: an ANSI log and a cast player select in `terminal-selection` and keep their ANSI
+colours, as a terminal does.
+
 ## Lines and focus
 
 <TokenSwatches tokens={["border", "input", "ring"]} />

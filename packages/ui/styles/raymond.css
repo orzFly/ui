@@ -171,14 +171,6 @@
   }
 }
 
-/* Selected text, which belongs to no component: the highlight. */
-@layer base {
-  [data-style="raymond"] ::selection {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-  }
-}
-
 /* Scroll bars, which belong to no component: a dithered track of the face
    and its highlight, a raised thumb, and raised arrow buttons that sink
    while held. The arrows are drawn in black, as Windows 2000 draws them: an

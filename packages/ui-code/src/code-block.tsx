@@ -351,6 +351,15 @@ const PATCH_OPTIONS = new Map<
   CodeViewProps<undefined, undefined>["options"]
 >();
 
+// theme.css's selected text, which stops at the shadow root: the custom
+// properties cross it, the rule does not.
+const SELECTION_CSS = `
+::selection {
+  background-color: var(--selection);
+  color: var(--selection-foreground);
+}
+`;
+
 // The only file items in a patch view are commit messages, and a message's
 // line numbers count nothing the reader can use. pierre's own
 // disableLineNumbers would take them off the diffs as well.
@@ -392,7 +401,7 @@ function patchOptions(
     overflow: "wrap",
     preferredHighlighter: PIERRE_HIGHLIGHTER,
     onPostRender: handlePostRender,
-    unsafeCSS: COMMIT_MESSAGE_CSS + SQUARE_SEPARATOR_CSS,
+    unsafeCSS: SELECTION_CSS + COMMIT_MESSAGE_CSS + SQUARE_SEPARATOR_CSS,
     layout: { paddingTop: 0, paddingBottom: 0, gap: 8 },
     itemMetrics: { diffHeaderHeight: PATCH_HEADER_HEIGHT },
   } as const;
@@ -412,6 +421,7 @@ function snippetOptions(
     disableLineNumbers: true,
     overflow: "wrap",
     preferredHighlighter: PIERRE_HIGHLIGHTER,
+    unsafeCSS: SELECTION_CSS,
     onPostRender: handlePostRender,
   } as const;
   SNIPPET_OPTIONS.set(theme, options);
@@ -428,6 +438,7 @@ function fileOptions(
     themeType: PIERRE_THEME_TYPE,
     disableFileHeader: true,
     preferredHighlighter: PIERRE_HIGHLIGHTER,
+    unsafeCSS: SELECTION_CSS,
     onPostRender: handlePostRender,
   } as const;
   FILE_OPTIONS.set(theme, options);
@@ -448,6 +459,7 @@ function fenceDiffOptions(
     diffStyle: "unified",
     overflow: "wrap",
     preferredHighlighter: PIERRE_HIGHLIGHTER,
+    unsafeCSS: SELECTION_CSS,
     // Off — pierre's default — unchanged context collapses to "N unmodified
     // lines" past a single line of it. That reads well in a whole file's
     // diff and badly in a fence the reader opened the document to read: a

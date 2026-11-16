@@ -17,6 +17,14 @@
     display: none;
   }
 
+  /* A terminal's selection, as @orz/ui-ansi's AnsiView draws it: the
+     terminal palette's fill, under text that keeps its ANSI colours.
+     currentColor is the selected element's own colour. */
+  [data-orz-cast] ::selection {
+    background: var(--terminal-selection);
+    color: currentColor;
+  }
+
   /* Fullscreen keeps the bar: the terminal takes what is left and the player
      fits it both ways. */
   [data-orz-cast]:fullscreen {

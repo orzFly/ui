@@ -1,5 +1,6 @@
 import { markerOf } from "./marker.ts";
 import { isUiTheme, resolvePalette, resolveTerminal } from "./resolve.ts";
+import { selectionOf } from "./selection.ts";
 import { DEFAULT_STYLE, stylesOf } from "./styles.ts";
 import type {
   AnyCustomTheme,
@@ -27,6 +28,8 @@ function withLateTokens(tokens: Tokens, terminal: TerminalTokens): Tokens {
     success: tokens.success ?? tokens["diff-addition"],
     warning: tokens.warning ?? terminal["ansi-yellow"],
     marker: tokens.marker ?? markerOf(tokens),
+    selection: tokens.selection ?? selectionOf(tokens),
+    "selection-foreground": tokens["selection-foreground"] ?? tokens.foreground,
   };
 }
 

@@ -55,6 +55,7 @@ export const UI_TOKEN_GROUPS: readonly TokenGroup<TokenName>[] = [
       pair("background", "Background", "foreground", "Text"),
       pair("card", "Card", "card-foreground", "Card text"),
       pair("popover", "Popover", "popover-foreground", "Popover text"),
+      pair("selection", "Selection", "selection-foreground", "Selected text"),
     ],
   },
   {

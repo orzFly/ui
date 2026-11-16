@@ -164,7 +164,13 @@ describe("the port from @orz/ui's styles.css", () => {
     monokai: ["destructive"],
   };
   // Added after the port, so the scraped fixture has no value for them.
-  const ADDED = ["success", "warning", "marker"];
+  const ADDED = [
+    "success",
+    "warning",
+    "marker",
+    "selection",
+    "selection-foreground",
+  ];
   // Raised in every palette to clear 3:1 as a field's edge;
   // field-contrast.test.ts holds it instead.
   const RAISED = ["input"];

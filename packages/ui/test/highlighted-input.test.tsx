@@ -96,8 +96,8 @@ describe("HighlightedInput", () => {
     expect(mirror.className).not.toContain("[&_span]:text-transparent");
   });
 
-  it("keeps the selection translucent so the mirror shows through it", () => {
-    expect(mount().input.className).toContain("selection:bg-primary/30");
+  it("leaves the selection to the page's own, which colours the text it covers", () => {
+    expect(mount().input.className).not.toContain("selection:");
   });
 
   it("reports where the caret is", () => {

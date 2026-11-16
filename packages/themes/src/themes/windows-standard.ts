@@ -41,6 +41,9 @@ const palette: Palette = {
     input: "#404040",
     ring: "#000000",
     marker: "#ffffff",
+    // Selected text is the highlight, as in every Windows edit control.
+    selection: HIGHLIGHT,
+    "selection-foreground": "#ffffff",
     "chart-1": "#000080",
     "chart-2": "#008000",
     "chart-3": "#800000",

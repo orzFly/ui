@@ -26,6 +26,8 @@ const darkPalette: Palette = {
     input: "oklch(0.525 0.028 268)",
     ring: "oklch(0.7 0.15 265)",
     marker: "oklch(0.325 0.044 269.688)",
+    selection: "oklch(0.332 0.064 268.447)",
+    "selection-foreground": "oklch(0.86 0.04 270)",
     "chart-1": "oklch(0.7 0.15 265)",
     "chart-2": "oklch(0.8 0.16 140)",
     "chart-3": "oklch(0.8 0.12 75)",

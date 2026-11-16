@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { CONTRAST_CHECKS, contrastRows } from "../src/contrast.ts";
 import { builtinThemes, DEFAULT_STYLE, resolvePalette } from "../src/index.ts";
-import { contrast, rgbOf } from "../src/rgb.ts";
+import { contrast, distance, painted, rgbOf } from "../src/rgb.ts";
+import { SELECTION_APART, SELECTION_SURFACES } from "../src/selection.ts";
 import { failures, resolvedPalettes as resolved } from "./palettes.ts";
 
 // A check id names one floor; each style may add its own pairs under it.
@@ -61,6 +62,20 @@ describe("AMOLED state contrast", () => {
         .filter((r) => r.after < r.before - 0.01)
         .map((r) => `${r.name} ${r.before.toFixed(2)} → ${r.after.toFixed(2)}`),
     ).toEqual([]);
+  });
+});
+
+describe("selection fill", () => {
+  it(`stands ${SELECTION_APART} off every surface selected text sits on`, () => {
+    const rows = resolved.flatMap(({ name, tokens }) => {
+      const ground = rgbOf(tokens.background);
+      const fill = painted(tokens.selection, ground);
+      return SELECTION_SURFACES.map((surface) => ({
+        name: `${name} selection/${surface}`,
+        ratio: distance(fill, painted(tokens[surface], ground)),
+      }));
+    });
+    expect(failures("selection-apart", rows, SELECTION_APART)).toEqual([]);
   });
 });
 

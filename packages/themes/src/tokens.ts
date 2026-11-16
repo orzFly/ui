@@ -25,6 +25,8 @@ export const TOKEN_NAMES: readonly TokenName[] = [
   "input",
   "ring",
   "marker",
+  "selection",
+  "selection-foreground",
   "chart-1",
   "chart-2",
   "chart-3",
@@ -48,6 +50,8 @@ export const LATE_TOKEN_NAMES: readonly TokenName[] = [
   "success",
   "warning",
   "marker",
+  "selection",
+  "selection-foreground",
 ];
 
 /** Terminal names; renderTerminalDeclarations emits in this order. */

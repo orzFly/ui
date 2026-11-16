@@ -1,6 +1,7 @@
 import { amoled } from "../amoled.ts";
 import { grayOf, oklchOf } from "../color.ts";
 import { markerOf } from "../marker.ts";
+import { selectionOf } from "../selection.ts";
 import type { Palette, TerminalTokens, Theme, Tokens } from "../types.ts";
 
 /*
@@ -273,6 +274,18 @@ function paletteOf(
       muted: color("surface0"),
       background: color("base"),
     }),
+    // Mauve rather than the style guide's Overlay 2, which on Latte all but
+    // vanishes into Surface 0, the muted fill.
+    selection: selectionOf({
+      primary: color("mauve"),
+      foreground: color("text"),
+      background: color("base"),
+      card: color("base"),
+      popover: color("base"),
+      muted: color("surface0"),
+      sidebar: color("mantle"),
+    }),
+    "selection-foreground": color("text"),
     "chart-1": color("mauve"),
     "chart-2": color("green"),
     "chart-3": color("yellow"),

@@ -148,11 +148,16 @@ syntax theme and its JSON round trip.
 - `markerOf({ primary, muted, background })` is the module marker's square for a palette that
   names none: `primary` tinted into `muted`, as far as the icon on it keeps 4.5:1. A custom side
   saved before `marker` existed gets it this way.
+- `selectionOf(tokens, seed?)` is the selected-text fill for a palette that names none: the seed
+  (an editor theme's selection, `#rrggbbaa` included) or `primary` at 25% over the page, moved in
+  lightness until it stands `SELECTION_APART` (an OKLab distance) off the page, a card, a popover,
+  `muted` and the sidebar, as far as `foreground` on it keeps 4.5:1. A custom side saved before
+  `selection` existed gets it this way, with `foreground` as its `selection-foreground`.
 - `xtermTheme(terminal)` maps terminal tokens onto xterm.js's `ITheme` field names:
   `terminal.options.theme = xtermTheme(tokens)`.
 - `contrastRows(tokens)`, from `@orz/themes/contrast`, measures a palette against
   `CONTRAST_CHECKS`: the token pairs this package's tests hold every built-in theme to, each with
-  its WCAG floor (4.5:1 for text and the module marker's icon, 3:1 for a field's edge, a focus
+  its WCAG floor (4.5:1 for text, selected text and the module marker's icon, 3:1 for a field's edge, a focus
   ring, the bar on a highlighted row, the current tab's edge and a chart's series). A row carries the pair,
   its ratio and its floor, so a theme editor or a test of your own palette can list what falls
   short.
@@ -173,6 +178,12 @@ palette's own background and foreground, so a terminal sits on the page's surfac
 sets no cursor, the cursor is the foreground (Monokai takes its editor cursor, `#f8f8f0`), and
 where it sets no selection, the selection is VS Code's fallback. Windows Standard's terminal keeps
 the Windows console's own black, on which its sixteen colours were drawn.
+
+A ported theme's selected text on the page is its editor selection, the terminal's, laid over the
+page and darkened or lightened by `selectionOf` where it all but vanished into a fill: Solarized's
+and One Dark's into `muted`. Catppuccin's is Mauve rather than Overlay 2, which on Latte matches
+Surface 0, and Picotera's and the Pro themes' are their own `primary` tinted into the page. Windows
+Standard selects in its highlight, as Windows does.
 
 | Theme | Terminal palette | Licence |
 |---|---|---|

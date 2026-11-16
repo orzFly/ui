@@ -14,6 +14,7 @@ export {
   schemesOf,
   variantsOf,
 } from "./resolve.ts";
+export { SELECTION_APART, selectionOf } from "./selection.ts";
 export {
   DEFAULT_STYLE,
   defaultStyle,

@@ -28,6 +28,34 @@ export function srgb([lightness, a, b]: Lab): Rgb {
   ];
 }
 
+/** sRGB bytes as OKLab, through CSS Color 4's matrices. */
+export function labOf(rgb: Rgb): Lab {
+  const [r, g, b] = rgb.map((v) => {
+    const s = v / 255;
+    return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  const long = Math.cbrt(
+    0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b,
+  );
+  const medium = Math.cbrt(
+    0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b,
+  );
+  const short = Math.cbrt(
+    0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b,
+  );
+  return [
+    0.2104542553 * long + 0.793617785 * medium - 0.0040720468 * short,
+    1.9779984951 * long - 2.428592205 * medium + 0.4505937099 * short,
+    0.0259040371 * long + 0.7827717662 * medium - 0.808675766 * short,
+  ];
+}
+
+/** How far apart two colours look: their distance in OKLab. */
+export function distance(x: Rgb, y: Rgb): number {
+  const [a, b] = [labOf(x), labOf(y)];
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
 /** An opaque `oklch(L C H)` or `#rrggbb` as sRGB bytes. */
 export function rgbOf(value: string): Rgb {
   const hex = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(value);

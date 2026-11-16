@@ -7,13 +7,15 @@
  * then the scheme) and stored as opaque hex, Graphite's translucent fills laid
  * over the surface they sit on; Prohibitorum's names are mapped onto these
  * tokens; the sidebar accent is moved in lightness until a current place
- * shows on the sidebar; and the field edge, charts, diff colours, terminal
- * and syntax theme, which Prohibitorum does not define, are derived here.
+ * shows on the sidebar; and the field edge, charts, diff colours, selected
+ * text, terminal and syntax theme, which Prohibitorum does not define, are
+ * derived here.
  */
 import { amoled } from "./amoled.ts";
 import { contrastOf, mixOf, oklchOf } from "./color.ts";
 import { markerOf } from "./marker.ts";
 import { contrast, type Rgb, rgbOf } from "./rgb.ts";
+import { selectionOf } from "./selection.ts";
 import { textMateTheme } from "./syntax.ts";
 import type {
   ColorScheme,
@@ -200,6 +202,8 @@ function paletteOf(
     input: fieldEdge(p),
     ring: p.ring,
     marker: markerOf(p),
+    selection: selectionOf(p),
+    "selection-foreground": p.foreground,
     "chart-1": p.primary,
     "chart-2": series(p, p.success, p["success-foreground"]),
     "chart-3": series(p, p.warning, p["warning-foreground"]),
