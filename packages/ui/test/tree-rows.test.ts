@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   ancestorsOf,
   matchAncestors,
+  moveNodes,
   moveTarget,
+  outermost,
   type TreeDropZone,
   type TreeLoadingRow,
   type TreeMoveTarget,
@@ -244,16 +246,17 @@ describe("moveTarget", () => {
   };
   const target = (
     open: string[],
-    moved: string,
+    moved: string | string[],
     over: string,
     zone: TreeDropZone | undefined,
     canDrop: (item: Node, t: TreeMoveTarget) => boolean = () => true,
   ) => {
+    const group = [moved].flat().map((id) => find(id) as Node);
     const rows = visibleRows(TREE, new Set(open));
     const index = rows.findIndex((r) =>
       r.kind === "item" ? r.item.id === over : `loading:${r.parentId}` === over,
     );
-    return moveTarget(rows, TREE, find(moved) as Node, index, zone, canDrop);
+    return moveTarget(rows, TREE, group, index, zone, canDrop);
   };
   const onlyInto = (_: Node, t: TreeMoveTarget) => t.position === "into";
 
@@ -400,5 +403,164 @@ describe("moveTarget", () => {
       over: "lazy",
       position: "into",
     });
+  });
+
+  describe("with a group", () => {
+    it("never asks about a drop below any item of it", () => {
+      const seen: TreeMoveTarget[] = [];
+      const record = (_: Node, t: TreeMoveTarget) => {
+        seen.push(t);
+        return false;
+      };
+      const open = ["src", "components"];
+      target(open, ["readme", "components"], "button", "top", record);
+      target(open, ["readme", "components"], "components", "middle", record);
+      expect(seen).toEqual([]);
+      expect(target(open, ["readme", "lib"], "dialog", "top")).toMatchObject({
+        parentId: "components",
+        index: 1,
+      });
+    });
+
+    it("counts the index with every item taken out", () => {
+      const open = ["src", "components", "lib"];
+      expect(target(open, ["components", "lib"], "readme", "top")).toEqual({
+        parentId: undefined,
+        index: 3,
+        over: "readme",
+        position: "before",
+      });
+      expect(
+        target(open, ["button", "readme"], "dialog", "bottom"),
+      ).toMatchObject({ parentId: "components", index: 1, position: "after" });
+      expect(target(open, ["button", "utils"], "lib", "top")).toMatchObject({
+        parentId: "src",
+        index: 1,
+        position: "before",
+      });
+    });
+
+    it("refuses a drop that leaves the group together where it is", () => {
+      const open = ["src", "components"];
+      expect(
+        target(
+          open,
+          ["button", "dialog"],
+          "components",
+          "middle",
+          (_, t) => t.parentId === "components",
+        ),
+      ).toBeUndefined();
+      // Not together yet: test stands between src and lazy at the root.
+      expect(target(open, ["src", "lazy"], "test", "top")).toMatchObject({
+        parentId: undefined,
+        index: 0,
+        position: "before",
+      });
+    });
+
+    it("tries the next candidate when canDrop refuses one item", () => {
+      const notReadmeBefore = (item: Node, t: TreeMoveTarget) =>
+        !(item.id === "readme" && t.position === "before");
+      expect(
+        target(["src"], ["utils", "readme"], "lib", "top", notReadmeBefore),
+      ).toMatchObject({ parentId: "lib", position: "into" });
+    });
+
+    it("passes the whole group to canDrop", () => {
+      const rows = visibleRows(TREE, new Set(["src"]));
+      const group = [find("readme"), find("test")] as Node[];
+      const seen: (readonly Node[])[] = [];
+      moveTarget(rows, TREE, group, 1, "middle", (_, __, g) => {
+        seen.push(g);
+        return true;
+      });
+      expect(seen).toEqual([group, group]);
+    });
+
+    it("takes a loading row as its branch", () => {
+      expect(
+        target(["lazy"], ["readme", "test"], "loading:lazy", "bottom"),
+      ).toMatchObject({ parentId: "lazy", index: 0 });
+    });
+  });
+});
+
+describe("outermost", () => {
+  it("drops the items another item of the group contains, keeping the order", () => {
+    const [src, test] = ITEMS as [Node, Node];
+    const lib = src.children?.[1] as Node;
+    const utils = lib.children?.[0] as Node;
+    expect(outermost([utils, test, lib]).map((n) => n.id)).toEqual([
+      "test",
+      "lib",
+    ]);
+    expect(outermost([lib, src]).map((n) => n.id)).toEqual(["src"]);
+  });
+});
+
+describe("moveNodes", () => {
+  const names = (nodes: readonly Node[]): unknown =>
+    nodes.map((n) => (n.children ? { [n.id]: names(n.children) } : n.id));
+  const tree = () => [
+    node("a", [node("a1"), node("a2"), node("a3")]),
+    node("b", [node("b1")]),
+    node("c"),
+  ];
+  const at = (parentId: string | undefined, index: number): TreeMoveTarget => ({
+    parentId,
+    index,
+    over: "x",
+    position: "into",
+  });
+  const pick = (nodes: readonly Node[], ...ids: string[]) =>
+    ids.map((id) => {
+      const walk = (list: readonly Node[]): Node | undefined => {
+        for (const n of list) {
+          if (n.id === id) return n;
+          const below = walk(n.children ?? []);
+          if (below) return below;
+        }
+        return undefined;
+      };
+      return walk(nodes) as Node;
+    });
+
+  it("moves within one parent, forward and back", () => {
+    const t = tree();
+    expect(names(moveNodes(t, pick(t, "a1"), at("a", 2)))).toEqual([
+      { a: ["a2", "a3", "a1"] },
+      { b: ["b1"] },
+      "c",
+    ]);
+    expect(names(moveNodes(t, pick(t, "a3"), at("a", 0)))).toEqual([
+      { a: ["a3", "a1", "a2"] },
+      { b: ["b1"] },
+      "c",
+    ]);
+  });
+
+  it("moves across parents and to the root, putting the group together", () => {
+    const t = tree();
+    expect(names(moveNodes(t, pick(t, "a1", "a3"), at("b", 1)))).toEqual([
+      { a: ["a2"] },
+      { b: ["b1", "a1", "a3"] },
+      "c",
+    ]);
+    expect(names(moveNodes(t, pick(t, "b1", "a2"), at(undefined, 1)))).toEqual([
+      { a: ["a1", "a3"] },
+      "b1",
+      "a2",
+      { b: [] },
+      "c",
+    ]);
+  });
+
+  it("returns a subtree the move does not touch as it was", () => {
+    const t = tree();
+    const moved = moveNodes(t, pick(t, "a1"), at("a", 1));
+    expect(moved[1]).toBe(t[1]);
+    expect(moved[2]).toBe(t[2]);
+    expect(moved[0]).not.toBe(t[0]);
   });
 });

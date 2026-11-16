@@ -1,5 +1,6 @@
 import {
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuShortcut,
 } from "@orz/ui/components/dropdown-menu";
 import { FileTree, FileTreeItem } from "@orz/ui/components/file-tree";
@@ -277,17 +278,18 @@ export const StickyBranches: Story = {
   },
 };
 
-/** `paths` and `status` with every path in them carried from `from` to `to`. */
+/** `paths` and `status` with every path in them carried along each `[from, to]` in turn. */
 function carried(
   paths: readonly string[],
   status: Readonly<Record<string, FileStatus>>,
-  from: string,
-  to: string,
+  moves: readonly (readonly [string, string])[],
 ) {
+  const carry = (path: string) =>
+    moves.reduce((p, [from, to]) => movePath(p, from, to), path);
   return {
-    paths: paths.map((path) => movePath(path, from, to)),
+    paths: paths.map(carry),
     status: Object.fromEntries(
-      Object.entries(status).map(([path, s]) => [movePath(path, from, to), s]),
+      Object.entries(status).map(([path, s]) => [carry(path), s]),
     ),
   };
 }
@@ -295,13 +297,15 @@ function carried(
 /**
  * F2 renames a file in place, with its name up to the extension selected; a file or a folder
  * dragged onto a folder, or onto a file in it, moves there, and Ctrl+X and Ctrl+V do the same
- * without a pointer. The ⋯ menu holds both. Each hands over the path before and after, which
- * `movePath` applies to `paths` and `status`.
+ * without a pointer. `selectable` lets the reader select several, by their icons, Space or the
+ * menu, and move them as one. The ⋯ menu holds it all. Each hands over the paths before and
+ * after, which `movePath` applies to `paths` and `status`.
  */
 export const Editing: Story = {
   args: {
     status: STATUS,
     defaultExpanded: ["docs"],
+    selectable: true,
     onRename: fn(),
     onMove: fn(),
   },
@@ -311,10 +315,16 @@ export const Editing: Story = {
       paths: args.paths,
       status: args.status ?? {},
     });
-    const change = (from: string, to: string) => {
-      setFiles((now) => carried(now.paths, now.status, from, to));
-      if (args.current !== undefined)
-        updateArgs({ current: movePath(args.current, from, to) });
+    const change = (moves: readonly (readonly [string, string])[]) => {
+      setFiles((now) => carried(now.paths, now.status, moves));
+      const { current } = args;
+      if (current !== undefined)
+        updateArgs({
+          current: moves.reduce(
+            (p, [from, to]) => movePath(p, from, to),
+            current,
+          ),
+        });
     };
     return (
       <FileTree
@@ -322,15 +332,28 @@ export const Editing: Story = {
         paths={files.paths}
         status={files.status}
         onRename={(from, to) => {
-          change(from, to);
+          change([[from, to]]);
           args.onRename?.(from, to);
         }}
-        onMove={(from, to) => {
-          change(from, to);
-          args.onMove?.(from, to);
+        onMove={(moves) => {
+          change(moves);
+          args.onMove?.(moves);
         }}
         menu={(_, actions) => (
           <>
+            {actions.select && (
+              <DropdownMenuItem onSelect={actions.select}>
+                Select
+                <DropdownMenuShortcut>Space</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            )}
+            {actions.deselect && (
+              <DropdownMenuItem onSelect={actions.deselect}>
+                Deselect
+                <DropdownMenuShortcut>Space</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               disabled={!actions.rename}
               onSelect={actions.rename}
@@ -339,7 +362,9 @@ export const Editing: Story = {
               <DropdownMenuShortcut>F2</DropdownMenuShortcut>
             </DropdownMenuItem>
             <DropdownMenuItem disabled={!actions.cut} onSelect={actions.cut}>
-              Cut
+              {actions.items.length > 1
+                ? `Cut ${actions.items.length} items`
+                : "Cut"}
               <DropdownMenuShortcut>Ctrl+X</DropdownMenuShortcut>
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -368,11 +393,13 @@ export const Editing: Story = {
       source: {
         code: `const [paths, setPaths] = useState(initialPaths);
 const [status, setStatus] = useState(initialStatus);
-const change = (from, to) => {
-  setPaths((paths) => paths.map((path) => movePath(path, from, to)));
+const carry = (moves) => (path) =>
+  moves.reduce((p, [from, to]) => movePath(p, from, to), path);
+const change = (moves) => {
+  setPaths((paths) => paths.map(carry(moves)));
   setStatus((status) =>
     Object.fromEntries(
-      Object.entries(status).map(([path, s]) => [movePath(path, from, to), s]),
+      Object.entries(status).map(([path, s]) => [carry(moves)(path), s]),
     ),
   );
 };
@@ -381,10 +408,14 @@ const change = (from, to) => {
   aria-label="Files"
   paths={paths}
   status={status}
-  onRename={change}
+  selectable
+  onRename={(from, to) => change([[from, to]])}
   onMove={change}
   menu={(file, actions) => (
     <>
+      {actions.select && <DropdownMenuItem onSelect={actions.select}>Select</DropdownMenuItem>}
+      {actions.deselect && <DropdownMenuItem onSelect={actions.deselect}>Deselect</DropdownMenuItem>}
+      <DropdownMenuSeparator />
       <DropdownMenuItem disabled={!actions.rename} onSelect={actions.rename}>Rename</DropdownMenuItem>
       <DropdownMenuItem disabled={!actions.cut} onSelect={actions.cut}>Cut</DropdownMenuItem>
       <DropdownMenuItem disabled={!actions.paste} onSelect={actions.paste}>Paste</DropdownMenuItem>

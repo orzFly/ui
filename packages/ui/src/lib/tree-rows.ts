@@ -206,19 +206,42 @@ function placeOf<T extends TreeNode<T>>(
 const contains = <T extends TreeNode<T>>(node: T, id: string): boolean =>
   node.id === id || (node.children ?? []).some((c) => contains(c, id));
 
+/** The children of `parentId`, the roots when it is undefined. */
+function childrenOf<T extends TreeNode<T>>(
+  items: readonly T[],
+  parentId: string | undefined,
+): readonly T[] | undefined {
+  if (parentId === undefined) return items;
+  for (const node of items) {
+    if (node.id === parentId) return node.children ?? [];
+    const below = node.children && childrenOf(node.children, parentId);
+    if (below) return below;
+  }
+  return undefined;
+}
+
+/** `moved` without the items another item of it contains, in its order. */
+export function outermost<T extends TreeNode<T>>(moved: readonly T[]): T[] {
+  return moved.filter(
+    (item) =>
+      !moved.some((other) => other !== item && contains(other, item.id)),
+  );
+}
+
 /**
  * The first target a move of `moved` onto `rows[overIndex]` can take, trying the zone's own
  * position, then into the row when it is a branch, then into the row's parent after it. Refuses
- * a target inside `moved` itself and one that leaves it where it is. `zone` undefined tries the
- * paste order: a branch into it then after it, a leaf after it then into its parent.
+ * a target inside any moved item and one that leaves the group where it is; `canDrop` is asked
+ * for each item and must pass for all. `zone` undefined tries the paste order: a branch into it
+ * then after it, a leaf after it then into its parent.
  */
 export function moveTarget<T extends TreeNode<T>>(
   rows: readonly (TreeRow<T> | TreeLoadingRow)[],
   items: readonly T[],
-  moved: T,
+  moved: readonly T[],
   overIndex: number,
   zone: TreeDropZone | undefined,
-  canDrop: (item: T, target: TreeMoveTarget) => boolean,
+  canDrop: (item: T, target: TreeMoveTarget, group: readonly T[]) => boolean,
 ): TreeMoveTarget | undefined {
   let row = rows[overIndex];
   if (row?.kind === "loading") {
@@ -230,14 +253,15 @@ export function moveTarget<T extends TreeNode<T>>(
     row = rows[overIndex];
     zone = "middle";
   }
+  const ids = new Set(moved.map((m) => m.id));
   // Before, after, into or beside itself, a node stays where it is.
-  if (row?.kind !== "item" || row.item.id === moved.id) return undefined;
+  if (row?.kind !== "item" || ids.has(row.item.id) || moved.length === 0)
+    return undefined;
   const over = row;
-  const from = placeOf(items, moved.id);
   const at = placeOf(items, over.item.id);
-  if (!from || !at) return undefined;
+  if (!at || moved.some((m) => !placeOf(items, m.id))) return undefined;
 
-  const without = (list: readonly T[]) => list.filter((n) => n.id !== moved.id);
+  const without = (list: readonly T[]) => list.filter((n) => !ids.has(n.id));
   const beside = (after: boolean): TreeMoveTarget => ({
     parentId: at.parent?.id,
     index:
@@ -256,6 +280,19 @@ export function moveTarget<T extends TreeNode<T>>(
     ...beside(true),
     position: "into",
   });
+  // The group already stands there, together and in this order.
+  const unchanged = (target: TreeMoveTarget) => {
+    const now = childrenOf(items, target.parentId) ?? [];
+    const rest = without(now);
+    const after = [
+      ...rest.slice(0, target.index),
+      ...moved,
+      ...rest.slice(target.index),
+    ];
+    return (
+      after.length === now.length && after.every((n, i) => n.id === now[i]?.id)
+    );
+  };
 
   const candidates: TreeMoveTarget[] = [];
   if (zone === undefined) {
@@ -283,11 +320,45 @@ export function moveTarget<T extends TreeNode<T>>(
     const key = `${target.parentId}/${target.index}/${target.position}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    if (target.parentId !== undefined && contains(moved, target.parentId))
+    const parentId = target.parentId;
+    if (parentId !== undefined && moved.some((m) => contains(m, parentId)))
       continue;
-    if (target.parentId === from.parent?.id && target.index === from.index)
-      continue;
-    if (canDrop(moved, target)) return target;
+    if (unchanged(target)) continue;
+    if (moved.every((m) => canDrop(m, target, moved))) return target;
   }
   return undefined;
+}
+
+/**
+ * `nodes` with `moved` taken out of wherever they stand and put, together and in order, at
+ * `target`. Nodes are rebuilt as `{ ...node, children }`; a subtree the move does not touch is
+ * returned as it was.
+ */
+export function moveNodes<T extends TreeNode<T>>(
+  nodes: readonly T[],
+  moved: readonly T[],
+  target: TreeMoveTarget,
+): T[] {
+  const ids = new Set(moved.map((m) => m.id));
+  const place = (list: readonly T[], parentId: string | undefined): T[] => {
+    let changed = false;
+    const kept: T[] = [];
+    for (const node of list) {
+      if (ids.has(node.id)) {
+        changed = true;
+        continue;
+      }
+      const children = node.children && place(node.children, node.id);
+      if (children && children !== node.children) {
+        changed = true;
+        kept.push({ ...node, children });
+      } else kept.push(node);
+    }
+    if (parentId === target.parentId) {
+      kept.splice(target.index, 0, ...moved);
+      return kept;
+    }
+    return changed ? kept : (list as T[]);
+  };
+  return place(nodes, undefined);
 }

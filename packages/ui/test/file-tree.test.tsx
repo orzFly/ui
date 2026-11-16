@@ -375,7 +375,7 @@ describe("FileTree, edited", () => {
     render(renderFiles({ onMove, current: "src/retry.ts" }));
     key(item("README.md"), "x", { ctrlKey: true });
     key(item("retry.ts, Added"), "v", { ctrlKey: true });
-    expect(onMove).toHaveBeenCalledWith("README.md", "src/README.md");
+    expect(onMove).toHaveBeenCalledWith([["README.md", "src/README.md"]]);
   });
 
   it("moves a row into a folder, never into its own or beside a row", () => {
@@ -388,7 +388,7 @@ describe("FileTree, edited", () => {
     key(item("src, Contains changes"), "v", { ctrlKey: true });
     expect(onMove).not.toHaveBeenCalled();
     key(item("docs, Contains changes"), "v", { ctrlKey: true });
-    expect(onMove).toHaveBeenCalledWith("src/retry.ts", "docs/retry.ts");
+    expect(onMove).toHaveBeenCalledWith([["src/retry.ts", "docs/retry.ts"]]);
     expect(canMove).toHaveBeenCalledWith("src/retry.ts", "docs/retry.ts");
   });
 
@@ -427,6 +427,101 @@ describe("FileTree, edited", () => {
     fireDrag("drop", row, data, { clientY: index * H + 2 });
     fireDrag("dragEnd", item("README.md"), data);
     layout.restore();
-    expect(onMove).toHaveBeenCalledWith("README.md", "src/README.md");
+    expect(onMove).toHaveBeenCalledWith([["README.md", "src/README.md"]]);
+  });
+});
+
+describe("FileTree, selected", () => {
+  const key = (el: Element, k: string, init: KeyboardEventInit = {}) =>
+    fireEvent.keyDown(el, { key: k, ...init });
+  const selectedLabels = () =>
+    screen
+      .queryAllByRole("treeitem")
+      .filter((el) => el.getAttribute("aria-selected") === "true")
+      .map((el) => el.querySelector("[data-slot=tree-label]")?.textContent);
+
+  it("takes paths, a merged folder's standing for its row, and hands back row ids", () => {
+    const onSelectedChange = vi.fn();
+    render(
+      renderFiles({
+        selectable: true,
+        defaultSelected: [".github/", "README.md"],
+        onSelectedChange,
+      }),
+    );
+    expect(selectedLabels()).toEqual([".github / workflows", "README.md"]);
+    key(item("dist, Ignored"), " ");
+    expect(onSelectedChange).toHaveBeenLastCalledWith([
+      ".github/workflows/",
+      "dist/",
+      "README.md",
+    ]);
+  });
+
+  it("moves the selection as one, pair by pair", () => {
+    const onMove = vi.fn();
+    render(
+      renderFiles({
+        selectable: true,
+        onMove,
+        defaultExpanded: ["src/"],
+        defaultSelected: ["src/retry.ts", "README.md"],
+      }),
+    );
+    key(item("README.md"), "x", { ctrlKey: true });
+    key(item("docs, Contains changes"), "v", { ctrlKey: true });
+    expect(onMove).toHaveBeenCalledWith([
+      ["src/retry.ts", "docs/retry.ts"],
+      ["README.md", "docs/README.md"],
+    ]);
+  });
+
+  it("refuses a move that would give two of the group one name", () => {
+    const onMove = vi.fn();
+    render(
+      renderFiles({
+        selectable: true,
+        onMove,
+        paths: [...PATHS, "docs/retry.ts"],
+        defaultExpanded: ["src/", "docs/"],
+        defaultSelected: ["src/retry.ts", "docs/retry.ts"],
+      }),
+    );
+    key(item("retry.ts, Added"), "x", { ctrlKey: true });
+    key(item("dist, Ignored"), "v", { ctrlKey: true });
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("keeps an open folder open, and selected, under its new path", () => {
+    function Files() {
+      const [paths, setPaths] = React.useState(PATHS);
+      const [selected, setSelected] = React.useState<string[]>([
+        "src/",
+        "README.md",
+      ]);
+      return renderFiles({
+        paths,
+        selectable: true,
+        selected,
+        onSelectedChange: setSelected,
+        defaultExpanded: ["src/", "docs/"],
+        onMove: (moves) =>
+          setPaths((list) =>
+            list.map((p) =>
+              moves.reduce((q, [from, to]) => movePath(q, from, to), p),
+            ),
+          ),
+      });
+    }
+    render(<Files />);
+    key(item("README.md"), "x", { ctrlKey: true });
+    key(item("docs, Contains changes"), "v", { ctrlKey: true });
+    expect(item("docs, Contains changes").getAttribute("aria-expanded")).toBe(
+      "true",
+    );
+    // The status stays the app's to move: src's is not.
+    expect(item("src").getAttribute("aria-expanded")).toBe("true");
+    // In an open folder, the moved rows show, and stay selected.
+    expect(selectedLabels()).toEqual(["src", "README.md"]);
   });
 });

@@ -25,6 +25,7 @@ import {
   SegmentedControl,
   SegmentedControlItem,
 } from "@orz/ui/components/segmented-control";
+import { SelectionBar } from "@orz/ui/components/selection-bar";
 import { Skeleton } from "@orz/ui/components/skeleton";
 import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
@@ -62,6 +63,7 @@ import {
   FolderIcon,
   ListFilterIcon,
   SearchXIcon,
+  Trash2Icon,
 } from "lucide-react";
 import { type MouseEvent, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -155,11 +157,25 @@ function carry(work: WorkTree, from: string, to: string): WorkTree {
   };
 }
 
-/** `work` without `gone` and, for a folder, what it holds. */
-const without = (work: WorkTree, gone: string): WorkTree => ({
+/** `work` without each of `gone` and, for a folder, what it holds. */
+const without = (work: WorkTree, gone: readonly string[]): WorkTree => ({
   ...work,
-  paths: work.paths.filter((path) => !under(path, gone)),
+  paths: work.paths.filter((path) => !gone.some((g) => under(path, g))),
 });
+
+type Moves = readonly (readonly [from: string, to: string])[];
+
+/** `path` carried along each move in turn. */
+const moveAll = (path: string, moves: Moves) =>
+  moves.reduce((p, [from, to]) => movePath(p, from, to), path);
+
+/** "“name”" for one path, "3 files" or "3 items" for several. */
+function named(paths: readonly string[]) {
+  const [only] = paths;
+  if (paths.length === 1 && only !== undefined) return `“${nameOf(only)}”`;
+  const files = paths.every((p) => !p.endsWith("/"));
+  return `${paths.length} ${files ? "files" : "items"}`;
+}
 
 /** A path's last name, a folder's without its "/". */
 function nameOf(path: string) {
@@ -209,6 +225,13 @@ export function Repository() {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<TreeFilterMode>("hide");
   const [work, setWork] = useState(INITIAL);
+  const [selected, setSelected] = useState<string[]>([]);
+  // The rows on screen, which select-all takes.
+  const [shown, setShown] = useState<string[]>([]);
+  // A selected folder takes what it holds with it.
+  const outermost = selected.filter(
+    (s) => !selected.some((o) => o !== s && o.endsWith("/") && s.startsWith(o)),
+  );
   // One row per folder, for the listings: a merged row would hide the
   // folders a listing steps through.
   const nodes = useMemo(
@@ -253,20 +276,26 @@ export function Repository() {
       movePath(path, from, to),
       `“${nameOf(from)}” renamed to “${nameOf(to)}”`,
     );
-  const move = (from: string, to: string) => {
-    const folder = folderOf(to);
+  // A move of several is one change, with one toast and one undo.
+  const move = (moves: Moves) => {
+    const [first] = moves;
+    if (!first) return;
+    const folder = folderOf(first[1]);
     change(
-      carry(work, from, to),
-      movePath(path, from, to),
-      `“${nameOf(from)}” moved to ${folder === "" ? PROJECT : `“${nameOf(folder)}”`}`,
+      moves.reduce((w, [from, to]) => carry(w, from, to), work),
+      moveAll(path, moves),
+      `${named(moves.map(([from]) => from))} moved to ${folder === "" ? PROJECT : `“${nameOf(folder)}”`}`,
     );
   };
-  const remove = (gone: string) =>
+  const remove = (gone: readonly string[]) => {
+    const at = gone.find((g) => under(path, g));
+    setSelected((now) => now.filter((s) => !gone.some((g) => under(s, g))));
     change(
       without(work, gone),
-      under(path, gone) ? folderOf(gone) : path,
-      `“${nameOf(gone)}” deleted`,
+      at === undefined ? path : folderOf(at),
+      `${named(gone)} deleted`,
     );
+  };
 
   return (
     <TooltipProvider>
@@ -332,6 +361,27 @@ export function Repository() {
                         ? "1 file matches"
                         : `${matches} files match`}
                   </p>
+                  {selected.length > 0 && (
+                    <SelectionBar
+                      edge="bottom"
+                      count={selected.length}
+                      total={shown.length}
+                      onSelectAll={() => setSelected(shown)}
+                      onClear={() => setSelected([])}
+                    >
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <ToolbarButton
+                            aria-label="Delete"
+                            onClick={() => remove(outermost)}
+                          >
+                            <Trash2Icon />
+                          </ToolbarButton>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete</TooltipContent>
+                      </Tooltip>
+                    </SelectionBar>
+                  )}
                   <div className="min-h-0 flex-1 overflow-y-auto pb-2">
                     {needle !== "" && matches === 0 && mode === "hide" ? (
                       <EmptyState
@@ -350,10 +400,38 @@ export function Repository() {
                         query={query}
                         filterMode={mode}
                         stickyBranches
+                        selectable
+                        selected={selected}
+                        onSelectedChange={setSelected}
+                        onShownChange={setShown}
                         onRename={rename}
                         onMove={move}
-                        menu={(file, actions) => (
+                        menu={(_, actions) => (
                           <>
+                            {actions.select && (
+                              <DropdownMenuItem onSelect={actions.select}>
+                                Select
+                                <DropdownMenuShortcut>
+                                  Space
+                                </DropdownMenuShortcut>
+                              </DropdownMenuItem>
+                            )}
+                            {actions.deselect && (
+                              <DropdownMenuItem onSelect={actions.deselect}>
+                                Deselect
+                                <DropdownMenuShortcut>
+                                  Space
+                                </DropdownMenuShortcut>
+                              </DropdownMenuItem>
+                            )}
+                            {actions.clearSelection && (
+                              <DropdownMenuItem
+                                onSelect={actions.clearSelection}
+                              >
+                                Clear selection
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                               disabled={!actions.rename}
                               onSelect={actions.rename}
@@ -365,7 +443,9 @@ export function Repository() {
                               disabled={!actions.cut}
                               onSelect={actions.cut}
                             >
-                              Cut
+                              {actions.items.length > 1
+                                ? `Cut ${actions.items.length} items`
+                                : "Cut"}
                               <DropdownMenuShortcut>
                                 Ctrl+X
                               </DropdownMenuShortcut>
@@ -382,9 +462,13 @@ export function Repository() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => remove(file.id)}
+                              onSelect={() =>
+                                remove(actions.items.map((item) => item.id))
+                              }
                             >
-                              Delete
+                              {actions.items.length > 1
+                                ? `Delete ${actions.items.length} items`
+                                : "Delete"}
                             </DropdownMenuItem>
                           </>
                         )}

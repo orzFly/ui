@@ -301,6 +301,23 @@ describe("movePath", () => {
     expect(movePath("a/x", "a/x/", "b/x/")).toBe("a/x");
     expect(movePath("c/d.ts", "a/b.ts", "c/b.ts")).toBe("c/d.ts");
   });
+
+  it("applies a group's pairs one after another", () => {
+    // A selected folder's moves carry the files in it; a FileTree hands
+    // no pair for them.
+    const moves = [
+      ["a/x/", "c/x/"],
+      ["b.ts", "c/b.ts"],
+    ] as const;
+    const apply = (path: string) =>
+      moves.reduce((p, [from, to]) => movePath(p, from, to), path);
+    expect(["a/x/", "a/x/y.ts", "b.ts", "a/z.ts"].map(apply)).toEqual([
+      "c/x/",
+      "c/x/y.ts",
+      "c/b.ts",
+      "a/z.ts",
+    ]);
+  });
 });
 
 describe("fileStem", () => {

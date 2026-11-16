@@ -105,10 +105,12 @@ type TreeProps = React.ComponentProps<typeof Tree<FileNode>>;
  * hands back row ids, and `handle`'s `scrollToItem` and `rename` take a path. Typing jumps to a
  * row by its name. Memoize `paths`.
  *
- * `onRename` and `onMove` hand over the path before and after, a folder's ending in "/"; apply
- * them to `paths` and `status` with `movePath`. The tree refuses a name holding "/" or one its
- * folder already has, and drops into a folder, never beside a row, since it sorts; `canMove`
- * refuses more.
+ * `onRename` hands over the path before and after, a folder's ending in "/", and `onMove` a
+ * `[from, to]` pair for each path a move takes; apply them to `paths` and `status` with
+ * `movePath`, pair by pair. The tree refuses a name holding "/" or one its folder already has,
+ * and drops into a folder, never beside a row, since it sorts; `canMove` refuses more.
+ * `selected` and `defaultSelected` take paths as `expanded` does, and `onSelectedChange` and
+ * `onShownChange` hand back row ids.
  */
 function FileTree({
   paths,
@@ -122,6 +124,8 @@ function FileTree({
   expanded,
   defaultExpanded,
   onExpandedChange,
+  selected,
+  defaultSelected,
   handle,
   onRename,
   onMove,
@@ -155,11 +159,14 @@ function FileTree({
   sort?: FileTreeOptions["sort"];
   statusLabels?: Partial<FileStatusLabels>;
   onRename?: (from: string, to: string) => void;
-  onMove?: (from: string, to: string) => void;
+  onMove?: (moves: readonly (readonly [from: string, to: string])[]) => void;
   canRename?: (path: string) => boolean;
   canDrag?: (path: string) => boolean;
   canMove?: (from: string, to: string) => boolean;
-  menu?: (file: FileNode, actions: TreeMenuActions) => React.ReactNode;
+  menu?: (
+    file: FileNode,
+    actions: TreeMenuActions<FileNode>,
+  ) => React.ReactNode;
   labels?: Partial<TreeLabels & FileTreeLabels>;
 }) {
   const nodes = React.useMemo(
@@ -239,6 +246,8 @@ function FileTree({
           if (expanded === undefined) setInner(next);
           onExpandedChange?.(next);
         }}
+        selected={resolve(selected)}
+        defaultSelected={resolve(defaultSelected)}
         textValue={textValue}
         handle={tree}
         labels={editLabels}
@@ -266,23 +275,31 @@ function FileTree({
         }}
         onMove={
           onMove &&
-          ((file, target) => {
-            const to = intoFolder(file, target);
-            if (to === undefined) return;
-            moved(file.id, to);
-            onMove(file.id, to);
-            return to;
+          ((files, target) => {
+            const pairs: (readonly [string, string])[] = [];
+            for (const file of files) {
+              const to = intoFolder(file, target);
+              if (to === undefined) return;
+              pairs.push([file.id, to]);
+            }
+            for (const [from, to] of pairs) moved(from, to);
+            onMove(pairs);
+            return pairs.map(([, to]) => to);
           })
         }
         canDrag={canDrag && ((file) => canDrag(file.id))}
         // It sorts its rows, so a drop goes into a folder and nowhere
-        // beside a row; one back into its own folder does nothing.
-        canDrop={(file, target) => {
+        // beside a row; one back into its own folder does nothing, and two
+        // of a group cannot land on one name.
+        canDrop={(file, target, group) => {
           const to = intoFolder(file, target);
           return (
             to !== undefined &&
             to !== file.id &&
             !taken.has(to) &&
+            group.every(
+              (other) => other === file || intoFolder(other, target) !== to,
+            ) &&
             (canMove?.(file.id, to) ?? true)
           );
         }}

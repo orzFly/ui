@@ -77,3 +77,26 @@ export function stubLayout() {
 }
 
 export type Layout = ReturnType<typeof stubLayout>;
+
+/**
+ * Rows across, on top of `stubLayout`: a row runs from 0 to 200, an item's
+ * leading icon from 20 to 36 and its label from 44, which a label leading
+ * with no icon starts at too. happy-dom gives the item no gap.
+ */
+export function stubIcons() {
+  const spy = vi.mocked(Element.prototype.getBoundingClientRect);
+  const down = spy.getMockImplementation();
+  spy.mockImplementation(function (this: Element) {
+    const r = down?.call(this) ?? ({} as DOMRect);
+    const across = (left: number, right: number) =>
+      ({ ...r, left, right, width: right - left }) as DOMRect;
+    const slot = this.getAttribute("data-slot");
+    if (slot === "tree-row") return across(0, 200);
+    if (slot === "tree-label") return across(44, 150);
+    if (this.parentElement?.getAttribute("data-slot") === "tree-item")
+      return this === this.parentElement.firstElementChild
+        ? across(20, 36)
+        : across(150, 160);
+    return r;
+  });
+}

@@ -113,6 +113,27 @@ rename, a move or a delete: do it, then say what was done in a toast with **Undo
 [Repository demo](/demos/repository/) does. A `FileTree` hands over each change as the path
 before and after; `movePath` applies it to the app's paths and statuses.
 
+### Selecting several
+
+Give a tree `selectable` when the reader will do one thing to several of their own places at once:
+move a handful of files into a folder, delete a batch of drafts. Selecting is not going: a click on
+a row's name still goes to its place, and a modified or middle click is still the link's.
+
+- With a pointer, a checkbox stands in for a row's icon while the pointer is on it, and a click
+  there selects; Shift and a click on another icon selects the rows between. From the keyboard,
+  Space toggles the focused row, Shift with the arrows extends from it, and Ctrl+A takes every row.
+- On a touch screen, the row's menu starts it: put `select` in `menu` as **Select**, and after the
+  first row each tap toggles a row instead of going. Put `clearSelection` there too, so the way
+  back is never only a toolbar.
+- Dragging a selected row, cutting it or opening its menu acts on the whole selection, and
+  `onMove` hears the group at once. A menu acting on several says how many ("Delete 3 items").
+- Follow `onSelectedChange` with a [`SelectionBar`](/guidelines/patterns/actions-and-buttons/#acting-on-a-selection)
+  over the tree: how many are selected, the actions that take them all, and the way out.
+  `onShownChange` hands over the rows on screen, which are what its select-all takes. A batch
+  action, like any other, is done at once and said in a toast with **Undo**.
+- Only the rows on screen are selected: closing a folder, or filtering a row away, takes its rows
+  out of the selection, so an action never reaches a row the reader cannot see.
+
 ### Files
 
 <Example of={RepositoryFiles} />

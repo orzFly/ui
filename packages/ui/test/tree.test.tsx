@@ -17,9 +17,19 @@ import {
   TreeLabel,
   type TreeMenuActions,
 } from "../src/components/tree.tsx";
-import type { TreeMoveTarget, TreeNode } from "../src/lib/tree-rows.ts";
+import {
+  moveNodes,
+  type TreeMoveTarget,
+  type TreeNode,
+} from "../src/lib/tree-rows.ts";
 import { FakeDataTransfer, fireDrag } from "./fake-data-transfer.ts";
-import { H, type Layout, stubLayout, VIEWPORT } from "./stub-tree-layout.ts";
+import {
+  H,
+  type Layout,
+  stubIcons,
+  stubLayout,
+  VIEWPORT,
+} from "./stub-tree-layout.ts";
 
 interface Node extends TreeNode<Node> {
   name: string;
@@ -57,9 +67,11 @@ const ITEMS: Node[] = [
 type Props = Partial<React.ComponentProps<typeof Tree<Node>>> & {
   onItemClick?: (event: React.MouseEvent) => void;
   target?: string;
+  /** Leads each place with an icon. */
+  icons?: boolean;
 };
 
-function renderTree({ onItemClick, target, ...props }: Props = {}) {
+function renderTree({ onItemClick, target, icons, ...props }: Props = {}) {
   return (
     <Tree aria-label="Files" items={ITEMS} {...props}>
       {(item) =>
@@ -69,6 +81,7 @@ function renderTree({ onItemClick, target, ...props }: Props = {}) {
           </TreeItem>
         ) : (
           <TreeItem href={`#${item.id}`} onClick={onItemClick} target={target}>
+            {icons && <svg aria-hidden data-icon="" />}
             <TreeLabel>{item.name}</TreeLabel>
             {item.children && <TreeCount>{item.children.length}</TreeCount>}
           </TreeItem>
@@ -1120,7 +1133,7 @@ describe("Tree, renamed", () => {
   });
 });
 
-const MENU = (node: Node, actions: TreeMenuActions) => (
+const MENU = (node: Node, actions: TreeMenuActions<Node>) => (
   <>
     {actions.rename && (
       <DropdownMenuItem onSelect={actions.rename}>
@@ -1198,14 +1211,18 @@ describe("Tree, a row's menu", () => {
   });
 
   it("offers an action only where the tree can take it", () => {
-    const seen: TreeMenuActions[] = [];
-    const menu = (node: Node, actions: TreeMenuActions) => {
+    const seen: TreeMenuActions<Node>[] = [];
+    const menu = (node: Node, actions: TreeMenuActions<Node>) => {
       seen.push(actions);
       return MENU(node, actions);
     };
     const { rerender } = render(renderTree({ menu }));
     key(item("readme"), "ContextMenu");
     expect(seen.at(-1)).toEqual({
+      items: [expect.objectContaining({ id: "readme" })],
+      select: undefined,
+      deselect: undefined,
+      clearSelection: undefined,
       rename: undefined,
       cut: undefined,
       paste: undefined,
@@ -1236,7 +1253,7 @@ describe("Tree, cut and pasted", () => {
     fireEvent.keyDown(item("readme"), { key: "x", ctrlKey: true });
     fireEvent.keyDown(item("lib 1"), { key: "v", ctrlKey: true });
     expect(onMove).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "readme" }),
+      [expect.objectContaining({ id: "readme" })],
       { parentId: "lib", index: 1, over: "lib", position: "into" },
     );
     expect(rowOf("readme").hasAttribute("data-cut")).toBe(false);
@@ -1368,7 +1385,7 @@ describe("Tree, dragged", () => {
     expect(marked("data-drop-inside")).toEqual([2, 3]);
     fireDrag("drop", rowAt(2), data, { clientY: y(2, 0.1) });
     expect(onMove).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "readme" }),
+      [expect.objectContaining({ id: "readme" })],
       { parentId: "components", index: 1, over: "button", position: "into" },
     );
     expect(marked("data-drop-target")).toEqual([]);
@@ -1426,5 +1443,546 @@ describe("Tree, dragged", () => {
     act(() => vi.advanceTimersByTime(100));
     expect(layout.state.scrollTop).toBe(top);
     vi.useRealTimers();
+  });
+});
+
+describe("Tree, selected", () => {
+  let layout: Layout;
+  let data: FakeDataTransfer;
+  beforeEach(() => {
+    layout = stubLayout();
+    stubIcons();
+    data = new FakeDataTransfer();
+  });
+  afterEach(() => {
+    const tree = document.querySelector("[data-slot=tree]");
+    if (tree) fireDrag("dragEnd", tree, data);
+    layout.restore();
+  });
+
+  // Open src: src 0, components 1, lib 2, archive 3, lazy 4, readme 5.
+  const OPEN = ["src"];
+  const NAMES: Record<string, string> = {
+    src: "src 2",
+    components: "components 2",
+    lib: "lib 1",
+  };
+  const row = (id: string) => item(NAMES[id] ?? id);
+  // Hidden too: an open menu hides the tree from the accessibility tree.
+  const selected = () =>
+    screen
+      .queryAllByRole("treeitem", { hidden: true })
+      .filter((el) => el.getAttribute("aria-selected") === "true")
+      .map((el) =>
+        Number(el.closest("[data-slot=tree-row]")?.getAttribute("data-index")),
+      );
+  const focused = () => document.activeElement as HTMLElement;
+  const press = (k: string, init: Partial<KeyboardEventInit> = {}) =>
+    fireEvent.keyDown(focused(), { key: k, ...init });
+  /** A click at `x` across row `id`, after a press from `pointerType`. */
+  const clickAt = (
+    id: string,
+    x: number,
+    init: Partial<MouseEventInit> = {},
+    pointerType = "mouse",
+  ) => {
+    const el = row(id);
+    const index = Number(
+      el.closest("[data-slot=tree-row]")?.getAttribute("data-index"),
+    );
+    fireEvent.pointerDown(el, { pointerType });
+    return fireEvent.click(el, {
+      clientX: x,
+      clientY: index * H + 5,
+      detail: 1,
+      ...init,
+    });
+  };
+
+  describe("ARIA", () => {
+    it("says the tree takes several and which rows are selected", () => {
+      render(
+        renderTree({
+          selectable: true,
+          defaultExpanded: OPEN,
+          defaultSelected: ["lib"],
+        }),
+      );
+      expect(
+        screen.getByRole("tree").getAttribute("aria-multiselectable"),
+      ).toBe("true");
+      expect(row("lib").getAttribute("aria-selected")).toBe("true");
+      expect(row("readme").getAttribute("aria-selected")).toBe("false");
+      expect(rowOf("lib 1").hasAttribute("data-selected")).toBe(true);
+    });
+
+    it("says nothing, and selects nothing, unless selectable", () => {
+      render(renderTree({ defaultExpanded: OPEN, defaultSelected: ["lib"] }));
+      expect(
+        screen.getByRole("tree").hasAttribute("aria-multiselectable"),
+      ).toBe(false);
+      expect(row("lib").hasAttribute("aria-selected")).toBe(false);
+      expect(document.querySelector("[data-slot=tree-select]")).toBeNull();
+      act(() => row("readme").focus());
+      // Space is the page's, as before.
+      expect(press(" ")).toBe(true);
+      expect(press("ArrowUp", { shiftKey: true })).toBe(false);
+      expect(focused()).toBe(row("lazy"));
+    });
+  });
+
+  describe("held", () => {
+    it("by the tree from defaultSelected, handed out in the order rows show", () => {
+      const onSelectedChange = vi.fn();
+      render(
+        renderTree({
+          selectable: true,
+          defaultExpanded: OPEN,
+          defaultSelected: ["readme"],
+          onSelectedChange,
+        }),
+      );
+      act(() => row("lib").focus());
+      press(" ");
+      expect(onSelectedChange).toHaveBeenLastCalledWith(["lib", "readme"]);
+      expect(selected()).toEqual([2, 5]);
+    });
+
+    it("by the app with selected", () => {
+      const onSelectedChange = vi.fn();
+      const { rerender } = render(
+        renderTree({
+          selectable: true,
+          defaultExpanded: OPEN,
+          selected: [],
+          onSelectedChange,
+        }),
+      );
+      act(() => row("lib").focus());
+      press(" ");
+      expect(onSelectedChange).toHaveBeenLastCalledWith(["lib"]);
+      expect(selected()).toEqual([]);
+      rerender(
+        renderTree({
+          selectable: true,
+          defaultExpanded: OPEN,
+          selected: ["lib"],
+          onSelectedChange,
+        }),
+      );
+      expect(selected()).toEqual([2]);
+    });
+
+    it("hands back the rows that leave the screen, closed, filtered or gone", () => {
+      const onSelectedChange = vi.fn();
+      const props = {
+        selectable: true,
+        defaultExpanded: OPEN,
+        defaultSelected: ["lib", "components", "readme"],
+        onSelectedChange,
+      };
+      const { rerender } = render(renderTree(props));
+      expect(onSelectedChange).not.toHaveBeenCalled();
+      act(() => row("components").focus());
+      // Closing src takes components and lib out of sight.
+      key(row("src"), "ArrowLeft");
+      expect(onSelectedChange).toHaveBeenLastCalledWith(["readme"]);
+      key(row("src"), "ArrowRight");
+      expect(selected()).toEqual([5]);
+      act(() => row("lib").focus());
+      press(" ");
+      rerender(
+        renderTree({ ...props, filter: (node: Node) => node.id !== "readme" }),
+      );
+      expect(onSelectedChange).toHaveBeenLastCalledWith(["lib"]);
+      rerender(
+        renderTree({
+          ...props,
+          items: ITEMS.filter((node) => node.id !== "src"),
+        }),
+      );
+      expect(onSelectedChange).toHaveBeenLastCalledWith([]);
+    });
+  });
+
+  it("hands over the rows on screen as they change, once each time", () => {
+    const onShownChange = vi.fn();
+    render(renderTree({ defaultExpanded: OPEN, onShownChange }));
+    expect(onShownChange).toHaveBeenCalledTimes(1);
+    expect(onShownChange).toHaveBeenLastCalledWith([
+      "src",
+      "components",
+      "lib",
+      "archive",
+      "lazy",
+      "readme",
+    ]);
+    act(() => row("readme").focus());
+    expect(onShownChange).toHaveBeenCalledTimes(1);
+    key(row("src"), "ArrowLeft");
+    expect(onShownChange).toHaveBeenLastCalledWith([
+      "src",
+      "archive",
+      "lazy",
+      "readme",
+    ]);
+  });
+
+  describe("by the keyboard", () => {
+    const tree = (extra: Props = {}) =>
+      render(renderTree({ selectable: true, defaultExpanded: OPEN, ...extra }));
+
+    it("toggles the focused row on Space, Ctrl+Space and ⌘+Space", () => {
+      tree();
+      act(() => row("lib").focus());
+      expect(press(" ")).toBe(false);
+      expect(selected()).toEqual([2]);
+      press(" ", { ctrlKey: true });
+      expect(selected()).toEqual([]);
+      press(" ", { metaKey: true });
+      expect(selected()).toEqual([2]);
+    });
+
+    it("leaves a Space typed into a search to the search", () => {
+      tree();
+      act(() => row("src").focus());
+      press("l");
+      expect(focused()).toBe(row("lib"));
+      press(" ");
+      expect(selected()).toEqual([]);
+    });
+
+    it("extends and draws back from the anchor with Shift and the arrows", () => {
+      tree();
+      act(() => row("components").focus());
+      press(" ");
+      press("ArrowDown", { shiftKey: true });
+      press("ArrowDown", { shiftKey: true });
+      press("ArrowDown", { shiftKey: true });
+      expect(selected()).toEqual([1, 2, 3, 4]);
+      press("ArrowUp", { shiftKey: true });
+      expect(selected()).toEqual([1, 2, 3]);
+      expect(focused()).toBe(row("archive"));
+      press("ArrowUp", { shiftKey: true });
+      press("ArrowUp", { shiftKey: true });
+      press("ArrowUp", { shiftKey: true });
+      expect(selected()).toEqual([0, 1]);
+    });
+
+    it("keeps what was selected before the anchor, and runs to the ends with Home and End", () => {
+      tree({ defaultSelected: ["readme"] });
+      act(() => row("lib").focus());
+      press("Home", { shiftKey: true });
+      expect(selected()).toEqual([0, 1, 2, 5]);
+      press("End", { shiftKey: true });
+      expect(selected()).toEqual([2, 3, 4, 5]);
+    });
+
+    it("selects every row on Ctrl+A", () => {
+      tree();
+      act(() => row("lib").focus());
+      expect(press("a", { ctrlKey: true })).toBe(false);
+      expect(selected()).toEqual([0, 1, 2, 3, 4, 5]);
+    });
+
+    it("clears the cut, then the selection, on Escape", () => {
+      tree({ onMove: vi.fn(), defaultSelected: ["lib"] });
+      act(() => row("readme").focus());
+      press("x", { ctrlKey: true });
+      expect(rowOf("readme").hasAttribute("data-cut")).toBe(true);
+      press("Escape");
+      expect(rowOf("readme").hasAttribute("data-cut")).toBe(false);
+      expect(selected()).toEqual([2]);
+      press("Escape");
+      expect(selected()).toEqual([]);
+      expect(press("Escape")).toBe(true);
+    });
+  });
+
+  describe("by the pointer", () => {
+    const tree = (extra: Props = {}) =>
+      render(
+        renderTree({
+          selectable: true,
+          defaultExpanded: OPEN,
+          icons: true,
+          ...extra,
+        }),
+      );
+
+    it("selects a row clicked on its icon, which goes nowhere", () => {
+      const onItemClick = vi.fn();
+      tree({ onItemClick });
+      expect(clickAt("lib", 28)).toBe(false);
+      expect(selected()).toEqual([2]);
+      expect(onItemClick).not.toHaveBeenCalled();
+      expect(clickAt("lib", 20)).toBe(false);
+      expect(selected()).toEqual([]);
+    });
+
+    it("goes to the place on a click on the name", () => {
+      const onItemClick = vi.fn();
+      tree({ onItemClick, defaultSelected: ["readme"] });
+      expect(clickAt("readme", 100)).toBe(true);
+      expect(onItemClick).toHaveBeenCalledTimes(1);
+      expect(selected()).toEqual([5]);
+    });
+
+    it("leaves a middle click and a modified click on the icon to the link", () => {
+      const onItemClick = vi.fn();
+      tree({ onItemClick });
+      clickAt("lib", 28, { button: 1 });
+      clickAt("lib", 28, { ctrlKey: true });
+      clickAt("lib", 28, { metaKey: true });
+      expect(selected()).toEqual([]);
+      expect(onItemClick).toHaveBeenCalledTimes(3);
+    });
+
+    it("sets the rows from the anchor on Shift and a click on the icon", () => {
+      tree();
+      clickAt("components", 28);
+      expect(clickAt("lazy", 28, { shiftKey: true })).toBe(false);
+      expect(selected()).toEqual([1, 2, 3, 4]);
+      // Each row of the range takes the clicked row's new state.
+      clickAt("archive", 28, { shiftKey: true });
+      expect(selected()).toEqual([]);
+    });
+
+    it("finds the icon's room on a row that leads with its label", () => {
+      tree({ icons: false });
+      expect(clickAt("lib", 30)).toBe(false);
+      expect(selected()).toEqual([2]);
+      expect(row("lib").className).toContain(
+        "has-[>[data-slot=tree-label]:first-child]:pl-",
+      );
+    });
+
+    it("toggles on a tap only once a selection is under way", () => {
+      const onItemClick = vi.fn();
+      tree({ onItemClick });
+      expect(clickAt("readme", 100, {}, "touch")).toBe(true);
+      expect(onItemClick).toHaveBeenCalledTimes(1);
+      act(() => row("lib").focus());
+      press(" ");
+      expect(clickAt("readme", 100, {}, "touch")).toBe(false);
+      expect(selected()).toEqual([2, 5]);
+      expect(onItemClick).toHaveBeenCalledTimes(1);
+      // Enter's click, with no pointer behind it, still goes.
+      expect(fireEvent.click(row("lazy"))).toBe(true);
+      expect(onItemClick).toHaveBeenCalledTimes(2);
+      // The toggle still opens and closes.
+      fireEvent.pointerDown(toggleOf("lib 1"), { pointerType: "touch" });
+      fireEvent.click(toggleOf("lib 1"));
+      expect(item("utils")).toBeTruthy();
+    });
+
+    it("marks the row whose icon a mouse is on, never on touch", () => {
+      tree();
+      const at = (x: number, pointerType = "mouse") =>
+        fireEvent.pointerMove(row("lib"), {
+          pointerType,
+          clientX: x,
+          clientY: 2 * H + 5,
+        });
+      at(30);
+      expect(rowOf("lib 1").hasAttribute("data-icon-hover")).toBe(true);
+      at(100);
+      expect(rowOf("lib 1").hasAttribute("data-icon-hover")).toBe(false);
+      at(30, "touch");
+      expect(rowOf("lib 1").hasAttribute("data-icon-hover")).toBe(false);
+    });
+
+    it("draws the checkbox beside the item, out of what a cut fades", () => {
+      tree({ defaultSelected: ["lib"] });
+      const box = rowOf("lib 1").querySelector("[data-slot=tree-select]");
+      expect(box?.getAttribute("aria-hidden")).toBe("true");
+      expect(box?.querySelector("[data-slot=checkbox]")).toBeTruthy();
+      expect(row("lib").contains(box ?? null)).toBe(false);
+      expect(screen.getByRole("tree").hasAttribute("data-selecting")).toBe(
+        true,
+      );
+    });
+  });
+
+  describe("acted on", () => {
+    // Every moved id gets a "2" when a move returns new ones.
+    const renamed = (nodes: readonly Node[], ids: Set<string>): Node[] =>
+      nodes.map((node) => ({
+        ...node,
+        id: ids.has(node.id) ? `${node.id}2` : node.id,
+        children: node.children && renamed(node.children, ids),
+      }));
+
+    function Moving({
+      rename = false,
+      onMove,
+      ...props
+    }: Props & { rename?: boolean }) {
+      const [items, setItems] = React.useState(ITEMS);
+      return renderTree({
+        ...props,
+        items,
+        onMove: (moved, target) => {
+          onMove?.(moved, target);
+          const next = moveNodes(items, moved, target);
+          if (!rename) {
+            setItems(next);
+            return;
+          }
+          setItems(renamed(next, new Set(moved.map((m) => m.id))));
+          return moved.map((m) => `${m.id}2`);
+        },
+      });
+    }
+
+    it("drags the selection along with a selected row, less what a branch holds", () => {
+      const onMove = vi.fn();
+      render(
+        renderTree({
+          selectable: true,
+          onMove,
+          expanded: ["src", "lib"],
+          defaultSelected: ["readme", "utils", "lib"],
+        }),
+      );
+      // src 0, components 1, lib 2, utils 3, archive 4, lazy 5, readme 6.
+      fireDrag("dragStart", row("readme"), data);
+      expect(
+        data.image?.querySelector("[data-slot=tree-drag-count]")?.textContent,
+      ).toBe("2");
+      expect(
+        [...document.querySelectorAll("[data-dragging]")].map((el) =>
+          el.getAttribute("data-index"),
+        ),
+      ).toEqual(["2", "6"]);
+      const archive = document.querySelector(
+        '[data-slot=tree-row][data-index="4"]',
+      ) as HTMLElement;
+      fireDrag("dragOver", archive, data, { clientY: 4 * H + 5 });
+      fireDrag("drop", archive, data, { clientY: 4 * H + 5 });
+      expect(onMove).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({ id: "lib" }),
+          expect.objectContaining({ id: "readme" }),
+        ],
+        expect.objectContaining({ parentId: "archive" }),
+      );
+    });
+
+    it("drags a row outside the selection alone", () => {
+      render(
+        renderTree({
+          selectable: true,
+          onMove: vi.fn(),
+          expanded: OPEN,
+          defaultSelected: ["readme"],
+        }),
+      );
+      fireDrag("dragStart", row("lib"), data);
+      expect(data.image?.textContent).toBe("lib1");
+      expect(rowOf("readme").hasAttribute("data-dragging")).toBe(false);
+      expect(selected()).toEqual([5]);
+    });
+
+    it("drags nothing when any row of the selection cannot move", () => {
+      render(
+        renderTree({
+          selectable: true,
+          onMove: vi.fn(),
+          canDrag: (node) => node.id !== "lazy",
+          expanded: OPEN,
+          defaultSelected: ["readme", "lazy"],
+        }),
+      );
+      fireDrag("dragStart", row("readme"), data);
+      expect(data.types).toEqual([]);
+    });
+
+    it("cuts the selection, pastes it whole, and keeps it selected", () => {
+      const onMove = vi.fn();
+      render(
+        <Moving
+          selectable
+          onMove={onMove}
+          defaultExpanded={["src", "lib"]}
+          defaultSelected={["readme", "lazy"]}
+        />,
+      );
+      act(() => row("readme").focus());
+      press("x", { ctrlKey: true });
+      expect(rowOf("readme").hasAttribute("data-cut")).toBe(true);
+      expect(rowOf("lazy").hasAttribute("data-cut")).toBe(true);
+      act(() => row("lib").focus());
+      press("v", { ctrlKey: true });
+      expect(onMove).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({ id: "lazy" }),
+          expect.objectContaining({ id: "readme" }),
+        ],
+        expect.objectContaining({ parentId: "lib", index: 1 }),
+      );
+      // src 0, components 1, lib 2, utils 3, lazy 4, readme 5, archive 6.
+      expect(selected()).toEqual([4, 5]);
+    });
+
+    it("selects the moved rows under the ids the move gave them", () => {
+      const onSelectedChange = vi.fn();
+      render(
+        <Moving
+          rename
+          selectable
+          onSelectedChange={onSelectedChange}
+          defaultExpanded={["src", "lib"]}
+          defaultSelected={["readme"]}
+        />,
+      );
+      act(() => row("readme").focus());
+      press("x", { ctrlKey: true });
+      act(() => row("lib").focus());
+      press("v", { ctrlKey: true });
+      expect(onSelectedChange).toHaveBeenLastCalledWith(["readme2"]);
+      expect(selected()).toEqual([4]);
+    });
+
+    it("offers the menu what it acts on, and select, deselect and clear where they apply", () => {
+      const seen: TreeMenuActions<Node>[] = [];
+      const menu = (node: Node, actions: TreeMenuActions<Node>) => {
+        seen.push(actions);
+        return MENU(node, actions);
+      };
+      render(
+        renderTree({
+          selectable: true,
+          menu,
+          onRename: vi.fn(),
+          onMove: vi.fn(),
+          defaultExpanded: OPEN,
+          defaultSelected: ["readme", "lib"],
+        }),
+      );
+      key(row("lazy"), "ContextMenu");
+      let actions = seen.at(-1);
+      expect(actions?.items.map((n) => n.id)).toEqual(["lazy"]);
+      expect(actions?.select).toBeTypeOf("function");
+      expect(actions?.deselect).toBeUndefined();
+      expect(actions?.clearSelection).toBeTypeOf("function");
+      expect(actions?.rename).toBeTypeOf("function");
+      key(screen.getByRole("menu"), "Escape");
+      key(row("readme"), "ContextMenu");
+      actions = seen.at(-1);
+      expect(actions?.items.map((n) => n.id)).toEqual(["lib", "readme"]);
+      expect(actions?.select).toBeUndefined();
+      expect(actions?.rename).toBeUndefined();
+      expect(actions?.cut).toBeTypeOf("function");
+      act(() => actions?.deselect?.());
+      expect(selected()).toEqual([2]);
+      act(() => actions?.clearSelection?.());
+      expect(selected()).toEqual([]);
+      key(screen.getByRole("menu"), "Escape");
+      key(row("readme"), "ContextMenu");
+      expect(seen.at(-1)?.clearSelection).toBeUndefined();
+      act(() => seen.at(-1)?.select?.());
+      expect(selected()).toEqual([5]);
+    });
   });
 });

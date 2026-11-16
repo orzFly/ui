@@ -13,7 +13,7 @@ import {
   TreeLabel,
   type TreeRowState,
 } from "@orz/ui/components/tree";
-import type { TreeMoveTarget, TreeNode } from "@orz/ui/lib/tree-rows";
+import { moveNodes, type TreeNode } from "@orz/ui/lib/tree-rows";
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -495,22 +495,6 @@ function edit(
 }
 
 /** The tree with `item` taken from its place and put where `target` says. */
-function moved(
-  nodes: readonly FileNode[],
-  item: FileNode,
-  target: TreeMoveTarget,
-): FileNode[] {
-  const rest = edit(nodes, item.id, () => undefined);
-  const put = (list: readonly FileNode[]) =>
-    list.toSpliced(target.index, 0, item);
-  return target.parentId === undefined
-    ? put(rest)
-    : edit(rest, target.parentId, (parent) => ({
-        ...parent,
-        children: put(parent.children ?? []),
-      }));
-}
-
 /**
  * F2 on the focused row, or a call to `handle.rename`, opens a field over its name. Enter or
  * leaving the field gives the name to `onRename`, which changes the items; Escape puts it back.
@@ -546,8 +530,8 @@ const OUTLINE: FileNode[] = [
 
 /**
  * A tree the reader orders by hand: a row dragged onto another goes before it, into it or after
- * it by the pointer's height, and `onMove` puts it there. Ctrl+X and Ctrl+V move the focused row
- * without a pointer.
+ * it by the pointer's height, and `onMove` puts it there, which `moveNodes` does for plain
+ * objects. Ctrl+X and Ctrl+V move the focused row without a pointer.
  */
 export const Move: Story = {
   args: {
@@ -563,9 +547,9 @@ export const Move: Story = {
       <Tree
         {...args}
         items={items}
-        onMove={(item, target) => {
-          setItems((now) => moved(now, item, target));
-          args.onMove?.(item, target);
+        onMove={(moved, target) => {
+          setItems((now) => moveNodes(now, moved, target));
+          args.onMove?.(moved, target);
         }}
       />
     );
@@ -579,11 +563,7 @@ export const Move: Story = {
   aria-label="Outline"
   items={items}
   defaultExpanded={["Getting started", "Guides"]}
-  onMove={(item, { parentId, index }) => {
-    // Take the item out, then put it at index among parentId's children.
-    const rest = remove(items, item.id);
-    setItems(insert(rest, parentId, index, item));
-  }}
+  onMove={(moved, target) => setItems((now) => moveNodes(now, moved, target))}
 >
   ${FILE_ROW}
 </Tree>`,
@@ -609,9 +589,9 @@ export const Menu: Story = {
           setItems((now) => edit(now, item.id, (n) => ({ ...n, name })));
           args.onRename?.(item, name);
         }}
-        onMove={(item, target) => {
-          setItems((now) => moved(now, item, target));
-          args.onMove?.(item, target);
+        onMove={(moved, target) => {
+          setItems((now) => moveNodes(now, moved, target));
+          args.onMove?.(moved, target);
         }}
         menu={(item, actions) => (
           <>
@@ -646,6 +626,113 @@ export const Menu: Story = {
         )}
       />
     );
+  },
+};
+
+/**
+ * `selectable`: the pointer on a row's icon draws a checkbox there, and a click on it selects the
+ * row; Space toggles the focused row and Shift with the arrows extends from it. Dragging a
+ * selected row takes the whole selection along, and so do Ctrl+X and the row's menu, whose
+ * Select is how a touch screen starts.
+ */
+export const Selection: Story = {
+  args: {
+    "aria-label": "Outline",
+    items: OUTLINE,
+    current: undefined,
+    defaultExpanded: ["Getting started", "Guides"],
+    selectable: true,
+    selected: ["Guides/Forms", "Guides/Tables"],
+    onSelectedChange: fn(),
+    onMove: fn(),
+  },
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
+    const [items, setItems] = useState(args.items);
+    return (
+      <Tree
+        {...args}
+        items={items}
+        onSelectedChange={(selected) => {
+          updateArgs({ selected });
+          args.onSelectedChange?.(selected);
+        }}
+        onMove={(moved, target) => {
+          setItems((now) => moveNodes(now, moved, target));
+          args.onMove?.(moved, target);
+        }}
+        menu={(_, actions) => (
+          <>
+            {actions.select && (
+              <DropdownMenuItem onSelect={actions.select}>
+                Select
+                <DropdownMenuShortcut>Space</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            )}
+            {actions.deselect && (
+              <DropdownMenuItem onSelect={actions.deselect}>
+                Deselect
+                <DropdownMenuShortcut>Space</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            )}
+            {actions.clearSelection && (
+              <DropdownMenuItem onSelect={actions.clearSelection}>
+                Clear selection
+                <DropdownMenuShortcut>Esc</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={!actions.cut} onSelect={actions.cut}>
+              {actions.items.length > 1
+                ? `Cut ${actions.items.length} items`
+                : "Cut"}
+              <DropdownMenuShortcut>Ctrl+X</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!actions.paste}
+              onSelect={actions.paste}
+            >
+              Paste
+              <DropdownMenuShortcut>Ctrl+V</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </>
+        )}
+      />
+    );
+  },
+  parameters: {
+    docs: {
+      source: {
+        code: `const [items, setItems] = useState(outline);
+const [selected, setSelected] = useState(["Guides/Forms", "Guides/Tables"]);
+
+<Tree
+  aria-label="Outline"
+  items={items}
+  defaultExpanded={["Getting started", "Guides"]}
+  selectable
+  selected={selected}
+  onSelectedChange={setSelected}
+  onMove={(moved, target) => setItems((now) => moveNodes(now, moved, target))}
+  menu={(item, actions) => (
+    <>
+      {actions.select && <DropdownMenuItem onSelect={actions.select}>Select</DropdownMenuItem>}
+      {actions.deselect && <DropdownMenuItem onSelect={actions.deselect}>Deselect</DropdownMenuItem>}
+      {actions.clearSelection && (
+        <DropdownMenuItem onSelect={actions.clearSelection}>Clear selection</DropdownMenuItem>
+      )}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem disabled={!actions.cut} onSelect={actions.cut}>
+        {actions.items.length > 1 ? \`Cut \${actions.items.length} items\` : "Cut"}
+      </DropdownMenuItem>
+      <DropdownMenuItem disabled={!actions.paste} onSelect={actions.paste}>Paste</DropdownMenuItem>
+    </>
+  )}
+>
+  ${FILE_ROW}
+</Tree>`,
+      },
+    },
   },
 };
 
