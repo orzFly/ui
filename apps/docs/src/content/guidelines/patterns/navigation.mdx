@@ -13,6 +13,7 @@ export const meta = {
 };
 
 import { AppFrame } from "../../../examples/navigation/app-frame.tsx";
+import { CollapsibleGroups } from "../../../examples/navigation/collapsible-groups.tsx";
 import { FolderTree } from "../../../examples/navigation/folder-tree.tsx";
 import { LineTabs } from "../../../examples/navigation/line-tabs.tsx";
 
@@ -32,6 +33,7 @@ row's leading edge.
 |---|---|
 | Go between an app's few top-level sections, from its header | `TabNav`, with a `TabNavLink` for each |
 | Go between many places: folders, settings sections, files, a document's parts | `NavList`, a `NavListLink` for each, `NavListHeading` over each group |
+| Let the reader close a group of places they seldom need | `NavListGroup`, headed by a `NavListHeading` holding a `NavListGroupToggle`, or by a `NavListGroupRow` when the group has a page of its own |
 | Go between places in a hierarchy the reader opens and closes: folders, machines, a file's parts | `Tree`, a `TreeItem` for each place |
 | Go to a section of the page in view, from a column beside it | `NavList variant="rail"` |
 | Send the reader to another page from inside the prose, saying what is there | `LinkCard`, with a `LinkCardTitle` and a `LinkCardDescription`; `variant="row"` for a list of pages |
@@ -57,12 +59,27 @@ The default tabs draw the current one as a box joined to its panel below. Where 
 not lie right under the tabs, as in a bar over a demo with its own sidebar, the box would hang
 over something else: use the line variant, laid flush on the bar's bottom rule.
 
+## Groups that open and close
+
+<Example of={CollapsibleGroups} />
+
+When a column holds many groups and the reader works in one or two of them, let the groups close
+in a `NavListGroup`. A few groups of a few places each stay open: closing them only costs the
+reader clicks. A group with no page of its own makes its `NavListHeading` the toggle. A group that
+is a place heads itself with a `NavListGroupRow`: its link goes to the place, and opens the group
+too if it was closed, never closing it; the toggle at the row's end does the opening and closing.
+
+A group the reader has not touched is open exactly while it holds the current place, from the
+first frame. Once the reader closes it over the current place, its head is drawn as current, so
+the reader still sees where they are. Groups hold no groups: deeper places, opened and closed as
+the reader works, are a [`Tree`](#trees).
+
 ## Trees
 
 <Example of={FolderTree} />
 
-Places nested a level or two and always shown open are a `NavList`, each level a `depth` deeper.
-When the reader opens and closes the branches, or the nesting runs as deep as the data does, they
+Places nested a level or two and always shown open are a `NavList`, each level a `depth` deeper;
+one level the reader may close is a [group](#groups-that-open-and-close). When the reader opens and closes the branches, or the nesting runs as deep as the data does, they
 are a `Tree`. A click on a place goes there, and opens it as well if it was closed; only the
 toggle beside it, or ←, closes it, so going to a folder never hides what is in it.
 
@@ -78,7 +95,8 @@ frame already shows the place. When a filter leaves no row, the tree draws nothi
 - `current` is `"page"` by default. A part of a document in view is `current="location"`.
 - A section in `TabNav` stays current on every page inside it, not only on its own first page.
 - Nest places that stay open with `depth`, one step per level, rather than wrapping a list in an
-  indented box; nest places the reader opens and closes in a `Tree`.
+  indented box; nest places the reader opens and closes in a `NavListGroup`, or a `Tree` when
+  they run deeper than one level.
 
 ## On each platform
 
@@ -90,5 +108,5 @@ figures (`NavListCount`).
 ### Touch & mobile
 
 Under a coarse pointer every row and tab grows to a touch target by itself. A `TabNav` has no room
-on a phone: put its sections in a `Sheet` opened from the header, as a `NavList` with the open
-section's places nested under it, as this site does.
+on a phone: put its sections in a `Sheet` opened from the header, as a `NavList` with each
+section a `NavListGroup` of its places, open on the section the reader is in, as this site does.

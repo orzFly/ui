@@ -439,6 +439,31 @@ describe("mail", () => {
     expect(rows(container)).toHaveLength(PAGE_SIZE * 2);
   });
 
+  it("closes Labels, which keeps the label on screen marked current inside", async () => {
+    const container = await draw(Mail, WIDTHS.desktop);
+    const sidebar = container.querySelector<HTMLElement>(
+      "aside[data-width=wide]",
+    );
+    const labels = [...(sidebar?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Labels",
+    );
+    expect(labels?.getAttribute("aria-expanded")).toBe("true");
+    await showPlace(container, "design");
+    await click(labels);
+    expect(labels?.getAttribute("aria-expanded")).toBe("false");
+    const content = document.getElementById(
+      labels?.getAttribute("aria-controls") ?? "",
+    );
+    expect(content?.hidden).toBe(true);
+    const design = [...(content?.querySelectorAll("a") ?? [])].find(
+      (link) => link.textContent === "design",
+    );
+    expect(design?.getAttribute("aria-current")).toBe("page");
+    expect(
+      labels?.closest<HTMLElement>("[data-slot=nav-list-group]")?.dataset.state,
+    ).toBe("closed");
+  });
+
   it("filters by the query, and says so when nothing matches", async () => {
     const container = await draw(Mail, WIDTHS.desktop);
     await searchFor(container, "is:starred label:design");

@@ -2,6 +2,7 @@ import { ChevronRightIcon } from "lucide-react";
 import { Slot } from "radix-ui";
 import * as React from "react";
 
+import { isPlainPress } from "../lib/link.ts";
 import {
   ancestorsOf,
   type TreeLoadingRow,
@@ -180,17 +181,9 @@ function Tree<T extends TreeNode<T>>({
       setOpen(row.item.id, !row.expanded);
       return;
     }
-    // Not isPlainClick: a link that opens in place, or a router's link, has
-    // already called preventDefault by now, and a plain click on it still
-    // opens the branch.
-    const target = event.currentTarget.getAttribute("target");
-    if (
-      event.button === 0 &&
-      !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) &&
-      (target === null || target === "" || target === "_self")
-    ) {
-      setOpen(row.item.id, true);
-    }
+    // isPlainPress, not isPlainClick: a link that opens in place, or a
+    // router's link, has already called preventDefault by now.
+    if (isPlainPress(event)) setOpen(row.item.id, true);
   };
 
   const toggle = (row: TreeRow<T>) => {

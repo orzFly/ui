@@ -7,7 +7,16 @@ import type * as React from "react";
  * download) and a middle or right click open the link where the reader asked.
  */
 export function isPlainClick(event: React.MouseEvent<Element>): boolean {
-  if (event.defaultPrevented || event.button !== 0) return false;
+  return !event.defaultPrevented && isPlainPress(event);
+}
+
+/**
+ * `isPlainClick` without its refusal of a click already handled: what opens a closed group or
+ * branch when the reader clicks its place. By then a link that opens in place, or a router's
+ * link, has called `preventDefault` itself, and the reader still went to the place.
+ */
+export function isPlainPress(event: React.MouseEvent<Element>): boolean {
+  if (event.button !== 0) return false;
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
     return false;
   }

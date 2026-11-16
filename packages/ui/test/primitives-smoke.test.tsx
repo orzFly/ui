@@ -56,6 +56,10 @@ import { Label } from "../src/components/label.tsx";
 import {
   NavList,
   NavListCount,
+  NavListGroup,
+  NavListGroupContent,
+  NavListGroupRow,
+  NavListGroupToggle,
   NavListHeading,
   NavListItem,
   NavListLink,
@@ -291,6 +295,45 @@ const CASES: [file: string, slot: string, tree: ReactElement][] = [
             </NavListLink>
           </NavListItem>
         </NavList>
+      </NavListItem>
+    </NavList>,
+  ],
+  [
+    "nav-list",
+    "nav-list-group-toggle",
+    <NavList key="a">
+      <NavListItem>
+        <NavListGroup>
+          <NavListGroupRow>
+            <NavListLink href="#project">Project</NavListLink>
+            <NavListGroupToggle />
+          </NavListGroupRow>
+          <NavListGroupContent>
+            <NavList>
+              <NavListItem>
+                <NavListLink href="#issues" depth={1} current>
+                  Issues
+                </NavListLink>
+              </NavListItem>
+            </NavList>
+          </NavListGroupContent>
+        </NavListGroup>
+      </NavListItem>
+      <NavListItem>
+        <NavListGroup defaultOpen>
+          <NavListHeading asChild>
+            <h2>
+              <NavListGroupToggle>Labels</NavListGroupToggle>
+            </h2>
+          </NavListHeading>
+          <NavListGroupContent>
+            <NavList>
+              <NavListItem>
+                <NavListLink href="#work">Work</NavListLink>
+              </NavListItem>
+            </NavList>
+          </NavListGroupContent>
+        </NavListGroup>
       </NavListItem>
     </NavList>,
   ],

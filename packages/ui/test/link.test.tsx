@@ -1,12 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { describe, expect, it } from "vitest";
-import { isPlainClick } from "../src/lib/link.ts";
+import { isPlainClick, isPlainPress } from "../src/lib/link.ts";
 
-/** Clicks a link and returns what `isPlainClick` said of the click. */
+/** Clicks a link and returns what `test` (`isPlainClick` unless given) said of the click. */
 function click(
   init: Parameters<typeof fireEvent.click>[1] = {},
   props: ComponentProps<"a"> = {},
+  test = isPlainClick,
 ) {
   let plain: boolean | undefined;
   const { unmount } = render(
@@ -15,7 +16,7 @@ function click(
       {...props}
       onClick={(event) => {
         props.onClick?.(event);
-        plain = isPlainClick(event);
+        plain = test(event);
         event.preventDefault();
       }}
     >
@@ -52,5 +53,31 @@ describe("isPlainClick", () => {
   it("is false for a link that opens elsewhere, true for _self", () => {
     expect(click({}, { target: "_blank" })).toBe(false);
     expect(click({}, { target: "_self" })).toBe(true);
+  });
+});
+
+describe("isPlainPress", () => {
+  const press = (
+    init: Parameters<typeof fireEvent.click>[1] = {},
+    props: ComponentProps<"a"> = {},
+  ) => click(init, props, isPlainPress);
+
+  it("is true for a plain left click, handled before or not", () => {
+    expect(press()).toBe(true);
+    expect(press({}, { onClick: (event) => event.preventDefault() })).toBe(
+      true,
+    );
+  });
+
+  it.each(["ctrlKey", "metaKey", "shiftKey", "altKey"])(
+    "is false with %s held",
+    (modifier) => {
+      expect(press({ [modifier]: true })).toBe(false);
+    },
+  );
+
+  it("is false for another button or a link that opens elsewhere", () => {
+    expect(press({ button: 1 })).toBe(false);
+    expect(press({}, { target: "_blank" })).toBe(false);
   });
 });

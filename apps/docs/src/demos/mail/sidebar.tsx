@@ -11,6 +11,9 @@ import {
   NavList,
   NavListCount,
   NavListFrame,
+  NavListGroup,
+  NavListGroupContent,
+  NavListGroupToggle,
   NavListHeading,
   NavListItem,
   NavListLink,
@@ -159,21 +162,27 @@ export function Sidebar({
               </NavListItem>
             ))}
           </NavList>
-          <NavListHeading asChild>
-            <h2>Labels</h2>
-          </NavListHeading>
-          <NavList>
-            {INBOX_LABELS.map((label) => (
-              <NavListItem key={label}>
-                <NavListLink current={query === `label:${label}`} asChild>
-                  <PlaceLink query={`label:${label}`} onShow={onShow}>
-                    <TagIcon />
-                    {label}
-                  </PlaceLink>
-                </NavListLink>
-              </NavListItem>
-            ))}
-          </NavList>
+          <NavListGroup defaultOpen>
+            <NavListHeading asChild>
+              <h2>
+                <NavListGroupToggle>Labels</NavListGroupToggle>
+              </h2>
+            </NavListHeading>
+            <NavListGroupContent>
+              <NavList>
+                {INBOX_LABELS.map((label) => (
+                  <NavListItem key={label}>
+                    <NavListLink current={query === `label:${label}`} asChild>
+                      <PlaceLink query={`label:${label}`} onShow={onShow}>
+                        <TagIcon />
+                        {label}
+                      </PlaceLink>
+                    </NavListLink>
+                  </NavListItem>
+                ))}
+              </NavList>
+            </NavListGroupContent>
+          </NavListGroup>
         </nav>
       </NavListFrame>
       <div className="flex items-center gap-2 border-t pt-3">

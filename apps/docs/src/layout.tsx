@@ -7,6 +7,10 @@ import {
 import {
   NavList,
   NavListFrame,
+  NavListGroup,
+  NavListGroupContent,
+  NavListGroupRow,
+  NavListGroupToggle,
   NavListHeading,
   NavListItem,
   NavListLink,
@@ -204,14 +208,22 @@ function MobileNav({
               <NavList>
                 {sections.map((node) => (
                   <NavListItem key={node.route}>
-                    <NavListLink
-                      asChild
-                      current={node === section && node.children.length === 0}
-                    >
-                      <Link to={firstPage(node).route}>{node.title}</Link>
-                    </NavListLink>
-                    {node === section && node.children.length > 0 && (
-                      <NavTree node={node} depth={1} />
+                    {node.children.length === 0 ? (
+                      <NavListLink asChild current={node === section}>
+                        <Link to={firstPage(node).route}>{node.title}</Link>
+                      </NavListLink>
+                    ) : (
+                      <NavListGroup>
+                        <NavListGroupRow>
+                          <NavListLink asChild>
+                            <Link to={firstPage(node).route}>{node.title}</Link>
+                          </NavListLink>
+                          <NavListGroupToggle />
+                        </NavListGroupRow>
+                        <NavListGroupContent>
+                          <NavTree node={node} depth={1} />
+                        </NavListGroupContent>
+                      </NavListGroup>
                     )}
                   </NavListItem>
                 ))}

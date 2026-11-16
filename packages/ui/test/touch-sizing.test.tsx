@@ -25,6 +25,11 @@ import { HighlightedInput } from "../src/components/highlighted-input.tsx";
 import { Input } from "../src/components/input.tsx";
 import {
   NavList,
+  NavListGroup,
+  NavListGroupContent,
+  NavListGroupRow,
+  NavListGroupToggle,
+  NavListHeading,
   NavListItem,
   NavListLink,
 } from "../src/components/nav-list.tsx";
@@ -312,6 +317,29 @@ describe("touch sizes", () => {
       </NavList>,
     );
     expect(classesOf(screen.getByRole("link"))).toContain("touch:min-h-11");
+  });
+
+  it("a NavList group's toggle is a 44px square in its row, a hit area in its heading", () => {
+    render(
+      <>
+        <NavListGroup>
+          <NavListGroupRow>
+            <NavListLink href="#a">A</NavListLink>
+            <NavListGroupToggle />
+          </NavListGroupRow>
+          <NavListGroupContent />
+        </NavListGroup>
+        <NavListGroup>
+          <NavListHeading>
+            <NavListGroupToggle>B</NavListGroupToggle>
+          </NavListHeading>
+          <NavListGroupContent />
+        </NavListGroup>
+      </>,
+    );
+    const [inRow, inHeading] = screen.getAllByRole("button");
+    expect(classesOf(inRow)).toContain("touch:w-11");
+    expectHitAreaOnly(inHeading);
   });
 
   it("Slider keeps its drawn size; its bar and its thumb have hit areas", () => {

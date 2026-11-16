@@ -2,20 +2,26 @@ import {
   NavList,
   NavListCount,
   NavListFrame,
+  NavListGroup,
+  NavListGroupContent,
+  NavListGroupRow,
+  NavListGroupToggle,
   NavListHeading,
   NavListItem,
   NavListLink,
 } from "@orz/ui/components/nav-list";
+import { isPlainClick } from "@orz/ui/lib/link";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   ArchiveIcon,
   FileTextIcon,
+  FolderIcon,
   InboxIcon,
   SendIcon,
   StarIcon,
   TagIcon,
 } from "lucide-react";
-import { Fragment, useState } from "react";
+import { Fragment, type MouseEvent, useState } from "react";
 import { withWidth } from "./decorators.tsx";
 
 const FOLDERS = [
@@ -171,6 +177,219 @@ export const Nested: Story = {
       </NavList>
     );
   },
+};
+
+const ARCHIVE = ["2026", "2025", "2024"];
+
+/**
+ * Groups the reader opens and closes. A group that is a place heads itself with a
+ * `NavListGroupRow`: its link goes to the place, the toggle at the row's end opens the group. A
+ * group with no page of its own makes its heading the toggle. Until the reader chooses, a group is
+ * open exactly while it holds the current place.
+ */
+export const Groups: Story = {
+  args: { "aria-label": "Mail" },
+  render: function Render(args) {
+    const [current, setCurrent] = useState("Inbox");
+    const go = (place: string) => (event: MouseEvent) => {
+      if (!isPlainClick(event)) return;
+      event.preventDefault();
+      setCurrent(place);
+    };
+    return (
+      <NavList {...args}>
+        {FOLDERS.slice(0, 4).map(({ title, Icon, count }) => (
+          <NavListItem key={title}>
+            <NavListLink
+              href={`#${title.toLowerCase()}`}
+              current={title === current}
+              onClick={go(title)}
+            >
+              <Icon />
+              {title}
+              {count > 0 && <NavListCount>{count}</NavListCount>}
+            </NavListLink>
+          </NavListItem>
+        ))}
+        <NavListItem>
+          <NavListGroup>
+            <NavListGroupRow>
+              <NavListLink
+                href="#archive"
+                current={current === "Archive"}
+                onClick={go("Archive")}
+              >
+                <ArchiveIcon />
+                Archive
+              </NavListLink>
+              <NavListGroupToggle />
+            </NavListGroupRow>
+            <NavListGroupContent>
+              <NavList>
+                {ARCHIVE.map((year) => (
+                  <NavListItem key={year}>
+                    <NavListLink
+                      href={`#archive-${year}`}
+                      depth={1}
+                      current={year === current}
+                      onClick={go(year)}
+                    >
+                      <FolderIcon />
+                      {year}
+                    </NavListLink>
+                  </NavListItem>
+                ))}
+              </NavList>
+            </NavListGroupContent>
+          </NavListGroup>
+        </NavListItem>
+        <NavListItem>
+          <NavListGroup defaultOpen>
+            <NavListHeading asChild>
+              <h2>
+                <NavListGroupToggle>Labels</NavListGroupToggle>
+              </h2>
+            </NavListHeading>
+            <NavListGroupContent>
+              <NavList>
+                {LABELS.map((label) => (
+                  <NavListItem key={label}>
+                    <NavListLink
+                      href={`#${label}`}
+                      current={label === current}
+                      onClick={go(label)}
+                    >
+                      <TagIcon />
+                      {label}
+                    </NavListLink>
+                  </NavListItem>
+                ))}
+              </NavList>
+            </NavListGroupContent>
+          </NavListGroup>
+        </NavListItem>
+      </NavList>
+    );
+  },
+};
+
+/** Both kinds of group closed over the current place: each head is drawn as current. */
+export const ClosedGroupHoldingCurrent: Story = {
+  tags: ["edge", "!autodocs"],
+  render: (args) => (
+    <div className="flex flex-col gap-4">
+      <NavList {...args}>
+        <NavListItem>
+          <NavListGroup defaultOpen={false}>
+            <NavListGroupRow>
+              <NavListLink href="#archive">
+                <ArchiveIcon />
+                Archive
+              </NavListLink>
+              <NavListGroupToggle />
+            </NavListGroupRow>
+            <NavListGroupContent>
+              <NavList>
+                {ARCHIVE.map((year) => (
+                  <NavListItem key={year}>
+                    <NavListLink
+                      href={`#archive-${year}`}
+                      depth={1}
+                      current={year === "2025"}
+                    >
+                      <FolderIcon />
+                      {year}
+                    </NavListLink>
+                  </NavListItem>
+                ))}
+              </NavList>
+            </NavListGroupContent>
+          </NavListGroup>
+        </NavListItem>
+      </NavList>
+      <NavList {...args}>
+        <NavListItem>
+          <NavListGroup defaultOpen={false}>
+            <NavListHeading asChild>
+              <h2>
+                <NavListGroupToggle>Labels</NavListGroupToggle>
+              </h2>
+            </NavListHeading>
+            <NavListGroupContent>
+              <NavList>
+                {LABELS.map((label) => (
+                  <NavListItem key={label}>
+                    <NavListLink href={`#${label}`} current={label === "ci"}>
+                      <TagIcon />
+                      {label}
+                    </NavListLink>
+                  </NavListItem>
+                ))}
+              </NavList>
+            </NavListGroupContent>
+          </NavListGroup>
+        </NavListItem>
+      </NavList>
+    </div>
+  ),
+};
+
+/** A head too long for its row cuts off before the toggle, which stays at the row's end. */
+export const LongGroupName: Story = {
+  tags: ["edge", "!autodocs"],
+  decorators: [withWidth("max-w-40")],
+  render: (args) => (
+    <NavList {...args}>
+      <NavListItem>
+        <NavListGroup>
+          <NavListGroupRow>
+            <NavListLink href="#archive">
+              <ArchiveIcon />
+              <span className="truncate">
+                Archived correspondence from earlier years
+              </span>
+            </NavListLink>
+            <NavListGroupToggle />
+          </NavListGroupRow>
+          <NavListGroupContent>
+            <NavList>
+              {ARCHIVE.map((year) => (
+                <NavListItem key={year}>
+                  <NavListLink href={`#archive-${year}`} depth={1}>
+                    <FolderIcon />
+                    {year}
+                  </NavListLink>
+                </NavListItem>
+              ))}
+            </NavList>
+          </NavListGroupContent>
+        </NavListGroup>
+      </NavListItem>
+      <NavListItem>
+        <NavListGroup defaultOpen>
+          <NavListHeading asChild>
+            <h2>
+              <NavListGroupToggle>
+                Labels shared with the whole team
+              </NavListGroupToggle>
+            </h2>
+          </NavListHeading>
+          <NavListGroupContent>
+            <NavList>
+              {LABELS.map((label) => (
+                <NavListItem key={label}>
+                  <NavListLink href={`#${label}`}>
+                    <TagIcon />
+                    {label}
+                  </NavListLink>
+                </NavListItem>
+              ))}
+            </NavList>
+          </NavListGroupContent>
+        </NavListGroup>
+      </NavListItem>
+    </NavList>
+  ),
 };
 
 const SECTIONS = [

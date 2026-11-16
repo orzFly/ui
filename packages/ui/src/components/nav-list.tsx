@@ -1,6 +1,8 @@
+import { ChevronDownIcon } from "lucide-react";
 import { Slot } from "radix-ui";
 import * as React from "react";
 
+import { isPlainPress } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
 
 /**
@@ -12,6 +14,24 @@ import { cn } from "../lib/utils.ts";
 type NavListVariant = "rows" | "rail";
 
 const NavListContext = React.createContext<NavListVariant>("rows");
+
+interface GroupContextValue {
+  contentId: string;
+  state: "auto" | "open" | "closed";
+  expanded: boolean;
+  setOpen: (open: boolean) => void;
+  setContent: (content: HTMLElement | null) => void;
+}
+
+const GroupContext = React.createContext<GroupContextValue | null>(null);
+
+interface GroupRowContextValue {
+  placeId: string | undefined;
+  setPlaceId: (id: string) => void;
+  onPlaceClick: (event: React.MouseEvent<HTMLElement>) => void;
+}
+
+const GroupRowContext = React.createContext<GroupRowContextValue | null>(null);
 
 /**
  * A column of places to go: an app's folders, a settings screen's sections, a document's parts.
@@ -106,6 +126,14 @@ function NavListLink({
 }) {
   const Comp = asChild ? Slot.Root : "a";
   const variant = React.useContext(NavListContext);
+  const row = React.useContext(GroupRowContext);
+  const ownId = React.useId();
+  const id = props.id ?? ownId;
+  const setPlaceId = row?.setPlaceId;
+  React.useLayoutEffect(() => {
+    setPlaceId?.(id);
+  }, [setPlaceId, id]);
+  const onClick = props.onClick;
   return (
     <Comp
       data-slot="nav-list-link"
@@ -119,9 +147,23 @@ function NavListLink({
         // quiet text and a primary mark inside swapped onto it as List's are,
         // and its focus rectangle drawn in the highlight's text colour.
         "raymond:text-foreground raymond:transition-none raymond:not-data-current:hover:bg-transparent raymond:not-data-current:hover:text-foreground raymond:data-current:bg-primary raymond:data-current:font-normal raymond:data-current:text-primary-foreground raymond:data-current:[--ring:var(--primary-foreground)] raymond:data-current:[--foreground:var(--primary-foreground)] raymond:data-current:[--muted-foreground:var(--primary-foreground)] raymond:data-current:[--list-highlight:var(--primary)] raymond:data-current:[--list-highlight-text:var(--primary-foreground)] raymond:data-current:*:[--primary:var(--list-highlight-text)] raymond:data-current:*:[--primary-foreground:var(--list-highlight)]",
+        // A group's place shares its row with the toggle. While the group is
+        // closed over the current place the row takes the current fill and
+        // the link the text and cue, so its own hover fill keeps the cue.
+        row &&
+          "min-w-0 flex-1 pr-1 group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:font-medium group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:text-accent-foreground group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:state-cue raymond:group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:font-normal raymond:group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:text-primary-foreground",
         className,
       )}
       {...props}
+      id={row ? id : props.id}
+      onClick={
+        row
+          ? (event: React.MouseEvent<HTMLAnchorElement>) => {
+              onClick?.(event);
+              row.onPlaceClick(event);
+            }
+          : onClick
+      }
     />
   );
 }
@@ -166,10 +208,210 @@ function NavListHeading({
   );
 }
 
+function useGroup(part: string) {
+  const group = React.useContext(GroupContext);
+  if (!group) throw new Error(`${part} renders inside a NavListGroup`);
+  return group;
+}
+
+/**
+ * A group of places the reader can close: its head, a `NavListGroupRow` or a `NavListHeading`
+ * holding a `NavListGroupToggle`, then a `NavListGroupContent`. Until the reader opens or closes
+ * it, it is open exactly while it holds the current place; `defaultOpen` starts it open or
+ * closed instead, and `open` with `onOpenChange` controls it. `asChild` makes the caller's
+ * element the group, such as the `NavListItem` it sits in. A group holds no other group.
+ */
+function NavListGroup({
+  open,
+  defaultOpen,
+  onOpenChange,
+  asChild = false,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & {
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  asChild?: boolean;
+}) {
+  const Comp = asChild ? Slot.Root : "div";
+  const contentId = React.useId();
+  const [chosen, setChosen] = React.useState(defaultOpen);
+  const [holdsCurrent, setHoldsCurrent] = React.useState(false);
+  const [content, setContent] = React.useState<HTMLElement | null>(null);
+
+  // Only aria-expanded waits for this. Until the reader chooses, what shows
+  // is the stylesheet's, from :has([aria-current]), so the first frame
+  // rendered on the server is already open over the current place.
+  React.useLayoutEffect(() => {
+    if (!content) return;
+    const check = () =>
+      setHoldsCurrent(content.querySelector("[aria-current]") !== null);
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(content, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["aria-current"],
+    });
+    return () => observer.disconnect();
+  }, [content]);
+
+  const controlled = open !== undefined;
+  const expanded = controlled ? open : (chosen ?? holdsCurrent);
+  const chosenOpen = controlled ? open : chosen;
+  const state =
+    chosenOpen === undefined ? "auto" : chosenOpen ? "open" : "closed";
+  const setOpen = (next: boolean) => {
+    if (!controlled) setChosen(next);
+    onOpenChange?.(next);
+  };
+
+  return (
+    <GroupContext.Provider
+      value={{ contentId, state, expanded, setOpen, setContent }}
+    >
+      <Comp
+        {...props}
+        data-slot="nav-list-group"
+        data-state={state}
+        className={cn("group/nav-list-group", className)}
+      />
+    </GroupContext.Provider>
+  );
+}
+
+/**
+ * A group's head when the group is a place: its `NavListLink`, then an icon-only
+ * `NavListGroupToggle`. A plain click on the link opens the group, and never closes it.
+ */
+function NavListGroupRow({ className, ...props }: React.ComponentProps<"div">) {
+  const group = useGroup("NavListGroupRow");
+  const [placeId, setPlaceId] = React.useState<string>();
+  const onPlaceClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (!group.expanded && isPlainPress(event)) group.setOpen(true);
+  };
+  return (
+    <GroupRowContext.Provider value={{ placeId, setPlaceId, onPlaceClick }}>
+      <div
+        {...props}
+        data-slot="nav-list-group-row"
+        // Closed over the current place, the row is drawn as the current
+        // place's: the fill here, the text and cue on its link. raymond
+        // fills it with the highlight; the +/- box keeps its own white.
+        className={cn(
+          "flex items-stretch group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:bg-accent raymond:group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:bg-primary raymond:group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:[--muted-foreground:var(--primary-foreground)] raymond:group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:[--ring:var(--primary-foreground)]",
+          className,
+        )}
+      />
+    </GroupRowContext.Provider>
+  );
+}
+
+/**
+ * Opens and closes its `NavListGroup`. With children it is the whole text of the
+ * `NavListHeading` it sits in; without, an icon button at the end of a `NavListGroupRow`, named
+ * after the row's link unless given `aria-label`.
+ */
+function NavListGroupToggle({
+  className,
+  children,
+  onClick,
+  ...props
+}: Omit<React.ComponentProps<"button">, "type">) {
+  const group = useGroup("NavListGroupToggle");
+  const row = React.useContext(GroupRowContext);
+  const named =
+    props["aria-label"] !== undefined || props["aria-labelledby"] !== undefined;
+  const icon = children === undefined || children === null;
+  // Drawn open by the stylesheet rather than by `expanded`, so a group the
+  // reader has not touched is right in its first frame.
+  const marker = (
+    <>
+      <ChevronDownIcon
+        aria-hidden
+        className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover/nav-list-toggle:text-foreground group-data-[state=open]/nav-list-group:rotate-180 group-data-[state=auto]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:rotate-180 motion-reduce:transition-none raymond:hidden"
+      />
+      {/* tree.tsx's 9px box, written again because the tree's is placed on
+            its connecting lines and this one ends the row. */}
+      <span className="relative hidden size-[9px] shrink-0 border border-(--3d-shadow) bg-(--window) before:absolute before:inset-x-px before:top-[3px] before:h-px before:bg-foreground after:absolute after:inset-y-px after:left-[3px] after:w-px after:bg-foreground raymond:block group-data-[state=open]/nav-list-group:after:hidden group-data-[state=auto]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:after:hidden" />
+    </>
+  );
+  return (
+    <button
+      {...props}
+      type="button"
+      data-slot="nav-list-group-toggle"
+      aria-expanded={group.expanded}
+      aria-controls={group.contentId}
+      aria-labelledby={named ? props["aria-labelledby"] : row?.placeId}
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) group.setOpen(!group.expanded);
+      }}
+      className={cn(
+        "group/nav-list-toggle outline-none",
+        icon
+          ? // A square the row's height, which grows to the touch size with
+            // the row. Under raymond the tree view's box, with no hover.
+            "flex w-row shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:focus-ring-inset touch:w-11 raymond:transition-none raymond:hover:bg-transparent raymond:focus-visible:focus-ring raymond:[--focus-offset:-1px]"
+          : // The heading's whole text, reaching back over the heading's
+            // padding so the cue of a group closed over the current place
+            // sits on the row's edge, where a current link draws its own.
+            "relative -mx-3 flex min-w-0 flex-1 items-center gap-2 pl-3 text-left focus-visible:focus-ring touch:hit-area group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:state-cue",
+        className,
+      )}
+    >
+      {!icon && (
+        // raymond has no cue; it highlights the words alone, as a tree view
+        // does its current item's.
+        <span className="min-w-0 truncate raymond:-mx-0.5 raymond:px-0.5 raymond:group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:bg-primary raymond:group-data-[state=closed]/nav-list-group:group-has-[[data-slot=nav-list-group-content]_[aria-current]]/nav-list-group:text-primary-foreground">
+          {children}
+        </span>
+      )}
+      {icon ? (
+        marker
+      ) : (
+        // The square an icon-only toggle is, so the markers of both kinds
+        // of head line up down the list.
+        <span className="ml-auto flex w-row shrink-0 items-center justify-center touch:w-11">
+          {marker}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/** A `NavListGroup`'s places, kept in the page while closed. */
+function NavListGroupContent({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  const group = useGroup("NavListGroupContent");
+  return (
+    <div
+      {...props}
+      ref={group.setContent}
+      id={group.contentId}
+      hidden={group.state === "closed"}
+      data-slot="nav-list-group-content"
+      className={cn(
+        "group-data-[state=auto]/nav-list-group:not-has-[[aria-current]]:hidden",
+        className,
+      )}
+    />
+  );
+}
+
 export {
   NavList,
   NavListCount,
   NavListFrame,
+  NavListGroup,
+  NavListGroupContent,
+  NavListGroupRow,
+  NavListGroupToggle,
   NavListHeading,
   NavListItem,
   NavListLink,
