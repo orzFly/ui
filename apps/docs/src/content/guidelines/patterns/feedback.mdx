@@ -61,6 +61,7 @@ control that can fix it.
 | What happened | Needs people to | Use |
 |---|---|---|
 | An action finished as expected | Nothing; maybe undo it | `toast()`, `toast.success()`, with an `action` to undo |
+| A control shows its own result where it was pressed | Nothing | No toast; `writeClipboard` toasts only a failure |
 | Something finished in the background, out of view | Know, maybe open it | `toast()` with an action that opens it |
 | A field or a form is wrong | Fix that field | An inline message under the field |
 | A surface failed to load and has nothing to show | Retry | `LoadFailure` in its place |
@@ -80,6 +81,12 @@ Mail's list failed to load and has nothing to show, so `LoadFailure` takes its p
 
 A message that stays has to be removable by fixing its cause, not by a close button; one that
 leaves by itself must not carry the only copy of something people need to read.
+
+A control that shows its own result needs no toast as well. A code block's **Copy** turns into a
+check for a moment, and says "Copied" to a screen reader: the eyes are already on the button, and a
+toast in the corner would only pull them away. Its failure still toasts, since the button cannot say
+why it failed. `copyToClipboard` is for a copy made from a menu or a shortcut, where nothing on
+screen changes; `writeClipboard` from `@orz/ui/lib/clipboard` is for a control that answers itself.
 
 ## Writing the message
 
