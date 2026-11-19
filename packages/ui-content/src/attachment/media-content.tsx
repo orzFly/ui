@@ -79,6 +79,8 @@ export function imageContent(): ContentRenderer {
           onLookChange={viewerImage.setLook}
           lastHeight={viewerImage.lastHeight}
           held={viewerImage.held}
+          dialog={viewerImage.dialog}
+          widening={viewerImage.widening}
           className={className}
         />
       );

@@ -42,6 +42,7 @@ import { ContentTitleBar } from "../title-bar.tsx";
 import type { ContentSource } from "../types.ts";
 import { fileIcon } from "./icon.ts";
 import { DEFAULT_IMAGE_LOOK, type ImageLook } from "./image-look.ts";
+import { releaseWidth, restingWidth, type Widening } from "./use-zoom-pan.ts";
 
 export type FileSource = Extract<ContentSource, { kind: "file" }>;
 
@@ -77,6 +78,10 @@ type ViewerImage = {
   lastHeight: { current: number | null };
   /** The height the canvas keeps while the pointer is on the title-bar controls. */
   held: number | null;
+  /** The dialog a zoomed canvas widens. */
+  dialog: HTMLElement | null;
+  /** What the canvas asked of the dialog's width, so the next one pages in from it. */
+  widening: { current: Widening };
 };
 
 const ViewerImageContext = createContext<ViewerImage | null>(null);
@@ -382,15 +387,21 @@ export function AttachmentViewer({
   const [ownLook, setOwnLook] = useState(DEFAULT_IMAGE_LOOK);
   const look = imageLook ?? ownLook;
   const lastHeight = useRef<number | null>(null);
+  const [dialog, setDialog] = useState<HTMLElement | null>(null);
+  const widening = useRef<Widening>(restingWidth());
 
   const file = state?.items[state.index];
   const count = state?.items.length ?? 0;
   const isImage = file !== undefined && isImageFile(file);
   // Paging between images tweens from one's height to the next; from
-  // anything else, including a closed viewer, the image lands at once.
+  // anything else, including a closed viewer, the image lands at once. The
+  // width a zoom widened the dialog to goes the same way, at once.
   useEffect(() => {
-    if (!isImage) lastHeight.current = null;
-  }, [isImage]);
+    if (isImage) return;
+    lastHeight.current = null;
+    releaseWidth(dialog, widening);
+    widening.current = restingWidth();
+  }, [isImage, dialog]);
 
   // While the pointer is over − 100%▾ + or ‹ ›, the image keeps the height
   // it had when the pointer arrived, and takes its own once the pointer
@@ -460,8 +471,10 @@ export function AttachmentViewer({
       },
       lastHeight,
       held,
+      dialog,
+      widening,
     }),
-    [maximized, look, imageLook, onImageLookChange, held],
+    [maximized, look, imageLook, onImageLookChange, held, dialog],
   );
 
   const step = (delta: number) => {
@@ -477,6 +490,7 @@ export function AttachmentViewer({
       }}
     >
       <DialogContent
+        ref={setDialog}
         aria-describedby={undefined}
         showCloseButton={false}
         onKeyDown={(e) => {

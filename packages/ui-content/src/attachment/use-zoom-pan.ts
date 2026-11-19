@@ -11,6 +11,7 @@ import { flushSync } from "react-dom";
 import {
   actualAt,
   canvasHeight,
+  canvasWidth,
   type Frame,
   fitView,
   isFitted,
@@ -33,6 +34,40 @@ export const ZOOM_STEP = 1.25;
 const TWEEN = { duration: 200, easing: "cubic-bezier(0.2, 0, 0, 1)" };
 /** Bounds re-measuring in one observer callback, should a layout never settle. */
 const SETTLE_PASSES = 3;
+/** The id the dialog's width tween is told apart from its own animations by. */
+const WIDEN = "zoom-widen";
+
+/**
+ * What a restored canvas has asked of its dialog's width, kept by the viewer
+ * so the next picture pages in from it: the canvas width the dialog was
+ * widened to, if any, and the canvas's width when it was not.
+ */
+export type Widening = { asked: number | null; rest: number | null };
+
+/** A fresh record, for a viewer to keep in a ref. */
+export function restingWidth(): Widening {
+  return { asked: null, rest: null };
+}
+
+// happy-dom has no Web Animations.
+function animationsOf(el: HTMLElement): Animation[] {
+  return typeof el.getAnimations === "function" ? el.getAnimations() : [];
+}
+
+/**
+ * Back to the dialog's resting width at once: for a picture that failed to
+ * load, which never becomes ready to ask for its own, and for paging to
+ * something that is not zoomed.
+ */
+export function releaseWidth(
+  dialog: HTMLElement | null,
+  widening: { current: Widening } | undefined,
+) {
+  if (widening !== undefined) widening.current.asked = null;
+  if (dialog === null) return;
+  for (const a of animationsOf(dialog)) if (a.id === WIDEN) a.cancel();
+  dialog.style.minWidth = "";
+}
 
 /** One pane filling the canvas: a single picture. */
 export function fillCanvas(width: number, height: number): Pane[] {
@@ -55,7 +90,7 @@ function paneAt(panes: Pane[], p: Point): number {
   return best;
 }
 
-type Layout = { width: number; height: number; panes: Pane[] };
+type Layout = { width: number; height: number; rest: number; panes: Pane[] };
 
 /** Applies `op` to the live view about the canvas centre. */
 export type AtCentre = (
@@ -67,16 +102,21 @@ export type UseZoomPanOptions = {
   natural: { w: number; h: number } | null;
   /**
    * The panes a canvas of this size is cut into, every one showing the same
-   * view; the frame is the first's. Default: one pane filling the canvas.
-   * Memoise it: a new function measures the canvas again.
+   * view; the frame is the first's. `rest` is the canvas's width before the
+   * zoom widened it. Default: one pane filling the canvas. Memoise it: a new
+   * function measures the canvas again.
    */
-  panes?: (width: number, height: number) => Pane[];
+  panes?: (width: number, height: number, rest: number) => Pane[];
   /** Whether the canvas fills the window rather than following the zoom. */
   maximized: boolean;
   /** The last canvas height, so a remounted canvas tweens from it. */
   lastHeight: { current: number | null };
   /** A height the canvas keeps whatever the zoom asks for; null lets go. */
   held: number | null;
+  /** The dialog that widens with the zoom; none keeps the width CSS gives. */
+  dialog?: HTMLElement | null;
+  /** What the dialog was asked for, carried across remounts by the viewer. */
+  widening?: { current: Widening };
 };
 
 /**
@@ -85,8 +125,10 @@ export type UseZoomPanOptions = {
  * fit ↔ actual pixels, and 0 / 1 / + / − work from the keyboard. Every pane
  * the canvas is cut into shows the same view, so a pointer is read in the
  * pane it is over and the result moves them all. Restored, the canvas grows
- * taller with the zoom, tweening from one height to the next. Put
- * `canvasRef`, `height` and `handlers` on the canvas element.
+ * with the zoom, tweening: taller itself, and wider by widening `dialog` up
+ * to the viewport. While `held` is set the canvas keeps the height and width
+ * it has whatever the zoom asks for, and moves to its own once it is
+ * cleared. Put `canvasRef`, `height` and `handlers` on the canvas element.
  */
 export function useZoomPan({
   natural,
@@ -94,6 +136,8 @@ export function useZoomPan({
   maximized,
   lastHeight,
   held,
+  dialog = null,
+  widening,
 }: UseZoomPanOptions) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState<Frame | null>(null);
@@ -134,7 +178,22 @@ export function useZoomPan({
     const measure = () => {
       const width = el.clientWidth;
       const height = el.clientHeight;
-      const panes = layoutPanes(width, height);
+      // Only a canvas the zoom has not widened, and is not mid-tween back
+      // from widening, shows the width the dialog rests at.
+      if (
+        !maximized &&
+        widening !== undefined &&
+        widening.current.asked === null &&
+        (dialog === null ||
+          !animationsOf(dialog).some(
+            (a) => a.id === WIDEN && a.playState === "running",
+          ))
+      )
+        widening.current.rest = width;
+      const rest = maximized
+        ? width
+        : Math.min(width, widening?.current.rest ?? width);
+      const panes = layoutPanes(width, height, rest);
       const first = panes[0] ?? { width, height };
       const next: Frame = {
         width: first.width,
@@ -142,13 +201,14 @@ export function useZoomPan({
         naturalWidth: natural.w,
         naturalHeight: natural.h,
         upscale: maximized,
+        restWidth: layoutPanes(rest, height, rest)[0]?.width ?? rest,
       };
       const { frame: prev, view: v } = live.current;
       lastHeight.current = maximized ? null : height;
       place(
         next,
         prev === null || v === null ? fitView(next) : reframe(prev, next, v),
-        { width, height, panes },
+        { width, height, rest, panes },
       );
       return { width, height };
     };
@@ -173,7 +233,7 @@ export function useZoomPan({
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [natural, maximized, place, lastHeight, layoutPanes]);
+  }, [natural, maximized, place, lastHeight, layoutPanes, dialog, widening]);
 
   // Canvas point → the point in the pane it is read in.
   const inPane = useCallback((p: Point, pane: number): Point => {
@@ -184,13 +244,29 @@ export function useZoomPan({
     (p: Point) => paneAt(live.current.layout?.panes ?? [], p),
     [],
   );
+  // Client point → canvas point, in the canvas as last measured, which is
+  // what the view is placed in. Chrome delivers a wheel at the start of a
+  // frame, after a tween has already resized the canvas and before it is
+  // measured again; read against the new box, every step of a wheel during
+  // a widening drifted. The canvas grows evenly about its centre, so the
+  // centre is where the two boxes agree.
+  const canvasPoint = useCallback(
+    (r: DOMRect, clientX: number, clientY: number): Point => {
+      const measured = live.current.layout;
+      if (measured === null) return { x: clientX - r.left, y: clientY - r.top };
+      return {
+        x: clientX - (r.left + r.width / 2) + measured.width / 2,
+        y: clientY - (r.top + r.height / 2) + measured.height / 2,
+      };
+    },
+    [],
+  );
 
   useEffect(() => {
     const el = canvasRef.current;
     if (el === null) return;
     const local = (clientX: number, clientY: number): Point => {
-      const r = el.getBoundingClientRect();
-      const p = { x: clientX - r.left, y: clientY - r.top };
+      const p = canvasPoint(el.getBoundingClientRect(), clientX, clientY);
       return inPane(p, paneUnder(p));
     };
     // React's onWheel is passive, so it cannot stop the page from scrolling
@@ -230,7 +306,7 @@ export function useZoomPan({
       el.removeEventListener("gesturestart", onGestureStart);
       el.removeEventListener("gesturechange", onGestureChange);
     };
-  }, [apply, inPane, paneUnder]);
+  }, [apply, inPane, paneUnder, canvasPoint]);
 
   const atCentre: AtCentre = useCallback(
     (op) => {
@@ -274,10 +350,8 @@ export function useZoomPan({
   const downAt = useRef<Point>({ x: 0, y: 0 });
   const gesturePane = useRef(0);
 
-  const canvasOf = (e: ReactPointerEvent): Point => {
-    const r = e.currentTarget.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
-  };
+  const canvasOf = (e: ReactPointerEvent): Point =>
+    canvasPoint(e.currentTarget.getBoundingClientRect(), e.clientX, e.clientY);
   const localOf = (e: ReactPointerEvent): Point =>
     inPane(canvasOf(e), gesturePane.current);
 
@@ -347,7 +421,10 @@ export function useZoomPan({
   // measure: a caller switching how its canvas is cut renders once before
   // the effect measures again, and must not see the old cut then.
   const panes = useMemo(
-    () => (layout === null ? null : layoutPanes(layout.width, layout.height)),
+    () =>
+      layout === null
+        ? null
+        : layoutPanes(layout.width, layout.height, layout.rest),
     [layout, layoutPanes],
   );
 
@@ -364,21 +441,33 @@ export function useZoomPan({
         ? layout.height + rows * (canvasHeight(frame, view.z) - frame.height)
         : (startHeight ?? undefined)));
 
+  // Every column of panes widens the same way: one for a single picture or
+  // two stacked, two side by side. Nothing is asked of a dialog at rest.
+  const columns = panes === null ? 1 : new Set(panes.map((p) => p.x)).size;
+  const wanted =
+    maximized || !ready
+      ? null
+      : layout.width + columns * (canvasWidth(frame, view.z) - frame.width);
+  const widen =
+    wanted === null || layout === null || wanted <= layout.rest + 0.5
+      ? null
+      : wanted;
+
   // From the last measured height, which mid-tween is the one on screen.
-  // Only between two restored heights at one width: maximize, restore and
-  // the first load land at once, and a resized window should not trail.
-  const tweened = useRef<{ height: number; width: number | null } | null>(null);
+  // Restored heights tween from one to the next, unless the window was
+  // resized in between: a resized window should not trail. Maximize,
+  // restore and the first load land at once.
+  const tweened = useRef<{ height: number; window: number } | null>(null);
   useLayoutEffect(() => {
     const el = canvasRef.current;
     const prev = tweened.current;
     const from = live.current.layout;
     tweened.current =
-      height === undefined ? null : { height, width: from?.width ?? null };
-    // happy-dom has no Web Animations.
+      height === undefined ? null : { height, window: window.innerWidth };
     if (el === null || typeof el.getAnimations !== "function") return;
     for (const a of el.getAnimations()) a.cancel();
     if (from === null || prev === null || height === undefined) return;
-    if (prev.width !== null && prev.width !== from.width) return;
+    if (prev.window !== window.innerWidth) return;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     // The capped height, not the requested one: a tween to a height past
     // the pane's cap would stop dead at the cap partway through its curve.
@@ -389,6 +478,42 @@ export function useZoomPan({
         TWEEN,
       );
   }, [height]);
+
+  // The dialog's width moves the same way, from whatever width is on screen,
+  // mid-tween included. Not until this picture is ready, so paging from a
+  // widened one tweens straight to the next one's width; not while held.
+  const widenedAt = useRef<{ maximized: boolean; window: number } | null>(null);
+  useLayoutEffect(() => {
+    const prev = widenedAt.current;
+    widenedAt.current = { maximized, window: window.innerWidth };
+    if (dialog === null || widening === undefined) return;
+    if (held !== null || (!ready && !maximized)) return;
+    if (widening.current.asked === widen) return;
+    const from = dialog.offsetWidth;
+    for (const a of animationsOf(dialog)) if (a.id === WIDEN) a.cancel();
+    widening.current.asked = widen;
+    // Past the canvas, the dialog's own padding; never past the inset its
+    // CSS keeps from the window's edges.
+    const box = getComputedStyle(dialog);
+    const padding =
+      (Number.parseFloat(box.paddingLeft) || 0) +
+      (Number.parseFloat(box.paddingRight) || 0);
+    dialog.style.minWidth =
+      widen === null ? "" : `min(100% - 2rem, ${widen + padding}px)`;
+    const to = dialog.offsetWidth;
+    if (from === to || typeof dialog.animate !== "function") return;
+    if (
+      prev === null ||
+      prev.maximized !== maximized ||
+      prev.window !== window.innerWidth
+    )
+      return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    dialog.animate([{ minWidth: `${from}px` }, { minWidth: `${to}px` }], {
+      ...TWEEN,
+      id: WIDEN,
+    });
+  }, [widen, held, ready, maximized, dialog, widening]);
 
   return {
     canvasRef,

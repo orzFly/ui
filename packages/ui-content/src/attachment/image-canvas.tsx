@@ -3,7 +3,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import type { ImageLook } from "./image-look.ts";
 import { fitScale } from "./image-zoom.ts";
-import { useZoomPan } from "./use-zoom-pan.ts";
+import { releaseWidth, useZoomPan, type Widening } from "./use-zoom-pan.ts";
 import { ZoomControls } from "./zoom-controls.tsx";
 
 // In screen pixels, never scaled with the image: at 800% a scaled checker
@@ -22,7 +22,8 @@ export const CORNER = "min(var(--radius-item), 6px)";
  * at fit; `lastHeight` carries the canvas height across that remount, so the
  * next image tweens from it. While `held` is set the canvas keeps that height
  * whatever the zoom or image asks for, and moves to its own once it is
- * cleared.
+ * cleared. Zoomed in, it widens `dialog` with it, `widening` carrying that
+ * across paging.
  */
 export function ImageCanvas({
   src,
@@ -33,6 +34,8 @@ export function ImageCanvas({
   onLookChange,
   lastHeight,
   held,
+  dialog,
+  widening,
   className,
 }: {
   src: string;
@@ -43,6 +46,8 @@ export function ImageCanvas({
   onLookChange(look: ImageLook): void;
   lastHeight: { current: number | null };
   held: number | null;
+  dialog: HTMLElement | null;
+  widening: { current: Widening };
   className?: string;
 }) {
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
@@ -57,7 +62,14 @@ export function ImageCanvas({
     atCentre,
     step,
     handlers,
-  } = useZoomPan({ natural, maximized, lastHeight, held });
+  } = useZoomPan({
+    natural,
+    maximized,
+    lastHeight,
+    held,
+    dialog,
+    widening,
+  });
 
   // Nothing to measure or zoom; the static image's alt text and
   // broken-image icon are the error.
@@ -130,6 +142,7 @@ export function ImageCanvas({
           draggable={false}
           onError={() => {
             lastHeight.current = null;
+            releaseWidth(dialog, widening);
             setFailed(true);
           }}
           onLoad={(e) =>
