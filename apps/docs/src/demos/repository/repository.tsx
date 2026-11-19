@@ -49,12 +49,15 @@ import { asciinemaContent } from "@orz/ui-asciinema";
 import { codeContent, patchContent } from "@orz/ui-code";
 import { Content, ContentRenderers } from "@orz/ui-content";
 import {
+  AttachmentViewer,
+  type AttachmentViewerState,
   audioContent,
   htmlContent,
   imageContent,
   pdfContent,
   videoContent,
 } from "@orz/ui-content/attachment";
+import { MediaCompare } from "@orz/ui-content/compare";
 import { hexContent } from "@orz/ui-hex/content";
 import { markdownContent } from "@orz/ui-markdown";
 import {
@@ -70,7 +73,13 @@ import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
 import { hrefOf as pageHref } from "../../routes.ts";
 import { setHash, useHash } from "../demo-state.ts";
-import { CHANGES, changeFile, STATUS } from "./changes.ts";
+import {
+  CHANGES,
+  changeFile,
+  IMAGE_CHANGES,
+  type ImageChange,
+  STATUS,
+} from "./changes.ts";
 
 // In the order the registry tries them: the media and pages first, markdown
 // before codeContent, which would take it as plain text, and hexContent last,
@@ -525,6 +534,7 @@ function Place({
   const status = rowStatus.get(path);
   const first = origin[path] ?? path;
   const change = CHANGES.get(first);
+  const image = IMAGE_CHANGES.get(first);
   const [view, setView] = useState<"file" | "changes">(
     status === "deleted" && change ? "changes" : "file",
   );
@@ -554,7 +564,7 @@ function Place({
         {status && status !== "changes" && (
           <Badge variant={BADGE[status]}>{LABELS[status]}</Badge>
         )}
-        {change && (
+        {(change || image) && (
           <SegmentedControl
             aria-label="View"
             value={view}
@@ -577,6 +587,8 @@ function Place({
           </EmptyState>
         ) : children ? (
           <Listing path={path} items={children} rowStatus={rowStatus} />
+        ) : view === "changes" && image ? (
+          <ImageChanges change={image} />
         ) : view === "changes" && change ? (
           <ClientOnly fallback={<Skeleton className="m-4 h-40" />}>
             <Viewed source={changeFile(first)} />
@@ -596,6 +608,36 @@ function Place({
         )}
       </Pane>
     </>
+  );
+}
+
+/**
+ * An image's change: the committed version beside the one on disk, and both
+ * in the viewer at one zoom on a click.
+ */
+function ImageChanges({ change }: { change: ImageChange }) {
+  const [viewer, setViewer] = useState<AttachmentViewerState | null>(null);
+  const before = { label: "HEAD", ...change.before };
+  const after = { label: "Working tree", ...change.after };
+  return (
+    <div className="p-4">
+      <MediaCompare
+        before={{
+          ...before,
+          content: <img src={before.file.url} alt="The committed version" />,
+        }}
+        after={{
+          ...after,
+          content: <img src={after.file.url} alt="The version on disk" />,
+        }}
+        onOpen={() => setViewer({ compare: [{ before, after }], index: 0 })}
+      />
+      <AttachmentViewer
+        state={viewer}
+        onNavigate={(index) => setViewer((s) => s && { ...s, index })}
+        onClose={() => setViewer(null)}
+      />
+    </div>
   );
 }
 

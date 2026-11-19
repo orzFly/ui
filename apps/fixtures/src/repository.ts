@@ -11,6 +11,7 @@ import guideText from "./attachment/guide.md?raw";
 import svgText from "./attachment/logo.svg?raw";
 import svgUrl from "./attachment/logo.svg?url&no-inline";
 import pdfUrl from "./attachment/paper.pdf?url&no-inline";
+import settingsUrl from "./attachment/settings-after.svg?url&no-inline";
 import spriteUrl from "./attachment/sprite.png?url&no-inline";
 import oggUrl from "./attachment/tone.ogg?url&no-inline";
 import alertsText from "./config/alerts.json?raw";
@@ -141,6 +142,8 @@ const BINARY: Record<string, [mime: string, url: string, size: number]> = {
   "dist/bundle.zip": ["application/zip", zipUrl, 182],
   "docs/paper.pdf": ["application/pdf", pdfUrl, 689],
   "docs/assets/gradient.png": ["image/png", pngUrl, 1510],
+  // Changed in the working tree: its committed version is settings-before.svg.
+  "docs/assets/settings.svg": ["image/svg+xml", settingsUrl, 2120],
   "docs/assets/sprite.png": ["image/png", spriteUrl, 232],
   "test/fixtures/media/clip.webm": ["video/webm", webmUrl, 10556],
   "test/fixtures/media/tone.ogg": ["audio/ogg", oggUrl, 4649],
