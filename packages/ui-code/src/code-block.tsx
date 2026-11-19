@@ -75,8 +75,10 @@ function chunkComponent<P extends object>(
     const [current, setCurrent] = useState(chunk);
     const waiting = current === undefined;
     // Started from render, as lazy() does, so the fetch is not held back
-    // until the page commits.
-    if (waiting) void start();
+    // until the page commits. Not on a server, which draws the fallback the
+    // client's first render draws too: no chunk is there yet as a page
+    // hydrates.
+    if (waiting && typeof document !== "undefined") void start();
     useEffect(() => {
       if (!waiting) return;
       let live = true;
