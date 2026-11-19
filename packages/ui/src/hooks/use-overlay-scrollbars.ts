@@ -38,6 +38,12 @@ function merged(options: PartialOptions | undefined): PartialOptions {
  * container whose content is still in flight does not. Initializing on mount
  * costs that one reveal outright. Until then the element scrolls natively.
  *
+ * The instance is built in an idle callback after `ready`, not in the commit,
+ * since building one forces a layout of the page. Hide the native bar on the
+ * viewport from the start (`[scrollbar-width:none]`), or on a platform whose
+ * bars take room the content narrows, then widens again when the overlay
+ * arrives.
+ *
  * `options` go over the defaults above. A container that must never scroll
  * sideways passes `{ overflow: { x: "hidden" } }`: Tailwind's
  * `overflow-y-auto` leaves x computing to `auto`. Pass a stable object — a new
@@ -58,19 +64,40 @@ export function useOverlayScrollbars(ready: boolean, options?: PartialOptions) {
     const slotElement = slot.current;
     const viewportElement = viewport.current;
     if (!ready || slotElement === null || viewportElement === null) return;
-    const created = OverlayScrollbars(
-      {
-        target: viewportElement,
-        elements: { viewport: viewportElement },
-        scrollbars: { slot: slotElement },
-      },
-      merged(latest.current),
-    );
-    instance.current = created;
-    applied.current = latest.current;
-    return () => {
+    let created: OverlayScrollbars | null = null;
+    const create = () => {
+      created = OverlayScrollbars(
+        {
+          target: viewportElement,
+          elements: { viewport: viewportElement },
+          scrollbars: { slot: slotElement },
+        },
+        merged(latest.current),
+      );
+      instance.current = created;
+      applied.current = latest.current;
+    };
+    const destroy = () => {
       instance.current = null;
-      created.destroy();
+      created?.destroy();
+    };
+    // Each instance forces a style and layout pass over the whole page as it
+    // builds itself, about 50ms under a board of 150 cards; created in the
+    // effect, a board's columns did it back to back inside the task that
+    // committed them, one 340ms block. An idle callback apiece puts input
+    // between them.
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(create, { timeout: 1000 });
+      return () => {
+        cancelIdleCallback(id);
+        destroy();
+      };
+    }
+    // Safari has no idle callbacks.
+    const id = setTimeout(create, 0);
+    return () => {
+      clearTimeout(id);
+      destroy();
     };
   }, [ready]);
 

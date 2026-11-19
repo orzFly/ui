@@ -12,7 +12,7 @@ function List({ items }: { items: string[] }) {
   const { slot, viewport } = useOverlayScrollbars(true, NO_SIDEWAYS);
   return (
     <div ref={slot} className="relative">
-      <div ref={viewport} className="h-64 overflow-y-auto">
+      <div ref={viewport} className="h-64 overflow-y-auto [scrollbar-width:none]">
         {items.map((item) => <div key={item}>{item}</div>)}
       </div>
     </div>
@@ -36,7 +36,7 @@ export const Usage: Story = {
       <Pane ref={slot} purpose="panel" frame="card" className="relative w-64">
         <div
           ref={viewport}
-          className="flex h-64 flex-col gap-2 overflow-y-auto p-2"
+          className="flex h-64 flex-col gap-2 overflow-y-auto p-2 [scrollbar-width:none]"
         >
           {Array.from({ length: 30 }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: static filler rows

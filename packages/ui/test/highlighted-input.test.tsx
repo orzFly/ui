@@ -117,3 +117,38 @@ describe("HighlightedInput", () => {
     expect(seen.at(-1)).toBe(8);
   });
 });
+
+// Reading scrollLeft forces a layout of the page, and a header's search box
+// re-renders with every query its suggestions watch landing.
+describe("HighlightedInput layout reads", () => {
+  it("reads scrollLeft again only when focused or after its value changed", () => {
+    const reads = vi.fn(() => 0);
+    const spy = vi
+      .spyOn(HTMLInputElement.prototype, "scrollLeft", "get")
+      .mockImplementation(reads);
+    const box = (value: string, placeholder: string) => (
+      <HighlightedInput
+        value={value}
+        onValueChange={() => {}}
+        render={render1}
+        aria-label="Search"
+        placeholder={placeholder}
+      />
+    );
+    const utils = render(box("is:open", "a"));
+    const first = reads.mock.calls.length;
+    expect(first).toBeGreaterThan(0);
+
+    utils.rerender(box("is:open", "b"));
+    expect(reads.mock.calls.length).toBe(first);
+
+    utils.rerender(box("is:closed", "b"));
+    expect(reads.mock.calls.length).toBeGreaterThan(first);
+
+    const afterValue = reads.mock.calls.length;
+    (utils.getByLabelText("Search") as HTMLInputElement).focus();
+    utils.rerender(box("is:closed", "c"));
+    expect(reads.mock.calls.length).toBeGreaterThan(afterValue);
+    spy.mockRestore();
+  });
+});

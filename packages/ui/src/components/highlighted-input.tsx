@@ -80,7 +80,23 @@ export function HighlightedInput({
   // No dependency list, deliberately: the browser moves `scrollLeft` as the
   // value and the caret change, and the render that follows was queued
   // before it did. `report` bails when nothing actually moved.
-  useLayoutEffect(report);
+  //
+  // Except where neither can have moved: a box nobody is typing in, holding
+  // the value it held last time. Reading `scrollLeft` forces a layout of the
+  // whole page, and a search box in an app's header re-renders with every
+  // query its suggestions watch landing. A blur that scrolls the text back is
+  // a scroll event, which reports on its own.
+  const reportedValue = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (
+      value === reportedValue.current &&
+      document.activeElement !== input.current
+    ) {
+      return;
+    }
+    reportedValue.current = value;
+    report();
+  });
 
   return (
     <div
