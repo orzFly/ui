@@ -58,11 +58,21 @@ export function renderDiagram(
         fontFamily,
         themeVariables: themeVariables(palette, fontFamily),
       });
-      // parse() first: it throws the readable error without touching the
-      // DOM, where a failing render() can leave its scratch node behind.
-      await mermaid.parse(source);
-      const { svg } = await mermaid.render(`mermaid-${++sequence}`, source);
-      return { ok: true, svg, width: viewBoxWidth(svg) };
+      const scratch = scratchHost();
+      try {
+        // parse() first: a source that does not parse would otherwise be
+        // drawn as mermaid's error diagram before render() throws the same
+        // message.
+        await mermaid.parse(source);
+        const { svg } = await mermaid.render(
+          `mermaid-${++sequence}`,
+          source,
+          scratch,
+        );
+        return { ok: true, svg, width: viewBoxWidth(svg) };
+      } finally {
+        scratch.remove();
+      }
     } catch (error) {
       return {
         ok: false,
@@ -72,6 +82,22 @@ export function renderDiagram(
   });
   queue = run.catch(() => undefined);
   return run;
+}
+
+/**
+ * A host for mermaid's measuring pass, already appended to `<body>`; the caller removes it once
+ * the render is done. Left to itself mermaid appends that scratch drawing to the end of `<body>`
+ * in flow, where it shows below the page for as long as layout takes (a whole queue of diagrams
+ * on a long document) and for good if drawing throws. Hidden rather than `display: none`, because
+ * text is measured with getBBox(), which needs a layout box.
+ */
+export function scratchHost(): HTMLDivElement {
+  const host = document.createElement("div");
+  host.setAttribute("aria-hidden", "true");
+  host.style.cssText =
+    "position:fixed;top:0;left:0;width:100%;visibility:hidden;pointer-events:none";
+  document.body.append(host);
+  return host;
 }
 
 function themeVariables(p: DiagramPalette, fontFamily: string) {

@@ -13,7 +13,7 @@ const mermaid = vi.hoisted(() => ({
     (_config: { themeVariables: { background: string } }) => {},
   ),
   parse: vi.fn(async (_source: string) => true),
-  render: vi.fn(async (id: string, _source: string) => ({
+  render: vi.fn(async (id: string, _source: string, _host?: Element) => ({
     svg: `<svg id="${id}" viewBox="0 0 120 40"></svg>`,
   })),
 }));
@@ -84,6 +84,32 @@ describe("renderDiagram", () => {
       ),
     ).toEqual(["#ffffff", "#000000"]);
     expect(mermaid.render).toHaveBeenCalledTimes(2);
+  });
+
+  it("measures in a hidden fixed host of its own, removed once drawn", async () => {
+    let host: Element | undefined;
+    mermaid.render.mockImplementationOnce(async (id, _source, container) => {
+      host = container;
+      expect(container?.isConnected).toBe(true);
+      return { svg: `<svg id="${id}"></svg>` };
+    });
+    await renderDiagram("flowchart LR\n A", LIGHT, "sans");
+    if (!(host instanceof HTMLElement)) throw new Error("no host handed over");
+    // Hidden, not display: none: text is measured with getBBox().
+    expect(host.style.visibility).toBe("hidden");
+    expect(host.style.position).toBe("fixed");
+    expect(host.getAttribute("aria-hidden")).toBe("true");
+    expect(host.isConnected).toBe(false);
+  });
+
+  it("removes the host when drawing throws", async () => {
+    const before = document.body.childElementCount;
+    mermaid.render.mockImplementationOnce(async () => {
+      throw new Error("layout failed");
+    });
+    const result = await renderDiagram("flowchart LR\n A", LIGHT, "sans");
+    expect(result).toEqual({ ok: false, error: "layout failed" });
+    expect(document.body.childElementCount).toBe(before);
   });
 });
 
