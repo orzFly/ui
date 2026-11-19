@@ -16,7 +16,7 @@ import type { Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { parser as commonmarkParser, GFM } from "@lezer/markdown";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { imagePairs } from "../extensions/image-pairs.ts";
 import {
@@ -31,6 +31,7 @@ import {
   type CodeEditorHandle,
   type CodeEditorPurpose,
 } from "./code-editor.tsx";
+import { PlainMarkdownEditor } from "./plain-markdown-editor.tsx";
 
 /**
  * GFM markdown, assembled straight from the Lezer parser rather than through
@@ -98,6 +99,12 @@ export type MarkdownEditorProps = {
   onDragOver?: (event: FileDragEvent) => void;
   /** Extra CodeMirror extensions, appended last so they can override. */
   extensions?: Extension;
+  /**
+   * A native textarea (`PlainMarkdownEditor`) in place of CodeMirror, with
+   * the same handle, keys and callbacks and none of the extensions. Read
+   * once, at mount: switching under an open draft would drop it.
+   */
+  plain?: boolean;
   /** What the editor is for, as `CodeEditor` takes it. Default `field`. */
   purpose?: CodeEditorPurpose;
   /** Height is the caller's business: pass the min-height/max-height here. */
@@ -166,8 +173,21 @@ export const markdownHighlightStyle = HighlightStyle.define([
  * callers read through the ref at submit time. onChange exists only for
  * derived flags; routing every keystroke through React would re-render the
  * caller's whole tree on every character.
+ *
+ * `plain` trades all of this for a native textarea, for a reader who would
+ * rather have the browser's own text box (a phone keyboard, a screen reader,
+ * a spell checker that only knows textareas).
  */
-export function MarkdownEditor({
+export function MarkdownEditor({ plain, ...props }: MarkdownEditorProps) {
+  const [textarea] = useState(plain ?? false);
+  return textarea ? (
+    <PlainMarkdownEditor {...props} />
+  ) : (
+    <CodeMirrorMarkdownEditor {...props} />
+  );
+}
+
+function CodeMirrorMarkdownEditor({
   initialValue,
   placeholder,
   ariaLabel,
@@ -184,7 +204,7 @@ export function MarkdownEditor({
   purpose,
   className,
   ref,
-}: MarkdownEditorProps) {
+}: Omit<MarkdownEditorProps, "plain">) {
   // Keymap and DOM handlers are built once but must always call today's
   // props, not the ones captured at mount.
   const handlers = useRef({ onSubmit, onCancel, onPaste, onDrop, onDragOver });

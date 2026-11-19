@@ -145,6 +145,18 @@ export const Playground: Story = {
 };
 
 /**
+ * `plain` mounts a native textarea instead of CodeMirror, read once at
+ * mount: the same handle, Mod-Enter and Escape, dirty tracking and paste and
+ * drop callbacks, without highlighting, completion or paste conversion.
+ */
+export const Plain: Story = {
+  args: {
+    plain: true,
+    initialValue: "A native textarea, for a reader who asked for one.\n",
+  },
+};
+
+/**
  * Copy part of a web page or a document and paste it here: links, emphasis, lists, tables and
  * code come through as Markdown, and a toolbar under the paste switches it to plain text or a
  * quote (Mod-. reaches it from the keyboard). Mod-Shift-V pastes plain text, Mod-Alt-V a quote.

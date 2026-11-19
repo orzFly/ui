@@ -75,6 +75,11 @@ The document lives in the EditorView, not in React state: read it through the ha
 `onSubmit`, and keep `onChange` for cheap derived flags. Mod-Enter submits, Escape cancels, and
 Alt-Enter inserts a blank line.
 
+`plain` mounts `PlainMarkdownEditor` instead, a native `Textarea` with the same handle, keys,
+dirty tracking and paste and drop callbacks, and none of the CodeMirror extensions below. It is
+read once, at mount, so a reader's choice of editor can be offered as a setting without an open
+draft switching under them.
+
 ### Paste and quote
 
 `MarkdownEditor` turns a formatted paste into Markdown, GitHub style: links, emphasis, lists,
@@ -101,6 +106,13 @@ alone.
 `EditorShortcutsHelp` is a keyboard button listing these keys, for a toolbar beside the editor,
 with Apple's ⌘ ⌥ ⇧ on Apple platforms. Its list portals into the button's own subtree, so a box
 that folds when focus leaves it stays open while the list is.
+
+Two images with `→` or `->` between them, alone in a paragraph, are an image pair, which a
+renderer that knows the convention shows as one comparison; the editor colours the arrow green.
+After a paste or a drop that lands one image beside another lone image, a toolbar under it offers
+to join them with an arrow (Mod-. reaches it). `imagePairs()` from `extensions/image-pairs` is
+that, for an editor of your own; its toolbar wears `extensions/editor-toolbar`, as the paste
+toolbar does.
 
 For an editor of your own, `pasteAs()` from `extensions/paste-as` is the toolbar and keys;
 call its `handlePaste(view, event)` from your paste handler, and `prefetchPasteConverter()` once
@@ -138,6 +150,12 @@ const extensions = [completionWith([mentions]), icons];
 Pass every source through one `completionWith` call. It installs the only `autocompletion()` for
 the editor, binds Tab only while a panel is open, adds the `<details>` tag template, and keeps the
 space after an accepted row out of the way of punctuation typed next.
+
+A row can draw more than a label: `completionWith`'s second argument takes CodeMirror's
+`optionClass` and `addToOptions`. `reactOption(position, className, draw)` is an `addToOptions`
+entry that renders a part with React, an `Avatar` say, and unmounts it once its row is gone. Return
+`completionRowClass.drawn` from `optionClass` for a row whose part takes the type icon's place, or
+`completionRowClass.face` for one whose part (a pill, a chip) shows the label itself.
 
 ### Slash commands
 
@@ -247,6 +265,7 @@ The handle's `setValue` and `append` are not marked, so they count as the reader
 |---|---|
 | `@orz/ui-codemirror/components/code-editor` | `CodeEditor`, `CodeEditorHandle`, `CodeEditorProps`, `PROGRAMMATIC_USER_EVENT` |
 | `@orz/ui-codemirror/components/editor-shortcuts-help` | `EditorShortcutsHelp` |
+| `@orz/ui-codemirror/components/plain-markdown-editor` | `PlainMarkdownEditor` |
 | `@orz/ui-codemirror/components/markdown-editor` | `MarkdownEditor`, `MarkdownEditorHandle`, `MarkdownEditorProps`, `FileClipboardEvent`, `FileDragEvent`, `markdownLanguage`, `markdownHighlightStyle` |
 | `@orz/ui-codemirror/extensions/<name>` | `code-context`, `completion`, `completion-space`, `composition-safe-measure`, `editor-toolbar`, `image-pairs`, `json`, `parked-tooltip`, `paste-as`, `quote-toggle`, `slash-commands`, `tag-completion`, `tooltip-space`, `trim-trailing-space` |
 | `@orz/ui-codemirror/styles.css` | `@source "./dist"` |
