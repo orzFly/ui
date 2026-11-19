@@ -71,13 +71,10 @@ const avatar = reactOption(20, "cm-completionAvatar", (option) => {
 });
 
 <MarkdownEditor
-  extensions={[
-    completionWith([mentions], {
-      optionClass: (option) => (people.has(option) ? completionRowClass.drawn : ""),
-      addToOptions: [avatar],
-    }),
-    mentionIcon,
-  ]}
+  extensions={completionWith([mentions], {
+    optionClass: (option) => (people.has(option) ? completionRowClass.drawn : ""),
+    addToOptions: [avatar],
+  })}
 />`;
 
 const TAG_COMPLETION = `import { completionWith } from "@orz/ui-codemirror/extensions/completion";
@@ -319,12 +316,6 @@ const mentions: CompletionSource = (context) => {
     people.set(option, person);
     return option;
   });
-  options.push({
-    label: "@here",
-    detail: "everyone watching",
-    type: "mention",
-    apply: applyWithSpace("@here"),
-  });
   return { from: match.from, options, validFor: /^@\w*$/ };
 };
 
@@ -338,27 +329,15 @@ const avatar = reactOption(20, "cm-completionAvatar", (option) => {
   );
 });
 
-const mentionIcon = EditorView.theme({
-  ".cm-completionIcon-mention::after": {
-    content: "'@'",
-    color: "var(--primary)",
-  },
+const completion = completionWith([mentions], {
+  optionClass: (option) => (people.has(option) ? completionRowClass.drawn : ""),
+  addToOptions: [avatar],
 });
-
-const completion = [
-  completionWith([mentions], {
-    optionClass: (option) =>
-      people.has(option) ? completionRowClass.drawn : "",
-    addToOptions: [avatar],
-  }),
-  mentionIcon,
-];
 
 /**
  * Type `@` for the stub mention source. A person's row draws an avatar with
  * React (`reactOption`) where the type icon stands, in a taller row
- * (`completionRowClass.drawn`); `@here`, which names nobody, keeps its icon.
- * An accepted mention leaves a space that punctuation typed next replaces.
+ * (`completionRowClass.drawn`). An accepted mention leaves a space that punctuation typed next replaces.
  */
 export const Completion: Story = {
   args: {
