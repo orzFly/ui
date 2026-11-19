@@ -66,7 +66,7 @@ const ALLOWED: readonly { file: string; utility: string; reason: string }[] = [
       "the editor's popups tint their shadow from --foreground, which no shadow token does",
   },
   {
-    file: "ui-codemirror/src/extensions/paste-as.ts",
+    file: "ui-codemirror/src/extensions/editor-toolbar.ts",
     utility:
       "boxShadow: 0 4px 6px -1px color-mix(in oklab, var(--foreground) 12%, transparent)",
     reason:
