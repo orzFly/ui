@@ -87,6 +87,11 @@ const liveField = StateField.define<Live | null>({
     ),
 });
 
+/** Whether the paste toolbar is up, for another toolbar to stand aside. */
+export function pasteOptionsShown(state: EditorState): boolean {
+  return (state.field(liveField, false) ?? null) !== null;
+}
+
 function hasOptions(pasted: Pasted): boolean {
   return pasted.markdown !== null || pasted.plain.includes("\n");
 }

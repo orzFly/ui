@@ -167,6 +167,20 @@ export const QuoteToggle: Story = {
   },
 };
 
+/**
+ * Two images with `→` or `->` between them, alone in a paragraph, get a green
+ * arrow: a renderer that knows the convention shows them as one comparison.
+ * Copy `![after](/after.png)` and paste it on the empty last line, and a
+ * toolbar under it offers to join it to the image above (Mod-. reaches it).
+ * Built into every MarkdownEditor.
+ */
+export const ImagePairs: Story = {
+  args: {
+    initialValue:
+      "![before](/before.png) → ![after](/after.png)\n\nNot a pair: see ![a](/a.png) -> ![b](/b.png) here.\n\n![before](/before.png)\n\n",
+  },
+};
+
 const people = new WeakMap<CompletionOption, TaskPerson>();
 
 const mentions: CompletionSource = (context) => {

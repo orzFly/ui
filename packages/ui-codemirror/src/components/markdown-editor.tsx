@@ -18,6 +18,7 @@ import { tags } from "@lezer/highlight";
 import { parser as commonmarkParser, GFM } from "@lezer/markdown";
 import { useEffect, useRef } from "react";
 
+import { imagePairs } from "../extensions/image-pairs.ts";
 import {
   handlePaste,
   pasteAs,
@@ -156,7 +157,10 @@ export const markdownHighlightStyle = HighlightStyle.define([
  *
  * A formatted paste becomes Markdown (`pasteAs`), Mod-Shift-V pastes plain
  * text, Mod-Alt-V pastes as a quote, and Mod-Shift-. quotes or unquotes the
- * selected lines; `EditorShortcutsHelp` lists these keys.
+ * selected lines; `EditorShortcutsHelp` lists these keys. Two images with an
+ * arrow between them, alone in a paragraph, get a green arrow, and a paste or
+ * drop that lands one image beside another offers to join them that way
+ * (`imagePairs`).
  *
  * The document is deliberately *not* React state — the EditorView owns it and
  * callers read through the ref at submit time. onChange exists only for
@@ -242,6 +246,7 @@ export function MarkdownEditor({
       onChange={onChange}
       extensions={[
         pasteAs(),
+        imagePairs(),
         EditorView.domEventHandlers({
           // `onPaste` first: a paste it takes as files is default-prevented,
           // and handlePaste then leaves it alone.
