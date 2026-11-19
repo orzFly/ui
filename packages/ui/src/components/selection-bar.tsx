@@ -2,7 +2,7 @@ import { XIcon } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "../lib/utils.ts";
-import { Checkbox } from "./checkbox.tsx";
+import { Checkbox, SelectSlot } from "./checkbox.tsx";
 import { Pane } from "./pane.tsx";
 import { ToolbarButton } from "./toolbar.tsx";
 import {
@@ -23,7 +23,9 @@ import {
  * The checkbox stays put in both states, so a clear, by the button or by
  * Escape inside the bar, hands the focus to it rather than dropping it with
  * the actions. A partly checked box selects the rest, and a fully checked one
- * clears. The count is a live region, read out as it changes.
+ * clears. The count is a live region, read out as it changes. Given an `icon`,
+ * the list's own, the box stands in for it as a row's does: the icon shows
+ * while nothing is selected, and the box while the pointer is on the bar.
  */
 function SelectionBar({
   count,
@@ -31,12 +33,15 @@ function SelectionBar({
   onSelectAll,
   onClear,
   idle,
+  icon,
   selectAllLabel = "Select all",
   clearLabel = "Clear selection",
   countLabel = (count) => `${count} selected`,
   className,
   children,
   onKeyDown,
+  onPointerEnter,
+  onPointerLeave,
   ...props
 }: Omit<React.ComponentProps<typeof Pane>, "purpose" | "asChild"> & {
   /** How many rows are selected. */
@@ -47,13 +52,23 @@ function SelectionBar({
   onClear: () => void;
   /** What the bar holds while nothing is selected, after the checkbox. */
   idle?: React.ReactNode;
+  /** The list's icon, which the checkbox stands in for until it is wanted. */
+  icon?: React.ReactNode;
   selectAllLabel?: string;
   clearLabel?: string;
   countLabel?: (count: number) => string;
 }) {
   const checkbox = React.useRef<HTMLButtonElement>(null);
+  const [hovered, setHovered] = React.useState(false);
   const selecting = count > 0;
   const all = total > 0 && count >= total;
+  const box = {
+    ref: checkbox,
+    checked: all ? true : selecting ? ("indeterminate" as const) : false,
+    disabled: total === 0,
+    onCheckedChange: () => (all ? onClear() : onSelectAll()),
+    "aria-label": selectAllLabel,
+  };
   const clear = () => {
     onClear();
     checkbox.current?.focus();
@@ -75,16 +90,22 @@ function SelectionBar({
         event.preventDefault();
         clear();
       }}
+      onPointerEnter={(event) => {
+        onPointerEnter?.(event);
+        if (event.pointerType !== "touch") setHovered(true);
+      }}
+      onPointerLeave={(event) => {
+        onPointerLeave?.(event);
+        setHovered(false);
+      }}
       {...props}
     >
       <span className="flex size-8 shrink-0 items-center justify-center">
-        <Checkbox
-          ref={checkbox}
-          checked={all ? true : selecting ? "indeterminate" : false}
-          disabled={total === 0}
-          onCheckedChange={() => (all ? onClear() : onSelectAll())}
-          aria-label={selectAllLabel}
-        />
+        {icon === undefined ? (
+          <Checkbox {...box} />
+        ) : (
+          <SelectSlot icon={icon} revealed={hovered} {...box} />
+        )}
       </span>
       {/* Mounted while idle too, empty: a live region is only read out once it exists. */}
       <span
