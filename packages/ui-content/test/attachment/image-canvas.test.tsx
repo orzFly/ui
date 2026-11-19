@@ -130,6 +130,43 @@ describe("the viewer's image", () => {
     }
   });
 
+  it("measures again when its own commit resized the canvas", () => {
+    let observed: (() => void) | undefined;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          observed = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    try {
+      render(<Viewer items={[SHOT]} />);
+      const el = canvas();
+      let width = 800;
+      // Laid out as a browser would: the height the canvas asks for is the
+      // height it gets, with no tween holding it.
+      Object.defineProperty(el, "clientWidth", { get: () => width });
+      Object.defineProperty(el, "clientHeight", {
+        get: () => Number.parseFloat(el.style.height) || 600,
+      });
+      const img = el.querySelector("img") as HTMLImageElement;
+      load(img);
+      expect(el.style.height).toBe("600px");
+
+      // Narrowed, the fitted image refits and asks for a shorter canvas,
+      // which the same commit gives it.
+      width = 400;
+      act(() => observed?.());
+      expect(el.style.height).toBe("300px");
+      expect(img.style.transform).toBe("translate(0px, 0px) scale(0.25)");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("lets go of a held height at once on a key press", () => {
     render(<Viewer items={[SHOT, file("other.png", { mime: "image/png" })]} />);
     const el = canvas();

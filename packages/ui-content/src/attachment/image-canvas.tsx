@@ -53,6 +53,8 @@ const TAP_SLOP = 4;
 const STEP = 1.25;
 /** The restored canvas's height changes. */
 const TWEEN = { duration: 200, easing: "cubic-bezier(0.2, 0, 0, 1)" };
+/** Bounds re-measuring in one observer callback, should a layout never settle. */
+const SETTLE_PASSES = 3;
 
 /**
  * The attachment viewer's image: wheel or pinch zooms about the pointer, drag
@@ -134,13 +136,27 @@ export function ImageCanvas({
         next,
         prev === null || v === null ? fitView(next) : reframe(prev, next, v),
       );
+      return next;
     };
     measure();
     if (typeof ResizeObserver === "undefined") return;
     // Committed before the frame paints: otherwise each frame of a tween
     // would show the canvas at its new height with the view placed for the
-    // old one, and the image would shake.
-    const ro = new ResizeObserver(() => flushSync(measure));
+    // old one, and the image would shake. That commit can itself resize the
+    // canvas (a refit asks for another height, or it carries a zoom that had
+    // not rendered yet), and with no tween holding the height it lands at
+    // once; the observer would only report it next frame, which paints the
+    // image a frame off, so it is measured again now.
+    const ro = new ResizeObserver(() => {
+      for (let i = 0; i < SETTLE_PASSES; i++) {
+        const measured = flushSync(measure);
+        if (
+          el.clientWidth === measured.width &&
+          el.clientHeight === measured.height
+        )
+          break;
+      }
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [natural, maximized, place, lastHeight]);
