@@ -248,6 +248,10 @@ function FilesMenu({
       </PopoverTrigger>
       <PopoverContent
         align="end"
+        // The padding matches the width cap's 1rem a side. At the default 8px
+        // a phone-wide list was pushed to 8px from one edge and 24px from the
+        // other, out past a dialog it opened from, whose own margin is 1rem.
+        collisionPadding={16}
         className="max-h-[55vh] w-96 max-w-[calc(100vw-2rem)] overflow-y-auto p-0"
       >
         <FileList
