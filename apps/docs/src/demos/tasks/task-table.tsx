@@ -27,6 +27,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@orz/ui/components/tooltip";
+import type { Selection } from "@orz/ui/hooks/use-selection";
 import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import {
@@ -38,16 +39,14 @@ import {
   Trash2Icon,
   UserIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { PointerEvent, ReactNode } from "react";
 import { isOpen, taskKey } from "./board.ts";
 import { taskHref } from "./location.ts";
 import { Assignee, StatusDot } from "./parts.tsx";
 
-/** What a row, its menu and the header's box do. */
+/** What a row and its menu do. */
 export interface RowActions {
   onOpen: (id: number) => void;
-  onSelect: (id: number, on: boolean) => void;
-  onSelectAll: (on: boolean) => void;
   onClose: (ids: number[]) => void;
   onReopen: (ids: number[]) => void;
   onAssign: (id: number, login: string | null) => void;
@@ -137,14 +136,17 @@ function RowMenu({ task, actions }: { task: Task; actions: RowActions }) {
  */
 export function TaskTable({
   tasks,
-  selected,
+  selection,
+  onPointerDownCapture,
   openId,
   openCounts,
   actions,
   footer,
 }: {
   tasks: readonly Task[];
-  selected: ReadonlySet<number>;
+  selection: Selection<number>;
+  /** Where a drag down the boxes starts selecting. */
+  onPointerDownCapture: (event: PointerEvent<HTMLElement>) => void;
   openId: number | null;
   /** Open tasks per assignee, for the hover card. */
   openCounts: Readonly<Record<string, number>>;
@@ -152,17 +154,27 @@ export function TaskTable({
   /** A last row across every column: the Load more button. */
   footer?: ReactNode;
 }) {
-  const picked = tasks.filter((task) => selected.has(task.id)).length;
-  const all = tasks.length > 0 && picked === tasks.length;
   return (
     <Table>
       <TableHeader className="sticky top-0 z-10">
         <TableRow>
           <TableHead className="w-px pl-4">
             <Checkbox
-              checked={all ? true : picked > 0 ? "indeterminate" : false}
-              onCheckedChange={() => actions.onSelectAll(!all && picked === 0)}
-              aria-label={picked > 0 ? "Select none" : "Select all"}
+              checked={
+                selection.state === "all"
+                  ? true
+                  : selection.state === "some"
+                    ? "indeterminate"
+                    : false
+              }
+              onCheckedChange={() =>
+                selection.state === "none"
+                  ? selection.toggleAll()
+                  : selection.clear()
+              }
+              aria-label={
+                selection.state === "none" ? "Select all" : "Select none"
+              }
             />
           </TableHead>
           <TableHead className="w-px max-sm:hidden">Task</TableHead>
@@ -175,14 +187,15 @@ export function TaskTable({
           </TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody>
+      <TableBody onPointerDownCapture={onPointerDownCapture}>
         {tasks.map((task) => {
           const key = taskKey(task.id);
-          const isSelected = selected.has(task.id);
+          const isSelected = selection.isSelected(task.id);
           return (
             <TableRow
               key={task.id}
               data-task={task.id}
+              data-sweep-key={task.id}
               data-state={isSelected ? "selected" : undefined}
               aria-current={task.id === openId ? "true" : undefined}
               onClick={(event) => {
@@ -196,9 +209,11 @@ export function TaskTable({
             >
               <TableCell className="pl-4">
                 <Checkbox
+                  data-sweep-start=""
                   checked={isSelected}
-                  onCheckedChange={(on) =>
-                    actions.onSelect(task.id, on === true)
+                  // The click carries Shift, for a range; Space clicks too.
+                  onClick={(event) =>
+                    selection.toggle(task.id, { extend: event.shiftKey })
                   }
                   aria-label={`Select ${key}`}
                 />

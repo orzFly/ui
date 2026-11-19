@@ -1203,6 +1203,25 @@ describe("tasks", () => {
     expect(keys(container).slice(0, 2)).toEqual([a, b]);
   });
 
+  it("selects a run of tasks with Shift", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    const [a, , c, d] = keys(container);
+    if (!a || !c || !d) throw new Error("too few tasks");
+    await select(container, a);
+    const box = row(container, c)?.querySelector("[role=checkbox]");
+    await act(async () =>
+      box?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, shiftKey: true }),
+      ),
+    );
+    expect(button(container, "Close 3 tasks")).toBeDefined();
+    expect(
+      row(container, d)
+        ?.querySelector("[role=checkbox]")
+        ?.getAttribute("aria-checked"),
+    ).toBe("false");
+  });
+
   it("deletes only once the confirmation is accepted", async () => {
     const container = await draw(Tasks, WIDTHS.desktop);
     await select(container, "T-60");

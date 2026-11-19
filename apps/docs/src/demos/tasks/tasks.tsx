@@ -16,6 +16,8 @@ import {
 } from "@orz/ui/components/sheet";
 import { TooltipProvider } from "@orz/ui/components/tooltip";
 import { usePagedAppend } from "@orz/ui/hooks/use-paged-append";
+import { useSelection } from "@orz/ui/hooks/use-selection";
+import { useSweepSelect } from "@orz/ui/hooks/use-sweep-select";
 import { ListTodoIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
@@ -82,7 +84,6 @@ export function Tasks() {
     tasks: TASKS,
     n: 0,
   });
-  const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
   const [deleting, setDeleting] = useState<number[]>([]);
   // Kept apart from `deleting` so the dialog keeps its wording while it fades out.
   const [confirming, setConfirming] = useState(false);
@@ -95,7 +96,7 @@ export function Tasks() {
   const filters = search.filters;
 
   const run = (next: Filters) => {
-    setSelected(new Set());
+    selection.clear();
     setSearch(({ n }) => ({
       filters: next,
       tasks: tasksRef.current,
@@ -127,6 +128,13 @@ export function Tasks() {
     .filter(
       (task): task is Task => task !== undefined && matches(task, filters),
     );
+  // A task that leaves the list leaves the selection with it.
+  const selection = useSelection(rows.map((task) => task.id));
+  const sweep = useSweepSelect({
+    isSelected: selection.isSelected,
+    paint: selection.paint,
+    parse: Number,
+  });
 
   const openCounts: Record<string, number> = {};
   for (const task of tasks) {
@@ -140,7 +148,7 @@ export function Tasks() {
     if (ids.length === 0) return;
     const [changed, undo] = changeTasks(tasksRef.current, ids, patch);
     setTasks(changed);
-    setSelected(new Set());
+    selection.clear();
     toast(message, {
       action: { label: "Undo", onClick: () => setTasks(undo) },
     });
@@ -174,21 +182,12 @@ export function Tasks() {
     setConfirming(false);
     if (openId !== null && deleting.includes(openId)) closeTask();
     setTasks(deleteTasks(tasksRef.current, deleting));
-    setSelected(new Set());
+    selection.clear();
     toast(`Deleted ${tasksNamed(deleting)}`);
   };
 
   const actions: RowActions = {
     onOpen: openTask,
-    onSelect: (id, on) =>
-      setSelected((was) => {
-        const next = new Set(was);
-        if (on) next.add(id);
-        else next.delete(id);
-        return next;
-      }),
-    onSelectAll: (on) =>
-      setSelected(new Set(on ? rows.map((task) => task.id) : [])),
     onClose: close,
     onReopen: reopen,
     onAssign: assign,
@@ -214,7 +213,7 @@ export function Tasks() {
     onOpen: openTask,
   };
 
-  const pickedRows = rows.filter((each) => selected.has(each.id));
+  const pickedRows = rows.filter((each) => selection.isSelected(each.id));
   const picked = pickedRows.map((each) => each.id);
   const allClosed =
     pickedRows.length > 0 && pickedRows.every((each) => !isOpen(each));
@@ -289,7 +288,8 @@ export function Tasks() {
               ) : (
                 <TaskTable
                   tasks={rows}
-                  selected={selected}
+                  selection={selection}
+                  onPointerDownCapture={sweep.onPointerDownCapture}
                   openId={openId}
                   openCounts={openCounts}
                   actions={actions}
@@ -322,7 +322,7 @@ export function Tasks() {
                   <>
                     <IconButton
                       label="Clear selection"
-                      onClick={() => setSelected(new Set())}
+                      onClick={selection.clear}
                     >
                       <XIcon />
                     </IconButton>
