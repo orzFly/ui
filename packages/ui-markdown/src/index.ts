@@ -13,6 +13,7 @@ export {
   externalLinks,
   isExternalHref,
 } from "./external-links.tsx";
+export { type ImagePairsOptions, imagePairs } from "./image-pairs.tsx";
 export { fenceTitle } from "./lib/fence-meta.ts";
 export {
   Markdown,

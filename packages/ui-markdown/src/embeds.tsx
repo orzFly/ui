@@ -4,6 +4,7 @@ import {
   useContentDisplayOf,
 } from "@orz/ui-content";
 import { DeletedAttachmentMark } from "@orz/ui-content/attachment";
+import { isPairImage } from "./lib/rehype-image-pairs.ts";
 import type { MarkdownPlugin } from "./plugin.ts";
 
 export type MarkdownEmbedsOptions = {
@@ -32,6 +33,8 @@ export function markdownEmbeds({
     components: {
       img: function EmbedImage({ Next, node, ...props }) {
         const displayOf = useContentDisplayOf();
+        // A pair `imagePairs` folded into one image is its comparison to draw.
+        if (isPairImage(node)) return <Next node={node} {...props} />;
         const source = sourceOf(props.src);
         if (source?.kind === "file" && source.deleted) {
           return (

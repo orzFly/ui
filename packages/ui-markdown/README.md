@@ -159,6 +159,14 @@ function Doc({ source }: { source: string }) {
   is a `DeletedAttachmentMark` in either plugin, inline in its paragraph, rather than a link to
   nothing or a broken image. Using it means installing what
   `@orz/ui-content/attachment` needs (its README, "Attachments").
+- **`imagePairs({ resolve? })`** draws a paragraph, or a list item's opening line, that is exactly
+  two images with `→` or `->` between them as one `MediaCompare` from `@orz/ui-content/compare`.
+  Each side is tagged by its alt, or Before and After where the alt is empty or only the file's
+  name. `resolve` has `markdownEmbeds`' signature: a resolved file is drawn from its `url` and
+  named by its `name`, and one marked `deleted` is a side that failed. The paragraph becomes
+  `div.markdown-paragraph`, keeping its props. Within an `AttachmentViewerProvider`, a click on
+  either picture opens the pair with `openCompare`, paging through every pair the plugin draws in
+  document order. `markdownEmbeds` leaves a pair to it, in either order.
 - **`externalLinks({ origin? })`** opens a link to an http(s) address on another origin (default
   `window.location.origin`) in a new tab, with `rel="noopener noreferrer"`; `styles.css` draws a ↗
   after it, except on an image link. Relative, same-origin, fragment and `mailto:` links are left
@@ -173,12 +181,13 @@ refuses is drawn as source text before `resolve` sees it: use relative addresses
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `markdownContent`, `MARKDOWN_RENDER_MAX_CHARS`, `fenceTitle`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
+| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `imagePairs`, `markdownContent`, `MARKDOWN_RENDER_MAX_CHARS`, `fenceTitle`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
 | `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `parseMarkdown` |
 | `@orz/ui-markdown/lib/remark-frontmatter-table` | `remarkFrontmatterTable`, `frontmatterFields`, `FRONTMATTER_FLAVOURS`, node types |
 | `@orz/ui-markdown/lib/remark-rejected-urls` | `remarkRejectedUrlsAsText` |
 | `@orz/ui-markdown/lib/rehype-source-lines` | `rehypeSourceLines`, `SOURCE_LINE_ATTR`, `CODE_CONTENT_START_ATTR`, `parseSourceLoc` |
 | `@orz/ui-markdown/lib/rehype-details` | `rehypeDetails` |
+| `@orz/ui-markdown/lib/rehype-image-pairs` | `rehypeImagePairs`, `imagePairOf`, `isPairImage`, `pairLabel`, `PAIR_ATTR`, `PAIR_BEFORE_SRC_ATTR`, `PAIR_BEFORE_ALT_ATTR` |
 | `@orz/ui-markdown/lib/fence-meta` | `fenceTitle` |
 | `@orz/ui-markdown/styles.css` | the `.markdown-body` typography |
 
