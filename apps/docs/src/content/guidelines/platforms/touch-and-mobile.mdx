@@ -192,21 +192,33 @@ scrolling, a thread or a log, `useAutoHideHeader(header, enabled)` slides it awa
 scrolls down and back as they scroll up, the way Safari's toolbar does.
 
 ```tsx
+import { useElementHeight } from "@orz/ui/hooks/use-element-height";
 import { SM_UP, useMediaQuery } from "@orz/ui/hooks/use-media-query";
-import { useAutoHideHeader } from "@orz/ui/hooks/viewport-chrome";
+import { belowHeader, useAutoHideHeader } from "@orz/ui/hooks/viewport-chrome";
 
 const header = useRef<HTMLElement>(null);
-useAutoHideHeader(header, !useMediaQuery(SM_UP));
+useAutoHideHeader(header, !useMediaQuery(SM_UP), pathname);
+const height = useElementHeight(() => header.current, 56);
 
 <header
   ref={header}
   data-header-follow=""
   className="sticky"
-  style={{ top: "calc(var(--vv-top, 0px) - var(--header-hide, 0px))" }}
+  style={{ top: belowHeader(0) }}
 >
+…
+<h2 data-header-follow="" className="sticky" style={{ top: belowHeader(height - 1) }}>
 ```
 
 - Enable it on a phone only; on a wider screen the header costs little and moving it distracts.
+- Mount it once, in the app's shell, so whether the header moves never depends on which page the
+  reader is on. Pass the route's path as its third argument: each new page then arrives with the
+  header in view, as a full load would.
+- A layer pinned under the header (a list's group heading, a toolbar) takes
+  `top: belowHeader(offset)` and `data-header-follow` too, or a strip of page opens between the two
+  while the header moves. Pin it one pixel under the header's height, so it tucks under the header's
+  border: at some zoom levels Firefox snaps the two to different device-pixel rows and leaves a
+  hairline of page between them.
 - Only the reader's own scrolling moves it. A jump to an anchor keeps it where it is, and it settles
   fully in or out when scrolling stops.
 - Do not use it on a short page, a form, or a page whose header holds the action people came for:

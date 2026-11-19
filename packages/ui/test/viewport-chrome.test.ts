@@ -2,6 +2,7 @@ import { cleanup, render } from "@testing-library/react";
 import { createElement, createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  belowHeader,
   useAutoHideHeader,
   useVisualViewportInsets,
   visualViewportInsets,
@@ -186,5 +187,30 @@ describe("auto-hiding header", () => {
     expect(hidden()).not.toBe("");
     on.unmount();
     expect(hidden()).toBe("");
+  });
+
+  it("brings the header back when its reset key changes", () => {
+    const Page = ({ path }: { path: string }) => {
+      useAutoHideHeader(header, true, path);
+      return null;
+    };
+    const view = render(createElement(Page, { path: "/inbox" }));
+    touch("touchstart");
+    scrollTo(2200);
+    expect(hidden()).toBe(`${HEADER}px`);
+    // A new page arrives with the header in view, as a full load would.
+    view.rerender(createElement(Page, { path: "/board" }));
+    expect(hidden()).toBe("");
+    touch("touchstart");
+    scrollTo(2230);
+    expect(hidden()).toBe("30px");
+  });
+});
+
+describe("belowHeader", () => {
+  it("pins a layer under the header as it follows the keyboard and slides", () => {
+    expect(belowHeader(56)).toBe(
+      "calc(56px + var(--vv-top, 0px) - var(--header-hide, 0px))",
+    );
   });
 });
