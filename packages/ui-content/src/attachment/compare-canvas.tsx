@@ -18,7 +18,6 @@ import {
   STRIP,
   SwipeHandle,
 } from "../compare/media-compare.tsx";
-import { CHECKER, CORNER } from "./image-canvas.tsx";
 import type { ImageLook } from "./image-look.ts";
 import {
   fitScale,
@@ -28,6 +27,7 @@ import {
 } from "./image-zoom.ts";
 import { releaseWidth, useZoomPan, type Widening } from "./use-zoom-pan.ts";
 import type { FileSource } from "./viewer.tsx";
+import { CHECKER, CORNER } from "./zoom-canvas.tsx";
 import { ZoomControls } from "./zoom-controls.tsx";
 
 /** One side of a comparison the viewer shows. */

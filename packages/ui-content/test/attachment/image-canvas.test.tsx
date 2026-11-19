@@ -208,7 +208,9 @@ describe("the viewer's image", () => {
       width = 400;
       act(() => observed?.());
       expect(el.style.height).toBe("300px");
-      expect(img.style.transform).toBe("translate(0px, 0px) scale(0.25)");
+      expect(img.parentElement?.style.transform).toBe(
+        "translate(0px, 0px) scale(0.25)",
+      );
     } finally {
       vi.unstubAllGlobals();
     }

@@ -422,6 +422,6 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
 | Import | Contents |
 |---|---|
 | `@orz/ui-content` | `Content`, `ContentRenderers`, `ContentFallback`, the `useContent…` hooks, `ContentTitleBar`, `useContentTitleBar`, `useSourceText`, the file-kind predicates, `formatSize`, `textPreviewGate` and its limits, types |
-| `@orz/ui-content/attachment` | the attachment renderers, viewer, links, cards and icons |
+| `@orz/ui-content/attachment` | the attachment renderers, viewer, links, cards and icons, and `ZoomCanvas` for a renderer that zooms in the viewer |
 | `@orz/ui-content/compare` | `MediaCompare`, its labels, mode control and swipe handle, `CompareModeProvider`, `useCompareMode` |
 | `@orz/ui-content/styles.css` | `@source "./dist"` |

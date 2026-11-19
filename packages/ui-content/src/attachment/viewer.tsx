@@ -24,6 +24,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -33,7 +34,6 @@ import { CompareTick } from "../compare/media-compare.tsx";
 import {
   formatSize,
   isHtmlFile,
-  isImageFile,
   isTextFile,
   TEXT_PREVIEW_HARD_MAX_BYTES,
   TEXT_PREVIEW_MAX_BYTES,
@@ -52,8 +52,21 @@ import {
 import { fileIcon } from "./icon.ts";
 import { DEFAULT_IMAGE_LOOK, type ImageLook } from "./image-look.ts";
 import { releaseWidth, restingWidth, type Widening } from "./use-zoom-pan.ts";
+import { ViewerImageContext } from "./viewer-image.ts";
 
 export type FileSource = Extract<ContentSource, { kind: "file" }>;
+
+/**
+ * Text the viewer draws through the renderers, as it draws a file: a diagram's
+ * source, say, which a renderer zooms with `ZoomCanvas`. `title` heads the
+ * viewer.
+ */
+export type InlineSource = Extract<ContentSource, { kind: "inline" }> & {
+  title?: string;
+};
+
+/** What the viewer pages through: files, and text drawn as a file is. */
+export type ViewerSource = FileSource | InlineSource;
 
 // Long enough to cover a pointer crossing the image between two controls,
 // short enough that leaving for good does not read as the viewer lagging.
@@ -65,12 +78,12 @@ const RELEASE_NOW = ["keydown", "pointerdown", "wheel"] as const;
  * the comparisons on a page, each two versions at one zoom.
  */
 export type AttachmentViewerState =
-  | { items: FileSource[]; index: number }
+  | { items: ViewerSource[]; index: number }
   | { compare: ComparePair[]; index: number };
 
 export type AttachmentViewerControls = {
   /** Opens the viewer on `items[index]`, paging through `items`. */
-  open(items: FileSource[], index: number): void;
+  open(items: ViewerSource[], index: number): void;
   /** Opens the viewer on one file, paging through the set `group` gives it. */
   show(file: FileSource): void;
   /** Opens the viewer on `pairs[index]`, paging through `pairs`. */
@@ -91,28 +104,6 @@ const IMAGE_LIKE: FileSource = {
   name: "",
   mime: "image/svg+xml",
 };
-
-type ViewerImage = {
-  /** Whether the dialog fills the window. */
-  maximized: boolean;
-  look: ImageLook;
-  setLook(look: ImageLook): void;
-  /** The last image's canvas height, so the next one tweens from it. */
-  lastHeight: { current: number | null };
-  /** The height the canvas keeps while the pointer is on the title-bar controls. */
-  held: number | null;
-  /** The dialog a zoomed canvas widens. */
-  dialog: HTMLElement | null;
-  /** What the canvas asked of the dialog's width, so the next one pages in from it. */
-  widening: { current: Widening };
-};
-
-const ViewerImageContext = createContext<ViewerImage | null>(null);
-
-/** What the image renderer needs from the viewer around it; null outside one. */
-export function useViewerImage(): ViewerImage | null {
-  return useContext(ViewerImageContext);
-}
 
 type ImageLookProps = {
   /** The image background and scaling, controlled. Default: held in memory by the viewer. */
@@ -157,7 +148,7 @@ export function AttachmentViewerProvider({
   groupRef.current = group;
 
   const open = useCallback(
-    (items: FileSource[], index: number) => setState({ items, index }),
+    (items: ViewerSource[], index: number) => setState({ items, index }),
     [],
   );
   const show = useCallback(
@@ -301,6 +292,25 @@ function DownloadOnlyPane({ file }: { file: FileSource }) {
         </a>
       )}
     </div>
+  );
+}
+
+/** Inline text has no size to gate on and nothing to download: it is drawn. */
+function InlineBody({
+  source,
+  maximized,
+  titleBar,
+}: {
+  source: InlineSource;
+  maximized: boolean;
+  titleBar: HTMLElement | null;
+}) {
+  return (
+    <ViewerPane maximized={maximized}>
+      <ContentTitleBar source={source} target={titleBar}>
+        <Content source={source} placement="viewer" />
+      </ContentTitleBar>
+    </ViewerPane>
   );
 }
 
@@ -484,8 +494,10 @@ export function AttachmentViewer({
   const [dialog, setDialog] = useState<HTMLElement | null>(null);
   const widening = useRef<Widening>(restingWidth());
 
-  const file =
+  const item =
     state !== null && "items" in state ? state.items[state.index] : undefined;
+  const file = item?.kind === "file" ? item : undefined;
+  const inline = item?.kind === "inline" ? item : undefined;
   const pair =
     state !== null && "compare" in state
       ? state.compare[state.index]
@@ -497,16 +509,21 @@ export function AttachmentViewer({
         ? state.items.length
         : state.compare.length;
   const noun = pair !== undefined ? "comparison" : "attachment";
-  const zooms = pair !== undefined || (file !== undefined && isImageFile(file));
-  // Paging between images tweens from one's height to the next; from
-  // anything else, including a closed viewer, the image lands at once. The
-  // width a zoom widened the dialog to goes the same way, at once.
-  useEffect(() => {
-    if (zooms) return;
+  // Paging between pictures tweens from one's height to the next; from
+  // anything else, including a closed viewer, the picture lands at once. The
+  // width a zoom widened the dialog to goes the same way, at once. Run after
+  // the body's own layout effects, so a canvas the new item mounted has
+  // already counted itself.
+  const canvases = useRef(0);
+  const itemKey =
+    state === null ? null : `${"items" in state ? "i" : "c"}${state.index}`;
+  useLayoutEffect(() => {
+    if (itemKey !== null && (pair !== undefined || canvases.current > 0))
+      return;
     lastHeight.current = null;
     releaseWidth(dialog, widening);
     widening.current = restingWidth();
-  }, [zooms, dialog]);
+  }, [itemKey, pair, dialog]);
 
   // While the pointer is over − 100%▾ + or ‹ ›, the image keeps the height
   // it had when the pointer arrived, and takes its own once the pointer
@@ -561,7 +578,7 @@ export function AttachmentViewer({
   }, [holdRegion]);
   // Closing unmounts the region under the pointer, which never reports
   // leaving it.
-  const open = file !== undefined || pair !== undefined;
+  const open = item !== undefined || pair !== undefined;
   useEffect(() => {
     if (!open) setHeld(null);
   }, [open]);
@@ -589,6 +606,7 @@ export function AttachmentViewer({
       held,
       dialog,
       widening,
+      canvases,
     }),
     [maximized, look, imageLook, onImageLookChange, held, dialog],
   );
@@ -636,7 +654,11 @@ export function AttachmentViewer({
                 )}
               >
                 <span className="min-w-0 truncate">
-                  {pair !== undefined ? pairTitle(pair) : file?.name}
+                  {pair !== undefined
+                    ? pairTitle(pair)
+                    : inline !== undefined
+                      ? (inline.title ?? inline.lang ?? "Snippet")
+                      : file?.name}
                 </span>
               </DialogTitle>
               <span
@@ -696,6 +718,16 @@ export function AttachmentViewer({
                 </ViewerImageContext.Provider>
                 <ViewerFooter file={file} />
               </>
+            )}
+            {inline !== undefined && (
+              <ViewerImageContext.Provider value={image}>
+                <InlineBody
+                  key={`${state?.index}:inline`}
+                  source={inline}
+                  maximized={maximized}
+                  titleBar={titleBar}
+                />
+              </ViewerImageContext.Provider>
             )}
             {pair !== undefined && (
               <>

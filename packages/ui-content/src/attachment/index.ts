@@ -45,7 +45,16 @@ export {
   type AttachmentViewerProviderProps,
   type AttachmentViewerState,
   type FileSource,
+  type InlineSource,
   useAttachmentViewer,
   useCanPreview,
   useViewHref,
+  type ViewerSource,
 } from "./viewer.tsx";
+export { useViewerImage, type ViewerImage } from "./viewer-image.ts";
+export {
+  CHECKER,
+  CORNER,
+  ZoomCanvas,
+  type ZoomCanvasProps,
+} from "./zoom-canvas.tsx";

@@ -1,17 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ImageCanvas } from "../../src/attachment/image-canvas.tsx";
-import { DEFAULT_IMAGE_LOOK } from "../../src/attachment/image-look.ts";
-import { restingWidth } from "../../src/attachment/use-zoom-pan.ts";
+import { AttachmentViewer, imageContent } from "../../src/attachment/index.ts";
+import { ContentRenderers } from "../../src/index.ts";
+import { file } from "./fixtures.tsx";
 
 // A 1920×1080 screenshot in a 1280×800 window: the restored canvas
 // measures 992×558, fit is 0.5167, and the dialog can grow it to 1216×600 —
 // the window less 2rem and the dialog's 16px padding either side, by the
 // canvas's 75vh cap — so the stops are contain 0.5556, cover 0.6333 and 1.
 let style: HTMLStyleElement;
-let dialog: HTMLElement;
-let toolbar: HTMLElement;
 
 beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(
@@ -27,38 +24,27 @@ beforeEach(() => {
   style.textContent = `
     html { font-size: 16px; }
     [data-testid="image-canvas"] { max-height: 600px; }
-    #dialog { padding-left: 16px; padding-right: 16px; }
+    [role="dialog"] { padding-left: 16px; padding-right: 16px; }
   `;
   document.head.append(style);
-  dialog = document.createElement("div");
-  dialog.id = "dialog";
-  toolbar = document.createElement("div");
-  document.body.append(dialog, toolbar);
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
   style.remove();
-  dialog.remove();
-  toolbar.remove();
 });
 
+const RENDERERS = [imageContent()];
+
 function Harness() {
-  const lastHeight = useRef<number | null>(null);
-  const widening = useRef(restingWidth());
   return (
-    <ImageCanvas
-      src="/shot.png"
-      alt="shot"
-      maximized={false}
-      toolbar={toolbar}
-      look={DEFAULT_IMAGE_LOOK}
-      onLookChange={() => {}}
-      lastHeight={lastHeight}
-      held={null}
-      dialog={dialog}
-      widening={widening}
-    />
+    <ContentRenderers renderers={RENDERERS}>
+      <AttachmentViewer
+        state={{ items: [file("shot.png", { mime: "image/png" })], index: 0 }}
+        onNavigate={() => {}}
+        onClose={() => {}}
+      />
+    </ContentRenderers>
   );
 }
 
@@ -67,7 +53,7 @@ const zoom = () => canvas().dataset.zoom;
 
 function open() {
   render(<Harness />);
-  const image = screen.getByRole("img", { name: "shot" });
+  const image = screen.getByRole("img", { name: "shot.png" });
   Object.defineProperty(image, "naturalWidth", { value: 1920 });
   Object.defineProperty(image, "naturalHeight", { value: 1080 });
   fireEvent.load(image);

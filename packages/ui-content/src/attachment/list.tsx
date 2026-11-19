@@ -13,13 +13,13 @@ import {
 import { type ReactNode, useId, useMemo, useState } from "react";
 import { formatSize, isImageFile } from "../file-kind.ts";
 import { fileIcon } from "./icon.ts";
-import { CHECKER } from "./image-canvas.tsx";
 import {
   type FileSource,
   useAttachmentViewer,
   useCanPreview,
   useViewHref,
 } from "./viewer.tsx";
+import { CHECKER } from "./zoom-canvas.tsx";
 
 export type AttachmentItem = FileSource & {
   key: string | number;
