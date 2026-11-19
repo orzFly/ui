@@ -23,6 +23,13 @@ import {
   prefetchPasteConverter,
 } from "../lib/paste-converter.ts";
 import { modKeyLabels } from "../lib/platform.ts";
+import {
+  createToolbarDom,
+  toolbarButton,
+  toolbarTheme,
+  visibleButtons,
+  wireToolbar,
+} from "./editor-toolbar.ts";
 import { blockquote } from "./quote-toggle.ts";
 
 export { prefetchPasteConverter };
@@ -336,18 +343,8 @@ function toolbarTooltip(live: Live): Tooltip {
 }
 
 function createToolbar(view: EditorView): TooltipView {
-  const dom = document.createElement("div");
-  dom.className = "cm-paste-options";
-  dom.setAttribute("role", "toolbar");
-  dom.setAttribute("aria-label", "Paste options");
-
-  const button = (label: string) => {
-    const element = document.createElement("button");
-    element.type = "button";
-    element.textContent = label;
-    element.tabIndex = -1;
-    return element;
-  };
+  const dom = createToolbarDom("cm-paste-options", "Paste options");
+  const button = toolbarButton;
   const plain = button("Plain text");
   plain.dataset.form = "plain";
   const markdown = button("Markdown");
@@ -359,11 +356,6 @@ function createToolbar(view: EditorView): TooltipView {
   quote.dataset.quote = "";
   dom.append(forms, quote);
 
-  const buttons = () =>
-    [...dom.querySelectorAll<HTMLButtonElement>("button")].filter(
-      (b) => !b.hidden,
-    );
-
   const sync = () => {
     const live = view.state.field(liveField, false);
     if (!live) return;
@@ -374,14 +366,16 @@ function createToolbar(view: EditorView): TooltipView {
     markdown.setAttribute("aria-pressed", String(live.form === "markdown"));
     quote.setAttribute("aria-pressed", String(live.quote));
     // One tab stop for the whole toolbar, as a toolbar is meant to have.
-    const visible = buttons();
+    const visible = visibleButtons(dom);
     const active =
       visible.find((b) => b.dataset.form === live.form) ?? visible[0];
     for (const b of visible) b.tabIndex = b === active ? 0 : -1;
   };
 
-  // The editor keeps focus (and its caret) while the mouse is used.
-  dom.addEventListener("mousedown", (event) => event.preventDefault());
+  wireToolbar(view, dom, {
+    onReturn: () => returnToEditor(view),
+    onDismiss: () => dismiss(view),
+  });
   dom.addEventListener("click", (event) => {
     const target = (event.target as HTMLElement).closest("button");
     if (target === null) return;
@@ -393,47 +387,11 @@ function createToolbar(view: EditorView): TooltipView {
       rewrite(view, { quote: !live.quote });
     }
   });
-  dom.addEventListener("keydown", (event) => {
-    const visible = buttons();
-    const index = visible.indexOf(document.activeElement as HTMLButtonElement);
-    const mod = event.metaKey || event.ctrlKey;
-    if (event.key === "Escape" || (mod && event.key === ".")) {
-      event.preventDefault();
-      returnToEditor(view);
-    } else if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
-      event.preventDefault();
-      const step = event.key === "ArrowRight" ? 1 : -1;
-      visible[(index + step + visible.length) % visible.length]?.focus();
-    }
-  });
-  dom.addEventListener("focusout", (event) => {
-    const next = event.relatedTarget as Node | null;
-    if (next !== null && (dom.contains(next) || view.contentDOM.contains(next)))
-      return;
-    dismiss(view);
-  });
-
   sync();
   return { dom, update: sync };
 }
 
-const toolbarTheme = EditorView.theme({
-  // Dressed like the completion panel (completionTheme) — the two are the
-  // editor's only popups.
-  ".cm-tooltip.cm-paste-options": {
-    border: "1px solid var(--border)",
-    borderRadius: "min(var(--radius-overlay), 0.5rem)",
-    backgroundColor: "var(--popover)",
-    color: "var(--popover-foreground)",
-    boxShadow:
-      "0 4px 6px -1px color-mix(in oklab, var(--foreground) 12%, transparent)",
-    fontFamily: "var(--font-ui)",
-    display: "flex",
-    alignItems: "center",
-    gap: "0.25rem",
-    padding: "0.125rem",
-    fontSize: "var(--text-xs)",
-  },
+const formsTheme = EditorView.theme({
   ".cm-paste-forms": {
     display: "flex",
     paddingRight: "0.25rem",
@@ -441,26 +399,6 @@ const toolbarTheme = EditorView.theme({
     borderRight: "1px solid var(--border)",
   },
   ".cm-paste-forms[hidden]": { display: "none" },
-  ".cm-paste-options button": {
-    padding: "0.125rem 0.5rem",
-    borderRadius: "min(var(--radius-control), 0.375rem)",
-    color: "var(--muted-foreground)",
-    cursor: "pointer",
-  },
-  ".cm-paste-options button:hover": {
-    backgroundColor: "var(--accent)",
-    color: "var(--accent-foreground)",
-  },
-  ".cm-paste-options button[aria-pressed='true']": {
-    backgroundColor: "var(--accent)",
-    color: "var(--accent-foreground)",
-    fontWeight: "500",
-    boxShadow: "var(--pressed-cue)",
-  },
-  ".cm-paste-options button:focus-visible": {
-    outline: "2px solid var(--ring)",
-    outlineOffset: "-2px",
-  },
 });
 
 /**
@@ -475,6 +413,7 @@ export function pasteAs(): Extension {
     liveField,
     pasteState,
     toolbarTheme,
+    formsTheme,
     Prec.highest(
       keymap.of([
         {
