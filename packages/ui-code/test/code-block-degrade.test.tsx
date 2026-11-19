@@ -302,4 +302,46 @@ describe("CodeBlock highlighting failures", () => {
     expect(deepText(document.body)).not.toContain("chunk boom");
     expect(warn).toHaveBeenCalled();
   });
+
+  it("stands in for a framed block in pierre's geometry, with no box", async () => {
+    mock.mode = "pending";
+    const { container } = render(
+      <CodeBlock
+        filename="snippet.ts"
+        contents={TS_SNIPPET}
+        copy={false}
+        bareFallback
+      />,
+    );
+    await screen.findByTestId("code-view");
+    const pre = container.querySelector("pre");
+    expect(pre?.textContent).toBe(TS_SNIPPET);
+    expect(pre?.className).not.toContain("bg-muted");
+    expect(pre?.className).toContain("text-[13px]");
+    expect(pre?.style.fontFamily).toContain("--diffs-font-family");
+  });
+
+  it.each(["paints-error", "throws"] as const)(
+    "keeps a framed block's plain text boxless when it degrades (%s)",
+    async (mode) => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(console, "warn").mockImplementation(() => {});
+      mock.mode = mode;
+      const { container } = render(
+        <CodeBlock
+          filename="snippet.ts"
+          contents={TS_SNIPPET}
+          copy={false}
+          bareFallback
+        />,
+      );
+      await waitFor(() => {
+        expect(screen.queryByTestId("code-view")).toBeNull();
+        expect(container.querySelector("pre")?.textContent).toBe(TS_SNIPPET);
+      });
+      expect(container.querySelector("pre")?.className).not.toContain(
+        "bg-muted",
+      );
+    },
+  );
 });

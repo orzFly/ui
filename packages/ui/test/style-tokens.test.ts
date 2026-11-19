@@ -17,6 +17,12 @@ const PACKAGES = join(import.meta.dirname, "../..");
  */
 const ALLOWED: readonly { file: string; utility: string; reason: string }[] = [
   {
+    file: "ui-code/src/code-block.tsx",
+    utility: "text-[13px]",
+    reason:
+      "a framed block's plain text stands in for pierre's lines, set in pierre's own size so nothing shifts when they land",
+  },
+  {
     file: "ui/src/components/avatar.tsx",
     utility: "size-6",
     reason: "an avatar's sizes are its picture's, not a control's",

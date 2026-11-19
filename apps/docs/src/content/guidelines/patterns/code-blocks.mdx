@@ -1,0 +1,67 @@
+export const meta = {
+  title: "Code blocks",
+  description:
+    "Code in a document sits in a frame that copies it, says what it is, and keeps a long block from burying the text around it.",
+  order: 38,
+  api: [
+    "ui-code/FenceFrame",
+    "ui-code/CodeBlock",
+    "ui-markdown/Markdown",
+    "ui-mermaid/MermaidBlock",
+    "ui-code/PatchView",
+  ],
+};
+
+import { FENCE_COLLAPSE_LINES } from "@orz/ui-code";
+import { FramedFences } from "../../../examples/code-blocks/framed-fences.tsx";
+
+**Give every block of code in a document the same frame: Copy, its language or the file it is, and
+a cap on a long one. The frame carries the controls, so the code itself is never covered and never
+moves.**
+
+<Example of={FramedFences} />
+
+Three fences from a setup note. The first names its file, so a header says `compose.yaml` and the
+name downloads the block. The second has only a language, which shows with **Copy** when the
+pointer is over the block. The third is longer than {FENCE_COLLAPSE_LINES} lines, so it scrolls
+inside its frame until **Expand** lets the whole of it into the page.
+
+## Naming a file
+
+Write the filename after the language, ```` ```yaml compose.yaml ````, or as
+```` ```ts title="retry.ts" ````. Other renderers read the first word and ignore the rest, so the
+fence still highlights wherever it is pasted. Name a file when the reader will save the block as
+one: a config to drop in, a script to run. A snippet that is only read keeps its language alone.
+
+## Long blocks
+
+A block past {FENCE_COLLAPSE_LINES} lines scrolls in its frame, so the prose after it is not pushed
+a screen away. Every line stays in the page, and find-in-page still reaches a match past the cap.
+Turn this off with `collapseLongFences={false}` on `Markdown` where every line has to stay in view:
+a review that annotates lines cannot reach one scrolled out of its frame. A document embedded in
+another follows its host.
+
+## Copy
+
+**Copy** turns into a check for a moment and says "Copied" to a screen reader. It shows no toast:
+the eyes are already on the button. Only a failure toasts, since the button cannot say why; see
+[Feedback](/guidelines/patterns/feedback/).
+
+## Diagrams and patches
+
+A mermaid diagram sits in the same frame, its **Source** toggle in a toolbar that never hides,
+since it is the only way to the source. A patch draws the frame's header with its file list and
+**raw** beside Copy. Inside a card or the viewer, which lend their own title bar, a patch puts its
+controls there and draws no frame.
+
+## On each platform
+
+### Desktop & pointer
+
+- The language and Copy float over the block's top corner and show while the pointer is over it, or
+  once Tab reaches Copy. At rest they take no room.
+
+### Touch
+
+- With no hover to bring it up, the toolbar stays shown and takes a row of its own above the code,
+  so it never sits on the first line for good.

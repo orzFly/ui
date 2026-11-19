@@ -9,8 +9,8 @@ from either.
 
 <!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
-pnpm add @orz/ui-mermaid @orz/query @orz/themes @orz/ui @orz/ui-content lucide-react radix-ui \
-  react react-dom sonner
+pnpm add @orz/ui-mermaid @orz/query @orz/themes @orz/ui @orz/ui-code @orz/ui-content @pierre/diffs \
+  lucide-react radix-ui react react-dom sonner
 ```
 <!-- /generated -->
 
@@ -45,10 +45,13 @@ becomes, and files named `*.mmd` or `*.mermaid`, in either placement. Register i
 renderer that takes every inline source, such as a code renderer, since the first renderer that
 accepts wins.
 
-The source shows until the first render lands, in place of a diagram that does not parse (with a
-one-line summary of the parser's message under it), and behind the Source toggle. That source view
-is `Next`: the renderers registered after this one draw it, so it is highlighted when a code
-renderer is registered and a plain `<pre><code>` when none is. A file is loaded once: the source view gets its text as an inline
+The block sits in `@orz/ui-code`'s `FenceFrame`, with Copy and, once drawn, the Source toggle in
+a toolbar that never hides, since it is the only way to the source; an inline source's `title`
+heads the frame with a download of it. The source shows until the first render lands, in place of a
+diagram that does not parse (with a one-line summary of the parser's message under it), and behind
+the Source toggle; a long one is capped behind Expand as other fences are, the drawn diagram never.
+That source view is `Next`: the renderers registered after this one draw it, so it is highlighted
+when a code renderer is registered and a plain `<pre><code>` when none is. A file is loaded once: the source view gets its text as an inline
 source tagged `mermaid`. A file that fails to load shows the message and a Retry button.
 
 ## `MermaidBlock`
@@ -62,7 +65,7 @@ import { MermaidBlock } from "@orz/ui-mermaid";
 <MermaidBlock source={text} sourceView={<MySourceView text={text} />} className="my-4" />
 ```
 
-`sourceView` defaults to a plain `<pre><code>`.
+`sourceView` defaults to a plain `<pre><code>`, and is drawn inside the frame. `title` heads the frame with a download of the source, and `collapsible` caps a long source behind Expand. `className` goes on the frame.
 
 ## Theme
 

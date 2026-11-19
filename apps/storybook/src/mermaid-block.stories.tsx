@@ -92,6 +92,7 @@ const meta = {
   title: "ui-mermaid/MermaidBlock",
   component: MermaidBlock,
   args: { source: FLOWCHART },
+  parameters: { guidelines: "/guidelines/patterns/code-blocks/" },
 } satisfies Meta<typeof MermaidBlock>;
 
 export default meta;
@@ -116,6 +117,12 @@ export const Kinds: Story = {
       ))}
     </div>
   ),
+};
+
+/** A source that names a file heads the frame with it; the name downloads the source. */
+export const Title: Story = {
+  decorators: [withWidth("max-w-3xl")],
+  args: { title: "request-flow.mmd" },
 };
 
 /** Wider than its column: it shrinks down to 75% of its natural width, then scrolls. */

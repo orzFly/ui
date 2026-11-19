@@ -220,6 +220,93 @@ describe("fences", () => {
     expect(drawn.map((el) => el.textContent)).toEqual(["graph", "indented"]);
   });
 
+  describe("a fence's info string and collapsing", () => {
+    const echo: ContentRenderer = {
+      name: "echo",
+      accepts: (source) => source.kind === "inline",
+      Component: ({ source }) =>
+        source.kind === "inline" ? (
+          <output
+            data-title={source.title ?? ""}
+            data-collapse={String(source.collapse)}
+          >
+            {source.text}
+          </output>
+        ) : null,
+    };
+    const renderers = [echo];
+    const drawn = (container: HTMLElement) => [
+      ...container.querySelectorAll<HTMLElement>(".markdown-fence output"),
+    ];
+
+    it.each([
+      ["```yaml compose.yaml", "compose.yaml"],
+      ['```yaml title="compose.yaml" {1,3}', "compose.yaml"],
+      ["```yaml {1,3}", ""],
+      ["```yaml", ""],
+    ])("names %s as %j", (opening, title) => {
+      const { container } = render(
+        <ContentRenderers renderers={renderers}>
+          <Markdown>{`${opening}\na: 1\n\`\`\``}</Markdown>
+        </ContentRenderers>,
+      );
+      expect(drawn(container)[0]?.dataset.title).toBe(title);
+    });
+
+    it("hands a plugin the info string after the language", () => {
+      const seen: (string | undefined)[] = [];
+      const plugins: MarkdownPlugin[] = [
+        {
+          name: "meta",
+          fence: ({ Next, ...props }) => {
+            seen.push(props.meta);
+            return <Next {...props} />;
+          },
+        },
+      ];
+      render(
+        <Markdown plugins={plugins}>
+          {'```ts title="x.ts" {1}\na\n```\n\n```ts\nb\n```'}
+        </Markdown>,
+      );
+      expect(seen).toEqual(['title="x.ts" {1}', undefined]);
+    });
+
+    it("lets a long fence collapse unless told not to, and an embed follows its host", () => {
+      function Embed() {
+        return <Markdown>{"```\ninner\n```"}</Markdown>;
+      }
+      const host: MarkdownPlugin = {
+        name: "embed",
+        components: {
+          p: ({ Next, ...props }) =>
+            props.children === "embed" ? <Embed /> : <Next {...props} />,
+        },
+      };
+      const plugins = [host];
+      const { container, rerender } = render(
+        <ContentRenderers renderers={renderers}>
+          <Markdown plugins={plugins}>{"```\nouter\n```\n\nembed"}</Markdown>
+        </ContentRenderers>,
+      );
+      expect(drawn(container).map((el) => el.dataset.collapse)).toEqual([
+        "true",
+        "true",
+      ]);
+      rerender(
+        <ContentRenderers renderers={renderers}>
+          <Markdown plugins={plugins} collapseLongFences={false}>
+            {"```\nouter\n```\n\nembed"}
+          </Markdown>
+        </ContentRenderers>,
+      );
+      expect(drawn(container).map((el) => el.dataset.collapse)).toEqual([
+        "false",
+        "false",
+      ]);
+    });
+  });
+
   it("leaves a <pre> that is not a plain fence as it is", () => {
     const plugins: MarkdownPlugin[] = [
       {

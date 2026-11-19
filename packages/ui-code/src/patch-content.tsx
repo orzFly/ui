@@ -26,6 +26,8 @@ function Patch({ source, placement, className }: ContentProps) {
           filename={fenceFilename(source.lang)}
           text={source.text}
           titleBar={titleBar}
+          title={source.title}
+          lang={source.lang}
         />
       </div>
     );

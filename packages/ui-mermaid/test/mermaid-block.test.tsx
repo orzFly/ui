@@ -1,5 +1,7 @@
 import { builtinThemes } from "@orz/themes";
+import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { createThemeStore, ThemeProvider } from "@orz/ui/theme";
+import { codeContent, FENCE_COLLAPSE_LINES } from "@orz/ui-code";
 import {
   Content,
   type ContentRenderer,
@@ -12,6 +14,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -31,6 +34,9 @@ const renderDiagram = vi.hoisted(() =>
       result.next,
   ),
 );
+vi.mock("@orz/ui/lib/clipboard", () => ({
+  writeClipboard: vi.fn(async () => true),
+}));
 vi.mock("../src/render.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/render.ts")>()),
   renderDiagram,
@@ -233,6 +239,73 @@ describe("mermaid sources (T-523)", () => {
     const root = container.firstElementChild;
     expect(root?.classList.contains("marked")).toBe(true);
     expect(root?.classList.contains("relative")).toBe(true);
+  });
+});
+
+describe("a mermaid source's frame", () => {
+  const slot = (root: Element, name: string) =>
+    root.querySelector(`[data-slot=${name}]`);
+
+  it("keeps its toolbar up once drawn, and copies the source", async () => {
+    result.next = { ok: true, svg: SVG, width: 1360 };
+    const container = mount(INLINE);
+    await drawn(container);
+    const tools = slot(container, "fence-tools") as HTMLElement;
+    expect(tools.hasAttribute("data-always")).toBe(true);
+    expect(within(tools).getByRole("button", { name: "Source" })).toBeTruthy();
+    expect(container.querySelectorAll("[data-slot=fence-frame]")).toHaveLength(
+      1,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    });
+    expect(writeClipboard).toHaveBeenCalledWith(DIAGRAM);
+  });
+
+  it("frames the source view a code renderer draws only once", async () => {
+    renderDiagram.mockImplementationOnce(() => new Promise(() => {}));
+    const container = mount(INLINE, {
+      renderers: [mermaidContent, codeContent],
+    });
+    await waitFor(() => {
+      expect(slot(container, "fence-frame")).not.toBeNull();
+    });
+    expect(container.querySelectorAll("[data-slot=fence-frame]")).toHaveLength(
+      1,
+    );
+    expect(screen.getAllByRole("button", { name: "Copy" })).toHaveLength(1);
+  });
+
+  it("heads a titled source with a download of it", async () => {
+    result.next = { ok: true, svg: SVG, width: 1360 };
+    const container = mount({ ...INLINE, title: "flow.mmd" });
+    await drawn(container);
+    const head = slot(container, "fence-head") as HTMLElement;
+    expect(head.querySelector('a[download="flow.mmd"]')).not.toBeNull();
+    expect(within(head).getByRole("button", { name: "Source" })).toBeTruthy();
+  });
+
+  it("caps a long source, never the drawn diagram", async () => {
+    result.next = { ok: true, svg: SVG, width: 1360 };
+    const text = Array.from(
+      { length: FENCE_COLLAPSE_LINES + 1 },
+      (_, i) => `  A${i} --> A${i + 1}`,
+    ).join("\n");
+    const container = mount({ ...INLINE, text: `flowchart LR\n${text}` });
+    await drawn(container);
+    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Source" }));
+    expect(screen.getByRole("button", { name: "Expand" })).toBeTruthy();
+  });
+
+  it("reads its palette inside the frame, off the colours it paints", async () => {
+    result.next = { ok: true, svg: SVG, width: 1360 };
+    const container = mount(INLINE);
+    await drawn(container);
+    const diagram = container.querySelector(".mermaid-diagram");
+    expect(slot(container, "fence-frame")?.contains(diagram ?? null)).toBe(
+      true,
+    );
   });
 });
 

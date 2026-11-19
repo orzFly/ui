@@ -15,6 +15,11 @@ export {
   useCodeWorkerFactory,
 } from "./code-worker.tsx";
 export { codeContent } from "./content.tsx";
+export {
+  FENCE_COLLAPSE_LINES,
+  FenceFrame,
+  useInFenceFrame,
+} from "./fence-frame.tsx";
 export { patchContent } from "./patch-content.tsx";
 export {
   LARGE_DIFF_LINES,

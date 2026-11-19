@@ -1,4 +1,5 @@
 import { Button } from "@orz/ui/components/button";
+import { FENCE_COLLAPSE_LINES } from "@orz/ui-code";
 import {
   ContentFallback,
   type ContentProps,
@@ -66,6 +67,11 @@ function Mermaid(props: MermaidProps) {
   return (
     <MermaidBlock
       source={source.text}
+      title={source.title}
+      collapsible={
+        source.collapse !== false &&
+        source.text.split("\n").length > FENCE_COLLAPSE_LINES
+      }
       className={className}
       sourceView={<Next source={source} placement={placement} />}
     />

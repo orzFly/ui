@@ -367,6 +367,38 @@ describe("patchContent", () => {
     expect(screen.getByRole("button", { name: "raw" })).toBeTruthy();
   });
 
+  it("copies from the frame it draws, and not from a card's title bar", async () => {
+    const view = draw({ kind: "inline", text: TWO_FILES, lang: "diff" });
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    expect(screen.getByRole("button", { name: "Copy" })).toBeTruthy();
+    view.unmount();
+
+    draw(patchFile("x.patch", TWO_FILES), [attachmentCard(), ...RENDERERS]);
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
+  });
+
+  it("names a titled patch fence with a download of it", async () => {
+    draw({ kind: "inline", text: TWO_FILES, lang: "diff", title: "fix.patch" });
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    const link = document.querySelector('a[download="fix.patch"]');
+    expect(link?.textContent).toBe("fix.patch");
+    expect(screen.queryByText("patch")).toBeNull();
+  });
+
+  it("frames a fence that is not a patch, with Copy and its tag", async () => {
+    draw({ kind: "inline", text: "-old\n+new", lang: "patch" });
+    await waitFor(() =>
+      expect(document.querySelector("[data-file]")).not.toBeNull(),
+    );
+    const frame = document.querySelector("[data-slot=fence-frame]");
+    expect(frame?.querySelector("[data-file]")).not.toBeNull();
+    expect(
+      frame?.querySelector("[data-slot=fence-tools]")?.textContent,
+    ).toContain("patch");
+    expect(screen.getAllByRole("button", { name: "Copy" })).toHaveLength(1);
+  });
+
   it("says so when a patch file is not one, above its numbered text", async () => {
     draw(patchFile("x.patch", "just notes\n"));
     await screen.findByText("Not a valid patch — showing the text.");

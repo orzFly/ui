@@ -60,13 +60,17 @@ const meta = {
   args: { filename: "series.patch", text: seriesText },
   argTypes: { titleBar: { control: false } },
   decorators: [withWidth("max-w-3xl")],
+  parameters: { guidelines: "/guidelines/patterns/code-blocks/" },
 } satisfies Meta<typeof PatchView>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** `PatchView` on its own, with no surrounding title bar: it frames itself. */
+/** `PatchView` on its own, with no surrounding title bar: it frames itself, with Copy. */
 export const Playground: Story = {};
+
+/** A fence's filename heads the frame in place of "patch", and downloads the patch. */
+export const Title: Story = { args: { title: "series.patch" } };
 
 /**
  * A file diff past `LARGE_DIFF_LINES` changed lines, here a generated lockfile, starts folded

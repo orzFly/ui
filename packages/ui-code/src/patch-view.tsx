@@ -30,6 +30,7 @@ import {
   patchCommitId,
   patchFileId,
 } from "./code-block.tsx";
+import { FenceFrame } from "./fence-frame.tsx";
 import {
   formatCommitDate,
   type PatchCommit,
@@ -307,9 +308,14 @@ export type PatchViewProps = {
   fit?: keyof typeof FIT_CLASS;
   /**
    * Where the surrounding title bar takes the controls (`useContentTitleBar`);
-   * null until it has mounted. Undefined, the patch draws a bar of its own.
+   * null until it has mounted. Undefined, the patch draws a frame of its own,
+   * with Copy.
    */
   titleBar?: HTMLElement | null;
+  /** A filename for the patch, which the frame it draws offers as a download. */
+  title?: string;
+  /** A fence's tag, shown in the frame while the text is not drawn as a patch. */
+  lang?: string;
 };
 
 /**
@@ -327,6 +333,8 @@ export function PatchView({
   invalidNote = false,
   fit = "flow",
   titleBar,
+  title,
+  lang,
 }: PatchViewProps) {
   const [parsed, setParsed] = useState<Parsed>({ kind: "pending" });
   const [raw, setRaw] = useState(false);
@@ -441,10 +449,28 @@ export function PatchView({
     return rows;
   }, [drawn, collapsed, clipped]);
 
+  // With no title bar to borrow, text not (yet) drawn as a patch is still a
+  // code block, framed as every other one is.
+  const framed = titleBar === undefined;
   if (parsed.kind === "pending") {
-    return <LoadingCodeFallback contents={text} className={FIT_CLASS[fit]} />;
+    return framed ? (
+      <FenceFrame text={text} lang={lang} title={title}>
+        <LoadingCodeFallback contents={text} bare />
+      </FenceFrame>
+    ) : (
+      <LoadingCodeFallback contents={text} className={FIT_CLASS[fit]} />
+    );
   }
   if (patches === null || drawn === null) {
+    const code = (
+      <CappedCodeBlock
+        filename={filename}
+        contents={text}
+        lineNumbers={lineNumbers}
+        copy={!framed}
+        bareFallback={framed}
+      />
+    );
     return (
       <>
         {parsed.kind === "invalid" && invalidNote && (
@@ -452,11 +478,13 @@ export function PatchView({
             Not a valid patch — showing the text.
           </p>
         )}
-        <CappedCodeBlock
-          filename={filename}
-          contents={text}
-          lineNumbers={lineNumbers}
-        />
+        {framed ? (
+          <FenceFrame text={text} lang={lang} title={title}>
+            {code}
+          </FenceFrame>
+        ) : (
+          code
+        )}
       </>
     );
   }
@@ -509,6 +537,8 @@ export function PatchView({
       filename={filename}
       contents={text}
       lineNumbers={lineNumbers}
+      // A frame of the patch's own has Copy in its bar.
+      copy={!framed}
     />
   ) : (
     <PatchFiles
@@ -522,7 +552,7 @@ export function PatchView({
     />
   );
 
-  if (titleBar !== undefined) {
+  if (!framed) {
     return (
       <>
         {titleBar !== null && createPortal(controls, titleBar)}
@@ -530,18 +560,23 @@ export function PatchView({
       </>
     );
   }
-  // Under raymond the patch is one document: a sunken well in the window
-  // colour, its bar a band of the face along the top, its files run together
-  // on the well (styles.css parts them).
+  // Under raymond the patch is one document: the frame's sunken well, its
+  // files run together on it (styles.css parts them).
   return (
-    <div className="overflow-hidden rounded-frame ring-1 ring-border raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken raymond:ring-0 raymond:[--background:var(--window)]">
-      <div className="flex items-center gap-2 border-b bg-muted py-1 pr-1.5 pl-2 text-ui-sm text-muted-foreground raymond:border-b-0 raymond:bg-(--3d-face)">
-        <ModuleMarker icon={<FileDiffIcon />} />
-        <span className="font-bold text-foreground">patch</span>
-        <span className="ml-auto" />
-        {controls}
-      </div>
+    <FenceFrame
+      text={text}
+      title={title}
+      leading={
+        title === undefined && (
+          <>
+            <ModuleMarker icon={<FileDiffIcon />} />
+            <span className="font-bold text-foreground">patch</span>
+          </>
+        )
+      }
+      actions={controls}
+    >
       <div className="p-2 raymond:p-0">{body}</div>
-    </div>
+    </FenceFrame>
   );
 }

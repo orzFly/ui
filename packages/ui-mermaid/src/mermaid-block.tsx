@@ -1,6 +1,6 @@
-import { Button } from "@orz/ui/components/button";
-import { cn } from "@orz/ui/lib/utils";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import { useTheme } from "@orz/ui/theme";
+import { FenceFrame } from "@orz/ui-code";
 import {
   type CSSProperties,
   type ReactNode,
@@ -62,10 +62,12 @@ function readPalette(el: Element): DiagramPalette {
 }
 
 /**
- * Mermaid source drawn as its diagram (T-523). `sourceView` shows until the
- * first render lands — the renderer is a lazy chunk — and stays one click
- * away afterwards. A diagram that does not parse keeps its source on screen
- * with the parser's complaint under it.
+ * Mermaid source drawn as its diagram (T-523), in a code block's frame
+ * (`FenceFrame`) with Copy. `sourceView` shows until the first render lands
+ * — the renderer is a lazy chunk — and stays one click away afterwards, from
+ * a toolbar that never hides, since it is the only way to the source. A
+ * diagram that does not parse keeps its source on screen with the parser's
+ * complaint under it.
  *
  * The colors are the theme tokens in effect on this element. The diagram is
  * drawn again whenever `useTheme()` reports a new theme, color scheme or
@@ -75,12 +77,21 @@ function readPalette(el: Element): DiagramPalette {
 export function MermaidBlock({
   source,
   sourceView,
+  title,
+  collapsible = false,
   className,
 }: {
   source: string;
-  /** Shown in place of the diagram. Default: a plain `<pre><code>`. */
+  /**
+   * Shown in place of the diagram, inside the frame. Default: a plain `<pre><code>`. A code view
+   * there reads `useInFenceFrame` and leaves the frame and Copy to this block.
+   */
   sourceView?: ReactNode;
-  /** On the outer element, which also carries the probe the palette is read from. */
+  /** A filename for the source, which the frame's header offers as a download. */
+  title?: string;
+  /** Caps the source shown to scroll in the frame, behind Expand; never the drawn diagram. */
+  collapsible?: boolean;
+  /** On the frame. */
   className?: string;
 }) {
   const { theme, colorScheme, variant } = useTheme();
@@ -108,51 +119,57 @@ export function MermaidBlock({
   }, [source, theme, colorScheme, variant]);
 
   const diagram = result?.ok === true ? result : null;
+  const drawn = diagram !== null && !showSource;
   const sourceShown = sourceView ?? (
-    <pre>
+    <pre className="m-0 overflow-x-auto rounded-none bg-transparent p-3 raymond:shadow-none">
       <code>{source}</code>
     </pre>
   );
   return (
-    // The toggle sits in a strip of its own: over the diagram it would cover
-    // whichever node lands in the corner.
-    <div
-      ref={probe}
-      className={cn(diagram === null ? undefined : "relative pt-7", className)}
+    <FenceFrame
+      text={source}
+      title={title}
+      collapsible={collapsible && !drawn}
+      toolbarAlwaysVisible={diagram !== null}
+      actions={
+        diagram !== null && (
+          <ToolbarButton
+            type="button"
+            size="xs"
+            className="font-normal text-muted-foreground"
+            aria-pressed={showSource}
+            onClick={() => setShowSource((shown) => !shown)}
+          >
+            {showSource ? "Diagram" : "Source"}
+          </ToolbarButton>
+        )
+      }
+      className={className}
     >
-      {diagram !== null && !showSource ? (
-        <div
-          className="mermaid-diagram overflow-x-auto"
-          style={{ "--diagram-width": `${diagram.width}px` } as CSSProperties}
-          // mermaid's own output under securityLevel "strict", which runs
-          // labels through DOMPurify: markup survives, scripts and handlers
-          // do not.
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized by mermaid, see above
-          dangerouslySetInnerHTML={{ __html: diagram.svg }}
-        />
-      ) : (
-        sourceShown
-      )}
-      {result?.ok === false && (
-        <p
-          className="mt-1 truncate text-destructive text-ui-sm"
-          title={result.error}
-        >
-          {errorSummary(result.error)}
-        </p>
-      )}
-      {diagram !== null && (
-        <Button
-          type="button"
-          size="xs"
-          variant="ghost"
-          className="absolute top-0 right-0"
-          aria-pressed={showSource}
-          onClick={() => setShowSource((shown) => !shown)}
-        >
-          {showSource ? "Diagram" : "Source"}
-        </Button>
-      )}
-    </div>
+      {/* The palette is read in here, off the colours the frame paints. */}
+      <div ref={probe}>
+        {drawn ? (
+          <div
+            className="mermaid-diagram overflow-x-auto p-4"
+            style={{ "--diagram-width": `${diagram.width}px` } as CSSProperties}
+            // mermaid's own output under securityLevel "strict", which runs
+            // labels through DOMPurify: markup survives, scripts and handlers
+            // do not.
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized by mermaid, see above
+            dangerouslySetInnerHTML={{ __html: diagram.svg }}
+          />
+        ) : (
+          sourceShown
+        )}
+        {result?.ok === false && (
+          <p
+            className="truncate border-t px-3 py-1 text-destructive text-ui-sm"
+            title={result.error}
+          >
+            {errorSummary(result.error)}
+          </p>
+        )}
+      </div>
+    </FenceFrame>
   );
 }

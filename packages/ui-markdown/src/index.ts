@@ -13,6 +13,7 @@ export {
   externalLinks,
   isExternalHref,
 } from "./external-links.tsx";
+export { fenceTitle } from "./lib/fence-meta.ts";
 export {
   Markdown,
   MarkdownPluginsContext,

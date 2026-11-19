@@ -260,14 +260,42 @@ export function useSyntaxTheme(): SyntaxTheme {
   return cached;
 }
 
+// pierre's own font stack, not the page's monospace, which resolves to a
+// different face and would shift every glyph when pierre lands.
+const PIERRE_FONT_FAMILY =
+  'var(--diffs-font-family, "SF Mono", Monaco, Consolas, "Ubuntu Mono", "Liberation Mono", "Courier New", monospace)';
+
 /** The shape every code surface falls back to: the code, unhighlighted. */
 export function PlainCodeFallback({
   contents,
+  bare = false,
   className,
 }: {
   contents: string;
+  /**
+   * pierre's own snippet geometry, with no box of its own: inside a frame a grey box would flash
+   * and shift its lines when pierre lands. Its 8px layout margin and its own 8px above and below,
+   * 1ch either side, and its font at 13px on 20px lines; each class beats `.markdown-body pre`,
+   * which a fence sits inside.
+   */
+  bare?: boolean;
   className?: string;
 }) {
+  if (bare) {
+    return (
+      <pre
+        className={cn(
+          "m-0 overflow-x-auto rounded-none bg-transparent px-[1ch] py-4 text-[13px] leading-5 wrap-anywhere whitespace-pre-wrap raymond:shadow-none",
+          className,
+        )}
+        style={{ fontFamily: PIERRE_FONT_FAMILY }}
+      >
+        <code className="rounded-none bg-transparent p-0 [font:inherit] raymond:shadow-none">
+          {contents}
+        </code>
+      </pre>
+    );
+  }
   return (
     <pre
       className={cn(
@@ -295,9 +323,12 @@ const LOADING_LINES = 500;
  */
 export function LoadingCodeFallback({
   contents,
+  bare = false,
   className,
 }: {
   contents: string;
+  /** See `PlainCodeFallback`. */
+  bare?: boolean;
   className?: string;
 }) {
   let end = -1;
@@ -308,6 +339,7 @@ export function LoadingCodeFallback({
   return (
     <PlainCodeFallback
       contents={end === -1 ? contents : contents.slice(0, end)}
+      bare={bare}
       className={className}
     />
   );
@@ -552,7 +584,7 @@ function fenceDiffOptions(
  * land on the same plain text rather than on React's error screen.
  */
 class CodeViewBoundary extends Component<
-  { contents: string; children: ReactNode },
+  { contents: string; bare?: boolean; children: ReactNode },
   { failed: boolean }
 > {
   state = { failed: false };
@@ -567,7 +599,12 @@ class CodeViewBoundary extends Component<
 
   render() {
     if (this.state.failed) {
-      return <PlainCodeFallback contents={this.props.contents} />;
+      return (
+        <PlainCodeFallback
+          contents={this.props.contents}
+          bare={this.props.bare}
+        />
+      );
     }
     return this.props.children;
   }
@@ -626,6 +663,7 @@ export function CodeBlock({
   plain = false,
   offThread = false,
   copy = true,
+  bareFallback = false,
   className,
 }: {
   filename: string;
@@ -652,6 +690,11 @@ export function CodeBlock({
    * line of 1 MiB still held the main thread for 2.2 s.
    */
   offThread?: boolean;
+  /**
+   * The plain text shown until pierre draws, and on a failure, in pierre's own geometry with no
+   * box of its own, so nothing shifts when highlighting arrives: for a block inside a frame.
+   */
+  bareFallback?: boolean;
   /** Caps the height for a long file: CodeView virtualizes against its box. */
   className?: string;
 }) {
@@ -698,11 +741,19 @@ export function CodeBlock({
   // Highlighting fails per grammar rather than per input, so a block that has
   // gone plain stays plain: re-arming it would only repeat the same failure.
   const block = degraded ? (
-    <PlainCodeFallback contents={contents} className={className} />
+    <PlainCodeFallback
+      contents={contents}
+      bare={bareFallback}
+      className={className}
+    />
   ) : (
-    <CodeViewBoundary contents={contents}>
+    <CodeViewBoundary contents={contents} bare={bareFallback}>
       {!ready && (
-        <LoadingCodeFallback contents={contents} className={className} />
+        <LoadingCodeFallback
+          contents={contents}
+          bare={bareFallback}
+          className={className}
+        />
       )}
       <div style={ready ? undefined : { visibility: "hidden" }}>
         {/* Plain text has nothing to tokenize, so no worker to start for it. */}

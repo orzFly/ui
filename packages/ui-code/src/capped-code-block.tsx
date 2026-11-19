@@ -38,6 +38,8 @@ export function CappedCodeBlock({
   lineNumbers,
   capClassName,
   offThread = false,
+  copy,
+  bareFallback,
 }: {
   filename: string;
   contents: string;
@@ -45,6 +47,8 @@ export function CappedCodeBlock({
   /** The box a text over the cap is drawn in; a height cap with its own overflow. */
   capClassName?: string;
   offThread?: boolean;
+  copy?: boolean;
+  bareFallback?: boolean;
 }) {
   const tooLarge = useMemo(
     () => exceedsBytes(contents, TEXT_PREVIEW_MAX_BYTES),
@@ -57,6 +61,8 @@ export function CappedCodeBlock({
       lineNumbers={lineNumbers}
       plain={tooLarge}
       offThread={offThread}
+      copy={copy}
+      bareFallback={bareFallback}
       className={tooLarge || offThread ? capClassName : undefined}
     />
   );

@@ -1,6 +1,7 @@
 import {
   CodeBlock,
   CodeWorkerProvider as CodeWorkerProviderView,
+  FenceFrame,
   fenceFilename,
 } from "@orz/ui-code";
 import PierreWorker from "@pierre/diffs/worker/worker.js?worker";
@@ -86,12 +87,28 @@ const meta = {
   title: "ui-code/CodeBlock",
   component: CodeBlock,
   args: { filename: "snippet.ts", contents: SNIPPET },
+  parameters: { guidelines: "/guidelines/patterns/code-blocks/" },
 } satisfies Meta<typeof CodeBlock>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+/**
+ * Inside a `FenceFrame`, which carries Copy and the edge: `bareFallback` draws the plain text in
+ * pierre's own geometry until it lands, so nothing moves when the colours arrive.
+ */
+export const BareFallback: Story = {
+  args: { copy: false, bareFallback: true },
+  decorators: [
+    (Story, { args }) => (
+      <FenceFrame text={args.contents} lang="ts">
+        <Story />
+      </FenceFrame>
+    ),
+  ],
+};
 
 export const LineNumbers: Story = {
   args: { filename: "tasks.ts", contents: WHOLE_FILE, lineNumbers: true },
