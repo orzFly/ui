@@ -69,8 +69,9 @@ type Story = StoryObj<typeof meta>;
 export const Playground: Story = {};
 
 /**
- * A file diff past `LARGE_DIFF_LINES` changed lines, here a generated lockfile, waits behind
- * Load diff so it does not bury the files around it.
+ * A file diff past `LARGE_DIFF_LINES` changed lines, here a generated lockfile, starts folded
+ * behind Load diff so it does not bury the files around it. Every file's chevron folds and
+ * unfolds it.
  */
 export const LargeFileDiff: Story = {
   args: { filename: "bump.patch", text: LARGE_PATCH },
