@@ -82,6 +82,19 @@ const ALLOWED: readonly { file: string; utility: string; reason: string }[] = [
     utility: "shadow-md",
     reason: "the play glyph sits on the video, which no style draws",
   },
+  {
+    file: "ui-content/src/attachment/compare-canvas.tsx",
+    utility: "shadow-[0_0_0_1px_rgb(0_0_0/0.65)]",
+    reason:
+      "the crosshair's dark ring keeps it visible on any picture; it is its drawing, not depth",
+  },
+  {
+    file: "ui-content/src/compare/media-compare.tsx",
+    utility:
+      "shadow-[0_0_0_1px_color-mix(in_oklab,var(--background)_70%,transparent)]",
+    reason:
+      "the swipe line's ring keeps it visible on any picture; it is its drawing, not depth",
+  },
 ];
 
 function walk(dir: string, out: string[] = []): string[] {

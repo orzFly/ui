@@ -1,0 +1,48 @@
+export const meta = {
+  title: "Comparing images",
+  description:
+    "MediaCompare for two versions of a picture in the page: side by side, swipe, onion skin or difference, at one scale.",
+  order: 38,
+  api: ["ui-content/MediaCompare"],
+};
+
+import { SettingsRedesign } from "../../../examples/comparing-images/settings-redesign.tsx";
+
+**When a picture changed, show its two versions as one `MediaCompare`, not as two images one
+after the other. Both sides are drawn at one scale, so a picture that grew still looks bigger,
+and the reader can lay one over the other to see exactly what moved.**
+
+<Example of={SettingsRedesign} />
+
+The settings screenshot gained a field and its Save button moved. Side by side shows both whole;
+**Swipe** drags the newer over the older, **Onion skin** fades it in, and **Difference** blacks
+out every pixel that did not change, so only what changed is left.
+
+## Which mode
+
+| The reader wants to | Mode |
+|---|---|
+| See both versions whole, or they differ in size or layout | Side by side |
+| Find where a change begins and ends across the picture | Swipe |
+| Judge a small shift, a nudged element or a recoloured one | Onion skin |
+| Be sure nothing else changed | Difference |
+
+The overlay modes line the two up at their top-left corner, as a screenshot is taken; a picture
+drawn about its centre, as a diagram is, takes `align="center"`. They wait until both sides have
+a size, and a side that failed to load leaves side by side the only mode.
+
+## Labels and sizes
+
+- Tag each side with what tells the versions apart: a version (`v1`, `v2`), a date, or
+  Before and After when nothing else names them. A long tag is cut, and keeps its whole text as
+  a tooltip.
+- Each label shows the side's natural size, and marks a dimension the two disagree on. Scaling
+  hides a size change, so the label is where the reader learns of it.
+- `backdrop="checker"` shows transparency as the attachment viewer does, for screenshots and
+  icons; `backdrop="page"` draws a picture on the page's own ground, for one made to sit on it.
+
+## Several on one page
+
+A page of comparisons is read one way: wrap them in one `CompareModeProvider`, and switching
+any of them switches them all. Without it each keeps its own mode. Limit `modes` to what makes
+sense for the pictures; a pair that can only sit side by side has no mode control at all.

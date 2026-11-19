@@ -23,6 +23,11 @@
       "types": "./dist/attachment/index.d.ts",
       "default": "./dist/attachment/index.js"
     },
+    "./compare": {
+      "@orz/source": "./src/compare/index.ts",
+      "types": "./dist/compare/index.d.ts",
+      "default": "./dist/compare/index.js"
+    },
     "./styles.css": "./styles.css"
   },
   "files": [

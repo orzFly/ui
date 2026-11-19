@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400">
+  <title>Settings, before</title>
+  <rect width="720" height="400" rx="16" fill="#f6f7f9"/>
+  <rect x="0" y="0" width="720" height="56" rx="16" fill="#1f3d6b"/>
+  <rect x="0" y="40" width="720" height="16" fill="#1f3d6b"/>
+  <text x="28" y="36" font-family="system-ui, sans-serif" font-size="20" font-weight="600" fill="#fff">Settings</text>
+  <rect x="24" y="80" width="200" height="296" rx="10" fill="#e8eef7"/>
+  <rect x="40" y="100" width="168" height="28" rx="6" fill="#fff"/>
+  <text x="52" y="119" font-family="system-ui, sans-serif" font-size="14" fill="#0f1727">Profile</text>
+  <text x="52" y="159" font-family="system-ui, sans-serif" font-size="14" fill="#4a5568">Notifications</text>
+  <text x="52" y="193" font-family="system-ui, sans-serif" font-size="14" fill="#4a5568">Billing</text>
+  <text x="248" y="104" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#0f1727">Display name</text>
+  <rect x="248" y="116" width="440" height="36" rx="6" fill="#fff" stroke="#cbd2dc"/>
+  <text x="260" y="139" font-family="system-ui, sans-serif" font-size="14" fill="#0f1727">alice</text>
+  <text x="248" y="188" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#0f1727">Email</text>
+  <rect x="248" y="200" width="440" height="36" rx="6" fill="#fff" stroke="#cbd2dc"/>
+  <text x="260" y="223" font-family="system-ui, sans-serif" font-size="14" fill="#0f1727">alice@example.com</text>
+  <rect x="248" y="320" width="96" height="36" rx="6" fill="#1f3d6b"/>
+  <text x="274" y="343" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Save</text>
+</svg>

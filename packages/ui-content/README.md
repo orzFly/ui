@@ -11,6 +11,8 @@ which renderers exist.
 ```bash
 pnpm add @orz/ui-content react
 # only for @orz/ui-content/attachment:
+pnpm add react-dom
+# only for @orz/ui-content/attachment, @orz/ui-content/compare:
 pnpm add @orz/query @orz/themes @orz/ui lucide-react radix-ui react-dom sonner
 ```
 <!-- /generated -->
@@ -421,4 +423,5 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
 |---|---|
 | `@orz/ui-content` | `Content`, `ContentRenderers`, `ContentFallback`, the `useContent…` hooks, `ContentTitleBar`, `useContentTitleBar`, `useSourceText`, the file-kind predicates, `formatSize`, `textPreviewGate` and its limits, types |
 | `@orz/ui-content/attachment` | the attachment renderers, viewer, links, cards and icons |
+| `@orz/ui-content/compare` | `MediaCompare`, its labels, mode control and swipe handle, `CompareModeProvider`, `useCompareMode` |
 | `@orz/ui-content/styles.css` | `@source "./dist"` |
