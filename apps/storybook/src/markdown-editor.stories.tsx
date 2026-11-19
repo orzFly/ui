@@ -4,12 +4,14 @@ import type {
 } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
+import { TASK_PEOPLE, type TaskPerson } from "@orz/fixtures/tasks.ts";
 import {
   createCommandRegistry,
   type ParsedDraft,
   parseCommandLines,
   type ValueProviders,
 } from "@orz/query";
+import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +23,11 @@ import {
   inCodeContext,
   inLiteralContext,
 } from "@orz/ui-codemirror/extensions/code-context";
-import { completionWith } from "@orz/ui-codemirror/extensions/completion";
+import {
+  completionRowClass,
+  completionWith,
+  reactOption,
+} from "@orz/ui-codemirror/extensions/completion";
 import { applyWithSpace } from "@orz/ui-codemirror/extensions/completion-space";
 import {
   commandCompletionSource,
@@ -32,16 +38,41 @@ import { useMemo, useState } from "react";
 import { fn } from "storybook/test";
 import { withWidth } from "./decorators.tsx";
 
-const COMPLETION = `import { completionWith } from "@orz/ui-codemirror/extensions/completion";
+const COMPLETION = `import { completionRowClass, completionWith, reactOption } from "@orz/ui-codemirror/extensions/completion";
 import { applyWithSpace } from "@orz/ui-codemirror/extensions/completion-space";
+
+// CodeMirror owns the Completion shape, so whose row it is lives beside it.
+const people = new WeakMap<Completion, Person>();
 
 const mentions: CompletionSource = (context) => {
   const match = context.matchBefore(/@\\w*$/);
   if (match === null) return null;
-  return { from: match.from, options: logins.map((login) => ({ label: \`@\${login}\`, type: "mention", apply: applyWithSpace(\`@\${login}\`) })) };
+  const options = members.map((person) => {
+    const option = { label: \`@\${person.login}\`, detail: person.name, type: "mention", apply: applyWithSpace(\`@\${person.login}\`) };
+    people.set(option, person);
+    return option;
+  });
+  return { from: match.from, options };
 };
 
-<MarkdownEditor extensions={[completionWith([mentions]), mentionIcon]} />`;
+const avatar = reactOption(20, "cm-completionAvatar", (option) => {
+  const person = people.get(option);
+  return person === undefined ? null : (
+    <Avatar size="sm" aria-hidden>
+      <AvatarFallback>{person.name[0]}</AvatarFallback>
+    </Avatar>
+  );
+});
+
+<MarkdownEditor
+  extensions={[
+    completionWith([mentions], {
+      optionClass: (option) => (people.has(option) ? completionRowClass.drawn : ""),
+      addToOptions: [avatar],
+    }),
+    mentionIcon,
+  ]}
+/>`;
 
 const TAG_COMPLETION = `import { completionWith } from "@orz/ui-codemirror/extensions/completion";
 
@@ -136,18 +167,39 @@ export const QuoteToggle: Story = {
   },
 };
 
-const PEOPLE = ["alice", "bob"];
+const people = new WeakMap<CompletionOption, TaskPerson>();
 
 const mentions: CompletionSource = (context) => {
   const match = context.matchBefore(/@\w*$/);
   if (match === null) return null;
-  const options: CompletionOption[] = PEOPLE.map((login) => ({
-    label: `@${login}`,
+  const options: CompletionOption[] = TASK_PEOPLE.map((person) => {
+    const option: CompletionOption = {
+      label: `@${person.login}`,
+      detail: person.name,
+      type: "mention",
+      apply: applyWithSpace(`@${person.login}`),
+    };
+    people.set(option, person);
+    return option;
+  });
+  options.push({
+    label: "@here",
+    detail: "everyone watching",
     type: "mention",
-    apply: applyWithSpace(`@${login}`),
-  }));
+    apply: applyWithSpace("@here"),
+  });
   return { from: match.from, options, validFor: /^@\w*$/ };
 };
+
+const avatar = reactOption(20, "cm-completionAvatar", (option) => {
+  const person = people.get(option);
+  if (person === undefined) return null;
+  return (
+    <Avatar size="sm" aria-hidden>
+      <AvatarFallback>{person.name.slice(0, 1).toUpperCase()}</AvatarFallback>
+    </Avatar>
+  );
+});
 
 const mentionIcon = EditorView.theme({
   ".cm-completionIcon-mention::after": {
@@ -156,11 +208,20 @@ const mentionIcon = EditorView.theme({
   },
 });
 
-const completion = [completionWith([mentions]), mentionIcon];
+const completion = [
+  completionWith([mentions], {
+    optionClass: (option) =>
+      people.has(option) ? completionRowClass.drawn : "",
+    addToOptions: [avatar],
+  }),
+  mentionIcon,
+];
 
 /**
- * Type `@` for the stub mention source. An accepted mention leaves a space
- * that punctuation typed next replaces.
+ * Type `@` for the stub mention source. A person's row draws an avatar with
+ * React (`reactOption`) where the type icon stands, in a taller row
+ * (`completionRowClass.drawn`); `@here`, which names nobody, keeps its icon.
+ * An accepted mention leaves a space that punctuation typed next replaces.
  */
 export const Completion: Story = {
   args: {
