@@ -206,10 +206,17 @@ const options = useMemo(
   [theme],
 );
 
-<Suspense>
-  <LazyMultiFileDiff oldFile={oldFile} newFile={newFile} options={options} />
-</Suspense>;
+<LazyMultiFileDiff
+  oldFile={oldFile}
+  newFile={newFile}
+  options={options}
+  fallback={<p>Loading diff…</p>}
+/>;
 ```
+
+`LazyMultiFileDiff` draws `fallback` (nothing by default) while pierre's chunk loads instead of
+suspending, like every surface in this package: a page whose first render suspended for the chunk
+would be rendered again from scratch once it arrived.
 
 ## Failures
 

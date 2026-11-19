@@ -17,10 +17,8 @@ import { CopyIcon } from "lucide-react";
 import {
   Component,
   type ComponentType,
-  lazy,
   type ReactNode,
   type Ref,
-  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -33,19 +31,84 @@ import {
 } from "./code-worker.tsx";
 import { ensureSyntaxTheme, loadPierre } from "./syntax-registry.ts";
 
+type Chunk<P> =
+  | { status: "loaded"; Component: ComponentType<P> }
+  | { status: "failed"; error: unknown };
+
+/**
+ * A component fetched in its own chunk on first render, drawing `fallback`
+ * until it arrives.
+ *
+ * Not `lazy()`, because suspending throws away far more than the code block.
+ * On a page's first load the nearest boundary that has never shown its
+ * content is often the app shell's, and React does not commit a retry that
+ * suspends within 300 ms of that boundary's fallback: when the chunk lands it
+ * renders the whole page again from scratch, every component above the block
+ * and a long document's markdown parse included.
+ *
+ * Not `useSyncExternalStore` either: a store that changes while a concurrent
+ * render is yielding fails React's consistency check, and the whole render is
+ * redone synchronously. The chunk landing mid-render is exactly that change.
+ */
+function chunkComponent<P extends object>(
+  load: () => Promise<ComponentType<P>>,
+): ComponentType<P & { fallback?: ReactNode }> {
+  let chunk: Chunk<P> | undefined;
+  let settled: Promise<Chunk<P>> | undefined;
+  const start = () => {
+    settled ??= load().then(
+      (Component): Chunk<P> => {
+        chunk = { status: "loaded", Component };
+        return chunk;
+      },
+      (error: unknown): Chunk<P> => {
+        chunk = { status: "failed", error };
+        return chunk;
+      },
+    );
+    return settled;
+  };
+  return function ChunkComponent({
+    fallback = null,
+    ...props
+  }: P & { fallback?: ReactNode }) {
+    const [current, setCurrent] = useState(chunk);
+    const waiting = current === undefined;
+    // Started from render, as lazy() does, so the fetch is not held back
+    // until the page commits.
+    if (waiting) void start();
+    useEffect(() => {
+      if (!waiting) return;
+      let live = true;
+      void start().then((next) => {
+        if (live) setCurrent(next);
+      });
+      return () => {
+        live = false;
+      };
+    }, [waiting]);
+    // Rethrown as lazy() would, so CodeViewBoundary still turns a chunk that
+    // never arrives (offline) into plain text.
+    if (current?.status === "failed") throw current.error;
+    if (current?.status !== "loaded") return fallback;
+    return <current.Component {...(props as P)} />;
+  };
+}
+
 // @pierre/diffs is the heaviest dependency in the web bundle (T-24). Every
-// value import goes through lazy() here so the library lands in its own
-// chunk, fetched the first time a code surface actually renders; the rest
+// value import goes through chunkComponent() here so the library lands in its
+// own chunk, fetched the first time a code surface actually renders; the rest
 // of the app must only use type imports. Each loader waits for loadPierre()
 // too, so a palette's own syntax theme is registered before the first view.
-const LazyCodeView = lazy(() =>
-  Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(([m]) => ({
-    default: m.CodeView as ComponentType<
-      CodeViewProps<undefined, undefined> & {
-        ref?: Ref<CodeViewHandle<undefined, undefined>>;
-      }
-    >,
-  })),
+const LazyCodeView = chunkComponent(() =>
+  Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(
+    ([m]) =>
+      m.CodeView as ComponentType<
+        CodeViewProps<undefined, undefined> & {
+          ref?: Ref<CodeViewHandle<undefined, undefined>>;
+        }
+      >,
+  ),
 );
 
 type CodeViewComponentProps = CodeViewProps<undefined, undefined> & {
@@ -59,7 +122,7 @@ type CodeViewComponentProps = CodeViewProps<undefined, undefined> & {
  * 9.3 s on the main thread, 0.2 s with the worker. The lines show as plain
  * text at once, and their colours follow.
  */
-const LazyWorkerCodeView = lazy(() =>
+const LazyWorkerCodeView = chunkComponent(() =>
   Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(([m]) => {
     const CodeView = m.CodeView as ComponentType<CodeViewComponentProps>;
     // The pool keeps the theme it was created with and overrides each
@@ -95,16 +158,23 @@ const LazyWorkerCodeView = lazy(() =>
         </m.WorkerPoolContextProvider>
       );
     }
-    return { default: WorkerCodeView };
+    return WorkerCodeView;
   }),
 );
 
-export const LazyMultiFileDiff = lazy(() =>
-  Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(([m]) => ({
-    default: m.MultiFileDiff as ComponentType<
-      MultiFileDiffProps<undefined, undefined>
-    >,
-  })),
+/**
+ * pierre's `MultiFileDiff`, fetched in its own chunk the first time one
+ * renders. It draws `fallback` (nothing by default) until the chunk arrives
+ * rather than suspending, so it needs no `<Suspense>` above it and a page's
+ * first render is not thrown away waiting for it.
+ */
+export const LazyMultiFileDiff = chunkComponent(() =>
+  Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(
+    ([m]) =>
+      m.MultiFileDiff as ComponentType<
+        MultiFileDiffProps<undefined, undefined>
+      >,
+  ),
 );
 
 /**
@@ -289,31 +359,30 @@ function handlePostRender(container: HTMLElement): void {
   }
 }
 
+const DRAWN_DIFF_CONTAINERS = new WeakSet<HTMLElement>();
+
 /**
- * pierre's FileDiff creates its `<pre>` before the highlighter is loaded and
- * fills it once it is. A ref detached and reattached in between — StrictMode
- * in dev, or a Suspense boundary above re-suspending — cleans that instance
- * up and hands the same `diffs-container` to a new one, which takes the empty
- * `<pre>` for server-rendered HTML, adopts it and never renders (UI-110).
- * Removing it as the old instance lets go makes the new one render afresh.
+ * A ref detached and reattached — StrictMode in dev, or a Suspense boundary
+ * above re-suspending — cleans pierre's diff instance up and hands the same
+ * `diffs-container` to a new one, which hydrates whatever the old one left
+ * there instead of rendering. Left an empty `<pre>` before the highlighter
+ * loaded, it never renders at all (UI-110); left plain lines while the shared
+ * highlighter was up but the file's grammar was not, it takes them for
+ * highlighted output and never starts that load, so the diff stays
+ * uncoloured. A second mount on a container therefore redraws; a first mount
+ * costs nothing extra.
  */
 function handleFenceDiffPostRender(
   container: HTMLElement,
-  _instance: unknown,
+  instance: { rerender: () => void },
   phase: PostRenderPhase,
 ): void {
-  if (phase !== "unmount") {
-    handlePostRender(container);
-    return;
+  if (phase === "unmount") return;
+  if (phase === "mount") {
+    if (DRAWN_DIFF_CONTAINERS.has(container)) instance.rerender();
+    else DRAWN_DIFF_CONTAINERS.add(container);
   }
-  for (const element of container.shadowRoot?.children ?? []) {
-    if (
-      element.tagName === "PRE" &&
-      element.querySelector("[data-line]") == null
-    ) {
-      element.remove();
-    }
-  }
+  handlePostRender(container);
 }
 
 /**
@@ -627,25 +696,23 @@ export function CodeBlock({
         <LoadingCodeFallback contents={contents} className={className} />
       )}
       <div style={ready ? undefined : { visibility: "hidden" }}>
-        <Suspense fallback={null}>
-          {/* Plain text has nothing to tokenize, so no worker to start for it. */}
-          {offThread && !plain && workerFactory !== null ? (
-            <LazyWorkerCodeView
-              items={items}
-              options={options}
-              className={className}
-              containerRef={containerRef}
-              workerFactory={workerFactory}
-            />
-          ) : (
-            <LazyCodeView
-              items={items}
-              options={options}
-              className={className}
-              containerRef={containerRef}
-            />
-          )}
-        </Suspense>
+        {/* Plain text has nothing to tokenize, so no worker to start for it. */}
+        {offThread && !plain && workerFactory !== null ? (
+          <LazyWorkerCodeView
+            items={items}
+            options={options}
+            className={className}
+            containerRef={containerRef}
+            workerFactory={workerFactory}
+          />
+        ) : (
+          <LazyCodeView
+            items={items}
+            options={options}
+            className={className}
+            containerRef={containerRef}
+          />
+        )}
       </div>
     </CodeViewBoundary>
   );
@@ -734,13 +801,11 @@ function FenceDiff({
       <CodeViewBoundary contents={after}>
         {!ready && <LoadingCodeFallback contents={after} />}
         <div style={ready ? undefined : { visibility: "hidden" }}>
-          <Suspense fallback={null}>
-            <LazyMultiFileDiff
-              oldFile={oldFile}
-              newFile={newFile}
-              options={options}
-            />
-          </Suspense>
+          <LazyMultiFileDiff
+            oldFile={oldFile}
+            newFile={newFile}
+            options={options}
+          />
         </div>
       </CodeViewBoundary>
     </div>
@@ -877,18 +942,15 @@ export function PatchFiles({
   if (degraded) return <PlainCodeFallback contents={text} />;
   return (
     <CodeViewBoundary contents={text}>
-      <Suspense
+      <LazyCodeView
         fallback={<LoadingCodeFallback contents={text} className={className} />}
-      >
-        <LazyCodeView
-          ref={viewRef}
-          items={items}
-          options={options}
-          className={className}
-          containerRef={containerRef}
-          renderCustomHeader={renderHeader}
-        />
-      </Suspense>
+        ref={viewRef}
+        items={items}
+        options={options}
+        className={className}
+        containerRef={containerRef}
+        renderCustomHeader={renderHeader}
+      />
     </CodeViewBoundary>
   );
 }
