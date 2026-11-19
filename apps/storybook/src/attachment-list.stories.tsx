@@ -1,12 +1,16 @@
 import { file } from "@orz/fixtures/files.ts";
 import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
 import { Button } from "@orz/ui/components/button";
+import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   type AttachmentItem,
   AttachmentList,
 } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Trash2Icon } from "lucide-react";
+import { useState } from "react";
+import { argsUpdater } from "./args.ts";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
 
 const LISTED: AttachmentItem[] = [
@@ -104,5 +108,88 @@ export const Thumbnails: Story = {
       "logo.svg",
     ].map((name) => ({ ...file(name), key: name })),
     thumbnails: true,
+  },
+};
+
+const SELECTABLE_SNIPPET = `import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
+import { AttachmentList } from "@orz/ui-content/attachment";
+
+const [deleting, setDeleting] = useState<AttachmentItem[]>([]);
+
+<AttachmentList
+  items={files}
+  selectable
+  // In the header while any file is selected: what the app does with them.
+  selectionActions={(chosen) => (
+    <ToolbarButton aria-label="Delete" onClick={() => setDeleting(chosen)}>
+      <Trash2Icon />
+    </ToolbarButton>
+  )}
+/>
+<ConfirmDialog
+  open={deleting.length > 0}
+  onOpenChange={(open) => !open && setDeleting([])}
+  title={\`Delete \${deleting.length} files?\`}
+  destructive
+  confirmLabel="Delete"
+  onConfirm={() => {
+    remove(deleting);
+    setDeleting([]);
+  }}
+/>`;
+
+/**
+ * `selectable`: hover a row and its icon gives way to a checkbox. Shift-click selects a range,
+ * a drag down the boxes selects every row it crosses, and the paperclip selects them all. The
+ * header then counts them and holds `selectionActions`, here a delete that asks first.
+ */
+export const Selectable: Story = {
+  args: { items: LISTED.slice(0, 6), selectable: true, selected: [] },
+  parameters: {
+    docs: { source: { code: SELECTABLE_SNIPPET, language: "tsx" } },
+  },
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
+    const [items, setItems] = useState(args.items);
+    const [deleting, setDeleting] = useState<AttachmentItem[]>([]);
+    // Kept apart from `deleting` so the dialog keeps its wording while it fades out.
+    const [confirming, setConfirming] = useState(false);
+    return (
+      <>
+        <AttachmentList
+          {...args}
+          items={items}
+          onSelectedChange={(selected) => updateArgs({ selected })}
+          selectionActions={(chosen) => (
+            <ToolbarButton
+              aria-label="Delete"
+              onClick={() => {
+                setDeleting(chosen);
+                setConfirming(true);
+              }}
+            >
+              <Trash2Icon />
+            </ToolbarButton>
+          )}
+        />
+        <ConfirmDialog
+          open={confirming}
+          onOpenChange={setConfirming}
+          title={
+            deleting.length === 1
+              ? `Delete ${deleting[0]?.name}?`
+              : `Delete ${deleting.length} files?`
+          }
+          description="They leave the list for good."
+          destructive
+          confirmLabel="Delete"
+          onConfirm={() => {
+            setItems((was) => was.filter((item) => !deleting.includes(item)));
+            setConfirming(false);
+          }}
+        />
+      </>
+    );
   },
 };

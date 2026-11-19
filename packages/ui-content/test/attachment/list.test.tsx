@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import {
   type AttachmentItem,
   AttachmentList,
@@ -279,5 +279,127 @@ describe("attachment thumbnails", () => {
       "shot-1.png",
       "0002-fix.patch",
     ]);
+  });
+});
+
+describe("a selectable attachment list", () => {
+  const box = (name: string) => screen.getByRole("checkbox", { name });
+  const checked = (name: string) =>
+    box(name).getAttribute("aria-checked") === "true";
+  const status = () => screen.getByRole("status").textContent;
+
+  it("draws no checkbox unless asked", () => {
+    drawWith(shots(3), {});
+    expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+
+  it("puts each row's checkbox in its icon's place", () => {
+    const { container } = drawWith(shots(3), { selectable: true });
+    const slot = box("select shot-1.png").closest(
+      "[data-slot=select-slot]",
+    ) as HTMLElement;
+    expect(slot.querySelector("[data-slot=select-slot-icon] svg")).toBeTruthy();
+    // The row's link no longer leads with an icon of its own.
+    const link = container.querySelector("li a") as HTMLAnchorElement;
+    expect(link.querySelector(":scope > svg")).toBeNull();
+    expect(slot.hasAttribute("data-revealed")).toBe(false);
+    fireEvent.pointerEnter(slot.closest("li") as HTMLElement, {
+      pointerType: "mouse",
+    });
+    expect(slot.hasAttribute("data-revealed")).toBe(true);
+  });
+
+  it("selects a row, then a range with Shift, and counts them in the header", () => {
+    const { container } = drawWith(shots(4), { selectable: true });
+    expect(status()).toBe("");
+    fireEvent.click(box("select shot-1.png"));
+    fireEvent.click(box("select shot-3.png"), { shiftKey: true });
+    expect(status()).toBe("3 selected");
+    expect(checked("select shot-2.png")).toBe(true);
+    expect(checked("select shot-4.png")).toBe(false);
+    const rows = [...container.querySelectorAll("li")];
+    expect(rows.map((row) => row.hasAttribute("data-selected"))).toEqual([
+      true,
+      true,
+      true,
+      false,
+    ]);
+    expect(
+      container.querySelector("section")?.hasAttribute("data-selecting"),
+    ).toBe(true);
+  });
+
+  it("selects every file, folded ones too, from the header's box", () => {
+    drawWith(shots(8), { selectable: true });
+    fireEvent.click(box("Select all"));
+    expect(status()).toBe("8 selected");
+    fireEvent.click(box("Select all"));
+    expect(status()).toBe("");
+  });
+
+  it("hands the selected files to the app's actions", () => {
+    const seen: string[][] = [];
+    drawWith(shots(3), {
+      selectable: true,
+      selectionActions: (items) => {
+        seen.push(items.map((item) => item.name));
+        return <button type="button">Delete {items.length}</button>;
+      },
+    });
+    expect(screen.queryByRole("button", { name: /^Delete/ })).toBeNull();
+    fireEvent.click(box("select shot-2.png"));
+    expect(screen.getByRole("button", { name: "Delete 1" })).toBeTruthy();
+    expect(seen.at(-1)).toEqual(["shot-2.png"]);
+  });
+
+  it("follows the selection the app holds", () => {
+    const changes: AttachmentItem["key"][][] = [];
+    drawWith(shots(3), {
+      selectable: true,
+      selected: [2],
+      onSelectedChange: (keys) => changes.push(keys),
+    });
+    expect(checked("select shot-2.png")).toBe(true);
+    fireEvent.click(box("select shot-3.png"));
+    expect(changes).toEqual([[2, 3]]);
+  });
+
+  it("selects every row a drag down the boxes crosses, under the item's own keys", () => {
+    const changes: AttachmentItem["key"][][] = [];
+    const { container } = drawWith(shots(4), {
+      selectable: true,
+      onSelectedChange: (keys) => changes.push(keys),
+    });
+    const rows = [...container.querySelectorAll("li")];
+    // No layout here: the pointer's y picks the row, 30px each.
+    const spy = vi
+      .spyOn(document, "elementFromPoint")
+      .mockImplementation((_x, y) => rows[Math.floor(y / 30)] ?? null);
+    fireEvent.pointerDown(box("select shot-1.png"), {
+      pointerId: 1,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 5,
+      clientY: 15,
+    });
+    act(() => {
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          pointerId: 1,
+          clientX: 5,
+          clientY: 75,
+        }),
+      );
+      window.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
+    });
+    spy.mockRestore();
+    expect(changes.at(-1)).toEqual([1, 2, 3]);
+    expect(status()).toBe("3 selected");
+  });
+
+  it("gives a thumbnail a checkbox of its own", () => {
+    drawWith([shot(1), shot(2)], { selectable: true, thumbnails: true });
+    fireEvent.click(box("select shot-2.png"));
+    expect(status()).toBe("1 selected");
   });
 });
