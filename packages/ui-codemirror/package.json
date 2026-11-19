@@ -23,6 +23,11 @@
       "types": "./dist/extensions/*.d.ts",
       "default": "./dist/extensions/*.js"
     },
+    "./hooks/*": {
+      "@orz/source": "./src/hooks/*.ts",
+      "types": "./dist/hooks/*.d.ts",
+      "default": "./dist/hooks/*.js"
+    },
     "./styles.css": "./styles.css"
   },
   "files": [

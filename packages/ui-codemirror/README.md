@@ -118,6 +118,39 @@ For an editor of your own, `pasteAs()` from `extensions/paste-as` is the toolbar
 call its `handlePaste(view, event)` from your paste handler, and `prefetchPasteConverter()` once
 the editor is up. `toggleQuote` and `blockquote` are in `extensions/quote-toggle`.
 
+### Staged files
+
+```tsx
+import { MarkdownEditor } from "@orz/ui-codemirror/components/markdown-editor";
+import { stagedFileDrag, useStagedFiles } from "@orz/ui-codemirror/hooks/use-staged-files";
+
+const staging = useStagedFiles({
+  upload: (file) => uploadFile(file), // resolves to { url, filename? }
+  withdraw: (uploaded) => deleteDraft(uploaded), // optional
+});
+
+<MarkdownEditor
+  staging={staging.editor}
+  onSubmit={async (text) => {
+    send(await staging.resolve(text));
+    staging.clear();
+  }}
+/>;
+// staging.staged lists the files the text places; staging.stage(files) takes a file picker's.
+```
+
+A pasted, dropped or picked file goes into the text as `![name](staged:<key>)` (`[name](…)` for
+a file that is not an image) where the reader put it, never inside code, a link, HTML, a table's
+delimiter row or a line's quote, list or heading marks. The editor draws it as a chip with a space
+on each side, which the caret steps over and Backspace takes whole, so an IME never composes into
+it. The text is the record: deleting a placeholder unstages its file and undo brings it back, and
+`remove(key)` takes every placeholder of a file out. Nothing is uploaded until `resolve`, which
+calls your `upload` for each file the text places, once each, and returns the text pointing at the
+uploads; a failure names its file, and a retry uploads only what has not gone up. `withdraw` hears
+an upload the text no longer links. `stagedFileDrag(key)` makes a thumbnail draggable into the text
+again, or into another editor on the page. A pasted screenshot's `image.png` is renamed after the
+time it was pasted. With `plain`, the placeholder is plain text.
+
 ### Completion
 
 ```tsx
@@ -267,7 +300,8 @@ The handle's `setValue` and `append` are not marked, so they count as the reader
 | `@orz/ui-codemirror/components/editor-shortcuts-help` | `EditorShortcutsHelp` |
 | `@orz/ui-codemirror/components/plain-markdown-editor` | `PlainMarkdownEditor` |
 | `@orz/ui-codemirror/components/markdown-editor` | `MarkdownEditor`, `MarkdownEditorHandle`, `MarkdownEditorProps`, `FileClipboardEvent`, `FileDragEvent`, `markdownLanguage`, `markdownHighlightStyle` |
-| `@orz/ui-codemirror/extensions/<name>` | `code-context`, `completion`, `completion-space`, `composition-safe-measure`, `editor-toolbar`, `image-pairs`, `json`, `parked-tooltip`, `paste-as`, `quote-toggle`, `slash-commands`, `tag-completion`, `tooltip-space`, `trim-trailing-space` |
+| `@orz/ui-codemirror/extensions/<name>` | `code-context`, `completion`, `completion-space`, `composition-safe-measure`, `editor-toolbar`, `image-pairs`, `json`, `parked-tooltip`, `paste-as`, `quote-toggle`, `slash-commands`, `staged-token-atoms`, `staged-tokens`, `tag-completion`, `tooltip-space`, `trim-trailing-space` |
+| `@orz/ui-codemirror/hooks/<name>` | `use-staged-files` |
 | `@orz/ui-codemirror/styles.css` | `@source "./dist"` |
 
 There is no root entry, so a markdown-only app never reaches `@lezer/json` through an index file.

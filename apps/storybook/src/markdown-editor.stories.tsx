@@ -12,6 +12,7 @@ import {
   type ValueProviders,
 } from "@orz/query";
 import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
+import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -33,8 +34,13 @@ import {
   commandCompletionSource,
   commandDecoration,
 } from "@orz/ui-codemirror/extensions/slash-commands";
+import {
+  stagedFileDrag,
+  useStagedFiles,
+} from "@orz/ui-codemirror/hooks/use-staged-files";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useMemo, useState } from "react";
+import { PaperclipIcon, XIcon } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { fn } from "storybook/test";
 import { withWidth } from "./decorators.tsx";
 
@@ -153,6 +159,110 @@ export const Plain: Story = {
   args: {
     plain: true,
     initialValue: "A native textarea, for a reader who asked for one.\n",
+  },
+};
+
+const STAGED_FILES = `import { MarkdownEditor } from "@orz/ui-codemirror/components/markdown-editor";
+import { stagedFileDrag, useStagedFiles } from "@orz/ui-codemirror/hooks/use-staged-files";
+
+// Uploading is yours; nothing goes up until a send calls resolve.
+const staging = useStagedFiles({
+  upload: (file) => uploadFile(file), // resolves to { url, filename? }
+});
+
+<MarkdownEditor
+  staging={staging.editor}
+  onSubmit={async (text) => {
+    send(await staging.resolve(text)); // placeholders become the uploads' links
+    staging.clear();
+  }}
+/>
+{staging.staged.map((item) => (
+  <Button key={item.key} {...stagedFileDrag(item.key)} onClick={() => staging.remove(item.key)}>
+    {item.file.name}
+  </Button>
+))}
+<Button onClick={() => input.current?.click()}>Attach files</Button>
+<input ref={input} type="file" multiple hidden onChange={(e) => staging.stage(e.target.files ?? [])} />`;
+
+/**
+ * `staging` with `useStagedFiles`: paste, drop or attach a file and it goes
+ * into the text as a placeholder where the caret is, drawn as a chip the caret
+ * steps over. The buttons below list what the text places; one removes its
+ * file from the text, and dragging one into the text places it once more.
+ * Mod-Enter uploads (here, pretends to) and shows the text that would be sent.
+ */
+export const StagedFiles: Story = {
+  args: {
+    initialValue: "Here is the screenshot: ",
+    placeholder: "Paste or drop a file",
+  },
+  parameters: { docs: { source: { code: STAGED_FILES, language: "tsx" } } },
+  render: function Render(args) {
+    const staging = useStagedFiles({
+      upload: (file) =>
+        new Promise<{ url: string }>((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                url: `https://files.example/${encodeURIComponent(file.name)}`,
+              }),
+            300,
+          ),
+        ),
+    });
+    const input = useRef<HTMLInputElement>(null);
+    const [sent, setSent] = useState<string | null>(null);
+    return (
+      <div className="grid gap-3">
+        <MarkdownEditor
+          {...args}
+          staging={staging.editor}
+          onSubmit={async (text) => {
+            setSent(await staging.resolve(text));
+            staging.clear();
+          }}
+        />
+        <div className="flex flex-wrap gap-2">
+          {staging.staged.map((item) => (
+            <Button
+              key={item.key}
+              variant="outline"
+              size="sm"
+              aria-label={`Remove ${item.file.name}`}
+              onClick={() => staging.remove(item.key)}
+              {...stagedFileDrag(item.key)}
+            >
+              {item.file.name}
+              <XIcon data-icon="inline-end" />
+            </Button>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => input.current?.click()}
+          >
+            <PaperclipIcon data-icon="inline-start" />
+            Attach files
+          </Button>
+          <input
+            ref={input}
+            type="file"
+            multiple
+            hidden
+            onChange={(event) => {
+              staging.stage(event.target.files ?? []);
+              event.target.value = "";
+            }}
+          />
+        </div>
+        {sent !== null && (
+          <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">
+            {sent}
+          </pre>
+        )}
+      </div>
+    );
   },
 };
 
