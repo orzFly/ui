@@ -12,7 +12,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { type ReactNode, type Ref, useImperativeHandle } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { codeContent } from "../src/content.tsx";
 import { patchContent } from "../src/patch-content.tsx";
@@ -27,37 +27,61 @@ type Item =
       collapsed?: boolean;
     };
 
+/** Where the stand-in renderer says it is scrolled, and where it was sent. */
+const scroll = vi.hoisted(() => ({
+  top: 0,
+  itemTops: new Map<string, number>(),
+  scrolledTo: [] as unknown[],
+}));
+
 // The real parser runs (it is plain string work); only the renderer is a
 // stand-in that says what it was handed, header rows included. A code block
 // is a CodeView too, so the raw text shows up as a file item.
 vi.mock("@pierre/diffs/react", () => ({
-  CodeView: ({
+  CodeView: function CodeView({
+    ref,
     items,
+    options,
     className,
     renderCustomHeader,
   }: {
+    ref?: Ref<unknown>;
     className?: string;
+    options?: { stickyHeaders?: boolean };
     items: Item[];
     renderCustomHeader?: (item: Item) => ReactNode;
-  }) => (
-    <div data-testid="codeview" data-class={className ?? ""}>
-      {items.map((item) => (
-        <section key={item.id} data-item={item.id}>
-          <header>{renderCustomHeader?.(item)}</header>
-          {item.type === "diff" ? (
-            <div
-              data-diff={item.fileDiff.name}
-              data-collapsed={item.collapsed ? "" : undefined}
-            >
-              {item.id}
-            </div>
-          ) : (
-            <pre data-file={item.file.name}>{item.file.contents}</pre>
-          )}
-        </section>
-      ))}
-    </div>
-  ),
+  }) {
+    useImperativeHandle(ref, () => ({
+      scrollTo: (target: unknown) => scroll.scrolledTo.push(target),
+      getInstance: () => ({
+        getScrollTop: () => scroll.top,
+        getTopForItem: (id: string) => scroll.itemTops.get(id),
+      }),
+    }));
+    return (
+      <div
+        data-testid="codeview"
+        data-class={className ?? ""}
+        data-sticky-headers={options?.stickyHeaders ? "" : undefined}
+      >
+        {items.map((item) => (
+          <section key={item.id} data-item={item.id}>
+            <header>{renderCustomHeader?.(item)}</header>
+            {item.type === "diff" ? (
+              <div
+                data-diff={item.fileDiff.name}
+                data-collapsed={item.collapsed ? "" : undefined}
+              >
+                {item.id}
+              </div>
+            ) : (
+              <pre data-file={item.file.name}>{item.file.contents}</pre>
+            )}
+          </section>
+        ))}
+      </div>
+    );
+  },
   MultiFileDiff: () => null,
 }));
 
@@ -160,9 +184,7 @@ const cardHeader = () => {
 describe("PatchView", () => {
   it("draws one diff per file, behind a height cap", async () => {
     render(<PatchView filename="x.patch" text={TWO_FILES} />);
-    // The file's first diff suspends on the lazy CodeView, and React holds
-    // back a revealed Suspense boundary for 300 ms; with the file's first
-    // render on a loaded machine, that comes to ~1 s, the default wait.
+    // The first render on a loaded machine comes to ~1 s, the default wait.
     await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]), {
       timeout: 3000,
     });
@@ -171,6 +193,12 @@ describe("PatchView", () => {
     const cls = screen.getByTestId("codeview").getAttribute("data-class");
     expect(cls).toMatch(/\bmax-h-/);
     expect(cls).toMatch(/\boverflow-auto\b/);
+  });
+
+  it("keeps each file's header pinned while the file scrolls under it", async () => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    const view = await screen.findByTestId("codeview");
+    expect(view.dataset.stickyHeaders).toBe("");
   });
 
   it("lists the files with their counts and toggles to the raw text", async () => {

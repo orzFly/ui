@@ -70,7 +70,10 @@ function fileLabel(file: FileDiffMetadata): string {
     : file.name;
 }
 
-const HEADER_ROW = "flex min-w-0 items-center gap-2 px-3 text-ui";
+// Opaque, in the colour the diffs are drawn on: the row stays pinned over
+// its file's lines as they scroll under it.
+const HEADER_ROW =
+  "flex min-w-0 items-center gap-2 bg-background px-3 text-ui raymond:bg-(--window)";
 
 function CommitHeader({ commit }: { commit: PatchCommit }) {
   const date =

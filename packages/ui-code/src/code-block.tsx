@@ -473,6 +473,10 @@ function patchOptions(
     unsafeCSS: SELECTION_CSS + COMMIT_MESSAGE_CSS + SQUARE_SEPARATOR_CSS,
     layout: { paddingTop: 0, paddingBottom: 0, gap: 8 },
     itemMetrics: { diffHeaderHeight: PATCH_HEADER_HEIGHT },
+    // Each item's header row stays pinned to the top of the box while the
+    // item scrolls under it: halfway down a long file the reader still sees
+    // which file it is, and the controls on its row.
+    stickyHeaders: true,
   } as const;
   PATCH_OPTIONS.set(theme, options);
   return options;
