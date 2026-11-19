@@ -165,7 +165,13 @@ function DialogContent({
           // box) would be the one to give. Clipped across: the corner X's
           // touch hit area reaches past the frame, and as a scroller the
           // content would otherwise scroll sideways by that much.
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-x-hidden overflow-y-auto rounded-surface bg-popover p-4 text-ui text-popover-foreground shadow-overlay ring-1 ring-border duration-(--duration-overlay) outline-none raymond:ring-0 sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom) [&>:not([data-slot=dialog-body])]:shrink-0",
+          // The duration is for the open/close keyframes, but it is also a
+          // transition-duration over the initial `transition-property: all`,
+          // so without transition-none anything that resizes the dialog while
+          // open (a viewer growing with its zoom) eased, reduced motion or
+          // not. Popover, menu, select and hover card carry it for the same
+          // reason.
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-x-hidden overflow-y-auto rounded-surface bg-popover p-4 text-ui text-popover-foreground shadow-overlay ring-1 ring-border duration-(--duration-overlay) transition-none outline-none raymond:ring-0 sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom) [&>:not([data-slot=dialog-body])]:shrink-0",
           className,
         )}
         onWheel={(event) => {
