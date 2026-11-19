@@ -12,16 +12,20 @@ import {
   actualAt,
   canvasHeight,
   canvasWidth,
+  type Detent,
   type Frame,
   fitView,
   isFitted,
   type Pane,
   panBy,
   reframe,
+  stepAt,
   toggleAt,
+  travel,
   type View,
   wheelFactor,
   zoomAt,
+  zoomStops,
 } from "./image-zoom.ts";
 
 type Point = { x: number; y: number };
@@ -128,7 +132,9 @@ export type UseZoomPanOptions = {
  * with the zoom, tweening: taller itself, and wider by widening `dialog` up
  * to the viewport. While `held` is set the canvas keeps the height and width
  * it has whatever the zoom asks for, and moves to its own once it is
- * cleared. Put `canvasRef`, `height` and `handlers` on the canvas element.
+ * cleared. Wheel, trackpad and − / + pause where the whole picture is as
+ * large as the canvas can grow, where it fills that canvas, and at actual
+ * pixels. Put `canvasRef`, `height` and `handlers` on the canvas element.
  */
 export function useZoomPan({
   natural,
@@ -155,10 +161,12 @@ export function useZoomPan({
     frame: Frame | null;
     view: View | null;
     layout: Layout | null;
-  }>({ frame: null, view: null, layout: null });
+    /** Where continuous input stands against the zoom stops. */
+    detent: Detent | null;
+  }>({ frame: null, view: null, layout: null, detent: null });
 
   const place = useCallback((f: Frame, v: View, l: Layout) => {
-    live.current = { frame: f, view: v, layout: l };
+    live.current = { ...live.current, frame: f, view: v, layout: l };
     setFrame(f);
     setView(v);
     setLayout(l);
@@ -262,6 +270,62 @@ export function useZoomPan({
     [],
   );
 
+  // The first pane of the largest canvas this window allows, measured on
+  // every input rather than kept, so a resized window leaves no stale stop.
+  // Restored, that is the canvas at its CSS max-height, as wide as the
+  // dialog's min-width can stretch it; anything unparseable (no styles, as
+  // in happy-dom) measures as nothing and leaves the zoom without stops.
+  const largestFor = useCallback(
+    (rest: number): { width: number; height: number } => {
+      const el = canvasRef.current;
+      const none = { width: Number.NaN, height: Number.NaN };
+      if (el === null) return none;
+      let width = el.clientWidth;
+      let height = el.clientHeight;
+      if (!maximized) {
+        height = Number.parseFloat(getComputedStyle(el).maxHeight);
+        if (dialog !== null) {
+          const root = document.documentElement;
+          const box = getComputedStyle(dialog);
+          // The 1rem the dialog keeps from either edge of the window.
+          width =
+            root.clientWidth -
+            2 * Number.parseFloat(getComputedStyle(root).fontSize) -
+            Number.parseFloat(box.paddingLeft) -
+            Number.parseFloat(box.paddingRight);
+        }
+      }
+      if (!(width > 0 && height > 0 && Number.isFinite(width + height)))
+        return none;
+      return layoutPanes(width, height, rest)[0] ?? none;
+    },
+    [maximized, dialog, layoutPanes],
+  );
+
+  // Unmeasured, the zoom has no stops.
+  const largestPane = useCallback((): { width: number; height: number } => {
+    const rest = live.current.layout?.rest;
+    return rest === undefined
+      ? { width: Number.NaN, height: Number.NaN }
+      : largestFor(rest);
+  }, [largestFor]);
+
+  // Continuous input moves through the stops; what it lands on is written
+  // back, so a zoom clamped at either end is read again next time.
+  const glide = useCallback(
+    (du: (current: Detent) => number, p: Point) => {
+      const { frame: f, view: v } = live.current;
+      if (f === null || v === null) return;
+      const stops = zoomStops(f, largestPane());
+      const current = travel(live.current.detent, f, v.z, stops, 0);
+      const next = travel(current, f, v.z, stops, du(current));
+      const landed = zoomAt(f, v, next.z / v.z, p.x, p.y);
+      apply(landed);
+      live.current.detent = { ...next, z: landed.z };
+    },
+    [apply, largestPane],
+  );
+
   useEffect(() => {
     const el = canvasRef.current;
     if (el === null) return;
@@ -275,16 +339,17 @@ export function useZoomPan({
       const { frame: f, view: v } = live.current;
       if (f === null || v === null) return;
       e.preventDefault();
-      const p = local(e.clientX, e.clientY);
-      apply(
-        zoomAt(f, v, wheelFactor(e.deltaY, e.deltaMode, e.ctrlKey), p.x, p.y),
-      );
+      const du = Math.log(wheelFactor(e.deltaY, e.deltaMode, e.ctrlKey));
+      glide(() => du, local(e.clientX, e.clientY));
     };
-    // Safari reports trackpad pinch as gesture events rather than ctrl+wheel.
-    let gestureStart = 1;
+    // Safari reports trackpad pinch as gesture events rather than ctrl+wheel,
+    // with a scale relative to where the gesture began.
+    let gestureU = 0;
     const onGestureStart = (e: Event) => {
       e.preventDefault();
-      gestureStart = live.current.view?.z ?? 1;
+      const { frame: f, view: v, detent } = live.current;
+      if (f === null || v === null) return;
+      gestureU = travel(detent, f, v.z, zoomStops(f, largestPane()), 0).u;
     };
     const onGestureChange = (e: Event) => {
       const { frame: f, view: v } = live.current;
@@ -295,8 +360,10 @@ export function useZoomPan({
         clientX: number;
         clientY: number;
       };
-      const p = local(g.clientX, g.clientY);
-      apply(zoomAt(f, v, (gestureStart * g.scale) / v.z, p.x, p.y));
+      glide(
+        (current) => gestureU + Math.log(g.scale) - current.u,
+        local(g.clientX, g.clientY),
+      );
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     el.addEventListener("gesturestart", onGestureStart);
@@ -306,7 +373,7 @@ export function useZoomPan({
       el.removeEventListener("gesturestart", onGestureStart);
       el.removeEventListener("gesturechange", onGestureChange);
     };
-  }, [apply, inPane, paneUnder, canvasPoint]);
+  }, [glide, largestPane, inPane, paneUnder, canvasPoint]);
 
   const atCentre: AtCentre = useCallback(
     (op) => {
@@ -317,13 +384,20 @@ export function useZoomPan({
     [apply],
   );
 
-  /** − / + : one step about the centre. */
+  /** − / + : one step about the centre, pausing on any zoom stop it crosses. */
   const step = useCallback(
     (dir: 1 | -1) =>
       atCentre((f, v, x, y) =>
-        zoomAt(f, v, dir > 0 ? ZOOM_STEP : 1 / ZOOM_STEP, x, y),
+        stepAt(
+          f,
+          v,
+          dir > 0 ? ZOOM_STEP : 1 / ZOOM_STEP,
+          zoomStops(f, largestPane()),
+          x,
+          y,
+        ),
       ),
-    [atCentre],
+    [atCentre, largestPane],
   );
 
   useEffect(() => {
