@@ -1,4 +1,4 @@
-import { file, group, MIXED } from "@orz/fixtures/files.ts";
+import { file, group, MIXED, SETTINGS_PAIR } from "@orz/fixtures/files.ts";
 import { ATTACHMENT_RENDERERS } from "@orz/fixtures/renderers.ts";
 import { Button } from "@orz/ui/components/button";
 import { isTextFile } from "@orz/ui-content";
@@ -7,6 +7,7 @@ import {
   AttachmentList,
   AttachmentViewerProvider,
   AttachmentViewer as AttachmentViewerView,
+  type ComparePair,
   TEXT_PREVIEW_HARD_MAX_BYTES,
   TEXT_PREVIEW_MAX_BYTES,
   useAttachmentViewer,
@@ -14,6 +15,7 @@ import {
   useStoredImageLook,
   useViewHref,
 } from "@orz/ui-content/attachment";
+import { MediaCompare } from "@orz/ui-content/compare";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { argsUpdater } from "./args.ts";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
@@ -59,6 +61,77 @@ const LARGE_ITEMS: AttachmentItem[] = [
     load: async () => logLines(12 * 1024 * 1024),
   },
 ];
+
+const SCREENSHOT: AttachmentItem[] = [
+  { ...SETTINGS_PAIR.after.file, key: "settings-after.svg" },
+];
+
+/** A drawing's version, as a diagram renderer would hand it over. */
+const flow = (label: string, boxes: number): ComparePair["before"] => ({
+  label,
+  size: { width: 120 * boxes, height: 80 },
+  content: (
+    <svg
+      viewBox={`0 0 ${120 * boxes} 80`}
+      width={120 * boxes}
+      height={80}
+      role="img"
+      aria-label={`Flow, ${label}`}
+    >
+      {Array.from({ length: boxes }, (_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: the boxes are positional
+        <g key={i}>
+          <rect
+            x={i * 120 + 10}
+            y={20}
+            width={80}
+            height={40}
+            rx={6}
+            fill="#e8eef7"
+            stroke="#1f3d6b"
+          />
+          {i > 0 && <path d={`M${i * 120 - 30} 40h40`} stroke="#1f3d6b" />}
+        </g>
+      ))}
+    </svg>
+  ),
+});
+
+const PAIRS: ComparePair[] = [
+  {
+    before: { label: "v1", ...SETTINGS_PAIR.before },
+    after: { label: "v2", ...SETTINGS_PAIR.after },
+  },
+  { title: "flow.mmd", before: flow("v1", 3), after: flow("v2", 4) },
+];
+
+const COMPARE = `import {
+  AttachmentViewer,
+  type AttachmentViewerState,
+  type ComparePair,
+} from "@orz/ui-content/attachment";
+import { MediaCompare } from "@orz/ui-content/compare";
+
+const pairs: ComparePair[] = [
+  {
+    before: { label: "v1", file: before, size: { width: 720, height: 400 } },
+    after: { label: "v2", file: after, size: { width: 720, height: 460 } },
+  },
+  // A side drawn as a node (an SVG) zooms as vectors, always left and right.
+  { title: "flow.mmd", before: { label: "v1", content: <svg …/>, size }, after: … },
+];
+
+const [state, setState] = useState<AttachmentViewerState | null>(null);
+
+<MediaCompare before={…} after={…} onOpen={() => setState({ compare: pairs, index: 0 })} />
+<AttachmentViewer
+  state={state}
+  onNavigate={(index) => setState((s) => s && { ...s, index })}
+  onClose={() => setState(null)}
+/>
+
+// Below an AttachmentViewerProvider instead:
+useAttachmentViewer()?.openCompare(pairs, 0);`;
 
 const PLAYGROUND = `import { ContentRenderers } from "@orz/ui-content";
 import {
@@ -281,4 +354,60 @@ export const AttachmentViewer: StoryObj<typeof AttachmentViewerView> = {
       </div>
     );
   },
+};
+
+/**
+ * Zooming a screenshot pauses where it is as large as the window lets the
+ * viewer grow, where it fills that, and at 100%; the viewer widens with the
+ * zoom before it pans. The wheel holds at each stop for about a notch, and
+ * − and + land on them.
+ */
+export const ZoomStops: Story = {
+  render: (args) => (
+    <AttachmentViewerProvider {...args}>
+      <AttachmentList items={SCREENSHOT} />
+    </AttachmentViewerProvider>
+  ),
+};
+
+/**
+ * Two versions at one zoom and one position: a wheel or a drag over either
+ * moves both. The bar below picks the mode, as `MediaCompare`'s does, and
+ * paging goes through the comparisons, the second a pair of drawings.
+ */
+export const Compare: StoryObj<typeof AttachmentViewerView> = {
+  args: { state: null },
+  argTypes: { state: { control: false } },
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
+    return (
+      <div className="grid gap-3">
+        <MediaCompare
+          before={{
+            label: "v1",
+            size: SETTINGS_PAIR.before.size,
+            content: (
+              <img src={SETTINGS_PAIR.before.file.url} alt="Settings, v1" />
+            ),
+          }}
+          after={{
+            label: "v2",
+            size: SETTINGS_PAIR.after.size,
+            content: (
+              <img src={SETTINGS_PAIR.after.file.url} alt="Settings, v2" />
+            ),
+          }}
+          onOpen={() => updateArgs({ state: { compare: PAIRS, index: 0 } })}
+        />
+        <AttachmentViewerView
+          state={args.state ?? null}
+          onNavigate={(index) =>
+            args.state && updateArgs({ state: { ...args.state, index } })
+          }
+          onClose={() => updateArgs({ state: null })}
+        />
+      </div>
+    );
+  },
+  parameters: code(COMPARE),
 };

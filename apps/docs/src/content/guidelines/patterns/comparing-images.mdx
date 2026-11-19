@@ -3,7 +3,7 @@ export const meta = {
   description:
     "MediaCompare for two versions of a picture in the page: side by side, swipe, onion skin or difference, at one scale.",
   order: 38,
-  api: ["ui-content/MediaCompare"],
+  api: ["ui-content/MediaCompare", "ui-content/AttachmentViewerProvider"],
 };
 
 import { SettingsRedesign } from "../../../examples/comparing-images/settings-redesign.tsx";
@@ -16,7 +16,8 @@ and the reader can lay one over the other to see exactly what moved.**
 
 The settings screenshot gained a field and its Save button moved. Side by side shows both whole;
 **Swipe** drags the newer over the older, **Onion skin** fades it in, and **Difference** blacks
-out every pixel that did not change, so only what changed is left.
+out every pixel that did not change, so only what changed is left. Click either picture to open
+the pair in the attachment viewer.
 
 ## Which mode
 
@@ -46,3 +47,15 @@ a size, and a side that failed to load leaves side by side the only mode.
 A page of comparisons is read one way: wrap them in one `CompareModeProvider`, and switching
 any of them switches them all. Without it each keeps its own mode. Limit `modes` to what makes
 sense for the pictures; a pair that can only sit side by side has no mode control at all.
+
+## In the viewer
+
+Detail a page cannot show is read in the attachment viewer: pass `onOpen`, and open the pair with
+`openCompare` from `useAttachmentViewer`, or as `{ compare, index }` in a controlled viewer's
+`state`. Hand it every comparison on the page, in reading order, so paging walks through them
+as the page does. Both versions share one zoom and one position there, so a wheel or a drag over
+either moves both, and the mode bar under them is the page's own when a `CompareModeProvider`
+holds them all.
+
+A side drawn as a node rather than an image file, such as a diagram's SVG, zooms as vectors and
+always sits left and right of its twin, side by side being its only mode.

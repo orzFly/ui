@@ -28,6 +28,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { useCompareMode } from "../compare/compare-mode.tsx";
+import { CompareTick } from "../compare/media-compare.tsx";
 import {
   formatSize,
   isHtmlFile,
@@ -40,6 +42,13 @@ import {
 import { Content, useContentDisplay } from "../registry.tsx";
 import { ContentTitleBar } from "../title-bar.tsx";
 import type { ContentSource } from "../types.ts";
+import {
+  CompareBar,
+  CompareCanvas,
+  type ComparePair,
+  pairMode,
+  pairTitle,
+} from "./compare-canvas.tsx";
 import { fileIcon } from "./icon.ts";
 import { DEFAULT_IMAGE_LOOK, type ImageLook } from "./image-look.ts";
 import { releaseWidth, restingWidth, type Widening } from "./use-zoom-pan.ts";
@@ -51,14 +60,21 @@ export type FileSource = Extract<ContentSource, { kind: "file" }>;
 const RELEASE_DELAY = 400;
 const RELEASE_NOW = ["keydown", "pointerdown", "wheel"] as const;
 
-/** What the viewer is showing: a set of files and a position in it. */
-export type AttachmentViewerState = { items: FileSource[]; index: number };
+/**
+ * What the viewer is showing, and the position in it: a set of files, or
+ * the comparisons on a page, each two versions at one zoom.
+ */
+export type AttachmentViewerState =
+  | { items: FileSource[]; index: number }
+  | { compare: ComparePair[]; index: number };
 
 export type AttachmentViewerControls = {
   /** Opens the viewer on `items[index]`, paging through `items`. */
   open(items: FileSource[], index: number): void;
   /** Opens the viewer on one file, paging through the set `group` gives it. */
   show(file: FileSource): void;
+  /** Opens the viewer on `pairs[index]`, paging through `pairs`. */
+  openCompare(pairs: ComparePair[], index: number): void;
 };
 
 type ViewerContext = AttachmentViewerControls & {
@@ -68,6 +84,13 @@ type ViewerContext = AttachmentViewerControls & {
 };
 
 const AttachmentViewerContext = createContext<ViewerContext | null>(null);
+
+/** What the title's icon is chosen from for a comparison of drawings. */
+const IMAGE_LIKE: FileSource = {
+  kind: "file",
+  name: "",
+  mime: "image/svg+xml",
+};
 
 type ViewerImage = {
   /** Whether the dialog fills the window. */
@@ -102,7 +125,7 @@ export type AttachmentViewerProviderProps = {
   /** Where a browser tab shows this file; undefined when it would only download. */
   viewHref?: (file: FileSource) => string | undefined;
   /** The set paging covers when a single file is opened; null pages nothing. */
-  group?: (file: FileSource) => AttachmentViewerState | null;
+  group?: (file: FileSource) => { items: FileSource[]; index: number } | null;
   /**
    * Text files above this wait for "Preview anyway" and then draw plain. Default 1 MiB. A text
    * file of unknown size stays a link until its size is known.
@@ -142,15 +165,27 @@ export function AttachmentViewerProvider({
       setState(groupRef.current?.(file) ?? { items: [file], index: 0 }),
     [],
   );
+  const openCompare = useCallback(
+    (compare: ComparePair[], index: number) => setState({ compare, index }),
+    [],
+  );
   const value = useMemo(
     () => ({
       open,
       show,
+      openCompare,
       viewHref,
       textPreviewMaxBytes,
       textPreviewHardMaxBytes,
     }),
-    [open, show, viewHref, textPreviewMaxBytes, textPreviewHardMaxBytes],
+    [
+      open,
+      show,
+      openCompare,
+      viewHref,
+      textPreviewMaxBytes,
+      textPreviewHardMaxBytes,
+    ],
   );
 
   return (
@@ -283,6 +318,29 @@ function ViewerBody({
   // For this opening only: the body is keyed by file.
   const [asked, setAsked] = useState(false);
   return (
+    <ViewerPane maximized={maximized}>
+      {!canPreview ? (
+        <DownloadOnlyPane file={file} />
+      ) : gate === "refuse" || (gate === "ask" && !asked) ? (
+        <LargeTextPane gate={gate} onPreview={() => setAsked(true)} />
+      ) : (
+        <ContentTitleBar source={file} target={titleBar}>
+          <Content source={file} placement="viewer" />
+        </ContentTitleBar>
+      )}
+    </ViewerPane>
+  );
+}
+
+/** The viewer's scrolling body, between its title row and its footer. */
+function ViewerPane({
+  maximized,
+  children,
+}: {
+  maximized: boolean;
+  children: ReactNode;
+}) {
+  return (
     <DialogBody
       // Inset as the title row and footer are: a renderer draws to its own
       // edges, and the scrollbar sits by it rather than on the frame.
@@ -298,15 +356,7 @@ function ViewerBody({
         } as CSSProperties
       }
     >
-      {!canPreview ? (
-        <DownloadOnlyPane file={file} />
-      ) : gate === "refuse" || (gate === "ask" && !asked) ? (
-        <LargeTextPane gate={gate} onPreview={() => setAsked(true)} />
-      ) : (
-        <ContentTitleBar source={file} target={titleBar}>
-          <Content source={file} placement="viewer" />
-        </ContentTitleBar>
-      )}
+      {children}
     </DialogBody>
   );
 }
@@ -351,11 +401,55 @@ function ViewerFooter({ file }: { file: FileSource }) {
   );
 }
 
+/**
+ * A comparison's footer: the new side's type and both sizes, and each side
+ * to download. No new tab: the comparison is the thing being looked at.
+ */
+function CompareFooter({ pair }: { pair: ComparePair }) {
+  const before = pair.before.file;
+  const after = pair.after.file;
+  return (
+    <div className="flex items-center justify-between gap-3 text-ui-sm text-muted-foreground">
+      <span className="truncate">
+        {[
+          after?.mime,
+          before?.size !== undefined && after?.size !== undefined
+            ? `${formatSize(before.size)} → ${formatSize(after.size)}`
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      </span>
+      <span className="flex shrink-0 items-center gap-3">
+        {(["before", "after"] as const).map((which) => {
+          const side = pair[which];
+          if (side.file?.url === undefined) return null;
+          return (
+            <a
+              key={which}
+              href={side.file.url}
+              download={side.file.name}
+              data-side={which}
+              aria-label={`Download ${side.label}`}
+              className="inline-flex items-center gap-1 font-medium hover:underline"
+            >
+              <CompareTick which={which} />
+              <DownloadIcon className="size-3.5" />
+              {side.label}
+            </a>
+          );
+        })}
+      </span>
+    </div>
+  );
+}
+
 function keepsArrowKeys(target: EventTarget): boolean {
   return (
     target instanceof HTMLElement &&
     (target.isContentEditable ||
-      target.closest("input, textarea, select, video, audio") !== null)
+      target.closest("input, textarea, select, video, audio, [role=slider]") !==
+        null)
   );
 }
 
@@ -390,18 +484,29 @@ export function AttachmentViewer({
   const [dialog, setDialog] = useState<HTMLElement | null>(null);
   const widening = useRef<Widening>(restingWidth());
 
-  const file = state?.items[state.index];
-  const count = state?.items.length ?? 0;
-  const isImage = file !== undefined && isImageFile(file);
+  const file =
+    state !== null && "items" in state ? state.items[state.index] : undefined;
+  const pair =
+    state !== null && "compare" in state
+      ? state.compare[state.index]
+      : undefined;
+  const count =
+    state === null
+      ? 0
+      : "items" in state
+        ? state.items.length
+        : state.compare.length;
+  const noun = pair !== undefined ? "comparison" : "attachment";
+  const zooms = pair !== undefined || (file !== undefined && isImageFile(file));
   // Paging between images tweens from one's height to the next; from
   // anything else, including a closed viewer, the image lands at once. The
   // width a zoom widened the dialog to goes the same way, at once.
   useEffect(() => {
-    if (isImage) return;
+    if (zooms) return;
     lastHeight.current = null;
     releaseWidth(dialog, widening);
     widening.current = restingWidth();
-  }, [isImage, dialog]);
+  }, [zooms, dialog]);
 
   // While the pointer is over − 100%▾ + or ‹ ›, the image keeps the height
   // it had when the pointer arrived, and takes its own once the pointer
@@ -456,9 +561,20 @@ export function AttachmentViewer({
   }, [holdRegion]);
   // Closing unmounts the region under the pointer, which never reports
   // leaving it.
-  const open = file !== undefined;
+  const open = file !== undefined || pair !== undefined;
   useEffect(() => {
     if (!open) setHeld(null);
+  }, [open]);
+  // A comparison's mode carries across paging, shared with the comparisons
+  // on the page when a CompareModeProvider holds them all. Its split and
+  // opacity carry across paging and modes, and start over at every opening.
+  const [chosenMode, setMode] = useCompareMode();
+  const [cut, setCut] = useState(50);
+  const [fade, setFade] = useState(50);
+  useEffect(() => {
+    if (open) return;
+    setCut(50);
+    setFade(50);
   }, [open]);
 
   const image = useMemo(
@@ -510,14 +626,18 @@ export function AttachmentViewer({
             : "sm:max-w-5xl",
         )}
       >
-        {file && (
+        {open && (
           <>
             <div className="flex items-center gap-1">
               <DialogTitle
                 className="min-w-0 flex-1"
-                icon={createElement(fileIcon(file))}
+                icon={createElement(
+                  fileIcon(file ?? pair?.after.file ?? IMAGE_LIKE),
+                )}
               >
-                <span className="min-w-0 truncate">{file.name}</span>
+                <span className="min-w-0 truncate">
+                  {pair !== undefined ? pairTitle(pair) : file?.name}
+                </span>
               </DialogTitle>
               <span
                 ref={setHoldRegion}
@@ -534,7 +654,7 @@ export function AttachmentViewer({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label="previous attachment"
+                      aria-label={`previous ${noun}`}
                       onClick={() => step(-1)}
                     >
                       <ChevronLeftIcon />
@@ -545,7 +665,7 @@ export function AttachmentViewer({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label="next attachment"
+                      aria-label={`next ${noun}`}
                       onClick={() => step(1)}
                     >
                       <ChevronRightIcon />
@@ -564,15 +684,49 @@ export function AttachmentViewer({
               <DialogCloseButton />
             </div>
             {/* Keyed by file, so paging starts the next one scrolled to its top. */}
-            <ViewerImageContext.Provider value={image}>
-              <ViewerBody
-                key={`${state?.index}:${file.url ?? file.name}`}
-                file={file}
-                maximized={maximized}
-                titleBar={titleBar}
-              />
-            </ViewerImageContext.Provider>
-            <ViewerFooter file={file} />
+            {file !== undefined && (
+              <>
+                <ViewerImageContext.Provider value={image}>
+                  <ViewerBody
+                    key={`${state?.index}:${file.url ?? file.name}`}
+                    file={file}
+                    maximized={maximized}
+                    titleBar={titleBar}
+                  />
+                </ViewerImageContext.Provider>
+                <ViewerFooter file={file} />
+              </>
+            )}
+            {pair !== undefined && (
+              <>
+                <ViewerPane maximized={maximized}>
+                  <CompareCanvas
+                    key={`${state?.index}:${pair.before.file?.url ?? pair.before.label} ${pair.after.file?.url ?? pair.after.label}`}
+                    pair={pair}
+                    mode={pairMode(pair, chosenMode)}
+                    maximized={maximized}
+                    toolbar={titleBar}
+                    look={look}
+                    onLookChange={image.setLook}
+                    lastHeight={lastHeight}
+                    held={held}
+                    dialog={dialog}
+                    widening={widening}
+                    cut={cut}
+                    onCut={setCut}
+                    fade={fade}
+                  />
+                </ViewerPane>
+                <CompareBar
+                  pair={pair}
+                  mode={pairMode(pair, chosenMode)}
+                  onModeChange={setMode}
+                  fade={fade}
+                  onFade={setFade}
+                />
+                {pair.footer ?? <CompareFooter pair={pair} />}
+              </>
+            )}
           </>
         )}
       </DialogContent>
