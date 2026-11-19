@@ -3,6 +3,11 @@ import { Button } from "@orz/ui/components/button";
 import { GroupHeading } from "@orz/ui/components/group-heading";
 import { List, ListItem } from "@orz/ui/components/list";
 import { Pane } from "@orz/ui/components/pane";
+import {
+  SelectionAction,
+  SelectionActionProvider,
+  useSelectionRegion,
+} from "@orz/ui/components/selection-action";
 import { Separator } from "@orz/ui/components/separator";
 import { Skeleton } from "@orz/ui/components/skeleton";
 import {
@@ -15,8 +20,9 @@ import {
   GitCommitHorizontalIcon,
   GitMergeIcon,
   RotateCwIcon,
+  TextQuoteIcon,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { type RefObject, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
 import { Stamp, StatusIcon, UserAvatar } from "./parts.tsx";
@@ -39,6 +45,8 @@ function Comment({
   body: string;
   verb?: string;
 }) {
+  // Text selected in the body, and only there, can be quoted in a reply.
+  const region = useSelectionRegion(author);
   return (
     <li className="grid grid-cols-[auto_1fr] gap-3">
       <span className="mt-1.5">
@@ -55,7 +63,9 @@ function Comment({
               </Badge>
             )}
           </header>
-          <Markdown className="min-w-0 p-3 text-ui">{body}</Markdown>
+          <div ref={region} className="min-w-0 p-3">
+            <Markdown className="text-ui">{body}</Markdown>
+          </div>
         </article>
       </Pane>
     </li>
@@ -200,8 +210,13 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
 }
 
 /** The comment box at the end of the timeline; what it posts lives only in this page's memory. */
-function CommentForm({ onPost }: { onPost(body: string): void }) {
-  const editor = useRef<MarkdownEditorHandle>(null);
+function CommentForm({
+  editor,
+  onPost,
+}: {
+  editor: RefObject<MarkdownEditorHandle | null>;
+  onPost(body: string): void;
+}) {
   // Comment stays pressable, and says what is missing, rather than greying out unexplained.
   const [missing, setMissing] = useState(false);
   const post = (value: string) => {
@@ -310,37 +325,61 @@ export function Conversation({
   const failed =
     CI_RUN.jobs.find((job) => job.status === "failed") ?? CI_RUN.jobs[0];
   const showRun = () => failed && onJob(failed.id);
+  const editor = useRef<MarkdownEditorHandle>(null);
+  const quote = (author: string, text: string) => {
+    const lines = text.trim().split("\n");
+    const quoted = lines.map((line) => `> ${line}`.trimEnd()).join("\n");
+    const before = editor.current?.getValue().trim() ? "\n\n" : "";
+    editor.current?.append(`${before}@${author} wrote:\n${quoted}\n\n`);
+    editor.current?.focus();
+  };
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_14rem]">
-      <div className="grid min-w-0 content-start gap-4">
-        <ol aria-label="Timeline" className="grid gap-3">
-          <Comment
-            author={PULL_REQUEST.author}
-            at={PULL_REQUEST.openedAt}
-            body={PULL_REQUEST.body}
-            verb="opened this"
-          />
-          {timeline.map((event) =>
-            event.kind === "comment" ? (
-              <Comment
-                key={`${event.author}-${event.at}`}
-                author={event.author}
-                at={event.at}
-                body={event.body}
-              />
-            ) : (
-              <Event
-                key={`${event.kind}-${event.at}`}
-                event={event}
-                onChecks={showRun}
-              />
-            ),
-          )}
-        </ol>
-        <MergeBox onJob={onJob} />
-        <CommentForm onPost={onPost} />
+    <SelectionActionProvider>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_14rem]">
+        <div className="grid min-w-0 content-start gap-4">
+          <ol aria-label="Timeline" className="grid gap-3">
+            <Comment
+              author={PULL_REQUEST.author}
+              at={PULL_REQUEST.openedAt}
+              body={PULL_REQUEST.body}
+              verb="opened this"
+            />
+            {timeline.map((event) =>
+              event.kind === "comment" ? (
+                <Comment
+                  key={`${event.author}-${event.at}`}
+                  author={event.author}
+                  at={event.at}
+                  body={event.body}
+                />
+              ) : (
+                <Event
+                  key={`${event.kind}-${event.at}`}
+                  event={event}
+                  onChecks={showRun}
+                />
+              ),
+            )}
+          </ol>
+          <MergeBox onJob={onJob} />
+          <CommentForm editor={editor} onPost={onPost} />
+        </div>
+        <Sidebar />
       </div>
-      <Sidebar />
-    </div>
+      <SelectionAction<string>>
+        {({ text, value, dismiss }) => (
+          <Button
+            size="sm"
+            onClick={() => {
+              dismiss();
+              quote(value, text);
+            }}
+          >
+            <TextQuoteIcon />
+            Quote reply
+          </Button>
+        )}
+      </SelectionAction>
+    </SelectionActionProvider>
   );
 }

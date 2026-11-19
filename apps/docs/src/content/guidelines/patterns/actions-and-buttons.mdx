@@ -14,6 +14,7 @@ export const meta = {
     "ui/Primitives/Checkbox",
     "ui/Hooks/useSelection",
     "ui/Hooks/useSweepSelect",
+    "ui/SelectionAction",
   ],
 };
 
@@ -130,6 +131,22 @@ action never reaches a row the reader no longer sees.
   does: the icon until the pointer is on the row, the box from then on and on every selected row,
   and on touch on every row once anything is selected. The icon is the box's hit area, so a tap on
   it selects.
+
+## Acting on selected text
+
+An action that takes the words the reader picked out, such as **Quote reply** on a comment, comes
+to the selection with `SelectionAction`: under its last line for a mouse, and on a touch screen
+as a bar along the window's foot, where the platform's own bubble cannot cover it. The Pull
+request demo quotes a comment into the reply box this way.
+
+- Register each place a selection means something, a comment's body, with `useSelectionRegion`.
+  A selection that runs out of it, into the comment's header or the next comment, offers nothing:
+  the action would not know whose words they are.
+- Offer one or two actions, the ones selecting the text was for. Copying is the platform's
+  already.
+- The floating action is a shortcut for a pointer. Where the keyboard needs the action too, keep
+  it in the comment's menu as well: selecting text from the keyboard leaves no pointer to press
+  it with.
 
 ## On each platform
 
