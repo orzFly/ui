@@ -35,6 +35,7 @@ export {
   VideoPlayer,
   type VideoPlayerProps,
 } from "./media-player.tsx";
+export { sandboxedPage } from "./sandboxed-page.ts";
 export {
   AttachmentViewer,
   type AttachmentViewerControls,
