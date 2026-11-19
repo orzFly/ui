@@ -1,0 +1,64 @@
+export const meta = {
+  title: "Writing Markdown",
+  description:
+    "Where people write more than a line, a comment, a description, a note, give them MarkdownEditor: files go in where they are pasted, and the reader keeps a plain text box if they ask for one.",
+  order: 38,
+  api: ["ui-codemirror/MarkdownEditor", "ui/Primitives/Textarea"],
+};
+
+import { CommentWithFiles } from "../../../examples/writing-markdown/comment-with-files.tsx";
+
+**A text that is written in Markdown is written in `MarkdownEditor`. A file that belongs to the
+text goes into it where it was pasted, and is uploaded when the text is sent.**
+
+<Example of={CommentWithFiles} />
+
+Paste or drop a file: it lands at the caret as a chip, and the button under the editor lists it.
+Delete the chip and the file goes with it; undo brings both back. **Comment** uploads the file and
+shows the text that would be sent, the chip turned into a link.
+
+## Which box
+
+| The text | Use |
+|---|---|
+| One line, a title, a name | `Input` |
+| Several lines that are read as written | `Textarea` |
+| Several lines that are rendered as Markdown: a comment, a description, a note | `MarkdownEditor` |
+| A file the pane exists to edit | `MarkdownEditor` or `CodeEditor` with `purpose="document"` |
+
+`MarkdownEditor` is the box people write Markdown in everywhere in an app, so its keys and its
+paste are learned once: Mod-Enter sends, Escape cancels, and a formatted paste becomes Markdown.
+
+## Files in the text
+
+- Put a file in the text with `staging` and `useStagedFiles`, rather than in a list beside the box:
+  where it sits is part of what the author wrote. List the files the text places under the box all
+  the same, with a way to remove each, for a reader who would rather click than find the chip.
+- Upload at send, not at paste. A file the author pastes and deletes again never reaches the server,
+  and a text that is abandoned leaves nothing behind; `withdraw` hears an upload a failed send got
+  up and the text no longer links.
+- Offer **Attach files** as well. A phone has no paste of a file and no drop, so the picker is the
+  only way in there.
+
+## Two images, compared
+
+An author who puts two images in a paragraph of their own with `→` between them, a before and an
+after, means them to be compared. The editor colours the arrow when the paragraph reads as a pair,
+and offers to join two screenshots pasted one after the other; a renderer that knows the
+convention shows them side by side. Leave the pair to the author: never join images for them.
+
+## People and values in completion
+
+A completion row that names a person shows the person as everywhere else in the app, an `Avatar`
+before the login, and a row that names a status or a label shows its pill or chip. Draw them with
+`reactOption` and the row classes `completionWith` takes, so the row reads the way the same thing
+reads in a picker. Values keep the order the app gives them: statuses in the order work moves
+through them, not alphabetically.
+
+## A plain text box
+
+Some readers would rather have the browser's own text box: a phone keyboard's corrections and
+dictation, a screen reader and a spell checker all know a textarea best. Offer the choice as a
+setting and pass it as `plain`; the editor reads it when it mounts, so a draft that is open never
+switches box under its author. A plain box keeps the keys, the dirty guard and staged files, and
+drops highlighting, completion, the paste conversion and the chips.

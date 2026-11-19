@@ -137,7 +137,8 @@ const meta = {
     onSubmit: fn(),
     onCancel: fn(),
   },
-  argTypes: { extensions: { control: false } },
+  argTypes: { extensions: { control: false }, staging: { control: false } },
+  parameters: { guidelines: "/guidelines/patterns/writing-markdown/" },
 } satisfies Meta<typeof MarkdownEditor>;
 
 export default meta;
