@@ -1,7 +1,8 @@
 import { type ContentRenderer, ContentRenderers } from "@orz/ui-content";
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import type { Root as HastRoot } from "hast";
 import type { Root as MdastRoot } from "mdast";
+import { useState } from "react";
 import { describe, expect, it } from "vitest";
 import { Markdown, type MarkdownPlugin } from "../src/index.ts";
 import { rehypeSourceLines } from "../src/lib/rehype-source-lines.ts";
@@ -286,5 +287,36 @@ describe("identity (T-60)", () => {
     expect(after.heading).toBe(before.heading);
     expect(after.paragraph).toBe(before.paragraph);
     expect(after.fence).toBe(before.fence);
+  });
+});
+
+describe("re-rendering", () => {
+  it("does not parse again when nothing it was handed changed", () => {
+    let parses = 0;
+    const counting: MarkdownPlugin = {
+      name: "counting",
+      remarkPlugins: [
+        () => () => {
+          parses++;
+        },
+      ],
+    };
+    const plugins = [counting];
+    let rerender!: () => void;
+    let retext!: () => void;
+    function Host() {
+      const [, setTick] = useState(0);
+      const [text, setText] = useState("# One");
+      rerender = () => setTick((tick) => tick + 1);
+      retext = () => setText("# Two");
+      return <Markdown plugins={plugins}>{text}</Markdown>;
+    }
+    const { container } = render(<Host />);
+    expect(parses).toBe(1);
+    act(() => rerender());
+    expect(parses).toBe(1);
+    act(() => retext());
+    expect(parses).toBe(2);
+    expect(container.textContent).toBe("Two");
   });
 });

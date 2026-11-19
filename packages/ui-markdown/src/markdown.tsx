@@ -4,6 +4,7 @@ import {
   type ComponentType,
   createContext,
   createElement,
+  memo,
   type Ref,
   useMemo,
 } from "react";
@@ -198,8 +199,12 @@ export type MarkdownProps = {
  * Keep `plugins` stable. A fresh array, or a fresh plugin object in it, makes react-markdown
  * reparse the document and React remount every overridden element, and either one collapses a live
  * text selection inside it (T-60).
+ *
+ * A re-render with the same text, plugins and class does nothing: react-markdown keeps no parse
+ * cache, and a host re-renders for reasons that never touch the text (each keystroke in a composer
+ * beside it), which on a long document cost a frame or more per key.
  */
-export function Markdown({
+export const Markdown = memo(function Markdown({
   children,
   plugins = NO_PLUGINS,
   className,
@@ -249,4 +254,4 @@ export function Markdown({
       </MarkdownPluginsContext.Provider>
     </div>
   );
-}
+});
