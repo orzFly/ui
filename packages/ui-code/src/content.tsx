@@ -39,6 +39,9 @@ function Code({ source, placement, className }: ContentProps) {
       <CappedCodeBlock
         filename={fenceFilename(source.lang)}
         contents={source.text}
+        // The first fence in a language compiles that grammar: 520 ms for
+        // TypeScript at 4x CPU throttling, in the middle of a page's load.
+        offThread
       />
     </div>
   );
@@ -50,8 +53,8 @@ function Code({ source, placement, className }: ContentProps) {
  * it after them — markdown files, mermaid diagrams, patches.
  *
  * It highlights at most `TEXT_PREVIEW_MAX_BYTES`, and draws text found larger plain. A file
- * declared over `TEXT_PREVIEW_HARD_MAX_BYTES` is not loaded. A file tokenizes in the worker a
- * `CodeWorkerProvider` lends, inside a height cap.
+ * declared over `TEXT_PREVIEW_HARD_MAX_BYTES` is not loaded. Both tokenize in the worker a
+ * `CodeWorkerProvider` lends, a file inside a height cap.
  */
 export const codeContent: ContentRenderer = {
   name: "code",

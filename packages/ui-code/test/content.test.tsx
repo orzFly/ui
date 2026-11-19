@@ -304,11 +304,20 @@ describe("size cap", () => {
     expect(block.textContent).toBe(huge);
   });
 
+  it("tokenizes an inline source off the main thread", () => {
+    draw(inline("let a = 1;", "ts"));
+    const block = screen.getByTestId("code-block");
+    expect(block.dataset.plain).toBe("false");
+    // The first fence in a language compiles its grammar, which is what
+    // the worker spares the page; a fence keeps its natural height.
+    expect(block.dataset.offThread).toBe("true");
+    expect(block.className).toBe("");
+  });
+
   it("draws an inline source over the cap plain", () => {
     draw(inline(huge, "ts"));
     const block = screen.getByTestId("code-block");
     expect(block.dataset.plain).toBe("true");
-    expect(block.dataset.offThread).toBe("false");
     expect(block.textContent).toBe(huge);
   });
 });

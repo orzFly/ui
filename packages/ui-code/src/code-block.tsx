@@ -639,8 +639,11 @@ export function CodeBlock({
   plain?: boolean;
   /**
    * Tokenize in pierre's worker pool, when a `CodeWorkerProvider` lends one.
-   * Only pays off with `className` capping the height: uncapped, laying out
-   * every line of 1 MiB still held the main thread for 2.2 s.
+   * Two costs move off the main thread: compiling a language's grammar, which
+   * the first block in that language pays however short it is (520 ms for
+   * TypeScript at 4x CPU throttling), and tokenizing a long file. For the
+   * second, cap the height with `className` too: uncapped, laying out every
+   * line of 1 MiB still held the main thread for 2.2 s.
    */
   offThread?: boolean;
   /** Caps the height for a long file: CodeView virtualizes against its box. */
