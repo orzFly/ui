@@ -1,12 +1,38 @@
-import { CheckIcon, ChevronRightIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, MinusIcon } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive, Slot } from "radix-ui";
 import type * as React from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import { cn } from "../lib/utils.ts";
 
+const OpenContext = createContext<{
+  open: boolean;
+  setOpen: (open: boolean) => void;
+} | null>(null);
+
+// Held here rather than left to Radix so the trigger can open the menu from a
+// click, which Radix's own trigger never does.
 function DropdownMenu({
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
+  const [uncontrolled, setUncontrolled] = useState(defaultOpen);
+  const open = openProp ?? uncontrolled;
+  const setOpen = (next: boolean) => {
+    if (openProp === undefined) setUncontrolled(next);
+    onOpenChange?.(next);
+  };
+  return (
+    <OpenContext.Provider value={{ open, setOpen }}>
+      <DropdownMenuPrimitive.Root
+        data-slot="dropdown-menu"
+        open={open}
+        onOpenChange={setOpen}
+        {...props}
+      />
+    </OpenContext.Provider>
+  );
 }
 
 function DropdownMenuPortal({
@@ -18,11 +44,39 @@ function DropdownMenuPortal({
 }
 
 function DropdownMenuTrigger({
+  onPointerDown,
+  onClick,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  const context = useContext(OpenContext);
+  // What the deferred tap should leave the menu as, decided at pointerdown:
+  // an open menu is dismissed by that same pointerdown landing outside it,
+  // and by click time `open` already reads false.
+  const deferred = useRef<boolean | null>(null);
   return (
     <DropdownMenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
+      onPointerDown={(event) => {
+        onPointerDown?.(event);
+        deferred.current = null;
+        if (event.defaultPrevented || context === null) return;
+        // Radix opens on pointerdown, and a finger lands on a trigger at the
+        // start of every scroll that crosses one. Wait for the click, which
+        // the browser withholds once the touch has become a scroll.
+        // preventDefault() is what makes Radix skip its own half; on a touch
+        // pointerdown it suppresses only the emulated mouse events.
+        if (event.pointerType === "touch" || event.pointerType === "pen") {
+          deferred.current = !context.open;
+          event.preventDefault();
+        }
+      }}
+      onClick={(event) => {
+        onClick?.(event);
+        const next = deferred.current;
+        deferred.current = null;
+        if (next === null || event.defaultPrevented || props.disabled) return;
+        if (context !== null && context.open !== next) context.setOpen(next);
+      }}
       {...props}
     />
   );
@@ -150,8 +204,10 @@ function DropdownMenuCheckboxItem({
         className="pointer-events-none absolute right-2 flex items-center justify-center raymond:right-auto raymond:left-1.5"
         data-slot="dropdown-menu-checkbox-item-indicator"
       >
+        {/* Radix shows the indicator for "indeterminate" too, so a mixed
+            item would otherwise wear the same check as a set one. */}
         <DropdownMenuPrimitive.ItemIndicator>
-          <CheckIcon />
+          {checked === "indeterminate" ? <MinusIcon /> : <CheckIcon />}
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}
