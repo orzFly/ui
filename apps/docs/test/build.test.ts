@@ -41,9 +41,11 @@ function redirectOf(html: string, search: string): string | undefined {
   return to;
 }
 
-function expectEveryRoute(dist: string) {
+function expectEveryRoute(dist: string, missing = "") {
   for (const route of routes) {
-    expect(existsSync(join(dist, route, "index.html")), route).toBe(true);
+    expect(existsSync(join(dist, route, "index.html")), route + missing).toBe(
+      true,
+    );
   }
   expect(existsSync(join(dist, "404.html"))).toBe(true);
 }
@@ -275,7 +277,13 @@ const built = join(APP, "dist");
 describe.skipIf(!existsSync(join(built, "index.html")))(
   "the built site",
   () => {
-    it("prerenders every route", () => expectEveryRoute(built));
+    // dist/ is whatever `pnpm build` last left behind, so a page added
+    // since then is missing from it without anything being wrong.
+    it("prerenders every route", () =>
+      expectEveryRoute(
+        built,
+        " (missing from apps/docs/dist: rebuild with `pnpm build` if the page is newer than the build)",
+      ));
 
     it("carries Storybook under storybook/", () => {
       expect(existsSync(join(built, "storybook/index.html"))).toBe(true);
