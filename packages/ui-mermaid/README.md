@@ -54,6 +54,13 @@ That source view is `Next`: the renderers registered after this one draw it, so 
 when a code renderer is registered and a plain `<pre><code>` when none is. A file is loaded once: the source view gets its text as an inline
 source tagged `mermaid`. A file that fails to load shows the message and a Retry button.
 
+Within an `AttachmentViewerProvider` from `@orz/ui-content/attachment`, the toolbar of a drawn
+diagram also has **Open in the viewer**, which opens the block's source in the viewer as an inline
+source titled by its `title` (else "Diagram"). There this renderer draws the diagram alone in
+`ZoomCanvas`, zoomed and panned as an image is and redrawn as vectors at every zoom; one that does
+not parse is its source view and the parser's message. A file opened in the viewer is the block,
+with its Source toggle.
+
 ## `MermaidBlock`
 
 For a surface that draws a diagram outside the registry:
@@ -88,4 +95,4 @@ since some cache a failed module fetch for the life of the page. Labels go throu
 | Import | Contents |
 |---|---|
 | `@orz/ui-mermaid` | `mermaidContent`, `MermaidBlock` |
-| `@orz/ui-mermaid/styles.css` | the `.mermaid-diagram` fit rule |
+| `@orz/ui-mermaid/styles.css` | the `.mermaid-diagram` fit rule, and the `.mermaid-drawing` one a box sizes |

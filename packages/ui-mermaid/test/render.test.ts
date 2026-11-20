@@ -3,7 +3,7 @@ import {
   type DiagramPalette,
   errorSummary,
   renderDiagram,
-  viewBoxWidth,
+  viewBoxSize,
 } from "../src/render.ts";
 
 const mermaid = vi.hoisted(() => ({
@@ -59,7 +59,12 @@ describe("renderDiagram", () => {
     });
 
     const drawn = await renderDiagram("flowchart LR\n A --> B", LIGHT, "sans");
-    expect(drawn).toEqual({ ok: true, svg: expect.any(String), width: 120 });
+    expect(drawn).toEqual({
+      ok: true,
+      svg: expect.any(String),
+      width: 120,
+      height: 40,
+    });
     expect(mermaid.imports).toBe(2);
   });
 
@@ -114,9 +119,16 @@ describe("renderDiagram", () => {
 });
 
 describe("mermaid helpers", () => {
-  it("reads the natural width off the viewBox", () => {
-    expect(viewBoxWidth('<svg viewBox="4 4 1360.5 164">')).toBe(1360.5);
-    expect(viewBoxWidth("<svg>")).toBe(0);
+  it("reads the natural size off the viewBox", () => {
+    expect(viewBoxSize('<svg viewBox="4 4 1360.5 164">')).toEqual({
+      width: 1360.5,
+      height: 164,
+    });
+    expect(viewBoxSize('<svg viewBox="0,0,10,20.5">')).toEqual({
+      width: 10,
+      height: 20.5,
+    });
+    expect(viewBoxSize("<svg>")).toEqual({ width: 0, height: 0 });
   });
 
   it("keeps a single-line error as it is", () => {

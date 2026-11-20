@@ -12,7 +12,7 @@ export type DiagramPalette = {
 };
 
 export type DiagramResult =
-  | { ok: true; svg: string; width: number }
+  | { ok: true; svg: string; width: number; height: number }
   | { ok: false; error: string };
 
 type Mermaid = typeof import("mermaid")["default"];
@@ -69,7 +69,7 @@ export function renderDiagram(
           source,
           scratch,
         );
-        return { ok: true, svg, width: viewBoxWidth(svg) };
+        return { ok: true, svg, ...viewBoxSize(svg) };
       } finally {
         scratch.remove();
       }
@@ -125,10 +125,16 @@ function themeVariables(p: DiagramPalette, fontFamily: string) {
   };
 }
 
-/** The diagram's natural width, which the fit rule in styles.css scales from. */
-export function viewBoxWidth(svg: string): number {
-  const match = /viewBox="[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)/.exec(svg);
-  return match ? Number(match[1]) : 0;
+/**
+ * The diagram's natural size: the width the fit rule in styles.css scales from, and the height a
+ * comparison or the viewer's zoom lays it out at.
+ */
+export function viewBoxSize(svg: string): { width: number; height: number } {
+  const match =
+    /viewBox="[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(svg);
+  return match
+    ? { width: Number(match[1]), height: Number(match[2]) }
+    : { width: 0, height: 0 };
 }
 
 /**

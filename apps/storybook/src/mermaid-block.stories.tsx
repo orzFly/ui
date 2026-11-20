@@ -1,8 +1,9 @@
 import { GroupHeading } from "@orz/ui/components/group-heading";
 import { Pane } from "@orz/ui/components/pane";
-import { MermaidBlock } from "@orz/ui-mermaid";
+import { codeContent } from "@orz/ui-code";
+import { MermaidBlock, mermaidContent } from "@orz/ui-mermaid";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { withWidth } from "./decorators.tsx";
+import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
 
 const FLOWCHART = `flowchart LR
   request[Request] --> auth{Signed in?}
@@ -123,6 +124,19 @@ export const Kinds: Story = {
 export const Title: Story = {
   decorators: [withWidth("max-w-3xl")],
   args: { title: "request-flow.mmd" },
+};
+
+/**
+ * Within an `AttachmentViewerProvider` the toolbar opens the diagram in the viewer, where
+ * `mermaidContent` zooms and pans it as an image is, drawn as vectors at every zoom.
+ */
+export const Viewer: Story = {
+  args: { source: WIDE, title: "steps.mmd" },
+  decorators: [
+    withWidth("max-w-3xl"),
+    withViewer(),
+    withRenderers(mermaidContent, codeContent),
+  ],
 };
 
 /** Wider than its column: it shrinks down to 75% of its natural width, then scrolls. */

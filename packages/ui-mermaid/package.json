@@ -36,6 +36,7 @@
     "@orz/ui": "workspace:^",
     "@orz/ui-code": "workspace:^",
     "@orz/ui-content": "workspace:^",
+    "lucide-react": "^1",
     "react": "^19"
   },
   "dependencies": {
