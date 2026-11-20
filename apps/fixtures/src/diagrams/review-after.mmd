@@ -1,0 +1,14 @@
+sequenceDiagram
+  participant author as Author
+  participant ci as Build queue
+  participant reviewer as Reviewer
+  author->>ci: push the branch
+  ci-->>author: checks passed
+  author->>reviewer: request review
+  alt changes requested
+    reviewer-->>author: comments
+    author->>ci: push fixes
+  else approved
+    reviewer-->>author: approve
+    author->>ci: merge when green
+  end

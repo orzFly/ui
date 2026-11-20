@@ -74,6 +74,31 @@ import { MermaidBlock } from "@orz/ui-mermaid";
 
 `sourceView` defaults to a plain `<pre><code>`, and is drawn inside the frame. `title` heads the frame with a download of the source, and `collapsible` caps a long source behind Expand. `className` goes on the frame.
 
+## `MermaidCompare`
+
+Two versions of a diagram, side by side in `@orz/ui-content/compare`'s `MediaCompare`:
+
+```tsx
+import { MermaidCompare } from "@orz/ui-mermaid";
+
+<MermaidCompare before={oldText} after={newText} />
+<MermaidCompare before={oldText} after={newText} labels={{ before: "v1", after: "v2" }} title="flow.mmd" />
+```
+
+What changed is coloured as whole units, red on the older side and green on the newer: a sequence
+diagram's participants, messages (text, line, arrowhead and a band across the row) and
+conditions; a flowchart's nodes and edges, labelled or not. A message pairs with its twin by
+sender, receiver and text, and an edge by both ends and its label, all by the ids the source
+gives, so renaming a participant colours the participant alone. Any other diagram type boxes the
+labels with no partner on the other side. Past half the units changed, both sides draw plain,
+since the colour would no longer point at anything.
+
+`labels` defaults to Before and After, and `title` is named at the head. Until both renders are
+back, and when neither parses, the comparison is `@orz/ui-code`'s `CodeDiffBlock` of the two
+sources; the Source toggle switches to that diff and back. A side that does not parse shows the
+parser's message and its source. Within an `AttachmentViewerProvider`, either picture, or the
+toolbar's **Open in the viewer**, opens both in the viewer as drawings at one zoom, side by side.
+
 ## Theme
 
 A diagram is drawn in the theme tokens in effect on its element (`--background`, `--foreground`,
@@ -94,5 +119,5 @@ since some cache a failed module fetch for the life of the page. Labels go throu
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-mermaid` | `mermaidContent`, `MermaidBlock` |
+| `@orz/ui-mermaid` | `mermaidContent`, `MermaidBlock`, `MermaidCompare` |
 | `@orz/ui-mermaid/styles.css` | the `.mermaid-diagram` fit rule, and the `.mermaid-drawing` one a box sizes |
