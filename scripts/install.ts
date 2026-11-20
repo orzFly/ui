@@ -1,7 +1,7 @@
 // The `pnpm add` lines for every package, worked out from the package.json files and the imports
 // in src/ and the shipped CSS, so that no README or docs page lists a package's peers by hand.
 // scripts/readme.ts writes them into the READMEs.
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -105,9 +105,12 @@ function sourceFiles({ dir, manifest }: Workspace): string[] {
     .flatMap((entry) =>
       entry.endsWith(".css")
         ? [entry]
-        : readdirSync(join(dir, entry), { recursive: true, encoding: "utf8" })
-            .filter((file) => file.endsWith(".css"))
-            .map((file) => join(entry, file)),
+        : // A file that is not a stylesheet, as a NOTICE, imports nothing.
+          !statSync(join(dir, entry)).isDirectory()
+          ? []
+          : readdirSync(join(dir, entry), { recursive: true, encoding: "utf8" })
+              .filter((file) => file.endsWith(".css"))
+              .map((file) => join(entry, file)),
     )
     .map((file) => join(dir, file));
   return [...modules, ...stylesheets];

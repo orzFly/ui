@@ -9,11 +9,13 @@ export const meta = {
     "ui-markdown/Markdown",
     "ui-mermaid/MermaidBlock",
     "ui-code/PatchView",
+    "ui-json/JsonView",
   ],
 };
 
 import { FENCE_COLLAPSE_LINES } from "@orz/ui-code";
 import { FramedFences } from "../../../examples/code-blocks/framed-fences.tsx";
+import { JsonPayload } from "../../../examples/code-blocks/json-payload.tsx";
 
 **Give every block of code in a document the same frame: Copy, its language or the file it is, and
 a cap on a long one. The frame carries the controls, so the code itself is never covered and never
@@ -53,6 +55,29 @@ A mermaid diagram sits in the same frame, its **Source** toggle in a toolbar tha
 since it is the only way to the source. A patch draws the frame's header with its file list and
 **raw** beside Copy. Inside a card or the viewer, which lend their own title bar, a patch puts its
 controls there and draws no frame.
+
+## Data as a tree
+
+A block of code is read as written. A payload is browsed: someone folds it open, searches it and
+copies one part of it, a request dump, a config, an event's body. Show a payload as a `JsonView`
+and a snippet as a fence or a `CodeBlock`. A short sample that illustrates the prose stays code,
+even when it is JSON; a payload the reader came to inspect is a tree.
+
+<Example of={JsonPayload} />
+
+An agent's request, written as JSON5. Its comments sit on rows of their own, or after the value
+they follow, and fold away with their member. Click a key, a value or the space before a row to
+select it, and Ctrl+C copies it as JSON; a range copies as one member per line. Text parsed with
+`parseJson` keeps where each part came from, so **Copy source** in a row's menu copies the
+selection as it was written, comments included.
+
+- Parse JSONC and JSON5 with `parseJson` and pass the `document`. A value the app already parsed
+  goes in as `value`; it shows no comments and offers no Copy source.
+- Give the view a `summary` when the data has a shape a collapsed row can name. An app showing
+  agent traces passes `agentTraceSummary`, so a collapsed message reads as its speaker and its
+  text, and a tool call as the call.
+- In a viewer, register `jsonContent` before the code renderer: a `.json`, `.jsonc` or `.json5`
+  file opens as a tree, and one that does not parse shows as text under the error.
 
 ## On each platform
 

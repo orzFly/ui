@@ -29,6 +29,7 @@
     "@orz/ui-codemirror": "workspace:*",
     "@orz/ui-content": "workspace:*",
     "@orz/ui-hex": "workspace:*",
+    "@orz/ui-json": "workspace:*",
     "@orz/ui-markdown": "workspace:*",
     "@orz/ui-mermaid": "workspace:*",
     "@pierre/diffs": "^1.6.1",

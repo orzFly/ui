@@ -1,0 +1,67 @@
+/** A comment in a JSONC or JSON5 source. */
+export interface JsonComment {
+  /** As written, delimiters included: `// note`, `/* note *\/`. */
+  text: string;
+  /** A `/* … *\/` comment, rather than a `//` one. */
+  block: boolean;
+  /** `[start, end)` in UTF-16 offsets into the document's `source`. */
+  range: [number, number];
+}
+
+/** What the source says about one member of a container, or about the root. */
+export interface NodeFacts {
+  /** The member's value in `source`, `[start, end)`. */
+  range: [number, number];
+  /** The member from its key through its value; the same as `range` for an array item or the root. */
+  memberRange?: [number, number];
+  /** A number or string as written, where it differs from the value's own text: `0x1F`, `1e3`, `'single'`. */
+  literal?: string;
+  /** Comments on the lines before the member. */
+  leading?: JsonComment[];
+  /** A comment after the member's value on the same line, or between its key and its value. */
+  trailing?: JsonComment;
+  /** In a container, the comments after its last member; on the root, also those after the root value. */
+  dangling?: JsonComment[];
+}
+
+/**
+ * A value with what its source text says about it. `facts(container, key)` reads one member's
+ * facts, where `container` is the object or array that holds it, by reference; the root's are
+ * `facts(null, "$")`.
+ */
+export interface JsonDocument {
+  value: unknown;
+  /** The text it was parsed from; present when parsed. */
+  source?: string;
+  facts?: (
+    container: object | null,
+    key: string | number,
+  ) => NodeFacts | undefined;
+}
+
+/**
+ * What is selected in a `JsonView`: a key, a value (a container with everything under it), or a
+ * run of siblings under one parent. Paths are accessors: `$`, `$.messages[0].role`, `$["odd key"]`.
+ */
+export type JsonSelection =
+  | { type: "key"; path: string }
+  | { type: "value"; path: string }
+  /** Siblings under one parent; `anchor` is where the range started, `focus` where it ends. */
+  | { type: "members"; anchor: string; focus: string };
+
+/** A piece of a summary's call arguments, coloured by what it is. */
+export type JsonSummaryToken = {
+  kind: "name" | "key" | "value" | "punct";
+  text: string;
+};
+
+/** What a collapsed object's row says about it after `{…}`. */
+export interface JsonSummary {
+  /** Short kind labels; `emphasis` draws one in the text colour instead of the muted one. */
+  tags: { key: string; text: string; emphasis?: boolean }[];
+  name: string | null;
+  /** A call's arguments, drawn after `name`; never set together with `text`. */
+  args: JsonSummaryToken[] | null;
+  /** A body snippet, drawn quoted. */
+  text: string | null;
+}
