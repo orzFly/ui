@@ -1,0 +1,223 @@
+{
+  "model": "model-large",
+  "stream": true,
+  "max_tokens": 8192,
+  "temperature": null,
+  "system": "You are a coding agent working in a sandbox. Follow the repository's AGENTS.md and keep every change on your own branch.\n\n\nSection 1:\n  1. Check every step so the next reader can follow it.\n  2. Keep the diff and say what you found.\n  3. Name the notes in the order the task gives.\n  4. Write the plan without guessing at what is missing.\n  5. Run the tests and stop when something fails.\n  6. List the branch before you move on.\n  7. Format each change so the next reader can follow it.\n  8. Test the output and say what you found.\n  9. Review the summary in the order the task gives.\n\nSection 2:\n  10. Read the file without guessing at what is missing.\n  11. Check every step and stop when something fails.\n  12. Keep the diff before you move on.\n  13. Name the notes so the next reader can follow it.\n  14. Write the plan and say what you found.\n  15. Run the tests in the order the task gives.\n  16. List the branch without guessing at what is missing.\n  17. Format each change and stop when something fails.\n  18. Test the output before you move on.\n\nSection 3:\n  19. Review the summary so the next reader can follow it.\n  20. Read the file and say what you found.\n  21. Check every step in the order the task gives.\n  22. Keep the diff without guessing at what is missing.\n  23. Name the notes and stop when something fails.\n  24. Write the plan before you move on.\n  25. Run the tests so the next reader can follow it.\n  26. List the branch and say what you found.\n  27. Format each change in the order the task gives.\n\nSection 4:\n  28. Test the output without guessing at what is missing.\n  29. Review the summary and stop when something fails.\n  30. Read the file before you move on.\n  31. Check every step so the next reader can follow it.\n  32. Keep the diff and say what you found.\n  33. Name the notes in the order the task gives.\n  34. Write the plan without guessing at what is missing.\n  35. Run the tests and stop when something fails.\n  36. List the branch before you move on.\n\nSection 5:\n  37. Format each change so the next reader can follow it.\n  38. Test the output and say what you found.\n  39. Review the summary in the order the task gives.\n  40. Read the file without guessing at what is missing.\n  41. Check every step and stop when something fails.\n  42. Keep the diff before you move on.\n  43. Name the notes so the next reader can follow it.\n  44. Write the plan and say what you found.\n  45. Run the tests in the order the task gives.\n\nSection 6:\n  46. List the branch without guessing at what is missing.\n  47. Format each change and stop when something fails.\n  48. Test the output before you move on.\n  49. Review the summary so the next reader can follow it.\n  50. Read the file and say what you found.\n  51. Check every step in the order the task gives.\n  52. Keep the diff without guessing at what is missing.\n  53. Name the notes and stop when something fails.\n  54. Write the plan before you move on.\n\nSection 7:\n  55. Run the tests so the next reader can follow it.\n  56. List the branch and say what you found.\n  57. Format each change in the order the task gives.\n  58. Test the output without guessing at what is missing.\n  59. Review the summary and stop when something fails.\n  60. Read the file before you move on.\n  61. Check every step so the next reader can follow it.\n  62. Keep the diff and say what you found.\n  63. Name the notes in the order the task gives.\n\nSection 8:\n  64. Write the plan without guessing at what is missing.\n  65. Run the tests and stop when something fails.\n  66. List the branch before you move on.\n  67. Format each change so the next reader can follow it.\n  68. Test the output and say what you found.\n  69. Review the summary in the order the task gives.\n  70. Read the file without guessing at what is missing.\n  71. Check every step and stop when something fails.\n  72. Keep the diff before you move on.\n\nSection 9:\n  73. Name the notes so the next reader can follow it.\n  74. Write the plan and say what you found.\n  75. Run the tests in the order the task gives.\n  76. List the branch without guessing at what is missing.\n  77. Format each change and stop when something fails.\n  78. Test the output before you move on.\n  79. Review the summary so the next reader can follow it.\n  80. Read the file and say what you found.\n  81. Check every step in the order the task gives.\n\nSection 10:\n  82. Keep the diff without guessing at what is missing.\n  83. Name the notes and stop when something fails.\n  84. Write the plan before you move on.\n  85. Run the tests so the next reader can follow it.\n  86. List the branch and say what you found.\n  87. Format each change in the order the task gives.\n  88. Test the output without guessing at what is missing.\n  89. Review the summary and stop when something fails.\n  90. Read the file before you move on.\n\nSection 11:\n  91. Check every step so the next reader can follow it.\n  92. Keep the diff and say what you found.\n  93. Name the notes in the order the task gives.\n  94. Write the plan without guessing at what is missing.\n  95. Run the tests and stop when something fails.\n  96. List the branch before you move on.\n  97. Format each change so the next reader can follow it.\n  98. Test the output and say what you found.\n  99. Review the summary in the order the task gives.\n\nSection 12:\n  100. Read the file without guessing at what is missing.\n  101. Check every step and stop when something fails.\n  102. Keep the diff before you move on.\n  103. Name the notes so the next reader can follow it.\n  104. Write the plan and say what you found.\n  105. Run the tests in the order the task gives.\n  106. List the branch without guessing at what is missing.\n  107. Format each change and stop when something fails.\n  108. Test the output before you move on.\n\nSection 13:\n  109. Review the summary so the next reader can follow it.\n  110. Read the file and say what you found.\n  111. Check every step in the order the task gives.\n  112. Keep the diff without guessing at what is missing.\n  113. Name the notes and stop when something fails.\n  114. Write the plan before you move on.\n  115. Run the tests so the next reader can follow it.\n  116. List the branch and say what you found.\n  117. Format each change in the order the task gives.\n\nSection 14:\n  118. Test the output without guessing at what is missing.\n  119. Review the summary and stop when something fails.\n  120. Read the file before you move on.\n  121. Check every step so the next reader can follow it.\n  122. Keep the diff and say what you found.\n  123. Name the notes in the order the task gives.\n  124. Write the plan without guessing at what is missing.\n  125. Run the tests and stop when something fails.\n  126. List the branch before you move on.\n\nSection 15:\n  127. Format each change so the next reader can follow it.\n  128. Test the output and say what you found.\n  129. Review the summary in the order the task gives.\n  130. Read the file without guessing at what is missing.\n  131. Check every step and stop when something fails.\n  132. Keep the diff before you move on.\n  133. Name the notes so the next reader can follow it.\n  134. Write the plan and say what you found.\n  135. Run the tests in the order the task gives.\n\nSection 16:\n  136. List the branch without guessing at what is missing.\n  137. Format each change and stop when something fails.\n  138. Test the output before you move on.\n  139. Review the summary so the next reader can follow it.\n  140. Read the file and say what you found.\n  141. Check every step in the order the task gives.\n  142. Keep the diff without guessing at what is missing.\n  143. Name the notes and stop when something fails.\n  144. Write the plan before you move on.\n\nSection 17:\n  145. Run the tests so the next reader can follow it.\n  146. List the branch and say what you found.\n  147. Format each change in the order the task gives.\n  148. Test the output without guessing at what is missing.\n  149. Review the summary and stop when something fails.\n  150. Read the file before you move on.\n  151. Check every step so the next reader can follow it.\n  152. Keep the diff and say what you found.\n  153. Name the notes in the order the task gives.\n\nSection 18:\n  154. Write the plan without guessing at what is missing.\n  155. Run the tests and stop when something fails.\n  156. List the branch before you move on.\n  157. Format each change so the next reader can follow it.\n  158. Test the output and say what you found.\n  159. Review the summary in the order the task gives.\n  160. Read the file without guessing at what is missing.\n  161. Check every step and stop when something fails.\n  162. Keep the diff before you move on.\n\nSection 19:\n  163. Name the notes so the next reader can follow it.\n  164. Write the plan and say what you found.\n  165. Run the tests in the order the task gives.\n  166. List the branch without guessing at what is missing.\n  167. Format each change and stop when something fails.\n  168. Test the output before you move on.\n  169. Review the summary so the next reader can follow it.\n  170. Read the file and say what you found.\n  171. Check every step in the order the task gives.\n\nSection 20:\n  172. Keep the diff without guessing at what is missing.\n  173. Name the notes and stop when something fails.\n  174. Write the plan before you move on.\n  175. Run the tests so the next reader can follow it.\n  176. List the branch and say what you found.\n  177. Format each change in the order the task gives.\n  178. Test the output without guessing at what is missing.\n  179. Review the summary and stop when something fails.\n  180. Read the file before you move on.\n\nSection 21:\n  181. Check every step so the next reader can follow it.\n  182. Keep the diff and say what you found.\n  183. Name the notes in the order the task gives.\n  184. Write the plan without guessing at what is missing.\n  185. Run the tests and stop when something fails.\n  186. List the branch before you move on.\n  187. Format each change so the next reader can follow it.\n  188. Test the output and say what you found.\n  189. Review the summary in the order the task gives.\n\nSection 22:\n  190. Read the file without guessing at what is missing.\n  191. Check every step and stop when something fails.\n  192. Keep the diff before you move on.\n  193. Name the notes so the next reader can follow it.\n  194. Write the plan and say what you found.\n  195. Run the tests in the order the task gives.\n  196. List the branch without guessing at what is missing.\n  197. Format each change and stop when something fails.",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "List the files in the repository and summarise what each package does."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I will start by listing the files."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01",
+          "name": "Bash",
+          "input": {
+            "command": "ls -la"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01",
+          "content": "total 8\ndrwxr-xr-x  apps\ndrwxr-xr-x  packages\n-rw-r--r--  README.md"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "Bash",
+      "description": "Bash a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The command to run."
+          },
+          "timeout": {
+            "type": "number"
+          }
+        },
+        "required": ["command"]
+      }
+    },
+    {
+      "name": "Read",
+      "description": "Read a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "Write",
+      "description": "Write a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "Edit",
+      "description": "Edit a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "Glob",
+      "description": "Glob a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "Grep",
+      "description": "Grep a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "List",
+      "description": "List a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "Fetch",
+      "description": "Fetch a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "Search",
+      "description": "Search a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "Plan",
+      "description": "Plan a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "Test",
+      "description": "Test a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    },
+    {
+      "name": "Format",
+      "description": "Format a part of the workspace and return what it found.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "A path inside the workspace."
+          }
+        },
+        "required": ["path"]
+      }
+    }
+  ],
+  "metadata": {
+    "user_id": "claude-agent",
+    "trace": null,
+    "tier": 2
+  }
+}

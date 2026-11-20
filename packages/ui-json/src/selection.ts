@@ -443,7 +443,15 @@ export function selectionText(
   selection: JsonSelection,
   options: { compact?: boolean } = {},
 ): string | null {
-  const { value } = asDocument(document);
+  return selectionTextOf(asDocument(document).value, selection, options);
+}
+
+/** `selectionText` over the value itself, for a caller that already holds it. */
+export function selectionTextOf(
+  value: unknown,
+  selection: JsonSelection,
+  options: { compact?: boolean } = {},
+): string | null {
   const compact = options.compact ?? false;
   if (selection.type === "key") {
     const found = resolvePath(value, selection.path);

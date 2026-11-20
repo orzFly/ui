@@ -7,6 +7,7 @@ import {
   pdfContent,
   videoContent,
 } from "@orz/ui-content/attachment";
+import { jsonContent } from "@orz/ui-json/content";
 import { markdownContent } from "@orz/ui-markdown";
 
 /**
@@ -22,5 +23,6 @@ export const ATTACHMENT_RENDERERS = [
   audioContent(),
   markdownContent(),
   patchContent,
+  jsonContent,
   codeContent,
 ];
