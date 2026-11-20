@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useState } from "react";
+import { type ReactElement, useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   Dialog,
@@ -357,4 +357,46 @@ it("still hands a dialog's focus to its trigger", async () => {
   fireEvent.keyDown(document, { key: "Escape" });
 
   await waitFor(() => expect(document.activeElement).toBe(trigger));
+});
+
+// An overlay's duration is meant for its open/close keyframes; with the
+// initial `transition-property: all` it would also ease every size change
+// made while the overlay is open.
+describe("overlay contents ease nothing while open", () => {
+  const overlays: [string, ReactElement][] = [
+    [
+      "dialog-content",
+      <Dialog key="dialog" defaultOpen>
+        <DialogContent>
+          <DialogTitle>Viewer</DialogTitle>
+        </DialogContent>
+      </Dialog>,
+    ],
+    [
+      "popover-content",
+      <Popover key="popover" defaultOpen>
+        <PopoverTrigger>Files</PopoverTrigger>
+        <PopoverContent>list</PopoverContent>
+      </Popover>,
+    ],
+    [
+      "dropdown-menu-content",
+      <DropdownMenu key="menu" defaultOpen>
+        <DropdownMenuTrigger>Actions</DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem>Rename</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>,
+    ],
+  ];
+  for (const [slot, element] of overlays) {
+    it(`${slot} sets transition-none beside the keyframe duration`, async () => {
+      render(element);
+      await waitFor(() =>
+        expect(
+          document.querySelector(`[data-slot="${slot}"]`)?.className,
+        ).toContain("transition-none"),
+      );
+    });
+  }
 });

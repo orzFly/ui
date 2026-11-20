@@ -1,3 +1,7 @@
+import { Checkbox, SelectSlot } from "@orz/ui/components/checkbox";
+import { SelectionBar } from "@orz/ui/components/selection-bar";
+import { type Selection, useSelection } from "@orz/ui/hooks/use-selection";
+import { useSweepSelect } from "@orz/ui/hooks/use-sweep-select";
 import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import {
@@ -6,16 +10,16 @@ import {
   DownloadIcon,
   PaperclipIcon,
 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useId, useMemo, useState } from "react";
 import { formatSize, isImageFile } from "../file-kind.ts";
 import { fileIcon } from "./icon.ts";
-import { CHECKER } from "./image-canvas.tsx";
 import {
   type FileSource,
   useAttachmentViewer,
   useCanPreview,
   useViewHref,
 } from "./viewer.tsx";
+import { CHECKER } from "./zoom-canvas.tsx";
 
 export type AttachmentItem = FileSource & {
   key: string | number;
@@ -41,6 +45,21 @@ export type AttachmentListProps = {
    * false. The viewer still pages through the whole list in its own order.
    */
   thumbnails?: boolean;
+  /**
+   * Let the reader select files: each row's icon gives way to a checkbox, Shift-click selects a
+   * range and a drag down the boxes selects every row it crosses. The header becomes a
+   * `SelectionBar`, its paperclip the select-all box. Default false.
+   */
+  selectable?: boolean;
+  /** The selected files' keys, when the app holds them. */
+  selected?: AttachmentItem["key"][];
+  defaultSelected?: AttachmentItem["key"][];
+  onSelectedChange?: (selected: AttachmentItem["key"][]) => void;
+  /**
+   * The actions on the selected files, in the header while any are: `ToolbarButton`s, a delete
+   * that asks first. The list does nothing to the files itself.
+   */
+  selectionActions?: (items: AttachmentItem[]) => ReactNode;
   className?: string;
 };
 
@@ -55,25 +74,70 @@ const CAP = 5;
  */
 const MIN_HIDDEN = 3;
 
+// A selected row takes a listbox's picked look, as `ListItem` draws it.
+const SELECTED_ROW =
+  "data-selected:bg-accent data-selected:text-accent-foreground data-selected:state-cue data-selected:hover:bg-accent raymond:data-selected:bg-primary raymond:data-selected:hover:bg-primary raymond:data-selected:text-primary-foreground raymond:data-selected:[--ring:var(--primary-foreground)] raymond:data-selected:[--foreground:var(--primary-foreground)] raymond:data-selected:[--muted-foreground:var(--primary-foreground)] raymond:data-selected:[--border:var(--primary-foreground)]";
+
 function AttachmentRow({
   items,
   index,
   actions,
+  selection,
 }: {
   items: AttachmentItem[];
   index: number;
   actions: AttachmentListProps["actions"];
+  selection: Selection<AttachmentItem["key"]> | null;
 }) {
   const item = items[index] as AttachmentItem;
   const viewer = useAttachmentViewer();
   const canPreview = useCanPreview(item);
   const href = useViewHref(item);
+  const [hovered, setHovered] = useState(false);
+  const boxId = useId();
   const Icon = fileIcon(item);
+  const icon = <Icon className="size-4 shrink-0 text-muted-foreground" />;
+  const selected = selection?.isSelected(item.key) ?? false;
   return (
-    <li className="flex items-center hover:bg-muted/40 raymond:hover:bg-transparent">
+    <li
+      data-sweep-key={selection ? String(item.key) : undefined}
+      data-selected={selected ? "" : undefined}
+      className={cn(
+        "flex items-center hover:bg-muted/40 raymond:hover:bg-transparent",
+        SELECTED_ROW,
+      )}
+      onPointerEnter={(e) => {
+        if (selection && e.pointerType !== "touch") setHovered(true);
+      }}
+      onPointerLeave={() => setHovered(false)}
+    >
+      {selection && (
+        // The label is the hit area: the whole gutter, the row's height,
+        // rather than a 16px box beside a link. The icon lives in it, so a
+        // tap on the icon selects on touch too.
+        <label
+          htmlFor={boxId}
+          data-sweep-start=""
+          className="flex shrink-0 cursor-pointer items-center self-stretch pr-2 pl-3"
+        >
+          <SelectSlot
+            id={boxId}
+            icon={icon}
+            revealed={hovered}
+            aria-label={`select ${item.name}`}
+            checked={selected}
+            // The click rather than onCheckedChange: only it carries Shift,
+            // and Space clicks too.
+            onClick={(e) => selection.toggle(item.key, { extend: e.shiftKey })}
+          />
+        </label>
+      )}
       <a
         href={href === "" ? undefined : href}
-        className="flex min-w-0 flex-1 items-center gap-2 py-2 pl-3 text-ui"
+        className={cn(
+          "flex min-w-0 flex-1 items-center gap-2 py-2 text-ui",
+          !selection && "pl-3",
+        )}
         onClick={(e) => {
           if (viewer !== null && canPreview && isPlainClick(e)) {
             e.preventDefault();
@@ -81,7 +145,7 @@ function AttachmentRow({
           }
         }}
       >
-        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        {!selection && icon}
         <span className="truncate font-medium hover:underline">
           {item.name}
         </span>
@@ -122,9 +186,11 @@ function AttachmentRow({
 function AttachmentThumbnail({
   items,
   index,
+  selection,
 }: {
   items: AttachmentItem[];
   index: number;
+  selection: Selection<AttachmentItem["key"]> | null;
 }) {
   const item = items[index] as AttachmentItem;
   const viewer = useAttachmentViewer();
@@ -161,6 +227,14 @@ function AttachmentThumbnail({
         </span>
       </a>
       <span className="flex items-center gap-1 text-muted-foreground text-ui-sm">
+        {selection && (
+          <Checkbox
+            className="mr-1"
+            aria-label={`select ${item.name}`}
+            checked={selection.isSelected(item.key)}
+            onClick={(e) => selection.toggle(item.key, { extend: e.shiftKey })}
+          />
+        )}
         {item.size !== undefined && <span>{formatSize(item.size)}</span>}
         {item.url !== undefined && (
           <a
@@ -191,10 +265,33 @@ export function AttachmentList({
   id,
   fold = true,
   thumbnails = false,
+  selectable = false,
+  selected,
+  defaultSelected,
+  onSelectedChange,
+  selectionActions,
   className,
 }: AttachmentListProps) {
   // Not persisted anywhere: expanding is "show me now", not a preference.
   const [expanded, setExpanded] = useState(false);
+  const keys = useMemo(() => items.map((item) => item.key), [items]);
+  const selectionState = useSelection(keys, {
+    selected,
+    defaultSelected,
+    onSelectedChange,
+  });
+  const selection = selectable ? selectionState : null;
+  // A key is a string or a number; the sweep reads it back from the row's
+  // attribute as a string.
+  const keyOf = useMemo(
+    () => new Map(keys.map((key) => [String(key), key])),
+    [keys],
+  );
+  const sweep = useSweepSelect({
+    isSelected: selectionState.isSelected,
+    paint: selectionState.paint,
+    parse: (raw) => keyOf.get(raw) ?? raw,
+  });
   if (items.length === 0) return null;
 
   // Each entry keeps its place in `items`, which is what the viewer pages
@@ -217,17 +314,41 @@ export function AttachmentList({
     // colour, its title on a band of the face across the top, and its rows
     // on the well unruled, as Explorer's details view draws files.
     <section
+      data-selecting={selection && selection.state !== "none" ? "" : undefined}
       className={cn(
         "rounded-frame ring-1 ring-border raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken raymond:ring-0",
         className,
       )}
       id={id}
     >
-      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-ui raymond:border-b-0 raymond:bg-(--3d-face)">
-        <PaperclipIcon className="size-3.5 text-muted-foreground" />
-        <span className="font-medium">{title}</span>
-        <span className="text-muted-foreground">{items.length}</span>
-      </div>
+      {selection ? (
+        <SelectionBar
+          edge="bottom"
+          // The box's cell centres on the rows' icons.
+          className="bg-muted/40 px-1"
+          count={selection.selected.length}
+          total={items.length}
+          onSelectAll={selection.toggleAll}
+          onClear={selection.clear}
+          icon={<PaperclipIcon className="size-3.5 text-muted-foreground" />}
+          idle={
+            <span className="flex items-center gap-2 px-1">
+              <span className="font-medium">{title}</span>
+              <span className="text-muted-foreground">{items.length}</span>
+            </span>
+          }
+        >
+          {selectionActions?.(
+            items.filter((item) => selection.isSelected(item.key)),
+          )}
+        </SelectionBar>
+      ) : (
+        <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-ui raymond:border-b-0 raymond:bg-(--3d-face)">
+          <PaperclipIcon className="size-3.5 text-muted-foreground" />
+          <span className="font-medium">{title}</span>
+          <span className="text-muted-foreground">{items.length}</span>
+        </div>
+      )}
       {collapsible && (
         <button
           type="button"
@@ -250,7 +371,12 @@ export function AttachmentList({
         </button>
       )}
       {shown.length > 0 && (
-        <ul className="divide-y raymond:divide-y-0">
+        <ul
+          className="divide-y raymond:divide-y-0"
+          onPointerDownCapture={
+            selection ? sweep.onPointerDownCapture : undefined
+          }
+        >
           {shown.map(({ item, index }) => (
             // The viewer pages through the whole list, so a row hands it its
             // place in `items` — the fold's offset put the first visible row
@@ -260,6 +386,7 @@ export function AttachmentList({
               items={items}
               index={index}
               actions={actions}
+              selection={selection}
             />
           ))}
         </ul>
@@ -272,7 +399,12 @@ export function AttachmentList({
           )}
         >
           {pictures.map(({ item, index }) => (
-            <AttachmentThumbnail key={item.key} items={items} index={index} />
+            <AttachmentThumbnail
+              key={item.key}
+              items={items}
+              index={index}
+              selection={selection}
+            />
           ))}
         </div>
       )}

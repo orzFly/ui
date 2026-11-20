@@ -1,4 +1,4 @@
-import { textFile } from "@orz/fixtures/files.ts";
+import { SETTINGS_PAIR, textFile } from "@orz/fixtures/files.ts";
 import seriesText from "@orz/fixtures/patch/series.patch?raw";
 import { REPOSITORY_STATUS } from "@orz/fixtures/repository.ts";
 import type { FileStatus } from "@orz/ui/lib/file-tree";
@@ -40,10 +40,22 @@ export const CHANGES: ReadonlyMap<string, FileChange> = new Map(
     }),
 );
 
+/** An image changed in the working tree: its committed version and the one on disk. */
+export interface ImageChange {
+  before: { file: FileSource; size: { width: number; height: number } };
+  after: { file: FileSource; size: { width: number; height: number } };
+}
+
+/** The images the working tree changes, which no text diff can show. */
+export const IMAGE_CHANGES: ReadonlyMap<string, ImageChange> = new Map([
+  ["docs/assets/settings.svg", SETTINGS_PAIR],
+]);
+
 /** What git says of every path: the diff's statuses over the rest. */
 export const STATUS: Readonly<Record<string, FileStatus>> = {
   ...REPOSITORY_STATUS,
   ...Object.fromEntries([...CHANGES.values()].map((c) => [c.path, c.status])),
+  ...Object.fromEntries([...IMAGE_CHANGES.keys()].map((p) => [p, "modified"])),
 };
 
 const patches = new Map<string, FileSource>();

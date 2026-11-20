@@ -1,4 +1,5 @@
 import { Button } from "@orz/ui/components/button";
+import { Dialog, DialogContent, DialogTitle } from "@orz/ui/components/dialog";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import { List, ListItem } from "@orz/ui/components/list";
@@ -98,4 +99,24 @@ export const Anchor: Story = {
       </Popover>
     );
   },
+};
+
+/**
+ * A modal dialog's scroll lock cancels every wheel and drag that lands
+ * outside the dialog's content; the long list here has to scroll anyway.
+ */
+export const InDialog: Story = {
+  tags: ["edge", "!autodocs"],
+  args: { defaultOpen: true },
+  decorators: [
+    (Story) => (
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Labels</DialogTitle>
+          <Story />
+        </DialogContent>
+      </Dialog>
+    ),
+  ],
+  render: LongList.render,
 };

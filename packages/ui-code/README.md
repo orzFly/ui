@@ -48,12 +48,15 @@ slots from the side on screen. Outside a provider, blocks use pierre's pair.
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `CodeWorkerProvider`, `useCodeWorkerFactory`, `fenceFilename`, `codeContent`, `patchContent`, `PatchView`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
+| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `CodeWorkerProvider`, `useCodeWorkerFactory`, `fenceFilename`, `codeContent`, `patchContent`, `PatchView`, `FenceFrame`, `useInFenceFrame`, `FENCE_COLLAPSE_LINES`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
 | `@orz/ui-code/word-diff` | `wordDiff`, `coalescedWordDiff`, `wordBag`, `bagWith`, types |
 | `@orz/ui-code/styles.css` | the `diffs-container` rules |
 
-pierre is only reached through `lazy()`, so a bundler splits it and shiki into their own chunks,
-fetched when the first block renders.
+pierre is only reached through dynamic imports, so a bundler splits it and shiki into their own
+chunks, fetched when the first block renders. Until the chunk lands a block draws its plain text
+rather than suspending: on a page's first load React does not commit a retry of a boundary that
+suspends again within 300 ms of its fallback, and would render the whole page again once the chunk
+arrived.
 
 ### `@orz/ui-code`
 
@@ -76,7 +79,9 @@ the code view virtualizes against its own box.
 
 pierre tokenizes a whole file even when it draws a screenful: 1 MiB of log held the tab for 9.3 s
 on the main thread, 0.2 s in pierre's worker. `CodeWorkerProvider` lends that worker to every
-`CodeBlock` below it that sets `offThread`, which `codeContent` does for files. The lines show as
+`CodeBlock` below it that sets `offThread`, which `codeContent` does for files and fences: the
+first fence in a language compiles that grammar, 520 ms for TypeScript at 4x CPU throttling. The
+lines show as
 plain text at once and their colours follow. The worker script has to come from the app's bundler,
 so the app starts it:
 
@@ -94,13 +99,42 @@ uncapped, laying out every line of 1 MiB still held the main thread for 2.2 s.
 
 `CodeDiffBlock` is a unified line diff of one block; with identical sides it renders a `CodeBlock`.
 
+### `FenceFrame`
+
+A code block's frame, which `codeContent`, `patchContent` and `@orz/ui-mermaid` put a fence in:
+
+- **Copy** answers on the button, a check for a moment and "Copied" for a screen reader, and
+  toasts only a failure (`writeClipboard` from `@orz/ui/lib/clipboard`).
+- The block's `lang` and Copy sit in a toolbar that floats over the top-right corner where the
+  pointer can hover (`can-hover:`), and shows on hover or once focus is inside. Without hover, or
+  with `toolbarAlwaysVisible`, it takes a row of its own above the content instead, so it never
+  covers a line for good.
+- A `title` (a filename) draws a header in place of the toolbar, whose name is an `a[href]` with
+  `download` on a blob of the text. `leading` draws the header too, with its controls first.
+- `collapsible` caps the content at 20 lines (or half the screen) to scroll inside the frame, with
+  Expand to lift the cap. Every line stays in the DOM, so find-in-page still reaches them.
+
+The content is the children's alone. A code view inside reads `useInFenceFrame()` and leaves the
+frame, the box and Copy to it; `CodeBlock`'s `bareFallback` draws its plain text in pierre's own
+geometry, so nothing moves when the highlighting arrives.
+
+```tsx
+import { CodeBlock, FenceFrame } from "@orz/ui-code";
+
+<FenceFrame text={code} lang="yaml" title="compose.yaml" collapsible>
+  <CodeBlock filename="compose.yaml" contents={code} copy={false} bareFallback />
+</FenceFrame>
+```
+
 ### `codeContent`
 
 The renderer this package contributes to `@orz/ui-content`'s registry. It
 accepts every inline source, whatever its `lang`, and every file `isTextFile` calls text, in either
 placement:
 
-- An inline source, such as a markdown fence, is a `CodeBlock` named `fenceFilename(lang)`.
+- An inline source, such as a markdown fence, is a `CodeBlock` named `fenceFilename(lang)`, in a
+  `FenceFrame` (below) that carries its language or `title`, and caps it past
+  `FENCE_COLLAPSE_LINES` unless the source's `collapse` is false.
 - A file is loaded through `useSourceText` and drawn as a `CodeBlock` under its own name, with
   line numbers and without its final newline, tokenized off the main thread when a
   `CodeWorkerProvider` is mounted, and capped to the viewer's pane or a card's collapsed body. While it loads, it is the registry's fallback: a
@@ -148,16 +182,21 @@ const RENDERERS = [attachmentCard(), markdownContent(), patchContent, codeConten
   text instead, rather than a patch with a change silently missing. A fence that is not a patch,
   such as a bare `+`/`-` snippet, stays highlighted text; a file that is not one says so above it.
 - The file list and *raw* go into the title bar a surrounding surface lends (`useContentTitleBar`;
-  `attachmentCard` lends its card's). With none, the patch draws a framed bar of its own, which is
-  what a fence gets, so a fence inside a markdown card never takes over the card's bar.
+  `attachmentCard` lends its card's). With none, the patch draws a `FenceFrame` of its own, with
+  Copy and the fence's `title` as a download, which is what a fence gets, so a fence inside a
+  markdown card never takes over the card's bar.
 - The diffs scroll inside a height-capped box, which is what lets pierre virtualize them: 70vh in a
   document, the viewer's 75vh pane less its bar (maximized too, for now). Inside a card, whose
   collapsed body hides its overflow, they do not scroll and the file list does not jump; the card
   expands instead. That assumes the card's `collapsedClassName` caps it below one screen: past it,
   the patch is cut at one screen.
-- A file diff over `LARGE_DIFF_LINES` (2,000) changed lines is drawn as its header row with a
-  *Load diff* button, unless it is the patch's only file: not for speed (a 40,000-line file drew in
-  0.1 s) but so a generated file does not bury the files around it.
+- Each file's header row stays pinned to the top of the box while the file scrolls under it.
+- With more than one file, a chevron at the start of each header folds that file down to its row
+  and back. Jumping to a folded file from the file list unfolds it, and folding a file whose top has
+  scrolled out of the box scrolls back to its header, so the next file follows it.
+- A file diff over `LARGE_DIFF_LINES` (2,000) changed lines starts folded, with a *Load diff*
+  button, unless it is the patch's only file: not for speed (a 40,000-line file drew in 0.1 s) but
+  so a generated file does not bury the files around it.
 - A file is loaded and capped as `codeContent` caps it, except that a patch up to 10 MiB is never
   asked about: its view is virtualized per file, and a 20 MiB one held the tab for 0.6 s at most.
 
@@ -206,10 +245,17 @@ const options = useMemo(
   [theme],
 );
 
-<Suspense>
-  <LazyMultiFileDiff oldFile={oldFile} newFile={newFile} options={options} />
-</Suspense>;
+<LazyMultiFileDiff
+  oldFile={oldFile}
+  newFile={newFile}
+  options={options}
+  fallback={<p>Loading diff…</p>}
+/>;
 ```
+
+`LazyMultiFileDiff` draws `fallback` (nothing by default) while pierre's chunk loads instead of
+suspending, like every surface in this package: a page whose first render suspended for the chunk
+would be rendered again from scratch once it arrived.
 
 ## Failures
 

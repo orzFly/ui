@@ -1,7 +1,18 @@
 import type { ComponentType } from "react";
 
 export type ContentSource =
-  | { kind: "inline"; text: string; lang?: string }
+  | {
+      kind: "inline";
+      text: string;
+      lang?: string;
+      /** A filename the text is known by, such as a fence's `title="…"`; a renderer may offer it as a download. */
+      title?: string;
+      /**
+       * Whether a long block may be capped to scroll in its frame, behind Expand. Default true;
+       * false where every line has to stay on the page, as for a review that annotates lines.
+       */
+      collapse?: boolean;
+    }
   | {
       kind: "file";
       name: string;

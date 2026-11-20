@@ -1,7 +1,8 @@
 import { type ContentRenderer, ContentRenderers } from "@orz/ui-content";
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import type { Root as HastRoot } from "hast";
 import type { Root as MdastRoot } from "mdast";
+import { useState } from "react";
 import { describe, expect, it } from "vitest";
 import { Markdown, type MarkdownPlugin } from "../src/index.ts";
 import { rehypeSourceLines } from "../src/lib/rehype-source-lines.ts";
@@ -219,6 +220,93 @@ describe("fences", () => {
     expect(drawn.map((el) => el.textContent)).toEqual(["graph", "indented"]);
   });
 
+  describe("a fence's info string and collapsing", () => {
+    const echo: ContentRenderer = {
+      name: "echo",
+      accepts: (source) => source.kind === "inline",
+      Component: ({ source }) =>
+        source.kind === "inline" ? (
+          <output
+            data-title={source.title ?? ""}
+            data-collapse={String(source.collapse)}
+          >
+            {source.text}
+          </output>
+        ) : null,
+    };
+    const renderers = [echo];
+    const drawn = (container: HTMLElement) => [
+      ...container.querySelectorAll<HTMLElement>(".markdown-fence output"),
+    ];
+
+    it.each([
+      ["```yaml compose.yaml", "compose.yaml"],
+      ['```yaml title="compose.yaml" {1,3}', "compose.yaml"],
+      ["```yaml {1,3}", ""],
+      ["```yaml", ""],
+    ])("names %s as %j", (opening, title) => {
+      const { container } = render(
+        <ContentRenderers renderers={renderers}>
+          <Markdown>{`${opening}\na: 1\n\`\`\``}</Markdown>
+        </ContentRenderers>,
+      );
+      expect(drawn(container)[0]?.dataset.title).toBe(title);
+    });
+
+    it("hands a plugin the info string after the language", () => {
+      const seen: (string | undefined)[] = [];
+      const plugins: MarkdownPlugin[] = [
+        {
+          name: "meta",
+          fence: ({ Next, ...props }) => {
+            seen.push(props.meta);
+            return <Next {...props} />;
+          },
+        },
+      ];
+      render(
+        <Markdown plugins={plugins}>
+          {'```ts title="x.ts" {1}\na\n```\n\n```ts\nb\n```'}
+        </Markdown>,
+      );
+      expect(seen).toEqual(['title="x.ts" {1}', undefined]);
+    });
+
+    it("lets a long fence collapse unless told not to, and an embed follows its host", () => {
+      function Embed() {
+        return <Markdown>{"```\ninner\n```"}</Markdown>;
+      }
+      const host: MarkdownPlugin = {
+        name: "embed",
+        components: {
+          p: ({ Next, ...props }) =>
+            props.children === "embed" ? <Embed /> : <Next {...props} />,
+        },
+      };
+      const plugins = [host];
+      const { container, rerender } = render(
+        <ContentRenderers renderers={renderers}>
+          <Markdown plugins={plugins}>{"```\nouter\n```\n\nembed"}</Markdown>
+        </ContentRenderers>,
+      );
+      expect(drawn(container).map((el) => el.dataset.collapse)).toEqual([
+        "true",
+        "true",
+      ]);
+      rerender(
+        <ContentRenderers renderers={renderers}>
+          <Markdown plugins={plugins} collapseLongFences={false}>
+            {"```\nouter\n```\n\nembed"}
+          </Markdown>
+        </ContentRenderers>,
+      );
+      expect(drawn(container).map((el) => el.dataset.collapse)).toEqual([
+        "false",
+        "false",
+      ]);
+    });
+  });
+
   it("leaves a <pre> that is not a plain fence as it is", () => {
     const plugins: MarkdownPlugin[] = [
       {
@@ -286,5 +374,36 @@ describe("identity (T-60)", () => {
     expect(after.heading).toBe(before.heading);
     expect(after.paragraph).toBe(before.paragraph);
     expect(after.fence).toBe(before.fence);
+  });
+});
+
+describe("re-rendering", () => {
+  it("does not parse again when nothing it was handed changed", () => {
+    let parses = 0;
+    const counting: MarkdownPlugin = {
+      name: "counting",
+      remarkPlugins: [
+        () => () => {
+          parses++;
+        },
+      ],
+    };
+    const plugins = [counting];
+    let rerender!: () => void;
+    let retext!: () => void;
+    function Host() {
+      const [, setTick] = useState(0);
+      const [text, setText] = useState("# One");
+      rerender = () => setTick((tick) => tick + 1);
+      retext = () => setText("# Two");
+      return <Markdown plugins={plugins}>{text}</Markdown>;
+    }
+    const { container } = render(<Host />);
+    expect(parses).toBe(1);
+    act(() => rerender());
+    expect(parses).toBe(1);
+    act(() => retext());
+    expect(parses).toBe(2);
+    expect(container.textContent).toBe("Two");
   });
 });

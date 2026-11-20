@@ -82,16 +82,22 @@ function firstLevelOption<T>(command: CommandDef<T>): Completion {
  * Accepting a non-final argument inserts a space and reopens the panel for
  * the next one; the final one inserts nothing more. Inside a brace group the
  * group is still open, so neither happens.
+ *
+ * Where CodeMirror filters the rows itself, equal scores sort by label, so
+ * statuses would come out Done, In Progress, Todo; the descending boost keeps
+ * the order the provider gave, as a status menu has it. Boosts stop at -99.
  */
 function argumentOption(
   slot: ArgumentSlot,
   lineFrom: number,
   option: ValueOption,
+  index: number,
 ): Completion {
   return {
     label: option.value,
     ...(option.hint === undefined ? {} : { detail: option.hint }),
     type: "command",
+    boost: Math.max(-99, -index),
     apply: (view, _completion, _from, to) => {
       const next = !slot.last && !slot.inBraces;
       const quoted = quoteArgument(slot, option.value);
@@ -150,7 +156,9 @@ function argumentResult(
     ? values
     : [...filterOptions(values, slot.typed), ...(fetched ?? [])];
   if (offered.length === 0) return null;
-  const options = offered.map((o) => argumentOption(slot, line.from, o));
+  const options = offered.map((o, index) =>
+    argumentOption(slot, line.from, o, index),
+  );
   const ends =
     slot.optional &&
     !slot.inBraces &&

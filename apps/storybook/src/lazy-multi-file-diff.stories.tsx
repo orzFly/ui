@@ -4,16 +4,9 @@ import {
   PIERRE_THEME_TYPE,
   useSyntaxTheme,
 } from "@orz/ui-code";
-import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
-import { Suspense, useMemo } from "react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useMemo } from "react";
 import { withWidth } from "./decorators.tsx";
-
-/** A `<Suspense>` boundary, for the lazy `LazyMultiFileDiff`. */
-const withSuspense: Decorator = (Story) => (
-  <Suspense fallback={null}>
-    <Story />
-  </Suspense>
-);
 
 const OLD = `export function retry<T>(
   run: () => Promise<T>,
@@ -55,14 +48,17 @@ const options = useMemo(
   [theme],
 );
 
-<Suspense>
-  <LazyMultiFileDiff oldFile={oldFile} newFile={newFile} options={options} />
-</Suspense>;`;
+<LazyMultiFileDiff
+  oldFile={oldFile}
+  newFile={newFile}
+  options={options}
+  fallback={<p>Loading diff…</p>}
+/>;`;
 
 /**
- * pierre's `MultiFileDiff` behind `lazy()`, for a diff surface of your own that matches the blocks.
- * It needs a `<Suspense>` above it, and options that name `PIERRE_HIGHLIGHTER`: another
- * highlighter would split pierre's singleton.
+ * pierre's `MultiFileDiff` in a chunk of its own, for a diff surface of your own that matches the
+ * blocks. It draws `fallback` until the chunk arrives rather than suspending, and it needs options
+ * that name `PIERRE_HIGHLIGHTER`: another highlighter would split pierre's singleton.
  */
 const meta = {
   title: "ui-code/LazyMultiFileDiff",
@@ -72,7 +68,7 @@ const meta = {
     newFile: { name: "retry.ts", contents: NEW },
   },
   argTypes: { options: { control: false } },
-  decorators: [withSuspense, withWidth("max-w-3xl")],
+  decorators: [withWidth("max-w-3xl")],
 } satisfies Meta<typeof LazyMultiFileDiff>;
 
 export default meta;

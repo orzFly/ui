@@ -11,6 +11,7 @@ import {
 } from "@codemirror/view";
 import { cn } from "@orz/ui";
 import { useDirtySource } from "@orz/ui/lib/unsaved-guard";
+import { useTheme } from "@orz/ui/theme";
 import { useEffect, useImperativeHandle, useRef } from "react";
 import { compositionSafeMeasure } from "../extensions/composition-safe-measure.ts";
 import { parkedTooltip } from "../extensions/parked-tooltip.ts";
@@ -217,6 +218,11 @@ export function CodeEditor({
   const placeholderSlot = useRef(new Compartment()).current;
   const readOnlySlot = useRef(new Compartment()).current;
   const extensionsSlot = useRef(new Compartment()).current;
+  // CodeMirror's base theme picks its light or dark colours (snippet fields,
+  // the search panel) by this facet, and nothing else tells it the page is
+  // dark. Outside a ThemeProvider the scheme reads light.
+  const dark = useTheme().colorScheme === "dark";
+  const darkSlot = useRef(new Compartment()).current;
 
   // Read through the ref rather than the closure: the EditorView is a
   // different instance after a rebuild, and only the baseline has to survive
@@ -328,6 +334,7 @@ export function CodeEditor({
           }),
           placeholderSlot.of(placeholderExt(placeholder)),
           readOnlySlot.of(EditorState.readOnly.of(readOnly)),
+          darkSlot.of(EditorView.darkTheme.of(dark)),
           extensionsSlot.of(extensions ?? []),
         ],
       }),
@@ -353,6 +360,12 @@ export function CodeEditor({
       effects: readOnlySlot.reconfigure(EditorState.readOnly.of(readOnly)),
     });
   }, [readOnly, readOnlySlot]);
+
+  useEffect(() => {
+    view.current?.dispatch({
+      effects: darkSlot.reconfigure(EditorView.darkTheme.of(dark)),
+    });
+  }, [dark, darkSlot]);
 
   useEffect(() => {
     view.current?.dispatch({

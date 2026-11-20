@@ -1,6 +1,10 @@
-import { Checkbox } from "@orz/ui/components/checkbox";
+import {
+  Checkbox,
+  SelectSlot as SelectSlotView,
+} from "@orz/ui/components/checkbox";
 import { Label } from "@orz/ui/components/label";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { FileTextIcon } from "lucide-react";
 import { useState } from "react";
 
 const meta = {
@@ -93,4 +97,32 @@ export const SelectAll: Story = {
       </div>
     );
   },
+};
+
+/**
+ * A row's checkbox standing in for its icon: the icon while the row is idle, the box once it is
+ * revealed (the pointer on the row), checked, or focused from the keyboard.
+ */
+export const SelectSlot: Story = {
+  render: (args) => (
+    <div className="flex items-center gap-6">
+      <SelectSlotView
+        {...args}
+        aria-label="Select brief.md"
+        icon={<FileTextIcon className="size-4 text-muted-foreground" />}
+      />
+      <SelectSlotView
+        {...args}
+        aria-label="Select notes.md"
+        revealed
+        icon={<FileTextIcon className="size-4 text-muted-foreground" />}
+      />
+      <SelectSlotView
+        {...args}
+        aria-label="Select todo.md"
+        defaultChecked
+        icon={<FileTextIcon className="size-4 text-muted-foreground" />}
+      />
+    </div>
+  ),
 };

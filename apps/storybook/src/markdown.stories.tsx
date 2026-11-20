@@ -12,6 +12,7 @@ import type { ContentRenderer, ContentSource } from "@orz/ui-content";
 import {
   attachmentLinks,
   externalLinks,
+  imagePairs,
   Markdown,
   type MarkdownPlugin,
   MarkdownPluginsContext as MarkdownPluginsContextView,
@@ -212,6 +213,22 @@ const EMBED_PLUGINS = [
   attachmentLinks({ resolve }),
 ];
 const LINK_PLUGINS = [attachmentLinks({ resolve })];
+const PAIR_PLUGINS = [
+  imagePairs({ resolve }),
+  markdownEmbeds({ resolve }),
+  attachmentLinks({ resolve }),
+];
+
+const PAIRS_DOC = `The settings screen gained a field, and Save moved:
+
+![v1](files/settings-before.svg) → ![v2](files/settings-after.svg)
+
+Joined by \`->\` and named by their files, the two are Before and After:
+
+![settings-before.svg](files/settings-before.svg) -> ![settings-after.svg](files/settings-after.svg)
+
+In a sentence, ![v1](files/settings-before.svg) → ![v2](files/settings-after.svg) stay two images.
+`;
 const EXTERNAL_PLUGINS = [attachmentLinks({ resolve }), externalLinks()];
 
 const EXTERNAL_DOC = `Read [the guide](files/guide.md) here, or [the spec](https://example.com/spec)
@@ -343,6 +360,39 @@ An address that does not resolve stays an image:
 
 const CODE = withRenderers(codeContent);
 
+const LONG_FENCE = Array.from(
+  { length: 40 },
+  (_, i) => `  step${i + 1}: run ${i + 1}`,
+).join("\n");
+
+const FENCES_DOC = `A fence that names a file is headed by it, and the name downloads it:
+
+\`\`\`yaml compose.yaml
+services:
+  web:
+    image: nginx:1.27
+\`\`\`
+
+\`title="…"\` names one too:
+
+\`\`\`ts title="retry.ts"
+export const attempts = 3;
+\`\`\`
+
+A fence with only a language shows it, and Copy, on hover:
+
+\`\`\`sh
+pnpm install && pnpm test
+\`\`\`
+
+A long one scrolls inside its frame until Expand:
+
+\`\`\`yaml
+pipeline:
+${LONG_FENCE}
+\`\`\`
+`;
+
 // remark-gfm draws a task list's boxes as disabled, unlabelled <input>s, as
 // GitHub does: the item's text is the label a reader sees, but not one axe can
 // associate with the box.
@@ -421,6 +471,17 @@ const renderers = [attachmentCard(), imageContent(), markdownContent(), codeCont
   </AttachmentViewerProvider>
 </ContentRenderers>`;
 
+const PAIRS_SNIPPET = `import { AttachmentViewerProvider } from "@orz/ui-content/attachment";
+import { imagePairs, Markdown, markdownEmbeds } from "@orz/ui-markdown";
+
+// One resolver for every plugin; the embeds plugin leaves a pair to imagePairs.
+const plugins = [imagePairs({ resolve }), markdownEmbeds({ resolve })];
+
+// "![v1](a.png) → ![v2](b.png)", a paragraph of its own, is one comparison.
+<AttachmentViewerProvider>
+  <Markdown plugins={plugins}>{source}</Markdown>
+</AttachmentViewerProvider>`;
+
 const LINKS_SNIPPET = `import { attachmentLinks, Markdown } from "@orz/ui-markdown";
 
 // A link that resolves to a file becomes an AttachmentLink chip; boxed draws a border.
@@ -455,6 +516,7 @@ const meta = {
   args: { children: GFM },
   argTypes: { plugins: { control: false } },
   decorators: [withWidth("max-w-3xl")],
+  parameters: { guidelines: "/guidelines/patterns/code-blocks/" },
 } satisfies Meta<typeof Markdown>;
 
 export default meta;
@@ -471,6 +533,21 @@ export const FrontmatterToml: Story = { args: { children: FRONTMATTER_TOML } };
 
 export const Folds: Story = {
   args: { children: DETAILS },
+  decorators: [CODE],
+};
+
+/**
+ * Every fence sits in `@orz/ui-code`'s `FenceFrame`: Copy, its language, a filename the info
+ * string names (`yaml compose.yaml`, `title="…"`) as a download, and a cap on a long one.
+ */
+export const Fences: Story = {
+  args: { children: FENCES_DOC },
+  decorators: [CODE],
+};
+
+/** `collapseLongFences={false}` keeps every line of a long fence on the page, for a review. */
+export const CollapseLongFences: Story = {
+  args: { children: FENCES_DOC, collapseLongFences: false },
   decorators: [CODE],
 };
 
@@ -508,6 +585,17 @@ export const MarkdownEmbeds: Story = {
   render: (args) => <Markdown {...args} plugins={EMBED_PLUGINS} />,
   decorators: ATTACHMENTS,
   parameters: code(EMBEDS_SNIPPET),
+};
+
+/**
+ * A paragraph that is two images and an arrow, `![v1](a.png) → ![v2](b.png)`, is one comparison,
+ * its sides tagged by the alts. A click on either picture opens the document's pairs in the viewer.
+ */
+export const ImagePairs: Story = {
+  args: { children: PAIRS_DOC },
+  render: (args) => <Markdown {...args} plugins={PAIR_PLUGINS} />,
+  decorators: ATTACHMENTS,
+  parameters: code(PAIRS_SNIPPET),
 };
 
 /** Links to files become attachment chips that open the viewer; other links stay links. */

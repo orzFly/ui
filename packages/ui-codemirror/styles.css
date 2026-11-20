@@ -22,6 +22,17 @@
     padding-block: 0;
   }
 }
+/* A drawn row's own rule names one class more than a plain row's, so this
+   names one more again. The period's drop-down rows are as tight with an
+   icon as without. */
+.cm-tooltip.cm-tooltip.cm-tooltip-autocomplete
+  > ul
+  > li:is(.cm-completion-drawn, .cm-completion-face) {
+  @variant raymond {
+    min-height: 0;
+    padding-block: 1px;
+  }
+}
 .cm-tooltip-autocomplete.cm-tooltip-autocomplete > ul > li[aria-selected] {
   @variant raymond {
     background-color: var(--primary);

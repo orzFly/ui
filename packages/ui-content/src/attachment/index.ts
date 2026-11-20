@@ -6,6 +6,7 @@ export {
   type AttachmentCardOptions,
   attachmentCard,
 } from "./card-content.tsx";
+export type { CompareItem, ComparePair } from "./compare-canvas.tsx";
 export { DeletedAttachmentMark } from "./deleted.tsx";
 export { DocumentCard, type DocumentCardProps } from "./document-card.tsx";
 export { fileIcon } from "./icon.ts";
@@ -35,6 +36,7 @@ export {
   VideoPlayer,
   type VideoPlayerProps,
 } from "./media-player.tsx";
+export { sandboxedPage } from "./sandboxed-page.ts";
 export {
   AttachmentViewer,
   type AttachmentViewerControls,
@@ -43,7 +45,16 @@ export {
   type AttachmentViewerProviderProps,
   type AttachmentViewerState,
   type FileSource,
+  type InlineSource,
   useAttachmentViewer,
   useCanPreview,
   useViewHref,
+  type ViewerSource,
 } from "./viewer.tsx";
+export { useViewerImage, type ViewerImage } from "./viewer-image.ts";
+export {
+  CHECKER,
+  CORNER,
+  ZoomCanvas,
+  type ZoomCanvasProps,
+} from "./zoom-canvas.tsx";

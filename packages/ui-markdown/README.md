@@ -48,9 +48,13 @@ a different chain composes react-markdown with the `lib/*` pieces below.
 A `<pre>` holding one `<code>` is a code block. It renders inside
 `<div class="markdown-fence">`, which carries the `<pre>`'s classes and, under `rehypeSourceLines`,
 its `data-loc` stamp plus `data-loc-content-start`, the line the code starts on. Inside, the block is
-`<Content source={{ kind: "inline", text, lang }} placement="document">`: whichever renderer is
-registered draws it, and with none it is a plain `<pre><code>`. Registering `@orz/ui-code`'s
-`codeContent` highlights every fence:
+`<Content source={{ kind: "inline", text, lang, title, collapse }} placement="document">`: whichever
+renderer is registered draws it, and with none it is a plain `<pre><code>`. `title` is the filename
+the info string names after the language, read by `fenceTitle`: ```` ```yaml compose.yaml ```` or
+```` ```yaml title="compose.yaml" ````, while a first word holding `=` or opening on `{` names
+none. `collapse` is the `collapseLongFences` prop, on by default; off, a renderer keeps every long
+block whole, as a review that annotates lines needs. A document embedded in another follows its
+host's. Registering `@orz/ui-code`'s `codeContent` highlights every fence, in a frame with Copy:
 
 ```tsx
 import { codeContent } from "@orz/ui-code";
@@ -68,7 +72,8 @@ list.
 
 **Keep `plugins` stable**: a module constant, or a `useMemo`. A fresh array, or a fresh plugin object
 in it, makes react-markdown reparse the document and React remount every overridden element, and
-either one collapses a live text selection inside it.
+either one collapses a live text selection inside it. With the same text, plugins and class,
+`<Markdown>` does not render again at all: react-markdown keeps no parse cache.
 
 ## Writing a plugin
 
@@ -99,7 +104,8 @@ const anchors: MarkdownPlugin = {
       </a>
     ),
   },
-  // FenceProps: { code, lang, loc }; lang is the info string's first word as written.
+  // FenceProps: { code, lang, meta, loc }; lang is the info string's first word as written,
+  // meta the rest of it.
   fence: ({ Next, ...props }) =>
     props.lang === "todo" ? <TodoList text={props.code} /> : <Next {...props} />,
 };
@@ -153,6 +159,14 @@ function Doc({ source }: { source: string }) {
   is a `DeletedAttachmentMark` in either plugin, inline in its paragraph, rather than a link to
   nothing or a broken image. Using it means installing what
   `@orz/ui-content/attachment` needs (its README, "Attachments").
+- **`imagePairs({ resolve? })`** draws a paragraph, or a list item's opening line, that is exactly
+  two images with `→` or `->` between them as one `MediaCompare` from `@orz/ui-content/compare`.
+  Each side is tagged by its alt, or Before and After where the alt is empty or only the file's
+  name. `resolve` has `markdownEmbeds`' signature: a resolved file is drawn from its `url` and
+  named by its `name`, and one marked `deleted` is a side that failed. The paragraph becomes
+  `div.markdown-paragraph`, keeping its props. Within an `AttachmentViewerProvider`, a click on
+  either picture opens the pair with `openCompare`, paging through every pair the plugin draws in
+  document order. `markdownEmbeds` leaves a pair to it, in either order.
 - **`externalLinks({ origin? })`** opens a link to an http(s) address on another origin (default
   `window.location.origin`) in a new tab, with `rel="noopener noreferrer"`; `styles.css` draws a ↗
   after it, except on an image link. Relative, same-origin, fragment and `mailto:` links are left
@@ -167,12 +181,14 @@ refuses is drawn as source text before `resolve` sees it: use relative addresses
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `markdownContent`, `MARKDOWN_RENDER_MAX_CHARS`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
+| `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `imagePairs`, `markdownContent`, `MARKDOWN_RENDER_MAX_CHARS`, `fenceTitle`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
 | `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `parseMarkdown` |
 | `@orz/ui-markdown/lib/remark-frontmatter-table` | `remarkFrontmatterTable`, `frontmatterFields`, `FRONTMATTER_FLAVOURS`, node types |
 | `@orz/ui-markdown/lib/remark-rejected-urls` | `remarkRejectedUrlsAsText` |
 | `@orz/ui-markdown/lib/rehype-source-lines` | `rehypeSourceLines`, `SOURCE_LINE_ATTR`, `CODE_CONTENT_START_ATTR`, `parseSourceLoc` |
 | `@orz/ui-markdown/lib/rehype-details` | `rehypeDetails` |
+| `@orz/ui-markdown/lib/rehype-image-pairs` | `rehypeImagePairs`, `imagePairOf`, `isPairImage`, `pairLabel`, `PAIR_ATTR`, `PAIR_BEFORE_SRC_ATTR`, `PAIR_BEFORE_ALT_ATTR` |
+| `@orz/ui-markdown/lib/fence-meta` | `fenceTitle` |
 | `@orz/ui-markdown/styles.css` | the `.markdown-body` typography |
 
 The unified pieces are exported one by one so that code rebuilding the same tree outside React (an

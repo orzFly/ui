@@ -29,7 +29,7 @@ import {
 } from "../lib/tree-window.ts";
 import { cn } from "../lib/utils.ts";
 import { Button } from "./button.tsx";
-import { Checkbox } from "./checkbox.tsx";
+import { SelectSlot } from "./checkbox.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1640,7 +1640,9 @@ function Tree<T extends TreeNode<T>>({
         }}
         after={
           <>
-            {selectable && <SelectBox checked={isSelected} />}
+            {selectable && (
+              <SelectBox checked={isSelected} revealed={id === iconHover} />
+            )}
             {isRenaming && (
               <RenameField
                 initial={
@@ -2180,8 +2182,15 @@ function RenameField({
  * pointer is on, and on every row on touch once a selection is under way. Only drawn: a press
  * falls through to the item under it, which stays the link it is, and the treeitem's
  * `aria-selected` tells a screen reader. Measured, so it is not in a page rendered on the server.
+ * The icon stays the item's, which hides it where the box is drawn.
  */
-function SelectBox({ checked }: { checked: boolean }) {
+function SelectBox({
+  checked,
+  revealed,
+}: {
+  checked: boolean;
+  revealed: boolean;
+}) {
   const box = React.useRef<HTMLSpanElement>(null);
   const [place, setPlace] = React.useState<{ left: number; width: number }>();
 
@@ -2212,10 +2221,12 @@ function SelectBox({ checked }: { checked: boolean }) {
       aria-hidden
       data-slot="tree-select"
       data-placed={place ? "" : undefined}
-      className="pointer-events-none invisible absolute inset-y-0 flex items-center justify-center group-data-icon-hover/tree-row:visible group-data-selected/tree-row:visible touch:in-data-selecting:visible"
+      className="pointer-events-none absolute inset-y-0 flex items-center justify-center"
       style={place}
     >
-      {place && <Checkbox checked={checked} tabIndex={-1} />}
+      {place && (
+        <SelectSlot checked={checked} revealed={revealed} tabIndex={-1} />
+      )}
     </span>
   );
 }

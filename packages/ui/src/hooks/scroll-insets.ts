@@ -262,6 +262,7 @@ export function useScrollInsets({
     const root = document.documentElement;
     const observed = new Set<Element>();
     let observer: ResizeObserver | null = null;
+    let pressed: Node | null = null;
 
     const watch = (el: Element) => {
       if (observed.has(el)) return;
@@ -272,11 +273,15 @@ export function useScrollInsets({
       // A caret inside a sticky overlay always sits within that overlay's own
       // inset, and Chrome's caret reveal honours scroll-padding: it scrolled
       // the page on every typed character, the overlay riding along, so the
-      // caret was never "revealed". Nothing inside an overlay can be hidden
-      // behind it, so the one holding focus stops counting.
+      // caret was never "revealed". Every engine's drag-select autoscroll
+      // honours it too: a drag begun on an overlay's own text keeps the
+      // pointer in that inset, and the page ran to one end of the document.
+      // Nothing inside an overlay can be hidden behind it, so the one holding
+      // focus or the press under way stops counting.
       const focused = document.activeElement;
       const extent = (el: HTMLElement) =>
-        focused !== null && el.contains(focused)
+        (focused !== null && el.contains(focused)) ||
+        (pressed !== null && el.contains(pressed))
           ? 0
           : el.getBoundingClientRect().height;
       let overlays = 0;
@@ -303,6 +308,20 @@ export function useScrollInsets({
       root.style.scrollPaddingTop = `${topInset}px`;
       root.style.scrollPaddingBottom = `${bottomInset}px`;
     };
+    // Not a finger: iOS drags a selection handle with one touch pointerdown
+    // and sends no pointerup or pointercancel after it, which would leave the
+    // overlay uncounted until the next press. Nor a press of another button:
+    // its context menu may keep the pointerup from the page.
+    const press = (event: PointerEvent) => {
+      if (event.pointerType === "touch" || event.button !== 0) return;
+      pressed = event.target instanceof Node ? event.target : null;
+      measure();
+    };
+    const release = () => {
+      if (pressed === null) return;
+      pressed = null;
+      measure();
+    };
 
     observer =
       typeof ResizeObserver === "undefined"
@@ -318,6 +337,14 @@ export function useScrollInsets({
     vv?.addEventListener("scroll", measure);
     document.addEventListener("focusin", measure);
     document.addEventListener("focusout", measure);
+    const pointer = { capture: true, passive: true };
+    window.addEventListener("pointerdown", press, pointer);
+    window.addEventListener("pointerup", release, pointer);
+    window.addEventListener("pointercancel", release, pointer);
+    // A press held while the window loses focus (switching apps, a native
+    // dialog) ends with its pointerup delivered elsewhere, and until the next
+    // press any reveal could park its target behind the overlay.
+    window.addEventListener("blur", release);
     return () => {
       window.removeEventListener("resize", measure);
       window.removeEventListener(VIEWPORT_CHROME_EVENT, measure);
@@ -325,6 +352,10 @@ export function useScrollInsets({
       vv?.removeEventListener("scroll", measure);
       document.removeEventListener("focusin", measure);
       document.removeEventListener("focusout", measure);
+      window.removeEventListener("pointerdown", press, true);
+      window.removeEventListener("pointerup", release, true);
+      window.removeEventListener("pointercancel", release, true);
+      window.removeEventListener("blur", release);
       observer?.disconnect();
       root.style.removeProperty("scroll-padding-top");
       root.style.removeProperty("scroll-padding-bottom");

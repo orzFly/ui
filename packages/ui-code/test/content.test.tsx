@@ -11,6 +11,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { exceedsBytes } from "../src/capped-code-block.tsx";
 import { codeContent } from "../src/content.tsx";
+import { FENCE_COLLAPSE_LINES, FenceFrame } from "../src/fence-frame.tsx";
 
 // pierre is covered by code-block-degrade; here only what the renderer hands
 // CodeBlock matters, so the stand-in prints its props.
@@ -22,6 +23,8 @@ vi.mock("../src/code-block.tsx", async (importOriginal) => ({
     lineNumbers,
     plain,
     offThread,
+    copy,
+    bareFallback,
     className,
   }: {
     filename: string;
@@ -29,6 +32,8 @@ vi.mock("../src/code-block.tsx", async (importOriginal) => ({
     lineNumbers?: boolean;
     plain?: boolean;
     offThread?: boolean;
+    copy?: boolean;
+    bareFallback?: boolean;
     className?: string;
   }) => (
     <pre
@@ -37,6 +42,8 @@ vi.mock("../src/code-block.tsx", async (importOriginal) => ({
       data-line-numbers={String(lineNumbers ?? false)}
       data-plain={String(plain ?? false)}
       data-off-thread={String(offThread ?? false)}
+      data-copy={String(copy ?? true)}
+      data-bare={String(bareFallback ?? false)}
       className={className}
     >
       {contents}
@@ -304,11 +311,20 @@ describe("size cap", () => {
     expect(block.textContent).toBe(huge);
   });
 
+  it("tokenizes an inline source off the main thread", () => {
+    draw(inline("let a = 1;", "ts"));
+    const block = screen.getByTestId("code-block");
+    expect(block.dataset.plain).toBe("false");
+    // The first fence in a language compiles its grammar, which is what
+    // the worker spares the page; a fence keeps its natural height.
+    expect(block.dataset.offThread).toBe("true");
+    expect(block.className).toBe("");
+  });
+
   it("draws an inline source over the cap plain", () => {
     draw(inline(huge, "ts"));
     const block = screen.getByTestId("code-block");
     expect(block.dataset.plain).toBe("true");
-    expect(block.dataset.offThread).toBe("false");
     expect(block.textContent).toBe(huge);
   });
 });
@@ -324,5 +340,77 @@ describe("exceedsBytes", () => {
     expect(exceedsBytes("中中", 6)).toBe(false);
     expect(exceedsBytes("😀", 3)).toBe(true);
     expect(exceedsBytes("😀", 4)).toBe(false);
+  });
+});
+
+describe("an inline source's frame", () => {
+  const lines = (count: number) =>
+    Array.from({ length: count }, (_, i) => `line ${i + 1}`).join("\n");
+  const slot = (name: string) => document.querySelector(`[data-slot=${name}]`);
+
+  it("frames the block with its language and Copy, leaving the box to the frame", () => {
+    draw(inline("let a = 1;", "ts"));
+    const frame = slot("fence-frame");
+    const block = screen.getByTestId("code-block");
+    expect(frame?.contains(block)).toBe(true);
+    expect(slot("fence-tools")?.textContent).toContain("ts");
+    expect(screen.getByRole("button", { name: "Copy" })).toBeTruthy();
+    expect(block.dataset.copy).toBe("false");
+    expect(block.dataset.bare).toBe("true");
+  });
+
+  it("heads a block that names a file with a download of it", () => {
+    draw({ kind: "inline", text: "a: 1", lang: "yaml", title: "x.yaml" });
+    expect(slot("fence-head")?.querySelector('a[download="x.yaml"]')).not.toBe(
+      null,
+    );
+    expect(slot("fence-tools")).toBeNull();
+  });
+
+  it(`caps a block of ${FENCE_COLLAPSE_LINES + 1} lines behind Expand`, () => {
+    draw(inline(lines(FENCE_COLLAPSE_LINES + 1)));
+    expect(screen.getByRole("region", { name: "Code" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Expand" })).toBeTruthy();
+  });
+
+  it(`leaves a block of ${FENCE_COLLAPSE_LINES} lines whole`, () => {
+    draw(inline(lines(FENCE_COLLAPSE_LINES)));
+    expect(screen.queryByRole("region", { name: "Code" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
+  });
+
+  it("leaves a long block whole when its source says so", () => {
+    draw({
+      kind: "inline",
+      text: lines(FENCE_COLLAPSE_LINES + 1),
+      collapse: false,
+    });
+    expect(screen.queryByRole("region", { name: "Code" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
+  });
+
+  it("draws no frame of its own inside another surface's frame", () => {
+    render(
+      <ContentRenderers renderers={[codeContent]}>
+        <FenceFrame text="graph LR">
+          <Content
+            source={inline("graph LR", "mermaid")}
+            placement="document"
+          />
+        </FenceFrame>
+      </ContentRenderers>,
+    );
+    expect(document.querySelectorAll("[data-slot=fence-frame]")).toHaveLength(
+      1,
+    );
+    expect(screen.getAllByRole("button", { name: "Copy" })).toHaveLength(1);
+    expect(screen.getByTestId("code-block").dataset.bare).toBe("true");
+  });
+
+  it("frames no file", async () => {
+    draw(file("a.py", { load: async () => "print(1)" }));
+    const block = await screen.findByTestId("code-block");
+    expect(slot("fence-frame")).toBeNull();
+    expect(block.dataset.copy).toBe("true");
   });
 });

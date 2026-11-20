@@ -11,6 +11,8 @@ import guideText from "./attachment/guide.md?raw";
 import svgText from "./attachment/logo.svg?raw";
 import svgUrl from "./attachment/logo.svg?url&no-inline";
 import pdfUrl from "./attachment/paper.pdf?url&no-inline";
+import settingsAfterUrl from "./attachment/settings-after.svg?url&no-inline";
+import settingsBeforeUrl from "./attachment/settings-before.svg?url&no-inline";
 import spriteUrl from "./attachment/sprite.png?url&no-inline";
 import oggUrl from "./attachment/tone.ogg?url&no-inline";
 import seriesText from "./patch/series.patch?raw";
@@ -74,6 +76,19 @@ export const FILES: Record<string, FileSource> = {
     tsText,
   ),
   "bundle.zip": binary("bundle.zip", "application/zip", zipUrl, 182),
+  // Two versions of one screenshot, for comparing: the newer is taller.
+  "settings-before.svg": binary(
+    "settings-before.svg",
+    "image/svg+xml",
+    settingsBeforeUrl,
+    1704,
+  ),
+  "settings-after.svg": binary(
+    "settings-after.svg",
+    "image/svg+xml",
+    settingsAfterUrl,
+    2120,
+  ),
   "series.patch": textFile("series.patch", "text/x-patch", seriesText),
   // The CLI uploads code under a generic type; the name makes it a patch.
   "pause.diff": textFile("pause.diff", "application/octet-stream", PLAIN_DIFF),
@@ -99,6 +114,18 @@ export const MIXED = [
   "fetch-task.ts",
   "bundle.zip",
 ].map(file);
+
+/** A screenshot's two versions, with the natural sizes a comparison is drawn at. */
+export const SETTINGS_PAIR = {
+  before: {
+    file: file("settings-before.svg"),
+    size: { width: 720, height: 400 },
+  },
+  after: {
+    file: file("settings-after.svg"),
+    size: { width: 720, height: 460 },
+  },
+};
 
 export const PATCHES = ["series.patch", "pause.diff", "notes.patch"].map(file);
 

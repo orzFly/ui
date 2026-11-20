@@ -23,9 +23,9 @@ import { AudioPlayer, VideoPlayer } from "./media-player.tsx";
 import {
   type FileSource,
   useAttachmentViewer,
-  useViewerImage,
   useViewHref,
 } from "./viewer.tsx";
+import { useViewerImage } from "./viewer-image.ts";
 
 export type FrameContentOptions = {
   /** Where the frame loads the file from. Default: the provider's `viewHref`, else `url`. */
@@ -73,12 +73,9 @@ export function imageContent(): ContentRenderer {
         <ImageCanvas
           src={file.url}
           alt={file.name}
-          maximized={viewerImage.maximized}
           toolbar={titleBar}
           look={viewerImage.look}
           onLookChange={viewerImage.setLook}
-          lastHeight={viewerImage.lastHeight}
-          held={viewerImage.held}
           className={className}
         />
       );

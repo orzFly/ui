@@ -41,9 +41,11 @@ function redirectOf(html: string, search: string): string | undefined {
   return to;
 }
 
-function expectEveryRoute(dist: string) {
+function expectEveryRoute(dist: string, missing = "") {
   for (const route of routes) {
-    expect(existsSync(join(dist, route, "index.html")), route).toBe(true);
+    expect(existsSync(join(dist, route, "index.html")), route + missing).toBe(
+      true,
+    );
   }
   expect(existsSync(join(dist, "404.html"))).toBe(true);
 }
@@ -200,9 +202,12 @@ describe("a build under /ui/", () => {
     const docs = join(pkg, "docs");
     /** The Markdown links in `text`, without the ones inside code. */
     const linksIn = (text: string) =>
-      [...text.replace(/```[\s\S]*?```/g, "").matchAll(/\]\(([^)\s]+)\)/g)].map(
-        ([, url = ""]) => url,
-      );
+      [
+        ...text
+          .replace(/```[\s\S]*?```/g, "")
+          .replace(/`[^`\n]*`/g, "")
+          .matchAll(/\]\(([^)\s]+)\)/g),
+      ].map(([, url = ""]) => url);
     const site = siteUrl();
 
     it("writes every route's page into docs/", () => {
@@ -272,7 +277,13 @@ const built = join(APP, "dist");
 describe.skipIf(!existsSync(join(built, "index.html")))(
   "the built site",
   () => {
-    it("prerenders every route", () => expectEveryRoute(built));
+    // dist/ is whatever `pnpm build` last left behind, so a page added
+    // since then is missing from it without anything being wrong.
+    it("prerenders every route", () =>
+      expectEveryRoute(
+        built,
+        " (missing from apps/docs/dist: rebuild with `pnpm build` if the page is newer than the build)",
+      ));
 
     it("carries Storybook under storybook/", () => {
       expect(existsSync(join(built, "storybook/index.html"))).toBe(true);

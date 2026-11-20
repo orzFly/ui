@@ -3,7 +3,7 @@ import {
   type DiagramPalette,
   errorSummary,
   renderDiagram,
-  viewBoxWidth,
+  viewBoxSize,
 } from "../src/render.ts";
 
 const mermaid = vi.hoisted(() => ({
@@ -13,7 +13,7 @@ const mermaid = vi.hoisted(() => ({
     (_config: { themeVariables: { background: string } }) => {},
   ),
   parse: vi.fn(async (_source: string) => true),
-  render: vi.fn(async (id: string, _source: string) => ({
+  render: vi.fn(async (id: string, _source: string, _host?: Element) => ({
     svg: `<svg id="${id}" viewBox="0 0 120 40"></svg>`,
   })),
 }));
@@ -59,7 +59,12 @@ describe("renderDiagram", () => {
     });
 
     const drawn = await renderDiagram("flowchart LR\n A --> B", LIGHT, "sans");
-    expect(drawn).toEqual({ ok: true, svg: expect.any(String), width: 120 });
+    expect(drawn).toEqual({
+      ok: true,
+      svg: expect.any(String),
+      width: 120,
+      height: 40,
+    });
     expect(mermaid.imports).toBe(2);
   });
 
@@ -85,12 +90,45 @@ describe("renderDiagram", () => {
     ).toEqual(["#ffffff", "#000000"]);
     expect(mermaid.render).toHaveBeenCalledTimes(2);
   });
+
+  it("measures in a hidden fixed host of its own, removed once drawn", async () => {
+    let host: Element | undefined;
+    mermaid.render.mockImplementationOnce(async (id, _source, container) => {
+      host = container;
+      expect(container?.isConnected).toBe(true);
+      return { svg: `<svg id="${id}"></svg>` };
+    });
+    await renderDiagram("flowchart LR\n A", LIGHT, "sans");
+    if (!(host instanceof HTMLElement)) throw new Error("no host handed over");
+    // Hidden, not display: none: text is measured with getBBox().
+    expect(host.style.visibility).toBe("hidden");
+    expect(host.style.position).toBe("fixed");
+    expect(host.getAttribute("aria-hidden")).toBe("true");
+    expect(host.isConnected).toBe(false);
+  });
+
+  it("removes the host when drawing throws", async () => {
+    const before = document.body.childElementCount;
+    mermaid.render.mockImplementationOnce(async () => {
+      throw new Error("layout failed");
+    });
+    const result = await renderDiagram("flowchart LR\n A", LIGHT, "sans");
+    expect(result).toEqual({ ok: false, error: "layout failed" });
+    expect(document.body.childElementCount).toBe(before);
+  });
 });
 
 describe("mermaid helpers", () => {
-  it("reads the natural width off the viewBox", () => {
-    expect(viewBoxWidth('<svg viewBox="4 4 1360.5 164">')).toBe(1360.5);
-    expect(viewBoxWidth("<svg>")).toBe(0);
+  it("reads the natural size off the viewBox", () => {
+    expect(viewBoxSize('<svg viewBox="4 4 1360.5 164">')).toEqual({
+      width: 1360.5,
+      height: 164,
+    });
+    expect(viewBoxSize('<svg viewBox="0,0,10,20.5">')).toEqual({
+      width: 10,
+      height: 20.5,
+    });
+    expect(viewBoxSize("<svg>")).toEqual({ width: 0, height: 0 });
   });
 
   it("keeps a single-line error as it is", () => {

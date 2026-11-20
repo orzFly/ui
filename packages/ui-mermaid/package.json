@@ -34,7 +34,9 @@
   },
   "peerDependencies": {
     "@orz/ui": "workspace:^",
+    "@orz/ui-code": "workspace:^",
     "@orz/ui-content": "workspace:^",
+    "lucide-react": "^1",
     "react": "^19"
   },
   "dependencies": {
@@ -43,11 +45,14 @@
   "devDependencies": {
     "@orz/themes": "workspace:*",
     "@orz/ui": "workspace:*",
+    "@orz/ui-code": "workspace:*",
     "@orz/ui-content": "workspace:*",
+    "@pierre/diffs": "^1.6.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "happy-dom": "^21.0.3",
+    "lucide-react": "^1.31.0",
     "radix-ui": "^1.6.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

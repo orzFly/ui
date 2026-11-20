@@ -1,17 +1,21 @@
 import { builtinThemes } from "@orz/themes";
+import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { createThemeStore, ThemeProvider } from "@orz/ui/theme";
+import { codeContent, FENCE_COLLAPSE_LINES } from "@orz/ui-code";
 import {
   Content,
   type ContentRenderer,
   ContentRenderers,
   type ContentSource,
 } from "@orz/ui-content";
+import { AttachmentViewerProvider } from "@orz/ui-content/attachment";
 import {
   act,
   fireEvent,
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -21,8 +25,8 @@ import type { DiagramPalette } from "../src/render.ts";
 // mermaid itself cannot lay anything out under happy-dom (no getBBox), so the
 // renderer is the seam: these cases pin what the block does with each answer.
 const result = vi.hoisted(() => ({
-  next: { ok: true, svg: "", width: 0 } as
-    | { ok: true; svg: string; width: number }
+  next: { ok: true, svg: "", width: 0, height: 0 } as
+    | { ok: true; svg: string; width: number; height: number }
     | { ok: false; error: string },
 }));
 const renderDiagram = vi.hoisted(() =>
@@ -31,6 +35,9 @@ const renderDiagram = vi.hoisted(() =>
       result.next,
   ),
 );
+vi.mock("@orz/ui/lib/clipboard", () => ({
+  writeClipboard: vi.fn(async () => true),
+}));
 vi.mock("../src/render.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/render.ts")>()),
   renderDiagram,
@@ -99,7 +106,7 @@ async function drawn(container: HTMLElement) {
 
 describe("mermaid sources (T-523)", () => {
   it("draws the diagram, with its source one toggle away", async () => {
-    result.next = { ok: true, svg: SVG, width: 1360 };
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
     const container = mount(INLINE);
     await drawn(container);
     expect(renderDiagram).toHaveBeenCalledWith(
@@ -154,7 +161,7 @@ describe("mermaid sources (T-523)", () => {
   });
 
   it("re-renders when the theme changes", async () => {
-    result.next = { ok: true, svg: SVG, width: 1360 };
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
     const store = createThemeStore({
       storageKey: "test-theme",
       themes: builtinThemes,
@@ -192,10 +199,15 @@ describe("mermaid sources (T-523)", () => {
       () =>
         new Promise((resolve) => {
           finishOld = () =>
-            resolve({ ok: true, svg: '<svg data-old=""></svg>', width: 10 });
+            resolve({
+              ok: true,
+              svg: '<svg data-old=""></svg>',
+              width: 10,
+              height: 10,
+            });
         }),
     );
-    result.next = { ok: true, svg: SVG, width: 1360 };
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
     const view = (text: string) => (
       <ContentRenderers renderers={WITH_PROBE}>
         <Content
@@ -227,12 +239,79 @@ describe("mermaid sources (T-523)", () => {
   });
 
   it("puts className on the block's root", async () => {
-    result.next = { ok: true, svg: SVG, width: 1360 };
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
     const container = mount(INLINE, { className: "marked" });
     await drawn(container);
     const root = container.firstElementChild;
     expect(root?.classList.contains("marked")).toBe(true);
     expect(root?.classList.contains("relative")).toBe(true);
+  });
+});
+
+describe("a mermaid source's frame", () => {
+  const slot = (root: Element, name: string) =>
+    root.querySelector(`[data-slot=${name}]`);
+
+  it("keeps its toolbar up once drawn, and copies the source", async () => {
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
+    const container = mount(INLINE);
+    await drawn(container);
+    const tools = slot(container, "fence-tools") as HTMLElement;
+    expect(tools.hasAttribute("data-always")).toBe(true);
+    expect(within(tools).getByRole("button", { name: "Source" })).toBeTruthy();
+    expect(container.querySelectorAll("[data-slot=fence-frame]")).toHaveLength(
+      1,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    });
+    expect(writeClipboard).toHaveBeenCalledWith(DIAGRAM);
+  });
+
+  it("frames the source view a code renderer draws only once", async () => {
+    renderDiagram.mockImplementationOnce(() => new Promise(() => {}));
+    const container = mount(INLINE, {
+      renderers: [mermaidContent, codeContent],
+    });
+    await waitFor(() => {
+      expect(slot(container, "fence-frame")).not.toBeNull();
+    });
+    expect(container.querySelectorAll("[data-slot=fence-frame]")).toHaveLength(
+      1,
+    );
+    expect(screen.getAllByRole("button", { name: "Copy" })).toHaveLength(1);
+  });
+
+  it("heads a titled source with a download of it", async () => {
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
+    const container = mount({ ...INLINE, title: "flow.mmd" });
+    await drawn(container);
+    const head = slot(container, "fence-head") as HTMLElement;
+    expect(head.querySelector('a[download="flow.mmd"]')).not.toBeNull();
+    expect(within(head).getByRole("button", { name: "Source" })).toBeTruthy();
+  });
+
+  it("caps a long source, never the drawn diagram", async () => {
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
+    const text = Array.from(
+      { length: FENCE_COLLAPSE_LINES + 1 },
+      (_, i) => `  A${i} --> A${i + 1}`,
+    ).join("\n");
+    const container = mount({ ...INLINE, text: `flowchart LR\n${text}` });
+    await drawn(container);
+    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Source" }));
+    expect(screen.getByRole("button", { name: "Expand" })).toBeTruthy();
+  });
+
+  it("reads its palette inside the frame, off the colours it paints", async () => {
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
+    const container = mount(INLINE);
+    await drawn(container);
+    const diagram = container.querySelector(".mermaid-diagram");
+    expect(slot(container, "fence-frame")?.contains(diagram ?? null)).toBe(
+      true,
+    );
   });
 });
 
@@ -242,7 +321,7 @@ describe("mermaid files", () => {
   }
 
   it("shows the fallback while the file loads, then draws it", async () => {
-    result.next = { ok: true, svg: SVG, width: 1360 };
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
     let resolve: (text: string) => void = () => {};
     const pending = new Promise<string>((r) => {
       resolve = r;
@@ -275,7 +354,7 @@ describe("mermaid files", () => {
   });
 
   it("hands its source on without the file's final newline", async () => {
-    result.next = { ok: true, svg: SVG, width: 1360 };
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
     const container = mount(file(async () => `${DIAGRAM}\n`));
     await drawn(container);
     fireEvent.click(screen.getByRole("button", { name: "Source" }));
@@ -283,7 +362,7 @@ describe("mermaid files", () => {
   });
 
   it("offers Retry when the file fails to load", async () => {
-    result.next = { ok: true, svg: SVG, width: 1360 };
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
     const load = vi
       .fn<() => Promise<string>>()
       .mockRejectedValueOnce(new Error("503 Service Unavailable"))
@@ -322,6 +401,73 @@ describe("mermaidContent.accepts", () => {
   });
 });
 
+describe("a diagram in the viewer", () => {
+  const OPEN = { name: "Open in the viewer" };
+  // The viewer draws through the renderers too, so it sits inside them.
+  const mountInViewer = (source: ContentSource) =>
+    render(
+      <ContentRenderers renderers={WITH_PROBE}>
+        <AttachmentViewerProvider>
+          <Content source={source} placement="document" />
+        </AttachmentViewerProvider>
+      </ContentRenderers>,
+    ).container;
+
+  beforeEach(() => {
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(800);
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(600);
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("is offered only where a viewer is mounted", async () => {
+    const container = mount(INLINE);
+    await drawn(container);
+    expect(screen.queryByRole("button", OPEN)).toBeNull();
+  });
+
+  it("opens the diagram alone, zoomable, titled by the fence", async () => {
+    const container = mountInViewer({ ...INLINE, title: "flow.mmd" });
+    await drawn(container);
+    fireEvent.click(screen.getByRole("button", OPEN));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading").textContent).toBe("flow.mmd");
+    const canvas = await within(dialog).findByTestId("diagram-canvas");
+    await waitFor(() => {
+      expect(canvas.querySelector(".mermaid-drawing svg")).not.toBeNull();
+    });
+    expect(canvas.dataset.fit).toBeDefined();
+    // Zoom controls in the title bar, and no way to open it again from here.
+    expect(
+      within(dialog).getByRole("button", { name: "zoom in" }),
+    ).toBeTruthy();
+    expect(within(dialog).queryByRole("button", OPEN)).toBeNull();
+    expect(container.querySelector(".mermaid-diagram")).not.toBeNull();
+  });
+
+  it("is titled Diagram when the fence names no file", async () => {
+    const container = mountInViewer(INLINE);
+    await drawn(container);
+    fireEvent.click(screen.getByRole("button", OPEN));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading").textContent).toBe("Diagram");
+  });
+
+  it("shows the source and the error when the viewer's render fails", async () => {
+    const container = mountInViewer(INLINE);
+    await drawn(container);
+    result.next = { ok: false, error: "No diagram type detected" };
+    fireEvent.click(screen.getByRole("button", OPEN));
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      await within(dialog).findByText("No diagram type detected"),
+    ).toBeTruthy();
+    expect(within(dialog).getByTestId("probe").textContent).toBe(DIAGRAM);
+  });
+});
+
 // Runs last: the block keeps the first 2D context it gets, so the stub stays
 // in place for anything after it.
 describe("the palette", () => {
@@ -333,7 +479,7 @@ describe("the palette", () => {
       fillStyle: "",
       getImageData: () => ({ data: pixel }),
     } as unknown as CanvasRenderingContext2D);
-    result.next = { ok: true, svg: SVG, width: 1360 };
+    result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
 
     mount(INLINE);
     await waitFor(() => expect(renderDiagram).toHaveBeenCalledTimes(1));

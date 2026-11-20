@@ -2,10 +2,9 @@ import { CodeBlock, fenceFilename } from "@orz/ui-code";
 import { ClientOnly } from "./hydrated.tsx";
 
 /**
- * A highlighted block. CodeBlock reaches pierre through lazy(), which
- * renderToString cannot wait for, so the prerendered page carries the plain
- * text CodeBlock itself shows until pierre has coloured it, beside the space
- * its Copy button takes.
+ * A highlighted block. CodeBlock fetches pierre's chunk in the browser only,
+ * so the prerendered page carries the plain text CodeBlock itself shows until
+ * pierre has coloured it, beside the space its Copy button takes.
  */
 export function Code({ lang, contents }: { lang: string; contents: string }) {
   return (

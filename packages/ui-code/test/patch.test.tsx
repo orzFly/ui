@@ -12,7 +12,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { type ReactNode, type Ref, useImperativeHandle, useState } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { codeContent } from "../src/content.tsx";
 import { patchContent } from "../src/patch-content.tsx";
@@ -27,37 +27,61 @@ type Item =
       collapsed?: boolean;
     };
 
+/** Where the stand-in renderer says it is scrolled, and where it was sent. */
+const scroll = vi.hoisted(() => ({
+  top: 0,
+  itemTops: new Map<string, number>(),
+  scrolledTo: [] as unknown[],
+}));
+
 // The real parser runs (it is plain string work); only the renderer is a
 // stand-in that says what it was handed, header rows included. A code block
 // is a CodeView too, so the raw text shows up as a file item.
 vi.mock("@pierre/diffs/react", () => ({
-  CodeView: ({
+  CodeView: function CodeView({
+    ref,
     items,
+    options,
     className,
     renderCustomHeader,
   }: {
+    ref?: Ref<unknown>;
     className?: string;
+    options?: { stickyHeaders?: boolean };
     items: Item[];
     renderCustomHeader?: (item: Item) => ReactNode;
-  }) => (
-    <div data-testid="codeview" data-class={className ?? ""}>
-      {items.map((item) => (
-        <section key={item.id} data-item={item.id}>
-          <header>{renderCustomHeader?.(item)}</header>
-          {item.type === "diff" ? (
-            <div
-              data-diff={item.fileDiff.name}
-              data-collapsed={item.collapsed ? "" : undefined}
-            >
-              {item.id}
-            </div>
-          ) : (
-            <pre data-file={item.file.name}>{item.file.contents}</pre>
-          )}
-        </section>
-      ))}
-    </div>
-  ),
+  }) {
+    useImperativeHandle(ref, () => ({
+      scrollTo: (target: unknown) => scroll.scrolledTo.push(target),
+      getInstance: () => ({
+        getScrollTop: () => scroll.top,
+        getTopForItem: (id: string) => scroll.itemTops.get(id),
+      }),
+    }));
+    return (
+      <div
+        data-testid="codeview"
+        data-class={className ?? ""}
+        data-sticky-headers={options?.stickyHeaders ? "" : undefined}
+      >
+        {items.map((item) => (
+          <section key={item.id} data-item={item.id}>
+            <header>{renderCustomHeader?.(item)}</header>
+            {item.type === "diff" ? (
+              <div
+                data-diff={item.fileDiff.name}
+                data-collapsed={item.collapsed ? "" : undefined}
+              >
+                {item.id}
+              </div>
+            ) : (
+              <pre data-file={item.file.name}>{item.file.contents}</pre>
+            )}
+          </section>
+        ))}
+      </div>
+    );
+  },
   MultiFileDiff: () => null,
 }));
 
@@ -160,9 +184,7 @@ const cardHeader = () => {
 describe("PatchView", () => {
   it("draws one diff per file, behind a height cap", async () => {
     render(<PatchView filename="x.patch" text={TWO_FILES} />);
-    // The file's first diff suspends on the lazy CodeView, and React holds
-    // back a revealed Suspense boundary for 300 ms; with the file's first
-    // render on a loaded machine, that comes to ~1 s, the default wait.
+    // The first render on a loaded machine comes to ~1 s, the default wait.
     await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]), {
       timeout: 3000,
     });
@@ -173,13 +195,20 @@ describe("PatchView", () => {
     expect(cls).toMatch(/\boverflow-auto\b/);
   });
 
+  it("keeps each file's header pinned while the file scrolls under it", async () => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    const view = await screen.findByTestId("codeview");
+    expect(view.dataset.stickyHeaders).toBe("");
+  });
+
   it("lists the files with their counts and toggles to the raw text", async () => {
     render(<PatchView filename="x.patch" text={TWO_FILES} />);
     const summary = await screen.findByRole("button", { name: /2 files/ });
     expect(summary.textContent).toContain("+3");
     expect(summary.textContent).toContain("−1");
     fireEvent.click(summary);
-    expect(await screen.findByRole("button", { name: /b\.ts/ })).toBeTruthy();
+    const menu = within(await screen.findByRole("dialog"));
+    expect(menu.getByRole("button", { name: /b\.ts/ })).toBeTruthy();
 
     const raw = screen.getByRole("button", { name: "raw" });
     fireEvent.click(raw);
@@ -196,7 +225,8 @@ describe("PatchView", () => {
     await waitFor(() =>
       expect(document.querySelector('li[title="src/b.ts"]')).not.toBeNull(),
     );
-    expect(screen.queryByRole("button", { name: /b\.ts/ })).toBeNull();
+    const menu = within(await screen.findByRole("dialog"));
+    expect(menu.queryByRole("button", { name: /b\.ts/ })).toBeNull();
     expect(screen.getByTestId("codeview").getAttribute("data-class")).toMatch(
       /\boverflow-hidden\b/,
     );
@@ -337,6 +367,38 @@ describe("patchContent", () => {
     expect(screen.getByRole("button", { name: "raw" })).toBeTruthy();
   });
 
+  it("copies from the frame it draws, and not from a card's title bar", async () => {
+    const view = draw({ kind: "inline", text: TWO_FILES, lang: "diff" });
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    expect(screen.getByRole("button", { name: "Copy" })).toBeTruthy();
+    view.unmount();
+
+    draw(patchFile("x.patch", TWO_FILES), [attachmentCard(), ...RENDERERS]);
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
+  });
+
+  it("names a titled patch fence with a download of it", async () => {
+    draw({ kind: "inline", text: TWO_FILES, lang: "diff", title: "fix.patch" });
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    const link = document.querySelector('a[download="fix.patch"]');
+    expect(link?.textContent).toBe("fix.patch");
+    expect(screen.queryByText("patch")).toBeNull();
+  });
+
+  it("frames a fence that is not a patch, with Copy and its tag", async () => {
+    draw({ kind: "inline", text: "-old\n+new", lang: "patch" });
+    await waitFor(() =>
+      expect(document.querySelector("[data-file]")).not.toBeNull(),
+    );
+    const frame = document.querySelector("[data-slot=fence-frame]");
+    expect(frame?.querySelector("[data-file]")).not.toBeNull();
+    expect(
+      frame?.querySelector("[data-slot=fence-tools]")?.textContent,
+    ).toContain("patch");
+    expect(screen.getAllByRole("button", { name: "Copy" })).toHaveLength(1);
+  });
+
   it("says so when a patch file is not one, above its numbered text", async () => {
     draw(patchFile("x.patch", "just notes\n"));
     await screen.findByText("Not a valid patch — showing the text.");
@@ -382,6 +444,132 @@ describe("PatchView large files", () => {
       />,
     );
     await waitFor(() => expect(diffs()).toEqual(["state.json"]));
+    expect(collapsedDiffs()).toEqual([]);
+  });
+});
+
+describe("PatchView folding files", () => {
+  it("folds a file from its header and unfolds it again", async () => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    const collapse = await screen.findByRole("button", {
+      name: "Collapse src/a.ts",
+    });
+    expect(collapse.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(collapse);
+    expect(collapsedDiffs()).toEqual(["src/a.ts"]);
+    const expand = screen.getByRole("button", { name: "Expand src/a.ts" });
+    expect(expand).toBe(collapse);
+    expect(expand.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(expand);
+    expect(collapsedDiffs()).toEqual([]);
+  });
+
+  it("gives the only file nothing to fold", async () => {
+    render(<PatchView filename="x.patch" text={newFile("only.ts", 2)} />);
+    await waitFor(() => expect(diffs()).toEqual(["only.ts"]));
+    expect(screen.queryByRole("button", { name: /Collapse/ })).toBeNull();
+  });
+
+  it("unfolds a folded file the file list jumps to", async () => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Collapse src/b.ts" }),
+    );
+    expect(collapsedDiffs()).toEqual(["src/b.ts"]);
+    fireEvent.click(screen.getByRole("button", { name: /2 files/ }));
+    const menu = within(await screen.findByRole("dialog"));
+    fireEvent.click(menu.getByRole("button", { name: /b\.ts/ }));
+    expect(collapsedDiffs()).toEqual([]);
+  });
+
+  it("treats a large file's chevron like Load diff", async () => {
+    render(
+      <PatchView
+        filename="x.patch"
+        text={`${TWO_FILES}${newFile("state.json", LARGE_DIFF_LINES + 1)}`}
+      />,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Expand state.json" }),
+    );
+    expect(collapsedDiffs()).toEqual([]);
+    expect(screen.queryByRole("button", { name: "Load diff" })).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Collapse state.json" }),
+    );
+    expect(collapsedDiffs()).toEqual(["state.json"]);
+    expect(screen.getByRole("button", { name: "Load diff" })).toBeTruthy();
+  });
+
+  it("scrolls back to a file's header when folding it from partway down", async () => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    const collapse = await screen.findByRole("button", {
+      name: "Collapse src/a.ts",
+    });
+    const a = document.querySelector("[data-diff='src/a.ts']")?.textContent;
+    if (a == null) throw new Error("src/a.ts is not drawn");
+    scroll.itemTops = new Map([[a, 0]]);
+    scroll.scrolledTo = [];
+
+    scroll.top = 0;
+    fireEvent.click(collapse);
+    fireEvent.click(screen.getByRole("button", { name: "Expand src/a.ts" }));
+    expect(scroll.scrolledTo).toEqual([]);
+
+    scroll.top = 120;
+    fireEvent.click(screen.getByRole("button", { name: "Collapse src/a.ts" }));
+    expect(scroll.scrolledTo).toEqual([
+      { type: "item", id: a, align: "start" },
+    ]);
+    expect(collapsedDiffs()).toEqual(["src/a.ts"]);
+  });
+
+  it("does not scroll a clipped card back", async () => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} fit="clipped" />);
+    const collapse = await screen.findByRole("button", {
+      name: "Collapse src/a.ts",
+    });
+    const a = document.querySelector("[data-diff='src/a.ts']")?.textContent;
+    if (a == null) throw new Error("src/a.ts is not drawn");
+    scroll.itemTops = new Map([[a, 0]]);
+    scroll.scrolledTo = [];
+    scroll.top = 120;
+    fireEvent.click(collapse);
+    expect(scroll.scrolledTo).toEqual([]);
+    expect(collapsedDiffs()).toEqual(["src/a.ts"]);
+  });
+
+  it("keeps what was folded across the raw view", async () => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Collapse src/a.ts" }),
+    );
+    const raw = screen.getByRole("button", { name: "raw" });
+    fireEvent.click(raw);
+    fireEvent.click(raw);
+    expect(collapsedDiffs()).toEqual(["src/a.ts"]);
+  });
+
+  it("starts a different patch with every file unfolded", async () => {
+    const other = TWO_FILES.replaceAll("src/", "lib/");
+    function Swap() {
+      const [text, setText] = useState(TWO_FILES);
+      return (
+        <>
+          <button type="button" onClick={() => setText(other)}>
+            swap
+          </button>
+          <PatchView filename="x.patch" text={text} />
+        </>
+      );
+    }
+    render(<Swap />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Collapse src/a.ts" }),
+    );
+    expect(collapsedDiffs()).toEqual(["src/a.ts"]);
+    fireEvent.click(screen.getByRole("button", { name: "swap" }));
+    await waitFor(() => expect(diffs()).toEqual(["lib/a.ts", "lib/b.ts"]));
     expect(collapsedDiffs()).toEqual([]);
   });
 });

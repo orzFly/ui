@@ -14,6 +14,11 @@ export type FenceProps = {
   code: string;
   /** The info string's first word as written; undefined for an indented block. */
   lang: string | undefined;
+  /**
+   * The info string after its first word, as written (`compose.yaml`, `title="x.ts" {1,3}`);
+   * undefined when there is none. `fenceTitle` reads a filename out of it.
+   */
+  meta?: string;
   /** 1-based inclusive source lines of the whole block, markers included; null when unstamped. */
   loc: { start: number; end: number } | null;
 };

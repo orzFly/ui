@@ -4,11 +4,14 @@ import {
   type ComponentType,
   createContext,
   createElement,
+  memo,
   type Ref,
+  useContext,
   useMemo,
 } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import type { PluggableList } from "unified";
+import { fenceTitle } from "./lib/fence-meta.ts";
 import { MARKDOWN_SYNTAX_PLUGINS } from "./lib/markdown-processor.ts";
 import { rehypeDetails } from "./lib/rehype-details.ts";
 import {
@@ -33,14 +36,17 @@ export const MarkdownPluginsContext = createContext<
   readonly MarkdownPlugin[] | undefined
 >(undefined);
 
+/** Whether the nearest `<Markdown>` lets a long code block scroll in its frame. */
+const CollapseFencesContext = createContext(true);
+
 /**
- * Pull the code text and fence tag out of a `<pre>` element's hast node.
- * Returns null for shapes that aren't a plain fenced block, which then
- * keep the default `<pre>` rendering.
+ * Pull the code text, the fence tag and the info string after the tag out of
+ * a `<pre>` element's hast node. Returns null for shapes that aren't a plain
+ * fenced block, which then keep the default `<pre>` rendering.
  */
 function parseFence(
   pre: Element | undefined,
-): { text: string; tag?: string } | null {
+): { text: string; tag?: string; meta?: string } | null {
   const code = pre?.children.find(
     (child): child is Element =>
       child.type === "element" && child.tagName === "code",
@@ -61,15 +67,27 @@ function parseFence(
     )
     .map((child) => child.value)
     .join("");
+  const meta = code.data?.meta;
   // Fenced blocks always carry a trailing newline; a code renderer would
   // show it as an empty last line.
-  return { text: text.replace(/\n$/, ""), tag };
+  return {
+    text: text.replace(/\n$/, ""),
+    tag,
+    meta: typeof meta === "string" && meta !== "" ? meta : undefined,
+  };
 }
 
-function RegistryFence({ code, lang }: FenceProps) {
+function RegistryFence({ code, lang, meta }: FenceProps) {
+  const collapse = useContext(CollapseFencesContext);
   return (
     <Content
-      source={{ kind: "inline", text: code, lang }}
+      source={{
+        kind: "inline",
+        text: code,
+        lang,
+        title: fenceTitle(meta),
+        collapse,
+      }}
       placement="document"
     />
   );
@@ -127,7 +145,7 @@ function preFor(Fence: ComponentType<FenceProps>) {
           };
     return (
       <div {...wrapperProps}>
-        <Fence code={fence.text} lang={fence.tag} loc={loc} />
+        <Fence code={fence.text} lang={fence.tag} meta={fence.meta} loc={loc} />
       </div>
     );
   };
@@ -186,6 +204,12 @@ export type MarkdownProps = {
   plugins?: readonly MarkdownPlugin[];
   /** Added to the `.markdown-body` root. */
   className?: string;
+  /**
+   * Let a code block past `FENCE_COLLAPSE_LINES` scroll inside its frame, behind Expand (default:
+   * the enclosing document's choice, else on). Off where every line has to stay on the page: a
+   * review that annotates lines cannot reach one scrolled out of its frame.
+   */
+  collapseLongFences?: boolean;
   ref?: Ref<HTMLDivElement>;
 };
 
@@ -198,13 +222,21 @@ export type MarkdownProps = {
  * Keep `plugins` stable. A fresh array, or a fresh plugin object in it, makes react-markdown
  * reparse the document and React remount every overridden element, and either one collapses a live
  * text selection inside it (T-60).
+ *
+ * A re-render with the same text, plugins and class does nothing: react-markdown keeps no parse
+ * cache, and a host re-renders for reasons that never touch the text (each keystroke in a composer
+ * beside it), which on a long document cost a frame or more per key.
  */
-export function Markdown({
+export const Markdown = memo(function Markdown({
   children,
   plugins = NO_PLUGINS,
   className,
+  collapseLongFences,
   ref,
 }: MarkdownProps) {
+  // Unset, a document embedded in another follows its host.
+  const outerCollapse = useContext(CollapseFencesContext);
+  const collapseFences = collapseLongFences ?? outerCollapse;
   // The override map must be referentially stable across re-renders: every
   // entry is a component built here, and a fresh map makes React treat each
   // one as a NEW component type, unmounting and rebuilding those DOM
@@ -239,14 +271,16 @@ export function Markdown({
       className={className ? `markdown-body ${className}` : "markdown-body"}
     >
       <MarkdownPluginsContext.Provider value={plugins}>
-        <ReactMarkdown
-          remarkPlugins={remarkPlugins}
-          rehypePlugins={rehypePlugins}
-          components={components}
-        >
-          {children}
-        </ReactMarkdown>
+        <CollapseFencesContext.Provider value={collapseFences}>
+          <ReactMarkdown
+            remarkPlugins={remarkPlugins}
+            rehypePlugins={rehypePlugins}
+            components={components}
+          >
+            {children}
+          </ReactMarkdown>
+        </CollapseFencesContext.Provider>
       </MarkdownPluginsContext.Provider>
     </div>
   );
-}
+});

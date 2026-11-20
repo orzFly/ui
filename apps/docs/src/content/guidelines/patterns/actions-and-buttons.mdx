@@ -11,6 +11,10 @@ export const meta = {
     "ui/Primitives/Badge",
     "ui/ConfirmDialog",
     "ui/SelectionBar",
+    "ui/Primitives/Checkbox",
+    "ui/Hooks/useSelection",
+    "ui/Hooks/useSweepSelect",
+    "ui/SelectionAction",
   ],
 };
 
@@ -112,6 +116,37 @@ rest, and a full one clears. Escape inside the bar clears too, and the focus sta
   there: on a touch screen, once a row is selected a tap selects too, and the bar's **Clear
   selection** is the visible way back.
 - Select-all selects the rows the list holds now, never the ones still behind **Load more**.
+
+A list that is not a `Tree` keeps its selection in `useSelection`, which feeds the bar its count
+and its select-all, and drops a row from the selection the moment the row leaves the list, so an
+action never reaches a row the reader no longer sees.
+
+- Shift-click selects a range: every row from the last one clicked to this one takes this one's
+  new state, as in a file manager. The box's `onClick` carries Shift, and Space clicks it too.
+- A long list lets a mouse select many rows at once with `useSweepSelect`: a press on a box that
+  drags down the column of boxes selects every row it crosses, or clears them when the first box
+  was checked. It starts only on a box, so a drag across a row's text still selects the text, and
+  on touch the same drag still scrolls.
+- Where a row leads with an icon, a `SelectSlot` lets the checkbox stand in for it, as a `Tree`'s
+  does: the icon until the pointer is on the row, the box from then on and on every selected row,
+  and on touch on every row once anything is selected. The icon is the box's hit area, so a tap on
+  it selects.
+
+## Acting on selected text
+
+An action that takes the words the reader picked out, such as **Quote reply** on a comment, comes
+to the selection with `SelectionAction`: under its last line for a mouse, and on a touch screen
+as a bar along the window's foot, where the platform's own bubble cannot cover it. The Pull
+request demo quotes a comment into the reply box this way.
+
+- Register each place a selection means something, a comment's body, with `useSelectionRegion`.
+  A selection that runs out of it, into the comment's header or the next comment, offers nothing:
+  the action would not know whose words they are.
+- Offer one or two actions, the ones selecting the text was for. Copying is the platform's
+  already.
+- The floating action is a shortcut for a pointer. Where the keyboard needs the action too, keep
+  it in the comment's menu as well: selecting text from the keyboard leaves no pointer to press
+  it with.
 
 ## On each platform
 

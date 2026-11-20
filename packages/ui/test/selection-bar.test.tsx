@@ -66,3 +66,30 @@ describe("SelectionBar", () => {
     expect(checkbox().hasAttribute("disabled")).toBe(true);
   });
 });
+
+describe("SelectionBar with an icon", () => {
+  it("lets the checkbox stand in for the icon while the pointer is on the bar", () => {
+    render(
+      <SelectionBar
+        count={0}
+        total={3}
+        onSelectAll={() => {}}
+        onClear={() => {}}
+        icon={<svg data-testid="clip" />}
+        idle={<span>Files</span>}
+      />,
+    );
+    const slot = checkbox().closest("[data-slot=select-slot]");
+    expect(slot?.contains(screen.getByTestId("clip"))).toBe(true);
+    expect(slot?.hasAttribute("data-revealed")).toBe(false);
+    const bar = screen.getByText("Files").closest("[data-slot=selection-bar]");
+    if (!bar) throw new Error("no bar");
+    fireEvent.pointerEnter(bar, { pointerType: "mouse" });
+    expect(slot?.hasAttribute("data-revealed")).toBe(true);
+    fireEvent.pointerLeave(bar, { pointerType: "mouse" });
+    expect(slot?.hasAttribute("data-revealed")).toBe(false);
+    // A tap reveals nothing: on touch the icon is what is pressed.
+    fireEvent.pointerEnter(bar, { pointerType: "touch" });
+    expect(slot?.hasAttribute("data-revealed")).toBe(false);
+  });
+});

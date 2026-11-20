@@ -18,5 +18,13 @@
     max-width: none !important;
     height: auto;
   }
+  /* A drawing the box around it sizes: a comparison's side, or the viewer's
+     zoom at the diagram's natural size. */
+  .mermaid-drawing > svg {
+    display: block;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+  }
   /* biome-ignore-end lint/complexity/noImportantStyles: mermaid's inline style, see above */
 }

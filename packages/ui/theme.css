@@ -19,6 +19,22 @@
   }
 }
 
+/* Where the primary pointer can hover, for a control that waits for hover
+   to show. Not the opposite of touch: a fine pointer that cannot hover (some
+   styluses, a headless browser) never brings a hover-only control up
+   either, so the control has to stay shown there too. A data-pointer
+   ancestor forces either branch, as it does for touch. */
+@custom-variant can-hover {
+  @media (hover: hover) {
+    &:not([data-pointer="coarse"] *) {
+      @slot;
+    }
+  }
+  &:where([data-pointer="fine"] *) {
+    @slot;
+  }
+}
+
 /* A part's look under the raymond style, written beside its default classes
    rather than as an override in styles/raymond.css: the component knows what
    the part is for, and the stylesheet does not.

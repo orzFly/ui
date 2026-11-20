@@ -17,6 +17,12 @@ const PACKAGES = join(import.meta.dirname, "../..");
  */
 const ALLOWED: readonly { file: string; utility: string; reason: string }[] = [
   {
+    file: "ui-code/src/code-block.tsx",
+    utility: "text-[13px]",
+    reason:
+      "a framed block's plain text stands in for pierre's lines, set in pierre's own size so nothing shifts when they land",
+  },
+  {
     file: "ui/src/components/avatar.tsx",
     utility: "size-6",
     reason: "an avatar's sizes are its picture's, not a control's",
@@ -66,7 +72,7 @@ const ALLOWED: readonly { file: string; utility: string; reason: string }[] = [
       "the editor's popups tint their shadow from --foreground, which no shadow token does",
   },
   {
-    file: "ui-codemirror/src/extensions/paste-as.ts",
+    file: "ui-codemirror/src/extensions/editor-toolbar.ts",
     utility:
       "boxShadow: 0 4px 6px -1px color-mix(in oklab, var(--foreground) 12%, transparent)",
     reason:
@@ -81,6 +87,19 @@ const ALLOWED: readonly { file: string; utility: string; reason: string }[] = [
     file: "ui-content/src/attachment/media-player.tsx",
     utility: "shadow-md",
     reason: "the play glyph sits on the video, which no style draws",
+  },
+  {
+    file: "ui-content/src/attachment/compare-canvas.tsx",
+    utility: "shadow-[0_0_0_1px_rgb(0_0_0/0.65)]",
+    reason:
+      "the crosshair's dark ring keeps it visible on any picture; it is its drawing, not depth",
+  },
+  {
+    file: "ui-content/src/compare/media-compare.tsx",
+    utility:
+      "shadow-[0_0_0_1px_color-mix(in_oklab,var(--background)_70%,transparent)]",
+    reason:
+      "the swipe line's ring keeps it visible on any picture; it is its drawing, not depth",
   },
 ];
 

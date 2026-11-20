@@ -130,6 +130,92 @@ describe("the viewer's image", () => {
     }
   });
 
+  it("widens the dialog with the zoom, and gives the width back at fit", () => {
+    render(<Viewer items={[SHOT]} />);
+    const el = canvas();
+    Object.defineProperty(el, "clientWidth", { value: 800 });
+    Object.defineProperty(el, "clientHeight", { value: 600 });
+    load(el.querySelector("img") as HTMLImageElement);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.style.minWidth).toBe("");
+
+    // 0.5 → 0.625: the 1600px image is 1000px wide.
+    fireEvent.click(screen.getByLabelText("zoom in"));
+    expect(dialog.style.minWidth).toBe("min(100% - 2rem, 1000px)");
+
+    fireEvent.keyDown(window, { key: "0" });
+    expect(dialog.style.minWidth).toBe("");
+  });
+
+  it("holds the width with the height while the pointer is on the title-bar controls", () => {
+    render(<Viewer items={[SHOT, file("other.png", { mime: "image/png" })]} />);
+    const el = canvas();
+    Object.defineProperty(el, "clientWidth", { value: 800 });
+    Object.defineProperty(el, "clientHeight", { value: 600 });
+    load(el.querySelector("img") as HTMLImageElement);
+    const region = screen.getByLabelText("next attachment")
+      .parentElement as HTMLElement;
+    fireEvent.pointerEnter(region, { pointerType: "mouse" });
+    fireEvent.click(screen.getByLabelText("zoom in"));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.style.minWidth).toBe("");
+    fireEvent.pointerLeave(region, { pointerType: "mouse" });
+    fireEvent.keyDown(window, { key: "Shift" });
+    expect(dialog.style.minWidth).toBe("min(100% - 2rem, 1000px)");
+  });
+
+  it("gives the width back when paging to a file that is not an image", () => {
+    render(<Viewer items={[SHOT, file("notes.txt", { size: 5 })]} />);
+    const el = canvas();
+    Object.defineProperty(el, "clientWidth", { value: 800 });
+    Object.defineProperty(el, "clientHeight", { value: 600 });
+    load(el.querySelector("img") as HTMLImageElement);
+    fireEvent.click(screen.getByLabelText("zoom in"));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.style.minWidth).not.toBe("");
+    fireEvent.click(screen.getByLabelText("next attachment"));
+    expect(dialog.style.minWidth).toBe("");
+  });
+
+  it("measures again when its own commit resized the canvas", () => {
+    let observed: (() => void) | undefined;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          observed = callback;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    try {
+      render(<Viewer items={[SHOT]} />);
+      const el = canvas();
+      let width = 800;
+      // Laid out as a browser would: the height the canvas asks for is the
+      // height it gets, with no tween holding it.
+      Object.defineProperty(el, "clientWidth", { get: () => width });
+      Object.defineProperty(el, "clientHeight", {
+        get: () => Number.parseFloat(el.style.height) || 600,
+      });
+      const img = el.querySelector("img") as HTMLImageElement;
+      load(img);
+      expect(el.style.height).toBe("600px");
+
+      // Narrowed, the fitted image refits and asks for a shorter canvas,
+      // which the same commit gives it.
+      width = 400;
+      act(() => observed?.());
+      expect(el.style.height).toBe("300px");
+      expect(img.parentElement?.style.transform).toBe(
+        "translate(0px, 0px) scale(0.25)",
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("lets go of a held height at once on a key press", () => {
     render(<Viewer items={[SHOT, file("other.png", { mime: "image/png" })]} />);
     const el = canvas();

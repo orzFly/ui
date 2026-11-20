@@ -273,6 +273,11 @@ export function QueryBox<R>({
    * nothing highlighted Tab still falls back to the first *completion* and
    * never to an app row — an unaimed Tab means "finish the word I am
    * typing", and a whole past query is a long way from that.
+   *
+   * Only a completion above the submit row counts, one the typed word really
+   * matches. The key table under an empty word is there to be read; taking
+   * it unaimed turned a held Tab into `is:open is:open …` forever and left
+   * the box a focus trap. Without a match Tab moves focus on.
    */
   const acceptable = (
     from: number,
@@ -283,7 +288,10 @@ export function QueryBox<R>({
       const apply = at.source.apply?.(at.row);
       if (apply != null) return apply;
     }
-    for (const row of rows) if (row.kind === "completion") return row.row.apply;
+    for (const row of rows) {
+      if (row.kind === "submit") return null;
+      if (row.kind === "completion") return row.row.apply;
+    }
     return null;
   };
 

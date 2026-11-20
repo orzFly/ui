@@ -91,11 +91,17 @@ const READER_WINDOW_MS = 600;
  *
  * Once scrolling stops the header settles fully in or fully out, as Safari's
  * does; a header left half-cut reads as broken.
+ *
+ * `resetKey` brings the header back whenever it changes: an app shell that
+ * mounts this once passes the route's path, so every new page arrives with
+ * the header in view, as a full load would.
  */
 export function useAutoHideHeader(
   headerRef: RefObject<HTMLElement | null>,
   enabled: boolean,
+  resetKey?: unknown,
 ): void {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `resetKey` only restarts it
   useEffect(() => {
     const header = headerRef.current;
     if (!enabled || header === null) return;
@@ -181,5 +187,16 @@ export function useAutoHideHeader(
       root.removeAttribute("data-header-settling");
       announce();
     };
-  }, [headerRef, enabled]);
+  }, [headerRef, enabled, resetKey]);
+}
+
+/**
+ * A sticky `top` for a layer pinned `offset` pixels under the top of a header
+ * that `useAutoHideHeader` moves: the header follows the visual viewport
+ * (`--vv-top`) and slides away (`--header-hide`), and a layer that did not do
+ * the same would open a strip between the two. Pair it with
+ * `data-header-follow`, so the layer settles on the header's own transition.
+ */
+export function belowHeader(offset: number): string {
+  return `calc(${offset}px + var(--vv-top, 0px) - var(--header-hide, 0px))`;
 }

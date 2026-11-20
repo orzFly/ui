@@ -4,12 +4,15 @@ import type {
 } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
+import { TASK_PEOPLE, type TaskPerson } from "@orz/fixtures/tasks.ts";
 import {
   createCommandRegistry,
   type ParsedDraft,
   parseCommandLines,
   type ValueProviders,
 } from "@orz/query";
+import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
+import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -21,27 +24,58 @@ import {
   inCodeContext,
   inLiteralContext,
 } from "@orz/ui-codemirror/extensions/code-context";
-import { completionWith } from "@orz/ui-codemirror/extensions/completion";
+import {
+  completionRowClass,
+  completionWith,
+  reactOption,
+} from "@orz/ui-codemirror/extensions/completion";
 import { applyWithSpace } from "@orz/ui-codemirror/extensions/completion-space";
 import {
   commandCompletionSource,
   commandDecoration,
 } from "@orz/ui-codemirror/extensions/slash-commands";
+import {
+  stagedFileDrag,
+  useStagedFiles,
+} from "@orz/ui-codemirror/hooks/use-staged-files";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useMemo, useState } from "react";
+import { PaperclipIcon, XIcon } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { fn } from "storybook/test";
 import { withWidth } from "./decorators.tsx";
 
-const COMPLETION = `import { completionWith } from "@orz/ui-codemirror/extensions/completion";
+const COMPLETION = `import { completionRowClass, completionWith, reactOption } from "@orz/ui-codemirror/extensions/completion";
 import { applyWithSpace } from "@orz/ui-codemirror/extensions/completion-space";
+
+// CodeMirror owns the Completion shape, so whose row it is lives beside it.
+const people = new WeakMap<Completion, Person>();
 
 const mentions: CompletionSource = (context) => {
   const match = context.matchBefore(/@\\w*$/);
   if (match === null) return null;
-  return { from: match.from, options: logins.map((login) => ({ label: \`@\${login}\`, type: "mention", apply: applyWithSpace(\`@\${login}\`) })) };
+  const options = members.map((person) => {
+    const option = { label: \`@\${person.login}\`, detail: person.name, type: "mention", apply: applyWithSpace(\`@\${person.login}\`) };
+    people.set(option, person);
+    return option;
+  });
+  return { from: match.from, options };
 };
 
-<MarkdownEditor extensions={[completionWith([mentions]), mentionIcon]} />`;
+const avatar = reactOption(20, "cm-completionAvatar", (option) => {
+  const person = people.get(option);
+  return person === undefined ? null : (
+    <Avatar size="sm" aria-hidden>
+      <AvatarFallback>{person.name[0]}</AvatarFallback>
+    </Avatar>
+  );
+});
+
+<MarkdownEditor
+  extensions={completionWith([mentions], {
+    optionClass: (option) => (people.has(option) ? completionRowClass.drawn : ""),
+    addToOptions: [avatar],
+  })}
+/>`;
 
 const TAG_COMPLETION = `import { completionWith } from "@orz/ui-codemirror/extensions/completion";
 
@@ -100,7 +134,8 @@ const meta = {
     onSubmit: fn(),
     onCancel: fn(),
   },
-  argTypes: { extensions: { control: false } },
+  argTypes: { extensions: { control: false }, staging: { control: false } },
+  parameters: { guidelines: "/guidelines/patterns/writing-markdown/" },
 } satisfies Meta<typeof MarkdownEditor>;
 
 export default meta;
@@ -110,6 +145,122 @@ export const Playground: Story = {
   args: {
     initialValue:
       "# A heading\n\nSome **bold**, some _italic_, a [link](https://example.com) and `code`.\n\n> A quote\n",
+  },
+};
+
+/**
+ * `plain` mounts a native textarea instead of CodeMirror, read once at
+ * mount: the same handle, Mod-Enter and Escape, dirty tracking and paste and
+ * drop callbacks, without highlighting, completion or paste conversion.
+ */
+export const Plain: Story = {
+  args: {
+    plain: true,
+    initialValue: "A native textarea, for a reader who asked for one.\n",
+  },
+};
+
+const STAGED_FILES = `import { MarkdownEditor } from "@orz/ui-codemirror/components/markdown-editor";
+import { stagedFileDrag, useStagedFiles } from "@orz/ui-codemirror/hooks/use-staged-files";
+
+// Uploading is yours; nothing goes up until a send calls resolve.
+const staging = useStagedFiles({
+  upload: (file) => uploadFile(file), // resolves to { url, filename? }
+});
+
+<MarkdownEditor
+  staging={staging.editor}
+  onSubmit={async (text) => {
+    send(await staging.resolve(text)); // placeholders become the uploads' links
+    staging.clear();
+  }}
+/>
+{staging.staged.map((item) => (
+  <Button key={item.key} {...stagedFileDrag(item.key)} onClick={() => staging.remove(item.key)}>
+    {item.file.name}
+  </Button>
+))}
+<Button onClick={() => input.current?.click()}>Attach files</Button>
+<input ref={input} type="file" multiple hidden onChange={(e) => staging.stage(e.target.files ?? [])} />`;
+
+/**
+ * `staging` with `useStagedFiles`: paste, drop or attach a file and it goes
+ * into the text as a placeholder where the caret is, drawn as a chip the caret
+ * steps over. The buttons below list what the text places; one removes its
+ * file from the text, and dragging one into the text places it once more.
+ * Mod-Enter uploads (here, pretends to) and shows the text that would be sent.
+ */
+export const StagedFiles: Story = {
+  args: {
+    initialValue: "Here is the screenshot: ",
+    placeholder: "Paste or drop a file",
+  },
+  parameters: { docs: { source: { code: STAGED_FILES, language: "tsx" } } },
+  render: function Render(args) {
+    const staging = useStagedFiles({
+      upload: (file) =>
+        new Promise<{ url: string }>((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                url: `https://files.example/${encodeURIComponent(file.name)}`,
+              }),
+            300,
+          ),
+        ),
+    });
+    const input = useRef<HTMLInputElement>(null);
+    const [sent, setSent] = useState<string | null>(null);
+    return (
+      <div className="grid gap-3">
+        <MarkdownEditor
+          {...args}
+          staging={staging.editor}
+          onSubmit={async (text) => {
+            setSent(await staging.resolve(text));
+            staging.clear();
+          }}
+        />
+        <div className="flex flex-wrap gap-2">
+          {staging.staged.map((item) => (
+            <Button
+              key={item.key}
+              variant="outline"
+              size="sm"
+              aria-label={`Remove ${item.file.name}`}
+              onClick={() => staging.remove(item.key)}
+              {...stagedFileDrag(item.key)}
+            >
+              {item.file.name}
+              <XIcon data-icon="inline-end" />
+            </Button>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => input.current?.click()}
+          >
+            <PaperclipIcon data-icon="inline-start" />
+            Attach files
+          </Button>
+          <input
+            ref={input}
+            type="file"
+            multiple
+            hidden
+            onChange={(event) => {
+              staging.stage(event.target.files ?? []);
+              event.target.value = "";
+            }}
+          />
+        </div>
+        {sent !== null && (
+          <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">
+            {sent}
+          </pre>
+        )}
+      </div>
+    );
   },
 };
 
@@ -136,31 +287,57 @@ export const QuoteToggle: Story = {
   },
 };
 
-const PEOPLE = ["alice", "bob"];
+/**
+ * Two images with `→` or `->` between them, alone in a paragraph, get a green
+ * arrow: a renderer that knows the convention shows them as one comparison.
+ * Copy `![after](/after.png)` and paste it on the empty last line, and a
+ * toolbar under it offers to join it to the image above (Mod-. reaches it).
+ * Built into every MarkdownEditor.
+ */
+export const ImagePairs: Story = {
+  args: {
+    initialValue:
+      "![before](/before.png) → ![after](/after.png)\n\nNot a pair: see ![a](/a.png) -> ![b](/b.png) here.\n\n![before](/before.png)\n\n",
+  },
+};
+
+const people = new WeakMap<CompletionOption, TaskPerson>();
 
 const mentions: CompletionSource = (context) => {
   const match = context.matchBefore(/@\w*$/);
   if (match === null) return null;
-  const options: CompletionOption[] = PEOPLE.map((login) => ({
-    label: `@${login}`,
-    type: "mention",
-    apply: applyWithSpace(`@${login}`),
-  }));
+  const options: CompletionOption[] = TASK_PEOPLE.map((person) => {
+    const option: CompletionOption = {
+      label: `@${person.login}`,
+      detail: person.name,
+      type: "mention",
+      apply: applyWithSpace(`@${person.login}`),
+    };
+    people.set(option, person);
+    return option;
+  });
   return { from: match.from, options, validFor: /^@\w*$/ };
 };
 
-const mentionIcon = EditorView.theme({
-  ".cm-completionIcon-mention::after": {
-    content: "'@'",
-    color: "var(--primary)",
-  },
+const avatar = reactOption(20, "cm-completionAvatar", (option) => {
+  const person = people.get(option);
+  if (person === undefined) return null;
+  return (
+    <Avatar size="sm" aria-hidden>
+      <AvatarFallback>{person.name.slice(0, 1).toUpperCase()}</AvatarFallback>
+    </Avatar>
+  );
 });
 
-const completion = [completionWith([mentions]), mentionIcon];
+const completion = completionWith([mentions], {
+  optionClass: (option) => (people.has(option) ? completionRowClass.drawn : ""),
+  addToOptions: [avatar],
+});
 
 /**
- * Type `@` for the stub mention source. An accepted mention leaves a space
- * that punctuation typed next replaces.
+ * Type `@` for the stub mention source. A person's row draws an avatar with
+ * React (`reactOption`) where the type icon stands, in a taller row
+ * (`completionRowClass.drawn`). An accepted mention leaves a space that punctuation typed next replaces.
  */
 export const Completion: Story = {
   args: {

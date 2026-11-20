@@ -214,6 +214,31 @@ describe("pull-request", () => {
     );
   });
 
+  it("quotes text selected in a comment into the reply", async () => {
+    const container = await draw(PullRequest, WIDTHS.desktop);
+    const body = container.querySelector(
+      "ol[aria-label=Timeline] article p",
+    )?.firstChild;
+    if (!body?.textContent) throw new Error("no comment text");
+    const words = body.textContent.slice(0, 12);
+    await act(async () => {
+      const range = document.createRange();
+      range.setStart(body, 0);
+      range.setEnd(body, 12);
+      window.getSelection()?.removeAllRanges();
+      window.getSelection()?.addRange(range);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    const quote = [...document.querySelectorAll<HTMLElement>("button")].find(
+      (each) => each.textContent === "Quote reply",
+    );
+    await click(quote);
+    expect(
+      container.querySelector("form[aria-label=Comment] .cm-content")
+        ?.textContent,
+    ).toContain(`> ${words.trim()}`);
+  });
+
   it("says which repository tabs are not in the demo, and leads back", async () => {
     const container = await draw(PullRequest, WIDTHS.phone);
     expect(link(container, "Issues4")?.getAttribute("href")).toBe("#issues");
@@ -1201,6 +1226,25 @@ describe("tasks", () => {
     expect(closed).toBeDefined();
     await click(button(closed ?? document, "Undo"));
     expect(keys(container).slice(0, 2)).toEqual([a, b]);
+  });
+
+  it("selects a run of tasks with Shift", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    const [a, , c, d] = keys(container);
+    if (!a || !c || !d) throw new Error("too few tasks");
+    await select(container, a);
+    const box = row(container, c)?.querySelector("[role=checkbox]");
+    await act(async () =>
+      box?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, shiftKey: true }),
+      ),
+    );
+    expect(button(container, "Close 3 tasks")).toBeDefined();
+    expect(
+      row(container, d)
+        ?.querySelector("[role=checkbox]")
+        ?.getAttribute("aria-checked"),
+    ).toBe("false");
   });
 
   it("deletes only once the confirmation is accepted", async () => {

@@ -612,6 +612,9 @@ importers:
       '@lezer/highlight':
         specifier: ^1.2.3
         version: 1.2.5
+      '@orz/themes':
+        specifier: workspace:*
+        version: link:../themes
       '@orz/ui':
         specifier: workspace:^
         version: link:../ui
@@ -834,9 +837,15 @@ importers:
       '@orz/ui':
         specifier: workspace:*
         version: link:../ui
+      '@orz/ui-code':
+        specifier: workspace:*
+        version: link:../ui-code
       '@orz/ui-content':
         specifier: workspace:*
         version: link:../ui-content
+      '@pierre/diffs':
+        specifier: ^1.6.1
+        version: 1.6.1(@shikijs/themes@4.5.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/react':
         specifier: ^16.3.2
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -849,6 +858,9 @@ importers:
       happy-dom:
         specifier: ^21.0.3
         version: 21.0.3
+      lucide-react:
+        specifier: ^1.31.0
+        version: 1.59.0(@types/react@19.3.0)(react@19.3.1)
       radix-ui:
         specifier: ^1.6.7
         version: 1.8.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)

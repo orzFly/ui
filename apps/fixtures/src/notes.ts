@@ -34,7 +34,7 @@ flowchart TD
 | 502, 503 | yes | A proxy restarting |
 | 4xx | no | The request itself is wrong |
 
-\`\`\`ts
+\`\`\`ts retry.ts
 export async function retryOnce<T>(attempt: () => Promise<T>): Promise<T> {
   try {
     return await attempt();

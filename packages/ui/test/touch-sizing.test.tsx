@@ -74,6 +74,14 @@ describe("theme.css touch variant", () => {
     expect(block).toContain('&:where([data-pointer="coarse"] *)');
   });
 
+  it("defines can-hover by the hover media query, which data-pointer overrides", () => {
+    const start = THEME.indexOf("@custom-variant can-hover");
+    const block = THEME.slice(start, THEME.indexOf("\n}", start));
+    expect(block).toContain("@media (hover: hover)");
+    expect(block).toContain('&:not([data-pointer="coarse"] *)');
+    expect(block).toContain('&:where([data-pointer="fine"] *)');
+  });
+
   it("defines hit-area as a centred ::after of at least 44px", () => {
     const start = THEME.indexOf("@utility hit-area");
     const block = THEME.slice(start, THEME.indexOf("\n}", start));

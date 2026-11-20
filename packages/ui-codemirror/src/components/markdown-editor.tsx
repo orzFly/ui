@@ -2,6 +2,7 @@ import {
   copyLineDown,
   deleteLine,
   insertBlankLine,
+  isolateHistory,
   moveLineDown,
   moveLineUp,
   selectLine,
@@ -13,23 +14,27 @@ import {
 } from "@codemirror/language";
 import { selectNextOccurrence } from "@codemirror/search";
 import type { Extension } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { dropCursor, EditorView } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { parser as commonmarkParser, GFM } from "@lezer/markdown";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { imagePairs } from "../extensions/image-pairs.ts";
 import {
   handlePaste,
   pasteAs,
   prefetchPasteConverter,
 } from "../extensions/paste-as.ts";
 import { toggleQuote } from "../extensions/quote-toggle.ts";
+import { stagedTokenAtoms } from "../extensions/staged-token-atoms.ts";
+import { STAGED_FILE_TYPE } from "../extensions/staged-tokens.ts";
 import { trimTrailingSpaceOnEnter } from "../extensions/trim-trailing-space.ts";
 import {
   CodeEditor,
   type CodeEditorHandle,
   type CodeEditorPurpose,
 } from "./code-editor.tsx";
+import { PlainMarkdownEditor } from "./plain-markdown-editor.tsx";
 
 /**
  * GFM markdown, assembled straight from the Lezer parser rather than through
@@ -67,6 +72,76 @@ export type FileDragEvent = {
   preventDefault: () => void;
 };
 
+/**
+ * The text box as file staging sees it, whichever editor draws it: the
+ * CodeMirror view, or the textarea `plain` mounts.
+ */
+export type StagingSurface = {
+  /** Where the reader presses and types: what counts as touching the box. */
+  dom: HTMLElement;
+  doc: () => string;
+  /** `head` is the end the caret is on. */
+  selection: () => { from: number; to: number; head: number };
+  /** The document position under a viewport point, where one is known. */
+  posAtCoords: (x: number, y: number) => number | null;
+  /**
+   * Apply non-overlapping `changes`, positions in the current document, as
+   * one undo step where the editor allows it. A `cursor` (in the changed
+   * document) moves the caret there and scrolls to it.
+   */
+  change: (spec: {
+    changes: ReadonlyArray<{ from: number; to: number; insert?: string }>;
+    cursor?: number;
+    userEvent: string;
+  }) => void;
+};
+
+/**
+ * Where pasted, dropped and picked files go. `useStagedFiles` from
+ * `hooks/use-staged-files` implements it, and the editor only calls it.
+ * Each staged file sits in the text as a placeholder token
+ * (`extensions/staged-tokens`), which the editor keeps whole.
+ */
+export type EditorFileStaging = {
+  /** The box once mounted, null once it is gone. */
+  bind: (surface: StagingSurface | null) => void;
+  /** Every document change, programmatic ones included. */
+  sync: (doc: string) => void;
+  /** Whether `key` is a file this editor staged: only those are tokens. */
+  knows: (key: string) => boolean;
+  /** Takes the paste's files, if any, and then default-prevents it. */
+  paste: (event: ClipboardEvent, surface: StagingSurface) => void;
+  /** True when it took the drop; the editor's own drop then stays out. */
+  drop: (event: DragEvent, surface: StagingSurface) => boolean;
+  dragOver: (event: DragEvent) => void;
+};
+
+function viewSurface(view: EditorView): StagingSurface {
+  return {
+    dom: view.dom,
+    doc: () => view.state.doc.toString(),
+    selection: () => {
+      const { from, to, head } = view.state.selection.main;
+      return { from, to, head };
+    },
+    posAtCoords: (x, y) => view.posAtCoords({ x, y }),
+    change: ({ changes, cursor, userEvent }) =>
+      view.dispatch({
+        changes: [...changes],
+        ...(cursor === undefined
+          ? {}
+          : { selection: { anchor: cursor }, scrollIntoView: true }),
+        // An undo step of its own, so the next keystroke's undo cannot take
+        // a file with it, and one undo brings back exactly what a remove took.
+        annotations: isolateHistory.of("full"),
+        userEvent,
+      }),
+  };
+}
+
+/** One instance for every editor, so reconfiguring never rebuilds it. */
+const dropCursorExtension = dropCursor();
+
 export type MarkdownEditorProps = {
   /** Read once, at mount: the editor owns its document from then on. */
   initialValue?: string;
@@ -95,8 +170,21 @@ export type MarkdownEditorProps = {
   onPaste?: (event: FileClipboardEvent) => void;
   onDrop?: (event: FileDragEvent) => void;
   onDragOver?: (event: FileDragEvent) => void;
+  /**
+   * File staging, from `useStagedFiles`: a pasted, dropped or picked file
+   * goes into the text as a placeholder where the reader put it, drawn as a
+   * chip the caret steps over. Read at mount; it sees a paste or a drop
+   * before `onPaste` and `onDrop` do.
+   */
+  staging?: EditorFileStaging;
   /** Extra CodeMirror extensions, appended last so they can override. */
   extensions?: Extension;
+  /**
+   * A native textarea (`PlainMarkdownEditor`) in place of CodeMirror, with
+   * the same handle, keys and callbacks and none of the extensions. Read
+   * once, at mount: switching under an open draft would drop it.
+   */
+  plain?: boolean;
   /** What the editor is for, as `CodeEditor` takes it. Default `field`. */
   purpose?: CodeEditorPurpose;
   /** Height is the caller's business: pass the min-height/max-height here. */
@@ -156,14 +244,30 @@ export const markdownHighlightStyle = HighlightStyle.define([
  *
  * A formatted paste becomes Markdown (`pasteAs`), Mod-Shift-V pastes plain
  * text, Mod-Alt-V pastes as a quote, and Mod-Shift-. quotes or unquotes the
- * selected lines; `EditorShortcutsHelp` lists these keys.
+ * selected lines; `EditorShortcutsHelp` lists these keys. Two images with an
+ * arrow between them, alone in a paragraph, get a green arrow, and a paste or
+ * drop that lands one image beside another offers to join them that way
+ * (`imagePairs`).
  *
  * The document is deliberately *not* React state — the EditorView owns it and
  * callers read through the ref at submit time. onChange exists only for
  * derived flags; routing every keystroke through React would re-render the
  * caller's whole tree on every character.
+ *
+ * `plain` trades all of this for a native textarea, for a reader who would
+ * rather have the browser's own text box (a phone keyboard, a screen reader,
+ * a spell checker that only knows textareas).
  */
-export function MarkdownEditor({
+export function MarkdownEditor({ plain, ...props }: MarkdownEditorProps) {
+  const [textarea] = useState(plain ?? false);
+  return textarea ? (
+    <PlainMarkdownEditor {...props} />
+  ) : (
+    <CodeMirrorMarkdownEditor {...props} />
+  );
+}
+
+function CodeMirrorMarkdownEditor({
   initialValue,
   placeholder,
   ariaLabel,
@@ -176,15 +280,45 @@ export function MarkdownEditor({
   onPaste,
   onDrop,
   onDragOver,
+  staging,
   extensions,
   purpose,
   className,
   ref,
-}: MarkdownEditorProps) {
+}: Omit<MarkdownEditorProps, "plain">) {
   // Keymap and DOM handlers are built once but must always call today's
   // props, not the ones captured at mount.
-  const handlers = useRef({ onSubmit, onCancel, onPaste, onDrop, onDragOver });
-  handlers.current = { onSubmit, onCancel, onPaste, onDrop, onDragOver };
+  const handlers = useRef({
+    onSubmit,
+    onCancel,
+    onPaste,
+    onDrop,
+    onDragOver,
+    staging,
+  });
+  handlers.current = {
+    onSubmit,
+    onCancel,
+    onPaste,
+    onDrop,
+    onDragOver,
+    staging,
+  };
+
+  // Built once, like the handlers: a new instance would make the compartment
+  // rebuild the chips on every render.
+  const [tokenExtension] = useState(() =>
+    staging === undefined
+      ? []
+      : stagedTokenAtoms(
+          (key) => handlers.current.staging?.knows(key) ?? false,
+        ),
+  );
+  const bindView = useCallback(
+    (view: EditorView | null) =>
+      handlers.current.staging?.bind(view === null ? null : viewSurface(view)),
+    [],
+  );
 
   useEffect(() => {
     const prefetch = () => void prefetchPasteConverter().catch(() => {});
@@ -239,21 +373,43 @@ export function MarkdownEditor({
       ]}
       language={markdownLanguage}
       highlightStyle={markdownHighlightStyle}
-      onChange={onChange}
+      onView={bindView}
+      onChange={(value) => {
+        handlers.current.staging?.sync(value);
+        onChange?.(value);
+      }}
       extensions={[
         pasteAs(),
+        imagePairs(),
+        dropCursorExtension,
+        tokenExtension,
         EditorView.domEventHandlers({
-          // `onPaste` first: a paste it takes as files is default-prevented,
-          // and handlePaste then leaves it alone.
+          // Staging, then `onPaste`: a paste either takes as files is
+          // default-prevented, and handlePaste then leaves it alone. All
+          // three live in this one handler because the order of separate
+          // handlers is decided by extension precedence, not by position.
           paste: (event, view) => {
+            handlers.current.staging?.paste(event, viewSurface(view));
             handlers.current.onPaste?.(event);
             return handlePaste(view, event);
           },
-          drop: (event) => {
+          drop: (event, view) => {
+            const staging = handlers.current.staging;
+            if (staging?.drop(event, viewSurface(view))) return true;
+            // A staged file's drag means nothing to an editor that stages
+            // no files.
+            if (
+              staging === undefined &&
+              event.dataTransfer?.types.includes(STAGED_FILE_TYPE)
+            ) {
+              event.preventDefault();
+              return true;
+            }
             handlers.current.onDrop?.(event);
             return false;
           },
           dragover: (event) => {
+            handlers.current.staging?.dragOver(event);
             handlers.current.onDragOver?.(event);
             return false;
           },

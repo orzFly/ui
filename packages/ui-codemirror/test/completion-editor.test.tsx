@@ -492,6 +492,20 @@ function moveEditor(providers: ValueProviders) {
 }
 
 describe("the slash panel's arguments", () => {
+  it("keeps the values in the provider's order, not alphabetical", async () => {
+    const view = moveEditor({
+      status: {
+        options: [
+          { value: "Todo" },
+          { value: "In Progress" },
+          { value: "Done" },
+        ],
+      },
+    });
+    await panelFor(view.container, "/move ");
+    expect(labels(view.container)).toEqual(["Todo", "In Progress", "Done"]);
+  });
+
   it("moves on to the next argument after accepting one", async () => {
     const { requests, providers } = controlledSearch();
     const view = moveEditor(providers);

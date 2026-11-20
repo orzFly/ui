@@ -9,8 +9,8 @@ from either.
 
 <!-- generated:install by scripts/readme.ts: run `pnpm fmt` after changing a peer -->
 ```bash
-pnpm add @orz/ui-mermaid @orz/query @orz/themes @orz/ui @orz/ui-content lucide-react radix-ui \
-  react react-dom sonner
+pnpm add @orz/ui-mermaid @orz/query @orz/themes @orz/ui @orz/ui-code @orz/ui-content @pierre/diffs \
+  lucide-react radix-ui react react-dom sonner
 ```
 <!-- /generated -->
 
@@ -45,11 +45,21 @@ becomes, and files named `*.mmd` or `*.mermaid`, in either placement. Register i
 renderer that takes every inline source, such as a code renderer, since the first renderer that
 accepts wins.
 
-The source shows until the first render lands, in place of a diagram that does not parse (with a
-one-line summary of the parser's message under it), and behind the Source toggle. That source view
-is `Next`: the renderers registered after this one draw it, so it is highlighted when a code
-renderer is registered and a plain `<pre><code>` when none is. A file is loaded once: the source view gets its text as an inline
+The block sits in `@orz/ui-code`'s `FenceFrame`, with Copy and, once drawn, the Source toggle in
+a toolbar that never hides, since it is the only way to the source; an inline source's `title`
+heads the frame with a download of it. The source shows until the first render lands, in place of a
+diagram that does not parse (with a one-line summary of the parser's message under it), and behind
+the Source toggle; a long one is capped behind Expand as other fences are, the drawn diagram never.
+That source view is `Next`: the renderers registered after this one draw it, so it is highlighted
+when a code renderer is registered and a plain `<pre><code>` when none is. A file is loaded once: the source view gets its text as an inline
 source tagged `mermaid`. A file that fails to load shows the message and a Retry button.
+
+Within an `AttachmentViewerProvider` from `@orz/ui-content/attachment`, the toolbar of a drawn
+diagram also has **Open in the viewer**, which opens the block's source in the viewer as an inline
+source titled by its `title` (else "Diagram"). There this renderer draws the diagram alone in
+`ZoomCanvas`, zoomed and panned as an image is and redrawn as vectors at every zoom; one that does
+not parse is its source view and the parser's message. A file opened in the viewer is the block,
+with its Source toggle.
 
 ## `MermaidBlock`
 
@@ -62,7 +72,32 @@ import { MermaidBlock } from "@orz/ui-mermaid";
 <MermaidBlock source={text} sourceView={<MySourceView text={text} />} className="my-4" />
 ```
 
-`sourceView` defaults to a plain `<pre><code>`.
+`sourceView` defaults to a plain `<pre><code>`, and is drawn inside the frame. `title` heads the frame with a download of the source, and `collapsible` caps a long source behind Expand. `className` goes on the frame.
+
+## `MermaidCompare`
+
+Two versions of a diagram, side by side in `@orz/ui-content/compare`'s `MediaCompare`:
+
+```tsx
+import { MermaidCompare } from "@orz/ui-mermaid";
+
+<MermaidCompare before={oldText} after={newText} />
+<MermaidCompare before={oldText} after={newText} labels={{ before: "v1", after: "v2" }} title="flow.mmd" />
+```
+
+What changed is coloured as whole units, red on the older side and green on the newer: a sequence
+diagram's participants, messages (text, line, arrowhead and a band across the row) and
+conditions; a flowchart's nodes and edges, labelled or not. A message pairs with its twin by
+sender, receiver and text, and an edge by both ends and its label, all by the ids the source
+gives, so renaming a participant colours the participant alone. Any other diagram type boxes the
+labels with no partner on the other side. Past half the units changed, both sides draw plain,
+since the colour would no longer point at anything.
+
+`labels` defaults to Before and After, and `title` is named at the head. Until both renders are
+back, and when neither parses, the comparison is `@orz/ui-code`'s `CodeDiffBlock` of the two
+sources; the Source toggle switches to that diff and back. A side that does not parse shows the
+parser's message and its source. Within an `AttachmentViewerProvider`, either picture, or the
+toolbar's **Open in the viewer**, opens both in the viewer as drawings at one zoom, side by side.
 
 ## Theme
 
@@ -84,5 +119,5 @@ since some cache a failed module fetch for the life of the page. Labels go throu
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-mermaid` | `mermaidContent`, `MermaidBlock` |
-| `@orz/ui-mermaid/styles.css` | the `.mermaid-diagram` fit rule |
+| `@orz/ui-mermaid` | `mermaidContent`, `MermaidBlock`, `MermaidCompare` |
+| `@orz/ui-mermaid/styles.css` | the `.mermaid-diagram` fit rule, and the `.mermaid-drawing` one a box sizes |

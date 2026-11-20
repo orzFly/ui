@@ -156,6 +156,17 @@ describe("QueryBox · keyboard model", () => {
     expect(tab).toBe(true);
   });
 
+  it("leaves the key table under an empty word to be read, not taken on Tab", () => {
+    // Taking it unaimed made a held Tab write one key after another and kept
+    // focus in the box for good.
+    const box = mount();
+    box.type("");
+    expect(box.texts()).toContain("Search for “”");
+    const tab = box.key("Tab");
+    expect(box.input.value).toBe("");
+    expect(tab).toBe(true);
+  });
+
   it("takes an app row's `apply` on Tab when it is highlighted", () => {
     const box = mount({ sources: [history(["label:kind:bug 部署"])] });
     box.type("部");
