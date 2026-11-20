@@ -7,6 +7,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@orz/ui/components/dialog";
+import { Pane } from "@orz/ui/components/pane";
 import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -178,32 +179,41 @@ function TextSegments({ text, wrap }: { text: string; wrap: boolean }) {
     }
     return `${Math.ceil(longest * charWidth + 24)}px`;
   }, [wrap, segments, charWidth]);
+  // The well is the frame around the scroller, never the scroller: a scroller paints its text
+  // over its own inset shadow.
   return (
-    <div
-      ref={scroller}
-      data-slot="json-inspect-text"
-      className="min-h-0 flex-1 overflow-auto bg-background font-mono text-data text-foreground [contain:content] select-text"
+    <Pane
+      purpose="document"
+      className="flex min-h-0 flex-1 flex-col rounded-frame border bg-background"
     >
       <div
-        className="relative w-full"
-        style={{ height: virtualizer.getTotalSize(), width }}
+        ref={scroller}
+        data-slot="json-inspect-text"
+        className="min-h-0 flex-1 overflow-auto py-1 font-mono text-data text-foreground [contain:content] select-text"
       >
-        {virtualizer.getVirtualItems().map((item) => (
-          <div
-            key={item.key}
-            ref={wrap ? virtualizer.measureElement : undefined}
-            data-index={item.index}
-            className={cn(
-              "absolute top-0 left-0 px-3 leading-[1.5]",
-              wrap ? "w-full break-all whitespace-pre-wrap" : "whitespace-pre",
-            )}
-            style={{ transform: `translateY(${item.start}px)` }}
-          >
-            {segments[item.index]}
-          </div>
-        ))}
+        <div
+          className="relative w-full"
+          style={{ height: virtualizer.getTotalSize(), width }}
+        >
+          {virtualizer.getVirtualItems().map((item) => (
+            <div
+              key={item.key}
+              ref={wrap ? virtualizer.measureElement : undefined}
+              data-index={item.index}
+              className={cn(
+                "absolute top-0 left-0 min-h-lh px-3 leading-[1.5]",
+                wrap
+                  ? "w-full break-all whitespace-pre-wrap"
+                  : "whitespace-pre",
+              )}
+              style={{ transform: `translateY(${item.start}px)` }}
+            >
+              {segments[item.index]}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </Pane>
   );
 }
 
@@ -285,10 +295,10 @@ function InspectContent({
   return (
     <DialogContent
       data-slot="json-inspect"
-      className="h-[min(82dvh,55rem)] gap-0 p-0 sm:max-w-[min(70rem,92vw)]"
+      className="h-[min(82dvh,55rem)] sm:max-w-5xl"
     >
-      <div className="flex flex-none flex-col gap-1 border-b bg-muted px-4 py-3 pr-12 raymond:border-b-0 raymond:bg-transparent">
-        <DialogTitle className="flex flex-wrap items-center gap-2">
+      <div className="flex min-w-0 flex-col gap-1.5 pr-8">
+        <DialogTitle className="flex-wrap">
           {labels.inspectTitle}
           <Badge
             variant="outline"
@@ -297,7 +307,7 @@ function InspectContent({
             {kind}
           </Badge>
           {(isText || container) && (
-            <span className="font-mono text-muted-foreground text-ui-xs tabular-nums">
+            <span className="font-normal font-mono text-muted-foreground text-ui-xs tabular-nums">
               {isText ? labels.chars(formatChars(size)) : labels.items(size)}
             </span>
           )}
@@ -309,7 +319,7 @@ function InspectContent({
           {path}
         </DialogDescription>
       </div>
-      <div className="flex flex-none flex-wrap items-center gap-1 border-b px-3 py-1.5">
+      <div className="-my-2 flex flex-wrap items-center gap-1">
         <CopyButton
           text={() => (isText ? text : rawTextOf(value))}
           label={labels.copy}
@@ -370,15 +380,18 @@ function InspectContent({
         )}
       </div>
       {showTree ? (
-        <div className="flex min-h-0 flex-1 flex-col p-3">
+        <div className="flex min-h-0 flex-1 flex-col">
           {renderTree(container ? value : parsed?.value)}
         </div>
       ) : isText ? (
         <TextSegments text={text} wrap={wrap} />
       ) : (
-        <div className="min-h-0 flex-1 overflow-auto p-3 font-mono text-data select-text">
+        <Pane
+          purpose="document"
+          className="min-h-0 flex-1 overflow-auto rounded-frame border bg-background p-3 font-mono text-data select-text"
+        >
           <span className={VALUE_CLASS[kind]}>{String(value)}</span>
-        </div>
+        </Pane>
       )}
     </DialogContent>
   );

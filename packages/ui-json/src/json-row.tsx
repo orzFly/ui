@@ -242,12 +242,11 @@ function JsonRowViewImpl({
 
   if (row.kind === "comment") {
     return (
+      // biome-ignore lint/a11y/useFocusableInteractive: reached through the tree's aria-activedescendant; a focusable row would take a press's focus from the tree
       <div
         ref={measureRef}
         id={id}
         role="treeitem"
-        // Reached through the tree's aria-activedescendant, never tabbed to.
-        tabIndex={-1}
         aria-level={row.depth + 1}
         aria-disabled
         aria-selected={false}
@@ -278,12 +277,11 @@ function JsonRowViewImpl({
   const container = isContainer(row.kind);
   const hasKey = row.key !== null && row.index === null;
   return (
+    // biome-ignore lint/a11y/useFocusableInteractive: reached through the tree's aria-activedescendant; a focusable row would take a press's focus from the tree
     <div
       ref={measureRef}
       id={id}
       role="treeitem"
-      // Reached through the tree's aria-activedescendant, never tabbed to.
-      tabIndex={-1}
       aria-level={row.depth + 1}
       aria-expanded={row.expandable ? row.expanded : undefined}
       aria-selected={inBlock || valueSelected || keySelected}

@@ -651,9 +651,8 @@ function JsonViewBody({
     if (event.button !== 0 || event.pointerType === "touch") return;
     const hit = rowAt(event.target);
     if (!hit) return;
-    // A press makes a token selection, never a text selection, and leaves the focus on the tree.
-    event.preventDefault();
-    scroller.current?.focus({ preventScroll: true });
+    // The rows are select-none, so a press makes a token selection, never a text selection;
+    // the press itself focuses the tree, the nearest focusable element, as a mouse focuses one.
     press(hit.row, partOf(event.target as Element, hit.el), event.shiftKey);
     const anchor = selectionRef.current
       ? anchorOf(selectionRef.current)
@@ -665,7 +664,6 @@ function JsonViewBody({
       y: event.clientY,
       moved: false,
     };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
   const edgeScroll = () => {
@@ -706,6 +704,11 @@ function JsonViewBody({
     const path = hit.row.kind === "comment" ? hit.row.member : hit.row.path;
     if (path === session.last) return;
     session.last = path;
+    if (!session.moved) {
+      // Captured only once the drag leaves its row: a capture from the press would retarget
+      // its click to the tree, and a press on a value would no longer open it.
+      scroller.current?.setPointerCapture?.(session.pointerId);
+    }
     session.moved = true;
     setSelection(liftMembers(session.anchor, path));
   };

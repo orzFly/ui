@@ -1,0 +1,67 @@
+import { textFile } from "@orz/fixtures/files.ts";
+import requestJson5 from "@orz/fixtures/json/agent-request.json5?raw";
+import { codeContent } from "@orz/ui-code";
+import { Content } from "@orz/ui-content";
+import type { FileSource } from "@orz/ui-content/attachment";
+import { jsonContent } from "@orz/ui-json/content";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
+import type { CSSProperties } from "react";
+import { withRenderers, withWidth } from "./decorators.tsx";
+import { registrationSnippet } from "./snippets.ts";
+
+const REQUEST = textFile("request.json5", "application/json5", requestJson5);
+
+// The viewer sets the pane's height; on a docs page this stands in for it.
+const paneHeight: Decorator = (Story) => (
+  <div style={{ "--attachment-pane-height": "28rem" } as CSSProperties}>
+    <Story />
+  </div>
+);
+
+/**
+ * `jsonContent` in the registry: in a viewer, a `.json`, `.jsonc` or `.json5` file is drawn as a
+ * tree, its comments kept. Text that does not parse goes to the next renderer, under the error.
+ */
+const meta = {
+  title: "ui-json/Content",
+  parameters: {
+    layout: "padded",
+    docs: {
+      source: {
+        code: registrationSnippet({
+          renderers: [
+            ["@orz/ui-json/content", "jsonContent"],
+            ["@orz/ui-code", "codeContent"],
+          ],
+          uses: [["@orz/ui-content", "Content"]],
+          body: '<Content source={file} placement="viewer" />',
+        }),
+        language: "tsx",
+      },
+    },
+  },
+  decorators: [
+    paneHeight,
+    withWidth("max-w-3xl"),
+    withRenderers(jsonContent, codeContent),
+  ],
+  render: (args) => <Content source={args.source} placement="viewer" />,
+} satisfies Meta<{ source: FileSource }>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Json: Story = {
+  args: { source: REQUEST },
+};
+
+export const ParseError: Story = {
+  tags: ["edge", "!autodocs"],
+  args: {
+    source: textFile(
+      "broken.json",
+      "application/json",
+      '{\n  "model": "model-large",\n  "stream": true,\n}\n',
+    ),
+  },
+};
