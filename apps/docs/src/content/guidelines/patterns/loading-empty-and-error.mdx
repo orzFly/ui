@@ -19,6 +19,7 @@ import { FilteredNotes } from "../../../examples/loading-empty-and-error/filtere
 import { InboxList } from "../../../examples/loading-empty-and-error/inbox-list.tsx";
 import { ListStates } from "../../../examples/loading-empty-and-error/list-states.tsx";
 import { PageSpinner } from "../../../examples/loading-empty-and-error/page-spinner.tsx";
+import { SettingsSections } from "../../../examples/loading-empty-and-error/settings-sections.tsx";
 import { SkeletonShapedLikeContent } from "../../../examples/loading-empty-and-error/skeleton-shaped-like-content.tsx";
 
 **Every surface that loads has four states, and each one looks like itself: a skeleton while it
@@ -63,7 +64,10 @@ the read runs, and the notes arrive.
 | Loading, short (under about half a second) | Nothing new; show the skeleton only after a short delay, so a fast load does not flash | `Skeleton` |
 | Loaded, nothing there | What would be here, why it is empty, and the action that fills it | `EmptyState` |
 | Loaded, nothing matches a filter | That the filter hid everything, and a way to clear it | `EmptyState` |
-| Failed, nothing to show | The error, the server's own words in `detail`, and **Retry** | `LoadFailure` |
+| Loaded, but not set up yet | What is missing, and the action that sets it up | `EmptyState` |
+| No permission to see it | What is held back, and how to get access when there is a way | `EmptyState` |
+| Failed, nothing to show, in a line or a list | The error, the server's own words in `detail`, and **Retry** | `LoadFailure` |
+| Failed, nothing to show, filling a pane or a page | What failed as the title, the server's own words below it, and **Retry** | `EmptyState` with `tone="destructive"` |
 | Refresh failed, older data still shown | That the data is stale, and **Retry** | `RefreshFailure` |
 | Loading more of a list | A **Load more** button that turns into its own failure and retry | `LoadMoreFooter` with `usePagedAppend` |
 
@@ -79,6 +83,21 @@ writing one; "No notes match" invites clearing the filter.
 
 Add **#release** to **#ci**: no note has both, and the list says so with **Clear filter** rather
 than "No notes yet".
+
+## Filling the space or sharing it
+
+An `EmptyState` that is the only thing in its pane, list or page stands vertical, centred in the
+space. One that shares its space with other content, such as a section of a settings page, a
+sidebar group or a card among other cards, lies on one row with `orientation="horizontal"`, so it
+takes no more height than the content it stands in for.
+
+An icon and a title are a whole empty state. Add the description only when the title leaves the
+reader asking why, and the action only when there is a next step.
+
+<Example of={SettingsSections} />
+
+The failed section keeps the same row and says what failed in its title. The red is not what tells
+it apart from the empty sections: the title and **Retry** do that.
 
 <Example of={InboxList} />
 
