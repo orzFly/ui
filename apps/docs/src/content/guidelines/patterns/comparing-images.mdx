@@ -1,9 +1,14 @@
 export const meta = {
   title: "Comparing images",
   description:
-    "MediaCompare for two versions of a picture in the page: side by side, swipe, onion skin or difference, at one scale.",
+    "MediaCompare for two versions of a picture in the page: side by side, swipe, onion skin or difference, at one scale; an author's image pair in Markdown, and MermaidCompare for a diagram.",
   order: 38,
-  api: ["ui-content/MediaCompare", "ui-content/AttachmentViewerProvider"],
+  api: [
+    "ui-content/MediaCompare",
+    "ui-content/AttachmentViewerProvider",
+    "ui-markdown/Markdown",
+    "ui-mermaid/MermaidCompare",
+  ],
 };
 
 import { SettingsRedesign } from "../../../examples/comparing-images/settings-redesign.tsx";
@@ -59,3 +64,21 @@ holds them all.
 
 A side drawn as a node rather than an image file, such as a diagram's SVG, zooms as vectors and
 always sits left and right of its twin, side by side being its only mode.
+
+## Pairs an author writes
+
+In Markdown, an author compares two images by giving them a paragraph of their own with an arrow
+between them, `![v1](before.png) → ![v2](after.png)` (or `->`). Register `imagePairs` with the
+same `resolve` as `markdownEmbeds` and that paragraph is one `MediaCompare`, tagged by the two
+alts, or Before and After where an alt is only the file's name. Anywhere else, in a sentence or
+with a third image, the images stay images: the author chose the pair, so never pair images for
+them. Under an `AttachmentViewerProvider` a click opens the document's pairs in the viewer, in
+reading order.
+
+## Diagrams
+
+A changed diagram is compared as a picture too: `MermaidCompare` draws both versions of a mermaid
+source side by side, and colours what changed, the participant renamed or the node added, rather
+than leaving the reader to spot it. Use it where the two sources are at hand, such as a review of a
+document's versions; a source diff is one toggle away, and is what shows until both are drawn.
+A diagram on its own opens in the viewer from its block's toolbar, to be zoomed as an image is.

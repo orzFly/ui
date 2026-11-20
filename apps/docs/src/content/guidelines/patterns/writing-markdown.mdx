@@ -42,10 +42,12 @@ paste are learned once: Mod-Enter sends, Escape cancels, and a formatted paste b
 
 ## Two images, compared
 
-An author who puts two images in a paragraph of their own with `→` between them, a before and an
-after, means them to be compared. The editor colours the arrow when the paragraph reads as a pair,
-and offers to join two screenshots pasted one after the other; a renderer that knows the
-convention shows them side by side. Leave the pair to the author: never join images for them.
+An author who puts two images in a paragraph of their own with `→` (or `->`) between them,
+`![before](a.png) → ![after](b.png)`, means them to be compared. The editor colours the arrow when
+the paragraph reads as a pair, and offers to join two screenshots pasted one after the other;
+wherever the text is read, register `imagePairs` so the pair is shown as one comparison, as
+[Comparing images](/guidelines/patterns/comparing-images/) describes. Leave the pair to the
+author: never join images for them.
 
 ## People and values in completion
 

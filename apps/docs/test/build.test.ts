@@ -200,9 +200,12 @@ describe("a build under /ui/", () => {
     const docs = join(pkg, "docs");
     /** The Markdown links in `text`, without the ones inside code. */
     const linksIn = (text: string) =>
-      [...text.replace(/```[\s\S]*?```/g, "").matchAll(/\]\(([^)\s]+)\)/g)].map(
-        ([, url = ""]) => url,
-      );
+      [
+        ...text
+          .replace(/```[\s\S]*?```/g, "")
+          .replace(/`[^`\n]*`/g, "")
+          .matchAll(/\]\(([^)\s]+)\)/g),
+      ].map(([, url = ""]) => url);
     const site = siteUrl();
 
     it("writes every route's page into docs/", () => {
