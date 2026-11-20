@@ -67,7 +67,7 @@ the read runs, and the notes arrive.
 | Loaded, but not set up yet | What is missing, and the action that sets it up | `EmptyState` |
 | No permission to see it | What is held back, and how to get access when there is a way | `EmptyState` |
 | Failed, nothing to show, in a line or a list | The error, the server's own words in `detail`, and **Retry** | `LoadFailure` |
-| Failed, nothing to show, filling a pane or a page | What failed as the title, the server's own words below it, and **Retry** | `EmptyState` with `tone="destructive"` |
+| Failed, nothing to show, filling a pane or a page | What failed as the title, the server's own words below it, and **Retry** | `LoadFailure` with `orientation` |
 | Refresh failed, older data still shown | That the data is stale, and **Retry** | `RefreshFailure` |
 | Loading more of a list | A **Load more** button that turns into its own failure and retry | `LoadMoreFooter` with `usePagedAppend` |
 
@@ -96,7 +96,8 @@ reader asking why, and the action only when there is a next step.
 
 <Example of={SettingsSections} />
 
-The failed section keeps the same row and says what failed in its title. The red is not what tells
+The failed section is a `LoadFailure` with `orientation="horizontal"`: it keeps the same row as
+the empty ones and says what failed in its title. The red is not what tells
 it apart from the empty sections: the title and **Retry** do that.
 
 <Example of={InboxList} />
@@ -109,8 +110,9 @@ loads only that page.
 
 A failure does not recover by itself, so its way out is a control, not a promise to try again
 later. **Retry** reruns only the read that failed, and is disabled while it runs. When an overlay
-opened from a failed surface closes, send focus to its **Retry** through `LoadFailure`'s
-`retryRef`: the overlay's own trigger may be gone.
+opened from a failed surface closes, send focus to its **Retry** through `retryRef`: the overlay's
+own trigger may be gone. `LoadFailure` wires both in every orientation, so a failure that fills
+a pane is a `LoadFailure` too, not an `EmptyState` with a **Retry** of its own.
 
 ## On each platform
 

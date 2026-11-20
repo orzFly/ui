@@ -1,6 +1,7 @@
-import type { ReactNode, Ref } from "react";
+import type { ComponentProps, ReactNode, Ref } from "react";
 import { cn } from "../lib/utils.ts";
 import { Button } from "./button.tsx";
+import { EmptyState } from "./empty-state.tsx";
 
 /**
  * `LoadFailure` occupies a surface that has nothing to display;
@@ -15,6 +16,12 @@ import { Button } from "./button.tsx";
  * size would strand the message at body scale next to a proportioned button;
  * `sm` stays inheriting for body-scale surfaces. `className` merges last for
  * margins and one-off adjustments.
+ *
+ * `orientation` draws `LoadFailure` as an `EmptyState` in the destructive tone instead of the
+ * line, for a failure that fills its pane (`vertical`) or stands for a section among others
+ * (`horizontal`): `icon` for the place, `message` as its title and `detail` shown beneath it,
+ * since a pane has the room a line lacks and a touch screen has no hover to show a `title`.
+ * `size` applies to the line only; `EmptyState` sizes its own text per orientation.
  */
 function FailureRow({
   message,
@@ -65,6 +72,8 @@ export function LoadFailure({
   retrying,
   retryRef,
   size = "sm",
+  orientation,
+  icon,
   className,
 }: {
   message: ReactNode;
@@ -78,8 +87,35 @@ export function LoadFailure({
    */
   retryRef?: Ref<HTMLButtonElement>;
   size?: "sm" | "xs";
+  orientation?: ComponentProps<typeof EmptyState>["orientation"];
+  icon?: ComponentProps<typeof EmptyState>["icon"];
   className?: string;
 }) {
+  if (orientation) {
+    return (
+      <EmptyState
+        role="status"
+        orientation={orientation}
+        tone="destructive"
+        icon={icon}
+        title={message}
+        action={
+          <Button
+            ref={retryRef}
+            variant="outline"
+            size="sm"
+            onClick={onRetry}
+            disabled={retrying}
+          >
+            Retry
+          </Button>
+        }
+        className={className}
+      >
+        {detail}
+      </EmptyState>
+    );
+  }
   return (
     <FailureRow
       message={message}

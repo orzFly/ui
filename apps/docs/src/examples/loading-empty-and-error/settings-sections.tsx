@@ -6,9 +6,12 @@ import {
   CardTitle,
 } from "@orz/ui/components/card";
 import { EmptyState } from "@orz/ui/components/empty-state";
+import { LoadFailure } from "@orz/ui/components/load-failure";
 import { KeyRoundIcon, LockIcon, PlusIcon, WebhookIcon } from "lucide-react";
+import { useState } from "react";
 
 export function SettingsSections() {
+  const [retrying, setRetrying] = useState(false);
   return (
     <div className="grid gap-4">
       <Card>
@@ -53,19 +56,17 @@ export function SettingsSections() {
           <CardTitle>Webhooks</CardTitle>
         </CardHeader>
         <CardContent>
-          <EmptyState
+          <LoadFailure
             orientation="horizontal"
-            tone="destructive"
             icon={WebhookIcon}
-            title="Couldn't load webhooks"
-            action={
-              <Button variant="outline" size="sm">
-                Retry
-              </Button>
-            }
-          >
-            503 Service Unavailable
-          </EmptyState>
+            message="Couldn't load webhooks"
+            detail="503 Service Unavailable"
+            onRetry={() => {
+              setRetrying(true);
+              setTimeout(() => setRetrying(false), 1000);
+            }}
+            retrying={retrying}
+          />
         </CardContent>
       </Card>
     </div>
