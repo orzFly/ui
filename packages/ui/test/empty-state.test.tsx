@@ -17,10 +17,7 @@ describe("EmptyState", () => {
 
   it("draws an element as given", () => {
     const { container } = render(
-      <EmptyState
-        icon={<svg className="h-12 w-16" />}
-        title="No notes yet"
-      />,
+      <EmptyState icon={<svg className="h-12 w-16" />} title="No notes yet" />,
     );
     expect(container.querySelector("svg")?.getAttribute("class")).toBe(
       "h-12 w-16",
