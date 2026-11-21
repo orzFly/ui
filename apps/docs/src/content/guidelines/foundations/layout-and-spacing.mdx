@@ -5,6 +5,7 @@ export const meta = {
   order: 12,
   api: [
     "ui/Hooks/useMediaQuery",
+    "ui/Primitives/Card",
     "ui/Primitives/Separator",
     "ui/Primitives/Sheet",
     "ui/Primitives/Tooltip",
@@ -16,9 +17,10 @@ import { BoxedGroups } from "../../../examples/layout-and-spacing/boxed-groups.t
 import { FormattingToolbar } from "../../../examples/layout-and-spacing/formatting-toolbar.tsx";
 import { MailPanes } from "../../../examples/layout-and-spacing/mail-panes.tsx";
 import { MailToolbar } from "../../../examples/layout-and-spacing/mail-toolbar.tsx";
+import { ModuleRegion } from "../../../examples/layout-and-spacing/module-region.tsx";
 import { SpacedGroups } from "../../../examples/layout-and-spacing/spaced-groups.tsx";
 import { MD_UP, SM_UP } from "@orz/ui/hooks/use-media-query";
-import { minWidth, radius } from "../../../sizes.ts";
+import { classes, gap, minWidth, radius } from "../../../sizes.ts";
 
 **Space things by how closely they belong together, in steps of Tailwind's 4px scale, and lay the
 screen out for a phone first, then add `md:` for the rest.**
@@ -37,6 +39,7 @@ everything:
 |---|---|---|
 | An icon and its label, inside a control | `gap-1.5` | 6px |
 | Controls that act together: a toolbar, a field and its button | `gap-2` | 8px |
+| Modules: between two, and around the region they fill | `ModuleGrid` | {gap(classes.moduleGrid)}px |
 | The rows of a form, the items of a list with padding of their own | `gap-4` | 16px |
 | Groups: a form's sections, a card's header and body | `gap-6` | 24px |
 | Sections of a page | `gap-8` or more | 32px+ |
@@ -79,6 +82,26 @@ sidebar's, is that `Pane`'s `edge` instead: the line belongs to the pane and goe
 The toolbar's buttons fall into three groups: how text looks, how a block is shaped, what is
 attached. A separator between groups in a `role="toolbar"` takes `decorative={false}`, so a screen
 reader hears where one group ends; elsewhere it stays decorative, as it is by default.
+
+## Modules
+
+**A page of modules lays them out in a `ModuleGrid`, which stands them {gap(classes.moduleGrid)}px apart and pads the
+region by the same amount; the page writes no spacing of its own between modules.** Each `Card`
+keeps its own rule on every side, and the page's ground shows between them.
+
+<Example of={ModuleRegion} />
+
+Columns and spans go in the grid's `className` (`md:grid-cols-4`, `col-span-full`). An aside of
+stacked modules is a `ModuleGrid` inside the grid: a grid inside another adds no padding of its
+own, so the aside's edges line up with its neighbours'. Modules in one row match heights; a stack
+keeps its modules at their own.
+
+A reader that fills the height beside a rail gives the grid one row, `grid-rows-[minmax(0,1fr)]`,
+and lets the reader's body (`min-h-0 overflow-y-auto`) and the rail scroll on their own.
+
+Figures that read as one, such as the cells of a single stat strip, are cells ruled off inside one
+`Card`, never cards set edge to edge. A `Pane` is the app's frame rather than a module: panes meet
+along their edges, and a grid of modules sits inside one.
 
 ## Breakpoints
 

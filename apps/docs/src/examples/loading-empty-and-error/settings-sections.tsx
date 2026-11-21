@@ -4,6 +4,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  ModuleGrid,
 } from "@orz/ui/components/card";
 import { EmptyState } from "@orz/ui/components/empty-state";
 import { LoadFailure } from "@orz/ui/components/load-failure";
@@ -13,7 +14,7 @@ import { useState } from "react";
 export function SettingsSections() {
   const [retrying, setRetrying] = useState(false);
   return (
-    <div className="grid gap-4">
+    <ModuleGrid>
       <Card>
         <CardHeader>
           <CardTitle>Deploy keys</CardTitle>
@@ -69,6 +70,6 @@ export function SettingsSections() {
           />
         </CardContent>
       </Card>
-    </div>
+    </ModuleGrid>
   );
 }

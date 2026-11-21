@@ -176,6 +176,7 @@ const INTERNAL = {
   hoverCardContent: ["hover-card.tsx", "slot:hover-card-content"],
   selectContent: ["select.tsx", "slot:select-content"],
   dropdownMenuContent: ["dropdown-menu.tsx", "slot:dropdown-menu-content"],
+  moduleGrid: ["card.tsx", "slot:module-grid"],
 } as const;
 
 export type InternalClasses = Record<keyof typeof INTERNAL, string>;

@@ -91,6 +91,9 @@
   /* A row of dense data: the hex grid's. */
   --spacing-row-dense: 1.375rem;
   --spacing-chip: 1.25rem;
+  /* The space between two modules, and between a module and the edge of the
+     region the modules fill. */
+  --spacing-module: 0.5rem;
 
   /* Buttons, fields, and the strips that hold them. */
   --radius-control: var(--radius);

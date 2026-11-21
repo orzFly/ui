@@ -19,6 +19,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  ModuleGrid,
 } from "../src/components/card.tsx";
 import { Checkbox } from "../src/components/checkbox.tsx";
 import { ConfirmDialog } from "../src/components/confirm-dialog.tsx";
@@ -478,5 +479,52 @@ describe("every primitive renders", () => {
   it("sonner", () => {
     render(<Toaster />);
     expect(screen.getByRole("region")).toBeTruthy();
+  });
+});
+
+describe("ModuleGrid", () => {
+  it("holds its modules in a module-grid region", () => {
+    const { container } = render(
+      <ModuleGrid>
+        <Card>One</Card>
+        <Card>Two</Card>
+      </ModuleGrid>,
+    );
+    const grid = container.querySelector('[data-slot="module-grid"]');
+    expect(grid?.querySelectorAll('[data-slot="card"]')).toHaveLength(2);
+    expect(grid?.className).toContain("gap-module");
+    expect(grid?.className).toContain("p-module");
+  });
+
+  it("with asChild is the caller's element", () => {
+    const { container } = render(
+      <ModuleGrid asChild>
+        <main>
+          <Card>One</Card>
+        </main>
+      </ModuleGrid>,
+    );
+    const main = container.querySelector("main");
+    expect(main?.dataset.slot).toBe("module-grid");
+    expect(main?.className).toContain("gap-module");
+  });
+
+  it("drops its padding inside another", () => {
+    const { container } = render(
+      <ModuleGrid>
+        <ModuleGrid>
+          <Card>One</Card>
+        </ModuleGrid>
+      </ModuleGrid>,
+    );
+    const inner = container.querySelectorAll('[data-slot="module-grid"]')[1];
+    expect(inner.className).toContain("in-data-[slot=module-grid]:p-0");
+  });
+
+  it("leaves each card its own border", () => {
+    const { container } = render(<Card>One</Card>);
+    const card = container.querySelector('[data-slot="card"]');
+    expect(card?.className.split(" ")).toContain("border");
+    expect(card?.className).not.toContain("ring-1");
   });
 });

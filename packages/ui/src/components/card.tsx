@@ -1,3 +1,4 @@
+import { Slot } from "radix-ui";
 import type * as React from "react";
 
 import { cn } from "../lib/utils.ts";
@@ -12,14 +13,39 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        // The edge is a ring, drawn outside the box, so two cards laid edge to
-        // edge paint one shared line rather than two.
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-surface bg-card py-(--card-spacing) text-ui text-card-foreground ring-1 ring-border [--card-spacing:--spacing(3)] has-[>[data-slot=card-header]]:pt-0 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(2)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-surface *:[img:last-child]:rounded-b-surface",
-        // Under raymond a card is a group box: the ring gives way to an
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-surface bg-card py-(--card-spacing) text-ui text-card-foreground border [--card-spacing:--spacing(3)] has-[>[data-slot=card-header]]:pt-0 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(2)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-surface *:[img:last-child]:rounded-b-surface",
+        // Under raymond a card is a group box: the border gives way to an
         // etched frame, a dark line with a lit one a pixel down and right,
         // drawn behind the content. With a header the frame's top runs
         // through the header's middle, where the header is its legend.
-        "raymond:relative raymond:isolate raymond:ring-0 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-[0_1px_1px_0] raymond:before:-z-1 raymond:before:border raymond:before:border-(--3d-shadow) raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),1px_1px_var(--3d-highlight)] raymond:before:content-[''] raymond:has-[>[data-slot=card-header]]:before:top-[calc(var(--spacing-row)/2)]",
+        "raymond:relative raymond:isolate raymond:border-0 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-[0_1px_1px_0] raymond:before:-z-1 raymond:before:border raymond:before:border-(--3d-shadow) raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),1px_1px_var(--3d-highlight)] raymond:before:content-[''] raymond:has-[>[data-slot=card-header]]:before:top-[calc(var(--spacing-row)/2)]",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/**
+ * A region of modules: its children stand a module gap apart, and the same
+ * gap pads the region's edge. One column unless `className` sets the columns
+ * and spans. A `ModuleGrid` inside another adds no padding of its own, so a
+ * nested stack's edges line up with its neighbours'.
+ */
+function ModuleGrid({
+  className,
+  asChild = false,
+  ...props
+}: React.ComponentProps<"div"> & {
+  /** Renders the child element (a `main`, a `section`) as the grid. */
+  asChild?: boolean;
+}) {
+  const Comp = asChild ? Slot.Root : "div";
+  return (
+    <Comp
+      data-slot="module-grid"
+      className={cn(
+        "grid min-w-0 content-start gap-module p-module *:min-w-0 in-data-[slot=module-grid]:p-0",
         className,
       )}
       {...props}
@@ -166,5 +192,6 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
+  ModuleGrid,
   ModuleMarker,
 };

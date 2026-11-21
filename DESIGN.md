@@ -1,6 +1,6 @@
 ---
 name: "@orz/ui"
-description: "The default style, the module mosaic: hairline-ruled modules tiled edge to edge on a white ground, dense ink text, one ai accent."
+description: "The default style, the module mosaic: hairline-ruled modules a small gap apart on a white ground, dense ink text, one ai accent."
 colors:
   ai: "#1f3d6b"
   ai-foreground: "#ffffff"
@@ -64,6 +64,7 @@ spacing:
   chip: "1.25rem"
   card: "0.75rem"
   card-sm: "0.5rem"
+  module: "0.5rem"
 components:
   button-primary:
     backgroundColor: "{colors.ai}"
@@ -141,7 +142,7 @@ components:
 
 **Creative North Star: "The Module Mosaic"**
 
-The default style draws on contemporary Japanese high-density web pages: a bright white ground, dense ink text, and content held in hairline-ruled modules tiled edge to edge. Each module is headed by a ruled strip on the strip tint, opening with a 16px marker square. Nothing floats or rounds for decoration; structure comes from 1px rules, tints and type weight.
+The default style draws on contemporary Japanese high-density web pages: a bright white ground, dense ink text, and content held in hairline-ruled modules a small gap apart. Each module is headed by a ruled strip on the strip tint, opening with a 16px marker square. Nothing floats or rounds for decoration; structure comes from 1px rules, tints and type weight.
 
 One strong colour, ai, carries meaning: where you are (the current tab, focus) and what you can do (the primary button, links, the marker's icon). Everything else is ink on white or neutrals pulled toward ai's hue (oklch h 258). State never rests on a fill alone: an ink bar or an ai edge says it in a second channel.
 
@@ -149,7 +150,7 @@ Density is for the pointer only. Under a coarse pointer, controls grow to 40px a
 
 **Key Characteristics:**
 - White ground, ink text, one accent (ai), neutrals tinted to hue 258.
-- Modules tiled edge to edge, sharing one 1px rule; square corners on every surface.
+- Modules 8px apart on the white ground, each in its own 1px rule; square corners on every surface.
 - Ruled header strip with a 16px marker square heading each module.
 - 13px body text, 28px controls and rows with a pointer; 40/44px and 16px field text under touch.
 - State cues in two channels: fill plus a 2px ink tick or a 2px ai top edge.
@@ -201,16 +202,16 @@ A near-monochrome ink-on-white palette with a single deep indigo accent; dark mo
 
 ## Layout
 
-Modules tile edge to edge: a card's edge is a 1px ring drawn outside the box, so two cards laid side by side paint one shared line. A card pads 12px (8px at `size="sm"`); its header strip pads 2px by 8px with a 28px minimum height and an 8px gap after the marker. Rows run 28px (menus, lists, table cells and heads), 22px for dense data; controls 24/28/32px; chips 20px.
+Modules stand a module gap (8px) apart, each inside its own 1px border, and the same gap pads the region they fill; `ModuleGrid` lays them out. A card pads 12px (8px at `size="sm"`); its header strip pads 2px by 8px with a 28px minimum height and an 8px gap after the marker. Rows run 28px (menus, lists, table cells and heads), 22px for dense data; controls 24/28/32px; chips 20px.
 
 Under a coarse pointer (`touch:`), controls rise to 40px (button, tab, input) and 44px (large button, menu items), and a smaller control gets a transparent 44px hit area that leaves its drawn size and the layout untouched. A `data-pointer` ancestor forces either branch.
 
 ## Elevation & Depth
 
-Flat by construction. Surfaces tile on the ground with no shadow (`shadow-raised` is none); depth is a 1px rule, a strip tint or a ground change. Menus, popovers, dialogs and sheets lift by their 1px ring and one small hard shadow, offset without blur (`--shadow-menu` 2px 2px, `--shadow-overlay` 3px 3px, ink at 14%), so they read as above the mosaic rather than in it; modal overlays sit over a scrim of 10% black with a light backdrop blur.
+Flat by construction. Surfaces sit on the ground with no shadow (`shadow-raised` is none); depth is a 1px rule, a strip tint or a ground change. Menus, popovers, dialogs and sheets lift by their 1px ring and one small hard shadow, offset without blur (`--shadow-menu` 2px 2px, `--shadow-overlay` 3px 3px, ink at 14%), so they read as above the mosaic rather than in it; modal overlays sit over a scrim of 10% black with a light backdrop blur.
 
 ### Named Rules
-**The Tiled Not Stacked Rule.** A module separates from its neighbour by a shared hairline rule, never by a shadow or a gap with a drop.
+**The Module Gap Rule.** A module stands apart from its neighbour by the module gap of page ground, inside its own 1px rule; never by a shadow or a tinted field. What must share a line is cells inside one module.
 
 ## Shapes
 
@@ -233,7 +234,7 @@ Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and c
 - **Corner Style:** square (0).
 - **Background:** ground; header strip and footer on strip, ruled off by 1px.
 - **Shadow Strategy:** none on surfaces; one small hard offset shadow on what floats (see Elevation & Depth).
-- **Border:** 1px rule as an outside ring, shared with tiled neighbours.
+- **Border:** 1px rule, its own on every side.
 - **Internal Padding:** 12px, 8px small.
 
 ### Inputs / Fields
@@ -254,6 +255,7 @@ The 16px square that heads a card header, a viewer's toolbar, and a dialog or sh
 
 ### Do:
 - **Do** head every module with the ruled strip and the 16px marker square.
+- **Do** lay modules out in a `ModuleGrid`, and keep figures that read as one inside one module.
 - **Do** pair every state fill with a second cue: the 2px ink tick for rows, the 2px ai top edge for the current tab.
 - **Do** keep touch sizes (40px, 44px hit areas) and 16px field text under a coarse pointer, whatever the style.
 - **Do** read sizes and radii from the style tokens (`--spacing-control`, `--radius-surface`), capping a smaller part to the token rather than adding one.
