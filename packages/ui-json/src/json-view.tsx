@@ -76,6 +76,7 @@ import {
   ancestorsOf,
   collectExpandable,
   flatten,
+  isRecursive,
   type JsonNodeRow,
   type JsonRow,
   PREVIEW_LIMIT,
@@ -324,7 +325,24 @@ function JsonViewBody({
     [index, virtualizer],
   );
 
+  // The row Go to anchor selected, scrolled to once its ancestors' rows are in.
+  const reveal = useRef<string | null>(null);
+  useEffect(() => {
+    const path = reveal.current;
+    if (path === null || !index.has(path)) return;
+    reveal.current = null;
+    scrollToPath(path);
+  }, [index, scrollToPath]);
+
   // --- expansion --------------------------------------------------------------
+
+  const goToAnchor = (path: string) => {
+    for (const p of ancestorsOf(path)) expanded.current.add(p);
+    if (search && !search.visible.has(path)) clearSearch();
+    reveal.current = path;
+    setSelection({ type: "value", path });
+    bumpExpanded();
+  };
 
   const collapse = (path: string) => {
     const set = expanded.current;
@@ -353,6 +371,7 @@ function JsonViewBody({
         found.value,
         path,
         ROW_BUDGET,
+        facts,
       );
       for (const p of paths) expanded.current.add(p);
       if (limited) {
@@ -366,7 +385,7 @@ function JsonViewBody({
   };
 
   const expandAll = () => {
-    const { paths, limited } = collectExpandable(value, "$", ROW_BUDGET);
+    const { paths, limited } = collectExpandable(value, "$", ROW_BUDGET, facts);
     expanded.current = new Set(paths);
     setExpandLimited(limited);
     if (limited) setWarnDismissed(false);
@@ -458,8 +477,14 @@ function JsonViewBody({
   // --- inspect ----------------------------------------------------------------
 
   const [inspect, setInspect] = useState<InspectTarget | null>(null);
+  const factsAtPath = (path: string) => {
+    const found = resolvePath(value, path);
+    return found.found ? facts?.(found.parent, found.key) : undefined;
+  };
+
+  // A recursive alias holds itself: there is nothing to open it onto.
   const openInspect = (path: string | null) => {
-    if (path === null) return;
+    if (path === null || isRecursive(factsAtPath(path))) return;
     const found = resolvePath(value, path);
     if (found.found) setInspect({ value: found.value, path });
   };
@@ -495,6 +520,8 @@ function JsonViewBody({
     const at = single === null ? undefined : index.get(single);
     const row = at === undefined ? undefined : rows[at];
     const node = isNodeRow(row) ? row : undefined;
+    const anchorPath = node?.anchorPath ?? null;
+    const recursive = single !== null && isRecursive(factsAtPath(single));
     const source =
       document.source !== undefined
         ? selectionSource(document, current)
@@ -548,15 +575,21 @@ function JsonViewBody({
             {labels.copyKey}
           </DropdownMenuItem>
         )}
-        {single !== null && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => openInspect(single)}>
-              <Maximize2Icon />
-              {labels.inspect}
-              <DropdownMenuShortcut>Enter</DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </>
+        {(anchorPath !== null || (single !== null && !recursive)) && (
+          <DropdownMenuSeparator />
+        )}
+        {anchorPath !== null && (
+          <DropdownMenuItem onSelect={() => goToAnchor(anchorPath)}>
+            <RouteIcon />
+            {labels.goToAnchor}
+          </DropdownMenuItem>
+        )}
+        {single !== null && !recursive && (
+          <DropdownMenuItem onSelect={() => openInspect(single)}>
+            <Maximize2Icon />
+            {labels.inspect}
+            <DropdownMenuShortcut>Enter</DropdownMenuShortcut>
+          </DropdownMenuItem>
         )}
         {node?.expandable && (
           <>

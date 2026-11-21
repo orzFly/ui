@@ -43,6 +43,10 @@ export interface JsonNodeRow {
   expanded: boolean;
   /** A comment after the value on the member's line, in one line. */
   trailing: string | null;
+  /** YAML's marks before the value, as written: `&defaults`, `&defaults !!binary`, `*defaults`. */
+  mark: string | null;
+  /** An alias's anchor's path, for Go to anchor. */
+  anchorPath: string | null;
 }
 
 /** One source line of a comment, on a row of its own. */
@@ -172,7 +176,7 @@ function previewOf(
         truncated: false,
       };
     case "null":
-      return { preview: "null", truncated: false };
+      return { preview: literal ?? "null", truncated: false };
     case "string":
       if (literal !== undefined) return literalPreview(literal, limit);
       return size === 0
@@ -187,6 +191,20 @@ function previewOf(
 export function commentLines(text: string): string[] {
   return text.split(/\r\n|[\n\r\u2028\u2029]/).map((line) => line.trim());
 }
+
+/** The anchor and tag a member is written with, or the alias it is. */
+export function markOf(facts: NodeFacts | undefined): string | null {
+  if (!facts) return null;
+  if (facts.alias) return `*${facts.alias.name}`;
+  const parts: string[] = [];
+  if (facts.anchor !== undefined) parts.push(`&${facts.anchor}`);
+  if (facts.tag !== undefined) parts.push(facts.tag);
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
+/** An alias inside the node it names: its value holds itself, so no walk goes into it. */
+export const isRecursive = (facts: NodeFacts | undefined) =>
+  facts?.alias?.recursive === true;
 
 /** A trailing comment drawn on its member's row, its lines run together. */
 function oneLine(text: string): string {
@@ -320,7 +338,8 @@ export function flatten(
 
     const { kind } = frame;
     const size = sizeOf(frame.value, kind);
-    const expandable = isContainer(kind) && size > 0;
+    const expandable =
+      isContainer(kind) && size > 0 && !isRecursive(frame.facts);
     const preview = previewOf(
       kind,
       frame.value,
@@ -360,6 +379,8 @@ export function flatten(
         expandable,
         expanded: expandedHere,
         trailing: trailing ? oneLine(trailing.text) : null,
+        mark: markOf(frame.facts),
+        anchorPath: frame.facts?.alias?.path ?? null,
       });
       if (pushed) break;
     }
@@ -622,6 +643,10 @@ export function searchPaths(
         node.kind === "string" ? (node.value as string) : String(node.value);
       node.selfMatch = hits(text) || (literal !== undefined && hits(literal));
     }
+    if (!node.selfMatch) {
+      const mark = markOf(node.facts);
+      node.selfMatch = mark !== null && hits(mark);
+    }
     if (node.selfMatch) {
       matched.add(node.path);
       if (container) visible.add(node.path);
@@ -641,7 +666,7 @@ export function searchPaths(
     }
 
     stack.push({ enter: false, node });
-    if (!container) continue;
+    if (!container || isRecursive(node.facts)) continue;
 
     const underMatch = node.underMatch || node.selfMatch;
     const holder = node.value as object;
@@ -687,11 +712,15 @@ export function searchPaths(
   return { visible, matched, limited };
 }
 
-/** Every expandable path under `value`, for "expand subtree" and "expand all". */
+/**
+ * Every expandable path under `value`, for "expand subtree" and "expand all". With `facts`, a
+ * recursive alias is left closed.
+ */
 export function collectExpandable(
   value: unknown,
   fromPath: string,
   limit: number,
+  facts?: Facts,
 ): { paths: string[]; limited: boolean } {
   const paths: string[] = [];
   let limited = false;
@@ -709,9 +738,11 @@ export function collectExpandable(
       break;
     }
     paths.push(frame.path);
+    const container = frame.value as object;
     if (kind === "array") {
       const list = frame.value as unknown[];
       for (let i = list.length - 1; i >= 0; i--) {
+        if (isRecursive(facts?.(container, i))) continue;
         stack.push({ value: list[i], path: `${frame.path}[${i}]` });
       }
     } else {
@@ -719,6 +750,7 @@ export function collectExpandable(
       const keys = Object.keys(record);
       for (let i = keys.length - 1; i >= 0; i--) {
         const k = keys[i] as string;
+        if (isRecursive(facts?.(container, k))) continue;
         stack.push({ value: record[k], path: childPath(frame.path, k, null) });
       }
     }

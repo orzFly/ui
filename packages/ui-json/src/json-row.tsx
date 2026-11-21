@@ -501,6 +501,12 @@ function JsonRowViewImpl({
                   : "min-w-0 flex-1 break-all whitespace-pre-wrap"),
             )}
           >
+            {row.mark !== null && (
+              <span data-mark className="text-muted-foreground">
+                <Highlight text={row.mark} needle={needle} />
+                {(row.preview !== "" || row.summary !== null) && <>&nbsp;</>}
+              </span>
+            )}
             {container ? (
               <>
                 <span>{row.preview}</span>

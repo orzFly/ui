@@ -16,6 +16,7 @@ import {
   WRAP_PREVIEW_LIMIT,
 } from "../src/tree.ts";
 import type { JsonDocument } from "../src/types.ts";
+import { parseYaml } from "../src/yaml.ts";
 
 const none = new Set<string>();
 const paths = (rows: JsonRow[]) => rows.map((row) => row.path);
@@ -260,5 +261,73 @@ describe("collectExpandable", () => {
     ]);
     const cut = collectExpandable(value, "$", 2);
     expect(cut).toEqual({ paths: ["$", "$.a"], limited: true });
+  });
+});
+
+describe("YAML", () => {
+  function yaml(text: string): JsonDocument {
+    const result = parseYaml(text);
+    if (!result.ok) throw new Error(result.error.message);
+    return result.document;
+  }
+  const recursive = yaml("a: &x [1, *x]\nb: *x\n");
+
+  it("draws a recursive alias as a leaf in every walk", () => {
+    const { value, facts } = recursive;
+    const { rows } = flatten(value, {
+      expanded: new Set(["$.a", "$.b"]),
+      facts,
+    });
+    expect(paths(rows)).toEqual([
+      "$.a",
+      "$.a[0]",
+      "$.a[1]",
+      "$.b",
+      "$.b[0]",
+      "$.b[1]",
+    ]);
+    expect(node(rows, "$.a[1]")).toMatchObject({
+      expandable: false,
+      mark: "*x",
+      anchorPath: "$.a",
+    });
+    expect(node(rows, "$.b").expandable).toBe(true);
+
+    expect(collectExpandable(value, "$", 100, facts).paths).toEqual([
+      "$",
+      "$.a",
+      "$.b",
+    ]);
+
+    const search = searchPaths(value, "1", { facts });
+    expect(search.limited).toBe(false);
+    expect([...search.matched].sort()).toEqual(
+      ["$.a[0]", "$.a[1]", "$.b[0]", "$.b[1]"].sort(),
+    );
+  });
+
+  it("writes each row's marks as YAML does", () => {
+    const { value, facts } = yaml(
+      "base: &defaults\n  k: v\nsum: &s !!binary aGk=\nthing: !thing x\nuse: *defaults\nplain: 1\n",
+    );
+    const { rows } = flatten(value, { expanded: none, facts });
+    const mark = (path: string) => node(rows, path).mark;
+    expect(mark("$.base")).toBe("&defaults");
+    expect(mark("$.sum")).toBe("&s !!binary");
+    expect(mark("$.thing")).toBe("!thing");
+    expect(mark("$.use")).toBe("*defaults");
+    expect(mark("$.plain")).toBeNull();
+    expect(node(rows, "$.use").anchorPath).toBe("$.base");
+    expect(node(rows, "$.base").anchorPath).toBeNull();
+  });
+
+  it("finds a mark as it finds a literal, on a container too", () => {
+    const { value, facts } = yaml(
+      "defaults: &defaults\n  k: v\nbuild:\n  <<: *defaults\nother: 1\n",
+    );
+    const { matched } = searchPaths(value, "defaults", { facts });
+    expect(matched.has("$.defaults")).toBe(true);
+    expect(matched.has('$.build["<<"]')).toBe(true);
+    expect(matched.has("$.other")).toBe(false);
   });
 });
