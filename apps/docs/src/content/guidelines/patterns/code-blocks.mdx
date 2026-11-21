@@ -69,15 +69,19 @@ An agent's request, written as JSON5. Its comments sit on rows of their own, or 
 they follow, and fold away with their member. Click a key, a value or the space before a row to
 select it, and Ctrl+C copies it as JSON; a range copies as one member per line. Text parsed with
 `parseJson` keeps where each part came from, so **Copy source** in a row's menu copies the
-selection as it was written, comments included.
+selection as it was written, its indent taken off and comments included.
 
 - Parse JSONC and JSON5 with `parseJson` and pass the `document`. A value the app already parsed
   goes in as `value`; it shows no comments and offers no Copy source.
+- Parse YAML with `parseYaml` from `@orz/ui-json/yaml` and pass the `document`; its anchors,
+  aliases and tags show on their rows, and an alias opens onto what it names.
 - Give the view a `summary` when the data has a shape a collapsed row can name. An app showing
   agent traces passes `agentTraceSummary`, so a collapsed message reads as its speaker and its
   text, and a tool call as the call.
 - In a viewer, register `jsonContent` before the code renderer: a `.json`, `.jsonc` or `.json5`
-  file opens as a tree, and one that does not parse shows as text under the error.
+  file opens as a tree, and one that does not parse shows as text under the error. Register
+  `yamlContent` beside it, from `@orz/ui-json/yaml/content`, for `.yaml` and `.yml` files.
+
 
 ## On each platform
 
