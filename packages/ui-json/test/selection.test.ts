@@ -16,6 +16,7 @@ import {
 } from "../src/selection.ts";
 import { flatten } from "../src/tree.ts";
 import type { JsonDocument, JsonSelection } from "../src/types.ts";
+import { parseYaml } from "../src/yaml.ts";
 
 const value = {
   model: "model-large",
@@ -296,9 +297,64 @@ describe("selectionSource", () => {
     expect(selectionSource(document, { type: "value", path: "$" })).toBe(text);
   });
 
-  it("slices a range from its first leading comment, comments kept", () => {
+  it("slices a range from its first leading comment, comments kept, indent taken off", () => {
     expect(selectionSource(document, members("$.model", "$.turns"))).toBe(
-      "// the model\n  model: 'model-large', // pinned\n  /* the turns */\n  turns: [1, 0x2]",
+      "// the model\nmodel: 'model-large', // pinned\n/* the turns */\nturns: [1, 0x2]",
+    );
+  });
+
+  it("takes a JSON member's indent off its later lines", () => {
+    const json =
+      '{\n  "a": {\n    "b": {\n      "c": 1,\n      "d": [\n        2\n      ]\n    }\n  }\n}';
+    const result = parseJson(json);
+    const doc = (result.ok ? result.document : undefined) as JsonDocument;
+    expect(selectionSource(doc, { type: "value", path: "$.a.b" })).toBe(
+      '{\n  "c": 1,\n  "d": [\n    2\n  ]\n}',
+    );
+    expect(selectionSource(doc, members("$.a.b"))).toBe(
+      '"b": {\n  "c": 1,\n  "d": [\n    2\n  ]\n}',
+    );
+  });
+
+  it("takes a line indented less only what it has", () => {
+    const json = '{\n    "a": [1,\n  2,\n\t\t3]\n}';
+    const result = parseJson(json);
+    const doc = (result.ok ? result.document : undefined) as JsonDocument;
+    expect(selectionSource(doc, members("$.a"))).toBe('"a": [1,\n2,\n3]');
+  });
+});
+
+describe("selectionSource over YAML", () => {
+  const text = `root:
+  build:
+    # the steps
+    script: |
+      pnpm install
+        --frozen
+      pnpm build
+    env:
+      - CI=true
+      - key: value
+        other: 2
+`;
+  const parsed = parseYaml(text);
+  const document = (parsed.ok ? parsed.document : undefined) as JsonDocument;
+
+  it("copies a block member as YAML that pastes at the start of a line", () => {
+    expect(selectionSource(document, members("$.root.build"))).toBe(
+      "build:\n  # the steps\n  script: |\n    pnpm install\n      --frozen\n    pnpm build\n  env:\n    - CI=true\n    - key: value\n      other: 2",
+    );
+  });
+
+  it("keeps a block scalar's lines indented relative to its member", () => {
+    expect(selectionSource(document, members("$.root.build.script"))).toBe(
+      "# the steps\nscript: |\n  pnpm install\n    --frozen\n  pnpm build",
+    );
+  });
+
+  it("copies a block sequence item from its dash", () => {
+    expect(selectionSource(document, members("$.root.build.env[1]"))).toBe(
+      "- key: value\n  other: 2",
     );
   });
 
