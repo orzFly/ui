@@ -17,6 +17,7 @@ import {
 import { type Dispatch, type ReactNode, useId, useRef, useState } from "react";
 import { cn } from "../../lib/utils.ts";
 import { Button } from "../button.tsx";
+import { InfoPopover } from "../info-popover.tsx";
 import { Input } from "../input.tsx";
 import { Label } from "../label.tsx";
 import {
@@ -244,17 +245,27 @@ function ModeControl<M extends string>({
 
 function Field({
   label,
+  info,
   children,
 }: {
   label: string;
+  /** What the field means, behind an (i) after its label. */
+  info?: ReactNode;
   children: (id: string) => ReactNode;
 }) {
   const id = useId();
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <Label htmlFor={id} className="text-ui-sm">
-        {label}
-      </Label>
+      <div className="flex items-center gap-1">
+        <Label htmlFor={id} className="text-ui-sm">
+          {label}
+        </Label>
+        {info && (
+          <InfoPopover label={`About ${label.toLowerCase()}`}>
+            {info}
+          </InfoPopover>
+        )}
+      </div>
       {children(id)}
     </div>
   );
@@ -444,7 +455,17 @@ function SideTab({
       {based && (
         <>
           <div className="flex gap-2">
-            <Field label="Base theme">
+            <Field
+              label="Base theme"
+              info={
+                base && (
+                  <>
+                    Colours you change override <em>{base.label}</em>; the rest
+                    keep following it.
+                  </>
+                )
+              }
+            >
               {(id) => (
                 <Select
                   value={base ? base.id : ""}
@@ -511,11 +532,7 @@ function SideTab({
             </Field>
           </div>
           {base ? (
-            <div className="flex items-start gap-2">
-              <p className={cn(MUTED_NOTE, "flex-1")}>
-                Colours you change override <em>{base.label}</em>; the rest keep
-                following it.
-              </p>
+            <div className="flex justify-end">
               <Button
                 type="button"
                 variant="outline"

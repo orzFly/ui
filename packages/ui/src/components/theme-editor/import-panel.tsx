@@ -10,6 +10,7 @@ import {
 import { cn } from "../../lib/utils.ts";
 import { Button } from "../button.tsx";
 import { Checkbox } from "../checkbox.tsx";
+import { InfoPopover } from "../info-popover.tsx";
 import { Textarea } from "../textarea.tsx";
 
 export interface ImportPanelProps {
@@ -150,15 +151,17 @@ export function ImportPanel({
       onDrop={drop}
     >
       <div className="flex items-center gap-2">
-        <h3 className="flex-1 text-ui font-medium">Import themes</h3>
+        <div className="flex flex-1 items-center gap-1">
+          <h3 className="text-ui font-medium">Import themes</h3>
+          <InfoPopover label="About importing themes">
+            Paste a theme file, choose one, or drop it on this panel. Nothing is
+            added until you import.
+          </InfoPopover>
+        </div>
         <Button type="button" variant="ghost" size="sm" onClick={onBack}>
           Back to the theme
         </Button>
       </div>
-      <p className="text-ui-sm text-muted-foreground">
-        Paste a theme file, choose one, or drop it on this panel. Nothing is
-        added until you import.
-      </p>
       <Textarea
         aria-label="Theme file"
         aria-describedby={problem ? statusId : undefined}
