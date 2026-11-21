@@ -42,7 +42,13 @@ import {
 import { toast } from "sonner";
 import { useControllable } from "./controllable.ts";
 import { InspectDialog, type InspectTarget } from "./inspect-dialog.tsx";
-import { indentOf, JsonRowView, PointMenu } from "./json-row.tsx";
+import {
+  indentOf,
+  JsonRowView,
+  PointMenu,
+  SelectionMenu,
+  SLOT_WIDTH,
+} from "./json-row.tsx";
 import { DEFAULT_LABELS, type JsonViewLabels } from "./labels.ts";
 import {
   anchorOf,
@@ -940,6 +946,16 @@ function JsonViewBody({
   const ownValue =
     geometry?.kind === "value" && geometry.ownRow ? geometry.first : -1;
   const keyRow = geometry?.kind === "key" ? geometry.first : -1;
+  // The rows the selection's frame spans, which its ⋯ stands in; a key keeps its row's ⋯.
+  const selectionBox = (() => {
+    if (geometry === null || geometry.kind === "key") return null;
+    const first = virtualizer.measurementsCache[geometry.first];
+    const last = virtualizer.measurementsCache[geometry.last];
+    if (!first || !last) return null;
+    const path = (selection && singlePath(selection)) ?? focusPath;
+    if (path === null) return null;
+    return { top: first.start, height: last.end - first.start, path };
+  })();
 
   return (
     <Pane
@@ -1082,6 +1098,7 @@ function JsonViewBody({
           style={
             {
               height: virtualizer.getTotalSize(),
+              "--json-slot": SLOT_WIDTH,
               "--json-sel-left":
                 geometry === null ? undefined : indentOf(geometry.depth),
               "--json-sel-right":
@@ -1117,7 +1134,7 @@ function JsonViewBody({
                 valueSelected={at === ownValue}
                 keySelected={at === keyRow}
                 focused={focused}
-                showMenu={focused || at === ownValue || at === keyRow}
+                showMenu={focused || at === keyRow}
                 measureRef={wrap ? virtualizer.measureElement : undefined}
                 menu={
                   row.kind === "comment"
@@ -1142,6 +1159,27 @@ function JsonViewBody({
               />
             );
           })}
+          {selectionBox && (
+            <SelectionMenu
+              top={selectionBox.top}
+              height={selectionBox.height}
+              wrap={wrap}
+              label={labels.rowActions(selectionBox.path)}
+              menu={{
+                open: menuPath !== null && menuPoint === null,
+                onOpenChange: (open) => {
+                  if (open) {
+                    setMenuPoint(null);
+                    setMenuPath(selectionBox.path);
+                  } else {
+                    closeMenu();
+                  }
+                },
+                items: menuItems,
+                onCloseAutoFocus: onMenuCloseAutoFocus,
+              }}
+            />
+          )}
         </div>
       </div>
 

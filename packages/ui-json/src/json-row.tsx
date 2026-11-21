@@ -99,18 +99,28 @@ export const indentOf = (depth: number) =>
 const EDGE = "before:absolute before:z-1 before:bg-primary before:content-['']";
 const FILL =
   "after:absolute after:z-2 after:bg-accent after:content-[''] raymond:after:bg-primary";
-/** A piece covering its element. */
-const PIECE = cn(EDGE, FILL, "before:-inset-px after:inset-0");
+/**
+ * A value's piece: its element, and the ⋯'s room after the row's content, which the selection's
+ * ⋯ stands in.
+ */
+const PIECE = cn(
+  EDGE,
+  FILL,
+  "before:-inset-y-px before:-left-px before:right-[calc(-1*var(--json-slot)-1px)] after:inset-y-0 after:left-0 after:right-[calc(-1*var(--json-slot))]",
+);
 /**
  * A key's piece, which meets no other: its frame is drawn inside the room its padding makes, so
  * it stays clear of the colon after it.
  */
 const KEY_PIECE = cn(EDGE, FILL, "before:inset-0 after:inset-px");
-/** A member row's piece: from the members' indent to the selection's right edge. */
+/** The ⋯'s room after every row's content: its margins and the button. */
+export const SLOT_WIDTH = "calc(var(--spacing-control-xs) + var(--spacing))";
+const SLOT = "mx-0.5 flex-none";
+/** A member row's piece: from the members' indent to the selection's right edge and its ⋯. */
 const BLOCK_PIECE = cn(
   EDGE,
   FILL,
-  "before:-inset-y-px before:-right-px before:left-[calc(var(--json-sel-left)-1px)] after:inset-y-0 after:right-0 after:left-(--json-sel-left)",
+  "before:-inset-y-px before:right-[calc(-1*var(--json-slot)-1px)] before:left-[calc(var(--json-sel-left)-1px)] after:inset-y-0 after:right-[calc(-1*var(--json-slot))] after:left-(--json-sel-left)",
 );
 /** Text and controls, above the fills. */
 const ABOVE = "relative z-3";
@@ -146,22 +156,20 @@ export interface JsonRowViewProps {
   valueSelected: boolean;
   keySelected: boolean;
   focused: boolean;
-  /** The row is the one the keyboard and the ⋯ menu follow, or is selected: its ⋯ shows. */
+  /** The row is the one the keyboard and the ⋯ menu follow, or its key is selected: its ⋯ shows. */
   showMenu: boolean;
   menu: RowMenuProps | null;
   measureRef?: Ref<HTMLDivElement>;
 }
 
-function RowMenu({
-  path,
-  labels,
-  shown,
+function MenuButton({
+  label,
   menu,
+  className,
 }: {
-  path: string;
-  labels: JsonViewLabels;
-  shown: boolean;
+  label: string;
   menu: RowMenuProps | null;
+  className: string;
 }) {
   return (
     <DropdownMenu open={menu?.open ?? false} onOpenChange={menu?.onOpenChange}>
@@ -170,17 +178,11 @@ function RowMenu({
           variant="ghost"
           size="icon-xs"
           tabIndex={-1}
-          aria-label={labels.rowActions(path)}
+          aria-label={label}
           data-slot="json-row-menu"
           // A press leaves the focus on the tree.
           onMouseDown={(event) => event.preventDefault()}
-          // After the row's content, or the selection's right edge; held at the view's right
-          // edge when the row runs past it, on the ground so the text under it does not show.
-          className={cn(
-            ABOVE,
-            "sticky right-0 ml-0.5 flex-none self-center bg-background text-muted-foreground invisible group-hover/row:visible can-hover:group-hover/row:bg-[color-mix(in_oklab,var(--muted)_70%,var(--background))] aria-expanded:visible touch:visible raymond:can-hover:group-hover/row:bg-background",
-            shown && "visible",
-          )}
+          className={cn(ABOVE, "text-muted-foreground", className)}
         >
           <MoreHorizontalIcon />
         </Button>
@@ -195,6 +197,42 @@ function RowMenu({
         </DropdownMenuContent>
       )}
     </DropdownMenu>
+  );
+}
+
+/**
+ * The selection's ⋯, inside its frame at the bottom right of the part in view: held to the view's
+ * bottom and right edges while the selection runs past them.
+ */
+export function SelectionMenu({
+  top,
+  height,
+  wrap,
+  label,
+  menu,
+}: {
+  top: number;
+  height: number;
+  wrap: boolean;
+  label: string;
+  menu: RowMenuProps;
+}) {
+  return (
+    <div
+      data-slot="json-selection-menu"
+      className="pointer-events-none absolute left-0 z-3 flex flex-col items-end justify-end"
+      style={{
+        top,
+        height,
+        width: wrap ? "100%" : `calc(var(--json-sel-right) + ${SLOT_WIDTH})`,
+      }}
+    >
+      <MenuButton
+        label={label}
+        menu={menu}
+        className="pointer-events-auto sticky right-0 bottom-0 mr-0.5 mb-[calc((var(--spacing-row-dense)-var(--spacing-control-xs))/2)] bg-accent touch:mb-[calc((--spacing(11)-var(--spacing-control-xs))/2)] raymond:bg-primary raymond:text-primary-foreground"
+      />
+    </div>
   );
 }
 
@@ -355,6 +393,7 @@ function JsonRowViewImpl({
             <Highlight text={row.text} needle={needle} />
           </span>
         </span>
+        <span aria-hidden className={cn(SLOT, "w-control-xs")} />
       </div>
     );
   }
@@ -445,7 +484,7 @@ function JsonRowViewImpl({
         <span
           data-in-selection={valueSelected || undefined}
           className={cn(
-            "relative flex min-w-0 flex-1 pr-1.5",
+            "relative flex min-w-0 flex-1 self-stretch pr-1.5",
             wrap ? "items-start" : "items-center",
             valueSelected && cn(PIECE, SELECTED_TEXT),
           )}
@@ -494,7 +533,22 @@ function JsonRowViewImpl({
           )}
         </span>
       </span>
-      <RowMenu path={row.path} labels={labels} shown={showMenu} menu={menu} />
+      {reach ? (
+        // The selection's own ⋯ stands in this room.
+        <span aria-hidden className={cn(SLOT, "w-control-xs")} />
+      ) : (
+        <MenuButton
+          label={labels.rowActions(row.path)}
+          menu={menu}
+          // After the row's content; held at the view's right edge when the row runs past it,
+          // on the ground so the text under it does not show.
+          className={cn(
+            SLOT,
+            "sticky right-0 self-center bg-background invisible group-hover/row:visible can-hover:group-hover/row:bg-[color-mix(in_oklab,var(--muted)_70%,var(--background))] aria-expanded:visible touch:visible raymond:can-hover:group-hover/row:bg-background",
+            showMenu && "visible",
+          )}
+        />
+      )}
     </div>
   );
 }
