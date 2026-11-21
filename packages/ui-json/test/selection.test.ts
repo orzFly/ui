@@ -15,7 +15,7 @@ import {
   selectionText,
 } from "../src/selection.ts";
 import { flatten } from "../src/tree.ts";
-import type { JsonDocument, JsonSelection } from "../src/types.ts";
+import type { JsonDocument, JsonSelection, NodeFacts } from "../src/types.ts";
 import { parseYaml } from "../src/yaml.ts";
 
 const value = {
@@ -363,5 +363,91 @@ describe("selectionSource over YAML", () => {
     expect(
       selectionSource(document, { type: "key", path: "$.model" }),
     ).toBeUndefined();
+  });
+});
+
+describe("selectionSource over parts", () => {
+  const text = `title = "t"
+
+# the server
+[server]
+port = 1
+
+[log]
+level = 2
+
+[server.tls]
+on = true
+`;
+  const span = (snippet: string): [number, number] => {
+    const start = text.indexOf(snippet);
+    return [start, start + snippet.length];
+  };
+  const first = span("[server]\nport = 1");
+  const second = span("[server.tls]\non = true");
+  const server: NodeFacts = {
+    range: [first[0], second[1]],
+    memberRange: [first[0], second[1]],
+    parts: [first, second],
+    leading: [
+      { text: "# the server", block: false, range: span("# the server") },
+    ],
+  };
+  const root = {
+    title: "t",
+    server: { port: 1, tls: { on: true } },
+    log: { level: 2 },
+  };
+  const table = new Map<string, NodeFacts>([
+    ["title", { range: span('"t"'), memberRange: span('title = "t"') }],
+    ["server", server],
+    [
+      "log",
+      {
+        range: span("[log]\nlevel = 2"),
+        memberRange: span("[log]\nlevel = 2"),
+      },
+    ],
+  ]);
+  const document: JsonDocument = {
+    value: root,
+    source: text,
+    facts: (container, key) =>
+      container === null
+        ? { range: [0, text.length] }
+        : container === root
+          ? table.get(String(key))
+          : undefined,
+  };
+
+  it("copies a scattered value's places, a blank line between them", () => {
+    expect(selectionSource(document, { type: "value", path: "$.server" })).toBe(
+      "[server]\nport = 1\n\n[server.tls]\non = true",
+    );
+  });
+
+  it("copies a scattered member from its leading comment", () => {
+    expect(selectionSource(document, members("$.server"))).toBe(
+      "# the server\n[server]\nport = 1\n\n[server.tls]\non = true",
+    );
+  });
+
+  it("copies a run where one member is scattered, leaving out what lies between", () => {
+    // `[log]` stands between `server`'s places and is not in the run.
+    expect(selectionSource(document, members("$.title", "$.server"))).toBe(
+      'title = "t"\n\n# the server\n[server]\nport = 1\n\n[server.tls]\non = true',
+    );
+  });
+
+  it("keeps places that touch as one slice, in source order", () => {
+    expect(selectionSource(document, members("$.server", "$.log"))).toBe(
+      "# the server\n[server]\nport = 1\n\n[log]\nlevel = 2\n\n[server.tls]\non = true",
+    );
+  });
+
+  it("copies a run without parts as one slice", () => {
+    expect(selectionSource(document, members("$.log"))).toBe(
+      "[log]\nlevel = 2",
+    );
   });
 });

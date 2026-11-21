@@ -1,8 +1,8 @@
-/** A comment in a JSONC, JSON5 or YAML source. */
+/** A comment in a JSONC, JSON5, YAML or TOML source. */
 export interface JsonComment {
-  /** As written, delimiters included: `// note`, `/* note *\/`, YAML's `# note`. */
+  /** As written, delimiters included: `// note`, `/* note *\/`, YAML's or TOML's `# note`. */
   text: string;
-  /** A `/* … *\/` comment, rather than a `//` one; never set for YAML. */
+  /** A `/* … *\/` comment, rather than a `//` one; never set for YAML or TOML. */
   block: boolean;
   /** `[start, end)` in UTF-16 offsets into the document's `source`. */
   range: [number, number];
@@ -35,6 +35,11 @@ export interface NodeFacts {
     /** The alias sits inside the node it names, so the value holds itself; drawn as a leaf. */
     recursive: boolean;
   };
+  /**
+   * Where a member is written in more than one place, each place in source order, `[start, end)`.
+   * Set only with two or more; `range` and `memberRange` then run from the first to the last.
+   */
+  parts?: [number, number][];
 }
 
 /**

@@ -1,0 +1,43 @@
+# Settings for the sample service
+
+title = "sample"
+mode = 0x1F
+timeout = 1_500  # ms
+owner.name = "claude-agent"
+owner.contact = "noreply@example.com"
+
+[server]
+host = "0.0.0.0"
+port = 8080
+started = 2026-11-21T09:30:00Z
+billed = 2026-12-01
+local = 2026-11-21 09:30
+
+[logging]
+level = "info"
+rotate = inf
+
+# off in development
+[server.tls]
+enabled = false
+cert = '/etc/service/tls/cert.pem'
+
+[[upstream]]
+name = "api"
+address = "198.51.100.10"
+weight = 0.75
+window = { opens = 09:00, closes = 17:30 }
+
+[[upstream]]
+name = "static"
+address = "203.0.113.24"
+weight = 0.25
+# TOML 1.1: an inline table may span lines, with comments and a trailing comma
+window = {
+  opens = 06:00,  # before the first deploy
+  closes = 22:00,
+}
+
+[upstream.health]
+path = "/healthz"
+interval = 10

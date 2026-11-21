@@ -53,7 +53,7 @@ install line from the Start page (**Install**, and the **Packages** table), or f
 - `@orz/ui-codemirror`: CodeMirror 6 editors: prose, markdown, completion
 - `@orz/ui-content`: The registry through which content packages draw one another
 - `@orz/ui-hex`: A hex view, editor and data inspector
-- `@orz/ui-json`: A JSON tree viewer: JSON, JSONC, JSON5 and YAML, comments shown
+- `@orz/ui-json`: A JSON tree viewer: JSON, JSONC, JSON5, YAML and TOML, comments shown
 - `@orz/ui-mail`: Mail messages (.eml): headers, body and attachments
 - `@orz/ui-markdown`: GitHub-style markdown
 - `@orz/ui-mermaid`: Mermaid diagrams in the active theme

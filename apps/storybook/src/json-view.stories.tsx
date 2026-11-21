@@ -1,3 +1,4 @@
+import serviceToml from "@orz/fixtures/config/service.toml?raw";
 import requestText from "@orz/fixtures/json/agent-request.json?raw";
 import requestJson5 from "@orz/fixtures/json/agent-request.json5?raw";
 import {
@@ -8,6 +9,7 @@ import {
 import manifestsYaml from "@orz/fixtures/yaml/manifests.yaml?raw";
 import pipelineYaml from "@orz/fixtures/yaml/pipeline.yaml?raw";
 import { agentTraceSummary, JsonView, parseJson } from "@orz/ui-json";
+import { parseToml } from "@orz/ui-json/toml";
 import { parseYaml } from "@orz/ui-json/yaml";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
@@ -43,6 +45,18 @@ const YAML = `import { JsonView } from "@orz/ui-json";
 import { parseYaml } from "@orz/ui-json/yaml";
 
 const parsed = parseYaml(text);
+
+{parsed.ok && <JsonView document={parsed.document} />}`;
+
+const tomlDocument = (text: string) => {
+  const parsed = parseToml(text);
+  return parsed.ok ? parsed.document : { value: null };
+};
+
+const TOML = `import { JsonView } from "@orz/ui-json";
+import { parseToml } from "@orz/ui-json/toml";
+
+const parsed = parseToml(text);
 
 {parsed.ok && <JsonView document={parsed.document} />}`;
 
@@ -143,6 +157,19 @@ export const Yaml: Story = {
 };
 
 /**
+ * A TOML document through `parseToml`: each `[table]` header is the member it names and each
+ * `[[array]]` item an item of its array, its `#` comments placed as YAML's are. Numbers keep
+ * their text (`0x1F`, `1_500`, `inf`), and dates and times show as written. Copy source on a
+ * table written in more than one place copies each place.
+ */
+export const Toml: Story = {
+  args: { document: tomlDocument(serviceToml), value: undefined },
+  parameters: {
+    docs: { source: { code: TOML, language: "tsx" } },
+  },
+};
+
+/**
  * A controlled selection. Click a key, a value or a row's gutter, Shift+click or drag for a range
  * of siblings; the `selection` control follows, and editing it moves the selection.
  */
@@ -239,5 +266,20 @@ export const RecursiveAlias: Story = {
   },
   parameters: {
     docs: { source: { code: YAML, language: "tsx" } },
+  },
+};
+
+/** `server` is written in two places with `[logging]` between: Copy source gives both, not `[logging]`. */
+export const TomlScatteredTable: Story = {
+  tags: ["edge", "!autodocs"],
+  args: {
+    document: tomlDocument(
+      '[server]\nhost = "0.0.0.0"\nport = 8080\n\n[logging]\nlevel = "info"\n\n[server.tls]\nenabled = false\n',
+    ),
+    value: undefined,
+    selection: { type: "value", path: "$.server" },
+  },
+  parameters: {
+    docs: { source: { code: TOML, language: "tsx" } },
   },
 };

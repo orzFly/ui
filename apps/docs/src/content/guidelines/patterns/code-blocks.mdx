@@ -75,12 +75,17 @@ selection as it was written, its indent taken off and comments included.
   goes in as `value`; it shows no comments and offers no Copy source.
 - Parse YAML with `parseYaml` from `@orz/ui-json/yaml` and pass the `document`; its anchors,
   aliases and tags show on their rows, and an alias opens onto what it names.
+- Parse TOML with `parseToml` from `@orz/ui-json/toml` and pass the `document`. Its headers build
+  the tree a program reads, and Copy source on a table written in more than one place copies each
+  place.
 - Give the view a `summary` when the data has a shape a collapsed row can name. An app showing
   agent traces passes `agentTraceSummary`, so a collapsed message reads as its speaker and its
   text, and a tool call as the call.
 - In a viewer, register `jsonContent` before the code renderer: a `.json`, `.jsonc` or `.json5`
   file opens as a tree, and one that does not parse shows as text under the error. Register
-  `yamlContent` beside it, from `@orz/ui-json/yaml/content`, for `.yaml` and `.yml` files.
+  `yamlContent` beside it, from `@orz/ui-json/yaml/content`, for `.yaml` and `.yml` files, and
+  `tomlContent`, from `@orz/ui-json/toml/content`, for `.toml` files and the lock files written
+  in TOML.
 
 
 ## On each platform

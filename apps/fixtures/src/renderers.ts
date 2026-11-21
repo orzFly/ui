@@ -8,6 +8,7 @@ import {
   videoContent,
 } from "@orz/ui-content/attachment";
 import { jsonContent } from "@orz/ui-json/content";
+import { tomlContent } from "@orz/ui-json/toml/content";
 import { yamlContent } from "@orz/ui-json/yaml/content";
 import { markdownContent } from "@orz/ui-markdown";
 
@@ -26,5 +27,6 @@ export const ATTACHMENT_RENDERERS = [
   patchContent,
   jsonContent,
   yamlContent,
+  tomlContent,
   codeContent,
 ];

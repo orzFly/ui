@@ -11,6 +11,7 @@ import {
   parentPathOf,
   resolvePath,
 } from "./tree.ts";
+import { onlyTrivia } from "./trivia.ts";
 import type { JsonDocument, JsonSelection, NodeFacts } from "./types.ts";
 
 /** The end a range started from; a key or value selection's own path. */
@@ -525,10 +526,11 @@ function dedentedSlice(source: string, start: number, end: number): string {
 }
 
 /**
- * A selection's slice of the document's source, comments and formatting kept, with the first
+ * A selection's text in the document's source, comments and formatting kept, with the first
  * line's indent taken off the lines after it: a value's range, or from a range's first member's
- * first leading comment to its last member's end. `undefined` when the document has no source,
- * or for a key.
+ * first leading comment to its last member's end. A member written in more than one place
+ * (`parts`) copies each place, and places with more than comments between them are joined by
+ * a blank line. `undefined` when the document has no source, or for a key.
  */
 export function selectionSource(
   document: JsonDocument,
@@ -544,15 +546,46 @@ export function selectionSource(
   };
   if (selection.type === "value") {
     const at = factsAt(selection.path);
-    return at ? dedentedSlice(source, ...at.range) : undefined;
+    if (!at) return undefined;
+    if (!at.parts) return dedentedSlice(source, ...at.range);
+    return joinPieces(source, at.parts);
   }
   const range = membersOf(value, selection);
   if (!range || range.members.length === 0) return undefined;
-  const first = factsAt((range.members[0] as { path: string }).path);
-  const last = factsAt((range.members.at(-1) as { path: string }).path);
+  const all = range.members.map((member) => factsAt(member.path));
+  const first = all[0];
+  const last = all.at(-1);
   if (!first || !last) return undefined;
-  const start =
-    first.leading?.[0]?.range[0] ?? (first.memberRange ?? first.range)[0];
-  const end = (last.memberRange ?? last.range)[1];
-  return dedentedSlice(source, start, end);
+  if (!all.some((at) => at?.parts)) {
+    const start =
+      first.leading?.[0]?.range[0] ?? (first.memberRange ?? first.range)[0];
+    const end = (last.memberRange ?? last.range)[1];
+    return dedentedSlice(source, start, end);
+  }
+  const pieces: [number, number][] = [];
+  for (const at of all) {
+    if (!at) continue;
+    const own = at.parts ?? [at.memberRange ?? at.range];
+    own.forEach(([start, end], i) => {
+      pieces.push([
+        i === 0 ? (at.leading?.[0]?.range[0] ?? start) : start,
+        end,
+      ]);
+    });
+  }
+  pieces.sort((a, b) => a[0] - b[0]);
+  const merged: [number, number][] = [];
+  for (const [start, end] of pieces) {
+    const prev = merged.at(-1);
+    if (prev && (start <= prev[1] || onlyTrivia(source, prev[1], start))) {
+      prev[1] = Math.max(prev[1], end);
+    } else {
+      merged.push([start, end]);
+    }
+  }
+  return joinPieces(source, merged);
 }
+
+/** Each piece dedented on its own, a blank line between them. */
+const joinPieces = (source: string, pieces: readonly [number, number][]) =>
+  pieces.map(([start, end]) => dedentedSlice(source, start, end)).join("\n\n");

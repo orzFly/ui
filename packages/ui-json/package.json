@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui-json",
   "version": "0.1.1",
-  "description": "A JSON tree viewer: JSON, JSONC, JSON5 and YAML, comments shown",
+  "description": "A JSON tree viewer: JSON, JSONC, JSON5, YAML and TOML, comments shown",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -33,6 +33,16 @@
       "types": "./dist/yaml-content.d.ts",
       "default": "./dist/yaml-content.js"
     },
+    "./toml": {
+      "@orz/source": "./src/toml.ts",
+      "types": "./dist/toml.d.ts",
+      "default": "./dist/toml.js"
+    },
+    "./toml/content": {
+      "@orz/source": "./src/toml-content.tsx",
+      "types": "./dist/toml-content.d.ts",
+      "default": "./dist/toml-content.js"
+    },
     "./styles.css": "./styles.css"
   },
   "files": [
@@ -56,10 +66,14 @@
     "react": "^19",
     "react-dom": "^19",
     "sonner": "^2",
+    "toml-eslint-parser": "^1.0.3",
     "yaml": "^2.9.1"
   },
   "peerDependenciesMeta": {
     "@orz/ui-content": {
+      "optional": true
+    },
+    "toml-eslint-parser": {
       "optional": true
     },
     "yaml": {
@@ -82,6 +96,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sonner": "^2.0.8",
+    "toml-eslint-parser": "^1.0.3",
     "vitest": "^5.0.5",
     "yaml": "^2.9.1"
   }
