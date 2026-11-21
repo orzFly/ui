@@ -488,10 +488,47 @@ export function selectionTextOf(
   return lines.join("\n");
 }
 
+const LINE_BREAK = /(\r\n|[\n\r\u2028\u2029])/;
+
+const isIndent = (c: number) => c === 0x20 || c === 0x09;
+
 /**
- * A selection's exact slice of the document's source, comments and formatting kept: a value's
- * range, or from a range's first member's first leading comment to its last member's end.
- * `undefined` when the document has no source, or for a key.
+ * `source.slice(start, end)`, each line after the first losing up to as many leading spaces or
+ * tabs as the first line's own indent, so the slice pastes at the start of a line. A value that
+ * starts after its key keeps what it holds indented under it.
+ */
+function dedentedSlice(source: string, start: number, end: number): string {
+  let lineStart = start;
+  while (lineStart > 0) {
+    const c = source.charCodeAt(lineStart - 1);
+    if (c === 0x0a || c === 0x0d || c === 0x2028 || c === 0x2029) break;
+    lineStart--;
+  }
+  let indent = 0;
+  while (
+    lineStart + indent < start &&
+    isIndent(source.charCodeAt(lineStart + indent))
+  ) {
+    indent++;
+  }
+  const slice = source.slice(start, end);
+  if (indent === 0) return slice;
+  // Lines at even indexes, the breaks between them at odd ones.
+  const parts = slice.split(LINE_BREAK);
+  for (let i = 2; i < parts.length; i += 2) {
+    const line = parts[i] as string;
+    let n = 0;
+    while (n < indent && (line[n] === " " || line[n] === "\t")) n++;
+    parts[i] = line.slice(n);
+  }
+  return parts.join("");
+}
+
+/**
+ * A selection's slice of the document's source, comments and formatting kept, with the first
+ * line's indent taken off the lines after it: a value's range, or from a range's first member's
+ * first leading comment to its last member's end. `undefined` when the document has no source,
+ * or for a key.
  */
 export function selectionSource(
   document: JsonDocument,
@@ -507,7 +544,7 @@ export function selectionSource(
   };
   if (selection.type === "value") {
     const at = factsAt(selection.path);
-    return at ? source.slice(...at.range) : undefined;
+    return at ? dedentedSlice(source, ...at.range) : undefined;
   }
   const range = membersOf(value, selection);
   if (!range || range.members.length === 0) return undefined;
@@ -517,5 +554,5 @@ export function selectionSource(
   const start =
     first.leading?.[0]?.range[0] ?? (first.memberRange ?? first.range)[0];
   const end = (last.memberRange ?? last.range)[1];
-  return source.slice(start, end);
+  return dedentedSlice(source, start, end);
 }

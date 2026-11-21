@@ -18,6 +18,7 @@ import { JsonView } from "../src/json-view.tsx";
 import { parseJson } from "../src/parse.ts";
 import { ROW_BUDGET } from "../src/tree.ts";
 import type { JsonSelection } from "../src/types.ts";
+import { parseYaml } from "../src/yaml.ts";
 
 const value = {
   model: "model-large",
@@ -311,6 +312,117 @@ describe("JsonView menu", () => {
     expect(items()).toContain("Copy 2 membersCtrl+C");
     expect(items()).toContain("Copy source");
     expect(items()).not.toContain("Copy path");
+  });
+});
+
+describe("JsonView over YAML", () => {
+  const PIPELINE = `# Build pipeline for the sample service
+defaults: &defaults
+  image: node:22   # pinned for the cache
+  retries: 0x3
+build:
+  <<: *defaults
+  checksum: !!binary aGVsbG8=
+  cache: ~
+loop: &loop [1, *loop]
+`;
+  const pipeline = () => {
+    const parsed = parseYaml(PIPELINE);
+    if (!parsed.ok) throw new Error(parsed.error.message);
+    return parsed.document;
+  };
+  const items = () =>
+    screen.getAllByRole("menuitem").map((item) => item.textContent);
+  const mark = (path: string) =>
+    rowOf(path)?.querySelector("[data-mark]")?.textContent;
+
+  it("draws anchors, tags and aliases before the value", () => {
+    render(<JsonView document={pipeline()} />);
+    pressOn(part("$.build", "value"));
+    expect(mark("$.defaults")).toBe("&defaults ");
+    expect(part("$.defaults", "value").textContent).toBe("&defaults {…}");
+    expect(mark('$.build["<<"]')).toBe("*defaults ");
+    expect(mark("$.build.checksum")).toBe("!!binary ");
+    expect(part("$.build.checksum", "value").textContent).toBe(
+      '!!binary "aGVsbG8="',
+    );
+    expect(part("$.build.cache", "value").textContent).toBe("~");
+    expect(mark("$.build.cache")).toBeUndefined();
+    // An open object's empty preview leaves the mark alone.
+    pressOn(part("$.defaults", "value"));
+    expect(part("$.defaults", "value").textContent).toBe("&defaults");
+  });
+
+  it("draws a recursive alias as a leaf, with no Inspect", async () => {
+    render(<JsonView document={pipeline()} />);
+    pressOn(part("$.loop", "value"));
+    const row = rowOf("$.loop[1]");
+    expect(row?.getAttribute("aria-expanded")).toBeNull();
+    expect(row?.querySelector("[data-chevron]")).toBeNull();
+    pressOn(part("$.loop[1]", "value"));
+    expect(row?.getAttribute("aria-expanded")).toBeNull();
+    fireEvent.contextMenu(part("$.loop[1]", "value"));
+    await screen.findByRole("menu");
+    expect(items()).toContain("Go to anchor");
+    expect(items()).not.toContain("InspectEnter");
+  });
+
+  it("goes to the anchor from an alias's menu", async () => {
+    const changes: (JsonSelection | null)[] = [];
+    render(
+      <JsonView
+        document={pipeline()}
+        onSelectionChange={(s) => changes.push(s)}
+      />,
+    );
+    pressOn(part("$.build", "value"));
+    key("Escape");
+    fireEvent.contextMenu(part('$.build["<<"]', "value"));
+    await screen.findByRole("menu");
+    const list = items();
+    expect(list.indexOf("Go to anchor")).toBe(list.indexOf("InspectEnter") - 1);
+    expect(list.indexOf("Go to anchor")).toBeGreaterThan(
+      list.indexOf("Copy key"),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Go to anchor" }));
+    await waitFor(() =>
+      expect(changes.at(-1)).toEqual({ type: "value", path: "$.defaults" }),
+    );
+    expect(rowOf("$.defaults")).not.toBeNull();
+    expect(rowOf("$.defaults")?.getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("offers no Go to anchor on a row that is not an alias", async () => {
+    render(
+      <JsonView
+        document={pipeline()}
+        defaultSelection={{ type: "value", path: "$.defaults" }}
+      />,
+    );
+    fireEvent.contextMenu(part("$.defaults", "value"));
+    await screen.findByRole("menu");
+    expect(items()).not.toContain("Go to anchor");
+  });
+
+  it("opens the anchor's ancestors to reach it", async () => {
+    const parsed = parseYaml(
+      "deep:\n  inner:\n    target: &t {k: v}\nuse: *t\n",
+    );
+    if (!parsed.ok) throw new Error();
+    render(
+      <JsonView
+        document={parsed.document}
+        defaultSelection={{ type: "value", path: "$.use" }}
+      />,
+    );
+    expect(rowOf("$.deep.inner.target")).toBeNull();
+    fireEvent.contextMenu(part("$.use", "value"));
+    await screen.findByRole("menu");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Go to anchor" }));
+    await waitFor(() => expect(rowOf("$.deep.inner.target")).not.toBeNull());
+    expect(rowOf("$.deep.inner.target")?.getAttribute("aria-selected")).toBe(
+      "true",
+    );
   });
 });
 

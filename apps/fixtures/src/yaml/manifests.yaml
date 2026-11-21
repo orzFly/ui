@@ -1,0 +1,11 @@
+# rendered manifests
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: settings }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: web }
+---
+apiVersion: apps/v1
+kind: Deployment

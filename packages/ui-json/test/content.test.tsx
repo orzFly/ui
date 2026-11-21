@@ -9,6 +9,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { jsonContent } from "../src/content.tsx";
 import type { JsonDocument } from "../src/types.ts";
+import { yamlContent } from "../src/yaml-content.tsx";
 
 // The view has tests of its own; here it only shows what it was handed.
 vi.mock("../src/json-view.tsx", () => ({
@@ -82,5 +83,72 @@ describe("jsonContent", () => {
     expect(screen.getByRole("status").textContent).toBe(
       "Not valid JSON: Trailing commas are not allowed in JSON at line 1, column 8",
     );
+  });
+});
+
+function mountYaml(source: ContentSource) {
+  return render(
+    <ContentRenderers renderers={[jsonContent, yamlContent, codeContent]}>
+      <Content source={source} placement="viewer" />
+    </ContentRenderers>,
+  );
+}
+
+describe("yamlContent", () => {
+  it("accepts YAML by name and by type, in the viewer only", () => {
+    for (const name of ["a.yaml", "B.YML", "ci.yml"]) {
+      expect(yamlContent.accepts(file(name, ""), "viewer")).toBe(true);
+    }
+    for (const mime of [
+      "application/yaml",
+      "application/x-yaml; charset=utf-8",
+      "text/yaml",
+      "text/x-yaml",
+    ]) {
+      expect(yamlContent.accepts(file("payload", "", { mime }), "viewer")).toBe(
+        true,
+      );
+    }
+    expect(yamlContent.accepts(file("a.yaml", ""), "document")).toBe(false);
+    expect(yamlContent.accepts(file("a.json", ""), "viewer")).toBe(false);
+    expect(yamlContent.accepts(file("a.yamlx", ""), "viewer")).toBe(false);
+    expect(
+      yamlContent.accepts(file("a.yaml", "", { deleted: true }), "viewer"),
+    ).toBe(false);
+    expect(
+      yamlContent.accepts(
+        { kind: "inline", text: "a: 1", lang: "yaml" },
+        "viewer",
+      ),
+    ).toBe(false);
+  });
+
+  it("draws a file that parses as a tree", async () => {
+    mountYaml(file("ci.yml", "a: 1 # one\nb: [x, y]\n"));
+    expect((await screen.findByTestId("tree")).textContent).toBe(
+      '{"a":1,"b":["x","y"]}',
+    );
+  });
+
+  it("shows a file that does not parse as text, under the error", async () => {
+    mountYaml(file("ci.yaml", "a: 1\n b: 2\n"));
+    expect((await screen.findByTestId("code")).textContent).toBe("ci.yaml");
+    expect(screen.getByRole("status").textContent).toMatch(
+      /^Not valid YAML: .+ at line 1, column 4$/,
+    );
+  });
+
+  it("leaves a file over 2 MB to the renderers after it, without reading it", async () => {
+    const load = vi.fn(async () => "a: 1\n");
+    mountYaml(file("big.yaml", "", { size: 2 * 1024 * 1024 + 1, load }));
+    expect((await screen.findByTestId("code")).textContent).toBe("big.yaml");
+    expect(load).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("tree")).toBeNull();
+  });
+
+  it("leaves a file of unknown size whose text is over 2 MB to the renderers after it", async () => {
+    mountYaml(file("big.yaml", `a: "${"x".repeat(2 * 1024 * 1024)}"\n`));
+    expect((await screen.findByTestId("code")).textContent).toBe("big.yaml");
+    expect(screen.queryByTestId("tree")).toBeNull();
   });
 });

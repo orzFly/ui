@@ -1,14 +1,11 @@
-import {
-  ContentFallback,
-  type ContentProps,
-  type ContentRenderer,
-  type ContentSource,
-  useSourceText,
+import type {
+  ContentProps,
+  ContentRenderer,
+  ContentSource,
 } from "@orz/ui-content";
-import { type ComponentType, useMemo } from "react";
-import { JsonView } from "./json-view.tsx";
+import type { ComponentType } from "react";
+import { DocumentContent } from "./loaded-document.tsx";
 import { type JsonDialect, parseJson } from "./parse.ts";
-import { WarningStrip } from "./warning-strip.tsx";
 
 /**
  * Past this a file goes to the renderers after this one: the text is held and parsed whole
@@ -22,7 +19,14 @@ const DIALECT_NAME: Record<JsonDialect, string> = {
   json5: "JSON5",
 };
 
-type FileSource = Extract<ContentSource, { kind: "file" }>;
+const PARSE: Record<
+  JsonDialect,
+  (text: string) => ReturnType<typeof parseJson>
+> = {
+  json: (text) => parseJson(text, { dialect: "json" }),
+  jsonc: (text) => parseJson(text, { dialect: "jsonc" }),
+  json5: (text) => parseJson(text, { dialect: "json5" }),
+};
 
 /** The dialect a file is read in: its extension's, or JSON when only its type said JSON. */
 function dialectOf(source: ContentSource): JsonDialect | null {
@@ -38,67 +42,19 @@ function dialectOf(source: ContentSource): JsonDialect | null {
   return null;
 }
 
-type JsonProps = ContentProps & { Next: ComponentType<ContentProps> };
-
-function LoadedJson({
-  source,
-  placement,
-  className,
-  Next,
-  dialect,
-}: JsonProps & { source: FileSource; dialect: JsonDialect }) {
-  const text = useSourceText(source);
-  const parsed = useMemo(
-    () =>
-      text.status === "ready" ? parseJson(text.text, { dialect }) : undefined,
-    [text.status, text.text, dialect],
-  );
-  if (text.status === "loading") {
-    return (
-      <ContentFallback
-        source={source}
-        placement={placement}
-        className={className}
-      />
-    );
-  }
-  if (text.status === "error" || !parsed) {
-    // A load that failed is the code renderer's to report, with its retry.
-    return <Next source={source} placement={placement} className={className} />;
-  }
-  if (!parsed.ok) {
-    const { message, line, column } = parsed.error;
-    // Reading again would fail the same way, so there is no retry: the text still shows, as
-    // code, below what was wrong with it.
-    return (
-      <div className={className}>
-        <WarningStrip className="border-b-0">
-          Not valid {DIALECT_NAME[dialect]}: {message} at line {line}, column{" "}
-          {column}
-        </WarningStrip>
-        <Next source={source} placement={placement} />
-      </div>
-    );
-  }
-  // The view fills its parent; the viewer sets the pane's height.
-  return (
-    <div
-      className={className}
-      style={{ height: "var(--attachment-pane-height)" }}
-    >
-      <JsonView document={parsed.document} fill />
-    </div>
-  );
-}
-
-function Json(props: JsonProps) {
-  const { source, placement, className, Next } = props;
+function Json(props: ContentProps & { Next: ComponentType<ContentProps> }) {
+  const { source } = props;
   const dialect = dialectOf(source);
   if (source.kind !== "file" || dialect === null) return null;
-  if (source.size !== undefined && source.size > JSON_PREVIEW_MAX_BYTES) {
-    return <Next source={source} placement={placement} className={className} />;
-  }
-  return <LoadedJson {...props} source={source} dialect={dialect} />;
+  return (
+    <DocumentContent
+      {...props}
+      source={source}
+      parse={PARSE[dialect]}
+      format={DIALECT_NAME[dialect]}
+      maxBytes={JSON_PREVIEW_MAX_BYTES}
+    />
+  );
 }
 
 /**

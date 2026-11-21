@@ -5,7 +5,10 @@ import {
   hugeString,
   largeArray,
 } from "@orz/fixtures/json/large.ts";
+import manifestsYaml from "@orz/fixtures/yaml/manifests.yaml?raw";
+import pipelineYaml from "@orz/fixtures/yaml/pipeline.yaml?raw";
 import { agentTraceSummary, JsonView, parseJson } from "@orz/ui-json";
+import { parseYaml } from "@orz/ui-json/yaml";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 import { argsUpdater } from "./args.ts";
@@ -31,6 +34,18 @@ const parsed = parseJson(text, { dialect: "json5" });
 
 {parsed.ok && <JsonView document={parsed.document} />}`;
 
+const yamlDocument = (text: string) => {
+  const parsed = parseYaml(text);
+  return parsed.ok ? parsed.document : { value: null };
+};
+
+const YAML = `import { JsonView } from "@orz/ui-json";
+import { parseYaml } from "@orz/ui-json/yaml";
+
+const parsed = parseYaml(text);
+
+{parsed.ok && <JsonView document={parsed.document} />}`;
+
 /** picotera's Chinese strings, as an app that speaks Chinese passes them. */
 const CHINESE = {
   toolbar: "文档",
@@ -50,6 +65,7 @@ const CHINESE = {
   copySource: "复制原文",
   copyPath: "复制路径",
   copyKey: "复制键名",
+  goToAnchor: "跳到锚点",
   inspect: "单独查看",
   expandSubtree: "展开子树",
   collapseSubtree: "折叠子树",
@@ -111,6 +127,18 @@ export const Json5Comments: Story = {
   args: { document: DOCUMENT, value: undefined },
   parameters: {
     docs: { source: { code: JSON5_COMMENTS, language: "tsx" } },
+  },
+};
+
+/**
+ * A YAML document through `parseYaml`: its `#` comments place as JSON5's do, and its anchors,
+ * aliases and tags show before the value as YAML writes them. An alias such as `<<: *defaults`
+ * opens onto what it names; its menu's Go to anchor selects the anchor.
+ */
+export const Yaml: Story = {
+  args: { document: yamlDocument(pipelineYaml), value: undefined },
+  parameters: {
+    docs: { source: { code: YAML, language: "tsx" } },
   },
 };
 
@@ -189,4 +217,27 @@ export const DeepNesting: Story = {
 export const HugeString: Story = {
   tags: ["edge", "!autodocs"],
   args: { value: hugeString() },
+};
+
+/** A stream of three YAML documents: the root lists them, a row each. */
+export const YamlStream: Story = {
+  tags: ["edge", "!autodocs"],
+  args: { document: yamlDocument(manifestsYaml), value: undefined },
+  parameters: {
+    docs: { source: { code: YAML, language: "tsx" } },
+  },
+};
+
+/** An alias inside the node it names holds itself: its row is a leaf, and Expand all stops there. */
+export const RecursiveAlias: Story = {
+  tags: ["edge", "!autodocs"],
+  args: {
+    document: yamlDocument(
+      "# a list that holds itself\nloop: &loop\n  - first\n  - *loop\nagain: *loop\n",
+    ),
+    value: undefined,
+  },
+  parameters: {
+    docs: { source: { code: YAML, language: "tsx" } },
+  },
 };

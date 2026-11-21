@@ -23,6 +23,8 @@ export interface JsonViewLabels {
   copySource: string;
   copyPath: string;
   copyKey: string;
+  /** An alias row's menu item. Default "Go to anchor". */
+  goToAnchor: string;
   inspect: string;
   expandSubtree: string;
   collapseSubtree: string;
@@ -70,6 +72,7 @@ export const DEFAULT_LABELS: JsonViewLabels = {
   copySource: "Copy source",
   copyPath: "Copy path",
   copyKey: "Copy key",
+  goToAnchor: "Go to anchor",
   inspect: "Inspect",
   expandSubtree: "Expand subtree",
   collapseSubtree: "Collapse subtree",

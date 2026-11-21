@@ -1,0 +1,18 @@
+# Build pipeline for the sample service
+defaults: &defaults
+  image: node:22   # pinned for the cache
+  retries: 0x3
+  env:
+    - CI=true
+    # more come from the runner
+
+build:
+  <<: *defaults
+  script: |
+    pnpm install
+    pnpm build
+  checksum: !!binary aGVsbG8=
+  cache: ~
+deploy:
+  <<: *defaults
+  when: manual
