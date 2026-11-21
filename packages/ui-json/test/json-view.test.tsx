@@ -270,15 +270,29 @@ describe("JsonView menu", () => {
     fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
 
-    fireEvent.contextMenu(part("$.metadata", "value"));
+    fireEvent.contextMenu(part("$.metadata", "value"), {
+      clientX: 120,
+      clientY: 80,
+    });
     await screen.findByRole("menu");
     expect(items()).toEqual(fromButton);
+    // A right-click's menu stands where the pointer was, not at the row's ⋯.
+    const anchor = document.querySelector<HTMLElement>(
+      "[data-slot=json-point-menu-anchor]",
+    );
+    expect(anchor?.style.left).toBe("120px");
+    expect(anchor?.style.top).toBe("80px");
+    expect(button.getAttribute("aria-expanded")).toBe("false");
     fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    expect(
+      document.querySelector("[data-slot=json-point-menu-anchor]"),
+    ).toBeNull();
 
     key("F10", { shiftKey: true });
     await screen.findByRole("menu");
     expect(items()).toEqual(fromButton);
+    expect(button.getAttribute("aria-expanded")).toBe("true");
     expect(fromButton).toContain("Expand subtree");
     expect(fromButton).not.toContain("Copy source");
   });

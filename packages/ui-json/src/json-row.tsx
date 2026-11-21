@@ -9,6 +9,7 @@ import {
 import { cn } from "@orz/ui/lib/utils";
 import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
 import { type CSSProperties, memo, type ReactNode, type Ref } from "react";
+import { createPortal } from "react-dom";
 import type { JsonViewLabels } from "./labels.ts";
 import {
   formatChars,
@@ -170,6 +171,50 @@ function RowMenu({
           {menu.items()}
         </DropdownMenuContent>
       )}
+    </DropdownMenu>
+  );
+}
+
+/**
+ * The row menu a right-click opens, anchored where it landed: Radix's dropdown menu anchors to
+ * its trigger, so a trigger with no size stands at that point.
+ */
+export function PointMenu({
+  point,
+  items,
+  onClose,
+  onCloseAutoFocus,
+}: {
+  point: { x: number; y: number };
+  items: () => ReactNode;
+  onClose: () => void;
+  onCloseAutoFocus: (event: Event) => void;
+}) {
+  return (
+    <DropdownMenu open onOpenChange={(open) => !open && onClose()}>
+      {/* In the body: inside the tree, whose containment holds fixed boxes, it would be placed
+          against the tree rather than the window. */}
+      {createPortal(
+        <DropdownMenuTrigger asChild>
+          <span
+            aria-hidden
+            tabIndex={-1}
+            data-slot="json-point-menu-anchor"
+            className="pointer-events-none fixed size-0"
+            style={{ left: point.x, top: point.y }}
+          />
+        </DropdownMenuTrigger>,
+        document.body,
+      )}
+      <DropdownMenuContent
+        side="bottom"
+        align="start"
+        sideOffset={0}
+        className="w-auto min-w-56"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
+        {items()}
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }

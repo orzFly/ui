@@ -41,7 +41,13 @@ import {
 import { toast } from "sonner";
 import { useControllable } from "./controllable.ts";
 import { InspectDialog, type InspectTarget } from "./inspect-dialog.tsx";
-import { FILL_CLASS, indentOf, JsonRowView, TICK_CLASS } from "./json-row.tsx";
+import {
+  FILL_CLASS,
+  indentOf,
+  JsonRowView,
+  PointMenu,
+  TICK_CLASS,
+} from "./json-row.tsx";
 import { DEFAULT_LABELS, type JsonViewLabels } from "./labels.ts";
 import {
   anchorOf,
@@ -461,6 +467,18 @@ function JsonViewBody({
   // --- menu -------------------------------------------------------------------
 
   const [menuPath, setMenuPath] = useState<string | null>(null);
+  // Where a right-click opened the menu; null while it is the row's ⋯ menu.
+  const [menuPoint, setMenuPoint] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const closeMenu = () => {
+    setMenuPath(null);
+    setMenuPoint(null);
+  };
+  const onMenuCloseAutoFocus = (event: Event) => {
+    event.preventDefault();
+    scroller.current?.focus({ preventScroll: true });
+  };
   // On touch, Select members… makes each later tap extend a range from this anchor.
   const [touchAnchor, setTouchAnchor] = useState<string | null>(null);
 
@@ -591,6 +609,7 @@ function JsonViewBody({
   }, []);
 
   const openMenuAt = (path: string) => {
+    setMenuPoint(null);
     setMenuPath(path);
     scrollToPath(path);
   };
@@ -763,7 +782,11 @@ function JsonViewBody({
       press(hit.row, partOf(event.target as Element, hit.el), false);
     }
     const path = hit.row.kind === "comment" ? hit.row.member : hit.row.path;
-    if (index.has(path)) openMenuAt(path);
+    if (!index.has(path)) return;
+    // A right-click opens the menu where it landed, as the system's own does; ⋯ and the
+    // keyboard open it at the row's ⋯.
+    setMenuPoint({ x: event.clientX, y: event.clientY });
+    setMenuPath(path);
   };
 
   // --- keyboard ---------------------------------------------------------------
@@ -1074,22 +1097,20 @@ function JsonViewBody({
                   row.kind === "comment"
                     ? null
                     : {
-                        open: menuPath === path,
+                        open: menuPath === path && menuPoint === null,
                         onOpenChange: (open) => {
                           if (open) {
                             if (!covered(at)) {
                               setSelection({ type: "value", path });
                             }
+                            setMenuPoint(null);
                             setMenuPath(path);
                           } else {
-                            setMenuPath(null);
+                            closeMenu();
                           }
                         },
                         items: menuItems,
-                        onCloseAutoFocus: (event) => {
-                          event.preventDefault();
-                          scroller.current?.focus({ preventScroll: true });
-                        },
+                        onCloseAutoFocus: onMenuCloseAutoFocus,
                       }
                 }
               />
@@ -1097,6 +1118,15 @@ function JsonViewBody({
           })}
         </div>
       </div>
+
+      {menuPath !== null && menuPoint !== null && (
+        <PointMenu
+          point={menuPoint}
+          items={menuItems}
+          onClose={closeMenu}
+          onCloseAutoFocus={onMenuCloseAutoFocus}
+        />
+      )}
 
       <InspectDialog
         target={inspect}
