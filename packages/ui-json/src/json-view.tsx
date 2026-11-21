@@ -26,6 +26,7 @@ import {
   WrapTextIcon,
 } from "lucide-react";
 import {
+  type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
@@ -41,7 +42,13 @@ import {
 import { toast } from "sonner";
 import { useControllable } from "./controllable.ts";
 import { InspectDialog, type InspectTarget } from "./inspect-dialog.tsx";
-import { FILL_CLASS, indentOf, JsonRowView, TICK_CLASS } from "./json-row.tsx";
+import {
+  indentOf,
+  JsonRowView,
+  PointMenu,
+  SelectionMenu,
+  SLOT_WIDTH,
+} from "./json-row.tsx";
 import { DEFAULT_LABELS, type JsonViewLabels } from "./labels.ts";
 import {
   anchorOf,
@@ -57,7 +64,6 @@ import {
   moveRight,
   moveToEnd,
   moveVertical,
-  type SelectionGeometry,
   sameSelection,
   selectAll,
   selectionAfterCollapse,
@@ -461,6 +467,18 @@ function JsonViewBody({
   // --- menu -------------------------------------------------------------------
 
   const [menuPath, setMenuPath] = useState<string | null>(null);
+  // Where a right-click opened the menu; null while it is the row's ⋯ menu.
+  const [menuPoint, setMenuPoint] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const closeMenu = () => {
+    setMenuPath(null);
+    setMenuPoint(null);
+  };
+  const onMenuCloseAutoFocus = (event: Event) => {
+    event.preventDefault();
+    scroller.current?.focus({ preventScroll: true });
+  };
   // On touch, Select members… makes each later tap extend a range from this anchor.
   const [touchAnchor, setTouchAnchor] = useState<string | null>(null);
 
@@ -591,6 +609,7 @@ function JsonViewBody({
   }, []);
 
   const openMenuAt = (path: string) => {
+    setMenuPoint(null);
     setMenuPath(path);
     scrollToPath(path);
   };
@@ -763,7 +782,11 @@ function JsonViewBody({
       press(hit.row, partOf(event.target as Element, hit.el), false);
     }
     const path = hit.row.kind === "comment" ? hit.row.member : hit.row.path;
-    if (index.has(path)) openMenuAt(path);
+    if (!index.has(path)) return;
+    // A right-click opens the menu where it landed, as the system's own does; ⋯ and the
+    // keyboard open it at the row's ⋯.
+    setMenuPoint({ x: event.clientX, y: event.clientY });
+    setMenuPath(path);
   };
 
   // --- keyboard ---------------------------------------------------------------
@@ -895,10 +918,44 @@ function JsonViewBody({
         : null;
 
   const virtualItems = virtualizer.getVirtualItems();
+
+  // The selection's right edge: the furthest its rows' content reaches, among the rows drawn.
+  // A wider row scrolled into view widens it.
+  const rowsBox = useRef<HTMLDivElement>(null);
+  const [selectionRight, setSelectionRight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const box = rowsBox.current;
+    let right: number | null = null;
+    if (box && geometry !== null && geometry.kind !== "key") {
+      const left = box.getBoundingClientRect().left;
+      for (const el of box.querySelectorAll<HTMLElement>("[data-row]")) {
+        const at = Number(el.dataset.index);
+        if (at < geometry.first || at > geometry.last) continue;
+        for (const end of el.querySelectorAll("[data-end]")) {
+          right = Math.max(
+            right ?? 0,
+            end.getBoundingClientRect().right - left,
+          );
+        }
+      }
+    }
+    const next = right === null ? null : Math.ceil(right);
+    if (next !== selectionRight) setSelectionRight(next);
+  });
   const focusIndex = focusPath === null ? undefined : index.get(focusPath);
   const ownValue =
     geometry?.kind === "value" && geometry.ownRow ? geometry.first : -1;
   const keyRow = geometry?.kind === "key" ? geometry.first : -1;
+  // The rows the selection's frame spans, which its ⋯ stands in; a key keeps its row's ⋯.
+  const selectionBox = (() => {
+    if (geometry === null || geometry.kind === "key") return null;
+    const first = virtualizer.measurementsCache[geometry.first];
+    const last = virtualizer.measurementsCache[geometry.last];
+    if (!first || !last) return null;
+    const path = (selection && singlePath(selection)) ?? focusPath;
+    if (path === null) return null;
+    return { top: first.start, height: last.end - first.start, path };
+  })();
 
   return (
     <Pane
@@ -1036,10 +1093,21 @@ function JsonViewBody({
           className="pointer-events-none invisible absolute h-row-dense w-0 touch:h-11"
         />
         <div
+          ref={rowsBox}
           className="relative w-full"
-          style={{ height: virtualizer.getTotalSize() }}
+          style={
+            {
+              height: virtualizer.getTotalSize(),
+              "--json-slot": SLOT_WIDTH,
+              "--json-sel-left":
+                geometry === null ? undefined : indentOf(geometry.depth),
+              "--json-sel-right":
+                selectionRight === null
+                  ? undefined
+                  : `calc(${selectionRight}px + var(--spacing) * 1.5)`,
+            } as CSSProperties
+          }
         >
-          <SelectionBlock geometry={geometry} virtualizer={virtualizer} />
           {virtualItems.map((item) => {
             const row = rows[item.index];
             if (!row) return null;
@@ -1066,37 +1134,63 @@ function JsonViewBody({
                 valueSelected={at === ownValue}
                 keySelected={at === keyRow}
                 focused={focused}
-                showMenu={
-                  focused || inBlock || at === ownValue || at === keyRow
-                }
+                showMenu={focused || at === keyRow}
                 measureRef={wrap ? virtualizer.measureElement : undefined}
                 menu={
                   row.kind === "comment"
                     ? null
                     : {
-                        open: menuPath === path,
+                        open: menuPath === path && menuPoint === null,
                         onOpenChange: (open) => {
                           if (open) {
                             if (!covered(at)) {
                               setSelection({ type: "value", path });
                             }
+                            setMenuPoint(null);
                             setMenuPath(path);
                           } else {
-                            setMenuPath(null);
+                            closeMenu();
                           }
                         },
                         items: menuItems,
-                        onCloseAutoFocus: (event) => {
-                          event.preventDefault();
-                          scroller.current?.focus({ preventScroll: true });
-                        },
+                        onCloseAutoFocus: onMenuCloseAutoFocus,
                       }
                 }
               />
             );
           })}
+          {selectionBox && (
+            <SelectionMenu
+              top={selectionBox.top}
+              height={selectionBox.height}
+              wrap={wrap}
+              label={labels.rowActions(selectionBox.path)}
+              menu={{
+                open: menuPath !== null && menuPoint === null,
+                onOpenChange: (open) => {
+                  if (open) {
+                    setMenuPoint(null);
+                    setMenuPath(selectionBox.path);
+                  } else {
+                    closeMenu();
+                  }
+                },
+                items: menuItems,
+                onCloseAutoFocus: onMenuCloseAutoFocus,
+              }}
+            />
+          )}
         </div>
       </div>
+
+      {menuPath !== null && menuPoint !== null && (
+        <PointMenu
+          point={menuPoint}
+          items={menuItems}
+          onClose={closeMenu}
+          onCloseAutoFocus={onMenuCloseAutoFocus}
+        />
+      )}
 
       <InspectDialog
         target={inspect}
@@ -1118,37 +1212,5 @@ function JsonViewBody({
         )}
       />
     </Pane>
-  );
-}
-
-/**
- * The block painted under the rows a members range or an open value's subtree covers, from the
- * members' indent, or the children's, to the right edge.
- */
-function SelectionBlock({
-  geometry,
-  virtualizer,
-}: {
-  geometry: SelectionGeometry | null;
-  virtualizer: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>;
-}) {
-  if (!geometry || geometry.kind === "key") return null;
-  const first = geometry.ownRow ? geometry.first + 1 : geometry.first;
-  if (first > geometry.last) return null;
-  const measurements = virtualizer.measurementsCache;
-  const top = measurements[first]?.start;
-  const bottom = measurements[geometry.last]?.end;
-  if (top === undefined || bottom === undefined) return null;
-  return (
-    <div
-      aria-hidden
-      data-slot="json-selection"
-      className={cn(
-        "pointer-events-none absolute right-0",
-        FILL_CLASS,
-        TICK_CLASS,
-      )}
-      style={{ top, height: bottom - top, left: indentOf(geometry.depth) }}
-    />
   );
 }
