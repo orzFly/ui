@@ -624,7 +624,7 @@ const WORDS: [string, unknown][] = [
   ["null", null],
 ];
 
-function lineAndColumn(
+export function lineAndColumn(
   text: string,
   offset: number,
 ): { line: number; column: number } {

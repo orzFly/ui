@@ -1,7 +1,7 @@
 {
   "name": "@orz/ui-json",
   "version": "0.1.1",
-  "description": "A JSON tree viewer: JSON, JSONC and JSON5, comments shown",
+  "description": "A JSON tree viewer: JSON, JSONC, JSON5 and YAML, comments shown",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
@@ -22,6 +22,16 @@
       "@orz/source": "./src/content.tsx",
       "types": "./dist/content.d.ts",
       "default": "./dist/content.js"
+    },
+    "./yaml": {
+      "@orz/source": "./src/yaml.ts",
+      "types": "./dist/yaml.d.ts",
+      "default": "./dist/yaml.js"
+    },
+    "./yaml/content": {
+      "@orz/source": "./src/yaml-content.tsx",
+      "types": "./dist/yaml-content.d.ts",
+      "default": "./dist/yaml-content.js"
     },
     "./styles.css": "./styles.css"
   },
@@ -45,10 +55,14 @@
     "radix-ui": "^1",
     "react": "^19",
     "react-dom": "^19",
-    "sonner": "^2"
+    "sonner": "^2",
+    "yaml": "^2.9.1"
   },
   "peerDependenciesMeta": {
     "@orz/ui-content": {
+      "optional": true
+    },
+    "yaml": {
       "optional": true
     }
   },
@@ -68,6 +82,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sonner": "^2.0.8",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
   }
 }

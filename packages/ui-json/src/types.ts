@@ -1,8 +1,8 @@
-/** A comment in a JSONC or JSON5 source. */
+/** A comment in a JSONC, JSON5 or YAML source. */
 export interface JsonComment {
-  /** As written, delimiters included: `// note`, `/* note *\/`. */
+  /** As written, delimiters included: `// note`, `/* note *\/`, YAML's `# note`. */
   text: string;
-  /** A `/* … *\/` comment, rather than a `//` one. */
+  /** A `/* … *\/` comment, rather than a `//` one; never set for YAML. */
   block: boolean;
   /** `[start, end)` in UTF-16 offsets into the document's `source`. */
   range: [number, number];
@@ -22,6 +22,19 @@ export interface NodeFacts {
   trailing?: JsonComment;
   /** In a container, the comments after its last member; on the root, also those after the root value. */
   dangling?: JsonComment[];
+  /** The anchor the node is named by, without `&`. */
+  anchor?: string;
+  /** The node's tag as written: `!!binary`, `!thing`. */
+  tag?: string;
+  /** Set when the member is an alias. */
+  alias?: {
+    /** The anchor's name, without `*`. */
+    name: string;
+    /** The anchored node's path in the view. */
+    path: string;
+    /** The alias sits inside the node it names, so the value holds itself; drawn as a leaf. */
+    recursive: boolean;
+  };
 }
 
 /**
