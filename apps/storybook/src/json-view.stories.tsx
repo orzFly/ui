@@ -60,6 +60,9 @@ const parsed = parseToml(text);
 
 {parsed.ok && <JsonView document={parsed.document} />}`;
 
+const DEEP_NESTING = `// { level: 1, next: { level: 2, next: … { level: 5000, next: null } } }
+<JsonView value={value} />`;
+
 /** picotera's Chinese strings, as an app that speaks Chinese passes them. */
 const CHINESE = {
   toolbar: "文档",
@@ -238,6 +241,15 @@ export const LargeDocument: Story = {
 export const DeepNesting: Story = {
   tags: ["edge", "!autodocs"],
   args: { value: deepNesting() },
+  // Storybook infers an arg's type, and the JSX printer writes a prop, by recursing through the
+  // value a call per level, and both overflow the stack at this depth: a declared type and a
+  // written snippet keep either from walking it.
+  argTypes: {
+    value: { type: { name: "other", value: "unknown" }, control: false },
+  },
+  parameters: {
+    docs: { source: { code: DEEP_NESTING, language: "tsx" } },
+  },
 };
 
 /** One 5 MB string: its row is cut from a bounded slice, and Inspect windows the whole text. */
