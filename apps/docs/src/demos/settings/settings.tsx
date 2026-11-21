@@ -5,6 +5,7 @@ import {
   TOKENS,
 } from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
+import { InfoPopover } from "@orz/ui/components/info-popover";
 import {
   NavList,
   NavListFrame,
@@ -51,37 +52,34 @@ type SectionId =
 const SECTIONS: {
   id: SectionId;
   title: string;
-  description: string;
+  /** What the section is for, behind an (i) after its title, where the title alone does not say. */
+  info?: string;
   Icon: LucideIcon;
 }[] = [
   {
     id: "editor",
     title: "Editor",
-    description: "How files look while you edit them. Changes apply at once.",
     Icon: SquarePenIcon,
   },
   {
     id: "notifications",
     title: "Notifications",
-    description: "What reaches you, and where. Changes apply at once.",
     Icon: BellIcon,
   },
   {
     id: "appearance",
     title: "Appearance",
-    description: "The colours of every screen, yours to pick.",
     Icon: PaletteIcon,
   },
   {
     id: "profile",
     title: "Profile",
-    description: "What others see of you. Saved when you press Save profile.",
     Icon: UserIcon,
   },
   {
     id: "tokens",
     title: "Access tokens",
-    description: "Tokens that scripts and bots sign in with.",
+    info: "Tokens that scripts and bots sign in with.",
     Icon: KeyRoundIcon,
   },
 ];
@@ -214,15 +212,19 @@ export function Settings() {
               Settings
             </a>
           </Button>
-          <h2
-            id="settings-section-title"
-            className="font-semibold text-lg leading-snug"
-          >
-            {current.title}
-          </h2>
-          <p className="mt-1 text-muted-foreground text-ui">
-            {current.description}
-          </p>
+          <div className="flex items-center gap-1">
+            <h2
+              id="settings-section-title"
+              className="font-semibold text-lg leading-snug"
+            >
+              {current.title}
+            </h2>
+            {current.info && (
+              <InfoPopover label={`About ${current.title.toLowerCase()}`}>
+                {current.info}
+              </InfoPopover>
+            )}
+          </div>
           <div className="mt-2 max-w-2xl">
             {view.section === "editor" && (
               <EditorSection prefs={prefs} onChange={onPrefs} />

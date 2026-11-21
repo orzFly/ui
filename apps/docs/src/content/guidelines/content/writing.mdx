@@ -13,9 +13,13 @@ export const meta = {
     "ui/Primitives/Tabs",
     "ui/Primitives/Table",
     "ui/Primitives/Textarea",
+    "ui/Primitives/InfoPopover",
+    "ui/Primitives/FieldDescription",
   ],
 };
 
+import { DescribedSetting } from "../../../examples/writing/described-setting.tsx";
+import { ExplainedSetting } from "../../../examples/writing/explained-setting.tsx";
 import { NamedAnswer } from "../../../examples/writing/named-answer.tsx";
 import { OffStateSwitch } from "../../../examples/writing/off-state-switch.tsx";
 import { OnStateSwitch } from "../../../examples/writing/on-state-switch.tsx";
@@ -84,6 +88,41 @@ verb; the rest name the setting or the thing.
     Name the off state, so that turning it on turns something off.
   </Dont>
 </DoDont>
+
+## Explanations
+
+The screen already says most of what a sentence would: the label names the setting, the switch
+shows its state, and a missing Save button says that changes apply at once. Write only what it
+cannot show, and put that behind an `InfoPopover`.
+
+<DoDont>
+  <Do show={<ExplainedSetting />}>
+    Put what a setting does behind an (i) right after its label, where a mouse, a thumb and the
+    keys all open it.
+  </Do>
+  <Dont show={<DescribedSetting />}>
+    Run a grey line under every label, or a subtitle that says what the controls already show. The
+    reader learns to skip them, and skips the one that mattered.
+  </Dont>
+</DoDont>
+
+| Words | Where |
+|---|---|
+| What a setting, an option or a section does, or why it is there | Behind an (i), when the label alone does not say it |
+| What the screen already shows: the heading again, "Changes apply at once" over switches, "Saved when you press Save" beside a Save button | Nowhere |
+| A limit the reader needs while typing: a format, a length | Under the field, as a `FieldDescription` |
+| What is wrong with a field | Under the field, as a `FieldError` |
+| Empty, failed, done | On screen, as the message (see **Messages** below) |
+| What a confirmation's action does, and that it cannot be undone | In the dialog's description |
+
+- **One (i) per thing explained**, right after its label or title, never at the far end of the
+  row, where the row's own control sits.
+- **Name it** when a view holds more than one: `label="About format on save"`, so a screen reader
+  tells them apart. A lone one may keep its default, "More information".
+- **A sentence or two.** It may end in a link to where the subject is told in full; anything longer
+  is a page of its own.
+- **Never the only copy of what the task needs.** A required format, a consequence that cannot be
+  undone: those stay on screen.
 
 ## Capitalisation
 

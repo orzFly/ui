@@ -7,6 +7,7 @@ export const meta = {
     "ui/Primitives/Dialog",
     "ui/Primitives/Sheet",
     "ui/Primitives/Popover",
+    "ui/Primitives/InfoPopover",
     "ui/Primitives/DropdownMenu",
     "ui/Primitives/HoverCard",
     "ui/Primitives/Tooltip",
@@ -39,6 +40,7 @@ and the HoverCard no longer open, and every other control still works.
 | Show a panel of settings, filters or a navigation list beside the work | `Sheet` (`side="right"` or `"left"`) | Yes, dimmed | Three quarters of the width, from the edge |
 | Offer a short list of actions or one choice from a few | `DropdownMenu` | Yes, until a pick or Escape | Opens under its trigger; rows grow to touch size |
 | Edit one value in place, where the trigger is | `Popover` | No | Opens under its trigger, never wider than the screen |
+| Explain a label, a setting or a section in a sentence or two | `InfoPopover` | No | Opens on a press, as on a click; see [Writing](/guidelines/content/writing/#explanations) |
 | Preview what a link points to | `HoverCard` | No | Does not open: the link itself must be enough |
 | Name an icon button | `Tooltip` | No | Does not open: the `aria-label` names it, the icon must be clear |
 

@@ -1,7 +1,7 @@
 export const meta = {
   title: "Principles",
   description:
-    "Seven rules the rest of the guidelines follow from. When a page is silent, these decide.",
+    "The rules the rest of the guidelines follow from. When a page is silent, these decide.",
   order: 1,
   api: [
     "ui/Primitives/NavList",
@@ -10,9 +10,11 @@ export const meta = {
     "ui/ConfirmDialog",
     "ui/Primitives/Skeleton",
     "ui/LoadFailure",
+    "ui/Primitives/InfoPopover",
   ],
 };
 
+import { ExplainedSettings } from "../../examples/principles/explained-settings.tsx";
 import { MailFolders } from "../../examples/principles/mail-folders.tsx";
 import { MailSelection } from "../../examples/principles/mail-selection.tsx";
 import { MailStates } from "../../examples/principles/mail-states.tsx";
@@ -129,3 +131,23 @@ state that cannot be told apart from another is a bug.
 
 Mail's Drafts in each state. Done is the toast under **Undo over confirm** above: one line, and
 gone again.
+
+## Shown, not told
+
+**The interface says nothing it already shows; an explanation waits behind (i).**
+
+A label, a control's state, a Save button that is there or is not: the screen already tells the
+reader most of what a sentence under it would. Write that sentence anyway and every row grows a
+line of grey text the reader learns to skip, taking the one line that mattered with it. So no
+subtitle restates its heading, and no "Changes apply at once" sits over switches that do. What a
+reader may need and cannot see, what a setting does or why an option is there, goes behind an
+`InfoPopover` right after the label it explains: one press away with a mouse, a thumb or the keys.
+
+Words that report stay on screen: an empty, failed or done message (*Say what happened*), a
+field's error, and a limit the reader needs while typing. [Writing](/guidelines/content/writing/#explanations)
+draws the line.
+
+<Example of={ExplainedSettings} />
+
+Two of these settings need a word on what they do, and carry it behind their (i); **Line numbers**
+says it all in its name. Press an (i), or Tab to it and press Enter.

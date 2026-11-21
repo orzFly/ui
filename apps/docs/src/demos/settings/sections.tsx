@@ -9,6 +9,7 @@ import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
 import { GroupHeading } from "@orz/ui/components/group-heading";
+import { InfoPopover } from "@orz/ui/components/info-popover";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import { List, ListItem } from "@orz/ui/components/list";
@@ -74,28 +75,31 @@ interface PreferenceProps {
   onChange(next: Partial<Preferences>): void;
 }
 
-/** A label on the leading edge, its control on the trailing edge, as a phone's settings lay them out. */
+/**
+ * A label on the leading edge, its control on the trailing edge, as a phone's settings lay them
+ * out. `info` is what the setting does, behind an (i) after the label.
+ */
 function SettingRow({
   id,
   label,
-  description,
+  info,
   disabled = false,
   children,
 }: {
   id: string;
   label: string;
-  description?: string;
+  info?: ReactNode;
   disabled?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 py-3">
-      <div className="group grid gap-1" data-disabled={disabled}>
+      <div className="group flex items-center gap-1" data-disabled={disabled}>
         <Label htmlFor={id}>{label}</Label>
-        {description && (
-          <p id={`${id}-description`} className="text-muted-foreground text-ui">
-            {description}
-          </p>
+        {info && (
+          <InfoPopover label={`About ${label.toLowerCase()}`}>
+            {info}
+          </InfoPopover>
         )}
       </div>
       {children}
@@ -186,13 +190,12 @@ export function EditorSection({ prefs, onChange }: PreferenceProps) {
         <SettingRow
           id="settings-format"
           label="Format on save"
-          description="Tidies indentation and trailing spaces each time a file is saved."
+          info="Tidies indentation and trailing spaces each time a file is saved."
         >
           <Switch
             id="settings-format"
             checked={prefs.formatOnSave}
             onCheckedChange={(formatOnSave) => onChange({ formatOnSave })}
-            aria-describedby="settings-format-description"
           />
         </SettingRow>
         <SettingRow id="settings-font-size" label="Font size">
@@ -258,18 +261,14 @@ export function EditorSection({ prefs, onChange }: PreferenceProps) {
   );
 }
 
-const NOTIFY = [
+const NOTIFY: { value: string; label: string; info?: string }[] = [
   {
     value: "all",
     label: "All activity",
-    description: "Every comment, run and review on what you follow.",
+    info: "Every comment, run and review on what you follow.",
   },
-  {
-    value: "mentions",
-    label: "Mentions and assignments",
-    description: "Only what asks for you by name.",
-  },
-  { value: "none", label: "Nothing", description: "Check in when you like." },
+  { value: "mentions", label: "Mentions and assignments" },
+  { value: "none", label: "Nothing" },
 ];
 
 export function NotificationsSection({ prefs, onChange }: PreferenceProps) {
@@ -285,22 +284,16 @@ export function NotificationsSection({ prefs, onChange }: PreferenceProps) {
           }
           className="py-3"
         >
-          {NOTIFY.map(({ value, label, description }) => (
-            <div key={value} className="flex items-start gap-2">
-              <RadioGroupItem
-                value={value}
-                id={`settings-notify-${value}`}
-                aria-describedby={`settings-notify-${value}-description`}
-                className="mt-0.5"
-              />
-              <div className="grid gap-1">
+          {NOTIFY.map(({ value, label, info }) => (
+            <div key={value} className="flex items-center gap-2">
+              <RadioGroupItem value={value} id={`settings-notify-${value}`} />
+              <div className="flex items-center gap-1">
                 <Label htmlFor={`settings-notify-${value}`}>{label}</Label>
-                <p
-                  id={`settings-notify-${value}-description`}
-                  className="text-muted-foreground text-ui"
-                >
-                  {description}
-                </p>
+                {info && (
+                  <InfoPopover label={`About ${label.toLowerCase()}`}>
+                    {info}
+                  </InfoPopover>
+                )}
               </div>
             </div>
           ))}
@@ -332,13 +325,12 @@ export function NotificationsSection({ prefs, onChange }: PreferenceProps) {
         <SettingRow
           id="settings-weekly"
           label="Weekly summary"
-          description="A Monday email of what changed last week, sent even when notifications are off."
+          info="A Monday email of what changed last week, sent even when notifications are off."
         >
           <Switch
             id="settings-weekly"
             checked={prefs.weekly}
             onCheckedChange={(weekly) => onChange({ weekly })}
-            aria-describedby="settings-weekly-description"
           />
         </SettingRow>
       </Group>
@@ -361,7 +353,7 @@ function ThemeRows() {
         <SettingRow
           id="settings-theme"
           label="Theme"
-          description="Shared with the menu in this site's top bar: a pick repaints the whole page."
+          info="Shared with the menu in this site's top bar: a pick repaints the whole page."
         >
           <ThemeMenu
             onCustomize={customize}
@@ -385,7 +377,7 @@ function ThemeRows() {
         <SettingRow
           id="settings-terminal-theme"
           label="Terminal theme"
-          description="For logs and recordings. It can follow the theme or keep its own."
+          info="For logs and recordings, such as a pull request's test output."
         >
           <ThemeMenu
             slot="terminal"
@@ -409,11 +401,7 @@ function ThemeRows() {
         </SettingRow>
       </Group>
       <Group>
-        <SettingRow
-          id="settings-custom-themes"
-          label="Custom themes"
-          description="Start from a theme and change its colours, or import one."
-        >
+        <SettingRow id="settings-custom-themes" label="Custom themes">
           <Button
             id="settings-custom-themes"
             variant="outline"

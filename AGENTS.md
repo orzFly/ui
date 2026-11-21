@@ -25,6 +25,11 @@ when they are not UI). Much of the code was extracted from todou; todou consumes
   click `isPlainClick` from `lib/link.ts` passes. A place held only in app state may stay a
   `button`; the demos give theirs a `#` address instead. The principle is written on the
   Principles page and in `skills/orz-ui/SKILL.md`.
+- A component draws no sentence explaining itself. What its own UI cannot show goes behind an
+  `InfoPopover` after the label it belongs to; what it reports (empty, failed, an error) stays
+  on screen as a message. The docs site's demos and examples hold to the same rule as any app;
+  a guideline page's prose is reading, not UI, and is exempt. The principle, *Shown, not told*,
+  is written for app builders on the Principles and Writing pages and in `skills/orz-ui/SKILL.md`.
 - A dependency heavy enough to matter to a consumer's bundle (CodeMirror, unified, shiki) gets its own
   package rather than landing in `@orz/ui`.
 - An app uses the components as they are; that is the library's point, and the docs site, its

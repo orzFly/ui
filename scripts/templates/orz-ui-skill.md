@@ -35,6 +35,11 @@ install line from the Start page (**Install**, and the **Packages** table), or f
   never a `button` that navigates in JS. Pass the router's link with `asChild`, or keep the `href`
   and take over only clicks `isPlainClick` from `@orz/ui/lib/link` passes, so middle-click,
   Ctrl/⌘/Shift-click and the context menu still work.
+- Write nothing the screen already shows: no subtitle restating its heading, no grey line under
+  every label. What a setting, option or section does, when its label does not say, goes behind
+  an `InfoPopover` right after the label. Empty, failed and done messages, a field's error and a
+  limit needed while typing stay on screen (Principles, **Shown, not told**; Writing,
+  **Explanations**).
 - Never pass sizes for touch, and never write a colour: use the theme's tokens.
 - No component for what you need? Compose it from library components before drawing your own.
 - A light tweak on top (a token colour, a size, a weight) is fine when it holds up in every style
