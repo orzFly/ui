@@ -26,6 +26,7 @@ import {
   WrapTextIcon,
 } from "lucide-react";
 import {
+  type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
@@ -41,13 +42,7 @@ import {
 import { toast } from "sonner";
 import { useControllable } from "./controllable.ts";
 import { InspectDialog, type InspectTarget } from "./inspect-dialog.tsx";
-import {
-  FILL_CLASS,
-  indentOf,
-  JsonRowView,
-  PointMenu,
-  TICK_CLASS,
-} from "./json-row.tsx";
+import { indentOf, JsonRowView, PointMenu } from "./json-row.tsx";
 import { DEFAULT_LABELS, type JsonViewLabels } from "./labels.ts";
 import {
   anchorOf,
@@ -63,7 +58,6 @@ import {
   moveRight,
   moveToEnd,
   moveVertical,
-  type SelectionGeometry,
   sameSelection,
   selectAll,
   selectionAfterCollapse,
@@ -918,6 +912,30 @@ function JsonViewBody({
         : null;
 
   const virtualItems = virtualizer.getVirtualItems();
+
+  // The selection's right edge: the furthest its rows' content reaches, among the rows drawn.
+  // A wider row scrolled into view widens it.
+  const rowsBox = useRef<HTMLDivElement>(null);
+  const [selectionRight, setSelectionRight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const box = rowsBox.current;
+    let right: number | null = null;
+    if (box && geometry !== null && geometry.kind !== "key") {
+      const left = box.getBoundingClientRect().left;
+      for (const el of box.querySelectorAll<HTMLElement>("[data-row]")) {
+        const at = Number(el.dataset.index);
+        if (at < geometry.first || at > geometry.last) continue;
+        for (const end of el.querySelectorAll("[data-end]")) {
+          right = Math.max(
+            right ?? 0,
+            end.getBoundingClientRect().right - left,
+          );
+        }
+      }
+    }
+    const next = right === null ? null : Math.ceil(right);
+    if (next !== selectionRight) setSelectionRight(next);
+  });
   const focusIndex = focusPath === null ? undefined : index.get(focusPath);
   const ownValue =
     geometry?.kind === "value" && geometry.ownRow ? geometry.first : -1;
@@ -1059,10 +1077,20 @@ function JsonViewBody({
           className="pointer-events-none invisible absolute h-row-dense w-0 touch:h-11"
         />
         <div
+          ref={rowsBox}
           className="relative w-full"
-          style={{ height: virtualizer.getTotalSize() }}
+          style={
+            {
+              height: virtualizer.getTotalSize(),
+              "--json-sel-left":
+                geometry === null ? undefined : indentOf(geometry.depth),
+              "--json-sel-right":
+                selectionRight === null
+                  ? undefined
+                  : `calc(${selectionRight}px + var(--spacing) * 1.5)`,
+            } as CSSProperties
+          }
         >
-          <SelectionBlock geometry={geometry} virtualizer={virtualizer} />
           {virtualItems.map((item) => {
             const row = rows[item.index];
             if (!row) return null;
@@ -1089,9 +1117,7 @@ function JsonViewBody({
                 valueSelected={at === ownValue}
                 keySelected={at === keyRow}
                 focused={focused}
-                showMenu={
-                  focused || inBlock || at === ownValue || at === keyRow
-                }
+                showMenu={focused || at === ownValue || at === keyRow}
                 measureRef={wrap ? virtualizer.measureElement : undefined}
                 menu={
                   row.kind === "comment"
@@ -1148,37 +1174,5 @@ function JsonViewBody({
         )}
       />
     </Pane>
-  );
-}
-
-/**
- * The block painted under the rows a members range or an open value's subtree covers, from the
- * members' indent, or the children's, to the right edge.
- */
-function SelectionBlock({
-  geometry,
-  virtualizer,
-}: {
-  geometry: SelectionGeometry | null;
-  virtualizer: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>;
-}) {
-  if (!geometry || geometry.kind === "key") return null;
-  const first = geometry.ownRow ? geometry.first + 1 : geometry.first;
-  if (first > geometry.last) return null;
-  const measurements = virtualizer.measurementsCache;
-  const top = measurements[first]?.start;
-  const bottom = measurements[geometry.last]?.end;
-  if (top === undefined || bottom === undefined) return null;
-  return (
-    <div
-      aria-hidden
-      data-slot="json-selection"
-      className={cn(
-        "pointer-events-none absolute right-0",
-        FILL_CLASS,
-        TICK_CLASS,
-      )}
-      style={{ top, height: bottom - top, left: indentOf(geometry.depth) }}
-    />
   );
 }

@@ -87,22 +87,42 @@ export const ROW_HEIGHT_CLASS = "h-row-dense touch:h-11";
 export const indentOf = (depth: number) =>
   `calc(var(--spacing) * ${1.5 + Math.max(0, depth) * 3})`;
 
-// A selection's fill: the soft accent with a 2px foreground tick while the
-// view holds the focus, the muted strip once it does not, the tick kept.
-// Under raymond the highlight, white on navy, and the face once the focus
-// leaves, as Explorer's tree draws its selected item, with no tick.
-export const FILL_CLASS =
-  "bg-muted group-focus-within/json:bg-accent raymond:bg-(--3d-face) raymond:group-focus-within/json:bg-primary";
-/** The same fill, on a value's own row, where it is drawn by `::before` behind the value. */
-const VALUE_FILL_CLASS =
-  "before:bg-muted group-focus-within/json:before:bg-accent raymond:before:bg-(--3d-face) raymond:group-focus-within/json:before:bg-primary";
-export const TICK_CLASS =
-  "after:absolute after:inset-y-0 after:left-0 after:w-0.5 after:bg-foreground after:content-[''] raymond:after:hidden";
+// A selection is one shape, framed as HexView frames a range. Each piece of it
+// (a key, a value from where it starts, a member's row from the members'
+// indent) paints a primary layer 1px larger than itself under every piece's
+// fill, so where two pieces meet the fills cover the edges between them and
+// one contour runs round the whole. The layers share the tree's stacking
+// context, which is why rows are placed by `top` rather than a transform,
+// and they sit above every row's own background, so a hovered neighbour
+// cannot cover the contour; text sits above the fills. Under raymond the
+// highlight, white on navy, with no frame.
+const EDGE = "before:absolute before:z-1 before:bg-primary before:content-['']";
+const FILL =
+  "after:absolute after:z-2 after:bg-accent after:content-[''] raymond:after:bg-primary";
+/** A piece covering its element. */
+const PIECE = cn(EDGE, FILL, "before:-inset-px after:inset-0");
+/**
+ * A key's piece, which meets no other: its frame is drawn inside the room its padding makes, so
+ * it stays clear of the colon after it.
+ */
+const KEY_PIECE = cn(EDGE, FILL, "before:inset-0 after:inset-px");
+/** A member row's piece: from the members' indent to the selection's right edge. */
+const BLOCK_PIECE = cn(
+  EDGE,
+  FILL,
+  "before:-inset-y-px before:-right-px before:left-[calc(var(--json-sel-left)-1px)] after:inset-y-0 after:right-0 after:left-(--json-sel-left)",
+);
+/** Text and controls, above the fills. */
+const ABOVE = "relative z-3";
 // What the selection covers is lettered in the highlight's text under
-// raymond, every token colour included, and in the window text once the
-// focus leaves.
+// raymond, every token colour included.
 const SELECTED_TEXT =
-  "raymond:data-in-selection:text-foreground raymond:data-in-selection:**:text-foreground raymond:group-focus-within/json:data-in-selection:text-primary-foreground raymond:group-focus-within/json:data-in-selection:**:text-primary-foreground";
+  "raymond:data-in-selection:text-primary-foreground raymond:data-in-selection:**:text-primary-foreground";
+/** The keyboard's row, ringed above the selection's fills. */
+const FOCUS_RING =
+  "after:pointer-events-none after:absolute after:inset-0 after:z-4 after:content-[''] group-focus-visible/json:after:focus-ring-inset";
+/** The selection's right edge, which the selected rows' content reaches. */
+const REACH_SELECTION = { minWidth: "var(--json-sel-right)" };
 
 export interface RowMenuProps {
   open: boolean;
@@ -154,8 +174,11 @@ function RowMenu({
           data-slot="json-row-menu"
           // A press leaves the focus on the tree.
           onMouseDown={(event) => event.preventDefault()}
+          // After the row's content, or the selection's right edge; held at the view's right
+          // edge when the row runs past it, on the ground so the text under it does not show.
           className={cn(
-            "ml-auto self-center text-muted-foreground invisible group-hover/row:visible aria-expanded:visible touch:visible",
+            ABOVE,
+            "sticky right-0 ml-0.5 flex-none self-center bg-background text-muted-foreground invisible group-hover/row:visible can-hover:group-hover/row:bg-[color-mix(in_oklab,var(--muted)_70%,var(--background))] aria-expanded:visible touch:visible raymond:can-hover:group-hover/row:bg-background",
             shown && "visible",
           )}
         >
@@ -256,13 +279,13 @@ function Summary({ row }: { row: JsonNodeRow }) {
 
 function rowStyle(start: number, wrap: boolean): CSSProperties {
   return {
-    transform: `translateY(${start}px)`,
+    top: start,
     lineHeight: wrap ? "var(--spacing-row-dense)" : undefined,
   };
 }
 
 const ROW_BASE =
-  "group/row absolute top-0 left-0 flex cursor-default font-mono text-data select-none";
+  "group/row absolute left-0 flex cursor-default font-mono text-data select-none";
 
 function JsonRowViewImpl({
   row,
@@ -283,7 +306,12 @@ function JsonRowViewImpl({
   const layout = wrap
     ? "w-full min-h-row-dense items-start touch:min-h-11"
     : cn("w-max min-w-full items-center whitespace-nowrap", ROW_HEIGHT_CLASS);
-  const focusRing = focused && "group-focus-visible/json:focus-ring-inset";
+  // The row's content, up to where the ⋯ follows: as wide as it is, or as the selection.
+  const content = cn(
+    "relative flex self-stretch",
+    wrap ? "min-w-0 flex-1 items-start" : "flex-none items-center",
+  );
+  const reach = inBlock || valueSelected;
 
   if (row.kind === "comment") {
     return (
@@ -298,22 +326,34 @@ function JsonRowViewImpl({
         data-row="comment"
         data-index={index}
         data-path={row.path}
-        data-in-selection={inBlock || undefined}
-        className={cn(ROW_BASE, layout, "pr-1.5", SELECTED_TEXT, focusRing)}
+        className={cn(ROW_BASE, layout, focused && FOCUS_RING)}
         style={rowStyle(start, wrap)}
       >
         <span
-          data-part="gutter"
-          className="flex-none self-stretch"
-          style={{ width: `calc(${indentOf(row.depth)} + 0.875rem)` }}
-        />
-        <span
+          data-in-selection={inBlock || undefined}
           className={cn(
-            "text-muted-foreground",
-            wrap && "min-w-0 flex-1 break-all whitespace-pre-wrap",
+            content,
+            "pr-1.5",
+            inBlock && BLOCK_PIECE,
+            SELECTED_TEXT,
           )}
+          style={inBlock ? REACH_SELECTION : undefined}
         >
-          <Highlight text={row.text} needle={needle} />
+          <span
+            data-part="gutter"
+            className="flex-none self-stretch"
+            style={{ width: `calc(${indentOf(row.depth)} + 0.875rem)` }}
+          />
+          <span
+            data-end
+            className={cn(
+              ABOVE,
+              "text-muted-foreground",
+              wrap && "min-w-0 flex-1 break-all whitespace-pre-wrap",
+            )}
+          >
+            <Highlight text={row.text} needle={needle} />
+          </span>
         </span>
       </div>
     );
@@ -334,121 +374,127 @@ function JsonRowViewImpl({
       data-index={index}
       data-path={row.path}
       data-focused={focused || undefined}
-      data-in-selection={inBlock || undefined}
       className={cn(
         ROW_BASE,
         layout,
         !inBlock && "can-hover:hover:bg-muted/70 raymond:hover:bg-transparent",
-        SELECTED_TEXT,
-        focusRing,
+        focused && FOCUS_RING,
       )}
       style={rowStyle(start, wrap)}
     >
       <span
-        data-part="gutter"
-        className="flex flex-none items-start justify-end self-stretch"
-        style={{ width: `calc(${indentOf(row.depth)} + 0.875rem)` }}
+        data-in-selection={inBlock || undefined}
+        className={cn(content, inBlock && BLOCK_PIECE, SELECTED_TEXT)}
+        style={reach ? REACH_SELECTION : undefined}
       >
         <span
-          data-chevron={row.expandable || undefined}
-          className={cn(
-            "inline-flex h-row-dense w-3.5 flex-none -translate-x-px translate-y-px items-center justify-center text-muted-foreground",
-            !wrap && "touch:h-11",
-          )}
+          data-part="gutter"
+          className="flex flex-none items-start justify-end self-stretch"
+          style={{ width: `calc(${indentOf(row.depth)} + 0.875rem)` }}
         >
-          {row.expandable && (
-            <ChevronRightIcon
-              aria-hidden
-              className={cn(
-                "size-3 transition-transform motion-reduce:transition-none",
-                row.expanded && "rotate-90",
-              )}
-            />
-          )}
-        </span>
-      </span>
-      {hasKey ? (
-        <>
           <span
-            data-part="key"
-            data-in-selection={keySelected || undefined}
+            data-chevron={row.expandable || undefined}
             className={cn(
-              "relative flex-none text-primary",
-              wrap && "max-w-1/2 break-all whitespace-pre-wrap",
-              keySelected &&
-                cn(
-                  FILL_CLASS,
-                  "-mx-px border-b-2 border-foreground px-px raymond:border-b-0 raymond:outline-1 raymond:-outline-offset-1 raymond:outline-primary-foreground raymond:outline-dotted",
-                  SELECTED_TEXT,
-                ),
+              ABOVE,
+              "inline-flex h-row-dense w-3.5 flex-none -translate-x-px translate-y-px items-center justify-center text-muted-foreground",
+              !wrap && "touch:h-11",
             )}
           >
-            <Highlight text={row.key as string} needle={needle} />
+            {row.expandable && (
+              <ChevronRightIcon
+                aria-hidden
+                className={cn(
+                  "size-3 transition-transform motion-reduce:transition-none",
+                  row.expanded && "rotate-90",
+                )}
+              />
+            )}
           </span>
-          <span data-part="gutter" className="flex-none text-muted-foreground">
+        </span>
+        {hasKey ? (
+          <>
+            <span
+              data-part="key"
+              data-in-selection={keySelected || undefined}
+              className={cn(
+                "relative flex-none text-primary",
+                wrap && "max-w-1/2 break-all whitespace-pre-wrap",
+                keySelected && cn(KEY_PIECE, "-mx-0.5 px-0.5", SELECTED_TEXT),
+              )}
+            >
+              <span className={ABOVE}>
+                <Highlight text={row.key as string} needle={needle} />
+              </span>
+            </span>
+            <span
+              data-part="gutter"
+              className={cn(ABOVE, "flex-none text-muted-foreground")}
+            >
+              :&nbsp;
+            </span>
+          </>
+        ) : row.index !== null ? (
+          <span
+            data-part="gutter"
+            className={cn(ABOVE, "flex-none text-muted-foreground")}
+          >
+            <Highlight text={String(row.index)} needle={needle} />
             :&nbsp;
           </span>
-        </>
-      ) : row.index !== null ? (
-        <span data-part="gutter" className="flex-none text-muted-foreground">
-          <Highlight text={String(row.index)} needle={needle} />
-          :&nbsp;
-        </span>
-      ) : null}
-      <span
-        data-in-selection={valueSelected || undefined}
-        className={cn(
-          "relative isolate flex min-w-0 flex-1 pr-1.5",
-          wrap ? "items-start" : "items-center",
-          valueSelected &&
-            cn(
-              "before:absolute before:inset-0 before:-z-10 before:content-['']",
-              VALUE_FILL_CLASS,
-              TICK_CLASS,
-              SELECTED_TEXT,
-            ),
-        )}
-      >
+        ) : null}
         <span
-          data-part="value"
+          data-in-selection={valueSelected || undefined}
           className={cn(
-            VALUE_CLASS[row.kind],
-            wrap &&
-              (container
-                ? cn("min-w-0 flex-1 truncate", containerTailClass(row))
-                : "min-w-0 flex-1 break-all whitespace-pre-wrap"),
+            "relative flex min-w-0 flex-1 pr-1.5",
+            wrap ? "items-start" : "items-center",
+            valueSelected && cn(PIECE, SELECTED_TEXT),
           )}
         >
-          {container ? (
-            <>
-              <span>{row.preview}</span>
-              <Summary row={row} />
-            </>
-          ) : (
-            <Highlight text={row.preview} needle={needle} />
-          )}
-          {row.truncated && (
-            <Badge
-              variant="outline"
-              className="ml-2 align-middle font-normal text-muted-foreground tabular-nums"
-            >
-              {labels.chars(formatChars(row.size))}
-            </Badge>
-          )}
-        </span>
-        {row.trailing !== null && (
           <span
             data-part="value"
+            data-end
             className={cn(
-              "ml-[2ch] flex-none text-muted-foreground",
-              wrap && "min-w-0 shrink break-all whitespace-pre-wrap",
+              ABOVE,
+              VALUE_CLASS[row.kind],
+              wrap &&
+                (container
+                  ? cn("min-w-0 flex-1 truncate", containerTailClass(row))
+                  : "min-w-0 flex-1 break-all whitespace-pre-wrap"),
             )}
           >
-            <Highlight text={row.trailing} needle={needle} />
+            {container ? (
+              <>
+                <span>{row.preview}</span>
+                <Summary row={row} />
+              </>
+            ) : (
+              <Highlight text={row.preview} needle={needle} />
+            )}
+            {row.truncated && (
+              <Badge
+                variant="outline"
+                className="ml-2 align-middle font-normal text-muted-foreground tabular-nums"
+              >
+                {labels.chars(formatChars(row.size))}
+              </Badge>
+            )}
           </span>
-        )}
-        <RowMenu path={row.path} labels={labels} shown={showMenu} menu={menu} />
+          {row.trailing !== null && (
+            <span
+              data-part="value"
+              data-end
+              className={cn(
+                ABOVE,
+                "ml-[2ch] flex-none text-muted-foreground",
+                wrap && "min-w-0 shrink break-all whitespace-pre-wrap",
+              )}
+            >
+              <Highlight text={row.trailing} needle={needle} />
+            </span>
+          )}
+        </span>
       </span>
+      <RowMenu path={row.path} labels={labels} shown={showMenu} menu={menu} />
     </div>
   );
 }
