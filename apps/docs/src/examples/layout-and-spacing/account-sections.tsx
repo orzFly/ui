@@ -1,9 +1,7 @@
 import { PROFILE, TOKENS } from "@orz/fixtures/account.ts";
 import { Button } from "@orz/ui/components/button";
-import {
-  GroupDescription,
-  GroupHeading,
-} from "@orz/ui/components/group-heading";
+import { GroupHeading } from "@orz/ui/components/group-heading";
+import { InfoPopover } from "@orz/ui/components/info-popover";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import { List, ListItem } from "@orz/ui/components/list";
@@ -13,14 +11,9 @@ export function AccountSections() {
   return (
     <div className="grid gap-8">
       <section aria-labelledby="spacing-profile" className="grid gap-6">
-        <header className="grid gap-1">
-          <GroupHeading asChild>
-            <h3 id="spacing-profile">Profile</h3>
-          </GroupHeading>
-          <GroupDescription>
-            What others see of you. Saved when you press Save profile.
-          </GroupDescription>
-        </header>
+        <GroupHeading asChild>
+          <h3 id="spacing-profile">Profile</h3>
+        </GroupHeading>
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="spacing-name">Display name</Label>
@@ -41,13 +34,13 @@ export function AccountSections() {
         </div>
       </section>
       <section aria-labelledby="spacing-tokens" className="grid gap-6">
-        <header className="grid gap-1">
+        <header className="flex items-center gap-1">
           <GroupHeading asChild>
             <h3 id="spacing-tokens">Access tokens</h3>
           </GroupHeading>
-          <GroupDescription>
+          <InfoPopover label="About access tokens">
             Tokens that scripts and bots sign in with.
-          </GroupDescription>
+          </InfoPopover>
         </header>
         <List purpose="collection">
           <ul>

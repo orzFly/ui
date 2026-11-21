@@ -1,5 +1,5 @@
 import { Button } from "@orz/ui/components/button";
-import { FieldDescription } from "@orz/ui/components/field";
+import { InfoPopover } from "@orz/ui/components/info-popover";
 import { Label } from "@orz/ui/components/label";
 import { Separator } from "@orz/ui/components/separator";
 import { ThemeEditor } from "@orz/ui/components/theme-editor";
@@ -37,18 +37,18 @@ export function AppearanceSettings() {
   return (
     <div className="grid">
       <div className="flex items-center justify-between gap-4 py-3">
-        <div className="grid gap-1">
+        <div className="flex items-center gap-1">
           <Label htmlFor="appearance-theme">Theme</Label>
-          <FieldDescription id="appearance-theme-description">
-            A pick repaints the whole page, this text included.
-          </FieldDescription>
+          <InfoPopover label="About theme">
+            Shared with the menu in this site's top bar: a pick repaints the
+            whole page.
+          </InfoPopover>
         </div>
         <ThemeMenu
           onCustomize={customize}
           trigger={({ Icon, label }) => (
             <Button
               id="appearance-theme"
-              aria-describedby="appearance-theme-description"
               variant="outline"
               aria-label={`${label}: ${theme.label}`}
               className="max-w-48"
@@ -66,11 +66,11 @@ export function AppearanceSettings() {
       <Separator purpose="row" />
       <div className="grid gap-3 py-3">
         <div className="flex items-center justify-between gap-4">
-          <div className="grid gap-1">
+          <div className="flex items-center gap-1">
             <Label htmlFor="appearance-terminal-theme">Terminal theme</Label>
-            <FieldDescription id="appearance-terminal-theme-description">
-              For logs and recordings. It can follow the theme or keep its own.
-            </FieldDescription>
+            <InfoPopover label="About terminal theme">
+              For logs and recordings, such as a pull request's test output.
+            </InfoPopover>
           </div>
           <ThemeMenu
             slot="terminal"
@@ -78,7 +78,6 @@ export function AppearanceSettings() {
             trigger={({ Icon, label }) => (
               <Button
                 id="appearance-terminal-theme"
-                aria-describedby="appearance-terminal-theme-description"
                 variant="outline"
                 aria-label={`${label}: ${terminal.following ? "follows the theme" : terminal.theme.label}`}
                 className="max-w-48"
@@ -107,15 +106,9 @@ export function AppearanceSettings() {
       </div>
       <Separator purpose="row" />
       <div className="flex items-center justify-between gap-4 py-3">
-        <div className="grid gap-1">
-          <Label htmlFor="appearance-custom-themes">Custom themes</Label>
-          <FieldDescription id="appearance-custom-themes-description">
-            Start from a theme and change its colours, or import one.
-          </FieldDescription>
-        </div>
+        <Label htmlFor="appearance-custom-themes">Custom themes</Label>
         <Button
           id="appearance-custom-themes"
-          aria-describedby="appearance-custom-themes-description"
           variant="outline"
           onClick={() => customize(undefined, "ui")}
         >
