@@ -37,6 +37,12 @@ import { NumberInput } from "../src/components/number-input.tsx";
 import { QueryBox } from "../src/components/query-box.tsx";
 import { RadioGroup, RadioGroupItem } from "../src/components/radio-group.tsx";
 import {
+  Reorder,
+  ReorderButtons,
+  ReorderHandle,
+  ReorderItem,
+} from "../src/components/reorder.tsx";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -382,5 +388,38 @@ describe("touch sizes", () => {
     expect(classesOf(swatch.parentElement as Element)).toEqual(
       expect.arrayContaining(["touch:grid-cols-6", "touch:gap-2"]),
     );
+  });
+
+  it("Reorder rows are 44px, the handle 44px wide, the move buttons 44px apart", () => {
+    const { container } = render(
+      <Reorder items={["a", "b"]} onMove={() => {}}>
+        {["a", "b"].map((id) => (
+          <ReorderItem key={id} id={id} name={id}>
+            <ReorderHandle />
+            <ReorderButtons />
+          </ReorderItem>
+        ))}
+      </Reorder>,
+    );
+    const slot = (name: string) =>
+      container.querySelector(`[data-slot="${name}"]`) as Element;
+    // A table row takes a height, which it holds as its least.
+    expect(classesOf(slot("reorder-item"))).toEqual(
+      expect.arrayContaining(["touch:min-h-11", "touch:[&:is(tr)]:h-11"]),
+    );
+    expect(classesOf(slot("reorder-handle"))).toEqual(
+      expect.arrayContaining(["touch:w-11", "raymond:touch:w-11"]),
+    );
+    // Centres 44px apart, hit areas side by side, whatever the style's
+    // button size: 20px apart by default, 26px under raymond.
+    const gap = "touch:gap-[calc(44px-var(--spacing-control-xs))]";
+    expect(classesOf(slot("reorder-buttons"))).toEqual(
+      expect.arrayContaining([gap, `raymond:${gap}`]),
+    );
+    for (const name of ["Move a up", "Move a down"]) {
+      const button = screen.getByRole("button", { name });
+      expect(classesOf(button)).toContain("size-control-xs");
+      expectHitAreaOnly(button);
+    }
   });
 });
