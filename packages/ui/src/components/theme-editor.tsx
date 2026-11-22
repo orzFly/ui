@@ -426,11 +426,16 @@ function EditorSession({
     [preview],
   );
 
-  useDirtySource(() => dirty);
+  // Not `dirty` alone: after Discard the session stays mounted through the
+  // sheet's exit animation, still holding the draft it discarded.
+  const markClean = useDirtySource(() => open && dirty);
 
   const finish = () => {
     closing.current = true;
     preview(null);
+    // An app whose onOpenChange(false) navigates asks the guard before the
+    // saved or discarded state has rendered.
+    markClean();
     onOpenChange(false);
   };
   const guarded = (proceed: () => void) => {

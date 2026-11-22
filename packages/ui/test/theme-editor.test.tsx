@@ -113,6 +113,15 @@ const rename = (label: string) =>
 const unsavedPrompt = () =>
   screen.queryByRole("dialog", { name: "Leave with unsaved changes?" });
 
+/** With an exit animation the sheet keeps its content mounted after close. */
+function animateExit() {
+  const style = document.createElement("style");
+  style.textContent =
+    "[data-state=closed] { animation-name: slide; animation-duration: 1s; }";
+  document.head.append(style);
+  return () => style.remove();
+}
+
 function choose(combobox: string, option: string | RegExp) {
   fireEvent.keyDown(screen.getByRole("combobox", { name: combobox }), {
     key: "Enter",
@@ -271,11 +280,7 @@ describe("ThemeEditor: unsaved changes", () => {
   });
 
   it("does not reopen the prompt while the panel animates out", async () => {
-    // With an exit animation the sheet keeps its content mounted after close.
-    const style = document.createElement("style");
-    style.textContent =
-      "[data-state=closed] { animation-name: slide; animation-duration: 1s; }";
-    document.head.append(style);
+    const stopAnimating = animateExit();
     try {
       stubDarkQuery(false);
       const themes = store();
@@ -334,7 +339,7 @@ describe("ThemeEditor: unsaved changes", () => {
       expect((nameField() as HTMLInputElement).value).toBe("Sunrise");
       expect(themes.getPreview()).not.toBeNull();
     } finally {
-      style.remove();
+      stopAnimating();
     }
   });
 
@@ -345,6 +350,46 @@ describe("ThemeEditor: unsaved changes", () => {
     expect(hasUnsavedWork()).toBe(true);
     rename("Sunrise");
     expect(hasUnsavedWork()).toBe(false);
+  });
+
+  // An app whose onOpenChange(false) navigates asks the guard right there,
+  // before the closing state has rendered.
+  it("reads clean to the guard when it reports the close after Save", () => {
+    const { onOpenChange } = setup({ customs: [sunrise], themeId: sunrise.id });
+    const seen: boolean[] = [];
+    onOpenChange.mockImplementation(() => seen.push(hasUnsavedWork()));
+    rename("Sunset");
+    fireEvent.click(button("Save"));
+    expect(seen).toEqual([false]);
+  });
+
+  it("reads clean to the guard when it reports the close after Discard", () => {
+    const { onOpenChange } = setup({ customs: [sunrise], themeId: sunrise.id });
+    const seen: boolean[] = [];
+    onOpenChange.mockImplementation(() => seen.push(hasUnsavedWork()));
+    rename("Sunset");
+    fireEvent.click(button("Close"));
+    fireEvent.click(button("Discard and leave"));
+    expect(seen).toEqual([false]);
+  });
+
+  it("stays clean to the guard while the panel animates out after Discard", async () => {
+    const stopAnimating = animateExit();
+    try {
+      setup({ customs: [sunrise], themeId: sunrise.id });
+      rename("Sunset");
+      fireEvent.click(button("Close"));
+      await act(async () => {
+        fireEvent.click(button("Discard and leave"));
+      });
+      // Still mounted, with the draft that was discarded.
+      expect(
+        screen.getByRole("textbox", { name: "Name", hidden: true }),
+      ).toHaveProperty("value", "Sunset");
+      expect(hasUnsavedWork()).toBe(false);
+    } finally {
+      stopAnimating();
+    }
   });
 });
 

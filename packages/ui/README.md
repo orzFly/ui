@@ -285,7 +285,8 @@ const [editing, setEditing] = useState<{ id?: string; slot: "ui" | "terminal" } 
   pick, leaving the UI pick alone.
 - `onOpenChange(false)` comes after Save, or after the unsaved-changes prompt resolves to Discard.
   While the draft has unsaved edits it is registered with `@orz/ui/lib/unsaved-guard`, so the app's
-  leave-page guard covers it.
+  leave-page guard covers it. It reads clean from `onOpenChange(false)` on, so an app that navigates
+  there (clears the theme from the URL, say) is not asked again.
 
 Import… and Export carry themes as JSON files (`format: "orz-themes"`, `version: 1`). UI themes go
 in `themes`, always written; terminal themes in `terminalThemes`, written only when there is one. An
