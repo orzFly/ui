@@ -193,7 +193,7 @@ A near-monochrome ink-on-white palette with a single deep indigo accent; dark mo
 - **Body small** (400, 12px, 18px): table text, header strips, descriptions, small buttons.
 - **Module title** (700, 12px): the card title inside the ruled strip. Table heads use 600.
 - **Label** (500, 11px, 16px): badges and counts; nothing smaller ships.
-- **Data** (mono, 12px): dense tabular data such as the hex grid. Timestamps take tabular numerals.
+- **Data** (mono, 12px): dense data a viewer draws: the hex grid, the JSON tree, a log (on 18px lines). Timestamps take tabular numerals.
 
 ### Named Rules
 **The Eleven Pixel Floor Rule.** No UI text below 11px (`text-ui-xs`, `-2xs` and `-3xs` all resolve to 0.6875rem).

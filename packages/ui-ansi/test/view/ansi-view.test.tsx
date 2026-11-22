@@ -657,6 +657,28 @@ describe("AnsiView chrome details", () => {
     expect(screen.queryByRole("link", { name: "Download" })).toBeNull();
   });
 
+  // Inherited, the text took a page's body or prose size, larger than the
+  // controls around it.
+  it.each(["pane", "file"] as const)(
+    "%s chrome sets the data text size rather than inheriting the page's",
+    (chrome) => {
+      const { container } = render(<AnsiView chrome={chrome} text="x" />);
+      const root = container.firstElementChild as HTMLElement;
+      expect(root.className).toContain("text-data");
+      expect(root.className).toContain("leading-4.5");
+    },
+  );
+
+  it("a caller's text size replaces the data size and its leading", () => {
+    const { container } = render(
+      <AnsiView chrome="pane" text="x" className="text-ui" />,
+    );
+    const classes = (container.firstElementChild as HTMLElement).className;
+    expect(classes).toContain("text-ui");
+    expect(classes).not.toContain("text-data");
+    expect(classes).not.toContain("leading-4.5");
+  });
+
   it("search box draws a field's edge and rings while its input has focus", () => {
     render(<AnsiView chrome="file" filename="a.log" text="x" />);
     const box = screen.getByRole("searchbox", { name: "Search log" })

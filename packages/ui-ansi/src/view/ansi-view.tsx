@@ -83,6 +83,12 @@ const CONTENT_PADDING = 8;
 // etched line.
 const RAYMOND_WELL = "raymond:p-0.5 raymond:shadow-sunken raymond:ring-0";
 
+// The hex grid's and the JSON tree's data size, set here rather than taken
+// from the page: a page's body or prose size drew the log larger than the
+// controls around it. Under raymond a line is as tall as its hex rows.
+const TERMINAL_TEXT =
+  "font-mono text-data leading-4.5 raymond:leading-row-dense";
+
 /**
  * The line between the gutter and the text, as a background of the rows'
  * container: it spans the padding too, and adds no node a selection could
@@ -913,7 +919,8 @@ export function AnsiView({
     return (
       <div
         className={cn(
-          "ansi-view group relative flex flex-col overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border font-mono text-terminal-foreground",
+          "ansi-view group relative flex flex-col overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border text-terminal-foreground",
+          TERMINAL_TEXT,
           RAYMOND_WELL,
           className,
         )}
@@ -935,7 +942,8 @@ export function AnsiView({
     // biome-ignore lint/a11y/noStaticElementInteractions: Ctrl+F from anywhere inside the view goes to its search box
     <div
       className={cn(
-        "ansi-view flex flex-col overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border font-mono text-terminal-foreground",
+        "ansi-view flex flex-col overflow-hidden rounded-frame bg-terminal-background ring-1 ring-border text-terminal-foreground",
+        TERMINAL_TEXT,
         RAYMOND_WELL,
         className,
       )}
