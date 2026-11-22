@@ -250,8 +250,12 @@ export function useStagedFiles<U extends StagedUpload = StagedUpload>(
     return item;
   }
 
-  // Nothing has been sent while a file is staged, so leaving drops it.
-  useDirtySource(() => staged.length > 0);
+  // Nothing has been sent while a file is staged, so leaving drops it. Read
+  // from the refs, not `staged`: a send that clears and navigates in one
+  // callback asks the guard before that render.
+  useDirtySource(() =>
+    allRef.current.some((item) => referencedRef.current.has(item.key)),
+  );
 
   // An editor unmounting with uploaded files is one whose text was left
   // unsent, the guard having let the reader go.

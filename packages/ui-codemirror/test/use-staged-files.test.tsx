@@ -242,6 +242,27 @@ describe("the text is the record of what is staged", () => {
     });
     expect(hasUnsavedWork()).toBe(true);
   });
+
+  // The text is emptied first: the editor's own source, its text against
+  // the baseline, would answer for it otherwise.
+  it.each(["clear", "discard"] as const)(
+    "has no unsaved work in the callback that calls %s()",
+    (method) => {
+      const mounted = mountStaging();
+      act(() => {
+        mounted.hook().stage([image("shot.png")]);
+      });
+      let seen: boolean | null = null;
+      act(() => {
+        mounted
+          .cm()
+          .dispatch({ changes: { from: 0, to: mounted.text().length } });
+        mounted.hook()[method]();
+        seen = hasUnsavedWork();
+      });
+      expect(seen).toBe(false);
+    },
+  );
 });
 
 describe("sending", () => {
