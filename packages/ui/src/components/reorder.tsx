@@ -88,10 +88,21 @@ const LABELS: ReorderLabels = {
 
 /** How far the pointer goes before a press on a handle becomes a drag. */
 const START_PX = 4;
-/** Past the slide's 150ms: a slide that sends no transitionend still ends. */
+/** When a slide's marks come off: past its 150ms, with room for a late frame. */
 const SETTLE_MS = 200;
 
-const dev = () => process.env.NODE_ENV !== "production";
+// Only what is read here: the package builds without Node's types.
+declare const process: { env: { NODE_ENV?: string } };
+
+// A bundler writes NODE_ENV in; a page loaded with none has no `process`,
+// and gets no warnings rather than an error.
+const dev = () => {
+  try {
+    return process.env.NODE_ENV !== "production";
+  } catch {
+    return false;
+  }
+};
 
 // Literal, not built from shared strings: Tailwind only generates the classes
 // it finds written out. The lifted row floats as a menu does, on the popover
