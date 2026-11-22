@@ -25,6 +25,7 @@ interface Shortfall {
   surfaces: TokenName[];
   /** The lowest ratio across the surfaces. */
   ratio: number;
+  /** The strictest floor the pair at `ratio` misses. */
   floor: number;
 }
 
@@ -57,10 +58,7 @@ function shortfalls(): Shortfall[] {
         for (const row of contrastRows(tokens, stylesOf(theme))) {
           if (row.ratio >= row.floor) continue;
           const seen = byToken.get(row.foreground);
-          if (seen) {
-            seen.surfaces.push(row.surface);
-            seen.ratio = Math.min(seen.ratio, row.ratio);
-          } else {
+          if (!seen) {
             byToken.set(row.foreground, {
               palette,
               token: row.foreground,
@@ -68,6 +66,18 @@ function shortfalls(): Shortfall[] {
               ratio: row.ratio,
               floor: row.floor,
             });
+            continue;
+          }
+          // One pair can be held by two checks (primary on the page is text and a
+          // state's edge), so it comes through twice, under each check's floor.
+          if (!seen.surfaces.includes(row.surface))
+            seen.surfaces.push(row.surface);
+          if (
+            row.ratio < seen.ratio ||
+            (row.ratio === seen.ratio && row.floor > seen.floor)
+          ) {
+            seen.ratio = row.ratio;
+            seen.floor = row.floor;
           }
         }
         return [...byToken.values()];
