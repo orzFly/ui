@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 export type NavigationLocation = {
   routeId: string;
@@ -62,11 +62,17 @@ export function hasUnsavedWork(navigation?: NavigationContext): boolean {
  * rides in a ref so the effect below keeps an empty dependency list: a
  * subscription that changed identity every render would tear itself down and
  * rebuild on each keystroke.
+ *
+ * Returns `markClean`, one function for the component's life: after it is
+ * called the source reads clean until the component next renders, when the
+ * predicate that render passes takes over again. The guard holds the
+ * predicate of the last render, so state set earlier in the same callback is
+ * not yet what `isDirty` reads.
  */
 export function useDirtySource(
   isDirty: () => boolean,
   survives?: DirtySourceSurvival,
-): void {
+): () => void {
   const current = useRef({ isDirty, survives });
   current.current = { isDirty, survives };
   useEffect(
@@ -77,4 +83,7 @@ export function useDirtySource(
       ),
     [],
   );
+  return useCallback(() => {
+    current.current = { ...current.current, isDirty: () => false };
+  }, []);
 }

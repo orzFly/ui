@@ -12,13 +12,20 @@ const REGISTRY_SOURCE = `import { Button } from "@orz/ui/components/button";
 import { UnsavedChangesDialog } from "@orz/ui/components/unsaved-changes-dialog";
 import { hasUnsavedWork, useDirtySource } from "@orz/ui/lib/unsaved-guard";
 
-// In an editor: registered while mounted, dirty while there is a draft.
-useDirtySource(() => draft !== "");
+// In an editor: registered while mounted, dirty while the draft is not what was saved.
+const markClean = useDirtySource(() => draft !== saved);
 
 // Where the app leaves the page (a router's blocker, a "Back" button):
 const [asking, setAsking] = useState(false);
+const tryLeave = () => (hasUnsavedWork() ? setAsking(true) : leave());
+const saveAndLeave = () => {
+  markClean(); // the guard reads before React renders setSaved
+  setSaved(draft);
+  tryLeave();
+};
 <>
-  <Button onClick={() => (hasUnsavedWork() ? setAsking(true) : leave())}>Leave</Button>
+  <Button onClick={tryLeave}>Leave</Button>
+  <Button onClick={saveAndLeave}>Save and leave</Button>
   <UnsavedChangesDialog
     open={asking}
     onProceed={() => {
@@ -59,20 +66,29 @@ export const Playground: Story = {
   decorators: [withOpener("Leave…")],
 };
 
-/** A stand-in for a router: "Leave" asks the dirty-source registry first. */
+/**
+ * A stand-in for a router: "Leave" asks the dirty-source registry first, and
+ * "Save and leave" marks the source clean before it asks.
+ */
 export const WithRegistry: Story = {
   decorators: [withWidth("max-w-sm")],
   parameters: {
     docs: { source: { code: REGISTRY_SOURCE, language: "tsx" } },
   },
   render: function Render(args) {
+    const [saved, setSaved] = useState("");
     const [draft, setDraft] = useState("");
     const [asking, setAsking] = useState(false);
     const [left, setLeft] = useState(false);
-    useDirtySource(() => draft !== "");
-    const leave = () => {
+    const markClean = useDirtySource(() => draft !== saved);
+    const tryLeave = () => {
       if (hasUnsavedWork()) setAsking(true);
       else setLeft(true);
+    };
+    const saveAndLeave = () => {
+      markClean();
+      setSaved(draft);
+      tryLeave();
     };
     if (left)
       return (
@@ -88,15 +104,18 @@ export const WithRegistry: Story = {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
         />
-        <Button variant="outline" onClick={leave}>
-          Leave
-        </Button>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={tryLeave}>
+            Leave
+          </Button>
+          <Button onClick={saveAndLeave}>Save and leave</Button>
+        </div>
         <UnsavedChangesDialog
           open={asking}
           onProceed={() => {
             args.onProceed();
             setAsking(false);
-            setDraft("");
+            setDraft(saved);
             setLeft(true);
           }}
           onStay={() => {

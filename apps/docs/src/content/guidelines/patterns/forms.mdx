@@ -103,6 +103,24 @@ alternative. The dialog takes no router; the app's own navigation blocker opens 
 Change the name and press **Settings**: the dialog asks, and **Keep editing** returns to the field
 with the name as typed. Save first, or change nothing, and **Settings** leaves at once.
 
+Register the work with `useDirtySource` from `@orz/ui/lib/unsaved-guard`, and have the blocker ask
+`hasUnsavedWork()`, which reads every source the moment a navigation starts. A form that becomes
+clean and navigates in one callback (save and open the new record, delete and go to the list,
+discard and go back) calls the `markClean` that `useDirtySource` returns before it navigates. The
+state that callback sets has not rendered yet, so without it the source still reads dirty, and
+people who have just saved are asked whether to leave without saving.
+
+```tsx
+const markClean = useDirtySource(() => draft !== saved);
+
+async function saveAndOpen() {
+  const { id } = await save(draft);
+  markClean();
+  setSaved(draft);
+  navigate(`/items/${id}`);
+}
+```
+
 Settings that apply as they change (Switches, see [Choosing a control](/guidelines/patterns/choosing-a-control/))
 have nothing unsaved, so a settings page of Switches needs no guard and no Save button.
 

@@ -1,4 +1,5 @@
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   hasUnsavedWork,
@@ -78,5 +79,40 @@ describe("useDirtySource", () => {
 
     view.unmount();
     expect(hasUnsavedWork()).toBe(false);
+  });
+
+  it("reads clean in the callback that marks it clean, before React renders", () => {
+    const view = renderHook(() => {
+      const [base, setBase] = useState("saved");
+      const [draft, setDraft] = useState("typed");
+      const markClean = useDirtySource(() => draft !== base);
+      return { draft, setBase, setDraft, markClean };
+    });
+    expect(hasUnsavedWork()).toBe(true);
+
+    let atNavigation: boolean | undefined;
+    act(() => {
+      const { draft, setBase, markClean } = view.result.current;
+      markClean();
+      setBase(draft);
+      atNavigation = hasUnsavedWork();
+    });
+    expect(atNavigation).toBe(false);
+
+    act(() => view.result.current.setDraft("typed again"));
+    expect(hasUnsavedWork()).toBe(true);
+  });
+
+  it("hands the source back to the predicate at the next render", () => {
+    const view = renderHook(({ dirty }) => useDirtySource(() => dirty), {
+      initialProps: { dirty: true },
+    });
+    const markClean = view.result.current;
+    markClean();
+    expect(hasUnsavedWork()).toBe(false);
+
+    view.rerender({ dirty: true });
+    expect(hasUnsavedWork()).toBe(true);
+    expect(view.result.current).toBe(markClean);
   });
 });
