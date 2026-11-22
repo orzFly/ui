@@ -1,0 +1,97 @@
+export const meta = {
+  title: "Reordering",
+  description:
+    "A list ordered by hand: a drag handle and a pair of move buttons on every row, the app's rules for where a row may go, and one move handed over each time.",
+  order: 38,
+  api: ["ui/Reorder", "ui/Primitives/List", "ui/Primitives/Table"],
+};
+
+import { ChannelTiers } from "../../../examples/reordering/channel-tiers.tsx";
+import { HandleAndButtons } from "../../../examples/reordering/handle-and-buttons.tsx";
+import { HandleOnly } from "../../../examples/reordering/handle-only.tsx";
+import { NotificationChannels } from "../../../examples/reordering/notification-channels.tsx";
+import { RouteTable } from "../../../examples/reordering/route-table.tsx";
+
+**Every row of a list ordered by hand has a drag handle and a pair of move buttons. Neither one
+replaces the other.**
+
+<Example of={NotificationChannels} />
+
+Where a notification goes, tried from the top. Drag a row by its grip, or press its ↑ or ↓; with
+the focus anywhere in a row, Alt+↑ and Alt+↓ (⌥ on a Mac) do what its buttons do. The other rows
+make room while one is dragged, and slide to their new places after a press.
+
+## When to order by hand
+
+Give a list a hand-set order when the order means something only its owner knows: what to try
+first, which rule matches before which, which way a fallback runs. A list that follows a field, a
+date or a name, is sorted by that field, and its rows carry no handle.
+
+## The handle and the buttons
+
+The handle is for the pointer: it carries a row any distance in one gesture. The buttons are for
+everyone else: the keyboard, a screen reader, a phone held in one hand, and anyone moving a row
+by a place or two. Each button's tooltip names its key, so the keyboard shortcut is found where the
+action already is.
+
+<DoDont>
+  <Do show={<HandleAndButtons />}>
+    Give every row both: the grip at its start, the pair at its end.
+  </Do>
+  <Dont show={<HandleOnly />}>
+    Leave the buttons out. A drag is the only way to move these rows, which a keyboard, a screen
+    reader and an unsteady hand cannot make
+    ([WCAG 2.5.7](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html)).
+  </Dont>
+</DoDont>
+
+Do not repeat the buttons as **Move up** and **Move down** in the row's `⋯` menu: they are already
+on the row. Where a row has a menu of its own, the pair goes just before it. A row that is a link
+keeps the handle and the buttons beside the link, never inside it.
+
+## Where a row may go
+
+<Example of={RouteTable} />
+
+Routes, matched from the top. The catch-all must stay last: it never moves, and no route may go
+below it.
+
+- A row that cannot move stays in the list, its handle and buttons disabled: `canMove`.
+- A place that cannot take a row is refused before the drop, not undone after it: `canDrop`.
+  A drag then holds the gap at the nearest place that takes the row, and a button steps past the
+  refused places to the next one that does, or is disabled when there is none.
+- When the rules are costly to ask or the list is long, answer for the buttons at once with
+  `canMoveUp` and `canMoveDown`, rather than leaving `Reorder` to ask `canDrop` place by place.
+
+`onMove` hears one move for each drag and each press: the row, where it was and where it went.
+An app that keeps positions on a server sends that one change; one that keeps an array passes it
+to `moveItem`, or `moveInGroups` for groups. `Reorder` changes nothing itself.
+
+## Groups
+
+<Example of={ChannelTiers} />
+
+When the group a row is in is part of its order, as which channels are tried first, put every
+group in one `Reorder` with `groups`, each group a `ReorderGroup` holding its heading and its rows.
+A row then moves across: a drag carries it past a heading, and a button at a group's end steps into
+the next group. Here **Notify first** takes at most two channels. An empty group shows a line
+saying so, which a row dragged into it covers.
+
+When the group is something else about the row, its owner or its state, give each group a
+`Reorder` of its own: a row moves only within its group, and changing the group is an edit of the
+row, from its menu or its form.
+
+## Filtering and saving
+
+- While a filter or a search hides some rows, draw no handles and no buttons: a place between rows
+  the reader cannot see means nothing.
+- Save a move as the page saves any other change: at once, or with the form's **Save**. Do not ask
+  first, and do not toast it with **Undo**: moving the row back is the undo.
+
+## On each platform
+
+- **Pointer.** Drag the handle; press the buttons, or Alt+↑ and Alt+↓ from anywhere in the row.
+  The handle is no Tab stop: the keyboard has the buttons.
+- **Touch.** A finger on the handle drags the row at once, with no long press; a finger anywhere
+  else on the row scrolls the page. The buttons grow to their touch size and stand far enough
+  apart that a thumb meant for one never presses the other.

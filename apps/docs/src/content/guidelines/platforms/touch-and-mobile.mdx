@@ -16,6 +16,7 @@ export const meta = {
     "ui/Primitives/Textarea",
     "ui/FilterMenu",
     "ui/QueryBox",
+    "ui/Reorder",
     "ui/Primitives/Sheet",
     "ui/Primitives/Toaster",
     "ui/Hooks/useVisualViewportInsets",
@@ -235,6 +236,7 @@ const height = useElementHeight(() => header.current, 56);
 | Pinch | The browser: zoom | Never disabled; a canvas that zooms its own content (an image viewer) takes it only inside itself |
 | Long press | The system: select text, preview a link | Nothing a control does not also do: a long press that selects a row repeats the row's checkbox, and a [`SelectionBar`](/guidelines/patterns/actions-and-buttons/#acting-on-a-selection) leads back out |
 | Swipe on a toast, a row | The app | Only as a shortcut: the toast also leaves on its own, the row's action is also in its menu, a delete still offers **Undo** |
+| Drag a row by its handle | The app | Only from the handle: anywhere else on the row the page scrolls, and the row's pair of move buttons does the same with taps ([Reordering](/guidelines/patterns/reordering/)) |
 
 Every gesture an app adds has a control that does the same thing with one tap, and anything that
 follows a path or needs two fingers works with a single pointer too
