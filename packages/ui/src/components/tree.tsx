@@ -2,6 +2,7 @@ import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
 import { Slot } from "radix-ui";
 import * as React from "react";
 
+import { edgeScrollBy, scrollerEdges, scrollerOf } from "../lib/edge-scroll.ts";
 import { isPlainPress } from "../lib/link.ts";
 import {
   ancestorsOf,
@@ -124,9 +125,6 @@ const TreeRowContext = React.createContext<RowContext | null>(null);
 const TYPEAHEAD_MS = 500;
 /** How long a drag rests on a closed branch before it opens. */
 const HOVER_OPEN_MS = 700;
-/** The band along the scroller's edges where a drag scrolls it, and its top speed per frame. */
-const EDGE_PX = 40;
-const EDGE_SPEED = 18;
 /** The type a drag from a tree carries, so a tree knows its own drags from any other. */
 const DRAG_TYPE = "application/x-orz-tree";
 
@@ -146,24 +144,6 @@ function nodeOf<T extends TreeNode<T>>(
     if (node.id === id) return node;
     const below = node.children && nodeOf(node.children, id);
     if (below) return below;
-  }
-  return undefined;
-}
-
-/**
- * The nearest ancestor that scrolls, or none when the document does. Looked
- * up each time rather than kept, as the tree may have moved.
- */
-function scrollerOf(tree: HTMLElement): HTMLElement | undefined {
-  const body = tree.ownerDocument.body;
-  for (let el = tree.parentElement; el && el !== body; el = el.parentElement) {
-    const { overflowY } = getComputedStyle(el);
-    if (
-      overflowY === "auto" ||
-      overflowY === "scroll" ||
-      overflowY === "overlay"
-    )
-      return el;
   }
   return undefined;
 }
@@ -1394,21 +1374,8 @@ function Tree<T extends TreeNode<T>>({
       if (!now) return;
       now.frame = undefined;
       const scroller = scrollerOf(el);
-      const top = scroller
-        ? scroller.getBoundingClientRect().top + scroller.clientTop
-        : 0;
-      const bottom = scroller
-        ? top + scroller.clientHeight
-        : (el.ownerDocument.defaultView?.innerHeight ?? 0);
-      const speed = (distance: number) =>
-        Math.ceil(((EDGE_PX - Math.max(0, distance)) / EDGE_PX) * EDGE_SPEED);
-      const upper = top + pinsBottom.current;
-      const by =
-        now.y < upper + EDGE_PX
-          ? -speed(now.y - upper)
-          : now.y > bottom - EDGE_PX
-            ? speed(bottom - now.y)
-            : 0;
+      const { top, bottom } = scrollerEdges(el, scroller);
+      const by = edgeScrollBy(now.y, top + pinsBottom.current, bottom);
       if (by === 0) return;
       scrollBy(el, scroller, by);
       now.frame = requestAnimationFrame(step);

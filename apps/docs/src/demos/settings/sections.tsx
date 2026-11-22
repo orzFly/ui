@@ -17,6 +17,13 @@ import { NumberInput } from "@orz/ui/components/number-input";
 import { Pane } from "@orz/ui/components/pane";
 import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
 import {
+  moveItem,
+  Reorder,
+  ReorderButtons,
+  ReorderHandle,
+  ReorderItem,
+} from "@orz/ui/components/reorder";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -54,8 +61,19 @@ export interface Preferences {
   notify: "all" | "mentions" | "none";
   email: boolean;
   desktop: boolean;
+  push: boolean;
+  /** The order the channels are tried in. */
+  channels: Channel[];
   weekly: boolean;
 }
+
+type Channel = "email" | "desktop" | "push";
+
+const CHANNELS: Record<Channel, string> = {
+  email: "Email",
+  desktop: "Desktop notifications",
+  push: "Push to phone",
+};
 
 export const PREFERENCES: Preferences = {
   wrap: true,
@@ -67,6 +85,8 @@ export const PREFERENCES: Preferences = {
   notify: "mentions",
   email: true,
   desktop: false,
+  push: true,
+  channels: ["email", "desktop", "push"],
   weekly: true,
 };
 
@@ -300,26 +320,42 @@ export function NotificationsSection({ prefs, onChange }: PreferenceProps) {
         </RadioGroup>
       </Group>
       <Group title="Send them by">
-        <SettingRow id="settings-email" label="Email" disabled={off}>
-          <Switch
-            id="settings-email"
-            checked={prefs.email && !off}
-            disabled={off}
-            onCheckedChange={(email) => onChange({ email })}
-          />
-        </SettingRow>
-        <SettingRow
-          id="settings-desktop"
-          label="Desktop notifications"
+        <Reorder
+          items={prefs.channels}
+          onMove={(move) =>
+            onChange({ channels: moveItem(prefs.channels, move) })
+          }
           disabled={off}
         >
-          <Switch
-            id="settings-desktop"
-            checked={prefs.desktop && !off}
-            disabled={off}
-            onCheckedChange={(desktop) => onChange({ desktop })}
-          />
-        </SettingRow>
+          {prefs.channels.map((channel, index) => {
+            const id = `settings-${channel}`;
+            return (
+              <Fragment key={channel}>
+                {index > 0 && <Separator purpose="row" />}
+                <ReorderItem
+                  id={channel}
+                  name={CHANNELS[channel]}
+                  className="flex items-center gap-2 py-3"
+                >
+                  <ReorderHandle />
+                  <div
+                    className="group flex min-w-0 flex-1 items-center"
+                    data-disabled={off}
+                  >
+                    <Label htmlFor={id}>{CHANNELS[channel]}</Label>
+                  </div>
+                  <ReorderButtons />
+                  <Switch
+                    id={id}
+                    checked={prefs[channel] && !off}
+                    disabled={off}
+                    onCheckedChange={(on) => onChange({ [channel]: on })}
+                  />
+                </ReorderItem>
+              </Fragment>
+            );
+          })}
+        </Reorder>
       </Group>
       <Group>
         <SettingRow
