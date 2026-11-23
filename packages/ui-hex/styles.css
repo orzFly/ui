@@ -133,9 +133,6 @@
 .orz-hex-spacer {
   position: relative;
   width: max-content;
-  /* A selected cell's 1px contour may overhang the edge. */
-  overflow: clip;
-  overflow-clip-margin: 1px;
 }
 /* Pinned under the header while the spacer scrolls: the scroll position only
    picks the top row, so the view moves by whole rows like the reference. */
@@ -271,17 +268,24 @@
   --cell-edge: var(--hex-edge);
 }
 
-/* One contour per range: an edge layer 1px larger behind every selected
-   cell, and fills above all of them that cover the inner edges. */
+/* One contour per range: an outline round a layer the cell's size behind
+   every selected cell, and fills above all of them, each the cell's own
+   box, which meet and cover the edges between cells. An outline's width
+   snaps to device pixels as a border's does, and it runs round the same
+   snapped box the fill covers, so every side of the edge is as wide as a
+   border at any scale. A layer 1px larger than the fill drew it 1 device
+   pixel wide on some sides and 2 on others at a fractional scale; a border
+   round that layer, with the fill inside a clear one, leaves the edges
+   between cells showing below a scale of 1, where the fills stop meeting. */
 .orz-hex-cell[data-sel] {
   --cell-bg: var(--cell-fill);
 }
 .orz-hex-cell[data-sel]::before {
   content: "";
   position: absolute;
-  inset: -1px;
+  inset: 0;
   z-index: 0;
-  background: var(--cell-edge);
+  outline: 1px solid var(--cell-edge);
 }
 .orz-hex:not([data-dragging]) [data-hover] {
   --cell-bg: var(--hex-hover);
@@ -526,7 +530,7 @@
     --cell-edge: var(--primary-foreground);
     color: var(--primary-foreground);
     &::before {
-      background: var(--primary);
+      outline-color: var(--primary);
     }
   }
 }

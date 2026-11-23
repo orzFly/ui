@@ -359,6 +359,20 @@ describe("HexView", () => {
     expect(touch).toMatch(/^@variant touch \{\s+--hex-header-height: 44px;/);
   });
 
+  it("draws a selected cell's edge as an outline round the cell's own box", () => {
+    // jsdom paints nothing. At 1.75x a layer 1px larger than the fill drew the
+    // edge 2 device pixels wide on some sides and 1 on others; an outline's
+    // width snaps as a border's does, round the box the fill covers.
+    const css = readFileSync(
+      join(import.meta.dirname, "../styles.css"),
+      "utf8",
+    );
+    const edge = /\.orz-hex-cell\[data-sel\]::before \{([^}]*)\}/.exec(css);
+    expect(edge?.[1]).toMatch(/\binset: 0;/);
+    expect(edge?.[1]).toMatch(/\boutline: 1px solid var\(--cell-edge\);/);
+    expect(edge?.[1]).not.toMatch(/background/);
+  });
+
   it("adds small wheel steps up to whole rows when scaled", () => {
     const huge: ByteSource = {
       size: 2 ** 32,
