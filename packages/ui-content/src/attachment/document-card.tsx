@@ -90,8 +90,7 @@ export function DocumentCard({
 
   // Under raymond the card is a document: a sunken well in the window colour,
   // its header a band of the face along the top with flat toolbar buttons. On
-  // touch the header is as tall as a hit area and its last control in by the
-  // rest of one, since the card clips.
+  // touch the header is as tall as a hit area, since the card clips.
   return (
     <section
       className={cn(
@@ -99,7 +98,7 @@ export function DocumentCard({
         className,
       )}
     >
-      <div className="flex items-center gap-1 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-ui touch:min-h-11 touch:pr-hit-xs raymond:border-b-0 raymond:bg-(--3d-face)">
+      <div className="flex items-center gap-1 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-ui touch:min-h-11 raymond:border-b-0 raymond:bg-(--3d-face)">
         {onExpand ? (
           <button
             type="button"

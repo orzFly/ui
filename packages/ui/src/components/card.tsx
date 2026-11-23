@@ -112,10 +112,10 @@ function CardHeader({
     <div
       data-slot="card-header"
       className={cn(
-        // On touch a header with an action is as tall as a hit area and ends
-        // by the rest of one, so the card, which clips, leaves the action's
-        // whole.
-        "group/card-header @container/card-header flex min-h-row flex-wrap items-center gap-x-2 gap-y-0.5 border-b bg-muted px-2 py-0.5 text-ui-sm touch:has-[>[data-slot=card-action]]:min-h-11 touch:has-[>[data-slot=card-action]]:pr-hit-sm",
+        // On touch a header with an action is as tall as a hit area, so the
+        // card, which clips, leaves the action's whole; an icon button's own
+        // margin leaves the room at the end.
+        "group/card-header @container/card-header flex min-h-row flex-wrap items-center gap-x-2 gap-y-0.5 border-b bg-muted px-2 py-0.5 text-ui-sm touch:has-[>[data-slot=card-action]]:min-h-11",
         // Under raymond the header is the group box's legend, on the card's
         // face with no rule: the frame breaks around each of its parts,
         // which mask half the gap on either side in the card's colour. The

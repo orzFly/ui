@@ -869,7 +869,7 @@ export function AnsiView({
   const tools = (
     <>
       <Button
-        size="xs"
+        size="icon-xs"
         variant="ghost"
         aria-label="Wrap lines"
         title="Wrap lines"
@@ -880,7 +880,7 @@ export function AnsiView({
         <WrapTextIcon />
       </Button>
       <Button
-        size="xs"
+        size="icon-xs"
         variant="ghost"
         aria-label="Copy output"
         title="Copy output"
@@ -926,9 +926,10 @@ export function AnsiView({
         )}
         style={rootStyle}
       >
-        {/* On touch in from the corner, which the frame clips, by the rest
-            of the buttons' hit areas. */}
-        <div className="absolute top-1 right-1 z-10 flex gap-0.5 rounded-[min(var(--radius-control),8px)] bg-terminal-background opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:top-hit-xs touch:right-hit-xs touch:opacity-100">
+        {/* On touch down from the top, which the frame clips, by the rest
+            of the buttons' hit areas; their own margins leave it at the
+            side. */}
+        <div className="absolute top-1 right-1 z-10 flex gap-0.5 rounded-[min(var(--radius-control),8px)] bg-terminal-background opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:top-hit-xs touch:opacity-100">
           {tools}
         </div>
         {scroller}
@@ -953,11 +954,12 @@ export function AnsiView({
       onKeyDown={onRootKeyDown}
     >
       {/* One child before the scroller, as in a pane, so that switching
-          chrome keeps the scroller mounted and measured. On touch its rows
-          end by the rest of a button's hit area, and the top one is as tall
-          as one, since the frame clips. */}
+          chrome keeps the scroller mounted and measured. On touch each row
+          is as tall as a button's hit area, since the frame clips and the
+          buttons of one row stand above the other's; their own margins
+          leave the room at the rows' ends. */}
       <div className="shrink-0 border-b border-border bg-muted font-ui text-foreground text-ui-sm raymond:border-b-0 raymond:bg-(--3d-face)">
-        <div className="flex items-center gap-2 py-1 pr-1 pl-2 touch:min-h-11 touch:pr-hit-xs">
+        <div className="flex items-center gap-2 py-1 pr-1 pl-2 touch:min-h-11">
           <ModuleMarker icon={<SquareTerminalIcon />} />
           {filename !== undefined && (
             <span className="min-w-0 truncate font-bold">{filename}</span>
@@ -968,7 +970,7 @@ export function AnsiView({
           <div className="ml-auto flex shrink-0 gap-0.5">
             {tools}
             {downloadUrl !== undefined && (
-              <Button asChild size="xs" variant="ghost">
+              <Button asChild size="icon-xs" variant="ghost">
                 <a
                   href={downloadUrl}
                   download={filename ?? ""}
@@ -981,7 +983,7 @@ export function AnsiView({
             )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border border-dashed py-1 pr-1 pl-2 touch:pr-hit-xs raymond:border-t-0 raymond:pt-1.5 raymond:shadow-[inset_0_1px_var(--3d-shadow),inset_0_2px_var(--3d-highlight)]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border border-dashed py-1 pr-1 pl-2 touch:min-h-11 touch:py-0 raymond:border-t-0 raymond:pt-1.5 raymond:shadow-[inset_0_1px_var(--3d-shadow),inset_0_2px_var(--3d-highlight)]">
           {parse.levelCounts && text !== "" && (
             <LevelChips
               counts={parse.levelCounts}

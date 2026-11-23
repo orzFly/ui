@@ -40,7 +40,7 @@ export const States: Story = {
           ],
         ] as const
       ).map(([id, label, props]) => (
-        <div key={id} className="flex items-center gap-2">
+        <div key={id} className="flex items-center gap-2 touch:min-h-11">
           <Checkbox {...args} id={id} {...props} />
           <Label htmlFor={id}>{label}</Label>
         </div>
@@ -66,7 +66,7 @@ export const SelectAll: Story = {
           : false;
     return (
       <div className="grid gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 touch:min-h-11">
           <Checkbox
             {...args}
             id="speed-all"
@@ -78,7 +78,10 @@ export const SelectAll: Story = {
           <Label htmlFor="speed-all">Any link speed</Label>
         </div>
         {SPEEDS.map((speed) => (
-          <div key={speed} className="ml-6 flex items-center gap-2">
+          <div
+            key={speed}
+            className="ml-6 flex items-center gap-2 touch:min-h-11"
+          >
             <Checkbox
               {...args}
               id={`speed-${speed}`}
@@ -105,7 +108,7 @@ export const SelectAll: Story = {
  */
 export const SelectSlot: Story = {
   render: (args) => (
-    <div className="flex items-center gap-6">
+    <div className="flex items-center gap-6 touch:gap-7">
       <SelectSlotView
         {...args}
         aria-label="Select brief.md"

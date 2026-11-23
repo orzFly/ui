@@ -20,9 +20,11 @@ function Toggle({
       // WordPad's bold and italic: flat until the pointer raises it by a
       // pixel, and while on sunk by a pixel over the face dithered with its
       // highlight, as SegmentedControl's pressed mode is; all in the window
-      // text, square.
+      // text, square. On touch a chip keeps the rest of its 44px above and
+      // below it, so the lines of a set that wraps stand 44px apart, and is
+      // at least 44px wide, so a short tag beside another shares no tap.
       className={cn(
-        "relative inline-flex h-control-xs items-center gap-1 rounded-full border px-2 text-ui-sm outline-none transition-colors hover:bg-accent focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground touch:hit-area [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "relative inline-flex h-control-xs items-center justify-center gap-1 rounded-full border px-2 text-ui-sm outline-none transition-colors hover:bg-accent focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground touch:hit-area touch:my-hit-xs touch:min-w-11 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         "raymond:rounded-none raymond:border-transparent raymond:text-foreground raymond:transition-none raymond:[--focus-offset:-3px] raymond:hover:bg-transparent raymond:not-aria-pressed:hover:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:aria-pressed:border-transparent raymond:aria-pressed:bg-(--3d-highlight) raymond:aria-pressed:bg-[conic-gradient(var(--3d-face)_25%,transparent_0_50%,var(--3d-face)_0_75%,transparent_0)] raymond:aria-pressed:bg-size-[2px_2px] raymond:aria-pressed:text-foreground raymond:aria-pressed:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:disabled:opacity-100 raymond:disabled:text-(--3d-shadow) raymond:disabled:[text-shadow:1px_1px_var(--3d-highlight)]",
         className,
       )}

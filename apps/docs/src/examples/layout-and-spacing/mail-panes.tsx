@@ -93,7 +93,7 @@ export function MailPanes() {
             <Pane
               purpose="toolbar"
               edge="bottom"
-              className="flex shrink-0 items-center gap-1 px-2 py-1.5 touch:pl-hit-sm"
+              className="flex shrink-0 items-center gap-1 px-2 py-1.5"
             >
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -147,7 +147,7 @@ export function MailPanes() {
                 <Pane
                   purpose="toolbar"
                   edge="bottom"
-                  className="flex shrink-0 items-center gap-1 px-2 py-1.5 touch:pl-hit-sm"
+                  className="flex shrink-0 items-center gap-1 px-2 py-1.5"
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>

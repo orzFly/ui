@@ -2246,7 +2246,8 @@ function RowMenu({
   if (pinned) {
     return (
       <span aria-hidden className={MENU_CELL}>
-        <span className="block size-control-xs" />
+        {/* The ⋯'s room as well as its size, so the column lines up on touch. */}
+        <span className="block size-control-xs touch:mx-hit-xs" />
       </span>
     );
   }
@@ -2283,9 +2284,7 @@ function RowMenu({
   );
 }
 
-// On touch the ⋯ sits in from the row's end by the rest of its hit area, for
-// a frame the tree scrolls in, which clips.
-const MENU_CELL = "flex shrink-0 items-center pr-1 touch:pr-hit-xs";
+const MENU_CELL = "flex shrink-0 items-center pr-1";
 
 /**
  * A selectable row's item: a label that leads keeps an icon's room before it for the checkbox,

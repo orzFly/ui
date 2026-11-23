@@ -183,12 +183,17 @@ describe("FenceFrame", () => {
       </>,
     );
     const classes = (el: Element | null) => el?.className.split(/\s+/) ?? [];
-    expect(classes(slot(container, "fence-tools"))).toEqual(
-      expect.arrayContaining(["touch:mt-hit-xs", "touch:mr-hit-xs"]),
-    );
-    expect(classes(slot(container, "fence-head"))).toEqual(
-      expect.arrayContaining(["touch:min-h-11", "touch:pr-hit-xs"]),
-    );
+    // Down from the top, and a hit area tall; the buttons' own room keeps
+    // them in from the side.
+    const tools = classes(slot(container, "fence-tools"));
+    expect(tools).toContain("touch:mt-hit-xs");
+    expect(tools).not.toContain("touch:mr-hit-xs");
+    const head = classes(slot(container, "fence-head"));
+    expect(head).toContain("touch:min-h-11");
+    expect(head).not.toContain("touch:pr-hit-xs");
+    for (const button of container.querySelectorAll("button")) {
+      expect(classes(button)).toContain("mx-(--hit-room)");
+    }
   });
 
   it("tells its content it is framed", () => {

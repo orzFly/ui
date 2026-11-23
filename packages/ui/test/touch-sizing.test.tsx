@@ -152,13 +152,16 @@ describe("touch sizes", () => {
     expectHitAreaOnly(screen.getByRole("radio"));
   });
 
-  it("RadioGroup spaces its rows 44px apart, so hit areas do not overlap", () => {
+  it("RadioGroup spaces its rows 44px apart in every style, so hit areas do not overlap", () => {
     render(
       <RadioGroup aria-label="R">
         <RadioGroupItem value="a" aria-label="A" />
       </RadioGroup>,
     );
-    expect(classesOf(screen.getByRole("radiogroup"))).toContain("touch:gap-7");
+    // 16px radios 28px apart; raymond's 12px ones 32px apart.
+    expect(classesOf(screen.getByRole("radiogroup"))).toEqual(
+      expect.arrayContaining(["touch:gap-7", "raymond:touch:gap-8"]),
+    );
   });
 
   it("Input draws 40px and keeps 16px text, so iOS does not zoom", () => {
@@ -417,15 +420,21 @@ describe("touch sizes", () => {
     expect(classesOf(slot("reorder-handle"))).toEqual(
       expect.arrayContaining(["touch:w-11", "raymond:touch:w-11"]),
     );
-    // Centres 44px apart, hit areas side by side, whatever the style's
-    // button size: 20px apart by default, 26px under raymond.
-    const gap = "touch:gap-[calc(44px-var(--spacing-control-xs))]";
-    expect(classesOf(slot("reorder-buttons"))).toEqual(
-      expect.arrayContaining([gap, `raymond:${gap}`]),
-    );
+    // Centres at least 44px apart, whatever the style's button size: each
+    // button keeps the rest of its 44px beside it, so the pair needs no
+    // touch gap of its own.
+    expect(
+      classesOf(slot("reorder-buttons")).filter((c) => c.includes("touch:")),
+    ).toEqual([]);
     for (const name of ["Move a up", "Move a down"]) {
       const button = screen.getByRole("button", { name });
-      expect(classesOf(button)).toContain("size-control-xs");
+      expect(classesOf(button)).toEqual(
+        expect.arrayContaining([
+          "size-control-xs",
+          "mx-(--hit-room)",
+          "touch:[--hit-room:var(--spacing-hit-xs)]",
+        ]),
+      );
       expectHitAreaOnly(button);
     }
   });

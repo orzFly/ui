@@ -125,7 +125,9 @@ const JOINS_NEXT = "after:-bottom-[3px]";
 /**
  * The ⋯'s room after every row's content: its margins and the button, as `--json-slot` on the
  * rows' box. On touch its end margin is the rest of its hit area, which the view would clip
- * where the ⋯ is held to the view's right edge.
+ * where the ⋯ is held to the view's right edge. Its margins replace the room an icon button
+ * keeps on both sides on touch: the selection's frame is built from them, and its only
+ * neighbour is its own row, a target wider than 44px.
  */
 export const SLOT_ROOM =
   "[--json-slot:calc(var(--spacing-control-xs)+var(--spacing))] touch:[--json-slot:calc(var(--spacing-control-xs)+var(--spacing)/2+var(--spacing-hit-xs))]";
@@ -274,7 +276,7 @@ export function SelectionMenu({
         label={label}
         menu={menu}
         className={cn(
-          "pointer-events-auto mr-0.5 bg-accent touch:mr-hit-xs raymond:bg-primary raymond:text-primary-foreground",
+          "pointer-events-auto mx-0 mr-0.5 bg-accent touch:mr-hit-xs raymond:bg-primary raymond:text-primary-foreground",
           HELD,
           ON_LAST_LINE,
         )}

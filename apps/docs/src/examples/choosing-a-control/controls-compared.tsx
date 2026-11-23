@@ -49,15 +49,15 @@ export function ControlsCompared() {
     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
       <div className="grid grid-cols-1 content-start gap-3">
         <GroupHeading>Editor</GroupHeading>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 touch:min-h-11">
           <Label htmlFor="cc-wrap">Wrap long lines</Label>
           <Switch id="cc-wrap" defaultChecked />
         </div>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 touch:min-h-11">
           <Label htmlFor="cc-line-numbers">Show line numbers</Label>
           <Switch id="cc-line-numbers" defaultChecked />
         </div>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 touch:min-h-11">
           <Label htmlFor="cc-language">New files open as</Label>
           <Select defaultValue="markdown">
             <SelectTrigger id="cc-language" className="w-36">

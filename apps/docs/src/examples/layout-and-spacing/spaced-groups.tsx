@@ -30,7 +30,7 @@ export function SpacedGroups() {
           {group.settings.map((setting) => (
             <div
               key={setting.id}
-              className="flex items-center justify-between gap-4"
+              className="flex items-center justify-between gap-4 touch:min-h-11"
             >
               <Label htmlFor={setting.id}>{setting.label}</Label>
               <Switch id={setting.id} defaultChecked={setting.on} />

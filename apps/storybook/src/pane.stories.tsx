@@ -164,7 +164,7 @@ export const Window: Story = {
   render: (args) => (
     <Pane {...args}>
       <Pane purpose="titlebar" asChild>
-        <header className="flex shrink-0 items-center gap-1 py-1 pr-1 pl-3 touch:pr-hit-sm">
+        <header className="flex shrink-0 items-center gap-1 py-1 pr-1 pl-3">
           <h2 className="min-w-0 flex-1 truncate">New message</h2>
           <Button variant="ghost" size="icon-sm" aria-label="Minimise">
             <MinusIcon />

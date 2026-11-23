@@ -60,68 +60,72 @@ export function OverlayMotion() {
   return (
     <TooltipProvider>
       <Pane purpose="toolbar" className="flex flex-wrap items-center gap-1">
-        <Sheet>
+        {/* A row a hit area tall on touch, so when the bar wraps on a phone
+            Keyboard shortcuts stands clear of the buttons above it. */}
+        <div className="flex items-center gap-1 touch:min-h-11">
+          <Sheet>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SheetTrigger asChild>
+                  <ToolbarButton aria-label="Folders">
+                    <PanelLeftIcon />
+                  </ToolbarButton>
+                </SheetTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Folders</TooltipContent>
+            </Tooltip>
+            <SheetContent side="left" className="w-64">
+              <SheetHeader>
+                <SheetTitle>Folders</SheetTitle>
+                <SheetDescription className="sr-only">
+                  Mail's folders
+                </SheetDescription>
+              </SheetHeader>
+              <nav aria-label="Folders" className="px-2">
+                <NavList>
+                  {PLACES.map(({ title, Icon }) => (
+                    <NavListItem key={title}>
+                      <NavListLink current={title === "Inbox"} asChild>
+                        <button type="button">
+                          <Icon />
+                          {title}
+                        </button>
+                      </NavListLink>
+                    </NavListItem>
+                  ))}
+                </NavList>
+              </nav>
+            </SheetContent>
+          </Sheet>
           <Tooltip>
             <TooltipTrigger asChild>
-              <SheetTrigger asChild>
-                <ToolbarButton aria-label="Folders">
-                  <PanelLeftIcon />
-                </ToolbarButton>
-              </SheetTrigger>
+              <ToolbarButton aria-label="Archive">
+                <ArchiveIcon />
+              </ToolbarButton>
             </TooltipTrigger>
-            <TooltipContent>Folders</TooltipContent>
+            <TooltipContent>Archive</TooltipContent>
           </Tooltip>
-          <SheetContent side="left" className="w-64">
-            <SheetHeader>
-              <SheetTitle>Folders</SheetTitle>
-              <SheetDescription className="sr-only">
-                Mail's folders
-              </SheetDescription>
-            </SheetHeader>
-            <nav aria-label="Folders" className="px-2">
-              <NavList>
-                {PLACES.map(({ title, Icon }) => (
-                  <NavListItem key={title}>
-                    <NavListLink current={title === "Inbox"} asChild>
-                      <button type="button">
-                        <Icon />
-                        {title}
-                      </button>
-                    </NavListLink>
-                  </NavListItem>
-                ))}
-              </NavList>
-            </nav>
-          </SheetContent>
-        </Sheet>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ToolbarButton aria-label="Archive">
-              <ArchiveIcon />
-            </ToolbarButton>
-          </TooltipTrigger>
-          <TooltipContent>Archive</TooltipContent>
-        </Tooltip>
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <ToolbarButton aria-label="More actions">
-                  <EllipsisIcon />
-                </ToolbarButton>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent>More actions</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent align="start" className="w-44">
-            <DropdownMenuItem>
-              <ForwardIcon /> Forward
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <LinkIcon /> Copy link
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <ToolbarButton aria-label="More actions">
+                    <EllipsisIcon />
+                  </ToolbarButton>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>More actions</TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuItem>
+                <ForwardIcon /> Forward
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <LinkIcon /> Copy link
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <Dialog>
           <DialogTrigger asChild>
             <ToolbarButton size="default">

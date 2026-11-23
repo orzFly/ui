@@ -89,7 +89,7 @@ export function ForAgents({ className }: { className?: string }) {
                 </a>
               )}
               {step.kind === "file" && step.command && (
-                <div className="pr-2 pb-1.5 pl-9 font-mono touch:pr-hit-xs">
+                <div className="pr-2 pb-1.5 pl-9 font-mono">
                   <Command command={step.command} />
                 </div>
               )}

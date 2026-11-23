@@ -255,7 +255,7 @@ export function Tasks() {
               </div>
               <Button
                 size="sm"
-                className="ml-auto sm:order-last"
+                className="ml-auto touch:my-hit-sm sm:order-last"
                 onClick={() => setCreating(true)}
               >
                 <PlusIcon />

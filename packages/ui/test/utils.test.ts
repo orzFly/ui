@@ -9,6 +9,10 @@ test("cn knows the style tokens' utilities for what they are", () => {
   expect(cn("rounded-control", "rounded-none")).toBe("rounded-none");
   expect(cn("h-control touch:h-10", "h-full")).toBe("touch:h-10 h-full");
   expect(cn("min-h-row", "min-h-0")).toBe("min-h-0");
+  expect(cn("touch:pr-hit-xs", "touch:pr-0")).toBe("touch:pr-0");
+  expect(cn("touch:mx-hit-sm", "touch:mr-hit-lg")).toBe(
+    "touch:mx-hit-sm touch:mr-hit-lg",
+  );
   expect(cn("shadow-overlay", "shadow-none")).toBe("shadow-none");
   expect(cn("font-ui", "font-mono")).toBe("font-mono");
   // A text size, not a colour: a colour beside it keeps it, a size replaces it.

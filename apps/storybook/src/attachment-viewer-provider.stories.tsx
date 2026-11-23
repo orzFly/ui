@@ -258,7 +258,7 @@ export const UseAttachmentViewer: Story = {
           Open any file, then page with ‹ › or the arrow keys. The archive has
           no inline preview.
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 touch:gap-y-[calc(2*var(--spacing-hit-sm))]">
           {MIXED.map((f, index) => (
             <Button
               key={f.name}
@@ -333,7 +333,7 @@ export const AttachmentViewer: StoryObj<typeof AttachmentViewerView> = {
   render: function Render(args, context) {
     const updateArgs = argsUpdater(context);
     return (
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 touch:gap-y-[calc(2*var(--spacing-hit-sm))]">
         {MIXED.map((f, index) => (
           <Button
             key={f.name}

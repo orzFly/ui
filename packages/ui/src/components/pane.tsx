@@ -251,8 +251,8 @@ function dockedClasses(docked: PaneResponsive<PaneDocked>) {
 // raised frame, square, docked or not; its
 // titlebar spans it in the caption gradient with its title in bold, grey
 // while the focus is elsewhere on the page, and its icon buttons are the
-// small raised caption boxes; on touch it is a hit area tall, its last box
-// in from the frame by the rest of one. A banner is a rebar band too, opaque,
+// small raised caption boxes; on touch it is a hit area tall, and each box
+// keeps beside it what its 16px leave of 44px. A banner is a rebar band too, opaque,
 // but keeps its caller's height. Each keeps the default style's rules at
 // their width, in no colour, as the edges replace them.
 //
@@ -276,7 +276,7 @@ const PURPOSE: Record<PanePurpose, string> = {
   window:
     "raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:p-[3px] raymond:shadow-raised",
   titlebar:
-    "raymond:h-auto raymond:min-h-0 raymond:touch:min-h-11 raymond:gap-0.5 raymond:border-0 raymond:bg-[linear-gradient(to_right,var(--caption),var(--caption-gradient))] raymond:py-0.5 raymond:pr-0.5 raymond:touch:pr-[11px] raymond:pl-1 raymond:font-bold raymond:text-(--caption-foreground) raymond:[--font-weight-medium:700] raymond:in-[body:has(:focus:not([data-purpose=window]_*))]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[body:has(:focus:not([data-purpose=window]_*))]:text-(--caption-inactive-foreground) raymond:[&_button[data-size^=icon]]:h-3.5 raymond:[&_button[data-size^=icon]]:w-4 raymond:[&_button[data-size^=icon]]:min-w-0 raymond:[&_button[data-size^=icon]]:bg-(--3d-face) raymond:[&_button[data-size^=icon]]:text-foreground raymond:[&_button[data-size^=icon]]:shadow-raised raymond:[&_button[data-size^=icon]:active]:shadow-pressed raymond:[&_button[data-size^=icon]:hover]:bg-(--3d-face) raymond:[&_button[data-size^=icon]:hover]:shadow-raised raymond:[&_button[data-size^=icon]:focus-visible]:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[&_button[data-size^=icon]]:[--focus-offset:-3px] raymond:[&_button[data-size^=icon]_svg]:size-2.5 raymond:[&_button[data-size^=icon]_svg]:stroke-3",
+    "raymond:h-auto raymond:min-h-0 raymond:touch:min-h-11 raymond:gap-0.5 raymond:border-0 raymond:bg-[linear-gradient(to_right,var(--caption),var(--caption-gradient))] raymond:py-0.5 raymond:pr-0.5 raymond:pl-1 raymond:font-bold raymond:text-(--caption-foreground) raymond:[--font-weight-medium:700] raymond:in-[body:has(:focus:not([data-purpose=window]_*))]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[body:has(:focus:not([data-purpose=window]_*))]:text-(--caption-inactive-foreground) raymond:[&_button[data-size^=icon]]:h-3.5 raymond:[&_button[data-size^=icon]]:w-4 raymond:[&_button[data-size^=icon]]:min-w-0 raymond:touch:[&_button[data-size^=icon]]:[--hit-room:14px] raymond:[&_button[data-size^=icon]]:bg-(--3d-face) raymond:[&_button[data-size^=icon]]:text-foreground raymond:[&_button[data-size^=icon]]:shadow-raised raymond:[&_button[data-size^=icon]:active]:shadow-pressed raymond:[&_button[data-size^=icon]:hover]:bg-(--3d-face) raymond:[&_button[data-size^=icon]:hover]:shadow-raised raymond:[&_button[data-size^=icon]:focus-visible]:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[&_button[data-size^=icon]]:[--focus-offset:-3px] raymond:[&_button[data-size^=icon]_svg]:size-2.5 raymond:[&_button[data-size^=icon]_svg]:stroke-3",
 };
 
 /** A region of an app's frame, drawn for its purpose. With `asChild` it is the caller's element. */

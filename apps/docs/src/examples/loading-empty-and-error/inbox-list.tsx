@@ -59,7 +59,7 @@ export function InboxList() {
         <Pane
           purpose="toolbar"
           edge="bottom"
-          className="flex items-center gap-1 px-1.5 py-1.5 touch:pl-hit"
+          className="flex items-center gap-1 px-1.5 py-1.5"
         >
           <Tooltip>
             <TooltipTrigger asChild>

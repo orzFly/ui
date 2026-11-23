@@ -95,7 +95,7 @@ export function NoteList({
         edge="bottom"
         className="grid shrink-0 gap-2 p-2 touch:pt-hit-sm"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 touch:min-h-11">
           <h2 className="flex-1 px-1 font-semibold">Notes</h2>
           <Button size="sm" variant="outline" onClick={onNew}>
             <PlusIcon />

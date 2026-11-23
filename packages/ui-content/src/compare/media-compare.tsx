@@ -142,9 +142,7 @@ export function MediaCompare({
       {head && (
         <Pane
           purpose="toolbar"
-          // On touch its last action sits in by the rest of its hit area:
-          // the frame clips.
-          className="flex min-w-0 items-center gap-2 border-b px-2 py-1.5 touch:pr-hit-xs"
+          className="flex min-w-0 items-center gap-2 border-b px-2 py-1.5"
         >
           {choosable && (
             <CompareModes

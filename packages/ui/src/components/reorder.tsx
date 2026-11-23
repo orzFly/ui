@@ -123,10 +123,7 @@ const GROUP =
 const HANDLE =
   "relative flex w-6 shrink-0 cursor-grab items-center justify-center self-stretch text-muted-foreground select-none touch-none [-webkit-touch-callout:none] not-data-disabled:hover:text-foreground in-data-lifted:cursor-grabbing in-data-lifted:text-foreground data-disabled:cursor-default data-disabled:opacity-50 [&_svg]:size-3.5 touch:w-11 raymond:w-3.5 raymond:touch:w-11 raymond:gap-px raymond:[&_svg]:hidden raymond:before:h-3 raymond:before:w-[3px] raymond:before:bg-(--3d-face) raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:before:content-[''] raymond:after:h-3 raymond:after:w-[3px] raymond:after:bg-(--3d-face) raymond:after:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:after:content-['']";
 
-// Under touch the two buttons stand 44px apart, centre to centre, so their
-// hit areas do not overlap: the gap is what the style's button leaves of it.
-const BUTTONS =
-  "flex shrink-0 gap-0.5 touch:gap-[calc(44px-var(--spacing-control-xs))] raymond:gap-0 raymond:touch:gap-[calc(44px-var(--spacing-control-xs))]";
+const BUTTONS = "flex shrink-0 gap-0.5 raymond:gap-0";
 
 type Dir = -1 | 1;
 

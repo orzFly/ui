@@ -14,6 +14,10 @@ export const meta = {
     "ui/Primitives/Switch",
     "ui/Primitives/Tabs",
     "ui/Primitives/Textarea",
+    "ui/Primitives/ToolbarButton",
+    "ui/Primitives/Toggle",
+    "ui/Primitives/SegmentedControl",
+    "ui/Primitives/List",
     "ui/FilterMenu",
     "ui/QueryBox",
     "ui/Reorder",
@@ -85,7 +89,8 @@ A control you build yourself takes the same sizes the same way:
 - A small control in a dense row keeps its size and adds the hit area: `relative touch:hit-area`.
   The `::after` belongs to the positioned element, so `relative` (or any positioning) is required.
   On touch the control has no baseline and lines up with text by its middle, so a flex or grid row
-  that lines it up with `items-baseline` adds `touch:items-center`.
+  that lines it up with `items-baseline` adds `touch:items-center`. It also keeps the room its
+  neighbours need, as the next section says.
 - Anything else that changes for a finger, such as a keyboard shortcut hint, uses `touch:` too, not
   Tailwind's `pointer-coarse:`, which no `data-pointer` reaches.
 - Tools that hover reveals hide only under `can-hover:`, which holds where the primary pointer can
@@ -94,19 +99,44 @@ A control you build yourself takes the same sizes the same way:
 
 ### Spacing between targets
 
-A hit area wider than its control overlaps its neighbours. Where two overlap, the later one in the
-DOM takes the tap, so:
+**On touch no two small controls share a hit area.** Two that stand side by side, each narrower
+than {css.hitArea}px, or one above the other, each shorter, stand {css.hitArea}px apart, centre to
+centre. A tap on one never lands on the other, and which comes first in the DOM decides nothing.
 
-- Leave 8px or more between two controls that do different things, and more between a control and
-  something destructive.
-- A link in text right next to a `Switch` or `Checkbox` loses the taps near the control. Keep the
-  link away from it, or make the whole row the control's label.
-- Inside a box that clips or scrolls (`overflow-hidden`, `overflow-auto`), a hit area that crosses
-  the box's edge is cut off there; it never makes the box scroll. On touch, leave the rest of the
-  hit area between the control and the edge: pad by `hit-xs` beside an `xs` control
-  (`touch:pr-hit-xs`), `hit-sm` beside an `sm` one, `hit` beside a default one, or give the strip
-  that holds them `touch:min-h-11` and centre them in it. The spacing follows the style's control
-  sizes. @orz/ui's own frames, bars and table rows already leave it for their controls.
+@orz/ui's parts keep that room themselves, so a row or a toolbar of them writes nothing for touch:
+
+- An icon `Button`, and so a `ToolbarButton` and every `⋯`, keeps its drawn size and reserves the
+  rest of its {css.hitArea}px beside it as margin. A margin you give it in `className` (`ml-auto`
+  to push it to a bar's end) replaces that room on its side.
+- A `Toggle` keeps the room above and below it, so the lines of a set of chips that wraps stand
+  apart, and is at least {css.hitArea}px wide. A segment of a `SegmentedControl` and a tab are at
+  least {css.hitArea}px wide too, since their faces join.
+- A `ListItem` that holds a control is at least {css.hitArea}px tall, so its controls stand that far
+  from the next row's.
+
+A small control you draw yourself reserves the room the same way: `touch:mx-hit-xs` beside it for
+an `xs` one, `hit-sm` for an `sm` one, `hit` for a default one, `hit-lg` for a large one. A stack of
+them outside a `ListItem` gives each row `touch:min-h-11`. The tokens follow the style's control
+sizes, so the centres stand {css.hitArea}px apart in every style.
+
+Three cases may overlap:
+
+- **A control and its own label.** A `Checkbox`, `RadioGroupItem` or `Switch` and the text that
+  toggles it do the same thing, so these controls reserve no room beside them. A link in that text
+  is another target: keep it away from the control, or make the whole row the label.
+- **A small control beside a target {css.hitArea}px or longer** along the line they share, such as
+  a row's link, a tree row or a field. The small one's hit area may take a strip of the large one,
+  which keeps {css.hitArea}px of its own.
+- **Marks placed by data on a track**, such as a seek bar's chapter marks under its thumb. Where
+  they stand is the data's, not the layout's.
+
+Inside a box that clips or scrolls (`overflow-hidden`, `overflow-auto`), a hit area that crosses the
+box's edge is cut off there; it never makes the box scroll. An icon button's own room already keeps
+its hit area inside the box at the side. Above and below a control, and beside one that keeps no
+room of its own, leave the rest of the hit area between the control and the edge: give the strip
+that holds them `touch:min-h-11` and centre them in it, or pad by the token of the control's size
+(`touch:pr-hit-xs` beside an `xs` one). @orz/ui's own frames, bars and table rows already leave it
+for their controls.
 
 <DoDont>
   <Do>

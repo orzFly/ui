@@ -37,7 +37,7 @@ export function NotificationChannels() {
           {channels.map((channel) => (
             <ListItem key={channel.id} asChild>
               <ReorderItem id={channel.id} name={channel.name} asChild>
-                <li className="flex min-h-row items-center gap-2 pr-1 touch:pr-hit-xs">
+                <li className="flex min-h-row items-center gap-2 pr-1">
                   <ReorderHandle />
                   <span className="flex min-w-0 flex-1 items-baseline gap-2">
                     <span className="truncate">{channel.name}</span>

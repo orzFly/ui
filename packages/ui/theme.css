@@ -53,10 +53,13 @@
 }
 
 /* A 44px hit area around a control drawn smaller, for `touch:hit-area`. It is
-   a transparent ::after, so the drawn size, and the layout around it, stay
-   as they are; neighbours closer than 44px share the overlap, and the later
-   one takes the tap. Positioning is the element's own (`relative` in its base
-   classes): set here, under touch: it would beat a caller's `absolute`.
+   a transparent ::after, so the drawn size stays as it is. No two small
+   controls share one: an icon button reserves the rest of its 44px beside it
+   as margin (the tokens below), so two side by side stand 44px apart, centre
+   to centre, and the DOM order never decides a tap. A control and its own
+   label, which do the same thing, may overlap. Positioning is the element's
+   own (`relative` in its base classes): set here, under touch: it would beat
+   a caller's `absolute`.
    Layout containment makes what spills past the control ink overflow, which a
    scroller does not grow by: without it, a control at a scroller's edge made
    it scroll by the overhang, as a checkbox in a table's last row did. It also
@@ -79,14 +82,18 @@
   }
 }
 
-/* How far `hit-area` reaches past a control of each size on every side, which
-   is the room a box that clips the control leaves between its edge and the
-   control on touch (`touch:pr-hit-xs` beside an xs button) for the hit area to
-   end inside. Inline, so each reads the size of the style it is drawn in. */
+/* How far `hit-area` reaches past a control of each size on every side. On
+   touch an icon button of that size takes it as inline margin, which keeps a
+   neighbour's hit area off its own and is the room a box that clips the
+   button needs between its edge and the button. A box leaves that room
+   itself only above and below a control, and beside a control that reserves
+   none (a checkbox, a chip). Inline, so each reads the size of the style it
+   is drawn in. */
 @theme inline {
   --spacing-hit-xs: calc((44px - var(--spacing-control-xs)) / 2);
   --spacing-hit-sm: calc((44px - var(--spacing-control-sm)) / 2);
   --spacing-hit: calc((44px - var(--spacing-control)) / 2);
+  --spacing-hit-lg: calc((44px - var(--spacing-control-lg)) / 2);
 }
 
 /* Style tokens: how the components are drawn, their shape, type, depth,

@@ -69,8 +69,10 @@ export function LevelChips({ counts, hidden, onChange }: LevelChipsProps) {
           title="Click to show or hide; shift+click to show only this level"
           // styles.css gives [data-level] its --log-level, which colours the dot.
           data-level={key === "other" ? undefined : key}
+          // On touch a chip keeps the rest of its 44px above and below it, as
+          // a Toggle does, so the lines of chips that wrap share no tap.
           className={cn(
-            "rounded-chip font-mono text-muted-foreground line-through opacity-60 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:pressed-cue aria-pressed:no-underline aria-pressed:opacity-100",
+            "rounded-chip font-mono text-muted-foreground line-through opacity-60 touch:my-hit-xs aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:pressed-cue aria-pressed:no-underline aria-pressed:opacity-100",
             RAYMOND_LATCH,
           )}
           onClick={onClick(key)}
@@ -183,8 +185,10 @@ export function SearchBox({
       data-slot="ansi-search"
       className={cn(
         // Under raymond the input and its buttons sit in one sunken field
-        // on the window colour.
-        "flex min-w-0 items-center gap-0.5 rounded-[min(var(--radius-control),8px)] border border-input bg-background pl-1.5 has-[input:focus-visible]:focus-ring raymond:bg-clip-padding raymond:shadow-sunken raymond:[--background:var(--window)] raymond:[--input:transparent]",
+        // on the window colour. On touch the field keeps the rest of its
+        // buttons' 44px above and below it, as a chip does, so a line of
+        // level chips wrapped above it shares no tap.
+        "flex min-w-0 items-center gap-0.5 rounded-[min(var(--radius-control),8px)] border border-input bg-background pl-1.5 has-[input:focus-visible]:focus-ring touch:my-[calc(var(--spacing-hit-xs)-1px)] raymond:bg-clip-padding raymond:shadow-sunken raymond:[--background:var(--window)] raymond:[--input:transparent]",
         className,
       )}
     >

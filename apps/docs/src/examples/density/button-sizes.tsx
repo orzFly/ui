@@ -21,7 +21,7 @@ const ICON_SIZES = ["icon-lg", "icon", "icon-sm", "icon-xs"] as const;
 export function ButtonSizes() {
   return (
     <TooltipProvider>
-      <dl className="grid grid-cols-[4.5rem_1fr] items-center gap-x-4 gap-y-4 text-ui">
+      <dl className="grid grid-cols-[4.5rem_1fr] items-center gap-x-4 gap-y-4 text-ui touch:[&>dd]:min-h-11">
         <dt className="font-mono text-muted-foreground text-ui-sm">lg</dt>
         <dd>
           <Button size="lg">

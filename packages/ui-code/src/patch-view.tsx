@@ -130,12 +130,7 @@ function FileHeader({
   const label = fileLabel(file);
   return (
     <div
-      // On touch the fold button sits in from the box's edge, which clips,
-      // by the rest of its hit area.
-      className={cn(
-        HEADER_ROW,
-        onToggle !== undefined && "pl-1.5 touch:pl-hit-xs",
-      )}
+      className={cn(HEADER_ROW, onToggle !== undefined && "pl-1.5")}
       style={HEADER_HEIGHT}
     >
       {onToggle !== undefined && (

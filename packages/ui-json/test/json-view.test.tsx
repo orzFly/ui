@@ -265,18 +265,25 @@ describe("JsonView menu", () => {
     const button = screen.getByRole("button", {
       name: "Actions for $.metadata",
     });
-    expect(button.className.split(/\s+/)).toEqual(
+    // Its own margins, which the selection's frame is built from, replace
+    // the room an icon button keeps on both sides on touch.
+    const classes = button.className.split(/\s+/);
+    expect(classes).toEqual(
       expect.arrayContaining([
         "touch:mr-hit-xs",
         "touch:right-hit-xs",
         "touch:before:bg-inherit",
       ]),
     );
+    expect(classes).not.toContain("mx-(--hit-room)");
     const box = tree().querySelector("[role=treeitem]")?.parentElement;
     expect(box?.className).toContain("touch:[--json-slot:");
-    expect(screen.getByRole("toolbar").className.split(/\s+/)).toContain(
-      "touch:pl-hit-sm",
-    );
+    // The toolbar's buttons keep their own room at its start.
+    const toolbar = screen.getByRole("toolbar");
+    expect(toolbar.className.split(/\s+/)).not.toContain("touch:pl-hit-sm");
+    for (const tool of within(toolbar).getAllByRole("button")) {
+      expect(tool.className.split(/\s+/)).toContain("mx-(--hit-room)");
+    }
   });
 
   it("opens from ⋯, from a right-click and from Shift+F10 alike", async () => {

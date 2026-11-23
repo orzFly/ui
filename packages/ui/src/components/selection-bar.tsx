@@ -79,9 +79,7 @@ function SelectionBar({
       data-slot="selection-bar"
       data-selecting={selecting || undefined}
       className={cn(
-        // On touch Clear sits in from the end by the rest of its hit area,
-        // for a list's frame, which clips.
-        "flex shrink-0 items-center gap-0.5 px-1.5 py-1.5 text-ui touch:pr-hit",
+        "flex shrink-0 items-center gap-0.5 px-1.5 py-1.5 text-ui",
         className,
       )}
       onKeyDown={(event) => {
@@ -102,7 +100,9 @@ function SelectionBar({
       }}
       {...props}
     >
-      <span className="flex size-8 shrink-0 items-center justify-center">
+      {/* As wide as the box's hit area on touch, so it ends where the
+          first command's room begins. */}
+      <span className="flex size-8 shrink-0 items-center justify-center touch:w-11">
         {icon === undefined ? (
           <Checkbox {...box} />
         ) : (

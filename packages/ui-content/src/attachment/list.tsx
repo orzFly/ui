@@ -102,8 +102,10 @@ function AttachmentRow({
     <li
       data-sweep-key={selection ? String(item.key) : undefined}
       data-selected={selected ? "" : undefined}
+      // On touch a hit area tall, as a ListItem that holds a control is, so
+      // the actions of rows stacked share no tap.
       className={cn(
-        "flex items-center hover:bg-muted/40 raymond:hover:bg-transparent",
+        "flex items-center hover:bg-muted/40 touch:min-h-11 raymond:hover:bg-transparent",
         SELECTED_ROW,
       )}
       onPointerEnter={(e) => {

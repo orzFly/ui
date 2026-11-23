@@ -1,3 +1,9 @@
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@orz/ui/components/dropdown-menu";
 import { Pane } from "@orz/ui/components/pane";
 import { ToolbarButton, ToolbarSeparator } from "@orz/ui/components/toolbar";
 import {
@@ -9,6 +15,7 @@ import {
 import {
   BoldIcon,
   CodeIcon,
+  EllipsisIcon,
   ItalicIcon,
   LinkIcon,
   ListIcon,
@@ -29,10 +36,13 @@ const GROUPS = [
     { label: "Numbered list", Icon: ListOrderedIcon },
     { label: "Quote", Icon: QuoteIcon },
   ],
-  [
-    { label: "Link", Icon: LinkIcon },
-    { label: "Attach a file", Icon: PaperclipIcon },
-  ],
+];
+
+// Below `sm` the rarest commands go into a ⋯ menu: on a phone's touch the
+// whole row no longer fits.
+const RARE = [
+  { label: "Link", Icon: LinkIcon },
+  { label: "Attach a file", Icon: PaperclipIcon },
 ];
 
 export function FormattingToolbar() {
@@ -60,6 +70,40 @@ export function FormattingToolbar() {
             ))}
           </Fragment>
         ))}
+        <ToolbarSeparator decorative={false} />
+        {RARE.map(({ label, Icon }) => (
+          <Tooltip key={label}>
+            <TooltipTrigger asChild>
+              <ToolbarButton aria-label={label} className="max-sm:hidden">
+                <Icon />
+              </ToolbarButton>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        ))}
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <ToolbarButton
+                  aria-label="More formatting"
+                  className="sm:hidden"
+                >
+                  <EllipsisIcon />
+                </ToolbarButton>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>More formatting</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end">
+            {RARE.map(({ label, Icon }) => (
+              <DropdownMenuItem key={label}>
+                <Icon />
+                {label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </Pane>
     </TooltipProvider>
   );

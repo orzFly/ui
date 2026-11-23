@@ -75,7 +75,7 @@ function ThemeButton() {
   return (
     <ClientOnly
       fallback={
-        <Button variant="ghost" size="icon" aria-label="Theme" disabled />
+        <Button variant="ghost" size="icon-sm" aria-label="Theme" disabled />
       }
     >
       <ThemeMenu />
@@ -130,10 +130,11 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
               inputRef={box}
               className="hidden w-56 md:block lg:w-64"
             />
+            {/* Drawn 44px on a phone, so it keeps no room beside it. */}
             <Button
               variant="ghost"
               size="icon"
-              className="size-11 md:hidden"
+              className="mx-0 size-11 md:hidden"
               aria-label="Search"
               onClick={() => setNav("search")}
             >
@@ -177,7 +178,7 @@ function MobileNav({
         <Button
           variant="ghost"
           size="icon"
-          className="size-11 md:hidden"
+          className="mx-0 size-11 md:hidden"
           aria-label="Menu"
         >
           <MenuIcon className="size-5" />

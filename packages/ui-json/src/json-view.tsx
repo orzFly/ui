@@ -1018,10 +1018,10 @@ function JsonViewBody({
         purpose="toolbar"
         role="toolbar"
         aria-label={labels.toolbar}
-        // On touch its first button sits in from the frame, which clips, by
-        // the rest of its hit area, and the buttons' line is as tall as one
-        // when the search wraps below it.
-        className="flex flex-none flex-wrap items-center gap-0.5 border-b bg-muted px-1 py-0.5 touch:pl-hit-sm touch:*:data-[slot=toolbar-button]:my-hit-sm raymond:mb-0.5 raymond:pl-2.5"
+        // On touch the buttons' line is as tall as a hit area when the
+        // search wraps below it, since the frame clips; their own margins
+        // keep them in from its side.
+        className="flex flex-none flex-wrap items-center gap-0.5 border-b bg-muted px-1 py-0.5 touch:*:data-[slot=toolbar-button]:my-hit-sm raymond:mb-0.5 raymond:pl-2.5"
       >
         <ToolbarButton
           size="icon-sm"

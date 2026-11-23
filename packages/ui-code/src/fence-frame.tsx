@@ -172,9 +172,9 @@ export function FenceFrame({
       {headed ? (
         <div
           data-slot="fence-head"
-          // On touch as tall as a hit area, and its last control in from
-          // the end by the rest of one: the frame clips.
-          className="flex items-center gap-2 border-b bg-muted py-1 pr-1.5 pl-2 text-ui-sm text-muted-foreground select-none touch:min-h-11 touch:pr-hit-xs raymond:border-b-0 raymond:bg-(--3d-face)"
+          // On touch as tall as a hit area, since the frame clips; its
+          // buttons' own margins leave the room at its end.
+          className="flex items-center gap-2 border-b bg-muted py-1 pr-1.5 pl-2 text-ui-sm text-muted-foreground select-none touch:min-h-11 raymond:border-b-0 raymond:bg-(--3d-face)"
         >
           {leading}
           {title !== undefined &&
@@ -196,13 +196,14 @@ export function FenceFrame({
         // that is the only way to something) that cover would be for good,
         // so it takes a row of its own, reaching down into the content's
         // top padding to cost less, but not over a scroller, whose lines
-        // would pass under it. On touch it sits in from the corner far
-        // enough for its controls' hit areas to end inside the frame.
+        // would pass under it. On touch it sits down from the top far
+        // enough for its controls' hit areas to end inside the frame; their
+        // own margins keep them in from its side.
         <div
           data-slot="fence-tools"
           data-always={toolbarAlwaysVisible ? "" : undefined}
           className={cn(
-            "relative z-10 mt-1 mr-1 ml-auto flex w-fit touch:mt-hit-xs touch:mr-hit-xs items-center gap-0.5 rounded-control border bg-background p-px shadow-menu select-none print:hidden raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:p-0.5 raymond:shadow-raised",
+            "relative z-10 mt-1 mr-1 ml-auto flex w-fit touch:mt-hit-xs items-center gap-0.5 rounded-control border bg-background p-px shadow-menu select-none print:hidden raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:p-0.5 raymond:shadow-raised",
             !collapsible && "-mb-3",
             !toolbarAlwaysVisible &&
               "transition-opacity duration-150 ease-out motion-reduce:transition-none can-hover:absolute can-hover:top-1 can-hover:right-1 can-hover:m-0 can-hover:opacity-0 can-hover:group-focus-within/fence:opacity-100 can-hover:group-hover/fence:opacity-100",

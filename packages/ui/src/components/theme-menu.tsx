@@ -647,7 +647,7 @@ export function ThemeMenu({
       {trigger ? (
         trigger({ Icon, label })
       ) : (
-        <Button variant="ghost" size="sm" aria-label={label} title={label}>
+        <Button variant="ghost" size="icon-sm" aria-label={label} title={label}>
           <Icon className="size-4" />
         </Button>
       )}
