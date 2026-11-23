@@ -56,8 +56,16 @@
    a transparent ::after, so the drawn size, and the layout around it, stay
    as they are; neighbours closer than 44px share the overlap, and the later
    one takes the tap. Positioning is the element's own (`relative` in its base
-   classes): set here, under touch: it would beat a caller's `absolute`. */
+   classes): set here, under touch: it would beat a caller's `absolute`.
+   Layout containment makes what spills past the control ink overflow, which a
+   scroller does not grow by: without it, a control at a scroller's edge made
+   it scroll by the overhang, as a checkbox in a table's last row did. It also
+   takes the control's baseline away, and a box without one sits on a line by
+   its bottom edge, the line's descent added under it. By its middle, a lone
+   button keeps the place its baseline gave it. */
 @utility hit-area {
+  contain: layout;
+  vertical-align: middle;
   &::after {
     content: "";
     position: absolute;

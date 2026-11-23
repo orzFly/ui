@@ -84,6 +84,8 @@ A control you build yourself takes the same sizes the same way:
 - A row that is tapped grows with `touch:min-h-11` (44px).
 - A small control in a dense row keeps its size and adds the hit area: `relative touch:hit-area`.
   The `::after` belongs to the positioned element, so `relative` (or any positioning) is required.
+  On touch the control has no baseline and lines up with text by its middle, so a flex or grid row
+  that lines it up with `items-baseline` adds `touch:items-center`.
 - Anything else that changes for a finger, such as a keyboard shortcut hint, uses `touch:` too, not
   Tailwind's `pointer-coarse:`, which no `data-pointer` reaches.
 - Tools that hover reveals hide only under `can-hover:`, which holds where the primary pointer can
@@ -99,8 +101,9 @@ DOM takes the tap, so:
   something destructive.
 - A link in text right next to a `Switch` or `Checkbox` loses the taps near the control. Keep the
   link away from it, or make the whole row the control's label.
-- Inside a box with `overflow-hidden`, a hit area that crosses the box's edge is cut off there. Pad
-  the box, or move the control in from the edge.
+- Inside a box that clips or scrolls (`overflow-hidden`, `overflow-auto`), a hit area that crosses
+  the box's edge is cut off there; it never makes the box scroll. Pad the box, or move the control
+  in from the edge.
 
 <DoDont>
   <Do>

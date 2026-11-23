@@ -50,6 +50,23 @@ describe("LoadFailure", () => {
       screen.getByRole("button", { name: "Retry" }).getAttribute("title"),
     ).toBeNull();
   });
+
+  it("centres the button on touch, where its hit area leaves it no baseline", () => {
+    render(
+      <LoadFailure
+        message="Failed."
+        detail="boom"
+        onRetry={() => {}}
+        retrying={false}
+      />,
+    );
+    expect(screen.getByRole("status").className.split(/\s+/)).toEqual(
+      expect.arrayContaining(["items-baseline", "touch:items-center"]),
+    );
+    expect(
+      screen.getByRole("button", { name: "Retry" }).className.split(/\s+/),
+    ).toContain("touch:hit-area");
+  });
 });
 
 describe("LoadFailure with an orientation", () => {

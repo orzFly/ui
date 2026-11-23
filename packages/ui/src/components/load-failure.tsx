@@ -45,9 +45,10 @@ function FailureRow({
   return (
     <div
       role="status"
+      // On touch the button's hit area leaves it no baseline to share.
       className={cn(
         textClassName,
-        "flex flex-wrap items-baseline gap-x-2 gap-y-1",
+        "flex flex-wrap items-baseline gap-x-2 gap-y-1 touch:items-center",
         size === "xs" ? "text-ui-sm" : null,
         className,
       )}

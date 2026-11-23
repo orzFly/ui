@@ -96,6 +96,13 @@ describe("theme.css touch variant", () => {
     expect(block).toContain("min-height: 44px");
     expect(block).not.toContain("position: relative");
   });
+
+  it("keeps the hit area out of a scroller's overflow, and lines the control up by its middle", () => {
+    const start = THEME.indexOf("@utility hit-area");
+    const block = THEME.slice(start, THEME.indexOf("\n}", start));
+    expect(block).toContain("contain: layout");
+    expect(block).toContain("vertical-align: middle");
+  });
 });
 
 describe("touch sizes", () => {
