@@ -314,6 +314,18 @@ function JsonViewBody({
   // biome-ignore lint/correctness/useExhaustiveDependencies: wrap and rowHeight are what invalidate them
   useLayoutEffect(() => {
     virtualizer.measure();
+    if (!wrap) return;
+    // A row the ResizeObserver already watches reports again only when its own size changes,
+    // so a wrapped row already taller than a new touch row height would stay at the estimate,
+    // over the rows below it. So the rows on screen are measured again, against the estimates
+    // getVirtualItems() lays out first: against the layout from before measure(), a row that
+    // kept its size would read as unchanged and keep the estimate all the same.
+    virtualizer.getVirtualItems();
+    for (const row of scroller.current?.querySelectorAll<HTMLElement>(
+      "[data-row]",
+    ) ?? []) {
+      virtualizer.measureElement(row);
+    }
   }, [wrap, rowHeight, virtualizer]);
 
   const scrollToPath = useCallback(

@@ -519,3 +519,99 @@ describe("JsonView props", () => {
     }
   });
 });
+
+/** happy-dom's ResizeObserver never calls back; this one reports the sizes a test hands it. */
+class SizedResizeObserver {
+  static instances = new Set<SizedResizeObserver>();
+  readonly observed = new Set<Element>();
+  private readonly callback: ResizeObserverCallback;
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+    SizedResizeObserver.instances.add(this);
+  }
+  observe(el: Element) {
+    this.observed.add(el);
+  }
+  unobserve(el: Element) {
+    this.observed.delete(el);
+  }
+  disconnect() {
+    this.observed.clear();
+    SizedResizeObserver.instances.delete(this);
+  }
+  static report(els: Iterable<Element>, height: (el: Element) => number) {
+    for (const el of els) {
+      for (const observer of SizedResizeObserver.instances) {
+        if (!observer.observed.has(el)) continue;
+        const size = { blockSize: height(el), inlineSize: 800 };
+        const entry = {
+          target: el,
+          borderBoxSize: [size],
+          contentBoxSize: [size],
+          devicePixelContentBoxSize: [size],
+          contentRect: rect(size.blockSize),
+        } as unknown as ResizeObserverEntry;
+        observer.callback([entry], observer as unknown as ResizeObserver);
+      }
+    }
+  }
+  static watched(): Element[] {
+    const all = new Set<Element>();
+    for (const observer of SizedResizeObserver.instances) {
+      for (const el of observer.observed) all.add(el);
+    }
+    return [...all];
+  }
+}
+
+describe("JsonView wrap", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    SizedResizeObserver.instances.clear();
+  });
+
+  it("lays out a wrapped row at its own height once the row height changes", () => {
+    vi.stubGlobal("ResizeObserver", SizedResizeObserver);
+    // A touch row height arriving after the first layout, as a coarse pointer does: the
+    // one-line rows grow, the wrapped row is already taller and stays as it is.
+    let line = 22;
+    const height = (el: Element) =>
+      el.getAttribute("role") === "tree"
+        ? 600
+        : el.getAttribute("data-path") === "$.long"
+          ? 132
+          : line;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        return rect(height(this));
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(
+      function (this: HTMLElement) {
+        return height(this);
+      },
+    );
+    render(
+      <JsonView value={{ model: "m", long: "x".repeat(400), after: 1 }} wrap />,
+    );
+    const gap = () =>
+      Number.parseFloat(rowOf("$.after")?.style.top ?? "") -
+      Number.parseFloat(rowOf("$.long")?.style.top ?? "");
+    // The real observer reports everything it watches once.
+    act(() =>
+      SizedResizeObserver.report(SizedResizeObserver.watched(), height),
+    );
+    expect(gap()).toBe(132);
+
+    line = 44;
+    act(() =>
+      SizedResizeObserver.report(
+        SizedResizeObserver.watched().filter(
+          (el) => el.getAttribute("data-path") !== "$.long",
+        ),
+        height,
+      ),
+    );
+    expect(gap()).toBe(132);
+  });
+});
