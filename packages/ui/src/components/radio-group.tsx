@@ -35,7 +35,9 @@ function RadioGroupItem({
         // window's own text colour rather than --foreground, which a
         // highlighted row turns white around it: 12px with a 4px dot, the
         // options at a dialog's pitch, grey while held down or disabled.
-        "peer relative flex aspect-square size-4 shrink-0 cursor-pointer items-center justify-center rounded-full border border-input shadow-sunken transition-colors outline-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 dark:bg-input/15 dark:aria-invalid:ring-destructive/40 data-[state=checked]:border-primary data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary touch:hit-area raymond:size-3 raymond:border-0 raymond:bg-(--window) raymond:active:bg-(--3d-face) raymond:disabled:bg-(--3d-face) raymond:disabled:opacity-100 raymond:[--input:transparent] raymond:[--primary-foreground:var(--popover-foreground)] raymond:[--primary:var(--window)]",
+        // Inline-level, as Checkbox is, so the hidden input Radix adds inside
+        // a form lands on the radio rather than on the line below it.
+        "peer relative inline-flex aspect-square size-4 shrink-0 cursor-pointer align-middle items-center justify-center rounded-full border border-input shadow-sunken transition-colors outline-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 dark:bg-input/15 dark:aria-invalid:ring-destructive/40 data-[state=checked]:border-primary data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary touch:hit-area raymond:size-3 raymond:border-0 raymond:bg-(--window) raymond:active:bg-(--3d-face) raymond:disabled:bg-(--3d-face) raymond:disabled:opacity-100 raymond:[--input:transparent] raymond:[--primary-foreground:var(--popover-foreground)] raymond:[--primary:var(--window)]",
         className,
       )}
       {...props}

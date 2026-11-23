@@ -20,7 +20,12 @@ function Checkbox({
         // window's own text colour rather than --foreground, which a
         // highlighted row turns white around it: 13px, the check a 7px pixel
         // mark, grey while held down or disabled.
-        "peer relative flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[min(var(--radius-control),4px)] border border-input shadow-sunken transition-colors outline-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 dark:bg-input/15 dark:aria-invalid:ring-destructive/40 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground dark:data-[state=indeterminate]:bg-primary touch:hit-area raymond:size-3.25 raymond:border-0 raymond:bg-(--window) raymond:active:bg-(--3d-face) raymond:disabled:bg-(--3d-face) raymond:disabled:opacity-100 raymond:[--input:transparent] raymond:[--primary-foreground:var(--popover-foreground)] raymond:[--primary:var(--window)]",
+        // Inline-level, as Radix expects: inside a form it adds a hidden input
+        // after the box and pulls it back by its own width, which lands on the
+        // box only when the two share a line. After a block-level box the
+        // input drops to the line below, out of a table cell and into the
+        // table's scroll.
+        "peer relative inline-flex size-4 shrink-0 cursor-pointer align-middle items-center justify-center rounded-[min(var(--radius-control),4px)] border border-input shadow-sunken transition-colors outline-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 dark:bg-input/15 dark:aria-invalid:ring-destructive/40 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground dark:data-[state=indeterminate]:bg-primary touch:hit-area raymond:size-3.25 raymond:border-0 raymond:bg-(--window) raymond:active:bg-(--3d-face) raymond:disabled:bg-(--3d-face) raymond:disabled:opacity-100 raymond:[--input:transparent] raymond:[--primary-foreground:var(--popover-foreground)] raymond:[--primary:var(--window)]",
         className,
       )}
       {...props}

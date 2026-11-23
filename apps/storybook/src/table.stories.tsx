@@ -1,5 +1,6 @@
 import { Badge } from "@orz/ui/components/badge";
 import { Checkbox } from "@orz/ui/components/checkbox";
+import { RadioGroup, RadioGroupItem } from "@orz/ui/components/radio-group";
 import {
   Table,
   TableBody,
@@ -10,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@orz/ui/components/table";
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 
 const ROWS = [
   { name: "@orz/ui", status: "Ready", size: "48 kB" },
@@ -126,6 +127,77 @@ export const Prose: Story = {
             <TableCell>{row.state}</TableCell>
             <TableCell>{row.show}</TableCell>
             <TableCell>{row.use}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  ),
+};
+
+// Radix adds a hidden input beside each box and radio only inside a form.
+const inAForm: Decorator = (Story) => (
+  <form>
+    <Story />
+  </form>
+);
+
+/**
+ * Inside a form, each box's hidden input lies on the box: the table keeps to its rows and does
+ * not scroll.
+ */
+export const CheckboxesInAForm: Story = {
+  tags: ["edge", "!autodocs"],
+  decorators: [inAForm],
+  render: (args) => (
+    <Table {...args}>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-8">
+            <Checkbox aria-label="Select all" defaultChecked="indeterminate" />
+          </TableHead>
+          <TableHead>Package</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {ROWS.map((row, i) => (
+          <TableRow key={row.name}>
+            <TableCell>
+              <Checkbox
+                aria-label={`Select ${row.name}`}
+                defaultChecked={i === 0}
+              />
+            </TableCell>
+            <TableCell>{row.name}</TableCell>
+            <TableCell>{row.status}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  ),
+};
+
+/** The same with a radio in each row. */
+export const RadiosInAForm: Story = {
+  tags: ["edge", "!autodocs"],
+  decorators: [
+    (Story) => (
+      <RadioGroup aria-label="Default package" defaultValue={ROWS[0].name}>
+        <Story />
+      </RadioGroup>
+    ),
+    inAForm,
+  ],
+  render: (args) => (
+    <Table {...args}>
+      <TableBody>
+        {ROWS.map((row) => (
+          <TableRow key={row.name}>
+            <TableCell className="w-8">
+              <RadioGroupItem value={row.name} aria-label={row.name} />
+            </TableCell>
+            <TableCell>{row.name}</TableCell>
+            <TableCell>{row.status}</TableCell>
           </TableRow>
         ))}
       </TableBody>
