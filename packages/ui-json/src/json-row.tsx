@@ -116,6 +116,22 @@ const KEY_PIECE = cn(EDGE, FILL, "before:inset-0 after:inset-px");
 /** The ⋯'s room after every row's content: its margins and the button. */
 export const SLOT_WIDTH = "calc(var(--spacing-control-xs) + var(--spacing))";
 const SLOT = "mx-0.5 flex-none";
+/**
+ * A ⋯ on the last line of what it stands beside, held to the view's bottom edge while that runs
+ * past it: a wrapped row's own, and the selection's, which a tap on the row's ⋯ opens in its place.
+ * Its margins make it as tall as a line, the touch row's 44px under touch: a wrapped row is as
+ * tall as its lines rather than the button, and a held ⋯ rises no higher than the first line, so
+ * a row barely in view shows no ⋯ ahead of its text.
+ */
+const ON_LAST_LINE =
+  "bottom-0 my-[calc((var(--spacing-row-dense)-var(--spacing-control-xs))/2)] touch:my-[calc((--spacing(11)-var(--spacing-control-xs))/2)]";
+// Under touch a wrapped row's lines keep the dense line's height, with a band above the first
+// and below the last that makes a one-line row the touch row's 44px, its line in the middle as
+// an unwrapped row's. The band is margin on what sits on a line, so a selected key's frame stays
+// round its text, and padding inside the value's piece, so the selection's fill covers it.
+const LINE_BAND = "touch:my-[calc((--spacing(11)-var(--spacing-row-dense))/2)]";
+const PIECE_BAND =
+  "touch:py-[calc((--spacing(11)-var(--spacing-row-dense))/2)]";
 /** A member row's piece: from the members' indent to the selection's right edge and its ⋯. */
 const BLOCK_PIECE = cn(
   EDGE,
@@ -230,7 +246,10 @@ export function SelectionMenu({
       <MenuButton
         label={label}
         menu={menu}
-        className="pointer-events-auto sticky right-0 bottom-0 mr-0.5 mb-[calc((var(--spacing-row-dense)-var(--spacing-control-xs))/2)] bg-accent touch:mb-[calc((--spacing(11)-var(--spacing-control-xs))/2)] raymond:bg-primary raymond:text-primary-foreground"
+        className={cn(
+          "pointer-events-auto sticky right-0 mr-0.5 bg-accent raymond:bg-primary raymond:text-primary-foreground",
+          ON_LAST_LINE,
+        )}
       />
     </div>
   );
@@ -342,7 +361,7 @@ function JsonRowViewImpl({
   measureRef,
 }: JsonRowViewProps) {
   const layout = wrap
-    ? "w-full min-h-row-dense items-start touch:min-h-11"
+    ? "w-full min-h-row-dense items-start"
     : cn("w-max min-w-full items-center whitespace-nowrap", ROW_HEIGHT_CLASS);
   // The row's content, up to where the ⋯ follows: as wide as it is, or as the selection.
   const content = cn(
@@ -387,7 +406,8 @@ function JsonRowViewImpl({
             className={cn(
               ABOVE,
               "text-muted-foreground",
-              wrap && "min-w-0 flex-1 break-all whitespace-pre-wrap",
+              wrap &&
+                cn("min-w-0 flex-1 break-all whitespace-pre-wrap", LINE_BAND),
             )}
           >
             <Highlight text={row.text} needle={needle} />
@@ -435,8 +455,9 @@ function JsonRowViewImpl({
             data-chevron={row.expandable || undefined}
             className={cn(
               ABOVE,
-              "inline-flex h-row-dense w-3.5 flex-none -translate-x-px translate-y-px items-center justify-center text-muted-foreground",
-              !wrap && "touch:h-11",
+              // Under wrap the gutter is the row's height, and the touch row's 44px from its
+              // top is the first line's.
+              "inline-flex h-row-dense w-3.5 flex-none -translate-x-px translate-y-px items-center justify-center text-muted-foreground touch:h-11",
             )}
           >
             {row.expandable && (
@@ -457,7 +478,8 @@ function JsonRowViewImpl({
               data-in-selection={keySelected || undefined}
               className={cn(
                 "relative flex-none text-primary",
-                wrap && "max-w-1/2 break-all whitespace-pre-wrap",
+                wrap &&
+                  cn("max-w-1/2 break-all whitespace-pre-wrap", LINE_BAND),
                 keySelected && cn(KEY_PIECE, "-mx-0.5 px-0.5", SELECTED_TEXT),
               )}
             >
@@ -467,7 +489,11 @@ function JsonRowViewImpl({
             </span>
             <span
               data-part="gutter"
-              className={cn(ABOVE, "flex-none text-muted-foreground")}
+              className={cn(
+                ABOVE,
+                "flex-none text-muted-foreground",
+                wrap && LINE_BAND,
+              )}
             >
               :&nbsp;
             </span>
@@ -475,7 +501,11 @@ function JsonRowViewImpl({
         ) : row.index !== null ? (
           <span
             data-part="gutter"
-            className={cn(ABOVE, "flex-none text-muted-foreground")}
+            className={cn(
+              ABOVE,
+              "flex-none text-muted-foreground",
+              wrap && LINE_BAND,
+            )}
           >
             <Highlight text={String(row.index)} needle={needle} />
             :&nbsp;
@@ -485,7 +515,7 @@ function JsonRowViewImpl({
           data-in-selection={valueSelected || undefined}
           className={cn(
             "relative flex min-w-0 flex-1 self-stretch pr-1.5",
-            wrap ? "items-start" : "items-center",
+            wrap ? cn("items-start", PIECE_BAND) : "items-center",
             valueSelected && cn(PIECE, SELECTED_TEXT),
           )}
         >
@@ -550,7 +580,8 @@ function JsonRowViewImpl({
           // on the ground so the text under it does not show.
           className={cn(
             SLOT,
-            "sticky right-0 self-center bg-background invisible group-hover/row:visible can-hover:group-hover/row:bg-[color-mix(in_oklab,var(--muted)_70%,var(--background))] aria-expanded:visible touch:visible raymond:can-hover:group-hover/row:bg-background",
+            "sticky right-0 bg-background invisible group-hover/row:visible can-hover:group-hover/row:bg-[color-mix(in_oklab,var(--muted)_70%,var(--background))] aria-expanded:visible touch:visible raymond:can-hover:group-hover/row:bg-background",
+            wrap ? cn("self-end", ON_LAST_LINE) : "self-center",
             showMenu && "visible",
           )}
         />
