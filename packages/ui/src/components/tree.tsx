@@ -2283,7 +2283,9 @@ function RowMenu({
   );
 }
 
-const MENU_CELL = "flex shrink-0 items-center pr-1";
+// On touch the ⋯ sits in from the row's end by the rest of its hit area, for
+// a frame the tree scrolls in, which clips.
+const MENU_CELL = "flex shrink-0 items-center pr-1 touch:pr-hit-xs";
 
 /**
  * A selectable row's item: a label that leads keeps an icon's room before it for the checkbox,

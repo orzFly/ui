@@ -34,6 +34,7 @@
 }
 
 .orz-hex {
+  --hex-header-height: var(--hex-row-height);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -54,6 +55,15 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: pan-x pan-y;
+}
+/* The column labels' row is a row tall with a pointer. On touch it is as
+   tall as the encoding picker's hit area, which the scroller it heads would
+   clip, and the status bar as tall as the typing mode's, which the frame
+   would. */
+.orz-hex {
+  @variant touch {
+    --hex-header-height: 44px;
+  }
 }
 .orz-hex[data-fill] {
   height: 100%;
@@ -92,6 +102,9 @@
   pointer-events: none;
   width: 0;
   height: var(--hex-row-height);
+}
+.orz-hex-header-probe {
+  height: var(--hex-header-height);
 }
 
 .orz-hex-scroller {
@@ -147,6 +160,12 @@
 .orz-hex-header .orz-hex-addr {
   display: flex;
   align-items: center;
+}
+.orz-hex-row.orz-hex-header {
+  height: var(--hex-header-height);
+  @variant touch {
+    align-items: center;
+  }
 }
 
 .orz-hex-pane-gap {
@@ -412,6 +431,10 @@
   font-size: var(--text-ui-2xs);
   line-height: 1.25rem;
   white-space: nowrap;
+  @variant touch {
+    align-items: center;
+    min-height: 44px;
+  }
 }
 /* Clear of the resize handle in the corner. */
 .orz-hex[data-resizable] .orz-hex-status {

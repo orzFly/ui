@@ -204,7 +204,7 @@ A near-monochrome ink-on-white palette with a single deep indigo accent; dark mo
 
 Modules stand a module gap (8px) apart, each inside its own 1px border, and the same gap pads the region they fill; `ModuleGrid` lays them out. A card pads 12px (8px at `size="sm"`); its header strip pads 2px by 8px with a 28px minimum height and an 8px gap after the marker. Rows run 28px (menus, lists, table cells and heads), 22px for dense data; controls 24/28/32px; chips 20px.
 
-Under a coarse pointer (`touch:`), controls rise to 40px (button, tab, input) and 44px (large button, menu items), and a smaller control gets a transparent 44px hit area that leaves its drawn size and the layout untouched. A `data-pointer` ancestor forces either branch.
+Under a coarse pointer (`touch:`), controls rise to 40px (button, tab, input) and 44px (large button, menu items), and a smaller control gets a transparent 44px hit area that leaves its drawn size and the layout untouched. A box that clips keeps those hit areas whole: a strip of small controls along its edge (a card header with an action, a viewer's bar, a toolbar or titlebar) is 44px tall on touch, and the control nearest an edge sits in from it by the rest of its hit area (the `hit-xs`, `hit-sm` and `hit` spacing tokens). A `data-pointer` ancestor forces either branch.
 
 ## Elevation & Depth
 

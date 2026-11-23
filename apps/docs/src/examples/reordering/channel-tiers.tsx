@@ -55,7 +55,7 @@ export function ChannelTiers() {
                 {tier.items.map((id) => (
                   <ListItem key={id} asChild>
                     <ReorderItem id={id} name={NAMES[id]} asChild>
-                      <li className="flex min-h-row items-center gap-2 pr-1">
+                      <li className="flex min-h-row items-center gap-2 pr-1 touch:pr-hit-xs">
                         <ReorderHandle />
                         <span className="min-w-0 flex-1 truncate">
                           {NAMES[id]}

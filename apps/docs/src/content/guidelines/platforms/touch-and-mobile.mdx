@@ -102,8 +102,11 @@ DOM takes the tap, so:
 - A link in text right next to a `Switch` or `Checkbox` loses the taps near the control. Keep the
   link away from it, or make the whole row the control's label.
 - Inside a box that clips or scrolls (`overflow-hidden`, `overflow-auto`), a hit area that crosses
-  the box's edge is cut off there; it never makes the box scroll. Pad the box, or move the control
-  in from the edge.
+  the box's edge is cut off there; it never makes the box scroll. On touch, leave the rest of the
+  hit area between the control and the edge: pad by `hit-xs` beside an `xs` control
+  (`touch:pr-hit-xs`), `hit-sm` beside an `sm` one, `hit` beside a default one, or give the strip
+  that holds them `touch:min-h-11` and centre them in it. The spacing follows the style's control
+  sizes. @orz/ui's own frames, bars and table rows already leave it for their controls.
 
 <DoDont>
   <Do>

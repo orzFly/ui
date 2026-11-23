@@ -65,7 +65,7 @@ export function MailSurfaces() {
         <Pane
           purpose="sidebar"
           edge="end"
-          className="grid content-start gap-3 p-2 max-sm:hidden"
+          className="grid content-start gap-3 p-2 touch:pt-hit-sm max-sm:hidden"
         >
           <Button size="sm" className="justify-start">
             <SquarePenIcon />
@@ -140,7 +140,7 @@ export function MailSurfaces() {
                               <Button
                                 variant="ghost"
                                 size="icon-xs"
-                                className="mt-2 mr-2"
+                                className="mt-2 mr-2 touch:mr-hit-xs"
                                 aria-label={`More actions for “${thread.subject}”`}
                               >
                                 <EllipsisIcon />

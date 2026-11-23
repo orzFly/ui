@@ -80,7 +80,10 @@ export const Usage: Story = {
           onClear={selection.clear}
           idle={<span className="px-1 font-medium">Months</span>}
         />
-        <ul className="p-1" onPointerDownCapture={sweep.onPointerDownCapture}>
+        <ul
+          className="p-1 touch:p-2"
+          onPointerDownCapture={sweep.onPointerDownCapture}
+        >
           {MONTHS.map((month) => (
             <ListItem
               key={month}

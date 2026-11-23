@@ -47,7 +47,10 @@ vi.mock("@pierre/diffs/react", () => ({
   }: {
     ref?: Ref<unknown>;
     className?: string;
-    options?: { stickyHeaders?: boolean };
+    options?: {
+      stickyHeaders?: boolean;
+      itemMetrics?: { diffHeaderHeight?: number };
+    };
     items: Item[];
     renderCustomHeader?: (item: Item) => ReactNode;
   }) {
@@ -63,6 +66,7 @@ vi.mock("@pierre/diffs/react", () => ({
         data-testid="codeview"
         data-class={className ?? ""}
         data-sticky-headers={options?.stickyHeaders ? "" : undefined}
+        data-header-height={options?.itemMetrics?.diffHeaderHeight}
       >
         {items.map((item) => (
           <section key={item.id} data-item={item.id}>
@@ -273,11 +277,22 @@ describe("the patch header", () => {
     expect(commit.querySelector("[data-file]")?.textContent).toBe(
       "The body of the message.",
     );
-    // pierre reserves this height for the row without measuring it: a row of
-    // any other height shifts every item under it.
+    // pierre reserves this height for the row without measuring it, read back
+    // off the box the row is drawn in: a row of any other height shifts every
+    // item under it. On touch the row is a hit area tall.
     expect(header.firstElementChild?.getAttribute("style")).toMatch(
-      /height: 36px/,
+      /height: var\(--patch-header-height\)/,
     );
+    const box = screen.getByTestId("codeview");
+    expect(box.dataset.class?.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        "[--patch-header-height:36px]",
+        "touch:[--patch-header-height:44px]",
+      ]),
+    );
+    // What pierre is told, read off the box: the pointer's 36px, which happy-dom
+    // leaves the variable's fallback.
+    expect(box.dataset.headerHeight).toBe("36");
   });
 
   it("names no commit for a bare diff command above a plain diff", async () => {

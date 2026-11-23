@@ -16,7 +16,7 @@ const pushes = PULL_REQUEST.timeline.filter((event) => event.kind === "push");
 export function PullRequestTabs() {
   return (
     <Tabs defaultValue="conversation" className="min-w-0">
-      <div className="flex max-w-full overflow-x-auto">
+      <div className="flex max-w-full overflow-x-auto touch:py-0.5">
         <TabsList>
           <TabsTrigger value="conversation">Conversation</TabsTrigger>
           <TabsTrigger value="commits">Commits</TabsTrigger>

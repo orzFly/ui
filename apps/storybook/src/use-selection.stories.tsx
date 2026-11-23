@@ -102,7 +102,7 @@ export const Usage: Story = {
             <Trash2Icon />
           </ToolbarButton>
         </SelectionBar>
-        <ul className="p-1">
+        <ul className="p-1 touch:p-2">
           {files.map((file) => (
             <ListItem key={file} selected={selection.isSelected(file)} asChild>
               <li>

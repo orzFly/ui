@@ -94,11 +94,16 @@ function TabsTrigger({
   className,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+  const framed = React.useContext(TabsVariantContext) === "framed";
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
         "relative -mb-px inline-flex min-h-control items-center justify-center gap-1.5 rounded-item px-3 touch:min-h-10 text-ui font-medium whitespace-nowrap transition-colors outline-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground touch:hit-area",
+        // Under a framed set's top edge, which clips, a tab is as tall as its
+        // hit area on touch, and so is the bar it stands in, for the
+        // controls beside it.
+        framed && "touch:min-h-11",
         // The current tab is a box in the page's colour that covers the list's
         // bottom rule, so it joins the content below, with a primary edge
         // across its top; the fill alone would not hold 3:1 on the strip.

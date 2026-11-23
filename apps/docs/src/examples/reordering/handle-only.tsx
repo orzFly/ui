@@ -20,7 +20,7 @@ export function HandleOnly() {
           {labels.map((label) => (
             <ListItem key={label} asChild>
               <ReorderItem id={label} name={label} asChild>
-                <li className="flex min-h-row items-center gap-2 pr-1">
+                <li className="flex min-h-row items-center gap-2 pr-1 touch:pr-hit-xs">
                   <ReorderHandle />
                   <span className="min-w-0 flex-1 truncate">{label}</span>
                 </li>

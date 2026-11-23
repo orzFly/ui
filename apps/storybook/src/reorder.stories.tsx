@@ -73,7 +73,7 @@ const channelRow = (id: string) => {
   return (
     <ListItem key={id} asChild>
       <ReorderItem id={id} name={name} asChild>
-        <li className="flex min-h-row items-center gap-2 pr-1">
+        <li className="flex min-h-row items-center gap-2 pr-1 touch:pr-hit-xs">
           <ReorderHandle />
           <span className="flex min-w-0 flex-1 items-baseline gap-2">
             <span className="truncate">{name}</span>
@@ -364,7 +364,7 @@ export const MixedHeights: Story = {
             return (
               <ListItem key={id} asChild>
                 <ReorderItem id={id} name={name} asChild>
-                  <li className="flex min-h-row items-center gap-2 py-1 pr-1">
+                  <li className="flex min-h-row items-center gap-2 py-1 pr-1 touch:pr-hit-xs">
                     <ReorderHandle />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span>{name}</span>
@@ -418,7 +418,7 @@ export const ManyRules: Story = {
           {items.map((id) => (
             <ListItem key={id} asChild>
               <ReorderItem id={id} name={id} asChild>
-                <li className="flex min-h-row items-center gap-2 pr-1">
+                <li className="flex min-h-row items-center gap-2 pr-1 touch:pr-hit-xs">
                   <ReorderHandle />
                   <span className="min-w-0 flex-1 truncate">{id}</span>
                   <ReorderButtons />

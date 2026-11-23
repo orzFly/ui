@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   act,
   fireEvent,
@@ -343,6 +345,18 @@ describe("HexView", () => {
       ".orz-hex-scroller",
     ) as HTMLElement;
     expect(fixedScroller.style.height).toContain("calc(");
+  });
+
+  it("sizes `rows` with the header's own height, which touch makes a hit area tall", () => {
+    const { root } = setup();
+    const scroller = root.querySelector(".orz-hex-scroller") as HTMLElement;
+    expect(scroller.style.height).toContain("var(--hex-header-height)");
+    const css = readFileSync(
+      join(import.meta.dirname, "../styles.css"),
+      "utf8",
+    );
+    const touch = css.slice(css.indexOf("@variant touch"));
+    expect(touch).toMatch(/^@variant touch \{\s+--hex-header-height: 44px;/);
   });
 
   it("adds small wheel steps up to whole rows when scaled", () => {

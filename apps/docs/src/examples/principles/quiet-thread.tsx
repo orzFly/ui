@@ -41,7 +41,7 @@ export function QuietThread() {
           <Pane
             purpose="toolbar"
             edge="bottom"
-            className="flex gap-0.5 px-2 py-1"
+            className="flex items-center gap-0.5 px-2 py-1 touch:pl-hit-sm"
           >
             {ACTIONS.map(({ label, Icon }) => (
               <Tooltip key={label}>

@@ -451,7 +451,7 @@ const FENCE_DIFF_OPTIONS = new Map<
 
 const PATCH_OPTIONS = new Map<
   SyntaxTheme,
-  CodeViewProps<undefined, undefined>["options"]
+  Map<number, CodeViewProps<undefined, undefined>["options"]>
 >();
 
 // theme.css's selected text, which stops at the shadow root: the custom
@@ -487,13 +487,25 @@ const SQUARE_SEPARATOR_CSS = `
 }
 `;
 
-/** px; the header rows `PatchFiles` callers draw must be exactly this tall. */
-export const PATCH_HEADER_HEIGHT = 36;
+/**
+ * px; the header rows `PatchFiles` callers draw must be exactly
+ * `var(--patch-header-height)` tall, which is this with a pointer.
+ */
+const PATCH_HEADER_HEIGHT = 36;
+// On touch a header row is a hit area tall: the box the diffs scroll in
+// clips a shorter row's controls at its top and bottom, and the row pinned
+// to its top. Literal, for Tailwind to find; pierre reserves the height
+// without measuring, so PatchFiles reads it back off its box.
+const PATCH_HEADER_ROOM =
+  "[--patch-header-height:36px] touch:[--patch-header-height:44px]";
 
 function patchOptions(
   theme: SyntaxTheme,
+  headerHeight: number,
 ): CodeViewProps<undefined, undefined>["options"] {
-  const cached = PATCH_OPTIONS.get(theme);
+  const byHeight = PATCH_OPTIONS.get(theme) ?? new Map();
+  PATCH_OPTIONS.set(theme, byHeight);
+  const cached = byHeight.get(headerHeight);
   if (cached) return cached;
   // The fence diff's look, with a header row per item: a patch is a list of
   // files, and the header is the only place each one is named.
@@ -506,13 +518,13 @@ function patchOptions(
     onPostRender: handlePostRender,
     unsafeCSS: SELECTION_CSS + COMMIT_MESSAGE_CSS + SQUARE_SEPARATOR_CSS,
     layout: { paddingTop: 0, paddingBottom: 0, gap: 8 },
-    itemMetrics: { diffHeaderHeight: PATCH_HEADER_HEIGHT },
+    itemMetrics: { diffHeaderHeight: headerHeight },
     // Each item's header row stays pinned to the top of the box while the
     // item scrolls under it: halfway down a long file the reader still sees
     // which file it is, and the controls on its row.
     stickyHeaders: true,
   } as const;
-  PATCH_OPTIONS.set(theme, options);
+  byHeight.set(headerHeight, options);
   return options;
 }
 
@@ -779,7 +791,9 @@ export function CodeBlock({
   if (!copy) return block;
   // Under raymond a snippet is a read-only field set in the page around it,
   // sunken on the window colour, where a file with its line numbers fills
-  // the document it is shown in; Copy is a push button either way.
+  // the document it is shown in; Copy is a push button either way. On touch
+  // Copy keeps the rest of its hit area inside the block, for whatever frame
+  // the block is set in, which may clip.
   return (
     <div
       data-slot="code-block"
@@ -796,7 +810,7 @@ export function CodeBlock({
         size="icon-sm"
         aria-label="Copy code"
         title="Copy code"
-        className="m-1 shrink-0 text-muted-foreground touch:hit-area raymond:bg-(--3d-face) raymond:text-foreground raymond:shadow-raised raymond:hover:bg-(--3d-face) raymond:active:shadow-pressed"
+        className="m-1 shrink-0 text-muted-foreground touch:m-hit-sm touch:hit-area raymond:bg-(--3d-face) raymond:text-foreground raymond:shadow-raised raymond:hover:bg-(--3d-face) raymond:active:shadow-pressed"
         onClick={() => void copyToClipboard(contents, "Code copied")}
       >
         <CopyIcon className="size-4 raymond:size-3" />
@@ -947,13 +961,17 @@ export function PatchFiles({
   /** Files, by position across the patch, drawn as their header row only. */
   collapsedFiles?: ReadonlySet<number>;
   /**
-   * Every item's header row, `PATCH_HEADER_HEIGHT` tall: pierre reserves that
-   * height for it without measuring.
+   * Every item's header row, `var(--patch-header-height)` tall: pierre
+   * reserves that height for it without measuring.
    */
   renderHeader: (item: CodeViewItem<undefined>) => ReactNode;
 }) {
   const syntaxTheme = useSyntaxTheme();
-  const options = useMemo(() => patchOptions(syntaxTheme), [syntaxTheme]);
+  const [headerHeight, setHeaderHeight] = useState(PATCH_HEADER_HEIGHT);
+  const options = useMemo(
+    () => patchOptions(syntaxTheme, headerHeight),
+    [syntaxTheme, headerHeight],
+  );
   const items = useMemo(() => {
     let position = 0;
     return patches.flatMap((patch, index): CodeViewItem<undefined>[] => {
@@ -998,6 +1016,16 @@ export function PatchFiles({
       }
       setDegraded(true);
     });
+    const readHeader = () =>
+      setHeaderHeight(
+        Number.parseFloat(
+          getComputedStyle(node).getPropertyValue("--patch-header-height"),
+        ) || PATCH_HEADER_HEIGHT,
+      );
+    readHeader();
+    const pointer = window.matchMedia?.("(pointer: coarse)");
+    pointer?.addEventListener("change", readHeader);
+    return () => pointer?.removeEventListener("change", readHeader);
   }, []);
   if (degraded) return <PlainCodeFallback contents={text} />;
   return (
@@ -1007,7 +1035,7 @@ export function PatchFiles({
         ref={viewRef}
         items={items}
         options={options}
-        className={className}
+        className={cn(PATCH_HEADER_ROOM, className)}
         containerRef={containerRef}
         renderCustomHeader={renderHeader}
       />

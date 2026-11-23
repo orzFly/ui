@@ -79,6 +79,16 @@
   }
 }
 
+/* How far `hit-area` reaches past a control of each size on every side, which
+   is the room a box that clips the control leaves between its edge and the
+   control on touch (`touch:pr-hit-xs` beside an xs button) for the hit area to
+   end inside. Inline, so each reads the size of the style it is drawn in. */
+@theme inline {
+  --spacing-hit-xs: calc((44px - var(--spacing-control-xs)) / 2);
+  --spacing-hit-sm: calc((44px - var(--spacing-control-sm)) / 2);
+  --spacing-hit: calc((44px - var(--spacing-control)) / 2);
+}
+
 /* Style tokens: how the components are drawn, their shape, type, depth,
    density, focus and motion, where a palette is their colours. A plain @theme,
    not inline, so each utility reads the variable and a [data-style] rule can

@@ -47,7 +47,7 @@ import {
   JsonRowView,
   PointMenu,
   SelectionMenu,
-  SLOT_WIDTH,
+  SLOT_ROOM,
 } from "./json-row.tsx";
 import { DEFAULT_LABELS, type JsonViewLabels } from "./labels.ts";
 import {
@@ -1016,7 +1016,10 @@ function JsonViewBody({
         purpose="toolbar"
         role="toolbar"
         aria-label={labels.toolbar}
-        className="flex flex-none flex-wrap items-center gap-0.5 border-b bg-muted px-1 py-0.5 raymond:mb-0.5 raymond:pl-2.5"
+        // On touch its first button sits in from the frame, which clips, by
+        // the rest of its hit area, and the buttons' line is as tall as one
+        // when the search wraps below it.
+        className="flex flex-none flex-wrap items-center gap-0.5 border-b bg-muted px-1 py-0.5 touch:pl-hit-sm touch:*:data-[slot=toolbar-button]:my-hit-sm raymond:mb-0.5 raymond:pl-2.5"
       >
         <ToolbarButton
           size="icon-sm"
@@ -1139,11 +1142,10 @@ function JsonViewBody({
         />
         <div
           ref={rowsBox}
-          className="relative w-full"
+          className={cn("relative w-full", SLOT_ROOM)}
           style={
             {
               height: virtualizer.getTotalSize(),
-              "--json-slot": SLOT_WIDTH,
               "--json-sel-left":
                 geometry === null ? undefined : indentOf(geometry.depth),
               "--json-sel-right":

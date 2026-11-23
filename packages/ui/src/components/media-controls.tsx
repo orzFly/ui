@@ -109,8 +109,10 @@ export function MediaControls({
     <TooltipProvider>
       <div
         data-slot="media-controls"
+        // On touch as tall as a hit area, and its end controls in by the
+        // rest of one: the player around the bar clips.
         className={cn(
-          "@container/media-controls flex items-center gap-2 border-t bg-card px-2 py-1 text-card-foreground text-ui-sm",
+          "@container/media-controls flex items-center gap-2 border-t bg-card px-2 py-1 text-card-foreground text-ui-sm touch:min-h-11 touch:px-hit-sm",
           className,
         )}
       >

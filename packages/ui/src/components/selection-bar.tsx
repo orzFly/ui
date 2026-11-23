@@ -79,7 +79,9 @@ function SelectionBar({
       data-slot="selection-bar"
       data-selecting={selecting || undefined}
       className={cn(
-        "flex shrink-0 items-center gap-0.5 px-1.5 py-1.5 text-ui",
+        // On touch Clear sits in from the end by the rest of its hit area,
+        // for a list's frame, which clips.
+        "flex shrink-0 items-center gap-0.5 px-1.5 py-1.5 text-ui touch:pr-hit",
         className,
       )}
       onKeyDown={(event) => {

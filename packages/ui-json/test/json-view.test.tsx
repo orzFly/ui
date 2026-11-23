@@ -260,6 +260,25 @@ describe("JsonView menu", () => {
   const items = () =>
     screen.getAllByRole("menuitem").map((item) => item.textContent);
 
+  it("holds ⋯ in from the view's edge by the rest of its hit area on touch, its room the selection's too", () => {
+    renderControlled({ type: "value", path: "$.metadata" });
+    const button = screen.getByRole("button", {
+      name: "Actions for $.metadata",
+    });
+    expect(button.className.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        "touch:mr-hit-xs",
+        "touch:right-hit-xs",
+        "touch:before:bg-inherit",
+      ]),
+    );
+    const box = tree().querySelector("[role=treeitem]")?.parentElement;
+    expect(box?.className).toContain("touch:[--json-slot:");
+    expect(screen.getByRole("toolbar").className.split(/\s+/)).toContain(
+      "touch:pl-hit-sm",
+    );
+  });
+
   it("opens from ⋯, from a right-click and from Shift+F10 alike", async () => {
     renderControlled({ type: "value", path: "$.metadata" });
     const button = screen.getByRole("button", {

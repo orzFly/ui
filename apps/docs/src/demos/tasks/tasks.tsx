@@ -234,7 +234,7 @@ export function Tasks() {
             <Pane
               purpose="toolbar"
               edge="bottom"
-              className="flex flex-wrap items-center gap-2 px-2 py-2 md:px-4"
+              className="flex flex-wrap items-center gap-2 px-2 py-2 touch:pt-hit-sm md:px-4"
             >
               <h2 id="tasks-title" className="mr-2 font-semibold">
                 Tasks
@@ -262,7 +262,7 @@ export function Tasks() {
                 New task…
               </Button>
               {/* One row that scrolls sideways on a phone, rather than three that wrap. */}
-              <div className="-mx-2 order-last flex w-[calc(100%+1rem)] gap-2 overflow-x-auto px-2 [scrollbar-width:none] sm:order-none sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">
+              <div className="-mx-2 order-last flex w-[calc(100%+1rem)] gap-2 overflow-x-auto px-2 [scrollbar-width:none] touch:py-hit-sm sm:order-none sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">
                 <FilterBar filters={filters} onChange={filter} />
               </div>
             </Pane>

@@ -171,6 +171,26 @@ describe("FenceFrame", () => {
     expect(slot(container, "fence-tools")).toBeNull();
   });
 
+  it("leaves its controls' hit areas whole inside the frame on touch", () => {
+    const { container } = render(
+      <>
+        <FenceFrame text={TEXT} lang="ts">
+          <div />
+        </FenceFrame>
+        <FenceFrame text={TEXT} title="a.ts">
+          <div />
+        </FenceFrame>
+      </>,
+    );
+    const classes = (el: Element | null) => el?.className.split(/\s+/) ?? [];
+    expect(classes(slot(container, "fence-tools"))).toEqual(
+      expect.arrayContaining(["touch:mt-hit-xs", "touch:mr-hit-xs"]),
+    );
+    expect(classes(slot(container, "fence-head"))).toEqual(
+      expect.arrayContaining(["touch:min-h-11", "touch:pr-hit-xs"]),
+    );
+  });
+
   it("tells its content it is framed", () => {
     function Probe() {
       return <span data-testid="probe">{String(useInFenceFrame())}</span>;

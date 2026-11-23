@@ -100,8 +100,9 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
       className={cn(
         // Under raymond a column header is a raised button in regular weight.
         // A checkbox or radio alone in the cell sits on a line no taller than
-        // itself, which the row centres as it would the box.
-        "h-row-head bg-muted px-2 text-left align-middle font-semibold whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 [&:has(>[role=checkbox],>[role=radio])]:leading-none raymond:font-normal raymond:shadow-raised",
+        // itself, which the row centres as it would the box. On touch, see
+        // TableCell.
+        "h-row-head bg-muted px-2 text-left align-middle font-semibold whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 [&:has(>[role=checkbox],>[role=radio])]:leading-none touch:has-[>[role=checkbox],>[role=radio]]:h-11 touch:first:has-[>[role=checkbox],>[role=radio]]:pl-3.5 touch:last:has-[button]:pr-hit-xs raymond:font-normal raymond:shadow-raised",
         "group-data-[purpose=prose]/table:h-auto group-data-[purpose=prose]/table:bg-transparent group-data-[purpose=prose]/table:px-3 group-data-[purpose=prose]/table:py-2 group-data-[purpose=prose]/table:font-medium group-data-[purpose=prose]/table:whitespace-normal group-data-[purpose=prose]/table:text-muted-foreground raymond:group-data-[purpose=prose]/table:bg-(--3d-face) raymond:group-data-[purpose=prose]/table:py-0.5 raymond:group-data-[purpose=prose]/table:text-foreground",
         className,
       )}
@@ -117,8 +118,11 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
       className={cn(
         // Under raymond a row is as tight as what it holds. A checkbox or
         // radio alone in the cell sits on a line no taller than itself, which
-        // the row centres as it would the box.
-        "h-row px-2 py-1 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has(>[role=checkbox],>[role=radio])]:leading-none raymond:py-0",
+        // the row centres as it would the box. On touch a row it is in is as
+        // tall as its hit area, and at the table's edge a control sits in by
+        // the rest of one, since the table's container clips: picking rows
+        // is what such a table is for.
+        "h-row px-2 py-1 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has(>[role=checkbox],>[role=radio])]:leading-none touch:has-[>[role=checkbox],>[role=radio]]:h-11 touch:first:has-[>[role=checkbox],>[role=radio]]:pl-3.5 touch:last:has-[button]:pr-hit-xs raymond:py-0",
         "group-data-[purpose=prose]/table:h-auto group-data-[purpose=prose]/table:px-3 group-data-[purpose=prose]/table:py-2 group-data-[purpose=prose]/table:align-top group-data-[purpose=prose]/table:whitespace-normal raymond:group-data-[purpose=prose]/table:py-1",
         className,
       )}

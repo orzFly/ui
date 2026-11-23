@@ -25,7 +25,9 @@ export function WarningStrip({
       data-slot="json-warning"
       className={cn(
         "flex flex-none items-start gap-2 border-b border-warning/40 bg-warning/8 py-0.5 pr-1 pl-2 text-ui-sm text-warning raymond:border-(--3d-shadow) raymond:bg-(--info) raymond:text-(--info-foreground)",
-        !onDismiss && "py-1 pr-2",
+        // On touch Dismiss sits in from the view's edge, which clips, by
+        // the rest of its hit area.
+        onDismiss ? "touch:pr-hit-xs" : "py-1 pr-2",
         className,
       )}
     >

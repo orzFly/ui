@@ -113,18 +113,33 @@ const PIECE = cn(
  * it stays clear of the colon after it.
  */
 const KEY_PIECE = cn(EDGE, FILL, "before:inset-0 after:inset-px");
-/** The ⋯'s room after every row's content: its margins and the button. */
-export const SLOT_WIDTH = "calc(var(--spacing-control-xs) + var(--spacing))";
-const SLOT = "mx-0.5 flex-none";
+/**
+ * The ⋯'s room after every row's content: its margins and the button, as `--json-slot` on the
+ * rows' box. On touch its end margin is the rest of its hit area, which the view would clip
+ * where the ⋯ is held to the view's right edge.
+ */
+export const SLOT_ROOM =
+  "[--json-slot:calc(var(--spacing-control-xs)+var(--spacing))] touch:[--json-slot:calc(var(--spacing-control-xs)+var(--spacing)/2+var(--spacing-hit-xs))]";
+const SLOT = "mx-0.5 flex-none touch:mr-hit-xs";
+/**
+ * A ⋯ held to the view's right edge stands in from it on touch by the rest of its hit area, which
+ * the view would clip, and draws its own ground over that room, so the text of a long row it is
+ * held over does not show beside it.
+ */
+const HELD = cn(
+  "sticky right-0 touch:right-hit-xs",
+  "touch:before:absolute touch:before:inset-y-0 touch:before:left-full touch:before:w-hit-xs touch:before:bg-inherit touch:before:content-['']",
+);
 /**
  * A ⋯ on the last line of what it stands beside, held to the view's bottom edge while that runs
  * past it: a wrapped row's own, and the selection's, which a tap on the row's ⋯ opens in its place.
  * Its margins make it as tall as a line, the touch row's 44px under touch: a wrapped row is as
  * tall as its lines rather than the button, and a held ⋯ rises no higher than the first line, so
- * a row barely in view shows no ⋯ ahead of its text.
+ * a row barely in view shows no ⋯ ahead of its text. Held on touch, it stands its margin above
+ * the edge, which would clip the rest of its hit area.
  */
 const ON_LAST_LINE =
-  "bottom-0 my-[calc((var(--spacing-row-dense)-var(--spacing-control-xs))/2)] touch:my-[calc((--spacing(11)-var(--spacing-control-xs))/2)]";
+  "bottom-0 my-[calc((var(--spacing-row-dense)-var(--spacing-control-xs))/2)] touch:bottom-hit-xs touch:my-[calc((--spacing(11)-var(--spacing-control-xs))/2)]";
 // Under touch a wrapped row's lines keep the dense line's height, with a band above the first
 // and below the last that makes a one-line row the touch row's 44px, its line in the middle as
 // an unwrapped row's. The band is margin on what sits on a line, so a selected key's frame stays
@@ -240,14 +255,15 @@ export function SelectionMenu({
       style={{
         top,
         height,
-        width: wrap ? "100%" : `calc(var(--json-sel-right) + ${SLOT_WIDTH})`,
+        width: wrap ? "100%" : "calc(var(--json-sel-right) + var(--json-slot))",
       }}
     >
       <MenuButton
         label={label}
         menu={menu}
         className={cn(
-          "pointer-events-auto sticky right-0 mr-0.5 bg-accent raymond:bg-primary raymond:text-primary-foreground",
+          "pointer-events-auto mr-0.5 bg-accent touch:mr-hit-xs raymond:bg-primary raymond:text-primary-foreground",
+          HELD,
           ON_LAST_LINE,
         )}
       />
@@ -580,7 +596,8 @@ function JsonRowViewImpl({
           // on the ground so the text under it does not show.
           className={cn(
             SLOT,
-            "sticky right-0 bg-background invisible group-hover/row:visible can-hover:group-hover/row:bg-[color-mix(in_oklab,var(--muted)_70%,var(--background))] aria-expanded:visible touch:visible raymond:can-hover:group-hover/row:bg-background",
+            HELD,
+            "bg-background invisible group-hover/row:visible can-hover:group-hover/row:bg-[color-mix(in_oklab,var(--muted)_70%,var(--background))] aria-expanded:visible touch:visible raymond:can-hover:group-hover/row:bg-background",
             wrap ? cn("self-end", ON_LAST_LINE) : "self-center",
             showMenu && "visible",
           )}

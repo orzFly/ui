@@ -309,6 +309,7 @@ export function HexGrid({
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLDivElement>(null);
+  const headerProbeRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const liveRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -327,7 +328,13 @@ export function HexGrid({
   const rowHeight =
     useElementSize(probeRef, (el) => el.getBoundingClientRect().height) ||
     FALLBACK_ROW_HEIGHT;
-  const headerHeight = showColumnLabels ? rowHeight : 0;
+  // A row tall with a pointer; on touch as tall as the encoding picker's hit
+  // area, which the scroller would clip.
+  const headerRowHeight =
+    useElementSize(headerProbeRef, (el) => el.getBoundingClientRect().height) ||
+    rowHeight;
+  const headerHeight = showColumnLabels ? headerRowHeight : 0;
+  const headerHeightRef = useLatest(headerHeight);
   const scrollerHeight = useElementSize(scrollerRef, (el) => el.clientHeight);
   // A horizontal scrollbar takes its height out of the rows; a fixed `rows`
   // height grows by it so that all of them still show.
@@ -528,8 +535,7 @@ export function HexGrid({
     const grid = scrollerRef.current;
     if (!state || !grid) return;
     const rect = grid.getBoundingClientRect();
-    const top =
-      rect.top + (showColumnLabels ? geometryRef.current.rowHeight : 0);
+    const top = rect.top + headerHeightRef.current;
     const bottom =
       top + geometryRef.current.viewportRows * geometryRef.current.rowHeight;
     const outside =
@@ -547,7 +553,7 @@ export function HexGrid({
     const hit = hitFromElement(document.elementFromPoint?.(state.x, y), grid);
     if (hit) extendTo(hit);
     state.frame = requestAnimationFrame(autoScroll);
-  }, [showColumnLabels, geometryRef, topRowRef, setTop, extendTo]);
+  }, [headerHeightRef, geometryRef, topRowRef, setTop, extendTo]);
 
   const endDrag = useCallback(() => {
     const state = drag.current;
@@ -942,7 +948,7 @@ export function HexGrid({
   const rowsHeight =
     rows === undefined
       ? undefined
-      : `calc(var(--hex-row-height) * ${rows + (showColumnLabels ? 1 : 0)} + ${scrollbarHeight}px)`;
+      : `calc(var(--hex-row-height) * ${rows}${showColumnLabels ? " + var(--hex-header-height)" : ""} + ${scrollbarHeight}px)`;
 
   const pending = cache.pending();
   let statusLeft = "";
@@ -978,6 +984,11 @@ export function HexGrid({
       onKeyDown={handleKey}
     >
       <div ref={probeRef} className="orz-hex-probe" aria-hidden />
+      <div
+        ref={headerProbeRef}
+        className="orz-hex-probe orz-hex-header-probe"
+        aria-hidden
+      />
       {autoColumns && (
         <div
           ref={measureRef}

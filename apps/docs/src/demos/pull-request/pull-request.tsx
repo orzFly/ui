@@ -224,7 +224,7 @@ export function PullRequest() {
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b pb-2">
                   {/* The scroller is around the strip, not the strip: the current tab
                       covers the strip's rule, which a scrolling strip would clip. */}
-                  <div className="flex max-w-full overflow-x-auto">
+                  <div className="flex max-w-full overflow-x-auto touch:py-0.5">
                     <TabsList>
                       <TabsTrigger value="conversation">
                         Conversation <Count>{comments}</Count>

@@ -169,7 +169,7 @@ function ThreadRow({
   return (
     <ListItem asChild selected={open || selected}>
       <li data-thread={thread.id} className="group relative flex items-stretch">
-        <span className="flex items-center pl-3">
+        <span className="flex items-center pl-3 touch:pl-4">
           <Checkbox
             checked={selected}
             onCheckedChange={(on) => onSelect(on === true)}

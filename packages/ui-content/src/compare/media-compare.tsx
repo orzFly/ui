@@ -142,7 +142,9 @@ export function MediaCompare({
       {head && (
         <Pane
           purpose="toolbar"
-          className="flex min-w-0 items-center gap-2 border-b px-2 py-1.5"
+          // On touch its last action sits in by the rest of its hit area:
+          // the frame clips.
+          className="flex min-w-0 items-center gap-2 border-b px-2 py-1.5 touch:pr-hit-xs"
         >
           {choosable && (
             <CompareModes
@@ -432,10 +434,12 @@ function Overlay({
           </>
         )}
       </div>
+      {/* On touch as tall as the slider's hit area, which the frame
+          clips below, in every mode, so a change of mode moves nothing. */}
       <div
         data-mode={mode}
         className={cn(
-          "mx-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2.5 text-muted-foreground text-ui-sm",
+          "mx-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2.5 text-muted-foreground text-ui-sm touch:min-h-11",
           mode === "onion" ? "justify-center" : "justify-between",
         )}
         style={{ maxWidth: stageWidth }}

@@ -24,7 +24,6 @@ import { createPortal } from "react-dom";
 import { CappedCodeBlock } from "./capped-code-block.tsx";
 import {
   LoadingCodeFallback,
-  PATCH_HEADER_HEIGHT,
   PatchFiles,
   parsePatch,
   patchCommitId,
@@ -76,12 +75,13 @@ function fileLabel(file: FileDiffMetadata): string {
 // its file's lines as they scroll under it.
 const HEADER_ROW =
   "flex min-w-0 items-center gap-2 bg-background px-3 text-ui raymond:bg-(--window)";
+const HEADER_HEIGHT = { height: "var(--patch-header-height)" };
 
 function CommitHeader({ commit }: { commit: PatchCommit }) {
   const date =
     commit.date === undefined ? undefined : formatCommitDate(commit.date);
   return (
-    <div className={HEADER_ROW} style={{ height: PATCH_HEADER_HEIGHT }}>
+    <div className={HEADER_ROW} style={HEADER_HEIGHT}>
       <GitCommitHorizontalIcon className="size-4 shrink-0 text-muted-foreground" />
       {commit.series !== undefined && (
         // Under raymond a static edge, Windows 2000's one-pixel sunken border.
@@ -130,8 +130,13 @@ function FileHeader({
   const label = fileLabel(file);
   return (
     <div
-      className={cn(HEADER_ROW, onToggle !== undefined && "pl-1.5")}
-      style={{ height: PATCH_HEADER_HEIGHT }}
+      // On touch the fold button sits in from the box's edge, which clips,
+      // by the rest of its hit area.
+      className={cn(
+        HEADER_ROW,
+        onToggle !== undefined && "pl-1.5 touch:pl-hit-xs",
+      )}
+      style={HEADER_HEIGHT}
     >
       {onToggle !== undefined && (
         <Button
