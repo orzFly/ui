@@ -264,7 +264,7 @@ interface Pending {
 /** A group's part in a drag, in the root's coordinates as it started. */
 interface Zone {
   id?: string;
-  /** Past this line the dragged row's middle is in the group. */
+  /** Once the dragged row is past this line it is in the group: the middle of its heading, or of the whole group when it has no rows. */
   headMid: number;
   /** The middles of its rows other than the dragged one. */
   mids: number[];
@@ -729,23 +729,30 @@ class Engine {
     return true;
   }
 
-  /** Where the pointer puts the row: the place under its middle, and the room the rest make. */
+  /** Where the pointer puts the row: the place it is drawn nearest to, and the room the rest make. */
   follow(drag: Drag) {
     const root = this.root;
     const row = drag.row;
     if (!root || !row || !drag.started) return;
     const y = drag.clientY - root.getBoundingClientRect().top;
     const dy = Math.min(drag.max, Math.max(drag.min, y - drag.startY));
-    const mid = drag.rowTop + drag.rowHeight / 2 + dy;
+    const top = drag.rowTop + dy;
+    const bottom = top + drag.rowHeight;
+    // The row is after a line above where it started for as long as its top
+    // edge is, and after one below once its bottom edge is: for another
+    // row's middle, half way between the two places the row could take.
+    // The row's own middle would not do. The drag stops the row at the
+    // ends, so that middle never comes within half the row's height of an
+    // end, and could never pass a shorter row there.
+    const start = drag.rowTop + drag.rowHeight / 2;
+    const after = (line: number) =>
+      line < start ? line <= top : line < bottom;
     let at = 0;
     drag.zones.forEach((zone, i) => {
-      if (i > 0 && mid >= zone.headMid) at = i;
+      if (i > 0 && after(zone.headMid)) at = i;
     });
     const zone = drag.zones[at];
-    // A tie goes the way the row travels: held at the last place, a row of
-    // the last row's height has its middle exactly on that row's.
-    const passed = (m: number) => (dy > 0 ? m <= mid : m < mid);
-    const candidate = place(zone.id, zone.mids.filter(passed).length);
+    const candidate = place(zone.id, zone.mids.filter(after).length);
     if (!samePlace(candidate, drag.candidate)) {
       drag.candidate = candidate;
       const to = nearestPlace(

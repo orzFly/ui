@@ -118,11 +118,13 @@ function Groups({
   adopt = "now",
   onMove,
   rules,
+  heights,
 }: {
   initial?: Group[];
   adopt?: Adopt;
   onMove?: (move: ReorderMove) => void;
   rules?: Rules | ((groups: Group[]) => Rules);
+  heights?: Record<string, number>;
 }) {
   const [groups, setGroups] = useState(initial);
   return (
@@ -143,7 +145,7 @@ function Groups({
             <ul>
               {group.items.map((id) => (
                 <ReorderItem key={id} id={id} name={NAMES[id]} asChild>
-                  <li data-testid={id}>
+                  <li data-testid={id} data-test-height={heights?.[id]}>
                     <ReorderHandle />
                     <span>{NAMES[id]}</span>
                     <ReorderButtons />
@@ -896,31 +898,118 @@ describe("Reorder drag", () => {
   it("parts the groups at the middle of each heading", () => {
     const onMove = vi.fn();
     render(<Groups onMove={onMove} />);
-    // Fallback's heading runs 80–100: its middle, 90, is the line.
+    // Fallback's heading runs 80–100: its middle, 90, is the line, which
+    // Push (20–50) crosses with its bottom edge and Chat (100–130) with its
+    // top.
     press("push", 35);
-    moveTo(35 + 54);
+    moveTo(35 + 39);
     expect(shiftOf(row("email"))).toBe(`translateY(-${H}px)`);
     expect(shiftOf(groupEl(1))).toBe("");
-    moveTo(35 + 56);
+    moveTo(35 + 41);
     expect(shiftOf(groupEl(1))).toBe(`translateY(-${H}px)`);
-    release(35 + 56);
-    expect(onMove).toHaveBeenCalledWith(
+    release(35 + 41);
+    expect(onMove).toHaveBeenLastCalledWith(
       expect.objectContaining({ to: { group: "fallback", index: 0 } }),
+    );
+    cleanup();
+    render(<Groups onMove={onMove} />);
+    press("chat", 115);
+    moveTo(115 - 9);
+    expect(shiftOf(groupEl(1))).toBe("");
+    moveTo(115 - 11);
+    expect(shiftOf(groupEl(1))).toBe(`translateY(${H}px)`);
+    release(115 - 11);
+    expect(onMove).toHaveBeenLastCalledWith(
+      expect.objectContaining({ to: { group: "first", index: 2 } }),
     );
   });
 
   it("finds the place by each row's own middle when heights differ", () => {
     const onMove = vi.fn();
-    // push 0–30, email 30–90 (two lines), chat 90–120.
+    // push 0–30, email 30–90 (two lines), chat 90–120: Push's bottom edge
+    // passes Email at 60.
     render(<List onMove={onMove} heights={{ email: 60 }} />);
     press("push", 15);
-    moveTo(15 + 44);
+    moveTo(15 + 29);
     expect(shiftOf(row("email"))).toBe("");
-    moveTo(15 + 46);
+    moveTo(15 + 31);
     expect(shiftOf(row("email"))).toBe(`translateY(-${H}px)`);
-    release(15 + 46);
+    release(15 + 31);
     expect(onMove).toHaveBeenCalledWith(
       expect.objectContaining({ to: { index: 1 } }),
+    );
+  });
+
+  it("reaches an end whose row is shorter, as a table body's last row is", () => {
+    const onMove = vi.fn();
+    // push 0–30, email 30–60, chat 60–89: no rule under the last row.
+    render(<List onMove={onMove} heights={{ chat: H - 1 }} />);
+    press("push", 15);
+    moveTo(500);
+    expect(shiftOf(row("chat"))).toBe(`translateY(-${H}px)`);
+    release(500);
+    expect(onMove).toHaveBeenLastCalledWith(
+      expect.objectContaining({ to: { index: 2 } }),
+    );
+    cleanup();
+    // push 0–29, email 29–59, chat 59–89.
+    render(<List onMove={onMove} heights={{ push: H - 1 }} />);
+    press("chat", 75);
+    moveTo(-500);
+    expect(shiftOf(row("push"))).toBe(`translateY(${H}px)`);
+    release(-500);
+    expect(onMove).toHaveBeenLastCalledWith(
+      expect.objectContaining({ to: { index: 0 } }),
+    );
+  });
+
+  // push 0–30, email 30–60, chat 60–160, sms 160–190, desk 190–220; chat
+  // held at its middle, 110. Its top passes a row above at that row's
+  // middle, its bottom a row below.
+  it.each([
+    [110 - 30, 1],
+    [-500, 0],
+    [110 + 30, 3],
+    [500, 4],
+  ])(
+    "carries a row taller than the rest to every place: %i puts it at %i",
+    (y, index) => {
+      const onMove = vi.fn();
+      render(
+        <List
+          initial={["push", "email", "chat", "sms", "desk"]}
+          onMove={onMove}
+          heights={{ chat: 100 }}
+        />,
+      );
+      press("chat", 110);
+      moveTo(y);
+      release(y);
+      expect(onMove).toHaveBeenCalledWith(
+        expect.objectContaining({ to: { index } }),
+      );
+    },
+  );
+
+  it("carries a tall row into the group at either end", () => {
+    const onMove = vi.fn();
+    // first 0–80; fallback 80–230 (chat 100–130, sms 130–230); paused
+    // 230–280, empty.
+    render(<Groups onMove={onMove} heights={{ sms: 100 }} />);
+    press("sms", 180);
+    moveTo(500);
+    release(500);
+    expect(onMove).toHaveBeenLastCalledWith(
+      expect.objectContaining({ to: { group: "paused", index: 0 } }),
+    );
+    cleanup();
+    // first 0–80 (push 20–50, email 50–80); fallback 80–230 (chat 100–200).
+    render(<Groups onMove={onMove} heights={{ chat: 100 }} />);
+    press("chat", 150);
+    moveTo(-500);
+    release(-500);
+    expect(onMove).toHaveBeenLastCalledWith(
+      expect.objectContaining({ to: { group: "first", index: 0 } }),
     );
   });
 
