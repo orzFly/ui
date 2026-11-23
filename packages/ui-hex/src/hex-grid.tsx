@@ -898,6 +898,15 @@ export function HexGrid({
     const append = appendCell && size - rowStart < columns;
     const cellEnd = append ? rowEnd + 1 : rowEnd;
     const inSel = selStart <= rowEnd && selLast >= rowStart && selStart >= 0;
+    const selFrom = inSel ? Math.max(selStart, rowStart) : -1;
+    const selTo = inSel ? Math.min(selLast, rowEnd) : -1;
+    // The view's first and last rows draw a selected cell's top or bottom
+    // side themselves, but only where nothing selected lies above or below:
+    // a side the range runs on past stays open, as the view cuts it.
+    const edgeTopTo =
+      inSel && row === topRow ? Math.min(selTo, selStart + columns - 1) : -1;
+    const edgeBottomFrom =
+      inSel && row === lastRow ? Math.max(selFrom, selLast - columns + 1) : -1;
     const hovered =
       hover !== null && hover.start <= cellEnd && hover.end >= rowStart;
     let modified = "";
@@ -921,8 +930,10 @@ export function HexGrid({
         before={windowBytes ? rowStart - windowStart : 0}
         state={state}
         textState={textState}
-        selFrom={inSel ? Math.max(selStart, rowStart) : -1}
-        selTo={inSel ? Math.min(selLast, rowEnd) : -1}
+        selFrom={selFrom}
+        selTo={selTo}
+        edgeTopTo={edgeTopTo >= selFrom ? edgeTopTo : -1}
+        edgeBottomFrom={edgeBottomFrom <= selTo ? edgeBottomFrom : -1}
         hoverFrom={hovered ? Math.max(hover.start, rowStart) : -1}
         hoverTo={hovered ? Math.min(hover.end, cellEnd) : -1}
         caret={caret >= rowStart && caret <= cellEnd ? caret : -1}
@@ -1221,6 +1232,10 @@ interface HexRowProps {
   textState: "ready" | "loading" | "error";
   selFrom: number;
   selTo: number;
+  /** In the first row in view, the last selected offset whose top side is the range's edge; -1 when none. */
+  edgeTopTo: number;
+  /** In the last row in view, the first selected offset whose bottom side is the range's edge; -1 when none. */
+  edgeBottomFrom: number;
   /** The hovered glyph's bytes inside this row, inclusive; -1 when none. */
   hoverFrom: number;
   hoverTo: number;
@@ -1346,6 +1361,8 @@ function HexRowImpl({
   textState,
   selFrom,
   selTo,
+  edgeTopTo,
+  edgeBottomFrom,
   hoverFrom,
   hoverTo,
   caret,
@@ -1433,6 +1450,16 @@ function HexRowImpl({
       continue;
     }
     const sel = flag(selFrom >= 0 && offset >= selFrom && offset <= selTo);
+    const top = sel !== undefined && offset <= edgeTopTo;
+    const bottom =
+      sel !== undefined && edgeBottomFrom >= 0 && offset >= edgeBottomFrom;
+    const edge = top
+      ? bottom
+        ? "top bottom"
+        : "top"
+      : bottom
+        ? "bottom"
+        : undefined;
     const car = flag(offset === caret);
     const mod = flag(edited[i] === true);
     const glyph = decoded?.spans[i];
@@ -1450,6 +1477,7 @@ function HexRowImpl({
         data-offset={offset}
         data-pane="hex"
         data-sel={sel}
+        data-edge={edge}
         data-hover={hov}
         data-caret={car === undefined ? car : (caretNibble ?? "")}
         data-modified={mod}
@@ -1492,6 +1520,7 @@ function HexRowImpl({
         data-offset={offset}
         data-pane="text"
         data-sel={sel}
+        data-edge={edge}
         data-hover={hov}
         data-caret={car}
         data-modified={mod}

@@ -138,6 +138,9 @@
    picks the top row, so the view moves by whole rows like the reference. */
 .orz-hex-layer {
   position: sticky;
+  /* Cuts the outlines above the first row and below the last, so that the
+     view's last row ends the same with or without space under it. */
+  overflow-y: clip;
 }
 
 .orz-hex-row {
@@ -286,6 +289,23 @@
   inset: 0;
   z-index: 0;
   outline: 1px solid var(--cell-edge);
+}
+/* The outline lies outside the cell, so in the first row in view it would be
+   under the column labels and in the last past the rows, where the layer
+   clips it. There the range's own side is a border inside the cell, over its
+   fill; a side the range runs on past stays open. */
+.orz-hex-cell[data-edge]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0 solid var(--cell-edge);
+}
+.orz-hex-cell[data-edge~="top"]::after {
+  border-top-width: 1px;
+}
+.orz-hex-cell[data-edge~="bottom"]::after {
+  border-bottom-width: 1px;
 }
 .orz-hex:not([data-dragging]) [data-hover] {
   --cell-bg: var(--hex-hover);
@@ -531,6 +551,9 @@
     color: var(--primary-foreground);
     &::before {
       outline-color: var(--primary);
+    }
+    &::after {
+      border-color: var(--primary);
     }
   }
 }

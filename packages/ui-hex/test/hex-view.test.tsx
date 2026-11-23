@@ -373,6 +373,62 @@ describe("HexView", () => {
     expect(edge?.[1]).not.toMatch(/background/);
   });
 
+  it("marks a range's own side in the first and last rows in view, not a side it runs on past", () => {
+    const { root } = setup({
+      selection: { anchor: 0x0b, focus: 0x55, pane: "hex" },
+    });
+    const edges = (pane: "hex" | "text") =>
+      [...root.querySelectorAll(`[data-pane="${pane}"][data-edge]`)].map(
+        (el) =>
+          `${Number(el.getAttribute("data-offset")).toString(16)} ${el.getAttribute("data-edge")}`,
+      );
+    const side = (from: number, to: number, edge: string) =>
+      Array.from(
+        { length: to - from + 1 },
+        (_, i) => `${(from + i).toString(16)} ${edge}`,
+      );
+    // Rows 0x00–0x30: the range starts in the first and runs on below the last.
+    expect(edges("hex")).toEqual(side(0x0b, 0x0f, "top"));
+    expect(edges("text")).toEqual(edges("hex"));
+    const scroller = root.querySelector(".orz-hex-scroller") as HTMLElement;
+    // One row at the fallback 22px row height: rows 0x10–0x40.
+    scroller.scrollTop = 22;
+    fireEvent.scroll(scroller);
+    expect(edges("hex")).toEqual([
+      ...side(0x10, 0x1a, "top"),
+      ...side(0x46, 0x4f, "bottom"),
+    ]);
+    expect(edges("text")).toEqual(edges("hex"));
+  });
+
+  it("marks both sides of a range one row tall in a view one row tall", () => {
+    const { root } = setup({
+      rows: 1,
+      selection: { anchor: 0x25, focus: 0x2c, pane: "text" },
+    });
+    const scroller = root.querySelector(".orz-hex-scroller") as HTMLElement;
+    scroller.scrollTop = 44;
+    fireEvent.scroll(scroller);
+    const edges = [...root.querySelectorAll("[data-edge]")].map((el) =>
+      el.getAttribute("data-edge"),
+    );
+    expect(edges).toEqual(Array(16).fill("top bottom"));
+  });
+
+  it("clips the outline past the rows and draws that side inside the cell", () => {
+    // jsdom paints nothing. The column labels cover the outline above the
+    // first row; below the last, space left under the rows would show it.
+    const css = readFileSync(
+      join(import.meta.dirname, "../styles.css"),
+      "utf8",
+    );
+    const layer = /\.orz-hex-layer \{([^}]*)\}/.exec(css);
+    expect(layer?.[1]).toMatch(/\boverflow-y: clip;/);
+    const side = /\.orz-hex-cell\[data-edge\]::after \{([^}]*)\}/.exec(css);
+    expect(side?.[1]).toMatch(/\binset: 0;/);
+    expect(side?.[1]).toMatch(/\bborder: 0 solid var\(--cell-edge\);/);
+  });
+
   it("adds small wheel steps up to whole rows when scaled", () => {
     const huge: ByteSource = {
       size: 2 ** 32,
