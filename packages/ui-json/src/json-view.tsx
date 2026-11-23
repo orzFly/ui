@@ -965,13 +965,15 @@ function JsonViewBody({
   const virtualItems = virtualizer.getVirtualItems();
 
   // The selection's right edge: the furthest its rows' content reaches, among the rows drawn.
-  // A wider row scrolled into view widens it.
+  // A wider row scrolled into view widens it. Under wrap each row's content already runs to the
+  // ⋯'s room, and there what is measured grows with the width set from it: at a fractional
+  // scale each rounding up widened it again, without end.
   const rowsBox = useRef<HTMLDivElement>(null);
   const [selectionRight, setSelectionRight] = useState<number | null>(null);
   useLayoutEffect(() => {
     const box = rowsBox.current;
     let right: number | null = null;
-    if (box && geometry !== null && geometry.kind !== "key") {
+    if (box && !wrap && geometry !== null && geometry.kind !== "key") {
       const left = box.getBoundingClientRect().left;
       for (const el of box.querySelectorAll<HTMLElement>("[data-row]")) {
         const at = Number(el.dataset.index);
@@ -1159,12 +1161,13 @@ function JsonViewBody({
             const row = rows[item.index];
             if (!row) return null;
             const at = item.index;
-            const inBlock =
+            const inSelection =
               geometry !== null &&
               geometry.kind !== "key" &&
               at >= geometry.first &&
-              at <= geometry.last &&
-              at !== ownValue;
+              at <= geometry.last;
+            const inBlock = inSelection && at !== ownValue;
+            const joinsNext = inSelection && at < geometry.last;
             const focused = at === focusIndex;
             const path = row.path;
             return (
@@ -1179,6 +1182,7 @@ function JsonViewBody({
                 labels={labels}
                 inBlock={inBlock}
                 valueSelected={at === ownValue}
+                joinsNext={joinsNext}
                 keySelected={at === keyRow}
                 focused={focused}
                 showMenu={focused || at === keyRow}

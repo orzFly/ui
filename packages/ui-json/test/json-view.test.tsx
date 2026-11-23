@@ -633,4 +633,33 @@ describe("JsonView wrap", () => {
     );
     expect(gap()).toBe(132);
   });
+
+  it("sets no width on a wrapped selection's rows, which fill the view", () => {
+    // At a fractional scale a wrapped row's end lands a fraction past the width set from it,
+    // so each rounding up set a wider one, without end.
+    const setTo = (el: Element) => {
+      const box = el.closest("[data-row]")?.parentElement as HTMLElement;
+      const width = /calc\(([\d.]+)px/.exec(
+        box.style.getPropertyValue("--json-sel-right"),
+      );
+      return width ? Number(width[1]) : 700;
+    };
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.getAttribute("role") === "tree") return rect(600);
+        if (this.hasAttribute("data-end")) return rect(22, setTo(this) + 0.4);
+        return rect(22);
+      },
+    );
+    render(
+      <JsonView
+        value={{ system: "x".repeat(400) }}
+        selection={{ type: "value", path: "$.system" }}
+        wrap
+      />,
+    );
+    const box = rowOf("$.system")?.parentElement as HTMLElement;
+    expect(rowOf("$.system")?.getAttribute("aria-selected")).toBe("true");
+    expect(box.style.getPropertyValue("--json-sel-right")).toBe("");
+  });
 });

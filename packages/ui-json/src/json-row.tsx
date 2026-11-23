@@ -87,18 +87,26 @@ export const ROW_HEIGHT_CLASS = "h-row-dense touch:h-11";
 export const indentOf = (depth: number) =>
   `calc(var(--spacing) * ${1.5 + Math.max(0, depth) * 3})`;
 
-// A selection is one shape, framed as HexView frames a range. Each piece of it
-// (a key, a value from where it starts, a member's row from the members'
-// indent) paints a primary layer 1px larger than itself under every piece's
-// fill, so where two pieces meet the fills cover the edges between them and
-// one contour runs round the whole. The layers share the tree's stacking
-// context, which is why rows are placed by `top` rather than a transform,
-// and they sit above every row's own background, so a hovered neighbour
-// cannot cover the contour; text sits above the fills. Under raymond the
-// highlight, white on navy, with no frame.
-const EDGE = "before:absolute before:z-1 before:bg-primary before:content-['']";
+// A selection is one shape. Each piece of it (a key, a value from where it
+// starts, a member's row from the members' indent) draws one box twice: its
+// edge, a primary border, and above every piece's edge its fill, a clear
+// border of the same width with the accent inside. Drawn as borders, the
+// frame snaps to the device's pixels as every other border does: at a
+// fractional scale a layer 1px larger than the fill drew it one pixel wide
+// on some sides and two on others. A box starts 1px out from its piece on
+// the left, top and bottom and ends with the ⋯'s room, inside the view, so
+// the boxes of two pieces in a row overlap by 2px, each fill covers the
+// other's edge there, and one contour runs round the whole. A fill the
+// selection goes on below reaches 2px further: under a scale below 1 a
+// border is wider than 1px. The layers share the tree's stacking context,
+// which is why rows are placed by `top` rather than a transform, and they
+// sit above every row's own background, so a hovered neighbour cannot cover
+// the contour; text sits above the fills. Under raymond the highlight,
+// white on navy, with no frame.
+const EDGE =
+  "before:absolute before:z-1 before:border before:border-primary before:content-['']";
 const FILL =
-  "after:absolute after:z-2 after:bg-accent after:content-[''] raymond:after:bg-primary";
+  "after:absolute after:z-2 after:border after:border-transparent after:bg-accent after:bg-clip-padding after:content-[''] raymond:after:bg-primary";
 /**
  * A value's piece: its element, and the ⋯'s room after the row's content, which the selection's
  * ⋯ stands in.
@@ -106,13 +114,14 @@ const FILL =
 const PIECE = cn(
   EDGE,
   FILL,
-  "before:-inset-y-px before:-left-px before:right-[calc(-1*var(--json-slot)-1px)] after:inset-y-0 after:left-0 after:right-[calc(-1*var(--json-slot))]",
+  "before:-inset-y-px before:-left-px before:right-[calc(-1*var(--json-slot))] after:-top-px after:-bottom-px after:-left-px after:right-[calc(-1*var(--json-slot))]",
 );
 /**
  * A key's piece, which meets no other: its frame is drawn inside the room its padding makes, so
  * it stays clear of the colon after it.
  */
-const KEY_PIECE = cn(EDGE, FILL, "before:inset-0 after:inset-px");
+const KEY_PIECE = cn(EDGE, FILL, "before:inset-0 after:inset-0");
+const JOINS_NEXT = "after:-bottom-[3px]";
 /**
  * The ⋯'s room after every row's content: its margins and the button, as `--json-slot` on the
  * rows' box. On touch its end margin is the rest of its hit area, which the view would clip
@@ -151,7 +160,7 @@ const PIECE_BAND =
 const BLOCK_PIECE = cn(
   EDGE,
   FILL,
-  "before:-inset-y-px before:right-[calc(-1*var(--json-slot)-1px)] before:left-[calc(var(--json-sel-left)-1px)] after:inset-y-0 after:right-[calc(-1*var(--json-slot))] after:left-(--json-sel-left)",
+  "before:-inset-y-px before:right-[calc(-1*var(--json-slot))] before:left-[calc(var(--json-sel-left)-1px)] after:-top-px after:-bottom-px after:right-[calc(-1*var(--json-slot))] after:left-[calc(var(--json-sel-left)-1px)]",
 );
 /** Text and controls, above the fills. */
 const ABOVE = "relative z-3";
@@ -185,6 +194,8 @@ export interface JsonRowViewProps {
   inBlock: boolean;
   /** The row's own value is selected: its fill starts at the value. */
   valueSelected: boolean;
+  /** The selection goes on into the next row. */
+  joinsNext: boolean;
   keySelected: boolean;
   focused: boolean;
   /** The row is the one the keyboard and the ⋯ menu follow, or its key is selected: its ⋯ shows. */
@@ -233,7 +244,8 @@ function MenuButton({
 
 /**
  * The selection's ⋯, inside its frame at the bottom right of the part in view: held to the view's
- * bottom and right edges while the selection runs past them.
+ * bottom and right edges while the selection runs past them. With a pointer it is 2px taller than
+ * a line, and its clear border lies on the frame's, so its ground stays inside the frame.
  */
 export function SelectionMenu({
   top,
@@ -370,6 +382,7 @@ function JsonRowViewImpl({
   labels,
   inBlock,
   valueSelected,
+  joinsNext,
   keySelected,
   focused,
   showMenu,
@@ -385,6 +398,8 @@ function JsonRowViewImpl({
     wrap ? "min-w-0 flex-1 items-start" : "flex-none items-center",
   );
   const reach = inBlock || valueSelected;
+  // Under wrap every row's content runs to the ⋯'s room already.
+  const reachStyle = reach && !wrap ? REACH_SELECTION : undefined;
 
   if (row.kind === "comment") {
     return (
@@ -407,10 +422,10 @@ function JsonRowViewImpl({
           className={cn(
             content,
             "pr-1.5",
-            inBlock && BLOCK_PIECE,
+            inBlock && cn(BLOCK_PIECE, joinsNext && JOINS_NEXT),
             SELECTED_TEXT,
           )}
-          style={inBlock ? REACH_SELECTION : undefined}
+          style={reachStyle}
         >
           <span
             data-part="gutter"
@@ -459,8 +474,12 @@ function JsonRowViewImpl({
     >
       <span
         data-in-selection={inBlock || undefined}
-        className={cn(content, inBlock && BLOCK_PIECE, SELECTED_TEXT)}
-        style={reach ? REACH_SELECTION : undefined}
+        className={cn(
+          content,
+          inBlock && cn(BLOCK_PIECE, joinsNext && JOINS_NEXT),
+          SELECTED_TEXT,
+        )}
+        style={reachStyle}
       >
         <span
           data-part="gutter"
@@ -532,7 +551,7 @@ function JsonRowViewImpl({
           className={cn(
             "relative flex min-w-0 flex-1 self-stretch pr-1.5",
             wrap ? cn("items-start", PIECE_BAND) : "items-center",
-            valueSelected && cn(PIECE, SELECTED_TEXT),
+            valueSelected && cn(PIECE, joinsNext && JOINS_NEXT, SELECTED_TEXT),
           )}
         >
           <span
