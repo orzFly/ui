@@ -43,7 +43,7 @@ function TooLargeCast({ source, placement, className }: ContentProps) {
 function CastHeader({ source, title }: { source: FileSource; title?: string }) {
   return (
     // On touch as tall as Download's hit area, which the player clips.
-    <div className="flex items-center gap-2 border-b bg-card py-1 pr-1 pl-3 text-card-foreground text-ui-sm touch:min-h-11">
+    <div className="flex items-center gap-2 border-b bg-card py-1 pr-1 pl-3 text-card-foreground text-ui-sm touch:min-h-touch">
       <span className="min-w-0 flex-1 truncate" title={source.name}>
         {title ?? source.name}
       </span>

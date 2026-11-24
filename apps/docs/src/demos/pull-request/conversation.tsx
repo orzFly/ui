@@ -161,7 +161,6 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
             size="sm"
             disabled={rerunning}
             onClick={rerun}
-            className="touch:h-10"
           >
             <RotateCwIcon className={rerunning ? "animate-spin" : undefined} />
             {rerunning ? "Re-running…" : "Re-run failed jobs"}
@@ -183,7 +182,6 @@ function MergeBox({ onJob }: { onJob(id: string): void }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="touch:h-10"
                     aria-label={`Details for ${job.name}`}
                     onClick={() => onJob(job.id)}
                   >

@@ -725,7 +725,7 @@ function Listing({
                 <a
                   href={`#${item.path}`}
                   onClick={(event) => go(event, item.path)}
-                  className="flex items-center gap-2 px-3 py-2 outline-none focus-visible:focus-ring-inset touch:py-3"
+                  className="flex items-center gap-2 px-3 py-2 outline-none focus-visible:focus-ring-inset"
                 >
                   <Icon className="size-4 shrink-0 text-muted-foreground" />
                   <span

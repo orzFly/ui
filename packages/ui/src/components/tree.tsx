@@ -1712,13 +1712,14 @@ function Tree<T extends TreeNode<T>>({
       aria-multiselectable={selectable || undefined}
       // The indent, the toggle's column and the row's height in variables
       // the rows, guides, lines and gaps all compute from. A coarse pointer
-      // widens the toggle to a touch target and the step with it; raymond
-      // takes the tree view's 19px step, keeping touch's sizes under a thumb.
+      // makes the row and the toggle's column the touch spacing and widens
+      // the step with them; raymond takes the tree view's 19px step, keeping
+      // touch's under a thumb.
       className={cn(
-        "flex flex-col [--tree-inset:calc(var(--spacing)*2)] [--tree-line:calc(var(--tree-toggle)/2)] [--tree-row:var(--spacing-row)] [--tree-step:calc(var(--spacing)*4)] [--tree-toggle:calc(var(--spacing)*5)] touch:[--tree-row:calc(var(--spacing)*11)] touch:[--tree-step:calc(var(--spacing)*6)] touch:[--tree-toggle:calc(var(--spacing)*11)]",
+        "flex flex-col [--tree-inset:calc(var(--spacing)*2)] [--tree-line:calc(var(--tree-toggle)/2)] [--tree-row:var(--spacing-row)] [--tree-step:calc(var(--spacing)*4)] [--tree-toggle:calc(var(--spacing)*5)] touch:[--tree-row:var(--spacing-touch)] touch:[--tree-step:calc(var(--spacing)*6)] touch:[--tree-toggle:var(--spacing-touch)]",
         // An odd column puts its centre on a half pixel; the dotted lines
         // take the pixel left of it, which the 9px box centres on.
-        "raymond:[--tree-inset:0.125rem] raymond:[--tree-line:calc(var(--tree-toggle)/2-0.5px)] raymond:[--tree-step:1.1875rem] raymond:[--tree-toggle:1.1875rem] raymond:touch:[--tree-line:calc(var(--tree-toggle)/2)] raymond:touch:[--tree-row:calc(var(--spacing)*11)] raymond:touch:[--tree-step:calc(var(--spacing)*6)] raymond:touch:[--tree-toggle:calc(var(--spacing)*11)]",
+        "raymond:[--tree-inset:0.125rem] raymond:[--tree-line:calc(var(--tree-toggle)/2-0.5px)] raymond:[--tree-step:1.1875rem] raymond:[--tree-toggle:1.1875rem] raymond:touch:[--tree-line:calc(var(--tree-toggle)/2)] raymond:touch:[--tree-row:var(--spacing-touch)] raymond:touch:[--tree-step:calc(var(--spacing)*6)] raymond:touch:[--tree-toggle:var(--spacing-touch)]",
         className,
       )}
       onFocus={handleFocus}

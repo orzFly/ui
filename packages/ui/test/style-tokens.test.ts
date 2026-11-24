@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 // Every package draws shape, type and depth from the style tokens in
 // theme.css, so a style can redraw it by reassigning them. This holds the
 // sources to that: a literal radius, control height, shadow, text size or
-// font family is a part no style can reach.
+// font family is a part no style can reach. Under touch a part keeps its
+// style's size, and only the touch tokens size what a finger needs: a
+// number there draws it larger.
 
 // Not `new URL(…, import.meta.url)`: under happy-dom `URL` is the window's
 // class, which node:fs refuses as a file URL.
@@ -260,6 +262,21 @@ function classProblem(utility: string): string | null {
 
 const CONTROL_HEIGHT = /^(?:min-h|h|size)-(?:6|7|8|9|10)$/;
 
+const TOUCH_SIZE = /^(?:min-|max-)?(?:h|w|size)-(.+)$/;
+const TOUCH_KEYWORDS = ["0", "auto", "full", "fit", "min", "max", "none"];
+const TOUCH_TOKENS = /^(?:touch|field-touch|hit(?:-xs|-sm|-lg)?)$/;
+const TOUCH_VAR = /^[[(].*var\(--spacing-(?:touch|field-touch|hit)/;
+
+/** Why a size under `touch:` is not one of the touch tokens, or null when it is. */
+function touchSizeProblem(utility: string): string | null {
+  const size = TOUCH_SIZE.exec(utility);
+  if (!size) return null;
+  const value = size[1] ?? "";
+  if (TOUCH_KEYWORDS.includes(value) || TOUCH_TOKENS.test(value)) return null;
+  if (TOUCH_VAR.test(value)) return null;
+  return "a touch size that is not a touch token";
+}
+
 /** The text of every JSX opening tag that carries a data-slot, with the consts it names. */
 function slotted(source: string): string[] {
   const out: string[] = [];
@@ -305,6 +322,11 @@ function scanSource(path: string): Finding[] {
   for (const { text } of literals(source)) {
     for (const token of text.split(/\s+/).filter(Boolean)) {
       const { variants, utility } = split(token);
+      // The finger is every style's, raymond's too.
+      if (variants.includes("touch")) {
+        const problem = touchSizeProblem(utility);
+        if (problem) found.push({ file, utility: token, problem });
+      }
       // A style's own variant is that style's drawing, as its stylesheet
       // under styles/ is: no other style reaches it, so it needs no token.
       if (variants.includes("raymond")) continue;
@@ -315,9 +337,7 @@ function scanSource(path: string): Finding[] {
   for (const tag of slotted(source)) {
     for (const { text } of literals(tag)) {
       for (const token of text.split(/\s+/).filter(Boolean)) {
-        const { variants, utility } = split(token);
-        // A coarse pointer's sizes stay literal: no style may shrink them.
-        if (variants.includes("touch")) continue;
+        const { utility } = split(token);
         if (CONTROL_HEIGHT.test(utility)) {
           found.push({ file, utility, problem: "a literal control height" });
         }
@@ -413,7 +433,7 @@ describe("style tokens", () => {
     );
   });
 
-  it("leaves no literal radius, control height, shadow, text size or font family", () => {
+  it("leaves no literal radius, control height, shadow, text size, font family or touch size", () => {
     expect(
       findings
         .filter((finding) => !allowed(finding))
@@ -449,6 +469,18 @@ describe("style tokens", () => {
     expect(classProblem("text-ui")).toBeNull();
     expect(classProblem("text-base")).toBeNull();
     expect(classProblem("font-sans")).not.toBeNull();
+    expect(touchSizeProblem("h-10")).not.toBeNull();
+    expect(touchSizeProblem("min-h-11")).not.toBeNull();
+    expect(touchSizeProblem("min-w-11")).not.toBeNull();
+    expect(touchSizeProblem("size-11")).not.toBeNull();
+    expect(touchSizeProblem("h-[44px]")).not.toBeNull();
+    expect(touchSizeProblem("min-h-touch")).toBeNull();
+    expect(touchSizeProblem("h-field-touch")).toBeNull();
+    expect(touchSizeProblem("w-hit-xs")).toBeNull();
+    expect(touchSizeProblem("h-auto")).toBeNull();
+    expect(touchSizeProblem("min-h-0")).toBeNull();
+    expect(touchSizeProblem("w-[calc(var(--spacing-touch)/2)]")).toBeNull();
+    expect(touchSizeProblem("my-hit-xs")).toBeNull();
     expect(
       scanSource(join(PACKAGES, "ui/src/components/button.tsx")).filter(
         (finding) => finding.problem === "a literal control height",

@@ -35,8 +35,8 @@ export function WarningStrip({
           size="icon-xs"
           aria-label={dismiss}
           title={dismiss}
-          // On touch it keeps the rest of its 44px above and below too: the
-          // strip sits right under the toolbar's search field.
+          // On touch it keeps the rest of the touch spacing above and below
+          // too: the strip sits right under the toolbar's search field.
           className="text-inherit touch:my-hit-xs"
           onClick={onDismiss}
         >

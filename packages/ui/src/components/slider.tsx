@@ -27,7 +27,7 @@ function Slider({
   );
 
   return (
-    // Under touch the whole bar takes a tap, through a 44px ::after kept under
+    // Under touch the whole bar takes a tap, through a hit area kept under
     // the thumb: a press on the thumb grabs it rather than jumping the value
     // to where the finger landed.
     // Under raymond it is a trackbar: a sunken channel with nothing filled

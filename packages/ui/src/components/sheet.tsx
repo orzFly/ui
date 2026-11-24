@@ -116,8 +116,8 @@ function SheetCloseButton() {
         size="icon-sm"
         // Under raymond the X is the title bar's close box, as Dialog's. On
         // touch its own margin sets it in from the edge, as Dialog's does,
-        // under raymond what the 16px box leaves of 44px.
-        className="absolute top-3 right-3 touch:right-0 raymond:top-[5px] raymond:right-[5px] raymond:touch:right-0 raymond:touch:[--hit-room:14px] raymond:h-3.5 raymond:w-4 raymond:min-w-0 raymond:bg-(--3d-face) raymond:shadow-raised raymond:hover:shadow-raised raymond:focus-visible:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[--focus-offset:-3px] raymond:[--muted:var(--3d-face)] raymond:active:shadow-pressed raymond:[&_svg]:size-2.5 raymond:[&_svg]:stroke-3"
+        // under raymond what the 16px box leaves of the touch spacing.
+        className="absolute top-3 right-3 touch:right-0 raymond:top-[5px] raymond:right-[5px] raymond:touch:right-0 raymond:touch:[--hit-room:calc((var(--spacing-touch)-16px)/2)] raymond:h-3.5 raymond:w-4 raymond:min-w-0 raymond:bg-(--3d-face) raymond:shadow-raised raymond:hover:shadow-raised raymond:focus-visible:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[--focus-offset:-3px] raymond:[--muted:var(--3d-face)] raymond:active:shadow-pressed raymond:[&_svg]:size-2.5 raymond:[&_svg]:stroke-3"
       >
         <XIcon />
         <span className="sr-only">Close</span>

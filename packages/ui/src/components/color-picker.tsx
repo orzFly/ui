@@ -1232,7 +1232,8 @@ export function ColorPicker({
           hidden: a chip that wrapped or a button that came and went changed the panel's height
           mid-drag, and in a popover opened upwards that moved the surface from under the pointer. */}
       <div className="grid gap-1 text-ui-2xs">
-        <div className="flex h-5 items-center gap-1.5">
+        {/* On touch the touch spacing tall, so its button stands that far from the fields above. */}
+        <div className="flex h-5 items-center gap-1.5 touch:h-touch">
           <span
             data-gamut={colorGamut}
             title={
@@ -1264,7 +1265,7 @@ export function ColorPicker({
                 draft: null,
               })
             }
-            className="ml-auto shrink-0 underline underline-offset-2 disabled:opacity-50"
+            className="relative ml-auto shrink-0 underline underline-offset-2 disabled:opacity-50 touch:hit-area"
             // visibility rather than unmounting, for the space; inline rather than a class, so
             // jsdom sees it too and the button leaves the accessibility tree there as well.
             style={colorGamut === "srgb" ? { visibility: "hidden" } : undefined}
@@ -1363,7 +1364,10 @@ function TrackSlider({
       disabled={disabled}
       onValueChange={([v]) => onChange(v)}
       onValueCommit={([v]) => onCommit(v)}
-      className="relative flex h-3 w-full touch-none items-center select-none data-disabled:opacity-50"
+      // On touch the bar is the touch spacing tall around its drawn track,
+      // so the whole of it takes a tap and the tracks stacked, and the
+      // controls beside and under them, stand that far apart.
+      className="relative flex h-3 w-full touch-none items-center select-none data-disabled:opacity-50 touch:h-touch"
     >
       <SliderPrimitive.Track
         className="relative h-3 grow overflow-hidden rounded-full raymond:rounded-none raymond:after:pointer-events-none raymond:after:absolute raymond:after:inset-0 raymond:after:shadow-sunken raymond:after:content-['']"

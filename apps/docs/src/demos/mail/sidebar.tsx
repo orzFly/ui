@@ -236,7 +236,7 @@ export function Rail({
                     <NavListLink
                       asChild
                       current={query === place}
-                      className="size-9 justify-center px-0 touch:w-11"
+                      className="size-9 justify-center px-0"
                     >
                       <PlaceLink
                         query={place}

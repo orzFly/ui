@@ -256,7 +256,11 @@ function Field({
   const id = useId();
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <div className="flex items-center gap-1">
+      {/* On touch an (i) keeps the rest of its hit area above and below
+          it, so its label's line is the touch spacing tall; the labels of
+          the fields beside it take that height too, so their fields still
+          line up. */}
+      <div className="flex items-center gap-1 touch:group-has-[[data-slot=info-popover-trigger]]/fields:min-h-touch">
         <Label htmlFor={id} className="text-ui-sm">
           {label}
         </Label>
@@ -454,7 +458,7 @@ function SideTab({
       )}
       {based && (
         <>
-          <div className="flex gap-2">
+          <div className="group/fields flex gap-2">
             <Field
               label="Base theme"
               info={
@@ -796,7 +800,7 @@ function TerminalBaseControls({
 
   return (
     <>
-      <div className="flex gap-2">
+      <div className="group/fields flex gap-2">
         <Field label="Palette">
           {(id) => (
             <Select

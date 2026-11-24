@@ -189,7 +189,7 @@ describe("FenceFrame", () => {
     expect(tools).toContain("touch:mt-hit-xs");
     expect(tools).not.toContain("touch:mr-hit-xs");
     const head = classes(slot(container, "fence-head"));
-    expect(head).toContain("touch:min-h-11");
+    expect(head).toContain("touch:min-h-touch");
     expect(head).not.toContain("touch:pr-hit-xs");
     for (const button of container.querySelectorAll("button")) {
       expect(classes(button)).toContain("mx-(--hit-room)");

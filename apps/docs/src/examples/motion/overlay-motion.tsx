@@ -62,7 +62,7 @@ export function OverlayMotion() {
       <Pane purpose="toolbar" className="flex flex-wrap items-center gap-1">
         {/* A row a hit area tall on touch, so when the bar wraps on a phone
             Keyboard shortcuts stands clear of the buttons above it. */}
-        <div className="flex items-center gap-1 touch:min-h-11">
+        <div className="flex items-center gap-1 touch:min-h-touch">
           <Sheet>
             <Tooltip>
               <TooltipTrigger asChild>

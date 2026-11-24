@@ -174,7 +174,7 @@ describe("MediaControls", () => {
     expect(onSeek).toHaveBeenCalledWith(15);
   });
 
-  it("gives a marker 24px to hit, and 44px under a touch pointer", () => {
+  it("gives a marker 24px to hit, and the touch spacing under a touch pointer", () => {
     renderBar({ markers: [{ time: 15, label: "Intro" }] });
     const classes = screen
       .getByRole("button", { name: "Intro at 0:15" })

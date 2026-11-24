@@ -81,7 +81,7 @@ export function TasksModule({ className }: { className?: string }) {
               tabIndex={0}
               aria-selected={task.id === selected}
               data-state={task.id === selected ? "selected" : undefined}
-              className="cursor-default outline-none focus-visible:focus-ring-inset touch:h-11"
+              className="cursor-default outline-none focus-visible:focus-ring-inset touch:h-touch"
               onClick={() => setSelected(task.id)}
               onKeyDown={(event) => {
                 if (event.key !== "Enter" && event.key !== " ") return;

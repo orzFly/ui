@@ -34,7 +34,7 @@ export function BoxedGroups() {
             {group.settings.map((setting) => (
               <Fragment key={setting.id}>
                 <Separator purpose="group" />
-                <div className="flex items-center justify-between gap-4 px-3 py-1.5 touch:min-h-11 touch:pr-4">
+                <div className="flex items-center justify-between gap-4 px-3 py-1.5 touch:min-h-touch">
                   <Label htmlFor={setting.id}>{setting.label}</Label>
                   <Switch id={setting.id} defaultChecked={setting.on} />
                 </div>

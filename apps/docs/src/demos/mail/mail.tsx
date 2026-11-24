@@ -169,7 +169,7 @@ function ThreadRow({
   return (
     <ListItem asChild selected={open || selected}>
       <li data-thread={thread.id} className="group relative flex items-stretch">
-        <span className="flex items-center pl-3 touch:pl-4">
+        <span className="flex items-center pl-3">
           <Checkbox
             checked={selected}
             onCheckedChange={(on) => onSelect(on === true)}
@@ -193,7 +193,7 @@ function ThreadRow({
             if (selecting && press.current.touch) onSelect(!selected);
             else onOpen();
           }}
-          className="grid min-w-0 flex-1 select-none grid-cols-[0.5rem_1fr_auto] items-baseline gap-x-2 gap-y-0.5 px-3 py-2.5 outline-none [-webkit-touch-callout:none] focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset touch:py-3.5"
+          className="grid min-w-0 flex-1 select-none grid-cols-[0.5rem_1fr_auto] items-baseline gap-x-2 gap-y-0.5 px-3 py-2.5 outline-none [-webkit-touch-callout:none] focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
         >
           {/* The dot carries the state for sight; the hidden word for a screen reader. */}
           <span

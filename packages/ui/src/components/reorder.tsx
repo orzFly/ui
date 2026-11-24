@@ -112,7 +112,7 @@ const dev = () => {
 // outrank a fill on the row. A row's own transform would be overridden while
 // it moves.
 const ITEM =
-  "data-lifted:relative data-lifted:z-10 data-lifted:bg-popover data-lifted:text-popover-foreground data-lifted:shadow-menu data-lifted:ring-1 data-lifted:ring-border data-lifted:[&>td]:bg-popover data-shifting:transition-transform data-shifting:duration-150 data-shifting:ease-out motion-reduce:data-shifting:transition-none touch:min-h-11 touch:[&:is(tr)]:h-11 raymond:data-lifted:bg-primary raymond:data-lifted:text-primary-foreground raymond:data-lifted:shadow-none raymond:data-lifted:ring-0 raymond:data-lifted:[--foreground:var(--primary-foreground)] raymond:data-lifted:[--muted-foreground:var(--primary-foreground)] raymond:data-lifted:[&>td]:bg-primary raymond:data-shifting:transition-none";
+  "data-lifted:relative data-lifted:z-10 data-lifted:bg-popover data-lifted:text-popover-foreground data-lifted:shadow-menu data-lifted:ring-1 data-lifted:ring-border data-lifted:[&>td]:bg-popover data-shifting:transition-transform data-shifting:duration-150 data-shifting:ease-out motion-reduce:data-shifting:transition-none touch:min-h-touch touch:[&:is(tr)]:h-touch raymond:data-lifted:bg-primary raymond:data-lifted:text-primary-foreground raymond:data-lifted:shadow-none raymond:data-lifted:ring-0 raymond:data-lifted:[--foreground:var(--primary-foreground)] raymond:data-lifted:[--muted-foreground:var(--primary-foreground)] raymond:data-lifted:[&>td]:bg-primary raymond:data-shifting:transition-none";
 
 // No fill, border or padding of its own: the whole group slides over its
 // neighbours while a row crosses it, and the frame is the List's or Table's.
@@ -121,7 +121,7 @@ const GROUP =
 
 // Under raymond the grip is a toolbar's: two raised bars, the icon dropped.
 const HANDLE =
-  "relative flex w-6 shrink-0 cursor-grab items-center justify-center self-stretch text-muted-foreground select-none touch-none [-webkit-touch-callout:none] not-data-disabled:hover:text-foreground in-data-lifted:cursor-grabbing in-data-lifted:text-foreground data-disabled:cursor-default data-disabled:opacity-50 [&_svg]:size-3.5 touch:w-11 raymond:w-3.5 raymond:touch:w-11 raymond:gap-px raymond:[&_svg]:hidden raymond:before:h-3 raymond:before:w-[3px] raymond:before:bg-(--3d-face) raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:before:content-[''] raymond:after:h-3 raymond:after:w-[3px] raymond:after:bg-(--3d-face) raymond:after:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:after:content-['']";
+  "relative flex w-6 shrink-0 cursor-grab items-center justify-center self-stretch text-muted-foreground select-none touch-none [-webkit-touch-callout:none] not-data-disabled:hover:text-foreground in-data-lifted:cursor-grabbing in-data-lifted:text-foreground data-disabled:cursor-default data-disabled:opacity-50 [&_svg]:size-3.5 touch:w-touch raymond:w-3.5 raymond:touch:w-touch raymond:gap-px raymond:[&_svg]:hidden raymond:before:h-3 raymond:before:w-[3px] raymond:before:bg-(--3d-face) raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:before:content-[''] raymond:after:h-3 raymond:after:w-[3px] raymond:after:bg-(--3d-face) raymond:after:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:after:content-['']";
 
 const BUTTONS = "flex shrink-0 gap-0.5 raymond:gap-0";
 

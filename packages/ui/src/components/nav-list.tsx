@@ -108,8 +108,8 @@ const indent = (
     : style;
 
 const LINK: Record<NavListVariant, string> = {
-  rows: "relative flex min-h-row w-full items-center gap-2 px-3 text-left text-ui text-muted-foreground transition-colors outline-none select-none hover:bg-accent hover:text-accent-foreground focus-visible:focus-ring-inset touch:min-h-11 data-current:bg-accent data-current:font-medium data-current:text-accent-foreground data-current:state-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-  rail: "-ml-px flex min-h-7 items-center gap-2 py-1 pl-3 text-left text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:focus-ring touch:min-h-11 data-current:text-foreground data-current:state-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 raymond:ml-0 raymond:min-h-row raymond:py-0 raymond:[--focus-offset:-1px]",
+  rows: "relative flex min-h-row w-full items-center gap-2 px-3 text-left text-ui text-muted-foreground transition-colors outline-none select-none hover:bg-accent hover:text-accent-foreground focus-visible:focus-ring-inset touch:min-h-touch data-current:bg-accent data-current:font-medium data-current:text-accent-foreground data-current:state-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  rail: "-ml-px flex min-h-7 items-center gap-2 py-1 pl-3 text-left text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:focus-ring touch:min-h-touch data-current:text-foreground data-current:state-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 raymond:ml-0 raymond:min-h-row raymond:touch:min-h-touch raymond:py-0 raymond:[--focus-offset:-1px]",
 };
 
 function NavListLink({
@@ -353,9 +353,9 @@ function NavListGroupToggle({
       className={cn(
         "group/nav-list-toggle outline-none",
         icon
-          ? // A square the row's height, which grows to the touch size with
-            // the row. Under raymond the tree view's box, with no hover.
-            "flex w-row shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:focus-ring-inset touch:w-11 raymond:transition-none raymond:hover:bg-transparent raymond:focus-visible:focus-ring raymond:[--focus-offset:-1px]"
+          ? // A square the row's height, which grows to the touch spacing
+            // with the row. Under raymond the tree view's box, with no hover.
+            "flex w-row shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:focus-ring-inset touch:w-touch raymond:transition-none raymond:hover:bg-transparent raymond:focus-visible:focus-ring raymond:[--focus-offset:-1px]"
           : // The heading's whole text, reaching back over the heading's
             // padding so the cue of a group closed over the current place
             // sits on the row's edge, where a current link draws its own.
@@ -375,7 +375,7 @@ function NavListGroupToggle({
       ) : (
         // The square an icon-only toggle is, so the markers of both kinds
         // of head line up down the list.
-        <span className="ml-auto flex w-row shrink-0 items-center justify-center touch:w-11">
+        <span className="ml-auto flex w-row shrink-0 items-center justify-center touch:w-touch">
           {marker}
         </span>
       )}

@@ -15,24 +15,25 @@ export const meta = {
 import { ButtonSizes } from "../../../examples/density/button-sizes.tsx";
 import { CiRunPanel } from "../../../examples/density/ci-run-panel.tsx";
 import { ThreadRows } from "../../../examples/density/thread-rows.tsx";
-import { button, classes, px, same } from "../../../sizes.ts";
+import { button, classes, px, same, touchSpacing } from "../../../sizes.ts";
 
 **Use the default size, step down only inside a dense row or toolbar, and leave touch to the
 components.** The default is drawn for a mouse, so a screen shows as much of the work as it can; on
-a coarse pointer the same controls grow their hit areas without the app asking.
+a coarse pointer the same controls, drawn the same, take hit areas and room between them without
+the app asking.
 
 <Example of={CiRunPanel} />
 
 The run's toolbar and each job's **Log** are a size down, because they repeat and sit next to
 content; the two actions that close out the panel are the default size. Press **Touch** above the
-example to see the same tree sized for a thumb.
+example to see the same tree make room for a thumb.
 
 ## Sizes
 
 Every number on this page is the default style's. Another
-[style](/guidelines/foundations/styles/) draws the same sizes at its own heights for a pointer, and
-grows them on a coarse one all the same. Every size of `Button`, as the default style draws it for a
-pointer:
+[style](/guidelines/foundations/styles/) draws the same sizes at its own heights, and a coarse
+pointer adds the same room around them all the same. Every size of `Button`, as the default style
+draws it:
 
 | Size | Height | Use |
 |---|---|---|
@@ -54,8 +55,8 @@ toolbar.
 
 <DoDont>
   <Do>
-    Keep the default size and let a coarse pointer grow it. One layout serves the mouse and the
-    thumb.
+    Keep the default size and let a coarse pointer add the room around it. One layout serves the
+    mouse and the thumb.
   </Do>
   <Dont>
     Pass `size="lg"` when the screen is narrow, or branch on width to make touch targets. A narrow
@@ -86,9 +87,10 @@ conversation, then press **Undo** in the toast.
 - **Pointer.** The sizes above. Neighbouring controls can sit 4px apart; a mouse lands reliably
   on a target of WCAG's 24px minimum
   ([2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)).
-- **Touch.** Controls grow on a coarse pointer through `@orz/ui`'s `touch:` variant, drawn larger
-  or given an invisible hit area around them, toward the 44pt Apple asks for
-  ([Apple HIG: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility))
+- **Touch.** On a coarse pointer `@orz/ui`'s `touch:` variant keeps each control as it is drawn,
+  gives it an invisible {touchSpacing}px hit area, and keeps neighbouring targets that far apart:
+  between the 28pt Apple allows and the 44pt it gives a control by default
+  ([Apple HIG: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility)),
   and never below that 24px minimum. [Touch &
-  mobile](/guidelines/platforms/touch-and-mobile/) has the size of each control. A row you build yourself grows the same way:
-  `touch:min-h-11`.
+  mobile](/guidelines/platforms/touch-and-mobile/) has the size of each part. A row you build
+  yourself makes the room the same way: `touch:min-h-touch`.

@@ -30,7 +30,7 @@ export const States: Story = {
           ],
         ] as const
       ).map(([id, label, props]) => (
-        <div key={id} className="flex items-center gap-2 touch:min-h-11">
+        <div key={id} className="flex items-center gap-2 touch:min-h-touch">
           <Switch {...args} id={id} {...props} />
           <Label htmlFor={id}>{label}</Label>
         </div>

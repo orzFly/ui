@@ -62,7 +62,7 @@
    would. */
 .orz-hex {
   @variant touch {
-    --hex-header-height: 44px;
+    --hex-header-height: var(--spacing-touch);
   }
 }
 .orz-hex[data-fill] {
@@ -457,7 +457,7 @@
   white-space: nowrap;
   @variant touch {
     align-items: center;
-    min-height: 44px;
+    min-height: var(--spacing-touch);
   }
 }
 /* Clear of the resize handle in the corner. */

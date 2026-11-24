@@ -52,7 +52,7 @@ function pageAt(route: string) {
 }
 
 const row =
-  "grid min-h-row grid-cols-[1.25rem_minmax(0,auto)_minmax(0,1fr)] items-start gap-x-2 px-2 py-1 transition-colors hover:bg-accent touch:min-h-11";
+  "grid min-h-row grid-cols-[1.25rem_minmax(0,auto)_minmax(0,1fr)] items-start gap-x-2 px-2 py-1 transition-colors hover:bg-accent touch:min-h-touch";
 
 export function ForAgents({ className }: { className?: string }) {
   return (

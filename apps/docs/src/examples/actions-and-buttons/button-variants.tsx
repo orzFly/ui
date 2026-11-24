@@ -29,7 +29,7 @@ export function ButtonVariants() {
   return (
     <TooltipProvider>
       <div className="grid">
-        <div className="flex flex-wrap items-center justify-end gap-2 pb-4">
+        <div className="flex flex-wrap items-center justify-end gap-2 pb-4 touch:gap-y-[calc(2*var(--spacing-hit))]">
           <span className="mr-auto font-mono text-muted-foreground text-ui-sm">
             default, outline
           </span>

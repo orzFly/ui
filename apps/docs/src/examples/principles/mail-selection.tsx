@@ -61,7 +61,7 @@ export function MailSelection() {
                 selected={selected.has(thread.id)}
                 asChild
               >
-                <li className="flex min-h-row items-center gap-3 px-3 py-2 touch:min-h-11 touch:py-3 touch:pl-3.5">
+                <li className="flex min-h-row items-center gap-3 px-3 py-2 touch:min-h-touch">
                   <Checkbox
                     id={`selection-${thread.id}`}
                     checked={selected.has(thread.id)}

@@ -1140,7 +1140,7 @@ function JsonViewBody({
         <div
           ref={probe}
           aria-hidden
-          className="pointer-events-none invisible absolute h-row-dense w-0 touch:h-11"
+          className="pointer-events-none invisible absolute h-row-dense w-0 touch:h-touch"
         />
         <div
           ref={rowsBox}

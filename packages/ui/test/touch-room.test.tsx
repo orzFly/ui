@@ -49,22 +49,40 @@ import { Toggle } from "../src/components/toggle.tsx";
 const THEME = readFileSync(join(import.meta.dirname, "../theme.css"), "utf8");
 const classesOf = (el: Element) => el.className.split(/\s+/);
 
-describe("hit room tokens", () => {
-  it("are what the hit area reaches past a control of each size, read in the style it is drawn in", () => {
-    const start = THEME.indexOf("@theme inline {\n  --spacing-hit-xs");
-    expect(start).toBeGreaterThan(-1);
+/** The `@theme inline` block of the touch tokens, on one line as the formatter would not keep it. */
+function touchTokens(): string {
+  const start = THEME.indexOf("@theme inline {\n  --spacing-hit-xs");
+  expect(start).toBeGreaterThan(-1);
+  return THEME.slice(start, THEME.indexOf("\n}", start))
+    .replace(/\s+/g, " ")
+    .replace(/\( /g, "(")
+    .replace(/ \)/g, ")");
+}
+
+describe("touch tokens", () => {
+  it("make P, the touch spacing, 36px, in px and in no style's hands", () => {
+    const start = THEME.indexOf("@theme static {");
     const block = THEME.slice(start, THEME.indexOf("\n}", start));
-    expect(block).toContain(
-      "--spacing-hit-xs: calc((44px - var(--spacing-control-xs)) / 2);",
-    );
-    expect(block).toContain(
-      "--spacing-hit-sm: calc((44px - var(--spacing-control-sm)) / 2);",
-    );
-    expect(block).toContain(
-      "--spacing-hit: calc((44px - var(--spacing-control)) / 2);",
-    );
-    expect(block).toContain(
-      "--spacing-hit-lg: calc((44px - var(--spacing-control-lg)) / 2);",
+    expect(block).toContain("--spacing-touch: 36px;");
+  });
+
+  it("are what the hit area reaches past a control of each size, read in the style it is drawn in", () => {
+    const block = touchTokens();
+    for (const [token, size] of [
+      ["hit-xs", "control-xs"],
+      ["hit-sm", "control-sm"],
+      ["hit", "control"],
+      ["hit-lg", "control-lg"],
+    ]) {
+      expect(block).toContain(
+        `--spacing-${token}: calc((var(--spacing-touch) - var(--spacing-${size})) / 2);`,
+      );
+    }
+  });
+
+  it("make a field on touch tall enough for 16px text, and no shorter than the style's control", () => {
+    expect(touchTokens()).toContain(
+      "--spacing-field-touch: max(var(--spacing-control), 2rem);",
     );
   });
 });
@@ -76,7 +94,7 @@ describe("an icon button's room on touch", () => {
     ["icon", "hit"],
     ["icon-lg", "hit-lg"],
   ] as const)(
-    "Button %s keeps the rest of its 44px, %s, as inline margin",
+    "Button %s keeps the rest of the touch spacing, %s, as inline margin",
     (size, token) => {
       render(<Button size={size}>B</Button>);
       expect(classesOf(screen.getByRole("button"))).toEqual(
@@ -110,7 +128,7 @@ describe("an icon button's room on touch", () => {
     expect(own).not.toContain("mx-(--hit-room)");
   });
 
-  it("in a button group, joins its neighbours and is drawn 44px wide instead", () => {
+  it("in a button group, joins its neighbours and is drawn the touch spacing wide instead", () => {
     render(
       <div data-slot="button-group">
         <Button size="icon-sm" aria-label="Bold" />
@@ -119,25 +137,31 @@ describe("an icon button's room on touch", () => {
     expect(classesOf(screen.getByRole("button"))).toEqual(
       expect.arrayContaining([
         "in-data-[slot=button-group]:mx-0",
-        "in-data-[slot=button-group]:touch:min-w-11",
+        "in-data-[slot=button-group]:touch:min-w-touch",
       ]),
     );
   });
 
-  it("leaves InfoPopover's trigger none, beside the text it explains", () => {
+  it("leaves InfoPopover's trigger none beside the text it explains, and its room above and below", () => {
     render(<InfoPopover>Why</InfoPopover>);
     const trigger = classesOf(
       screen.getByRole("button", { name: "More information" }),
     );
     expect(trigger).toContain("mx-0");
     expect(trigger).not.toContain("mx-(--hit-room)");
+    // With a pointer it keeps the label's line no taller; on touch it makes
+    // it the touch spacing.
+    expect(trigger).toEqual(
+      expect.arrayContaining(["-my-1", "touch:my-hit-xs"]),
+    );
   });
 
   it("follows a raymond caption box's drawn 16px in a Pane titlebar and a DialogTitleBar", () => {
     const { container } = render(
       <Pane purpose="titlebar" data-testid="titlebar" />,
     );
-    const room = "raymond:touch:[&_button[data-size^=icon]]:[--hit-room:14px]";
+    const room =
+      "raymond:touch:[&_button[data-size^=icon]]:[--hit-room:calc((var(--spacing-touch)-16px)/2)]";
     expect(
       classesOf(container.querySelector("[data-testid=titlebar]") as Element),
     ).toContain(room);
@@ -155,14 +179,14 @@ describe("an icon button's room on touch", () => {
 });
 
 describe("parts that space themselves on touch", () => {
-  it("a Toggle chip keeps its room above and below and is at least 44px wide", () => {
+  it("a Toggle chip keeps its room above and below and is at least the touch spacing wide", () => {
     render(<Toggle>#ui</Toggle>);
     expect(classesOf(screen.getByRole("button"))).toEqual(
-      expect.arrayContaining(["touch:my-hit-xs", "touch:min-w-11"]),
+      expect.arrayContaining(["touch:my-hit-xs", "touch:min-w-touch"]),
     );
   });
 
-  it("a segment and a tab are at least 44px wide, since their faces join", () => {
+  it("a segment and a tab are at least the touch spacing wide, since their faces join", () => {
     render(
       <>
         <SegmentedControl aria-label="View" value="a" onValueChange={() => {}}>
@@ -176,10 +200,23 @@ describe("parts that space themselves on touch", () => {
       </>,
     );
     expect(classesOf(screen.getByRole("button", { name: "A" }))).toContain(
-      "touch:min-w-11",
+      "touch:min-w-touch",
     );
     expect(classesOf(screen.getByRole("tab", { name: "B" }))).toContain(
-      "touch:min-w-11",
+      "touch:min-w-touch",
+    );
+  });
+
+  it("a vertical ListItem that is a button or a link is the touch spacing tall", () => {
+    render(
+      <List purpose="collection">
+        <ListItem asChild>
+          <button type="button">Inbox</button>
+        </ListItem>
+      </List>,
+    );
+    expect(classesOf(screen.getByRole("button"))).toContain(
+      "touch:[&:is(button,a[href])]:min-h-touch",
     );
   });
 
@@ -196,7 +233,7 @@ describe("parts that space themselves on touch", () => {
         </List>
       </>,
     );
-    const tall = "touch:has-[button,a[href],input,[role=checkbox]]:min-h-11";
+    const tall = "touch:has-[button,a[href],input,[role=checkbox]]:min-h-touch";
     expect(classesOf(screen.getByTestId("row"))).toContain(tall);
     expect(classesOf(screen.getByTestId("column"))).not.toContain(tall);
   });
@@ -217,17 +254,17 @@ describe("room on touch", () => {
         "mx-(--hit-room)",
         "touch:top-hit-sm",
         "touch:right-0",
-        "raymond:touch:top-[18px]",
+        "raymond:touch:top-[calc(var(--spacing-touch)/2-4px)]",
         "raymond:touch:right-0",
-        "raymond:touch:[--hit-room:14px]",
+        "raymond:touch:[--hit-room:calc((var(--spacing-touch)-16px)/2)]",
       ]),
     );
     expect(
       classesOf(screen.getByText("Title").closest("h2") as Element),
-    ).toContain("raymond:touch:min-h-11");
+    ).toContain("raymond:touch:min-h-touch");
   });
 
-  it("makes a Card's header with an action and its footer a hit area tall, an icon button's own room at its end", () => {
+  it("makes a Card's header that holds a target and its footer the touch spacing tall, an icon button's own room at its end", () => {
     const { container } = render(
       <Card>
         <CardHeader>
@@ -244,10 +281,16 @@ describe("room on touch", () => {
     const header = classesOf(
       container.querySelector("[data-slot=card-header]") as Element,
     );
-    expect(header).toContain("touch:has-[>[data-slot=card-action]]:min-h-11");
+    expect(header).toContain("touch:has-[a[href],button]:min-h-touch");
+    // Under raymond the frame's top runs through the grown header's middle.
+    expect(
+      classesOf(container.querySelector("[data-slot=card]") as Element),
+    ).toContain(
+      "raymond:touch:has-[>[data-slot=card-header]_:is(a[href],button)]:before:top-[calc(var(--spacing-touch)/2)]",
+    );
     expect(header.filter((c) => /pr-hit/.test(c))).toEqual([]);
     const footer = container.querySelector("[data-slot=card-footer]");
-    expect(classesOf(footer as Element)).toContain("touch:min-h-11");
+    expect(classesOf(footer as Element)).toContain("touch:min-h-touch");
   });
 
   it("makes a Table row with a checkbox a hit area tall, the box in from the table's edge", () => {
@@ -273,14 +316,15 @@ describe("room on touch", () => {
       const cell = screen.getByRole("checkbox", { name }).parentElement;
       expect(classesOf(cell as Element), name).toEqual(
         expect.arrayContaining([
-          "touch:has-[>[role=checkbox],>[role=radio]]:h-11",
-          "touch:first:has-[>[role=checkbox],>[role=radio]]:pl-3.5",
+          "touch:has-[>[role=checkbox],>[role=radio]]:h-touch",
+          "touch:first:has-[>[role=checkbox],>[role=radio]]:pl-[calc((var(--spacing-touch)-1rem)/2)]",
+          "raymond:touch:first:has-[>[role=checkbox],>[role=radio]]:pl-[calc((var(--spacing-touch)-0.8125rem)/2)]",
         ]),
       );
     }
   });
 
-  it("makes a framed set's tabs a hit area tall, and leaves the rest at 40px", () => {
+  it("makes a framed set's tabs the touch spacing tall, and leaves the rest as drawn", () => {
     render(
       <Tabs variant="framed" defaultValue="a">
         <TabsList>
@@ -296,14 +340,14 @@ describe("room on touch", () => {
       </Tabs>,
     );
     expect(classesOf(screen.getByRole("tab", { name: "Framed" }))).toContain(
-      "touch:min-h-11",
+      "touch:min-h-touch",
     );
     expect(
       classesOf(screen.getByRole("tab", { name: "Nested" })),
-    ).not.toContain("touch:min-h-11");
+    ).not.toContain("touch:min-h-touch");
   });
 
-  it("makes a Pane toolbar or titlebar a hit area tall, in every style", () => {
+  it("makes a Pane toolbar or titlebar the touch spacing tall, in every style", () => {
     const { container } = render(
       <>
         <Pane purpose="toolbar" data-testid="toolbar" />
@@ -316,18 +360,21 @@ describe("room on touch", () => {
     ) as Element;
     expect(classesOf(toolbar)).toEqual(
       expect.arrayContaining([
-        "touch:min-h-11",
-        "raymond:touch:min-h-11",
+        "touch:min-h-touch",
+        "raymond:touch:min-h-touch",
         "raymond:touch:py-hit-sm",
       ]),
     );
     expect(classesOf(titlebar)).toEqual(
-      expect.arrayContaining(["touch:min-h-11", "raymond:touch:min-h-11"]),
+      expect.arrayContaining([
+        "touch:min-h-touch",
+        "raymond:touch:min-h-touch",
+      ]),
     );
     expect(classesOf(titlebar)).not.toContain("raymond:touch:pr-[11px]");
   });
 
-  it("makes the media bar a hit area tall, its end buttons' own room at its sides", () => {
+  it("makes the media bar the touch spacing tall, its end buttons' own room at its sides", () => {
     const { container } = render(
       <MediaControls
         playing={false}
@@ -342,7 +389,7 @@ describe("room on touch", () => {
     const bar = classesOf(
       container.querySelector("[data-slot=media-controls]") as Element,
     );
-    expect(bar).toContain("touch:min-h-11");
+    expect(bar).toContain("touch:min-h-touch");
     expect(bar).not.toContain("touch:px-hit-sm");
   });
 
@@ -359,7 +406,7 @@ describe("room on touch", () => {
     expect(classesOf(bar as Element)).not.toContain("touch:pr-hit");
     const slot = screen.getByRole("checkbox").parentElement as Element;
     expect(classesOf(slot)).toEqual(
-      expect.arrayContaining(["size-8", "touch:w-11"]),
+      expect.arrayContaining(["size-8", "touch:w-touch"]),
     );
     expect(
       classesOf(screen.getByRole("button", { name: "Clear selection" })),

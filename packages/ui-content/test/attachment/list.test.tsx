@@ -164,9 +164,13 @@ describe("attachment list rows", () => {
       "https://app.example/view/1/demo.html",
       "https://app.example/files/1/demo.html",
     ]);
-    const download = row.querySelector("a[download]");
-    expect(download?.getAttribute("download")).toBe("demo.html");
-    expect(download?.getAttribute("aria-label")).toBe("download demo.html");
+    const download = row.querySelector("a[download]") as HTMLAnchorElement;
+    expect(download.getAttribute("download")).toBe("demo.html");
+    expect(download.getAttribute("aria-label")).toBe("download demo.html");
+    // An icon button, with its hit area and its room on touch, that is still a link.
+    expect(download.dataset.slot).toBe("button");
+    expect(download.dataset.size).toBe("icon-sm");
+    expect(download.className.split(/\s+/)).toContain("touch:hit-area");
   });
 
   it("points a row viewHref leaves out at url", () => {

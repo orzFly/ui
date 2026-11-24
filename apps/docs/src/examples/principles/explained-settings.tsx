@@ -25,7 +25,7 @@ export function ExplainedSettings() {
       {ROWS.map(({ id, label, on, info }, index) => (
         <div key={id}>
           {index > 0 && <Separator />}
-          <div className="flex items-center justify-between gap-4 py-3 touch:min-h-11">
+          <div className="flex items-center justify-between gap-4 py-3 touch:min-h-touch">
             <div className="flex items-center gap-1">
               <Label htmlFor={id}>{label}</Label>
               {info && (

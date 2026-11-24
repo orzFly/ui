@@ -102,7 +102,7 @@ function SelectionBar({
     >
       {/* As wide as the box's hit area on touch, so it ends where the
           first command's room begins. */}
-      <span className="flex size-8 shrink-0 items-center justify-center touch:w-11">
+      <span className="flex size-8 shrink-0 items-center justify-center touch:w-touch">
         {icon === undefined ? (
           <Checkbox {...box} />
         ) : (

@@ -23,7 +23,7 @@ import { KeptFocusRing } from "../../../examples/accessibility/kept-focus-ring.t
 import { ProfileEmail } from "../../../examples/accessibility/profile-email.tsx";
 import { RemovedFocusRing } from "../../../examples/accessibility/removed-focus-ring.tsx";
 import { ThreadToolbar } from "../../../examples/accessibility/thread-toolbar.tsx";
-import { button, classes, px, same } from "../../../sizes.ts";
+import { button, classes, px, same, touchSpacing } from "../../../sizes.ts";
 
 > **Every action works by keyboard, by touch and through a screen reader, and every word and edge is
 > readable in every theme held to the numbers below.**
@@ -136,10 +136,13 @@ this.
 - **24 × 24px at least** for anything clickable
   ([SC 2.5.8](https://www.w3.org/TR/WCAG22/#target-size-minimum), AA, new in 2.2). A smaller target
   passes only when a 24px circle on its centre touches no other target.
-- **44 × 44px on touch**, the size Apple's
+- **{touchSpacing} × {touchSpacing}px on touch**, around every control and between neighbouring
+  targets. Apple's
   [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/accessibility)
-  ask of every control and [SC 2.5.5](https://www.w3.org/TR/WCAG22/#target-size-enhanced) (AAA)
-  asks of every target.
+  give a control 44 × 44pt by default and 28 × 28pt at the least, and count the room between
+  controls as much as their size; [SC 2.5.5](https://www.w3.org/TR/WCAG22/#target-size-enhanced)
+  (AAA) asks 44 × 44px of every target. @orz/ui takes the room rather than drawing a dense screen
+  larger ([Touch & mobile](/guidelines/platforms/touch-and-mobile/#hit-areas)).
 - **Drags have a click.** Anything done by dragging can also be done with single clicks or taps
   ([SC 2.5.7](https://www.w3.org/TR/WCAG22/#dragging-movements), AA, new in 2.2): a `Slider` moves
   to where its track is clicked, and with the arrow keys; every row of a `Reorder` has a pair of
@@ -148,8 +151,8 @@ this.
 On a mouse, @orz/ui's `Button` is {px(button())}px tall and its `xs` size {px(button("xs"))}px; a `Checkbox` and a
 `RadioGroup` item are {same(px(classes.checkbox), px(classes.radioGroupItem))}px, and a `Switch` {px(classes.switch)}px tall. Those three pass by the spacing exception, so
 keep other targets out of the 24px around them, and pair each with its `Label`: the words then
-toggle it too. On a touch screen the controls grow; the **Pointer** and **Touch** buttons above any
-example on this site show both.
+toggle it too. On a touch screen each control takes a {touchSpacing}px hit area and stands that far
+from the next; the **Pointer** and **Touch** buttons above any example on this site show both.
 
 ## Names and roles
 
@@ -194,7 +197,7 @@ Fix it and save: the toast that confirms it is announced without moving the focu
 |---|---|---|
 | Moving around | Tab and the arrow keys, with the focus ring showing where | VoiceOver or TalkBack swipes through the page in DOM order |
 | Hover | Tooltips appear on hover and on focus | There is no hover; a tooltip's words must also be the control's name |
-| Target | 24px, or the spacing around it | 44px |
+| Target | 24px, or the spacing around it | {touchSpacing}px, and that far apart |
 | Shortcuts | `/` and the menus' own keys | None; every shortcut has a visible control too |
 
 ## Checking a screen

@@ -1,3 +1,4 @@
+import { Button } from "@orz/ui/components/button";
 import { cn } from "@orz/ui/lib/utils";
 import { DownloadIcon, Maximize2Icon } from "lucide-react";
 import {
@@ -90,7 +91,7 @@ export function DocumentCard({
 
   // Under raymond the card is a document: a sunken well in the window colour,
   // its header a band of the face along the top with flat toolbar buttons. On
-  // touch the header is as tall as a hit area, since the card clips.
+  // touch the header is the touch spacing tall, since the card clips.
   return (
     <section
       className={cn(
@@ -98,7 +99,7 @@ export function DocumentCard({
         className,
       )}
     >
-      <div className="flex items-center gap-1 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-ui touch:min-h-11 raymond:border-b-0 raymond:bg-(--3d-face)">
+      <div className="flex items-center gap-1 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-ui touch:min-h-touch raymond:border-b-0 raymond:bg-(--3d-face)">
         {onExpand ? (
           <button
             type="button"
@@ -117,24 +118,31 @@ export function DocumentCard({
         )}
         {headerActions}
         {downloadUrl !== undefined && (
-          <a
-            href={downloadUrl}
-            download={name}
-            aria-label={`download ${name}`}
-            className="rounded-[min(var(--radius-control),8px)] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground raymond:text-foreground raymond:hover:bg-transparent raymond:hover:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:active:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)]"
+          <Button
+            asChild
+            variant="ghost"
+            size="icon-sm"
+            className="text-muted-foreground raymond:text-foreground"
           >
-            <DownloadIcon className="size-3.5" />
-          </a>
+            <a
+              href={downloadUrl}
+              download={name}
+              aria-label={`download ${name}`}
+            >
+              <DownloadIcon className="size-3.5" />
+            </a>
+          </Button>
         )}
         {onExpand && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={onExpand}
             aria-label={`expand ${name}`}
-            className="cursor-pointer rounded-[min(var(--radius-control),8px)] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground raymond:text-foreground raymond:hover:bg-transparent raymond:hover:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:active:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)]"
+            className="text-muted-foreground raymond:text-foreground"
           >
             <Maximize2Icon className="size-3.5" />
-          </button>
+          </Button>
         )}
       </div>
       <div

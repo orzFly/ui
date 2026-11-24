@@ -113,11 +113,16 @@ describe("raymond.css", () => {
 });
 
 describe("raymond touch sizing", () => {
-  // A coarse pointer's sizes are literal touch: utilities (touch-sizing.test
-  // holds the components to them). raymond reaches a control's size only
-  // through the tokens those utilities replace, so nothing here can shrink a
-  // touch target.
-  it("keeps every control and row token at or under the touch sizes", () => {
+  // A coarse pointer draws every part as the style draws it and adds only
+  // the touch spacing, P, which is the finger's: raymond never sets it, and
+  // its controls and rows stay under it, so what a hit area reaches past a
+  // control (`--spacing-hit-*`) is never negative.
+  it("leaves the touch spacing to theme.css", () => {
+    expect(tokenBlock?.declarations).not.toHaveProperty("--spacing-touch");
+    expect(CSS).not.toMatch(/--spacing-(?:touch|field-touch|hit)[\w-]*\s*:/);
+  });
+
+  it("keeps every control and row token under the touch spacing", () => {
     const px = (value: string) => Number.parseFloat(value) * 16;
     const sizes = Object.entries(tokenBlock?.declarations ?? {}).filter(
       ([name]) => /^--spacing-(control|row)/.test(name),
@@ -125,7 +130,7 @@ describe("raymond touch sizing", () => {
     expect(sizes.length).toBe(7);
     for (const [name, value] of sizes) {
       expect(value, name).toMatch(/^[\d.]+rem$/);
-      expect(px(value), name).toBeLessThan(40);
+      expect(px(value), name).toBeLessThan(36);
     }
   });
 });

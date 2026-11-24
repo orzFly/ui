@@ -225,7 +225,7 @@ export function ConfigEditor() {
                 <button
                   type="button"
                   onClick={showProblem}
-                  className="flex items-center gap-1.5 self-stretch text-left text-destructive hover:underline touch:min-h-11"
+                  className="flex items-center gap-1.5 self-stretch text-left text-destructive hover:underline touch:min-h-touch"
                 >
                   <CircleAlertIcon className="size-3.5 shrink-0" />
                   Line {problem.line}: {problem.message}

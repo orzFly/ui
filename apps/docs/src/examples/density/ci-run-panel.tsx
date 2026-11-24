@@ -56,7 +56,7 @@ export function CiRunPanel() {
             <ul>
               {CI_RUN.jobs.map((job) => (
                 <ListItem key={job.id} asChild>
-                  <li className="flex min-h-row items-center gap-2 text-ui touch:min-h-11">
+                  <li className="flex min-h-row items-center gap-2 text-ui touch:min-h-touch">
                     {job.status === "failed" ? (
                       <CircleXIcon
                         aria-label="failed"

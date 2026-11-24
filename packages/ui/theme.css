@@ -52,14 +52,17 @@
   }
 }
 
-/* A 44px hit area around a control drawn smaller, for `touch:hit-area`. It is
-   a transparent ::after, so the drawn size stays as it is. No two small
-   controls share one: an icon button reserves the rest of its 44px beside it
-   as margin (the tokens below), so two side by side stand 44px apart, centre
-   to centre, and the DOM order never decides a tap. A control and its own
-   label, which do the same thing, may overlap. Positioning is the element's
-   own (`relative` in its base classes): set here, under touch: it would beat
-   a caller's `absolute`.
+/* A hit area of P, the touch spacing (`--spacing-touch`), around a control
+   drawn smaller, for `touch:hit-area`. It is a transparent ::after, so the
+   drawn size stays as it is. No two small controls share one: an icon button
+   reserves the rest of P beside it as margin (the tokens below), so two side
+   by side stand P apart, centre to centre, and the DOM order never decides a
+   tap. Three cases may overlap: a control and its own label, which do the
+   same thing; a small control beside a target at least P across in the
+   direction they neighbour (a row's link, a field), whose strip it may take
+   while that target keeps at least P of its own; and markers placed on a
+   track by their data. Positioning is the element's own (`relative` in its
+   base classes): set here, under touch: it would beat a caller's `absolute`.
    Layout containment makes what spills past the control ink overflow, which a
    scroller does not grow by: without it, a control at a scroller's edge made
    it scroll by the overhang, as a checkbox in a table's last row did. It also
@@ -76,24 +79,37 @@
     left: 50%;
     width: 100%;
     height: 100%;
-    min-width: 44px;
-    min-height: 44px;
+    min-width: var(--spacing-touch);
+    min-height: var(--spacing-touch);
     translate: -50% -50%;
   }
 }
 
-/* How far `hit-area` reaches past a control of each size on every side. On
-   touch an icon button of that size takes it as inline margin, which keeps a
-   neighbour's hit area off its own and is the room a box that clips the
-   button needs between its edge and the button. A box leaves that room
-   itself only above and below a control, and beside a control that reserves
-   none (a checkbox, a chip). Inline, so each reads the size of the style it
-   is drawn in. */
+/* How far `hit-area` reaches past a control of each size on every side: what
+   the control leaves of P. On touch an icon button of that size takes it as
+   inline margin, which keeps a neighbour's hit area off its own and is the
+   room a box that clips the button needs between its edge and the button. A
+   box leaves that room itself only above and below a control, and beside a
+   control that reserves none (a checkbox, a chip). Inline, so each reads the
+   size of the style it is drawn in.
+   `field-touch` is a field's height on touch: 16px text, which iOS Safari
+   needs not to zoom the page on focus, takes 32px, and a style whose
+   controls are taller keeps its own. */
 @theme inline {
-  --spacing-hit-xs: calc((44px - var(--spacing-control-xs)) / 2);
-  --spacing-hit-sm: calc((44px - var(--spacing-control-sm)) / 2);
-  --spacing-hit: calc((44px - var(--spacing-control)) / 2);
-  --spacing-hit-lg: calc((44px - var(--spacing-control-lg)) / 2);
+  --spacing-hit-xs: calc(
+    (var(--spacing-touch) - var(--spacing-control-xs)) /
+    2
+  );
+  --spacing-hit-sm: calc(
+    (var(--spacing-touch) - var(--spacing-control-sm)) /
+    2
+  );
+  --spacing-hit: calc((var(--spacing-touch) - var(--spacing-control)) / 2);
+  --spacing-hit-lg: calc(
+    (var(--spacing-touch) - var(--spacing-control-lg)) /
+    2
+  );
+  --spacing-field-touch: max(var(--spacing-control), 2rem);
 }
 
 /* Style tokens: how the components are drawn, their shape, type, depth,
@@ -103,9 +119,15 @@
    stylesheet or an app's own CSS to read. The values are the default
    style's. A smaller part caps a token rather than taking one of its own
    (`rounded-[min(var(--radius-control),8px)]`), so it follows the token down.
-   `touch:` sizes stay literal: a variant's rule follows the plain ones, so
-   they win under every style. */
+   Under `touch:` nothing is drawn larger: a part keeps its style's look, and
+   only the rows, strips and fields a finger needs are sized, by the touch
+   tokens. */
 @theme static {
+  /* P, the touch spacing: the side of a control's hit area, the height of a
+     row or a strip tapped with a finger, and the least distance between the
+     centres of two neighbouring targets. It measures the finger, not the
+     style, so it is in px and no style's stylesheet sets it. */
+  --spacing-touch: 36px;
   --spacing-control-xs: 1.5rem;
   --spacing-control-sm: 1.5rem;
   --spacing-control: 1.75rem;

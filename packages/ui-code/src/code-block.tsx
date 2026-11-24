@@ -492,12 +492,12 @@ const SQUARE_SEPARATOR_CSS = `
  * `var(--patch-header-height)` tall, which is this with a pointer.
  */
 const PATCH_HEADER_HEIGHT = 36;
-// On touch a header row is a hit area tall: the box the diffs scroll in
+// On touch a header row is the touch spacing tall: the box the diffs scroll in
 // clips a shorter row's controls at its top and bottom, and the row pinned
 // to its top. Literal, for Tailwind to find; pierre reserves the height
 // without measuring, so PatchFiles reads it back off its box.
 const PATCH_HEADER_ROOM =
-  "[--patch-header-height:36px] touch:[--patch-header-height:44px]";
+  "[--patch-header-height:36px] touch:[--patch-header-height:var(--spacing-touch)]";
 
 function patchOptions(
   theme: SyntaxTheme,

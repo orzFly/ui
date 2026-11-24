@@ -36,7 +36,13 @@ export function HomeModule({
 }) {
   return (
     <Card className={cn("min-w-0 gap-0 py-0", className)}>
-      <CardHeader icon={icon}>
+      {/* A long title wraps the action under the API links. On touch the two
+          lines stand apart by what a line of links and a small button leave
+          of the touch spacing, so a link and the button share no tap. */}
+      <CardHeader
+        icon={icon}
+        className="touch:gap-y-[calc(var(--spacing-touch)-(var(--text-ui-sm--line-height)+var(--spacing-control-xs))/2)]"
+      >
         <CardTitle>
           <h2>{title}</h2>
         </CardTitle>

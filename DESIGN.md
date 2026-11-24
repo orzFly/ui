@@ -146,13 +146,13 @@ The default style draws on contemporary Japanese high-density web pages: a brigh
 
 One strong colour, ai, carries meaning: where you are (the current tab, focus) and what you can do (the primary button, links, the marker's icon). Everything else is ink on white or neutrals pulled toward ai's hue (oklch h 258). State never rests on a fill alone: an ink bar or an ai edge says it in a second channel.
 
-Density is for the pointer only. Under a coarse pointer, controls grow to 40px and 44px and field text to 16px, and those sizes outrank the style. Overlays fade in 100ms without moving, and reduced motion strips any travel a style adds.
+Density holds under every pointer. A coarse one draws nothing larger: it adds a 36px hit area around each control and keeps neighbouring targets 36px apart, rows and strips a finger taps grow to 36px, and fields take 16px text at 32px; that room outranks the style. Overlays fade in 100ms without moving, and reduced motion strips any travel a style adds.
 
 **Key Characteristics:**
 - White ground, ink text, one accent (ai), neutrals tinted to hue 258.
 - Modules 8px apart on the white ground, each in its own 1px rule; square corners on every surface.
 - Ruled header strip with a 16px marker square heading each module.
-- 13px body text, 28px controls and rows with a pointer; 40/44px and 16px field text under touch.
+- 13px body text, 28px controls and rows under every pointer; under touch, 36px hit areas and spacing, 36px tapped rows, and 16px field text at 32px.
 - State cues in two channels: fill plus a 2px ink tick or a 2px ai top edge.
 
 ## Colors
@@ -204,7 +204,7 @@ A near-monochrome ink-on-white palette with a single deep indigo accent; dark mo
 
 Modules stand a module gap (8px) apart, each inside its own 1px border, and the same gap pads the region they fill; `ModuleGrid` lays them out. A card pads 12px (8px at `size="sm"`); its header strip pads 2px by 8px with a 28px minimum height and an 8px gap after the marker. Rows run 28px (menus, lists, table cells and heads), 22px for dense data; controls 24/28/32px; chips 20px.
 
-Under a coarse pointer (`touch:`), controls rise to 40px (button, tab, input) and 44px (large button, menu items), and a smaller control gets a transparent 44px hit area that leaves its drawn size untouched. No two small controls share one: an icon button reserves the rest of its 44px beside it as margin (the `hit-xs`, `hit-sm`, `hit` and `hit-lg` spacing tokens), so a row or toolbar of them stands 44px apart, centre to centre; a chip keeps the room above and below, and a list row that holds a control is 44px tall. A box that clips keeps those hit areas whole: a strip of small controls along its edge (a card header with an action, a viewer's bar, a toolbar or titlebar) is 44px tall on touch, and an icon button's own room keeps it in from the side. A `data-pointer` ancestor forces either branch.
+Under a coarse pointer (`touch:`) every part is drawn as the style draws it for a mouse; the touch spacing P (`--spacing-touch`, 36px, the same in every style) is all that changes. Each control gets a transparent P × P hit area that leaves its drawn size untouched, and no two small controls share one: an icon button reserves the rest of P beside it as margin (the `hit-xs`, `hit-sm`, `hit` and `hit-lg` spacing tokens), so a row or toolbar of them stands P apart, centre to centre; a chip and an `InfoPopover`'s (i) keep the room above and below; a short text button, a segment and a tab are at least P wide. A menu item, a tree row and a list row that holds a control or is one are P tall. A box that clips keeps those hit areas whole: a strip of small controls along its edge (a card header that holds an action or a link, a viewer's bar, a toolbar or titlebar, a framed tab bar) is P tall on touch, and an icon button's own room keeps it in from the side. Fields take 16px text, at `--spacing-field-touch` (32px, or the style's control height if taller), and a default-size select trigger matches them. A `data-pointer` ancestor forces either branch.
 
 ## Elevation & Depth
 
@@ -220,7 +220,7 @@ Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and c
 ## Components
 
 ### Buttons
-- **Shape:** gently squared (2px), 28px high, 10px side padding, 13px medium text; 40px under touch (44px for large).
+- **Shape:** gently squared (2px), 28px high, 10px side padding, 13px medium text; the same under touch, with a 36px hit area, and at least 36px wide.
 - **Primary:** ai fill, white text; hover drops the fill to 80%.
 - **Outline:** field-edge border on ground; hover fills with strip.
 - **Secondary / Ghost:** strip fill, or none until hover; ghost hovers to strip.
@@ -238,7 +238,7 @@ Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and c
 - **Internal Padding:** 12px, 8px small.
 
 ### Inputs / Fields
-- **Style:** 1px field-edge border, transparent fill, 2px radius, 28px high (40px under touch).
+- **Style:** 1px field-edge border, transparent fill, 2px radius, 28px high (32px with 16px text under touch).
 - **Focus:** 2px solid ai outline at 2px offset.
 - **Error / Disabled:** destructive border with a 3px 20% destructive ring; disabled at 50% opacity.
 
@@ -257,7 +257,7 @@ The 16px square that heads a card header, a viewer's toolbar, and a dialog or sh
 - **Do** head every module with the ruled strip and the 16px marker square.
 - **Do** lay modules out in a `ModuleGrid`, and keep figures that read as one inside one module.
 - **Do** pair every state fill with a second cue: the 2px ink tick for rows, the 2px ai top edge for the current tab.
-- **Do** keep touch sizes (40px, 44px hit areas) and 16px field text under a coarse pointer, whatever the style.
+- **Do** keep the touch room (36px hit areas, 36px between targets, 36px tapped rows) and 16px field text under a coarse pointer, whatever the style; draw nothing larger for it.
 - **Do** read sizes and radii from the style tokens (`--spacing-control`, `--radius-surface`), capping a smaller part to the token rather than adding one.
 - **Do** keep overlays at a 100ms fade with no travel; under reduced motion, translate, scale, rotate and blur reset.
 

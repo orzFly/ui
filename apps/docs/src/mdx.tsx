@@ -124,7 +124,7 @@ export function Command({ command }: { command: string }) {
   return (
     // A line too long for its box scrolls sideways, and the button stays in view beside it. On
     // touch a hit area tall, so the copy buttons of install lines one above the other share no tap.
-    <span className="inline-flex max-w-full items-center gap-0.5 touch:min-h-11">
+    <span className="inline-flex max-w-full items-center gap-0.5 touch:min-h-touch">
       <span className="min-w-0 overflow-x-auto whitespace-nowrap">
         <InlineCode>{command}</InlineCode>
       </span>

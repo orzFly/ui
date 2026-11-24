@@ -38,7 +38,7 @@ function JobList({
                   type="button"
                   aria-current={job.id === selected ? "true" : undefined}
                   onClick={() => onSelect(job.id)}
-                  className="flex min-h-8 w-full items-center gap-2 px-2.5 text-left text-ui touch:min-h-11"
+                  className="flex min-h-8 w-full items-center gap-2 px-2.5 text-left text-ui touch:min-h-touch"
                 >
                   <StatusIcon status={job.status} />
                   <span className="flex-1">{job.name}</span>
@@ -62,7 +62,6 @@ function RecordingButton() {
     <Button
       variant="outline"
       size="sm"
-      className="touch:h-10"
       onClick={() => viewer?.show(runFiles().cast)}
     >
       <PlayIcon />

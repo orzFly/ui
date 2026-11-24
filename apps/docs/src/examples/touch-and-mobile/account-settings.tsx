@@ -66,7 +66,7 @@ export function AccountSettings() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2 touch:min-h-11">
+          <div className="flex items-center gap-2 touch:min-h-touch">
             <Checkbox
               id="touch-show-email"
               defaultChecked={PROFILE.showEmail}

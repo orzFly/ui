@@ -205,7 +205,7 @@ export function TaskTable({
                 if (target.closest("a, button, [role=checkbox]")) return;
                 actions.onOpen(task.id);
               }}
-              className="cursor-default touch:h-14"
+              className="cursor-default"
             >
               <TableCell className="pl-4">
                 <Checkbox

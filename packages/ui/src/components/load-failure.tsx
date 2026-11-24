@@ -49,7 +49,7 @@ function FailureRow({
       // the line is a hit area tall, as a list row that holds a control is.
       className={cn(
         textClassName,
-        "flex flex-wrap items-baseline gap-x-2 gap-y-1 touch:min-h-11 touch:items-center",
+        "flex flex-wrap items-baseline gap-x-2 gap-y-1 touch:min-h-touch touch:items-center",
         size === "xs" ? "text-ui-sm" : null,
         className,
       )}

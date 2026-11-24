@@ -38,7 +38,7 @@ function NoteRow({
           type="button"
           aria-current={selected ? "true" : undefined}
           onClick={onOpen}
-          className="grid w-full grid-cols-[1fr_auto] items-baseline gap-x-2 px-2.5 py-2 text-left touch:min-h-11"
+          className="grid w-full grid-cols-[1fr_auto] items-baseline gap-x-2 px-2.5 py-2 text-left touch:min-h-touch"
         >
           <span className="truncate font-medium text-ui">
             {titleOf(note.body)}
@@ -95,7 +95,7 @@ export function NoteList({
         edge="bottom"
         className="grid shrink-0 gap-2 p-2 touch:pt-hit-sm"
       >
-        <div className="flex items-center gap-2 touch:min-h-11">
+        <div className="flex items-center gap-2 touch:min-h-touch">
           <h2 className="flex-1 px-1 font-semibold">Notes</h2>
           <Button size="sm" variant="outline" onClick={onNew}>
             <PlusIcon />

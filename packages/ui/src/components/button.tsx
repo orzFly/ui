@@ -4,16 +4,19 @@ import type * as React from "react";
 
 import { cn } from "../lib/utils.ts";
 
-// On touch an icon button keeps its drawn size and reserves the rest of its
-// 44px as margin, half on each side (theme.css, `hit-area`), so a row or a
-// toolbar of them needs no touch spacing of its own. Only the room's value
+// On touch a button keeps the size its style draws it at; only its hit area
+// grows, to the touch spacing P (theme.css, `hit-area`). An icon button
+// reserves the rest of P as margin, half on each side, so a row or a toolbar
+// of them needs no touch spacing of its own. Only the room's value
 // (`--hit-room`) is set on touch, and the margin reads it on any pointer, so
 // a caller's margin, which places the button (`ml-auto` pushing it to a
 // bar's end), replaces the room on that side rather than losing to a touch:
 // rule. In a button group the faces join, and margin would part them: there
-// the button is drawn 44px wide instead.
+// the button is drawn P wide instead. A text button's width is its words',
+// which CSS cannot read to leave the rest of P beside it, so a short one is
+// drawn P wide.
 const ICON_ROOM =
-  "mx-(--hit-room) in-data-[slot=button-group]:mx-0 in-data-[slot=button-group]:touch:min-w-11";
+  "mx-(--hit-room) in-data-[slot=button-group]:mx-0 in-data-[slot=button-group]:touch:min-w-touch";
 
 // Under raymond a push button's focus rectangle sits inside its bevel, and
 // the focused button takes the black frame of the window's default; in a
@@ -59,10 +62,10 @@ const buttonVariants = cva(
       },
       size: {
         default:
-          "h-control gap-1.5 px-2.5 touch:h-10 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-control-xs gap-1 rounded-[min(var(--radius-control),8px)] px-2 text-ui-sm in-data-[slot=button-group]:rounded-control has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-control-sm gap-1 rounded-[min(var(--radius-control),8px)] px-2.5 text-ui-sm in-data-[slot=button-group]:rounded-control has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-control-lg gap-1.5 px-2.5 touch:h-11 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+          "h-control gap-1.5 px-2.5 touch:min-w-touch has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        xs: "h-control-xs gap-1 touch:min-w-touch rounded-[min(var(--radius-control),8px)] px-2 text-ui-sm in-data-[slot=button-group]:rounded-control has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-control-sm gap-1 touch:min-w-touch rounded-[min(var(--radius-control),8px)] px-2.5 text-ui-sm in-data-[slot=button-group]:rounded-control has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-control-lg gap-1.5 px-2.5 touch:min-w-touch has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         icon: `size-control touch:[--hit-room:var(--spacing-hit)] ${ICON_ROOM}`,
         "icon-xs": `size-control-xs rounded-[min(var(--radius-control),8px)] in-data-[slot=button-group]:rounded-control [&_svg:not([class*='size-'])]:size-3 touch:[--hit-room:var(--spacing-hit-xs)] ${ICON_ROOM}`,
         "icon-sm": `size-control-sm rounded-[min(var(--radius-control),8px)] in-data-[slot=button-group]:rounded-control touch:[--hit-room:var(--spacing-hit-sm)] ${ICON_ROOM}`,
@@ -92,10 +95,12 @@ function Button({
   /**
    * The height, one of the style's control sizes (`xs`, `sm`, `default`,
    * `lg`); an `icon` size is the square of the same height, for a button
-   * that holds only an icon. On a coarse pointer an icon size keeps its
-   * drawn size and reserves the rest of its 44px beside it as margin, so two
-   * of them side by side never share a tap; a margin given in `className`
-   * replaces it on its side.
+   * that holds only an icon. On a coarse pointer every size keeps its drawn
+   * height, with a hit area the touch spacing tall around it. An icon size
+   * reserves the rest of that spacing beside it as margin, so two of them
+   * side by side never share a tap; a margin given in `className` replaces
+   * it on its side. A text size is drawn at least that spacing wide, so a
+   * short label shares no tap with its neighbour either.
    */
   size?: VariantProps<typeof buttonVariants>["size"];
   /** Render the single child element (an `<a>`, a router's link) as the button. */

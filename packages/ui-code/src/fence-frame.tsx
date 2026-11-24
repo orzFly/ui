@@ -174,7 +174,7 @@ export function FenceFrame({
           data-slot="fence-head"
           // On touch as tall as a hit area, since the frame clips; its
           // buttons' own margins leave the room at its end.
-          className="flex items-center gap-2 border-b bg-muted py-1 pr-1.5 pl-2 text-ui-sm text-muted-foreground select-none touch:min-h-11 raymond:border-b-0 raymond:bg-(--3d-face)"
+          className="flex items-center gap-2 border-b bg-muted py-1 pr-1.5 pl-2 text-ui-sm text-muted-foreground select-none touch:min-h-touch raymond:border-b-0 raymond:bg-(--3d-face)"
         >
           {leading}
           {title !== undefined &&

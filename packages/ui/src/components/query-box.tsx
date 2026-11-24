@@ -63,7 +63,7 @@ type BoxRow<R> =
  * `<a>` and `<div>` rows, which are block already, it changes nothing.
  */
 const OPTION =
-  "flex w-full items-center gap-2 rounded-item px-2 py-1.5 text-ui min-h-row touch:min-h-11 raymond:py-0.5 raymond:touch:py-1.5";
+  "flex w-full items-center gap-2 rounded-item px-2 py-1.5 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:touch:py-1.5";
 
 /** Nothing highlighted. Enter then submits what was typed, not an offer. */
 const NONE = -1;

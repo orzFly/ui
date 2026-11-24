@@ -26,6 +26,7 @@ export const meta = {
 };
 
 import { StyleSwitch } from "../../../examples/styles/style-switch.tsx";
+import { touchSpacing } from "../../../sizes.ts";
 
 **Leave how the components are drawn to the style, and build every surface of your own from the
 same components and tokens, so a style the user picks redraws it too.** A theme says what colour
@@ -61,9 +62,10 @@ These hold under every style, and outrank it:
 
 - The components' structure, props and behaviour. Code written against one style runs under all of
   them.
-- The sizes on a coarse pointer: 40px and 44px controls, a 44px hit area around anything drawn
-  smaller, and 16px text in a field, so a phone does not zoom. A style sizes for the mouse only
-  ([Density](/guidelines/foundations/density/)).
+- What a coarse pointer adds: a {touchSpacing}px hit area around every control, neighbouring
+  targets that far apart, and 16px text in a field, so a phone does not zoom. How a part is
+  drawn stays the style's under either pointer
+  ([Touch & mobile](/guidelines/platforms/touch-and-mobile/#hit-areas)).
 - The contrast floors: 4.5:1 for text, 3:1 for an edge a control is found by and for a state cue.
   Every palette a style ships is held to them
   ([Accessibility](/guidelines/content/accessibility/#contrast)).

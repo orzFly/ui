@@ -61,7 +61,7 @@ const THEME = readFileSync(join(import.meta.dirname, "../theme.css"), "utf8");
 
 const classesOf = (el: Element) => el.className.split(/\s+/);
 
-/** The drawn box keeps its size; touch only adds the 44px ::after. */
+/** The drawn box keeps its size; touch only adds the ::after of the touch spacing. */
 function expectHitAreaOnly(el: Element) {
   const classes = classesOf(el);
   expect(classes).toContain("relative");
@@ -88,12 +88,12 @@ describe("theme.css touch variant", () => {
     expect(block).toContain('&:where([data-pointer="fine"] *)');
   });
 
-  it("defines hit-area as a centred ::after of at least 44px", () => {
+  it("defines hit-area as a centred ::after of at least the touch spacing", () => {
     const start = THEME.indexOf("@utility hit-area");
     const block = THEME.slice(start, THEME.indexOf("\n}", start));
     expect(block).toContain("&::after");
-    expect(block).toContain("min-width: 44px");
-    expect(block).toContain("min-height: 44px");
+    expect(block).toContain("min-width: var(--spacing-touch)");
+    expect(block).toContain("min-height: var(--spacing-touch)");
     expect(block).not.toContain("position: relative");
   });
 
@@ -106,27 +106,27 @@ describe("theme.css touch variant", () => {
 });
 
 describe("touch sizes", () => {
-  it("Button default and lg grow, to 40px and 44px, with a hit area", () => {
-    render(
-      <>
-        <Button>Default</Button>
-        <Button size="lg">Large</Button>
-      </>,
-    );
-    const button = screen.getByRole("button", { name: "Default" });
-    expect(classesOf(button)).toEqual(
-      expect.arrayContaining(["relative", "touch:hit-area", "touch:h-10"]),
-    );
-    expect(classesOf(screen.getByRole("button", { name: "Large" }))).toEqual(
-      expect.arrayContaining(["touch:hit-area", "touch:h-11"]),
-    );
+  it.each([
+    "default",
+    "xs",
+    "sm",
+    "lg",
+    "icon",
+    "icon-xs",
+    "icon-sm",
+    "icon-lg",
+  ] as const)("Button %s keeps its drawn height", (size) => {
+    render(<Button size={size}>B</Button>);
+    expectHitAreaOnly(screen.getByRole("button"));
   });
 
-  it.each(["xs", "sm", "icon", "icon-xs", "icon-sm", "icon-lg"] as const)(
-    "Button %s keeps its drawn size",
+  it.each(["default", "xs", "sm", "lg"] as const)(
+    "Button %s, as wide as its words, is drawn at least the touch spacing wide",
     (size) => {
-      render(<Button size={size}>B</Button>);
-      expectHitAreaOnly(screen.getByRole("button"));
+      render(<Button size={size}>OK</Button>);
+      expect(classesOf(screen.getByRole("button"))).toContain(
+        "touch:min-w-touch",
+      );
     },
   );
 
@@ -152,40 +152,45 @@ describe("touch sizes", () => {
     expectHitAreaOnly(screen.getByRole("radio"));
   });
 
-  it("RadioGroup spaces its rows 44px apart in every style, so hit areas do not overlap", () => {
+  it("RadioGroup spaces its rows the touch spacing apart in every style, so hit areas do not overlap", () => {
     render(
       <RadioGroup aria-label="R">
         <RadioGroupItem value="a" aria-label="A" />
       </RadioGroup>,
     );
-    // 16px radios 28px apart; raymond's 12px ones 32px apart.
+    // What a 16px radio leaves of the spacing; under raymond a 12px one.
     expect(classesOf(screen.getByRole("radiogroup"))).toEqual(
-      expect.arrayContaining(["touch:gap-7", "raymond:touch:gap-8"]),
+      expect.arrayContaining([
+        "touch:gap-[calc(var(--spacing-touch)-1rem)]",
+        "raymond:touch:gap-[calc(var(--spacing-touch)-0.75rem)]",
+      ]),
     );
   });
 
-  it("Input draws 40px and keeps 16px text, so iOS does not zoom", () => {
+  it("Input draws its 16px text, which iOS does not zoom, in a field tall enough for it", () => {
     render(<Input aria-label="I" />);
     expect(classesOf(screen.getByRole("textbox"))).toEqual(
-      expect.arrayContaining(["touch:h-10", "touch:text-base"]),
+      expect.arrayContaining(["touch:h-field-touch", "touch:text-base"]),
     );
   });
 
-  it("NumberInput draws 40px with 16px text, its step buttons side by side and 40px wide", () => {
+  it("NumberInput draws a field's height with 16px text, its step buttons side by side and the touch spacing wide", () => {
     const { container } = render(<NumberInput aria-label="N" />);
     expect(
       classesOf(
         container.querySelector('[data-slot="number-input"]') as Element,
       ),
-    ).toEqual(expect.arrayContaining(["touch:h-10", "touch:text-base"]));
+    ).toEqual(
+      expect.arrayContaining(["touch:h-field-touch", "touch:text-base"]),
+    );
     expect(
       classesOf(
         container.querySelector('[data-slot="number-input-steps"]') as Element,
       ),
     ).toContain("touch:flex-row-reverse");
     for (const name of ["Increase", "Decrease"]) {
-      expect(classesOf(screen.getByRole("button", { name }))).toContain(
-        "touch:w-10",
+      expect(classesOf(screen.getByRole("button", { name }))).toEqual(
+        expect.arrayContaining(["touch:w-touch", "raymond:touch:w-touch"]),
       );
     }
   });
@@ -195,7 +200,7 @@ describe("touch sizes", () => {
     expect(classesOf(screen.getByRole("textbox"))).toContain("touch:text-base");
   });
 
-  it("HighlightedInput draws 40px, with 16px text in both layers", () => {
+  it("HighlightedInput draws a field's height, with 16px text in both layers", () => {
     const { container } = render(
       <HighlightedInput
         aria-label="H"
@@ -205,14 +210,14 @@ describe("touch sizes", () => {
       />,
     );
     const box = container.firstElementChild as Element;
-    expect(classesOf(box)).toContain("touch:h-10");
+    expect(classesOf(box)).toContain("touch:h-field-touch");
     const mirror = box.querySelector("[aria-hidden]") as Element;
     for (const layer of [mirror, screen.getByRole("textbox")]) {
       expect(classesOf(layer)).toContain("touch:text-base");
     }
   });
 
-  it("QueryBox suggestion rows are 44px rows", () => {
+  it("QueryBox suggestion rows are the touch spacing tall", () => {
     render(
       <QueryBox
         schema={todouSchema}
@@ -227,10 +232,12 @@ describe("touch sizes", () => {
     act(() => screen.getByLabelText("Search").focus());
     const rows = screen.getAllByRole("option");
     expect(rows.length).toBeGreaterThan(1);
-    for (const row of rows) expect(classesOf(row)).toContain("touch:min-h-11");
+    for (const row of rows) {
+      expect(classesOf(row)).toContain("touch:min-h-touch");
+    }
   });
 
-  it("FilterMenu rows are 44px rows; its search field keeps 16px text", () => {
+  it("FilterMenu rows are the touch spacing tall; its search field keeps 16px text", () => {
     const sections: FilterMenuSection<{ id: string }>[] = [
       { id: "s", label: "S", rows: [{ id: "a" }, { id: "b" }] },
     ];
@@ -249,14 +256,16 @@ describe("touch sizes", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Pick" }));
     expect(classesOf(screen.getByRole("combobox", { name: "Filter" }))).toEqual(
-      expect.arrayContaining(["touch:h-10", "touch:text-base"]),
+      expect.arrayContaining(["touch:h-field-touch", "touch:text-base"]),
     );
     const rows = screen.getAllByRole("option");
     expect(rows).toHaveLength(2);
-    for (const row of rows) expect(classesOf(row)).toContain("touch:min-h-11");
+    for (const row of rows) {
+      expect(classesOf(row)).toContain("touch:min-h-touch");
+    }
   });
 
-  it("Select trigger grows at the default size; its items are 44px rows", () => {
+  it("Select trigger takes a field's height at the default size; its items are rows the touch spacing tall", () => {
     render(
       <Select open defaultValue="a">
         <SelectTrigger>
@@ -272,14 +281,14 @@ describe("touch sizes", () => {
       expect.arrayContaining([
         "relative",
         "touch:hit-area",
-        "touch:data-[size=default]:h-10",
+        "touch:data-[size=default]:h-field-touch",
       ]),
     );
     const item = document.querySelector('[data-slot="select-item"]');
-    expect(classesOf(item as Element)).toContain("touch:min-h-11");
+    expect(classesOf(item as Element)).toContain("touch:min-h-touch");
   });
 
-  it("DropdownMenu items of every kind are 44px rows", () => {
+  it("DropdownMenu items of every kind are the touch spacing tall", () => {
     render(
       <DropdownMenu open>
         <DropdownMenuTrigger>Open</DropdownMenuTrigger>
@@ -302,11 +311,11 @@ describe("touch sizes", () => {
       "dropdown-menu-sub-trigger",
     ]) {
       const row = document.querySelector(`[data-slot="${slot}"]`);
-      expect(classesOf(row as Element), slot).toContain("touch:min-h-11");
+      expect(classesOf(row as Element), slot).toContain("touch:min-h-touch");
     }
   });
 
-  it("Tabs triggers draw 40px with a 44px hit area", () => {
+  it("Tabs triggers keep their drawn height, with a hit area", () => {
     render(
       <Tabs defaultValue="a">
         <TabsList>
@@ -314,12 +323,10 @@ describe("touch sizes", () => {
         </TabsList>
       </Tabs>,
     );
-    expect(classesOf(screen.getByRole("tab"))).toEqual(
-      expect.arrayContaining(["relative", "touch:hit-area", "touch:min-h-10"]),
-    );
+    expectHitAreaOnly(screen.getByRole("tab"));
   });
 
-  it("TabNav links draw 40px with a 44px hit area", () => {
+  it("TabNav links fill a row the touch spacing tall, with a hit area", () => {
     render(
       <TabNav aria-label="Sections">
         <TabNavLink href="#a" current>
@@ -327,12 +334,13 @@ describe("touch sizes", () => {
         </TabNavLink>
       </TabNav>,
     );
-    expect(classesOf(screen.getByRole("link"))).toEqual(
-      expect.arrayContaining(["relative", "touch:hit-area", "touch:min-h-10"]),
+    expectHitAreaOnly(screen.getByRole("link"));
+    expect(classesOf(screen.getByRole("navigation"))).toContain(
+      "touch:min-h-touch",
     );
   });
 
-  it("NavList links are 44px rows", () => {
+  it("NavList links are the touch spacing tall", () => {
     render(
       <NavList>
         <NavListItem>
@@ -340,10 +348,10 @@ describe("touch sizes", () => {
         </NavListItem>
       </NavList>,
     );
-    expect(classesOf(screen.getByRole("link"))).toContain("touch:min-h-11");
+    expect(classesOf(screen.getByRole("link"))).toContain("touch:min-h-touch");
   });
 
-  it("a NavList group's toggle is a 44px square in its row, a hit area in its heading", () => {
+  it("a NavList group's toggle is a square of the touch spacing in its row, a hit area in its heading", () => {
     render(
       <>
         <NavListGroup>
@@ -362,7 +370,7 @@ describe("touch sizes", () => {
       </>,
     );
     const [inRow, inHeading] = screen.getAllByRole("button");
-    expect(classesOf(inRow)).toContain("touch:w-11");
+    expect(classesOf(inRow)).toContain("touch:w-touch");
     expectHitAreaOnly(inHeading);
   });
 
@@ -383,7 +391,7 @@ describe("touch sizes", () => {
     for (const thumb of screen.getAllByRole("slider")) expectHitAreaOnly(thumb);
   });
 
-  it("ColorPicker swatches widen to six a row, with a hit area", () => {
+  it("ColorPicker swatches widen to six a row, with a hit area, and its tracks are bars the touch spacing tall", () => {
     render(
       <ColorPicker
         value="#3b82f6"
@@ -398,9 +406,13 @@ describe("touch sizes", () => {
     expect(classesOf(swatch.parentElement as Element)).toEqual(
       expect.arrayContaining(["touch:grid-cols-6", "touch:gap-2"]),
     );
+    // The bar, not the drawn track: the thumb's slider role is on its child.
+    const hue = screen.getByRole("slider", { name: "Hue" });
+    const bar = hue.closest(".touch-none:not([role])");
+    expect(classesOf(bar as Element)).toContain("touch:h-touch");
   });
 
-  it("Reorder rows are 44px, the handle 44px wide, the move buttons 44px apart", () => {
+  it("Reorder rows are the touch spacing tall, the handle as wide, the move buttons as far apart", () => {
     const { container } = render(
       <Reorder items={["a", "b"]} onMove={() => {}}>
         {["a", "b"].map((id) => (
@@ -415,13 +427,13 @@ describe("touch sizes", () => {
       container.querySelector(`[data-slot="${name}"]`) as Element;
     // A table row takes a height, which it holds as its least.
     expect(classesOf(slot("reorder-item"))).toEqual(
-      expect.arrayContaining(["touch:min-h-11", "touch:[&:is(tr)]:h-11"]),
+      expect.arrayContaining(["touch:min-h-touch", "touch:[&:is(tr)]:h-touch"]),
     );
     expect(classesOf(slot("reorder-handle"))).toEqual(
-      expect.arrayContaining(["touch:w-11", "raymond:touch:w-11"]),
+      expect.arrayContaining(["touch:w-touch", "raymond:touch:w-touch"]),
     );
-    // Centres at least 44px apart, whatever the style's button size: each
-    // button keeps the rest of its 44px beside it, so the pair needs no
+    // Centres at least the touch spacing apart, whatever the style's button
+    // size: each button keeps the rest of it beside it, so the pair needs no
     // touch gap of its own.
     expect(
       classesOf(slot("reorder-buttons")).filter((c) => c.includes("touch:")),

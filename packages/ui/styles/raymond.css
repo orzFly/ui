@@ -50,8 +50,9 @@
     --info-foreground: var(--popover-foreground);
     --link: var(--primary);
 
-    /* 23px push buttons at a fine pointer; a coarse one grows every control
-       to the literal touch: sizes, which no token reaches. */
+    /* 23px push buttons, under every pointer: a coarse one draws them the
+       same and adds only the touch spacing, which is the finger's and not
+       set here. */
     --spacing-control-xs: 1.125rem;
     --spacing-control-sm: 1.3125rem;
     --spacing-control: 1.4375rem;

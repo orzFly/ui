@@ -136,8 +136,8 @@ function NumberInput({
         // arrow a small black triangle that moves a pixel while held, and
         // embossed grey when it can go no further.
         className={cn(
-          "relative flex w-6 flex-1 items-center justify-center text-muted-foreground outline-none transition-colors enabled:hover:bg-muted enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 touch:w-10",
-          "raymond:w-4 raymond:bg-(--3d-face) raymond:text-foreground raymond:shadow-raised raymond:transition-none raymond:enabled:hover:bg-(--3d-face) raymond:enabled:active:shadow-[inset_0_0_0_1px_var(--3d-shadow)] raymond:enabled:active:[&_svg]:translate-px raymond:disabled:opacity-100 raymond:disabled:text-(--3d-shadow) raymond:disabled:[&_svg]:drop-shadow-[1px_1px_0_var(--3d-highlight)] raymond:touch:w-10",
+          "relative flex w-6 flex-1 items-center justify-center text-muted-foreground outline-none transition-colors enabled:hover:bg-muted enabled:hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 touch:w-touch",
+          "raymond:w-4 raymond:bg-(--3d-face) raymond:text-foreground raymond:shadow-raised raymond:transition-none raymond:enabled:hover:bg-(--3d-face) raymond:enabled:active:shadow-[inset_0_0_0_1px_var(--3d-shadow)] raymond:enabled:active:[&_svg]:translate-px raymond:disabled:opacity-100 raymond:disabled:text-(--3d-shadow) raymond:disabled:[&_svg]:drop-shadow-[1px_1px_0_var(--3d-highlight)] raymond:touch:w-touch",
         )}
       >
         {direction > 0 ? (
@@ -174,7 +174,7 @@ function NumberInput({
       // with the up-down control inside its bevel; its focus rectangle goes
       // round the text alone.
       className={cn(
-        "flex h-control w-full min-w-0 overflow-hidden rounded-control border border-input bg-field text-base transition-colors has-[input:focus-visible]:focus-ring has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-input/10 has-[input:disabled]:opacity-50 md:text-ui dark:bg-input/15 dark:has-[input:disabled]:bg-input/40 dark:has-aria-invalid:border-destructive/50 dark:has-aria-invalid:ring-destructive/40 touch:h-10 touch:text-base",
+        "flex h-control w-full min-w-0 overflow-hidden rounded-control border border-input bg-field text-base transition-colors has-[input:focus-visible]:focus-ring has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-input/10 has-[input:disabled]:opacity-50 md:text-ui dark:bg-input/15 dark:has-[input:disabled]:bg-input/40 dark:has-aria-invalid:border-destructive/50 dark:has-aria-invalid:ring-destructive/40 touch:h-field-touch touch:text-base",
         "raymond:border-transparent raymond:bg-(--window) raymond:bg-clip-padding raymond:shadow-sunken raymond:has-[input:focus-visible]:outline-none raymond:has-aria-invalid:ring-0 raymond:has-[input:disabled]:bg-(--3d-face) raymond:has-[input:disabled]:opacity-100",
         className,
       )}

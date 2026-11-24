@@ -99,13 +99,14 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        // On touch at least 44px wide, so a tab holding only an icon shares
+        // On touch drawn as with a pointer, with a hit area the touch spacing
+        // tall, and at least that wide, so a tab holding only an icon shares
         // no tap with the next.
-        "relative -mb-px inline-flex min-h-control items-center justify-center gap-1.5 rounded-item px-3 touch:min-h-10 text-ui font-medium whitespace-nowrap transition-colors outline-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground touch:hit-area touch:min-w-11",
-        // Under a framed set's top edge, which clips, a tab is as tall as its
-        // hit area on touch, and so is the bar it stands in, for the
-        // controls beside it.
-        framed && "touch:min-h-11",
+        "relative -mb-px inline-flex min-h-control items-center justify-center gap-1.5 rounded-item px-3 text-ui font-medium whitespace-nowrap transition-colors outline-none focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground touch:hit-area touch:min-w-touch",
+        // Under a framed set's top edge, which clips, a tab fills a bar the
+        // touch spacing tall on touch, for its hit area and the controls
+        // beside it.
+        framed && "touch:min-h-touch",
         // The current tab is a box in the page's colour that covers the list's
         // bottom rule, so it joins the content below, with a primary edge
         // across its top; the fill alone would not hold 3:1 on the strip.

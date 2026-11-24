@@ -152,10 +152,11 @@ function ListItem({
       className={cn(
         "outline-none focus-visible:focus-ring-inset",
         ITEM[purpose][orientation],
-        // On touch a row that holds a control is a hit area tall, so the
-        // controls of rows stacked stand 44px apart and none shares a tap.
+        // On touch a row that holds a control, or is one, is the touch
+        // spacing tall, so the targets of rows stacked stand that far apart
+        // and none shares a tap.
         orientation === "vertical" &&
-          "touch:has-[button,a[href],input,[role=checkbox]]:min-h-11",
+          "touch:has-[button,a[href],input,[role=checkbox]]:min-h-touch touch:[&:is(button,a[href])]:min-h-touch",
         className,
       )}
       {...props}

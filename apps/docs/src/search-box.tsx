@@ -154,7 +154,7 @@ function SearchResults({
               onClick={onPick}
               className={cn(
                 "flex flex-col justify-center gap-0.5 px-3 py-1.5",
-                size === "touch" ? "min-h-11" : "min-h-8 touch:min-h-11",
+                size === "touch" ? "min-h-touch" : "min-h-8 touch:min-h-touch",
                 option.section && "ml-3",
               )}
             >
@@ -266,7 +266,7 @@ export function SheetSearch({
         <Input
           {...input}
           ref={inputRef}
-          className="h-11 pl-9 [&::-webkit-search-cancel-button]:hidden"
+          className="pl-9 [&::-webkit-search-cancel-button]:hidden"
         />
       </div>
       {showing ? (

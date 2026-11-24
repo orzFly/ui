@@ -422,7 +422,7 @@ export function BinaryInspector() {
         <Pane purpose="panel" edge="start" asChild>
           <aside
             aria-label="Inspector"
-            className="hidden w-72 shrink-0 overflow-y-auto p-3 touch:pl-4 lg:block"
+            className="hidden w-72 shrink-0 overflow-y-auto p-3 lg:block"
           >
             {inspector}
           </aside>

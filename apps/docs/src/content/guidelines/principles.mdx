@@ -39,17 +39,19 @@ in the muted colour, and **Send** is the one filled button.
 
 ## Dense with a pointer, generous with a thumb
 
-**One component, two sizes, chosen by the pointer.**
+**One look under every pointer; a coarse one adds the room a thumb needs.**
 
 A mouse can hit a 32px button all day, and a dense screen shows more of the work at once. A thumb
-cannot, so on a coarse pointer the same components grow their hit areas by themselves. Write one
-layout and let the components size themselves; do not branch the app on screen width to pass bigger
-sizes. [Density](/guidelines/foundations/density/) has the sizes and when to step down from them.
+cannot, so on a coarse pointer the same components, drawn the same, take that room by themselves: a
+hit area around each control, space between neighbours, rows tall enough to tap. Write one layout
+and let the components make the room; do not branch the app on screen width to pass bigger sizes.
+[Density](/guidelines/foundations/density/) has the sizes and when to step down from them,
+[Touch & mobile](/guidelines/platforms/touch-and-mobile/) what a coarse pointer adds.
 
 <Example of={MailSelection} />
 
-Press **Touch** above the example: the same toolbar and rows grow for a thumb, with no change to
-the code.
+Press **Touch** above the example: nothing is drawn larger, but the toolbar's buttons move apart
+and its bar makes room for their hit areas, with no change to the code.
 
 ## Nothing only on hover
 

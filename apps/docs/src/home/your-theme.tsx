@@ -154,7 +154,7 @@ export function YourTheme({ className }: { className?: string }) {
                     <button
                       type="button"
                       aria-pressed={picked}
-                      className="flex min-h-row w-full items-center gap-2 px-2 text-left text-ui outline-none focus-visible:focus-ring-inset touch:min-h-11"
+                      className="flex min-h-row w-full items-center gap-2 px-2 text-left text-ui outline-none focus-visible:focus-ring-inset touch:min-h-touch"
                       onClick={() => commitTheme(theme.id)}
                       onPointerEnter={() =>
                         show({ ui: { theme: theme.id, mode } })

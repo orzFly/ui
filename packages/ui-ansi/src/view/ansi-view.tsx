@@ -959,7 +959,7 @@ export function AnsiView({
           buttons of one row stand above the other's; their own margins
           leave the room at the rows' ends. */}
       <div className="shrink-0 border-b border-border bg-muted font-ui text-foreground text-ui-sm raymond:border-b-0 raymond:bg-(--3d-face)">
-        <div className="flex items-center gap-2 py-1 pr-1 pl-2 touch:min-h-11">
+        <div className="flex items-center gap-2 py-1 pr-1 pl-2 touch:min-h-touch">
           <ModuleMarker icon={<SquareTerminalIcon />} />
           {filename !== undefined && (
             <span className="min-w-0 truncate font-bold">{filename}</span>
@@ -983,7 +983,7 @@ export function AnsiView({
             )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border border-dashed py-1 pr-1 pl-2 touch:min-h-11 touch:py-0 raymond:border-t-0 raymond:pt-1.5 raymond:shadow-[inset_0_1px_var(--3d-shadow),inset_0_2px_var(--3d-highlight)]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border border-dashed py-1 pr-1 pl-2 touch:min-h-touch touch:py-0 raymond:border-t-0 raymond:pt-1.5 raymond:shadow-[inset_0_1px_var(--3d-shadow),inset_0_2px_var(--3d-highlight)]">
           {parse.levelCounts && text !== "" && (
             <LevelChips
               counts={parse.levelCounts}

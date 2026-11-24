@@ -3,7 +3,8 @@ import { extendTailwindMerge } from "tailwind-merge";
 
 // The style tokens' utilities (theme.css), named to tailwind-merge so a
 // caller's `rounded-none` replaces `rounded-control`, a caller's `touch:pr-0`
-// a part's `touch:pr-hit-xs`, and `text-ui-sm` is not taken for a colour.
+// a part's `touch:pr-hit-xs`, a caller's `touch:min-h-0` a part's
+// `touch:min-h-touch`, and `text-ui-sm` is not taken for a colour.
 const twMerge = extendTailwindMerge({
   extend: {
     theme: {
@@ -20,6 +21,8 @@ const twMerge = extendTailwindMerge({
         "hit-sm",
         "hit",
         "hit-lg",
+        "touch",
+        "field-touch",
       ],
       radius: ["control", "item", "frame", "surface", "overlay", "chip"],
       text: ["ui", "ui-sm", "ui-xs", "ui-2xs", "ui-3xs", "data", "title"],

@@ -130,15 +130,14 @@ export function SiteHeader({ section }: { section: NavNode | undefined }) {
               inputRef={box}
               className="hidden w-56 md:block lg:w-64"
             />
-            {/* Drawn 44px on a phone, so it keeps no room beside it. */}
             <Button
               variant="ghost"
               size="icon"
-              className="mx-0 size-11 md:hidden"
+              className="md:hidden"
               aria-label="Search"
               onClick={() => setNav("search")}
             >
-              <SearchIcon className="size-5" />
+              <SearchIcon />
             </Button>
             <ThemeButton />
             <Button variant="ghost" size="icon" asChild>
@@ -178,10 +177,10 @@ function MobileNav({
         <Button
           variant="ghost"
           size="icon"
-          className="mx-0 size-11 md:hidden"
+          className="md:hidden"
           aria-label="Menu"
         >
-          <MenuIcon className="size-5" />
+          <MenuIcon />
         </Button>
       </SheetTrigger>
       <SheetContent
@@ -448,7 +447,7 @@ export function PageContents({
             <a
               key={title}
               href={storybookHref(BASE, title)}
-              className="inline-flex min-h-7 items-center text-muted-foreground hover:text-foreground touch:min-h-11 outline-none focus-visible:focus-ring"
+              className="inline-flex min-h-7 items-center text-muted-foreground hover:text-foreground touch:min-h-touch outline-none focus-visible:focus-ring"
             >
               {title.split("/").at(-1)}
               <ArrowUpRightIcon className="ml-0.5 size-3.5" />
@@ -481,7 +480,7 @@ export function ApiLinks({
           <li key={title}>
             <a
               href={storybookHref(BASE, title)}
-              className="inline-flex items-center py-0.5 text-muted-foreground hover:text-foreground outline-none focus-visible:focus-ring"
+              className="inline-flex items-center py-0.5 text-muted-foreground hover:text-foreground touch:min-h-touch outline-none focus-visible:focus-ring"
             >
               {title.split("/").at(-1)}
               <ArrowUpRightIcon className="ml-0.5 size-3.5" />

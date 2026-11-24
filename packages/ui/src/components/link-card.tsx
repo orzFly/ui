@@ -15,7 +15,7 @@ type LinkCardVariant = "card" | "row";
 // the rest in the window text, and the dotted focus rectangle around it all.
 const VARIANT: Record<LinkCardVariant, string> = {
   card: "flex min-h-11 flex-col gap-1 rounded-surface border px-4 py-3 text-prose [&_[data-slot=link-card-description]]:leading-prose-sm",
-  row: "grid min-h-row gap-x-6 gap-y-0.5 border-b px-2 py-2 text-prose-sm sm:grid-cols-[11rem_1fr] touch:min-h-11 [li:first-child>&]:border-t",
+  row: "grid min-h-row gap-x-6 gap-y-0.5 border-b px-2 py-2 text-prose-sm sm:grid-cols-[11rem_1fr] touch:min-h-touch [li:first-child>&]:border-t",
 };
 
 /**

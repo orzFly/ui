@@ -71,10 +71,11 @@ function SegmentedControlItem({
       // Under raymond flat until the pointer raises it by a pixel, and the
       // pressed one sunk by a pixel over the face dithered with its
       // highlight, as a latched toolbar button is; all in the window text.
-      // On touch at least 44px wide: the segments join, so room beside one
-      // would part them, and one holding only an icon would share a tap.
+      // On touch at least the touch spacing wide: the segments join, so room
+      // beside one would part them, and one holding only an icon would share
+      // a tap.
       className={cn(
-        "relative inline-flex items-center justify-center gap-1.5 rounded-[calc(var(--radius-control)*0.6)] px-2.5 py-1 text-muted-foreground text-ui-sm outline-none transition-colors enabled:hover:text-foreground focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:pressed-cue touch:hit-area touch:min-w-11",
+        "relative inline-flex items-center justify-center gap-1.5 rounded-[calc(var(--radius-control)*0.6)] px-2.5 py-1 text-muted-foreground text-ui-sm outline-none transition-colors enabled:hover:text-foreground focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:pressed-cue touch:hit-area touch:min-w-touch",
         "raymond:text-foreground raymond:transition-none raymond:[--focus-offset:-3px] raymond:enabled:not-aria-pressed:hover:shadow-[inset_1px_1px_var(--3d-highlight),inset_-1px_-1px_var(--3d-shadow)] raymond:aria-pressed:bg-(--3d-highlight) raymond:aria-pressed:bg-[conic-gradient(var(--3d-face)_25%,transparent_0_50%,var(--3d-face)_0_75%,transparent_0)] raymond:aria-pressed:bg-size-[2px_2px] raymond:aria-pressed:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:disabled:opacity-100 raymond:disabled:text-(--3d-shadow) raymond:disabled:[text-shadow:1px_1px_var(--3d-highlight)]",
         className,
       )}

@@ -20,15 +20,15 @@ const INDENTS = [
 export function EditorSettings() {
   return (
     <div className="grid max-w-md gap-4">
-      <div className="flex items-center justify-between gap-4 touch:min-h-11">
+      <div className="flex items-center justify-between gap-4 touch:min-h-touch">
         <Label htmlFor="keys-wrap">Wrap long lines</Label>
         <Switch id="keys-wrap" defaultChecked />
       </div>
-      <div className="flex items-center justify-between gap-4 touch:min-h-11">
+      <div className="flex items-center justify-between gap-4 touch:min-h-touch">
         <Label htmlFor="keys-line-numbers">Show line numbers</Label>
         <Switch id="keys-line-numbers" defaultChecked />
       </div>
-      <div className="flex items-center justify-between gap-4 touch:min-h-11">
+      <div className="flex items-center justify-between gap-4 touch:min-h-touch">
         <Label htmlFor="keys-language">New files open as</Label>
         <Select defaultValue="markdown">
           <SelectTrigger id="keys-language" className="w-36">

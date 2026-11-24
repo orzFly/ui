@@ -356,7 +356,9 @@ describe("HexView", () => {
       "utf8",
     );
     const touch = css.slice(css.indexOf("@variant touch"));
-    expect(touch).toMatch(/^@variant touch \{\s+--hex-header-height: 44px;/);
+    expect(touch).toMatch(
+      /^@variant touch \{\s+--hex-header-height: var\(--spacing-touch\);/,
+    );
   });
 
   it("draws a selected cell's edge as an outline round the cell's own box", () => {
@@ -761,7 +763,8 @@ describe("HexView encodings", () => {
       onCopy,
     });
     const trigger = root.querySelector(".orz-hex-encoding") as HTMLElement;
-    // Drawn at the dense row's height; a touch pointer gets 44px to hit.
+    // Drawn at the dense row's height; a touch pointer gets the touch
+    // spacing to hit.
     expect(trigger.className.split(" ")).toEqual(
       expect.arrayContaining(["relative", "touch:hit-area"]),
     );

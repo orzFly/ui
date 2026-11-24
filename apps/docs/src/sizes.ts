@@ -12,10 +12,20 @@ import { buttonVariants } from "@orz/ui/components/button";
 type ButtonSize = NonNullable<Parameters<typeof buttonVariants>[0]>["size"];
 
 /**
- * Lengths from the stylesheets that no class carries: `hitArea` in px, `radius` in rem,
- * `headerSettle` in ms, `anchorFlash` and tw-animate-css's `animateDefault` in s.
+ * Lengths from the stylesheets that no class carries: `radius` in rem, `headerSettle` in ms,
+ * `anchorFlash` and tw-animate-css's `animateDefault` in s.
  */
 export const css = source.css;
+
+/**
+ * P, the touch spacing, in px: the side of a hit area, the height of a row or a strip a finger
+ * taps, and the least distance between the centres of two neighbouring targets on touch.
+ */
+export const touchSpacing = (() => {
+  const found = source.tokens.spacing.touch;
+  if (found === undefined) throw new Error("no --spacing-touch in theme.css");
+  return found;
+})();
 
 /** `--radius`, the theme's corner and `rounded-lg`, in px. */
 export const radius = css.radius * 16;
@@ -55,15 +65,25 @@ function textStep(value: string): [size: number, line: number] | undefined {
 }
 
 /**
- * A spacing step in px: `8` is 32px, `[18px]` is 18px, `control` the style token's value; null
- * for `full`, `fit` and the like.
+ * A spacing step in px: `8` is 32px, `[18px]` is 18px, `control` the style token's value,
+ * `[calc(var(--spacing-touch)-1rem)]` a token less or more a length; null for `full`, `fit` and
+ * the like.
  */
 function spacing(value: string): number | null {
   if (/^\d+(\.\d+)?$/.test(value)) return Number(value) * 4;
   const token = source.tokens.spacing[value];
   if (token !== undefined) return token;
   const px = /^\[(\d+)px\]$/.exec(value);
-  return px ? Number(px[1]) : null;
+  if (px) return Number(px[1]);
+  const offset =
+    /^\[calc\(var\(--spacing-([\w-]+)\)([+-])(\d*\.?\d+)(px|rem)\)\]$/.exec(
+      value,
+    );
+  if (!offset) return null;
+  const base = source.tokens.spacing[offset[1] ?? ""];
+  if (base === undefined) throw new Error(`no token --spacing-${offset[1]}`);
+  const length = Number(offset[3]) * (offset[4] === "rem" ? 16 : 1);
+  return offset[2] === "-" ? base - length : base + length;
 }
 
 /** `touch:data-[size=sm]:h-7` as its variants and its utility, split outside brackets. */
@@ -111,6 +131,8 @@ function applying(
 interface Box {
   height: number;
   width: number | null;
+  /** The least width a `min-w-*` holds it to, or 0. */
+  minWidth: number;
   /** The height of the target a tap lands on. */
   hit: number;
   font: number;
@@ -121,6 +143,7 @@ function box(text: string, options: Options = {}): Box {
   let height: number | null = null;
   let width: number | null = null;
   let min = 0;
+  let minWide = 0;
   let padding = 0;
   let border = 0;
   let hitArea = false;
@@ -128,7 +151,7 @@ function box(text: string, options: Options = {}): Box {
   let type = TEXT.sm;
   for (const utility of applying(text, options)) {
     const [, name = "", value = ""] =
-      /^(min-h|h|w|size|py|gap|text)-(.+)$/.exec(utility) ?? [];
+      /^(min-h|min-w|h|w|size|py|gap|text)-(.+)$/.exec(utility) ?? [];
     // `w-full`, `h-px` and the like size by their container, not by a step.
     const length = spacing(value);
     if (utility === "border") border = 1;
@@ -139,6 +162,7 @@ function box(text: string, options: Options = {}): Box {
     else if (name === "w") width = length;
     else if (name === "size") height = width = length;
     else if (name === "min-h") min = length;
+    else if (name === "min-w") minWide = length;
     else if (name === "py") padding = length;
     else if (name === "gap") gap = length;
   }
@@ -148,7 +172,8 @@ function box(text: string, options: Options = {}): Box {
   return {
     height: drawn,
     width,
-    hit: hitArea ? Math.max(drawn, css.hitArea) : drawn,
+    minWidth: minWide,
+    hit: hitArea ? Math.max(drawn, touchSpacing) : drawn,
     font,
     gap,
   };
@@ -162,6 +187,13 @@ export const px = (text: string, options?: Options) =>
 export function width(text: string, options?: Options): number {
   const found = box(text, options).width;
   if (found === null) throw new Error(`no width in "${text}"`);
+  return found;
+}
+
+/** The least width a `min-w-*` draws it at in px; throws where none applies. */
+export function leastWidth(text: string, options?: Options): number {
+  const found = box(text, options).minWidth;
+  if (found === 0) throw new Error(`no min-w in "${text}"`);
   return found;
 }
 

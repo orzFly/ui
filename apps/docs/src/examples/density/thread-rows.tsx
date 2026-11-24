@@ -64,7 +64,7 @@ export function ThreadRows() {
           <ul aria-label="Conversations">
             {threads.map((thread) => (
               <ListItem key={thread.id} asChild>
-                <li className="flex min-h-row items-center gap-2 px-2 py-1 touch:min-h-11">
+                <li className="flex min-h-row items-center gap-2 px-2 py-1 touch:min-h-touch">
                   <div className="grid min-w-0 flex-1">
                     <span
                       className={cn(

@@ -14,10 +14,10 @@ function RadioGroup({
   return (
     <RadioGroupPrimitive.Root
       data-slot="radio-group"
-      // On touch the rows stand 44px apart, the gap what the style's radio
-      // leaves of it: 16px by default, 12px under raymond.
+      // On touch the rows stand the touch spacing apart, the gap what the
+      // style's radio leaves of it: 16px by default, 12px under raymond.
       className={cn(
-        "grid gap-3 touch:gap-7 raymond:gap-1 raymond:touch:gap-8",
+        "grid gap-3 touch:gap-[calc(var(--spacing-touch)-1rem)] raymond:gap-1 raymond:touch:gap-[calc(var(--spacing-touch)-0.75rem)]",
         className,
       )}
       {...props}

@@ -112,7 +112,7 @@ export function MediaControls({
         // On touch as tall as a hit area, since the player around the bar
         // clips; its end buttons' own margins leave the room at its sides.
         className={cn(
-          "@container/media-controls flex items-center gap-2 border-t bg-card px-2 py-1 text-card-foreground text-ui-sm touch:min-h-11",
+          "@container/media-controls flex items-center gap-2 border-t bg-card px-2 py-1 text-card-foreground text-ui-sm touch:min-h-touch",
           className,
         )}
       >

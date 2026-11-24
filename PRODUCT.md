@@ -36,8 +36,8 @@ a thumb, in whatever theme its user picked, without the app branching on any of 
 
 ## Positioning
 
-- **One component, two sizes, chosen by the pointer.** Hit areas grow on a coarse pointer by
-  themselves; an app writes one layout.
+- **One look under every pointer; a coarse one adds the room.** On a coarse pointer each control
+  keeps its look and takes a hit area and the space beside it by itself; an app writes one layout.
 - **The theme is the user's.** A theme store with built-in palettes (terminal palettes included)
   that every surface, viewer and diagram follows; nothing hard-codes a colour.
 - **Viewers for tool output** as first-class, separately installable packages, so an app pays only

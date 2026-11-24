@@ -113,7 +113,7 @@ function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3 touch:min-h-11">
+    <div className="flex items-center justify-between gap-4 py-3 touch:min-h-touch">
       <div className="group flex items-center gap-1" data-disabled={disabled}>
         <Label htmlFor={id}>{label}</Label>
         {info && (

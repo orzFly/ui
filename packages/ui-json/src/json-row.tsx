@@ -81,7 +81,7 @@ function Highlight({ text, needle }: { text: string; needle: string }) {
 }
 
 /** A row's height, from the style's dense row; the touch row is `Tree`'s. */
-export const ROW_HEIGHT_CLASS = "h-row-dense touch:h-11";
+export const ROW_HEIGHT_CLASS = "h-row-dense touch:h-touch";
 
 /** The left edge of a row's content at `depth`: 6px, then 12px a level. */
 export const indentOf = (depth: number) =>
@@ -127,7 +127,7 @@ const JOINS_NEXT = "after:-bottom-[3px]";
  * rows' box. On touch its end margin is the rest of its hit area, which the view would clip
  * where the ⋯ is held to the view's right edge. Its margins replace the room an icon button
  * keeps on both sides on touch: the selection's frame is built from them, and its only
- * neighbour is its own row, a target wider than 44px.
+ * neighbour is its own row, a target wider than the touch spacing.
  */
 export const SLOT_ROOM =
   "[--json-slot:calc(var(--spacing-control-xs)+var(--spacing))] touch:[--json-slot:calc(var(--spacing-control-xs)+var(--spacing)/2+var(--spacing-hit-xs))]";
@@ -144,20 +144,21 @@ const HELD = cn(
 /**
  * A ⋯ on the last line of what it stands beside, held to the view's bottom edge while that runs
  * past it: a wrapped row's own, and the selection's, which a tap on the row's ⋯ opens in its place.
- * Its margins make it as tall as a line, the touch row's 44px under touch: a wrapped row is as
+ * Its margins make it as tall as a line, the touch row's height under touch: a wrapped row is as
  * tall as its lines rather than the button, and a held ⋯ rises no higher than the first line, so
  * a row barely in view shows no ⋯ ahead of its text. Held on touch, it stands its margin above
  * the edge, which would clip the rest of its hit area.
  */
 const ON_LAST_LINE =
-  "bottom-0 my-[calc((var(--spacing-row-dense)-var(--spacing-control-xs))/2)] touch:bottom-hit-xs touch:my-[calc((--spacing(11)-var(--spacing-control-xs))/2)]";
+  "bottom-0 my-[calc((var(--spacing-row-dense)-var(--spacing-control-xs))/2)] touch:bottom-hit-xs touch:my-[calc((var(--spacing-touch)-var(--spacing-control-xs))/2)]";
 // Under touch a wrapped row's lines keep the dense line's height, with a band above the first
-// and below the last that makes a one-line row the touch row's 44px, its line in the middle as
+// and below the last that makes a one-line row the touch row's height, its line in the middle as
 // an unwrapped row's. The band is margin on what sits on a line, so a selected key's frame stays
 // round its text, and padding inside the value's piece, so the selection's fill covers it.
-const LINE_BAND = "touch:my-[calc((--spacing(11)-var(--spacing-row-dense))/2)]";
+const LINE_BAND =
+  "touch:my-[calc((var(--spacing-touch)-var(--spacing-row-dense))/2)]";
 const PIECE_BAND =
-  "touch:py-[calc((--spacing(11)-var(--spacing-row-dense))/2)]";
+  "touch:py-[calc((var(--spacing-touch)-var(--spacing-row-dense))/2)]";
 /** A member row's piece: from the members' indent to the selection's right edge and its ⋯. */
 const BLOCK_PIECE = cn(
   EDGE,
@@ -492,9 +493,9 @@ function JsonRowViewImpl({
             data-chevron={row.expandable || undefined}
             className={cn(
               ABOVE,
-              // Under wrap the gutter is the row's height, and the touch row's 44px from its
+              // Under wrap the gutter is the row's height, and the touch row's height from its
               // top is the first line's.
-              "inline-flex h-row-dense w-3.5 flex-none -translate-x-px translate-y-px items-center justify-center text-muted-foreground touch:h-11",
+              "inline-flex h-row-dense w-3.5 flex-none -translate-x-px translate-y-px items-center justify-center text-muted-foreground touch:h-touch",
             )}
           >
             {row.expandable && (

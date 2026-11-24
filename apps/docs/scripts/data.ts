@@ -164,8 +164,8 @@ const INTERNAL = {
   selectItem: ["select.tsx", "slot:select-item"],
   tabsTrigger: ["tabs.tsx", "slot:tabs-trigger"],
   dropdownMenuItem: ["dropdown-menu.tsx", "slot:dropdown-menu-item"],
-  highlightedInput: ["highlighted-input.tsx", "touch:h-10 border"],
-  filterBox: ["filter-menu.tsx", "touch:h-10 touch:text-base"],
+  highlightedInput: ["highlighted-input.tsx", "touch:h-field-touch border"],
+  filterBox: ["filter-menu.tsx", "touch:h-field-touch touch:text-base"],
   filterRow: ["filter-menu.tsx", "ROW_CLASS"],
   filterCell: ["filter-menu.tsx", "CELL_CLASS"],
   queryOption: ["query-box.tsx", "OPTION"],
@@ -219,8 +219,6 @@ export function internalClasses(): InternalClasses {
 
 /** Lengths `@orz/ui`'s stylesheets set that no class carries, each the one match of its pattern. */
 const LENGTHS = {
-  /** The `hit-area` utility's minimum, in px. */
-  hitArea: ["theme.css", /@utility hit-area \{[^}]*min-height: (\d+)px/],
   /** `--radius`, the default palette's corner, in rem. */
   radius: ["theme.css", /--radius: (\d*\.?\d+)rem;/],
   /** The auto-hiding header settling in or out, in ms. */
@@ -252,7 +250,9 @@ export function cssLengths(): CssLengths {
  * The style tokens a class can name, from theme.css's `@theme static` block, by namespace and
  * name: `spacing.control` is `h-control`'s 32 (px), `text.ui-sm` `text-ui-sm`'s size, and
  * `duration.overlay` `duration-(--duration-overlay)`'s 100 (ms). These are the default style's
- * values, which is what every number a page quotes is.
+ * values, which is what every number a page quotes is. `spacing.touch` is P, the touch
+ * spacing; the touch tokens theme.css works out from it in `@theme inline` (`hit-xs`,
+ * `field-touch`) are worked out here the same way.
  */
 export interface StyleTokens {
   spacing: Record<string, number>;
@@ -307,5 +307,46 @@ export function styleTokens(): StyleTokens {
     }
     out.leading[key] = line;
   }
+  for (const inline of theme.matchAll(/@theme inline \{([^}]*)\}/g)) {
+    const body = (inline[1] ?? "")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\s+/g, " ")
+      .replace(/\( /g, "(")
+      .replace(/ \)/g, ")");
+    for (const [, key = "", value = ""] of body.matchAll(
+      /--spacing-([\w-]+): ([^;]+);/g,
+    )) {
+      out.spacing[key] = derived(key, value.trim(), out.spacing);
+    }
+  }
   return out;
+}
+
+/** A spacing token theme.css derives from others, in one of the two shapes it writes them. */
+function derived(
+  key: string,
+  value: string,
+  spacing: Record<string, number>,
+): number {
+  const token = (name = "") => {
+    const found = spacing[name];
+    if (found === undefined) {
+      throw new Error(
+        `packages/ui/theme.css: --spacing-${key} reads no --spacing-${name}`,
+      );
+    }
+    return found;
+  };
+  const half =
+    /^calc\(\(var\(--spacing-([\w-]+)\) - var\(--spacing-([\w-]+)\)\) \/ 2\)$/.exec(
+      value,
+    );
+  if (half) return (token(half[1]) - token(half[2])) / 2;
+  const floor = /^max\(var\(--spacing-([\w-]+)\), (\d*\.?\d+)rem\)$/.exec(
+    value,
+  );
+  if (floor) return Math.max(token(floor[1]), Number(floor[2]) * 16);
+  throw new Error(
+    `packages/ui/theme.css: --spacing-${key}: ${value} is no shape read here`,
+  );
 }

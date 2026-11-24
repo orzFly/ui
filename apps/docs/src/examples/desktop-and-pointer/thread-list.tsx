@@ -96,7 +96,7 @@ export function ThreadList() {
             <ul>
               {threads.map((thread) => (
                 <ListItem key={thread.id} asChild>
-                  <li className="flex min-h-row items-center gap-2 px-3 text-ui touch:min-h-11">
+                  <li className="flex min-h-row items-center gap-2 px-3 text-ui touch:min-h-touch">
                     <span className="w-20 shrink-0 truncate font-medium">
                       {thread.from}
                     </span>

@@ -287,7 +287,7 @@ describe("the patch header", () => {
     expect(box.dataset.class?.split(/\s+/)).toEqual(
       expect.arrayContaining([
         "[--patch-header-height:36px]",
-        "touch:[--patch-header-height:44px]",
+        "touch:[--patch-header-height:var(--spacing-touch)]",
       ]),
     );
     // What pierre is told, read off the box: the pointer's 36px, which happy-dom

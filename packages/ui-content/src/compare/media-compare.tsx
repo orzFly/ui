@@ -437,7 +437,7 @@ function Overlay({
       <div
         data-mode={mode}
         className={cn(
-          "mx-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2.5 text-muted-foreground text-ui-sm touch:min-h-11",
+          "mx-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2.5 text-muted-foreground text-ui-sm touch:min-h-touch",
           mode === "onion" ? "justify-center" : "justify-between",
         )}
         style={{ maxWidth: stageWidth }}

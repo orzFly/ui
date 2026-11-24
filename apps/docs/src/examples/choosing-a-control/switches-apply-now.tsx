@@ -6,11 +6,11 @@ export function SwitchesApplyNow() {
   return (
     <div className="grid gap-3">
       <GroupHeading>Send them by</GroupHeading>
-      <div className="flex items-center justify-between gap-4 touch:min-h-11">
+      <div className="flex items-center justify-between gap-4 touch:min-h-touch">
         <Label htmlFor="do-email">Email</Label>
         <Switch id="do-email" defaultChecked />
       </div>
-      <div className="flex items-center justify-between gap-4 touch:min-h-11">
+      <div className="flex items-center justify-between gap-4 touch:min-h-touch">
         <Label htmlFor="do-desktop">Desktop notifications</Label>
         <Switch id="do-desktop" />
       </div>

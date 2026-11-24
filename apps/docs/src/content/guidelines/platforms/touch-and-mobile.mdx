@@ -1,7 +1,7 @@
 export const meta = {
   title: "Touch & mobile",
   description:
-    "44px hit areas from the components, content clear of the notch and the on-screen keyboard, and no gesture as the only way.",
+    "Hit areas and room between targets from the components, content clear of the notch and the on-screen keyboard, and no gesture as the only way.",
   order: 21,
   api: [
     "ui/Primitives/Button",
@@ -17,6 +17,7 @@ export const meta = {
     "ui/Primitives/ToolbarButton",
     "ui/Primitives/Toggle",
     "ui/Primitives/SegmentedControl",
+    "ui/Primitives/InfoPopover",
     "ui/Primitives/List",
     "ui/FilterMenu",
     "ui/QueryBox",
@@ -32,50 +33,62 @@ export const meta = {
 
 import { AccountSettings } from "../../../examples/touch-and-mobile/account-settings.tsx";
 import { MailList } from "../../../examples/touch-and-mobile/mail-list.tsx";
-import { button, classes, coarse, css, font, gap, hit, px, range, same, touch, width } from "../../../sizes.ts";
+import { button, classes, coarse, font, gap, hit, leastWidth, px, range, same, touch, touchSpacing, width } from "../../../sizes.ts";
 
-**On a coarse pointer every control is {css.hitArea}px to the finger, by itself; the app keeps its own controls
-the same size, its edges clear of the notch and the keyboard, and every gesture backed by
-something to tap.**
+**On a coarse pointer every part looks as it does under a mouse, and the components give each
+control a {touchSpacing}px hit area and keep neighbouring targets {touchSpacing}px apart by
+themselves; the app keeps its own controls to the same rule, its edges clear of the notch and the
+keyboard, and every gesture backed by something to tap.**
 
 <Example of={MailList} />
 
-On a phone this is already the touch layout; on a desk, press **Touch** above the example.
-**Compose** and the rows of each `⋯` menu grow; the checkboxes and the `⋯` buttons keep their drawn
-size and take a {css.hitArea}px hit area around it, so the conversations' rows do not grow at all.
+On a phone this is already the touch layout; on a desk, press **Touch** above the example. Nothing
+is drawn larger: the checkboxes, the `⋯` buttons and **Compose** keep their size and take a
+{touchSpacing}px hit area around it, and the rows of each `⋯` menu are {touchSpacing}px tall. The
+conversations' rows are taller than that already, so they do not grow at all.
 
 ## Hit areas
 
-44 × 44 is Apple's minimum for a touch target
+Apple gives a control on iOS 44 × 44pt by default and 28 × 28pt at the least, and counts the space
+between controls as much as their size
 ([Apple HIG: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility));
-WCAG's floor is 24px ([2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)).
-@orz/ui meets the larger one on a coarse pointer through its `touch:` variant, in one of two ways:
-a control that has room is drawn larger, and a control that sits in a dense row keeps its drawn
-size and widens its hit area with a transparent `::after`.
+WCAG asks for 24px ([2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html),
+AA) and 44px ([2.5.5](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html), AAA).
+@orz/ui takes {touchSpacing}px on a coarse pointer, through its `touch:` variant, and spends it on
+what keeps a finger on the right target rather than on drawing a dense screen larger:
+
+- Every control keeps the size its style draws it at, and takes a transparent `::after`
+  {touchSpacing}px square, centred on it, as its hit area.
+- Neighbouring targets stand {touchSpacing}px apart, centre to centre, so no two hit areas overlap.
+- Only what has no other way to make that room changes size: a row a finger taps, a strip of small
+  controls along the edge of a box that clips, and a field, whose text grows to
+  {font(classes.input, coarse)}px.
 
 | Control | Pointer | Touch, drawn | Touch, hit area |
 |---|---|---|---|
-| `Button` default | {px(button())} | {touch(button())} | {hit(button())} |
-| `Button` `lg` | {px(button("lg"))} | {touch(button("lg"))} | {hit(button("lg"))} |
-| `Button` `xs`, `sm`, and the `icon` sizes | {range(...["xs", "sm", "icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => px(button(size))))} | {same(...["xs", "sm", "icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => touch(button(size))))} | {same(...["xs", "sm", "icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => hit(button(size))))} |
+| `Button`, every size | {range(...["lg", "default", "sm", "xs", "icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => px(button(size))))} | {same(...["lg", "default", "sm", "xs", "icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => touch(button(size))))} | {same(...["lg", "default", "sm", "xs", "icon", "icon-sm", "icon-xs", "icon-lg"].map((size) => hit(button(size))))} |
 | `Switch` ({width(classes.switch)} × {px(classes.switch)}), `Checkbox`, `RadioGroupItem` ({same(px(classes.checkbox), px(classes.radioGroupItem))}) | — | {same(touch(classes.switch), touch(classes.checkbox), touch(classes.radioGroupItem))} | {same(hit(classes.switch), hit(classes.checkbox), hit(classes.radioGroupItem))} |
-| `Input`, `HighlightedInput` (so `QueryBox`'s field) | {same(px(classes.input), px(classes.highlightedInput))} | {same(touch(classes.input), touch(classes.highlightedInput))}, at {font(classes.input, coarse)}px text | {same(hit(classes.input), hit(classes.highlightedInput))} |
-| `FilterMenu`'s search field | {px(classes.filterBox)} | {touch(classes.filterBox)}, at {font(classes.filterBox, coarse)}px text | {hit(classes.filterBox)} |
-| `Select` trigger, default / `sm` | {px(classes.selectTrigger)} / {px(classes.selectTrigger, { size: "sm" })} | {px(classes.selectTrigger, coarse)} / {px(classes.selectTrigger, { ...coarse, size: "sm" })} | {same(hit(classes.selectTrigger), hit(classes.selectTrigger, { size: "sm" }))} |
 | `Tabs` trigger | {px(classes.tabsTrigger)} | {touch(classes.tabsTrigger)} | {hit(classes.tabsTrigger)} |
-| `DropdownMenu` items, `Select` items, `FilterMenu` rows | {same(px(classes.dropdownMenuItem), px(classes.selectItem), px(classes.filterOption))} | {same(touch(classes.dropdownMenuItem), touch(classes.selectItem), touch(classes.filterOption))} | {same(hit(classes.dropdownMenuItem), hit(classes.selectItem), hit(classes.filterOption))} |
-| `QueryBox` suggestions | {px(classes.queryOption)} | {touch(classes.queryOption)} | {hit(classes.queryOption)} |
-| `RadioGroup` rows | {gap(classes.radioGroup)} apart | {gap(classes.radioGroup, coarse)} apart | rows {gap(classes.radioGroup, coarse) + px(classes.radioGroupItem)} apart |
+
+| Part | Pointer | Touch |
+|---|---|---|
+| `Input`, `HighlightedInput` (so `QueryBox`'s field) | {same(px(classes.input), px(classes.highlightedInput))} | {same(touch(classes.input), touch(classes.highlightedInput))}, at {font(classes.input, coarse)}px text |
+| `FilterMenu`'s search field | {px(classes.filterBox)} | {touch(classes.filterBox)}, at {font(classes.filterBox, coarse)}px text |
+| `Select` trigger, default / `sm` | {px(classes.selectTrigger)} / {px(classes.selectTrigger, { size: "sm" })} | {px(classes.selectTrigger, coarse)} / {px(classes.selectTrigger, { ...coarse, size: "sm" })} |
+| `DropdownMenu` items, `Select` items, `FilterMenu` rows | {same(px(classes.dropdownMenuItem), px(classes.selectItem), px(classes.filterOption))} | {same(touch(classes.dropdownMenuItem), touch(classes.selectItem), touch(classes.filterOption))} |
+| `QueryBox` suggestions | {px(classes.queryOption)} | {touch(classes.queryOption)} |
+| `RadioGroup` rows | {gap(classes.radioGroup)} apart | {gap(classes.radioGroup, coarse)} apart, centres {gap(classes.radioGroup, coarse) + px(classes.radioGroupItem)} apart |
 
 Sizes are in CSS pixels. "Pointer" is what a mouse gets, and what the [Density](/guidelines/foundations/density/)
-page's sizes are.
+page's sizes are. A `Select` trigger is as tall as a field, so the two line up in a form; its text
+stays the size it is.
 
 <Example of={AccountSettings} />
 
-Press **Touch** and **Pointer** in turn. The tabs, the field, the select and **Save profile** are
-drawn taller; the checkbox, the radio buttons and the switch stay their size, and under
-**Notifications** the radio rows move apart so their hit areas do not overlap. Open the time zone
-select to see its items grow too.
+Press **Touch** and **Pointer** in turn. Only the field and the select change, to make room for
+the field's larger text. The tabs, **Save profile**, the checkbox, the radio buttons and the switch
+keep their size and take hit areas, and under **Notifications** the radio rows move apart so their
+hit areas do not overlap. Open the time zone select to see its items made {touchSpacing}px rows.
 
 `touch:` follows the primary pointer, so a touchscreen laptop driven by its trackpad keeps the
 pointer sizes. `data-pointer="coarse"` or `"fine"` on an element forces either set on everything
@@ -83,14 +96,16 @@ inside it, which is how the **Touch** button above previews a phone on a desk.
 
 ### Your own controls
 
-A control you build yourself takes the same sizes the same way:
+A control you build yourself takes the same room the same way:
 
-- A row that is tapped grows with `touch:min-h-11` (44px).
+- A row that is tapped is at least {touchSpacing}px tall: `touch:min-h-touch`.
 - A small control in a dense row keeps its size and adds the hit area: `relative touch:hit-area`.
   The `::after` belongs to the positioned element, so `relative` (or any positioning) is required.
   On touch the control has no baseline and lines up with text by its middle, so a flex or grid row
   that lines it up with `items-baseline` adds `touch:items-center`. It also keeps the room its
   neighbours need, as the next section says.
+- A field takes `touch:h-field-touch`, the height its 16px text needs, as
+  [Text fields](#text-fields) says.
 - Anything else that changes for a finger, such as a keyboard shortcut hint, uses `touch:` too, not
   Tailwind's `pointer-coarse:`, which no `data-pointer` reaches.
 - Tools that hover reveals hide only under `can-hover:`, which holds where the primary pointer can
@@ -99,34 +114,46 @@ A control you build yourself takes the same sizes the same way:
 
 ### Spacing between targets
 
-**On touch no two small controls share a hit area.** Two that stand side by side, each narrower
-than {css.hitArea}px, or one above the other, each shorter, stand {css.hitArea}px apart, centre to
-centre. A tap on one never lands on the other, and which comes first in the DOM decides nothing.
+**On touch no two neighbouring targets stand closer than {touchSpacing}px, centre to centre.** Two
+that stand side by side, each narrower than that, or one above the other, each shorter, are at least
+that far apart, so their hit areas do not overlap: a tap on one never lands on the other, and which
+comes first in the DOM decides nothing.
 
 @orz/ui's parts keep that room themselves, so a row or a toolbar of them writes nothing for touch:
 
-- An icon `Button`, and so a `ToolbarButton` and every `⋯`, keeps its drawn size and reserves the
-  rest of its {css.hitArea}px beside it as margin. A margin you give it in `className` (`ml-auto`
-  to push it to a bar's end) replaces that room on its side.
+- An icon `Button`, and so a `ToolbarButton` and every `⋯`, reserves the rest of {touchSpacing}px
+  beside it as margin. A margin you give it in `className` (`ml-auto` to push it to a bar's end)
+  replaces that room on its side.
+- A text `Button` is at least {same(...["lg", "default", "sm", "xs"].map((size) => leastWidth(button(size), coarse)))}px wide: it is as wide as its words, which CSS
+  cannot read to leave the rest beside it, so a short label is drawn that wide. A segment of a
+  `SegmentedControl` and a tab are at least that wide too, since their faces join.
 - A `Toggle` keeps the room above and below it, so the lines of a set of chips that wraps stand
-  apart, and is at least {css.hitArea}px wide. A segment of a `SegmentedControl` and a tab are at
-  least {css.hitArea}px wide too, since their faces join.
-- A `ListItem` that holds a control is at least {css.hitArea}px tall, so its controls stand that far
-  from the next row's.
+  apart, and is at least {touchSpacing}px wide.
+- An `InfoPopover`'s (i) keeps the room above and below it, so the line of the label it stands after
+  is {touchSpacing}px tall.
+- A `ListItem` that holds a control or is one, a menu's item and a tree's row are at least
+  {touchSpacing}px tall, so their targets stand that far from the next row's; a `RadioGroup` spaces
+  its rows the same.
+- A strip of small controls along the edge of a box that clips, such as a `Card` header that
+  holds an action or a link, a `Pane` toolbar or title bar, a framed `Tabs` bar or a viewer's
+  toolbar, is at least {touchSpacing}px tall, its controls centred in it.
 
 A small control you draw yourself reserves the room the same way: `touch:mx-hit-xs` beside it for
 an `xs` one, `hit-sm` for an `sm` one, `hit` for a default one, `hit-lg` for a large one. A stack of
-them outside a `ListItem` gives each row `touch:min-h-11`. The tokens follow the style's control
-sizes, so the centres stand {css.hitArea}px apart in every style.
+them outside a `ListItem` gives each row `touch:min-h-touch`, and a row of buttons that wraps keeps
+its lines apart by twice the token, `touch:gap-y-[calc(2*var(--spacing-hit))]` for default ones.
+The tokens follow the style's control sizes, so the centres stand {touchSpacing}px apart in every
+style.
 
-Three cases may overlap:
+Three cases may stand closer:
 
 - **A control and its own label.** A `Checkbox`, `RadioGroupItem` or `Switch` and the text that
   toggles it do the same thing, so these controls reserve no room beside them. A link in that text
   is another target: keep it away from the control, or make the whole row the label.
-- **A small control beside a target {css.hitArea}px or longer** along the line they share, such as
-  a row's link, a tree row or a field. The small one's hit area may take a strip of the large one,
-  which keeps {css.hitArea}px of its own.
+- **A small control beside a target at least {touchSpacing}px across in the direction they
+  neighbour**: its width for two side by side, its height for one above the other, such as a row's
+  link, a tree row or a field. The small one's hit area may take a strip of the large one, which
+  keeps at least {touchSpacing}px of its own.
 - **Marks placed by data on a track**, such as a seek bar's chapter marks under its thumb. Where
   they stand is the data's, not the layout's.
 
@@ -134,18 +161,19 @@ Inside a box that clips or scrolls (`overflow-hidden`, `overflow-auto`), a hit a
 box's edge is cut off there; it never makes the box scroll. An icon button's own room already keeps
 its hit area inside the box at the side. Above and below a control, and beside one that keeps no
 room of its own, leave the rest of the hit area between the control and the edge: give the strip
-that holds them `touch:min-h-11` and centre them in it, or pad by the token of the control's size
-(`touch:pr-hit-xs` beside an `xs` one). @orz/ui's own frames, bars and table rows already leave it
-for their controls.
+that holds them `touch:min-h-touch` and centre them in it, or pad by the token of the control's
+size (`touch:pr-hit-xs` beside an `xs` one). @orz/ui's own frames, bars and table rows already leave
+it for their controls.
 
 <DoDont>
   <Do>
-    Keep the default sizes and let the coarse pointer grow them. One layout serves the mouse and the
-    thumb.
+    Keep the default sizes and let a coarse pointer add the hit areas and the room between them. One
+    layout serves the mouse and the thumb.
   </Do>
   <Dont>
-    Branch on screen width to make things bigger: a tablet is wide and touched, and a narrow desktop
-    window is still clicked.
+    Draw controls larger for touch, or branch on screen width to do it: the room between targets is
+    what keeps a thumb on the right one, a tablet is wide and touched, and a narrow desktop window
+    is still clicked.
   </Dont>
 </DoDont>
 
@@ -154,7 +182,8 @@ for their controls.
 - Fields are 16px text on touch at every width: `Input`, `Textarea`, `HighlightedInput` and
   `FilterMenu`'s search field all are. Safari zooms the page into a field whose text is smaller
   ([how Safari decides](https://thingsthemselves.com/no-input-zoom-in-safari-on-iphone-the-pixel-perfect-way/)),
-  and leaves it zoomed after. A field you build takes `text-base md:text-ui touch:text-base`.
+  and leaves it zoomed after. A field you build takes `text-base md:text-ui touch:text-base`, and
+  `h-control touch:h-field-touch` for the height that text needs, so it lines up with ours.
 - Give a field the keyboard it needs: `type="email"`, `inputMode="numeric"`, `autoComplete`, and
   `enterKeyHint` (`"search"`, `"send"`, `"next"`) for the label on the return key.
 - Do not focus a field on arrival on a phone; that raises the keyboard over a page the person came

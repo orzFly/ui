@@ -18,8 +18,9 @@ function Card({
         // etched frame, a dark line with a lit one a pixel down and right,
         // drawn behind the content. With a header the frame's top runs
         // through the header's middle, where the header is its legend, and
-        // on touch a header with an action is 44px, its middle 22px down.
-        "raymond:relative raymond:isolate raymond:border-0 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-[0_1px_1px_0] raymond:before:-z-1 raymond:before:border raymond:before:border-(--3d-shadow) raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),1px_1px_var(--3d-highlight)] raymond:before:content-[''] raymond:has-[>[data-slot=card-header]]:before:top-[calc(var(--spacing-row)/2)] raymond:touch:has-[>[data-slot=card-header]>[data-slot=card-action]]:before:top-[22px]",
+        // on touch a header that holds a target (an action, a link in its
+        // description) is the touch spacing tall, its middle half that down.
+        "raymond:relative raymond:isolate raymond:border-0 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-[0_1px_1px_0] raymond:before:-z-1 raymond:before:border raymond:before:border-(--3d-shadow) raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),1px_1px_var(--3d-highlight)] raymond:before:content-[''] raymond:has-[>[data-slot=card-header]]:before:top-[calc(var(--spacing-row)/2)] raymond:touch:has-[>[data-slot=card-header]_:is(a[href],button)]:before:top-[calc(var(--spacing-touch)/2)]",
         className,
       )}
       {...props}
@@ -112,10 +113,11 @@ function CardHeader({
     <div
       data-slot="card-header"
       className={cn(
-        // On touch a header with an action is as tall as a hit area, so the
-        // card, which clips, leaves the action's whole; an icon button's own
-        // margin leaves the room at the end.
-        "group/card-header @container/card-header flex min-h-row flex-wrap items-center gap-x-2 gap-y-0.5 border-b bg-muted px-2 py-0.5 text-ui-sm touch:has-[>[data-slot=card-action]]:min-h-11",
+        // On touch a header that holds a target, an action or a link in its
+        // description, is the touch spacing tall, so the card, which clips,
+        // leaves its hit area whole and the content under it stands clear;
+        // an icon button's own margin leaves the room at the end.
+        "group/card-header @container/card-header flex min-h-row flex-wrap items-center gap-x-2 gap-y-0.5 border-b bg-muted px-2 py-0.5 text-ui-sm touch:has-[a[href],button]:min-h-touch",
         // Under raymond the header is the group box's legend, on the card's
         // face with no rule: the frame breaks around each of its parts,
         // which mask half the gap on either side in the card's colour. The
@@ -180,8 +182,9 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="card-footer"
       className={cn(
         // Under raymond the footer is the group box's face, with no rule. On
-        // touch it is as tall as a hit area, as the header with an action is.
-        "flex items-center rounded-b-surface border-t bg-muted p-(--card-spacing) touch:min-h-11 raymond:border-t-transparent raymond:bg-transparent",
+        // touch it is the touch spacing tall, as a header that holds a target
+        // is.
+        "flex items-center rounded-b-surface border-t bg-muted p-(--card-spacing) touch:min-h-touch raymond:border-t-transparent raymond:bg-transparent",
         className,
       )}
       {...props}

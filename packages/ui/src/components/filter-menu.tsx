@@ -221,7 +221,7 @@ const GRACE_MS = 300;
 // Under raymond the highlighted row fills with the highlight colour, the
 // palette's primary, as DropdownMenu's items do.
 const ROW_CLASS =
-  "group/option relative flex w-full cursor-default items-center rounded-item text-ui min-h-row touch:min-h-11 select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+  "group/option relative flex w-full cursor-default items-center rounded-item text-ui min-h-row touch:min-h-touch select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
 
 const CELL_CLASS = "gap-1.5 py-1 pl-1.5";
 
@@ -273,7 +273,7 @@ function FilterBox({
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}
-        className="h-control-lg min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-ui touch:h-10 touch:text-base"
+        className="h-control-lg min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-ui touch:h-field-touch touch:text-base"
         {...props}
       />
     </div>

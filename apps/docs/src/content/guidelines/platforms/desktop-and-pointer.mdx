@@ -139,11 +139,11 @@ item.
 
 ## Pointer and width are two questions
 
-Width decides the layout; the pointer decides the size and what hover may do. A narrow desktop
+Width decides the layout; the pointer decides the room around the controls and what hover may do. A narrow desktop
 window is still clicked, a tablet is wide and still touched. Ask `useMediaQuery(MD_UP)` to lay out,
 and `useMediaQuery(POINTER_FINE)` only for behaviour that depends on a mouse and a keyboard being
-there, as the autofocus above does. Sizes need neither: the components grow on a coarse pointer by
-themselves ([Touch & mobile](/guidelines/platforms/touch-and-mobile/)).
+there, as the autofocus above does. Sizes need neither: the components make the room a coarse
+pointer needs by themselves ([Touch & mobile](/guidelines/platforms/touch-and-mobile/)).
 
 `POINTER_FINE` asks about the primary pointer. A touchscreen laptop driven by its trackpad answers
 fine and keeps the desktop sizes, which is what the person using it is doing.

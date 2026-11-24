@@ -34,13 +34,15 @@ function InfoPopover({
           variant="ghost"
           size="icon-xs"
           aria-label={label}
-          // The negative margin keeps the button from making a label's line
-          // taller than the label beside it in the next field; on touch its
-          // hit area still reaches past it. Unlike other icon buttons it
-          // reserves no room beside it on touch: it stands after the text it
+          // With a pointer the negative margin keeps the button from making a
+          // label's line taller than the label beside it in the next field.
+          // On touch it keeps the rest of its hit area above and below it
+          // instead, so the line it stands on is the touch spacing tall and
+          // the control under it shares no tap. Unlike other icon buttons it
+          // reserves no room beside it: it stands after the text it
           // explains, which takes no tap, and the room would only push the
           // label's words apart.
-          className="-my-1 mx-0 text-muted-foreground hover:text-foreground aria-expanded:text-foreground"
+          className="-my-1 mx-0 text-muted-foreground hover:text-foreground aria-expanded:text-foreground touch:my-hit-xs"
         >
           <InfoIcon aria-hidden />
         </Button>

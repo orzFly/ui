@@ -1,3 +1,4 @@
+import { Button } from "@orz/ui/components/button";
 import { Checkbox, SelectSlot } from "@orz/ui/components/checkbox";
 import { SelectionBar } from "@orz/ui/components/selection-bar";
 import { type Selection, useSelection } from "@orz/ui/hooks/use-selection";
@@ -102,10 +103,10 @@ function AttachmentRow({
     <li
       data-sweep-key={selection ? String(item.key) : undefined}
       data-selected={selected ? "" : undefined}
-      // On touch a hit area tall, as a ListItem that holds a control is, so
-      // the actions of rows stacked share no tap.
+      // On touch the touch spacing tall, as a ListItem that holds a control
+      // is, so the actions of rows stacked share no tap.
       className={cn(
-        "flex items-center hover:bg-muted/40 touch:min-h-11 raymond:hover:bg-transparent",
+        "flex items-center hover:bg-muted/40 touch:min-h-touch raymond:hover:bg-transparent",
         SELECTED_ROW,
       )}
       onPointerEnter={(e) => {
@@ -171,14 +172,20 @@ function AttachmentRow({
         )}
       </a>
       {item.url !== undefined && (
-        <a
-          href={item.url}
-          download={item.name}
-          aria-label={`download ${item.name}`}
-          className="shrink-0 py-2 pr-3 pl-2 text-muted-foreground hover:text-foreground"
+        <Button
+          asChild
+          variant="ghost"
+          size="icon-sm"
+          className="mr-2 ml-1 text-muted-foreground"
         >
-          <DownloadIcon className="size-3.5" />
-        </a>
+          <a
+            href={item.url}
+            download={item.name}
+            aria-label={`download ${item.name}`}
+          >
+            <DownloadIcon className="size-3.5" />
+          </a>
+        </Button>
       )}
       {actions?.(item)}
     </li>
@@ -356,7 +363,7 @@ export function AttachmentList({
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
-          className="flex w-full items-center gap-1 border-b px-3 py-2 text-ui-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground raymond:border-b-0 raymond:hover:bg-transparent"
+          className="flex w-full items-center gap-1 border-b px-3 py-2 text-ui-sm text-muted-foreground touch:min-h-touch hover:bg-muted/40 hover:text-foreground raymond:border-b-0 raymond:hover:bg-transparent"
           data-testid="attachment-fold-toggle"
         >
           {folded ? (

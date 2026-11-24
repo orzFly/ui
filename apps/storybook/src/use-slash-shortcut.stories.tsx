@@ -83,7 +83,7 @@ export const Enabled: Story = {
 
     return (
       <div className="grid gap-3">
-        <Label className="touch:min-h-11">
+        <Label className="touch:min-h-touch">
           <Checkbox
             checked={shortcuts}
             onCheckedChange={(checked) => setShortcuts(checked === true)}

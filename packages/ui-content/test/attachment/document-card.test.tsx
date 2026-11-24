@@ -24,6 +24,33 @@ describe("DocumentCard", () => {
     expect(screen.getByText("body")).toBeTruthy();
   });
 
+  it("draws download and expand as icon buttons, download still a link", () => {
+    render(
+      <DocumentCard
+        name="spec.md"
+        downloadUrl="https://app.example/files/spec.md"
+        onExpand={() => {}}
+      >
+        body
+      </DocumentCard>,
+    );
+    const download = screen.getByLabelText("download spec.md");
+    expect(download.tagName).toBe("A");
+    expect(download.getAttribute("href")).toBe(
+      "https://app.example/files/spec.md",
+    );
+    const expand = screen.getByLabelText("expand spec.md");
+    expect(expand.tagName).toBe("BUTTON");
+    for (const control of [download, expand]) {
+      expect(control.dataset.slot).toBe("button");
+      expect(control.dataset.size).toBe("icon-sm");
+      // An icon button's hit area and the room it keeps beside it on touch.
+      expect(control.className.split(/\s+/)).toEqual(
+        expect.arrayContaining(["touch:hit-area", "mx-(--hit-room)"]),
+      );
+    }
+  });
+
   it("calls onExpand from the name and the expand button", () => {
     const onExpand = vi.fn();
     render(
