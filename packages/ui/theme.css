@@ -57,11 +57,12 @@
    drawn size stays as it is. No two small controls share one: an icon button
    reserves the rest of P beside it as margin (the tokens below), so two side
    by side stand P apart, centre to centre, and the DOM order never decides a
-   tap. Three cases may overlap: a control and its own label, which do the
+   tap. Four cases may overlap: a control and its own label, which do the
    same thing; a small control beside a target at least P across in the
    direction they neighbour (a row's link, a field), whose strip it may take
-   while that target keeps at least P of its own; and markers placed on a
-   track by their data. Positioning is the element's own (`relative` in its
+   while that target keeps at least P of its own; markers placed on a track
+   by their data; and links in running text, which stand where the words
+   put them. Positioning is the element's own (`relative` in its
    base classes): set here, under touch: it would beat a caller's `absolute`.
    Layout containment makes what spills past the control ink overflow, which a
    scroller does not grow by: without it, a control at a scroller's edge made

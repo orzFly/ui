@@ -145,7 +145,7 @@ its lines apart by twice the token, `touch:gap-y-[calc(2*var(--spacing-hit))]` f
 The tokens follow the style's control sizes, so the centres stand {touchSpacing}px apart in every
 style.
 
-Three cases may stand closer:
+Four cases may stand closer:
 
 - **A control and its own label.** A `Checkbox`, `RadioGroupItem` or `Switch` and the text that
   toggles it do the same thing, so these controls reserve no room beside them. A link in that text
@@ -156,6 +156,10 @@ Three cases may stand closer:
   keeps at least {touchSpacing}px of its own.
 - **Marks placed by data on a track**, such as a seek bar's chapter marks under its thumb. Where
   they stand is the data's, not the layout's.
+- **Links in running text.** A link inside a sentence stands where the words put it, and the line
+  height of the text decides how far it is from a link on the next line, as WCAG's inline exception
+  allows ([2.5.8](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)). A list
+  of links on their own lines is not running text: its rows take `touch:min-h-touch`.
 
 Inside a box that clips or scrolls (`overflow-hidden`, `overflow-auto`), a hit area that crosses the
 box's edge is cut off there; it never makes the box scroll. An icon button's own room already keeps
