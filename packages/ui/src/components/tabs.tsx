@@ -110,7 +110,7 @@ function TabsTrigger({
         // The current tab is a box in the page's colour that covers the list's
         // bottom rule, so it joins the content below, with a primary edge
         // across its top; the fill alone would not hold 3:1 on the strip.
-        "group-data-[variant=default]/tabs-list:border-r group-data-[variant=default]/tabs-list:border-border/60 group-data-[variant=default]/tabs-list:first:border-l group-data-[variant=default]/tabs-list:data-[state=active]:bg-background group-data-[variant=default]/tabs-list:data-[state=active]:tab-cue",
+        "group-data-[variant=default]/tabs-list:border-r group-data-[variant=default]/tabs-list:border-border/60 group-data-[variant=default]/tabs-list:first:border-l group-data-[variant=default]/tabs-list:data-[state=active]:bg-card group-data-[variant=default]/tabs-list:data-[state=active]:tab-cue",
         // A line's current tab has nothing to join, so it is underlined.
         "group-data-[variant=line]/tabs-list:hover:text-foreground group-data-[variant=line]/tabs-list:data-[state=active]:tab-line-cue",
         // Under raymond each tab, of either strip, is raised from the strip with

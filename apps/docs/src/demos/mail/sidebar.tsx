@@ -249,7 +249,7 @@ export function Rail({
                         {(counts[place] ?? 0) > 0 && (
                           <span
                             aria-hidden
-                            className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-primary px-1 text-[0.6rem] text-primary-foreground leading-4 tabular-nums"
+                            className="absolute top-0.5 right-0.5 min-w-4 rounded-chip bg-primary px-1 text-ui-xs text-primary-foreground leading-4 tabular-nums"
                           >
                             {counts[place]}
                           </span>

@@ -261,8 +261,8 @@ export function Tasks() {
                 <PlusIcon />
                 New task…
               </Button>
-              {/* One row that scrolls sideways on a phone, rather than three that wrap. */}
-              <div className="-mx-2 order-last flex w-[calc(100%+1rem)] gap-2 overflow-x-auto px-2 [scrollbar-width:none] touch:py-hit-sm sm:order-none sm:mx-0 sm:w-auto sm:overflow-visible sm:px-0">
+              {/* Wraps cleanly on narrow screens instead of hard-clipping the trailing filter trigger. */}
+              <div className="order-last flex w-full flex-wrap gap-2 touch:py-hit-sm sm:order-none sm:w-auto">
                 <FilterBar filters={filters} onChange={filter} />
               </div>
             </Pane>

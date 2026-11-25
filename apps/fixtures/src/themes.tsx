@@ -9,7 +9,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@orz/ui/components/card";
@@ -265,10 +264,6 @@ export function PageSample() {
         <CardTitle>Sample surface</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <CardDescription>
-          Everything here reads the tokens the picker writes, so a preview shows
-          at a glance.
-        </CardDescription>
         <div className="flex flex-wrap items-center gap-2">
           <Button>Primary</Button>
           <Button variant="secondary">Secondary</Button>
@@ -303,7 +298,7 @@ export function TerminalPane({
 }: {
   onCustomize?: (id: string | undefined, slot: "ui" | "terminal") => void;
 } = {}) {
-  const { tokens, theme, following } = useTerminalTheme();
+  const { tokens } = useTerminalTheme();
   const c = (name: keyof TerminalTokens) => ({ color: tokens[name] });
   const prompt = (
     <>
@@ -315,9 +310,6 @@ export function TerminalPane({
     <Card>
       <CardHeader>
         <CardTitle>Terminal</CardTitle>
-        <CardDescription>
-          {following ? `(same as UI: ${theme.label})` : `(${theme.label})`}
-        </CardDescription>
         <CardAction>
           <ThemeMenu slot="terminal" onCustomize={onCustomize} />
         </CardAction>

@@ -129,7 +129,7 @@
      centres of two neighbouring targets. It measures the finger, not the
      style, so it is in px and no style's stylesheet sets it. */
   --spacing-touch: 36px;
-  --spacing-control-xs: 1.5rem;
+  --spacing-control-xs: 1.375rem;
   --spacing-control-sm: 1.5rem;
   --spacing-control: 1.75rem;
   --spacing-control-lg: 2rem;
@@ -220,7 +220,7 @@
   --translate-overlay: 0;
   /* A sheet coming in from its edge. */
   --duration-sheet: 100ms;
-  --translate-sheet: 0;
+  --translate-sheet: 0.75rem;
 }
 
 /* CJK text takes its own language's face: one face for every language would
@@ -281,9 +281,14 @@
     --shadow-menu: 2px 2px 0 0 rgb(15 23 39 / 0.14);
     --shadow-overlay: 3px 3px 0 0 rgb(15 23 39 / 0.14);
     --state-cue: linear-gradient(currentColor, currentColor);
-    --pressed-cue: inset 0 0 0 1px currentColor;
+    --pressed-cue: inset 0 0 0 1px var(--input);
     --tab-cue: inset 0 2px 0 0 var(--primary);
     --tab-line-cue: inset 0 -2px 0 0 var(--primary);
+  }
+  .dark {
+    --shadow-menu: 2px 2px 0 0 rgb(0 0 0 / 0.55);
+    --shadow-overlay: 3px 3px 0 0 rgb(0 0 0 / 0.65);
+    --color-scrim: color-mix(in oklab, #000 45%, transparent);
   }
 }
 
@@ -520,7 +525,7 @@
   --card-foreground: oklch(0.94 0.012 258);
   --popover: oklch(0.21 0.016 258);
   --popover-foreground: oklch(0.94 0.012 258);
-  --primary: oklch(0.78 0.09 258);
+  --primary: oklch(0.76 0.135 256);
   --primary-foreground: oklch(0.18 0.014 258);
   --secondary: oklch(0.225 0.018 258);
   --secondary-foreground: oklch(0.94 0.012 258);
@@ -533,8 +538,8 @@
   --warning: oklch(0.8 0.14 75);
   --border: oklch(0.36 0.022 258);
   --input: oklch(0.55 0.025 258);
-  --ring: oklch(0.78 0.09 258);
-  --marker: oklch(0.33 0.05 258);
+  --ring: oklch(0.76 0.135 256);
+  --marker: oklch(0.32 0.06 256);
   --selection: oklch(0.418 0.083 250.444);
   --selection-foreground: oklch(0.94 0.012 258);
   --chart-1: oklch(0.72 0.12 255);
@@ -544,12 +549,12 @@
   --chart-5: oklch(0.74 0.12 195);
   --sidebar: oklch(0.225 0.018 258);
   --sidebar-foreground: oklch(0.94 0.012 258);
-  --sidebar-primary: oklch(0.78 0.09 258);
+  --sidebar-primary: oklch(0.76 0.135 256);
   --sidebar-primary-foreground: oklch(0.18 0.014 258);
   --sidebar-accent: oklch(0.29 0.028 258);
   --sidebar-accent-foreground: oklch(0.94 0.012 258);
   --sidebar-border: oklch(0.36 0.022 258);
-  --sidebar-ring: oklch(0.78 0.09 258);
+  --sidebar-ring: oklch(0.76 0.135 256);
   --terminal-background: #0e1218;
   --terminal-foreground: #e6ecf3;
   --terminal-cursor: #e6ecf3;

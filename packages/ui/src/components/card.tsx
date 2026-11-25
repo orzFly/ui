@@ -66,7 +66,7 @@ function ModuleMarker({
   className,
   ...props
 }: React.ComponentProps<"span"> & {
-  /** An icon, sized and stroked by the marker; omitted, the marker draws ▶. */
+  /** An icon, sized and stroked by the marker; omitted, the marker draws a solid square. */
   icon?: React.ReactNode;
 }) {
   return (
@@ -74,22 +74,21 @@ function ModuleMarker({
       data-slot="module-marker"
       aria-hidden="true"
       className={cn(
-        "inline-grid size-4 shrink-0 place-items-center bg-marker text-primary [&_svg:not([data-play])]:size-[11px] [&_svg:not([data-play])]:stroke-[2.4]",
+        "inline-grid size-4 shrink-0 place-items-center bg-marker text-primary [&_svg:not([data-default])]:size-[11px] [&_svg:not([data-default])]:stroke-[2.4]",
         className,
       )}
       {...props}
     >
       {icon ?? (
         <svg
-          data-play=""
+          data-default=""
           aria-hidden="true"
-          width="7"
-          height="9"
-          viewBox="0 0 7 9"
+          width="6"
+          height="6"
+          viewBox="0 0 6 6"
           fill="currentColor"
-          className="ml-px"
         >
-          <path d="M0 0 7 4.5 0 9z" />
+          <rect width="6" height="6" />
         </svg>
       )}
     </span>
@@ -106,7 +105,7 @@ function CardHeader({
   children,
   ...props
 }: React.ComponentProps<"div"> & {
-  /** The module marker's icon; omitted, the marker draws ▶. */
+  /** The module marker's icon; omitted, the marker draws a solid square. */
   icon?: React.ReactNode;
 }) {
   return (
@@ -184,7 +183,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
         // Under raymond the footer is the group box's face, with no rule. On
         // touch it is the touch spacing tall, as a header that holds a target
         // is.
-        "flex items-center rounded-b-surface border-t bg-muted p-(--card-spacing) touch:min-h-touch raymond:border-t-transparent raymond:bg-transparent",
+        "flex items-center rounded-b-surface border-t bg-muted px-(--card-spacing) py-2 touch:min-h-touch raymond:border-t-transparent raymond:bg-transparent",
         className,
       )}
       {...props}

@@ -44,7 +44,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--border-radius": "var(--radius-overlay)",
         } as React.CSSProperties
       }
       toastOptions={{
@@ -53,7 +53,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         // button's frame.
         classNames: {
           toast:
-            "cn-toast raymond:font-(family-name:--font-ui)! raymond:gap-2! raymond:text-ui! raymond:rounded-none! raymond:border! raymond:border-(--info-foreground)! raymond:bg-(--info)! raymond:px-2! raymond:py-1.5! raymond:text-(--info-foreground)! raymond:shadow-none!",
+            "cn-toast rounded-overlay! border! border-border! shadow-overlay! raymond:font-(family-name:--font-ui)! raymond:gap-2! raymond:text-ui! raymond:rounded-none! raymond:border! raymond:border-(--info-foreground)! raymond:bg-(--info)! raymond:px-2! raymond:py-1.5! raymond:text-(--info-foreground)! raymond:shadow-none!",
           actionButton:
             "raymond:rounded-none! raymond:bg-(--3d-face)! raymond:text-foreground! raymond:shadow-[inset_0_0_0_1px_var(--foreground),inset_-2px_-2px_var(--3d-dark-shadow),inset_2px_2px_var(--3d-highlight),inset_-3px_-3px_var(--3d-shadow),inset_3px_3px_var(--3d-light)]! raymond:active:shadow-pressed!",
         },

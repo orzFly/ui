@@ -213,7 +213,7 @@ function split(token: string): { variants: string[]; utility: string } {
       start = i + 1;
     }
   }
-  const utility = token.slice(start);
+  const utility = token.slice(start).replace(/!$/, "");
   return { variants: parts, utility };
 }
 

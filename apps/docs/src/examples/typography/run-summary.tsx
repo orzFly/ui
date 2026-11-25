@@ -3,7 +3,6 @@ import { PULL_REQUEST } from "@orz/fixtures/pull-request.ts";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@orz/ui/components/card";
@@ -33,13 +32,13 @@ export function RunSummary() {
         <CardTitle>
           {CI_RUN.workflow} #{CI_RUN.id}
         </CardTitle>
-        <CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <div className="text-muted-foreground text-ui-sm">
           Started <time dateTime={CI_RUN.startedAt}>Oct 21, 09:14 UTC</time> on{" "}
           <InlineCode>{CI_RUN.branch}</InlineCode> at{" "}
           <InlineCode>{CI_RUN.commit}</InlineCode>
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4">
+        </div>
         <Table>
           <TableHeader>
             <TableRow>

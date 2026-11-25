@@ -39,7 +39,7 @@ describe("sizes", () => {
     expect(px("min-h-row touch:min-h-touch", coarse)).toBe(36);
     // max(control, 2rem): the default style's 28px control is shorter.
     expect(px("h-control touch:h-field-touch", coarse)).toBe(32);
-    expect(px("touch:h-hit-xs", coarse)).toBe((36 - 24) / 2);
+    expect(px("touch:h-hit-xs", coarse)).toBe((36 - 22) / 2);
     expect(leastWidth(button("xs"), coarse)).toBe(36);
     expect(() => leastWidth(button("xs"))).toThrow();
   });

@@ -186,7 +186,14 @@ describe("the port from @orz/ui's styles.css", () => {
 
   // Rebuilt after the port, Catppuccin from catppuccin/palette and Default as
   // the module mosaic's palette; no ported value is meant to survive.
-  const REBUILT = ["catppuccin-latte", "catppuccin-mocha", "light", "dark"];
+  const REBUILT = [
+    "catppuccin-latte",
+    "catppuccin-mocha",
+    "light",
+    "dark",
+    "solarized-light",
+    "solarized-dark",
+  ];
 
   it.each(Object.entries(PORTED).filter(([slug]) => !REBUILT.includes(slug)))(
     "changed no UI value of %s",

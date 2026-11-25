@@ -1,7 +1,6 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
   ModuleGrid,
@@ -48,7 +47,6 @@ export function ModuleRegion() {
         <Card>
           <CardHeader>
             <CardTitle>Queues</CardTitle>
-            <CardDescription>By open cards</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>

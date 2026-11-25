@@ -241,7 +241,7 @@ function ThreadRow({
               <Badge
                 key={label}
                 variant="outline"
-                className="mr-1 h-4 gap-1 px-1 align-[1px] text-[0.65rem]"
+                className="mr-1 h-4 gap-1 px-1 align-[1px] text-ui-xs"
               >
                 {label}
               </Badge>

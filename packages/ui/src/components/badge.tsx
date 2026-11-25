@@ -17,18 +17,18 @@ const badgeVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
         secondary:
-          "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
+          "border-border bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         // The same text mix as Button's destructive variant, for the same reason.
         destructive: [
-          "bg-destructive/10 text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] focus-visible:outline-destructive dark:bg-destructive/20 [a]:hover:bg-destructive/20",
+          "border-destructive/35 bg-destructive/10 text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] focus-visible:outline-destructive dark:bg-destructive/20 [a]:hover:bg-destructive/20",
           STATIC_EDGE,
         ],
         success: [
-          "bg-success/10 text-[color-mix(in_oklab,var(--success),var(--foreground)_65%)] focus-visible:outline-success dark:bg-success/20 [a]:hover:bg-success/20",
+          "border-success/35 bg-success/10 text-[color-mix(in_oklab,var(--success),var(--foreground)_65%)] focus-visible:outline-success dark:bg-success/20 [a]:hover:bg-success/20",
           STATIC_EDGE,
         ],
         warning: [
-          "bg-warning/10 text-[color-mix(in_oklab,var(--warning),var(--foreground)_65%)] focus-visible:outline-warning dark:bg-warning/20 [a]:hover:bg-warning/20",
+          "border-warning/35 bg-warning/10 text-[color-mix(in_oklab,var(--warning),var(--foreground)_65%)] focus-visible:outline-warning dark:bg-warning/20 [a]:hover:bg-warning/20",
           STATIC_EDGE,
         ],
         outline: [

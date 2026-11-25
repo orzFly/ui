@@ -47,7 +47,7 @@ function Slider({
     >
       <SliderPrimitive.Track
         data-slot="slider-track"
-        className="relative grow overflow-hidden rounded-full bg-muted data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1 raymond:rounded-none raymond:bg-transparent raymond:shadow-sunken"
+        className="relative grow overflow-hidden rounded-control bg-muted data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1 raymond:rounded-none raymond:bg-transparent raymond:shadow-sunken"
       >
         {trackChildren}
         <SliderPrimitive.Range
@@ -64,7 +64,7 @@ function Slider({
           aria-labelledby={ariaLabelledBy}
           // biome-ignore lint/suspicious/noArrayIndexKey: thumbs are positional, one per value
           key={index}
-          className="relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 outline-none hover:ring-3 focus-visible:focus-ring active:ring-3 disabled:pointer-events-none disabled:opacity-50 touch:hit-area raymond:h-5 raymond:w-2.75 raymond:focus-visible:outline-none raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:shadow-raised raymond:ring-0 raymond:data-vertical:h-2.75 raymond:data-vertical:w-5"
+          className="relative block size-3 shrink-0 rounded-control border border-primary bg-background transition-colors select-none after:absolute after:-inset-2 outline-none hover:bg-accent focus-visible:focus-ring disabled:pointer-events-none disabled:opacity-50 touch:hit-area raymond:h-5 raymond:w-2.75 raymond:focus-visible:outline-none raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:shadow-raised raymond:ring-0 raymond:data-vertical:h-2.75 raymond:data-vertical:w-5"
         />
       ))}
     </SliderPrimitive.Root>

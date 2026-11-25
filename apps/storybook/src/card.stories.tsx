@@ -3,7 +3,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -33,7 +32,6 @@ const meta = {
     <Card {...args}>
       <CardHeader>
         <CardTitle>Release notes</CardTitle>
-        <CardDescription>What changed in this version.</CardDescription>
         <CardAction>
           <Button variant="ghost" size="sm">
             Edit
@@ -71,7 +69,6 @@ export const WithIcon: Story = {
     <Card {...args}>
       <CardHeader icon={<ListChecksIcon />}>
         <CardTitle>Checks</CardTitle>
-        <CardDescription>3 of 4 passed</CardDescription>
       </CardHeader>
       <CardContent>
         Lint, typecheck and build passed; one test failed.
@@ -126,7 +123,6 @@ export const ModuleGrid: Story = {
         <Card>
           <CardHeader>
             <CardTitle>Accounts</CardTitle>
-            <CardDescription>By requests today</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -187,9 +183,10 @@ export const TwoColumns: Story = {
         <Card key={row.name}>
           <CardHeader>
             <CardTitle>{row.name}</CardTitle>
-            <CardDescription>{row.share} of today</CardDescription>
           </CardHeader>
-          <CardContent>{row.requests} requests since the reset.</CardContent>
+          <CardContent>
+            {row.requests} requests ({row.share} of today).
+          </CardContent>
         </Card>
       ))}
     </ModuleGridView>
@@ -215,8 +212,7 @@ export const FullHeight: Story = {
     <ModuleGridView className="h-full grid-rows-[minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_20rem]">
       <Card>
         <CardHeader>
-          <CardTitle>Transcript</CardTitle>
-          <CardDescription>Run 42</CardDescription>
+          <CardTitle>Transcript · Run 42</CardTitle>
         </CardHeader>
         <CardContent className="min-h-0 overflow-y-auto font-mono">
           {TRANSCRIPT.map((line) => (

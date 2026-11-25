@@ -219,7 +219,7 @@ function DialogContent({
           // the title bar grows to the touch spacing to keep it there, the X
           // at its middle (the bar's 3px inset, half the bar, less half the
           // 14px box), and the room is what the 16px box leaves of it.
-          <DialogCloseButton className="absolute top-2 right-2 touch:top-hit-sm touch:right-0 raymond:top-[5px] raymond:right-[5px] raymond:touch:top-[calc(var(--spacing-touch)/2-4px)] raymond:touch:right-0 raymond:touch:[--hit-room:calc((var(--spacing-touch)-16px)/2)] raymond:h-3.5 raymond:w-4 raymond:min-w-0 raymond:bg-(--3d-face) raymond:shadow-raised raymond:hover:shadow-raised raymond:focus-visible:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[--focus-offset:-3px] raymond:[--muted:var(--3d-face)] raymond:active:shadow-pressed" />
+          <DialogCloseButton className="absolute top-1.5 right-2 touch:top-hit-sm touch:right-0 raymond:top-[5px] raymond:right-[5px] raymond:touch:top-[calc(var(--spacing-touch)/2-4px)] raymond:touch:right-0 raymond:touch:[--hit-room:calc((var(--spacing-touch)-16px)/2)] raymond:h-3.5 raymond:w-4 raymond:min-w-0 raymond:bg-(--3d-face) raymond:shadow-raised raymond:hover:shadow-raised raymond:focus-visible:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[--focus-offset:-3px] raymond:[--muted:var(--3d-face)] raymond:active:shadow-pressed" />
         )}
       </DialogPrimitive.Content>
     </DialogPortal>
@@ -258,7 +258,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
+      className={cn("flex flex-col gap-3 raymond:gap-2", className)}
       {...props}
     />
   );
@@ -328,8 +328,8 @@ function DialogTitleBar({ className, ...props }: React.ComponentProps<"div">) {
         // the caption is the touch spacing tall, and each box keeps beside it
         // what its 16px leave of that, as the corner X does.
         className={cn(
-          "flex items-center gap-1",
-          "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:touch:min-h-touch raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:text-(--caption-inactive-foreground) raymond:[--muted-foreground:currentColor] raymond:[&>[data-slot=module-marker]]:bg-transparent raymond:[&>[data-slot=module-marker]]:text-current raymond:gap-0.5",
+          "-mx-4 -mt-4 flex items-center gap-1 border-b bg-muted px-4 py-1.5",
+          "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:touch:min-h-touch raymond:border-b-0 raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:py-0 raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:text-(--caption-inactive-foreground) raymond:[--muted-foreground:currentColor] raymond:[&>[data-slot=module-marker]]:bg-transparent raymond:[&>[data-slot=module-marker]]:text-current raymond:gap-0.5",
           "raymond:[&_button[data-size^=icon]]:h-3.5 raymond:[&_button[data-size^=icon]]:w-4 raymond:[&_button[data-size^=icon]]:min-w-0 raymond:touch:[&_button[data-size^=icon]]:[--hit-room:calc((var(--spacing-touch)-16px)/2)] raymond:[&_button[data-size^=icon]]:bg-(--3d-face) raymond:[&_button[data-size^=icon]]:text-foreground raymond:[&_button[data-size^=icon]]:shadow-raised raymond:[&_button[data-size^=icon]:active]:shadow-pressed raymond:[&_button[data-size^=icon]:hover]:bg-(--3d-face) raymond:[&_button[data-size^=icon]:hover]:shadow-raised raymond:[&_button[data-size^=icon]:focus-visible]:shadow-[inset_-1px_-1px_var(--3d-dark-shadow),inset_1px_1px_var(--3d-highlight),inset_-2px_-2px_var(--3d-shadow),inset_2px_2px_var(--3d-light)] raymond:[&_button[data-size^=icon]]:[--focus-offset:-3px] raymond:[&_button[data-size^=icon]_svg]:size-2.5 raymond:[&_button[data-size^=icon]_svg]:stroke-3",
           className,
         )}
@@ -361,7 +361,7 @@ function DialogTitle({
         // while the dialog does not hold the focus; quiet text in it and the
         // module marker take the caption's text colour, on no tile.
         !inBar &&
-          "raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:touch:min-h-touch raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:text-(--caption-inactive-foreground) raymond:[--muted-foreground:currentColor] raymond:[&>[data-slot=module-marker]]:bg-transparent raymond:[&>[data-slot=module-marker]]:text-current",
+          "-mx-4 -mt-4 border-b bg-muted px-4 py-2.5 pr-10 raymond:mx-[calc(var(--spacing)*-4+3px)] raymond:mt-[calc(var(--spacing)*-4+3px)] raymond:min-h-4.5 raymond:touch:min-h-touch raymond:border-b-0 raymond:bg-[linear-gradient(to_right,var(--caption),color-mix(in_oklab,var(--caption),var(--caption-gradient))_60%,var(--caption-gradient))] raymond:py-0 raymond:pr-0.5 raymond:pl-[3px] raymond:font-bold raymond:text-(--caption-foreground) raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:bg-[linear-gradient(to_right,var(--caption-inactive),var(--caption-inactive-gradient))] raymond:in-[[data-slot=dialog-content]:not(:focus-within)]:text-(--caption-inactive-foreground) raymond:[--muted-foreground:currentColor] raymond:[&>[data-slot=module-marker]]:bg-transparent raymond:[&>[data-slot=module-marker]]:text-current",
         className,
       )}
       {...props}
