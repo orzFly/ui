@@ -56,12 +56,7 @@ const row =
 
 export function ForAgents({ className }: { className?: string }) {
   return (
-    <HomeModule
-      icon={<ListIcon />}
-      title="For agents"
-      meta="read in this order"
-      className={className}
-    >
+    <HomeModule icon={<ListIcon />} title="For agents" className={className}>
       <ol className="text-ui" data-pagefind-ignore>
         {STEPS.map((step, index) => {
           const { title, description } =

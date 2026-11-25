@@ -18,8 +18,8 @@ function Card({
         // etched frame, a dark line with a lit one a pixel down and right,
         // drawn behind the content. With a header the frame's top runs
         // through the header's middle, where the header is its legend, and
-        // on touch a header that holds a target (an action, a link in its
-        // description) is the touch spacing tall, its middle half that down.
+        // on touch a header that holds a target (an action, a link) is the
+        // touch spacing tall, its middle half that down.
         "raymond:relative raymond:isolate raymond:border-0 raymond:before:pointer-events-none raymond:before:absolute raymond:before:inset-[0_1px_1px_0] raymond:before:-z-1 raymond:before:border raymond:before:border-(--3d-shadow) raymond:before:shadow-[inset_1px_1px_var(--3d-highlight),1px_1px_var(--3d-highlight)] raymond:before:content-[''] raymond:has-[>[data-slot=card-header]]:before:top-[calc(var(--spacing-row)/2)] raymond:touch:has-[>[data-slot=card-header]_:is(a[href],button)]:before:top-[calc(var(--spacing-touch)/2)]",
         className,
       )}
@@ -96,8 +96,8 @@ function ModuleMarker({
 }
 
 /**
- * The card's header: a ruled strip holding the module marker, then the title,
- * the description and the action.
+ * The card's header: a ruled strip holding the module marker, then the title
+ * and the action.
  */
 function CardHeader({
   className,
@@ -112,16 +112,16 @@ function CardHeader({
     <div
       data-slot="card-header"
       className={cn(
-        // On touch a header that holds a target, an action or a link in its
-        // description, is the touch spacing tall, so the card, which clips,
-        // leaves its hit area whole and the content under it stands clear;
-        // an icon button's own margin leaves the room at the end.
+        // On touch a header that holds a target, an action or a link, is the
+        // touch spacing tall, so the card, which clips, leaves its hit area
+        // whole and the content under it stands clear; an icon button's own
+        // margin leaves the room at the end.
         "group/card-header @container/card-header flex min-h-row flex-wrap items-center gap-x-2 gap-y-0.5 border-b bg-muted px-2 py-0.5 text-ui-sm touch:has-[a[href],button]:min-h-touch",
         // Under raymond the header is the group box's legend, on the card's
         // face with no rule: the frame breaks around each of its parts,
         // which mask half the gap on either side in the card's colour. The
         // marker keeps its own fill.
-        "raymond:border-b-transparent raymond:bg-transparent raymond:[&>:is([data-slot=card-title],[data-slot=card-description],[data-slot=card-action])]:bg-card raymond:[&>:is([data-slot=module-marker],[data-slot=card-title],[data-slot=card-description],[data-slot=card-action])]:[outline:calc(var(--spacing)*1)_solid_var(--card)]",
+        "raymond:border-b-transparent raymond:bg-transparent raymond:[&>:is([data-slot=card-title],[data-slot=card-action])]:bg-card raymond:[&>:is([data-slot=module-marker],[data-slot=card-title],[data-slot=card-action])]:[outline:calc(var(--spacing)*1)_solid_var(--card)]",
         className,
       )}
       {...props}
@@ -140,16 +140,6 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
         "font-heading text-ui-sm font-bold text-card-foreground",
         className,
       )}
-      {...props}
-    />
-  );
-}
-
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-description"
-      className={cn("text-ui-sm text-muted-foreground", className)}
       {...props}
     />
   );
@@ -195,7 +185,6 @@ export {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,

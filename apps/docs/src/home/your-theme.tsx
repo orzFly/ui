@@ -113,7 +113,6 @@ export function YourTheme({ className }: { className?: string }) {
     <HomeModule
       icon={<PaletteIcon />}
       title="Your theme"
-      meta="whole site"
       api={["ui/Foundations/Theme"]}
       className={className}
     >

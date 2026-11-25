@@ -15,7 +15,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -139,7 +138,6 @@ const CASES: [file: string, slot: string, tree: ReactElement][] = [
     <Card key="a">
       <CardHeader>
         <CardTitle>Title</CardTitle>
-        <CardDescription>Description</CardDescription>
         <CardAction>Action</CardAction>
       </CardHeader>
       <CardContent>Body</CardContent>
