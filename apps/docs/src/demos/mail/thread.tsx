@@ -2,21 +2,18 @@ import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
-  DropdownMenu,
   DropdownMenuCheckboxItem,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
 import { Pane } from "@orz/ui/components/pane";
-import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@orz/ui/components/tooltip";
+  Toolbar,
+  ToolbarMenu,
+  ToolbarOverflow,
+  ToolbarSpacer,
+} from "@orz/ui/components/toolbar";
 import { isPlainClick } from "@orz/ui/lib/link";
 import {
   MarkdownEditor,
@@ -26,7 +23,6 @@ import { Markdown } from "@orz/ui-markdown";
 import {
   ArchiveIcon,
   ArrowLeftIcon,
-  EllipsisIcon,
   ForwardIcon,
   InboxIcon,
   LinkIcon,
@@ -158,7 +154,7 @@ export interface ThreadActions {
   onCopyLink: () => void;
 }
 
-function Toolbar({
+function ThreadToolbar({
   thread,
   actions,
 }: {
@@ -167,15 +163,16 @@ function Toolbar({
 }) {
   const folder = folderOf(thread);
   return (
-    <Pane
-      purpose="toolbar"
+    <Toolbar
       edge="bottom"
-      className="flex shrink-0 items-center gap-0.5 px-2 py-2.5"
+      aria-label="Thread actions"
+      className="shrink-0 px-2 py-2.5"
     >
       <ActionButton
         label="Back to inbox"
         action="back"
         className="md:hidden"
+        priority="pin"
         asChild
       >
         <a
@@ -214,33 +211,26 @@ function Toolbar({
       >
         <MailIcon />
       </ActionButton>
-      <DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <ToolbarButton aria-label="Labels">
-                <TagIcon />
-              </ToolbarButton>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Labels</TooltipContent>
-        </Tooltip>
-        <DropdownMenuContent align="start" className="w-44">
-          <DropdownMenuLabel>Labels</DropdownMenuLabel>
-          {INBOX_LABELS.map((label) => (
-            <DropdownMenuCheckboxItem
-              key={label}
-              checked={thread.labels.includes(label)}
-              onCheckedChange={(on) => actions.onLabel(label, on)}
-              // A reader ticks several in a row; the menu stays open for the next.
-              onSelect={(event) => event.preventDefault()}
-            >
-              {label}
-            </DropdownMenuCheckboxItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <span className="flex-1" />
+      <ToolbarMenu
+        icon={<TagIcon />}
+        label="Labels"
+        iconOnly
+        contentClassName="w-44"
+      >
+        <DropdownMenuLabel>Labels</DropdownMenuLabel>
+        {INBOX_LABELS.map((label) => (
+          <DropdownMenuCheckboxItem
+            key={label}
+            checked={thread.labels.includes(label)}
+            onCheckedChange={(on) => actions.onLabel(label, on)}
+            // A reader ticks several in a row; the menu stays open for the next.
+            onSelect={(event) => event.preventDefault()}
+          >
+            {label}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </ToolbarMenu>
+      <ToolbarSpacer />
       <ActionButton
         // A toggle keeps one name and says its state as pressed; "Unstar" would read as pressed Unstar.
         label="Star"
@@ -250,41 +240,29 @@ function Toolbar({
       >
         <StarIcon className={thread.starred ? "fill-current" : undefined} />
       </ActionButton>
-      <DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <ToolbarButton aria-label="More actions">
-                <EllipsisIcon />
-              </ToolbarButton>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent>More actions</TooltipContent>
-        </Tooltip>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onSelect={actions.onForward}>
-            <ForwardIcon />
-            Forward
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={actions.onCopyLink}>
-            <LinkIcon />
-            Copy link
-          </DropdownMenuItem>
-          {folder === "trash" && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onSelect={actions.onDeleteForever}
-              >
-                <Trash2Icon />
-                Delete forever…
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </Pane>
+      <ToolbarOverflow contentClassName="w-44">
+        <DropdownMenuItem onSelect={actions.onForward}>
+          <ForwardIcon />
+          Forward
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={actions.onCopyLink}>
+          <LinkIcon />
+          Copy link
+        </DropdownMenuItem>
+        {folder === "trash" && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={actions.onDeleteForever}
+            >
+              <Trash2Icon />
+              Delete forever…
+            </DropdownMenuItem>
+          </>
+        )}
+      </ToolbarOverflow>
+    </Toolbar>
   );
 }
 
@@ -312,7 +290,7 @@ export function Thread({
       aria-labelledby="inbox-subject"
       className="flex min-h-0 flex-1 flex-col"
     >
-      <Toolbar thread={thread} actions={actions} />
+      <ThreadToolbar thread={thread} actions={actions} />
       <Pane purpose="document" className="flex min-h-0 flex-1 flex-col">
         <div
           ref={scrollRef}

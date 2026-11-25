@@ -80,8 +80,10 @@ sidebar's, is that `Pane`'s `edge` instead: the line belongs to the pane and goe
 <Example of={FormattingToolbar} />
 
 The toolbar's buttons fall into three groups: how text looks, how a block is shaped, what is
-attached. A separator between groups in a `role="toolbar"` takes `decorative={false}`, so a screen
-reader hears where one group ends; elsewhere it stays decorative, as it is by default.
+attached. A separator between groups in a `Toolbar` takes `decorative={false}`, so a screen
+reader hears where one group ends; elsewhere it stays decorative, as it is by default. Where the
+row does not fit, the toolbar moves the last group into its `⋯` first, and draws no separator
+beside the `⋯` ([Toolbars](/guidelines/patterns/toolbars/)).
 
 ## Modules
 

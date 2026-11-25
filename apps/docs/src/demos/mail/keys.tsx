@@ -8,7 +8,7 @@ import {
 import { Kbd } from "@orz/ui/components/kbd";
 import { Label } from "@orz/ui/components/label";
 import { Switch } from "@orz/ui/components/switch";
-import { ToolbarButton } from "@orz/ui/components/toolbar";
+import { ToolbarButton, useToolbar } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
   TooltipContent,
@@ -88,7 +88,8 @@ export function useMailKeys(onKey: (action: KeyAction) => void) {
 
 /**
  * An icon button named by its tooltip, which also prints the action's key while the keys are on:
- * a shortcut is learned where its action is.
+ * a shortcut is learned where its action is. In a `Toolbar` the button draws that tooltip itself,
+ * and prints the key beside the action once the action has moved into the toolbar's ⋯ menu.
  */
 export function ActionButton({
   label,
@@ -100,6 +101,19 @@ export function ActionButton({
   action?: KeyAction;
 }) {
   const enabled = useShortcutsEnabled();
+  const toolbar = useToolbar();
+  if (toolbar) {
+    return (
+      <ToolbarButton
+        aria-label={label}
+        tooltip={label}
+        shortcut={enabled && action ? printed(KEYS[action].key) : undefined}
+        {...props}
+      >
+        {children}
+      </ToolbarButton>
+    );
+  }
   return (
     <Tooltip>
       <TooltipTrigger asChild>

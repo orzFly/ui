@@ -14,7 +14,7 @@ export const meta = {
     "ui/Primitives/Switch",
     "ui/Primitives/Tabs",
     "ui/Primitives/Textarea",
-    "ui/Primitives/ToolbarButton",
+    "ui/Toolbar",
     "ui/Primitives/Toggle",
     "ui/Primitives/SegmentedControl",
     "ui/Primitives/InfoPopover",
@@ -137,6 +137,10 @@ comes first in the DOM decides nothing.
 - A strip of small controls along the edge of a box that clips, such as a `Card` header that
   holds an action or a link, a `Pane` toolbar or title bar, a framed `Tabs` bar or a viewer's
   toolbar, is at least {touchSpacing}px tall, its controls centred in it.
+
+With that room, fewer commands fit on a `Toolbar` at the same width. It hides no words on touch,
+since no tooltip would say them under a finger: a command that does not fit moves into its `⋯`
+whole, words and all ([Toolbars](/guidelines/patterns/toolbars/)).
 
 A small control you draw yourself reserves the room the same way: `touch:mx-hit-xs` beside it for
 an `xs` one, `hit-sm` for an `sm` one, `hit` for a default one, `hit-lg` for a large one. A stack of

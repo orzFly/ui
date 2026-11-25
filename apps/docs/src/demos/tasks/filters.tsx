@@ -6,6 +6,7 @@ import {
   MatchedText,
   matchText,
 } from "@orz/ui/components/filter-menu";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import { ChevronDownIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { DEFAULT_FILTERS, type Filters, STATUSES } from "./board.ts";
@@ -69,11 +70,14 @@ function Filter({
   name,
   sections,
   value,
+  fallback,
   onChange,
 }: {
   name: string;
   sections: FilterMenuSection<Choice>[];
   value: string;
+  /** The value it holds unless asked otherwise. */
+  fallback: string;
   onChange: (value: string) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -102,6 +106,9 @@ function Filter({
       listLabel={name}
       align="start"
       className="w-56"
+      toolbarLabel={name}
+      toolbarValue={label}
+      toolbarActive={value !== fallback}
     >
       <Button variant="outline" size="sm" className="shrink-0">
         <span className="text-muted-foreground">{name}:</span>
@@ -129,25 +136,25 @@ export function FilterBar({
         name="Status"
         sections={STATUS_SECTIONS}
         value={filters.status}
+        fallback={DEFAULT_FILTERS.status}
         onChange={(status) => onChange({ status: status as Filters["status"] })}
       />
       <Filter
         name="Assignee"
         sections={ASSIGNEE_SECTIONS}
         value={filters.assignee}
+        fallback={DEFAULT_FILTERS.assignee}
         onChange={(assignee) => onChange({ assignee })}
       />
       <Filter
         name="Label"
         sections={LABEL_SECTIONS}
         value={filters.label}
+        fallback={DEFAULT_FILTERS.label}
         onChange={(label) => onChange({ label })}
       />
       {changed && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="shrink-0"
+        <ToolbarButton
           onClick={() =>
             onChange({
               status: DEFAULT_FILTERS.status,
@@ -157,7 +164,7 @@ export function FilterBar({
           }
         >
           Reset
-        </Button>
+        </ToolbarButton>
       )}
     </>
   );

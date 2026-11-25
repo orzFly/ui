@@ -8,6 +8,8 @@ export const meta = {
     "ui/Primitives/Checkbox",
     "ui/Primitives/RadioGroup",
     "ui/Primitives/SegmentedControl",
+    "ui/Toolbar",
+    "ui/Primitives/SplitButton",
     "ui/Primitives/Toggle",
     "ui/Primitives/Select",
     "ui/FilterMenu",
@@ -73,6 +75,7 @@ one, and the box above them turns partly checked; press it to select none.
 | Exactly one of two to five, worth seeing together | Either | `RadioGroup` |
 | Exactly one of many, or of options with long names | Either | `Select` |
 | One of two or three modes of the tool in hand, in its toolbar | Immediately | `SegmentedControl` |
+| One of a few icon toggles in a toolbar: an alignment | Immediately | `ToolbarGroup` with `selection="single"` |
 | Any number of tags or filters over a list, each on or off | Immediately | `Toggle`s, side by side |
 | Exactly one of a list too long to scan, or one that grows with people's own data: a task, a person, a label | Either | `FilterMenu`, behind a button that shows the pick |
 | A number people know exactly: a count, a port, a font size | Either | `NumberInput` |
@@ -82,7 +85,14 @@ one, and the box above them turns partly checked; press it to select none.
 
 A `SegmentedControl` sets how the tool works rather than a value it saves: the Binary inspector's
 typing mode, Overwrite or Insert, beside the commands it changes. A setting on a form or a settings
-screen, even one of two, is a RadioGroup.
+screen, even one of two, is a RadioGroup. Icons that pick one of a few in a toolbar, an alignment,
+are a `ToolbarGroup` with `selection="single"`: short of room it keeps its row until it moves into
+the `⋯` whole, where a `SegmentedControl` first becomes a dropdown of its words
+([Toolbars](/guidelines/patterns/toolbars/)).
+
+A `SplitButton` does the usual thing on its face and offers the others behind its arrow. Use it
+when one variant is what people want most of the time; when none is, the variants are a menu of
+their own.
 
 A `Toggle` narrows what is on screen the moment it is pressed, and any number may be on: the Notes
 demo's tags above its list. Filters that wait for **Apply**, or a choice the app saves, are a

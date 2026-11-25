@@ -1,0 +1,117 @@
+export const meta = {
+  title: "Toolbars",
+  description:
+    "A row of commands that fits the width it is given: what does not fit goes into a ⋯ menu, in an order the caller sets, and comes back as the room does.",
+  order: 38,
+  api: [
+    "ui/Toolbar",
+    "ui/Primitives/SplitButton",
+    "ui/Primitives/SegmentedControl",
+    "ui/FilterMenu",
+  ],
+};
+
+import { IssueToolbar } from "../../../examples/toolbars/issue-toolbar.tsx";
+import { ViewAndAlignment } from "../../../examples/toolbars/view-and-alignment.tsx";
+
+**A row of commands is a `Toolbar`. It decides what fits; you decide the order, what stays
+together and what goes first. Never hide a command at a breakpoint by hand.**
+
+<Example of={IssueToolbar} />
+
+Drag the frame's corner. As the bar narrows, the search narrows, the filters drop their names,
+the empty search gives way to its icon, and then the filters go into the `⋯` menu, the one at the
+end first. **New issue** stays to the last. Set a filter away from its default and it leaves the
+bar last, and marks the `⋯` while it is in there.
+
+## What gives way, in order
+
+Each step is taken only when the one before has not made enough room, and a wider bar takes them
+back in reverse, so a width always gets the same layout however it was reached.
+
+1. A `ToolbarSpacer` gives up its room, and a `ToolbarSearch` or a `flex` `ToolbarItem` narrows.
+2. On a fine pointer, the words of commands with an icon hide, the lowest `priority` first, every
+   command of a priority at once. The icon stays, and the tooltip says the words. A primary or
+   destructive command keeps its words: what it does is said before it is done.
+3. A `SegmentedControl` becomes a dropdown of its value, and an empty search becomes its icon.
+4. Commands go into the `⋯` menu: the lowest `priority` first; within a priority, those at their
+   defaults before those set away from them (a filter in use, a toggle that is on); with a
+   `ToolbarSpacer`, the cluster before it before the one after it; each from the end of its
+   cluster.
+5. Commands with `priority="pin"` go last of all, and only those with a form in the menu. What is
+   still too wide scrolls rather than being cut off.
+
+The `⋯` stands at the end of the first cluster that overflowed, so a command at the far end, the
+one a reader looks for there, keeps its place. Put it somewhere else with `ToolbarOverflow`.
+
+## What fits follows the style and the pointer
+
+How many commands fit at a width is whatever their sizes in the style and on the pointer in use
+allow: a style with smaller controls holds more, and a coarse pointer, whose commands keep room
+beside them for a finger, holds fewer. So a toolbar states an order, groups and priorities, never
+a breakpoint: a command hidden at a breakpoint follows the window rather than the bar, and stays
+hidden when a denser style would have made room for it.
+
+On a coarse pointer no words hide: a tooltip never shows under a finger, so an icon alone would
+lose its name. A command that does not fit moves into the menu whole, words and all.
+
+## Clusters and the ⋯
+
+A `ToolbarSpacer` splits the bar into the commands at its start and those at its end, as Mail's
+thread toolbar keeps **Star** at the far end. Commands that belong together go in a
+`ToolbarGroup`, which moves into the menu whole and is parted from its neighbours there; a
+`ToolbarSeparator` between commands parts them in the menu too. A separator left with nothing to
+part, at an end or beside the `⋯`, is not drawn.
+
+Commands that are always in the `⋯`, Mail's **Forward** and **Copy link**, are the children of a
+`ToolbarOverflow`. Its `⋯` is always shown, and what the bar moves into it goes above them.
+
+## One of a few
+
+<Example of={ViewAndAlignment} />
+
+Both pick one of a few, and they give way differently.
+
+- A `SegmentedControl` is a mode of the tool with words: a view, a typing mode. Short of room it
+  first becomes a dropdown of its current value, then radio items in the `⋯` menu.
+- A `ToolbarGroup` with `selection="single"` is a row of icon toggles: an alignment. It stays a row
+  until it moves into the menu whole, as radio items under its `label`. With
+  `selection="multiple"` each toggle is on or off on its own, bold and italic, and they move as
+  check items.
+
+## Menus, filters and other parts
+
+A command whose menu should follow it into the `⋯` is a `ToolbarMenu`, which becomes a submenu
+there, its `value` beside its name. A `FilterMenu` in a toolbar becomes a row naming its
+`toolbarLabel` and `toolbarValue`; choosing the row opens the filter against the `⋯` and gives the
+focus back to the `⋯` when it closes. A `SplitButton` becomes its command and a submenu of the
+others, or the others after it with `overflow="group"`.
+
+A `ToolbarButton` wrapped in a menu or popover trigger of your own cannot be followed into the
+menu, since its surface would have nothing on the bar to open from: it stays on the bar, and warns
+in development. Make it a `ToolbarMenu`, or a `ToolbarItem` with an `overflow` form.
+
+Anything else is a `ToolbarItem`. Give it `overflow`, what it is in the `⋯` menu, or it stays on
+the bar. That form is drawn in the menu, outside the item: it reads nothing from the providers
+inside the item, so take what it needs from the code it is written in. A command moved into the
+menu is called with the menu item's event, not its button's.
+
+## Search
+
+A `ToolbarSearch` with a query never becomes its icon. Pressing the icon opens the field again at
+its narrowest, moving other commands into the menu to make room; only when nothing else could make
+room does the field take the whole bar, with a button back. The field stays one element through all
+of this, so its caret and an input method's composition survive.
+
+## The keyboard
+
+A toolbar is one Tab stop, and the arrow keys move between its commands, wrapping at the ends and
+following the reading direction; a command in the menu is skipped. A search's field is a Tab stop
+of its own, so its arrow keys move its caret.
+
+## Before it is measured
+
+A prerendered page draws every command first. What does not fit wraps onto a line that is cut off
+rather than showing half a button, and the bar lays itself out once the page runs, which may move
+it once. A `⋯` that only holds overflow appears then; one with commands of its own is there from
+the start.

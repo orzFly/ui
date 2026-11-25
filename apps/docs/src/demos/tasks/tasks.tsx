@@ -2,7 +2,6 @@ import { TASKS, type Task } from "@orz/fixtures/tasks.ts";
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
 import { EmptyState } from "@orz/ui/components/empty-state";
-import { Input } from "@orz/ui/components/input";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
 import { Pane } from "@orz/ui/components/pane";
 import { Separator } from "@orz/ui/components/separator";
@@ -14,11 +13,17 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@orz/ui/components/sheet";
+import {
+  Toolbar,
+  ToolbarButton,
+  ToolbarSearch,
+  ToolbarSpacer,
+} from "@orz/ui/components/toolbar";
 import { TooltipProvider } from "@orz/ui/components/tooltip";
 import { usePagedAppend } from "@orz/ui/hooks/use-paged-append";
 import { useSelection } from "@orz/ui/hooks/use-selection";
 import { useSweepSelect } from "@orz/ui/hooks/use-sweep-select";
-import { ListTodoIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
+import { ListTodoIcon, PlusIcon, XIcon } from "lucide-react";
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import {
@@ -231,41 +236,34 @@ export function Tasks() {
             aria-labelledby="tasks-title"
             className="flex min-w-0 flex-1 flex-col"
           >
-            <Pane
-              purpose="toolbar"
+            <Toolbar
               edge="bottom"
-              className="flex flex-wrap items-center gap-2 px-2 py-2 touch:pt-hit-sm md:px-4"
+              size="sm"
+              aria-label="Tasks toolbar"
+              className="gap-2 px-2 py-2 md:px-4"
             >
               <h2 id="tasks-title" className="mr-2 font-semibold">
                 Tasks
               </h2>
-              <div className="relative order-last w-full sm:order-none sm:w-56 md:w-64">
-                <SearchIcon
-                  aria-hidden
-                  className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-2.5 size-4 text-muted-foreground"
-                />
-                <Input
-                  type="search"
-                  aria-label="Search tasks"
-                  placeholder="Search…"
-                  value={filters.text}
-                  onChange={(event) => filter({ text: event.target.value })}
-                  className="pl-8"
-                />
-              </div>
-              <Button
-                size="sm"
-                className="ml-auto touch:my-hit-sm sm:order-last"
+              <ToolbarSearch
+                label="Search tasks"
+                placeholder="Search…"
+                minWidth={140}
+                maxWidth={256}
+                value={filters.text}
+                onValueChange={(text) => filter({ text })}
+              />
+              <FilterBar filters={filters} onChange={filter} />
+              <ToolbarSpacer />
+              <ToolbarButton
+                variant="default"
+                priority="pin"
                 onClick={() => setCreating(true)}
               >
                 <PlusIcon />
                 New task…
-              </Button>
-              {/* Wraps cleanly on narrow screens instead of hard-clipping the trailing filter trigger. */}
-              <div className="order-last flex w-full flex-wrap gap-2 touch:py-hit-sm sm:order-none sm:w-auto">
-                <FilterBar filters={filters} onChange={filter} />
-              </div>
-            </Pane>
+              </ToolbarButton>
+            </Toolbar>
             <div className="flex min-h-0 flex-1 flex-col *:data-[slot=table-container]:min-h-0 *:data-[slot=table-container]:flex-1 *:data-[slot=table-container]:overflow-auto">
               {rows.length === 0 ? (
                 <Pane purpose="document" className="flex-1 px-4 py-12">

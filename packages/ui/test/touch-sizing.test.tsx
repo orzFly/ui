@@ -50,10 +50,20 @@ import {
   SelectValue,
 } from "../src/components/select.tsx";
 import { Slider } from "../src/components/slider.tsx";
+import {
+  SplitButton,
+  SplitButtonAction,
+  SplitButtonMenu,
+} from "../src/components/split-button.tsx";
 import { Switch } from "../src/components/switch.tsx";
 import { TabNav, TabNavLink } from "../src/components/tab-nav.tsx";
 import { Tabs, TabsList, TabsTrigger } from "../src/components/tabs.tsx";
 import { Textarea } from "../src/components/textarea.tsx";
+import {
+  Toolbar,
+  ToolbarButton,
+  ToolbarOverflow,
+} from "../src/components/toolbar.tsx";
 
 // Not `new URL(…, import.meta.url)`: under happy-dom `URL` is the window's
 // class, which node:fs refuses as a file URL.
@@ -449,5 +459,56 @@ describe("touch sizes", () => {
       );
       expectHitAreaOnly(button);
     }
+  });
+
+  it("a Toolbar is at least the touch spacing tall; its icon commands and its ⋯ keep the room beside them", () => {
+    render(
+      <Toolbar aria-label="Thread">
+        <ToolbarButton aria-label="Archive">
+          <svg aria-hidden />
+        </ToolbarButton>
+        <ToolbarOverflow>
+          <DropdownMenuItem>Forward</DropdownMenuItem>
+        </ToolbarOverflow>
+      </Toolbar>,
+    );
+    expect(classesOf(screen.getByRole("toolbar"))).toContain(
+      "touch:min-h-touch",
+    );
+    // What a coarse pointer does to the bar is move commands, never draw
+    // them larger: the room beside each is the margin an icon button keeps.
+    for (const name of ["Archive", "More actions"]) {
+      const button = screen.getByRole("button", { name });
+      expect(classesOf(button)).toEqual(
+        expect.arrayContaining([
+          "size-control",
+          "mx-(--hit-room)",
+          "touch:[--hit-room:var(--spacing-hit)]",
+        ]),
+      );
+      expectHitAreaOnly(button);
+    }
+  });
+
+  it("SplitButton's halves join: each is the touch spacing wide, with no room between", () => {
+    render(
+      <SplitButton>
+        <SplitButtonAction>Merge</SplitButtonAction>
+        <SplitButtonMenu triggerLabel="Merge options">
+          <DropdownMenuItem>Squash and merge</DropdownMenuItem>
+        </SplitButtonMenu>
+      </SplitButton>,
+    );
+    const action = screen.getByRole("button", { name: "Merge" });
+    const arrow = screen.getByRole("button", { name: "Merge options" });
+    expect(classesOf(action)).toContain("touch:min-w-touch");
+    expect(classesOf(arrow)).toEqual(
+      expect.arrayContaining([
+        "in-data-[slot=button-group]:mx-0",
+        "in-data-[slot=button-group]:touch:min-w-touch",
+      ]),
+    );
+    expectHitAreaOnly(action);
+    expectHitAreaOnly(arrow);
   });
 });

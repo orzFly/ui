@@ -1,4 +1,5 @@
 import { CheckIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
+import { Toolbar as ToolbarPrimitive } from "radix-ui";
 import type {
   ComponentProps,
   KeyboardEvent,
@@ -6,6 +7,7 @@ import type {
   ReactElement,
   ReactNode,
   Ref,
+  RefObject,
 } from "react";
 import {
   Fragment,
@@ -19,12 +21,21 @@ import {
   useState,
 } from "react";
 import { cn } from "../lib/utils.ts";
+import { DropdownMenuItem } from "./dropdown-menu.tsx";
 import {
   Popover,
   PopoverAnchor,
   PopoverContent,
   PopoverTrigger,
 } from "./popover.tsx";
+import { RovingTaken } from "./toolbar/command.tsx";
+import {
+  OUT_OF_FLOW,
+  slotProps,
+  ToolbarItemContext,
+  type ToolbarPriority,
+  useToolbarUnit,
+} from "./toolbar/store.ts";
 
 export interface FilterMenuRow {
   /** Unique across every section. */
@@ -101,6 +112,14 @@ export interface FilterMenuProps<R extends FilterMenuRow> {
   side?: ComponentProps<typeof PopoverContent>["side"];
   sideOffset?: number;
   className?: string;
+  /** In a `Toolbar`, how soon it gives up room. Outside one it is ignored. */
+  priority?: ToolbarPriority;
+  /** In a `Toolbar`, set away from its default: it leaves the bar last, and marks the ⋯. */
+  toolbarActive?: boolean;
+  /** Its row's name in the ⋯ menu; `listLabel` by default. */
+  toolbarLabel?: ReactNode;
+  /** What it is set to, after its name in the ⋯ menu (`Open`, `Alice`). */
+  toolbarValue?: ReactNode;
 }
 
 /** Case-folded, with diacritics dropped, so `frappe` finds `Frappé`. */
@@ -307,6 +326,10 @@ const isEscapeOfComposition = (event: globalThis.KeyboardEvent) =>
  * in the box, so typing always filters, and the arrow keys walk a highlight
  * that `aria-activedescendant` follows. The caller filters; this component
  * owns the surface, the highlight and the keys.
+ *
+ * In a `Toolbar` its trigger is one of the bar's commands. Moved into the ⋯
+ * menu it is a row there, naming it and its value, which opens the menu
+ * against the ⋯ and hands the focus back to it on closing.
  */
 export function FilterMenu<R extends FilterMenuRow>({
   ref,
@@ -335,6 +358,10 @@ export function FilterMenu<R extends FilterMenuRow>({
   side,
   sideOffset,
   className,
+  priority,
+  toolbarActive,
+  toolbarLabel,
+  toolbarValue,
 }: FilterMenuProps<R>) {
   const [openState, setOpenState] = useState(defaultOpen);
   const open = openProp ?? openState;
@@ -390,6 +417,32 @@ export function FilterMenu<R extends FilterMenuRow>({
    * first hit, or by the user. The first two follow the list as it changes.
    */
   const mode = useRef<"rest" | "hit" | "user">("rest");
+  const interactedOutside = useRef(false);
+  const openRef = useRef<(next: boolean) => void>(() => {});
+  const unit = useToolbarUnit({
+    meta: {
+      priority,
+      active: toolbarActive,
+      overflowable: true,
+      renderOverflow: () => (
+        <DropdownMenuItem
+          onSelect={() => {
+            unit.internal?.store.closeOverflow({ restoreFocus: false });
+            // Once the ⋯ menu has let go of the focus, which this one's box takes.
+            queueMicrotask(() => openRef.current(true));
+          }}
+        >
+          <span className="flex-1">{toolbarLabel ?? listLabel}</span>
+          {toolbarValue !== undefined && (
+            <span className="text-muted-foreground">{toolbarValue}</span>
+          )}
+          <ChevronRightIcon aria-hidden />
+        </DropdownMenuItem>
+      ),
+    },
+  });
+  const overflowed = unit.view === "overflow";
+  const moreRef = unit.internal?.store.triggerRef;
   const base = useId();
   const listId = `${base}-list`;
   const submenuId = `${base}-submenu`;
@@ -451,6 +504,7 @@ export function FilterMenu<R extends FilterMenuRow>({
     setOpenState(next);
     onOpenChange?.(next);
   };
+  openRef.current = setOpen;
 
   // In an effect rather than setOpen, so a controlled `open` that the parent
   // flips gets the same reset and the same closing null.
@@ -815,20 +869,47 @@ export function FilterMenu<R extends FilterMenuRow>({
   };
 
   let flatIndex = 0;
+  const triggerPart = (
+    <PopoverTrigger
+      asChild
+      ref={trigger}
+      // What a select's trigger does; a popover's opens on click alone.
+      onKeyDown={(event) => {
+        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+        event.preventDefault();
+        setOpen(true);
+      }}
+    >
+      {unit.registered ? (
+        <ToolbarPrimitive.Button asChild>{children}</ToolbarPrimitive.Button>
+      ) : (
+        children
+      )}
+    </PopoverTrigger>
+  );
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        asChild
-        ref={trigger}
-        // What a select's trigger does; a popover's opens on click alone.
-        onKeyDown={(event) => {
-          if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-          event.preventDefault();
-          setOpen(true);
-        }}
-      >
-        {children}
-      </PopoverTrigger>
+      {unit.registered ? (
+        <ToolbarItemContext.Provider value={unit.item}>
+          <span
+            ref={unit.ref}
+            {...slotProps(overflowed)}
+            data-slot="toolbar-item"
+            className={cn(
+              "inline-flex shrink-0 items-center",
+              overflowed && OUT_OF_FLOW,
+            )}
+          >
+            <RovingTaken.Provider value>{triggerPart}</RovingTaken.Provider>
+          </span>
+        </ToolbarItemContext.Provider>
+      ) : (
+        triggerPart
+      )}
+      {/* Its own trigger is out of sight while it is in the ⋯ menu. */}
+      {overflowed && moreRef && (
+        <PopoverAnchor virtualRef={moreRef as RefObject<HTMLButtonElement>} />
+      )}
       <PopoverContent
         ref={content}
         align={align}
@@ -854,17 +935,28 @@ export function FilterMenu<R extends FilterMenuRow>({
           event.preventDefault();
           input.current?.focus({ preventScroll: true });
         }}
+        onInteractOutside={(event) => {
+          if (!event.defaultPrevented) interactedOutside.current = true;
+        }}
         onCloseAutoFocus={(event) => {
           const direction = tabbing.current;
           tabbing.current = null;
-          if (direction === null || !trigger.current) return;
+          const outside = interactedOutside.current;
+          interactedOutside.current = false;
+          // Opened from the ⋯ menu, it goes back to the ⋯: its own trigger
+          // is out of sight. A click elsewhere has put the focus there.
+          const from =
+            overflowed && moreRef?.current ? moreRef.current : trigger.current;
+          if (direction === null) {
+            if (!overflowed || outside || !from) return;
+            event.preventDefault();
+            from.focus({ preventScroll: true });
+            return;
+          }
+          if (!from) return;
           event.preventDefault();
           // The surface may already be gone by now, its ref with it.
-          focusBeside(
-            trigger.current,
-            direction === "backward",
-            content.current,
-          );
+          focusBeside(from, direction === "backward", content.current);
         }}
       >
         <FilterBox

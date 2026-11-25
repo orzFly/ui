@@ -20,7 +20,7 @@ export const meta = {
     "ui/Primitives/TabNav",
     "ui/Primitives/Table",
     "ui/Primitives/Tree",
-    "ui/Primitives/ToolbarButton",
+    "ui/Toolbar",
     "ui-codemirror/CodeEditor",
   ],
 };
@@ -125,9 +125,10 @@ the window's face around them; each style draws each of those its own way. Say w
 - **An editor** is `CodeEditor` or `MarkdownEditor` with `purpose="field"`, the default, when it
   is one input among others on a form or under a message, and `"document"` when it is the file or
   text its pane exists to edit and fills that pane, which draws the edges.
-- **A command in a toolbar** is `ToolbarButton`, named with `aria-label` when it shows an icon
-  alone, and a mode of the tool picked from two or three there is a `SegmentedControl`, which a
-  style may draw as toolbar buttons only one of which stays down. A tag or filter that is on or off
+- **A row of commands** is a `Toolbar` of `ToolbarButton`s, each named with `aria-label` when it
+  shows an icon alone, and a mode of the tool picked from two or three there is a
+  `SegmentedControl`, which a style may draw as toolbar buttons only one of which stays down. A
+  command with its variants beside it is a `SplitButton`. A tag or filter that is on or off
   on its own is a `Toggle`, which a style may draw as a toolbar button that stays down.
 - **A group of controls' title** on a form or settings screen is a `GroupHeading`; a group that
   wants a frame of its own is a `Card`. A rule between the group's rows is a `Separator` with
@@ -144,12 +145,15 @@ the window's face around them; each style draws each of those its own way. Say w
 A style redraws these where they stand: it keeps what they hold and in what order, adds nothing you
 did not write, and may tighten their spacing. So size a toolbar or a header by the padding around
 its controls rather than a fixed height, and a style's denser controls bring the bar in with them.
+A `Toolbar` keeps its order too, but how many of its commands fit at a width follows each style's
+sizes, and the rest wait in its `⋯`: give it an order and priorities, never a breakpoint
+([Toolbars](/guidelines/patterns/toolbars/)).
 A list or pane that scrolls puts its scroller inside, so a style's sunken edge stays drawn around
 it.
 
 <DoDont>
   <Do>
-    Build a panel from `Card`, a toolbar from `Pane` and `ToolbarButton`, a list from `List`, its
+    Build a panel from `Card`, a toolbar from `Toolbar` and `ToolbarButton`, a list from `List`, its
     rows at `min-h-row`, and round a part of your own with `rounded-control` or `rounded-surface`.
     Under another style it changes with everything around it.
   </Do>

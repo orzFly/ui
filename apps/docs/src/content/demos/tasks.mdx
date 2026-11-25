@@ -21,6 +21,11 @@ export const meta = {
         "New task… is the one primary button. Each row's ⋯ holds the actions on that task, and the bulk bar names its actions with their count once tasks are selected.",
     },
     {
+      route: "/guidelines/patterns/toolbars/",
+      where:
+        "Narrow the window: the search gives way to its icon, then the filters move into the toolbar's ⋯, the last first, while New task… keeps its place. A filter set from there marks the ⋯.",
+    },
+    {
       route: "/guidelines/patterns/overlays/",
       where:
         "Each row's menu has a submenu for the assignee, and hovering an assignee previews them in a HoverCard. New task… opens a Dialog. Below lg, a task's details slide in as a Sheet.",
@@ -53,7 +58,7 @@ export const meta = {
     {
       route: "/guidelines/platforms/touch-and-mobile/",
       where:
-        "On a phone the filters scroll sideways in one row, and a task opens as a Sheet that fills the screen.",
+        "On a phone the filters that do not fit wait in the toolbar's ⋯, and a task opens as a Sheet that fills the screen.",
     },
   ],
 };
