@@ -95,12 +95,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
 
-/**
- * Inside a `FenceFrame`, which carries Copy and the edge: `bareFallback` draws the plain text in
- * pierre's own geometry until it lands, so nothing moves when the colours arrive.
- */
-export const BareFallback: Story = {
-  args: { copy: false, bareFallback: true },
+/** Inside a `FenceFrame`, which carries Copy and the edge, the block turns its own Copy off. */
+export const InFenceFrame: Story = {
+  args: { copy: false },
   decorators: [
     (Story, { args }) => (
       <FenceFrame text={args.contents} lang="ts">

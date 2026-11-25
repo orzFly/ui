@@ -316,46 +316,65 @@ export function useSyntaxTheme(): SyntaxTheme {
 const PIERRE_FONT_FAMILY =
   'var(--diffs-font-family, "SF Mono", Monaco, Consolas, "Ubuntu Mono", "Liberation Mono", "Courier New", monospace)';
 
-/** The shape every code surface falls back to: the code, unhighlighted. */
+// `.markdown-body pre` and `code`, which a fence sits inside, draw a grey box,
+// padding and smaller type that pierre never draws; each class here beats them.
+const PLAIN_PRE =
+  "m-0 rounded-none bg-transparent p-0 [font:inherit] raymond:shadow-none";
+
+/**
+ * The code, unhighlighted, drawn as pierre draws it: what every code surface
+ * shows until pierre has drawn, and for good when it cannot. Anything else
+ * jumps when the highlighting arrives (UI-227). So, as pierre: its 8px layout
+ * margin, left unpainted, then its background (`diffs-container`'s, in
+ * styles.css) with 8px above and below the lines; its font at 13px on 20px
+ * lines with tabs two wide, or what pierre's `--diffs-*` properties make them;
+ * 1ch either side of a line. A snippet wraps; a file scrolls sideways beside
+ * its line numbers, which take pierre's gutter: 2ch before, at least 3ch wide,
+ * 1ch and its 2px rule after, the foreground mixed 65% into the background.
+ */
 export function PlainCodeFallback({
   contents,
-  bare = false,
+  lineNumbers = false,
   className,
 }: {
   contents: string;
-  /**
-   * pierre's own snippet geometry, with no box of its own: inside a frame a grey box would flash
-   * and shift its lines when pierre lands. Its 8px layout margin and its own 8px above and below,
-   * 1ch either side, and its font at 13px on 20px lines; each class beats `.markdown-body pre`,
-   * which a fence sits inside.
-   */
-  bare?: boolean;
+  lineNumbers?: boolean;
+  /** The view's own: it caps the height, around the margin as pierre's root does. */
   className?: string;
 }) {
-  if (bare) {
-    return (
-      <pre
-        className={cn(
-          "m-0 overflow-x-auto rounded-none bg-transparent px-[1ch] py-4 text-[13px] leading-5 wrap-anywhere whitespace-pre-wrap raymond:shadow-none",
-          className,
-        )}
+  return (
+    <div className={className}>
+      <div
+        className="my-2 flex bg-(--plain-code-bg) py-2 text-[length:var(--diffs-font-size,13px)] leading-[var(--diffs-line-height,20px)] text-foreground [--plain-code-bg:var(--background)] [tab-size:var(--diffs-tab-size,2)] raymond:[--plain-code-bg:var(--window)]"
         style={{ fontFamily: PIERRE_FONT_FAMILY }}
       >
-        <code className="rounded-none bg-transparent p-0 [font:inherit] raymond:shadow-none">
-          {contents}
-        </code>
-      </pre>
-    );
-  }
-  return (
-    <pre
-      className={cn(
-        "overflow-x-auto rounded-[min(var(--radius-frame),8px)] bg-muted p-3 text-[0.85em] leading-[1.45]",
-        className,
-      )}
-    >
-      <code>{contents}</code>
-    </pre>
+        {lineNumbers && (
+          <pre
+            aria-hidden
+            className={cn(
+              PLAIN_PRE,
+              "box-content min-w-[var(--diffs-min-number-column-width,3ch)] shrink-0 border-r-2 border-transparent pr-[1ch] pl-[2ch] text-right text-[color-mix(in_lab,var(--foreground)_65%,var(--plain-code-bg))] select-none",
+            )}
+          >
+            {Array.from(
+              { length: contents.split("\n").length },
+              (_, index) => index + 1,
+            ).join("\n")}
+          </pre>
+        )}
+        <pre
+          className={cn(
+            PLAIN_PRE,
+            "min-w-0 flex-1 px-[1ch]",
+            lineNumbers
+              ? "overflow-x-auto"
+              : "wrap-anywhere whitespace-pre-wrap",
+          )}
+        >
+          <code className={PLAIN_PRE}>{contents}</code>
+        </pre>
+      </div>
+    </div>
   );
 }
 
@@ -374,12 +393,11 @@ const LOADING_LINES = 500;
  */
 export function LoadingCodeFallback({
   contents,
-  bare = false,
+  lineNumbers,
   className,
 }: {
   contents: string;
-  /** See `PlainCodeFallback`. */
-  bare?: boolean;
+  lineNumbers?: boolean;
   className?: string;
 }) {
   let end = -1;
@@ -390,7 +408,7 @@ export function LoadingCodeFallback({
   return (
     <PlainCodeFallback
       contents={end === -1 ? contents : contents.slice(0, end)}
-      bare={bare}
+      lineNumbers={lineNumbers}
       className={className}
     />
   );
@@ -647,7 +665,12 @@ function fenceDiffOptions(
  * land on the same plain text rather than on React's error screen.
  */
 class CodeViewBoundary extends Component<
-  { contents: string; bare?: boolean; children: ReactNode },
+  {
+    contents: string;
+    lineNumbers?: boolean;
+    className?: string;
+    children: ReactNode;
+  },
   { failed: boolean }
 > {
   state = { failed: false };
@@ -665,7 +688,8 @@ class CodeViewBoundary extends Component<
       return (
         <PlainCodeFallback
           contents={this.props.contents}
-          bare={this.props.bare}
+          lineNumbers={this.props.lineNumbers}
+          className={this.props.className}
         />
       );
     }
@@ -709,8 +733,9 @@ export function fenceFilename(tag: string | undefined): string {
 /**
  * Read-only code rendering through pierre CodeView: syntax highlighting
  * from the filename, dark/light theme in step with the revision diffs.
- * Until pierre renders its first line a plain `<pre>` shows the same text, so
- * content stays readable through both chunk loading and highlighter startup.
+ * Until pierre renders its first line the same text shows unhighlighted, laid
+ * out as pierre lays it out, so it stays readable through both chunk loading
+ * and highlighter startup and nothing moves when the colours arrive.
  *
  * pierre's virtualization scaffold declares `contain: inline-size`, so this
  * block contributes 0px to an ancestor's intrinsic width: in a content-sized
@@ -726,7 +751,6 @@ export function CodeBlock({
   plain = false,
   offThread = false,
   copy = true,
-  bareFallback = false,
   className,
 }: {
   filename: string;
@@ -753,11 +777,6 @@ export function CodeBlock({
    * line of 1 MiB still held the main thread for 2.2 s.
    */
   offThread?: boolean;
-  /**
-   * The plain text shown until pierre draws, and on a failure, in pierre's own geometry with no
-   * box of its own, so nothing shifts when highlighting arrives: for a block inside a frame.
-   */
-  bareFallback?: boolean;
   /** Caps the height for a long file: CodeView virtualizes against its box. */
   className?: string;
 }) {
@@ -806,15 +825,19 @@ export function CodeBlock({
   const block = degraded ? (
     <PlainCodeFallback
       contents={contents}
-      bare={bareFallback}
+      lineNumbers={lineNumbers}
       className={className}
     />
   ) : (
-    <CodeViewBoundary contents={contents} bare={bareFallback}>
+    <CodeViewBoundary
+      contents={contents}
+      lineNumbers={lineNumbers}
+      className={className}
+    >
       {!ready && (
         <LoadingCodeFallback
           contents={contents}
-          bare={bareFallback}
+          lineNumbers={lineNumbers}
           className={className}
         />
       )}

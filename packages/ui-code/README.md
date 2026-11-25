@@ -56,7 +56,9 @@ pierre is only reached through dynamic imports, so a bundler splits it and shiki
 chunks, fetched when the first block renders. Until the chunk lands a block draws its plain text
 rather than suspending: on a page's first load React does not commit a retry of a boundary that
 suspends again within 300 ms of its fallback, and would render the whole page again once the chunk
-arrived.
+arrived. The plain text is laid out as pierre lays out the block (its font, line height, margins,
+background and line numbers), so nothing moves when the highlighting arrives. A server draws the
+same text, since pierre is never fetched there, so a prerendered block needs no stand-in of its own.
 
 ### `@orz/ui-code`
 
@@ -115,14 +117,13 @@ A code block's frame, which `codeContent`, `patchContent` and `@orz/ui-mermaid` 
   Expand to lift the cap. Every line stays in the DOM, so find-in-page still reaches them.
 
 The content is the children's alone. A code view inside reads `useInFenceFrame()` and leaves the
-frame, the box and Copy to it; `CodeBlock`'s `bareFallback` draws its plain text in pierre's own
-geometry, so nothing moves when the highlighting arrives.
+frame and Copy to it.
 
 ```tsx
 import { CodeBlock, FenceFrame } from "@orz/ui-code";
 
 <FenceFrame text={code} lang="yaml" title="compose.yaml" collapsible>
-  <CodeBlock filename="compose.yaml" contents={code} copy={false} bareFallback />
+  <CodeBlock filename="compose.yaml" contents={code} copy={false} />
 </FenceFrame>
 ```
 

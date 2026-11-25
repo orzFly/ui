@@ -149,9 +149,9 @@ describe("CodeBlock highlighting failures", () => {
       />,
     );
     await screen.findByTestId("code-view");
-    const pre = container.querySelector("pre");
-    expect(pre?.textContent).toBe(lines.slice(0, 500).join("\n"));
-    expect(pre?.classList).toContain("max-h-96");
+    const text = container.querySelector("pre code");
+    expect(text?.textContent).toBe(lines.slice(0, 500).join("\n"));
+    expect(text?.closest(".max-h-96")).not.toBeNull();
   });
 
   it("removes the fallback and reveals CodeView after its first line", async () => {
@@ -303,45 +303,56 @@ describe("CodeBlock highlighting failures", () => {
     expect(warn).toHaveBeenCalled();
   });
 
-  it("stands in for a framed block in pierre's geometry, with no box", async () => {
+  it("stands in with the text laid out as pierre lays it out", async () => {
     mock.mode = "pending";
     const { container } = render(
-      <CodeBlock
-        filename="snippet.ts"
-        contents={TS_SNIPPET}
-        copy={false}
-        bareFallback
-      />,
+      <CodeBlock filename="snippet.ts" contents={TS_SNIPPET} copy={false} />,
     );
     await screen.findByTestId("code-view");
     const pre = container.querySelector("pre");
     expect(pre?.textContent).toBe(TS_SNIPPET);
-    expect(pre?.className).not.toContain("bg-muted");
-    expect(pre?.className).toContain("text-[13px]");
-    expect(pre?.style.fontFamily).toContain("--diffs-font-family");
+    expect(pre?.className).toContain("whitespace-pre-wrap");
+    const lines = pre?.parentElement;
+    expect(lines?.className).not.toContain("bg-muted");
+    expect(lines?.className).toContain("--diffs-font-size");
+    expect(lines?.style.fontFamily).toContain("--diffs-font-family");
+  });
+
+  it("stands in for a file with pierre's line numbers beside its text", async () => {
+    mock.mode = "pending";
+    const { container } = render(
+      <CodeBlock
+        filename="main.ts"
+        contents={"a\nb\n"}
+        lineNumbers
+        copy={false}
+      />,
+    );
+    await screen.findByTestId("code-view");
+    const [numbers, text] = container.querySelectorAll("pre");
+    // pierre numbers the empty line after a final newline too.
+    expect(numbers?.textContent).toBe("1\n2\n3");
+    expect(numbers?.getAttribute("aria-hidden")).toBe("true");
+    expect(text?.textContent).toBe("a\nb\n");
+    expect(text?.className).not.toContain("whitespace-pre-wrap");
   });
 
   it.each(["paints-error", "throws"] as const)(
-    "keeps a framed block's plain text boxless when it degrades (%s)",
+    "keeps the plain text in pierre's geometry when it degrades (%s)",
     async (mode) => {
       vi.spyOn(console, "error").mockImplementation(() => {});
       vi.spyOn(console, "warn").mockImplementation(() => {});
       mock.mode = mode;
       const { container } = render(
-        <CodeBlock
-          filename="snippet.ts"
-          contents={TS_SNIPPET}
-          copy={false}
-          bareFallback
-        />,
+        <CodeBlock filename="snippet.ts" contents={TS_SNIPPET} copy={false} />,
       );
       await waitFor(() => {
         expect(screen.queryByTestId("code-view")).toBeNull();
         expect(container.querySelector("pre")?.textContent).toBe(TS_SNIPPET);
       });
-      expect(container.querySelector("pre")?.className).not.toContain(
-        "bg-muted",
-      );
+      const lines = container.querySelector("pre")?.parentElement;
+      expect(lines?.className).not.toContain("bg-muted");
+      expect(lines?.className).toContain("--diffs-font-size");
     },
   );
 });

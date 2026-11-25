@@ -39,7 +39,6 @@ export function CappedCodeBlock({
   capClassName,
   offThread = false,
   copy,
-  bareFallback,
 }: {
   filename: string;
   contents: string;
@@ -48,7 +47,6 @@ export function CappedCodeBlock({
   capClassName?: string;
   offThread?: boolean;
   copy?: boolean;
-  bareFallback?: boolean;
 }) {
   const tooLarge = useMemo(
     () => exceedsBytes(contents, TEXT_PREVIEW_MAX_BYTES),
@@ -62,7 +60,6 @@ export function CappedCodeBlock({
       plain={tooLarge}
       offThread={offThread}
       copy={copy}
-      bareFallback={bareFallback}
       className={tooLarge || offThread ? capClassName : undefined}
     />
   );

@@ -455,7 +455,7 @@ export function PatchView({
   if (parsed.kind === "pending") {
     return framed ? (
       <FenceFrame text={text} lang={lang} title={title}>
-        <LoadingCodeFallback contents={text} bare />
+        <LoadingCodeFallback contents={text} />
       </FenceFrame>
     ) : (
       <LoadingCodeFallback contents={text} className={FIT_CLASS[fit]} />
@@ -468,7 +468,6 @@ export function PatchView({
         contents={text}
         lineNumbers={lineNumbers}
         copy={!framed}
-        bareFallback={framed}
       />
     );
     return (

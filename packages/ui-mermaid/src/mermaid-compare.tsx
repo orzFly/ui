@@ -89,12 +89,7 @@ export function MermaidCompare({
               {result?.ok === false && (
                 <ErrorLine error={result.error} className="border-t-0 px-0" />
               )}
-              <CodeBlock
-                filename={filename}
-                contents={source}
-                copy={false}
-                bareFallback
-              />
+              <CodeBlock filename={filename} contents={source} copy={false} />
             </div>
           ),
         };

@@ -28,12 +28,7 @@ const meta = {
     text: COMPOSE,
     lang: "yaml",
     children: (
-      <CodeBlock
-        filename="compose.yaml"
-        contents={COMPOSE}
-        copy={false}
-        bareFallback
-      />
+      <CodeBlock filename="compose.yaml" contents={COMPOSE} copy={false} />
     ),
   },
   argTypes: {
@@ -60,14 +55,7 @@ export const Collapsible: Story = {
     text: LONG,
     lang: "ts",
     collapsible: true,
-    children: (
-      <CodeBlock
-        filename="steps.ts"
-        contents={LONG}
-        copy={false}
-        bareFallback
-      />
-    ),
+    children: <CodeBlock filename="steps.ts" contents={LONG} copy={false} />,
   },
 };
 

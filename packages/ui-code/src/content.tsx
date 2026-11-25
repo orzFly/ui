@@ -62,7 +62,6 @@ function InlineCode({
       // TypeScript at 4x CPU throttling, in the middle of a page's load.
       offThread
       copy={false}
-      bareFallback
     />
   );
   if (framed) return block;

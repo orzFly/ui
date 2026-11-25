@@ -24,7 +24,6 @@ vi.mock("../src/code-block.tsx", async (importOriginal) => ({
     plain,
     offThread,
     copy,
-    bareFallback,
     className,
   }: {
     filename: string;
@@ -33,7 +32,6 @@ vi.mock("../src/code-block.tsx", async (importOriginal) => ({
     plain?: boolean;
     offThread?: boolean;
     copy?: boolean;
-    bareFallback?: boolean;
     className?: string;
   }) => (
     <pre
@@ -43,7 +41,6 @@ vi.mock("../src/code-block.tsx", async (importOriginal) => ({
       data-plain={String(plain ?? false)}
       data-off-thread={String(offThread ?? false)}
       data-copy={String(copy ?? true)}
-      data-bare={String(bareFallback ?? false)}
       className={className}
     >
       {contents}
@@ -356,7 +353,6 @@ describe("an inline source's frame", () => {
     expect(slot("fence-tools")?.textContent).toContain("ts");
     expect(screen.getByRole("button", { name: "Copy" })).toBeTruthy();
     expect(block.dataset.copy).toBe("false");
-    expect(block.dataset.bare).toBe("true");
   });
 
   it("heads a block that names a file with a download of it", () => {
@@ -404,7 +400,7 @@ describe("an inline source's frame", () => {
       1,
     );
     expect(screen.getAllByRole("button", { name: "Copy" })).toHaveLength(1);
-    expect(screen.getByTestId("code-block").dataset.bare).toBe("true");
+    expect(screen.getByTestId("code-block").dataset.copy).toBe("false");
   });
 
   it("frames no file", async () => {
