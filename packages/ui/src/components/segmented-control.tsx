@@ -16,6 +16,7 @@ import { CommandTooltip } from "./toolbar/command.tsx";
 import { FLAT, textSize } from "./toolbar/look.ts";
 import {
   OUT_OF_FLOW,
+  outerHeight,
   outerWidth,
   slotProps,
   ToolbarItemContext,
@@ -129,9 +130,13 @@ function SegmentedControl({
         </>
       ),
     },
-    measure: (view) => ({
+    measure: (view, el) => ({
       ...(view === "dropdown" && items.current
-        ? { width: outerWidth(items.current) }
+        ? {
+            width: outerWidth(items.current),
+            // Its segments', held out of sight behind the dropdown.
+            height: Math.max(outerHeight(el), outerHeight(items.current)),
+          }
         : {}),
       dropdownWidth:
         collapse === "dropdown" && probe.current

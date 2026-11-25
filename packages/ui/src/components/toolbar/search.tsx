@@ -7,6 +7,7 @@ import { CommandTooltip, Roving } from "./command.tsx";
 import { FLAT, iconSize } from "./look.ts";
 import {
   OUT_OF_FLOW,
+  outerHeight,
   outerWidth,
   ToolbarItemContext,
   type ToolbarPriority,
@@ -44,7 +45,8 @@ export interface ToolbarSearchProps {
 }
 
 /**
- * A search field in a toolbar. Short of room it narrows to `minWidth`, then,
+ * A search field in a toolbar, at the bar's `size` (on touch, a field's own
+ * height, for its larger text). Short of room it narrows to `minWidth`, then,
  * while empty, gives way to its icon; pressing the icon opens the field
  * again at `minWidth`, moving other parts into the ⋯ menu, and only when
  * nothing else could make room does it take the whole bar, with a button
@@ -85,12 +87,17 @@ export function ToolbarSearch({
       pinned,
       active: !empty,
     },
-    measure: () => ({
+    measure: (_view, el) => ({
       width: minWidth,
       iconWidth:
         collapse === "icon" && empty && !pinned && probe.current
           ? outerWidth(probe.current)
           : undefined,
+      // The field's, out of sight while the icon stands in for it.
+      height: Math.max(
+        outerHeight(el),
+        field.current ? outerHeight(field.current) : 0,
+      ),
     }),
   });
   const store = unit.internal?.store;
@@ -171,6 +178,8 @@ export function ToolbarSearch({
         // The browser's own clear button would sit beside this one.
         className={cn(
           "ps-8 [&::-webkit-search-cancel-button]:appearance-none",
+          // The bar's size, as its commands are; touch keeps a field's own.
+          size === "sm" && "h-control-sm",
           clearable && !empty && "pe-8",
         )}
       />

@@ -7,8 +7,10 @@ import { FakeResizeObserver } from "./fake-resize-observer.ts";
  * never move a part. This gives it a small model to read instead: an icon
  * 16px, a letter 7px, an icon button 28px (24 at `icon-sm`), a text button
  * its content plus 10px each side and 6px between, a separator 9px, an
- * input 200px, and the row the width the test sets. Out-of-flow elements
- * (`absolute`) keep their own width but add none to their parent's.
+ * input 200px, and the row the width the test sets. Everything is 28px
+ * tall, an input 32px, and a box as tall as its tallest child; a
+ * `data-test-width` or `data-test-height` sets either. Out-of-flow elements
+ * (`absolute`) keep their own size but add none to their parent's.
  */
 export function stubToolbarLayout(initial: number) {
   let rowWidth = initial;
@@ -38,11 +40,22 @@ export function stubToolbarLayout(initial: number) {
     if (size) return 20 + content + 6 * Math.max(parts - 1, 0);
     return content;
   };
+  const height = (el: Element): number => {
+    const html = el as HTMLElement;
+    if (html.dataset?.testHeight) return Number(html.dataset.testHeight);
+    if (el.tagName === "INPUT") return 32;
+    return Math.max(28, ...[...el.children].filter(inFlow).map(height));
+  };
   vi.stubGlobal("ResizeObserver", FakeResizeObserver);
   const rect = vi
     .spyOn(Element.prototype, "getBoundingClientRect")
     .mockImplementation(function (this: Element) {
-      return DOMRect.fromRect({ x: 0, y: 0, width: width(this), height: 28 });
+      return DOMRect.fromRect({
+        x: 0,
+        y: 0,
+        width: width(this),
+        height: height(this),
+      });
     });
   // happy-dom defines it on HTMLElement, below Element.
   const client = Object.getOwnPropertyDescriptor(

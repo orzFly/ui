@@ -52,6 +52,9 @@ const overflowed = (name: string) =>
 const trigger = () =>
   document.querySelector<HTMLElement>("[data-slot=toolbar-overflow-trigger]");
 
+const row = () =>
+  document.querySelector<HTMLElement>("[data-slot=toolbar-row]");
+
 /** Opens the ⋯ menu as Enter does, and returns its items' text. */
 async function openMore() {
   const more = trigger();
@@ -143,6 +146,39 @@ describe("Toolbar", () => {
         ?.getAttribute("aria-hidden"),
     ).toBe("true");
     expect(trigger()).toBeNull();
+  });
+
+  it("opens a tooltip only on a hover or a focus made while the words are hidden", async () => {
+    render(
+      <Toolbar aria-label="Message">
+        <ToolbarButton>
+          <Icon />
+          <ToolbarLabel>Reply</ToolbarLabel>
+        </ToolbarButton>
+        <ToolbarButton>
+          <Icon />
+          <ToolbarLabel>Forward</ToolbarLabel>
+        </ToolbarButton>
+      </Toolbar>,
+    );
+    await settle();
+    const tooltips = () =>
+      [...document.querySelectorAll("[data-slot=tooltip-content]")].map(
+        (tooltip) => tooltip.firstChild?.textContent,
+      );
+    // Each heard while its words show, then left.
+    const reply = screen.getByRole("button", { name: "Reply" });
+    fireEvent.pointerMove(reply, { pointerType: "mouse" });
+    fireEvent.pointerLeave(reply, { pointerType: "mouse" });
+    const forward = screen.getByRole("button", { name: "Forward" });
+    act(() => forward.focus());
+    act(() => forward.blur());
+    await layout.resize(100);
+    expect(reply.dataset.size).toBe("icon");
+    expect(tooltips()).toEqual([]);
+    fireEvent.pointerMove(reply, { pointerType: "mouse" });
+    await settle();
+    expect(tooltips()).toEqual(["Reply"]);
   });
 
   it("moves labelled commands whole on a coarse pointer", async () => {
@@ -428,6 +464,34 @@ describe("Toolbar", () => {
     expect(separator.className).toContain("invisible");
   });
 
+  it("stays as tall as a part it holds for the ⋯ menu", async () => {
+    render(
+      <Toolbar aria-label="Editor">
+        <ToolbarButton aria-label="Bold">
+          <Icon />
+        </ToolbarButton>
+        <ToolbarItem
+          overflow={<DropdownMenuItem>Zoom</DropdownMenuItem>}
+          data-test-width="120"
+          data-test-height="40"
+        >
+          Zoom
+        </ToolbarItem>
+      </Toolbar>,
+    );
+    await settle();
+    expect(row()?.style.minHeight).toBe("40px");
+    await layout.resize(80);
+    expect(await openMore()).toEqual(["Zoom"]);
+    expect(row()?.style.minHeight).toBe("40px");
+    // Drawn taller (another style), it is followed on the next frame.
+    const zoom = document.querySelector<HTMLElement>("[data-test-height]");
+    if (zoom) zoom.dataset.testHeight = "44";
+    await layout.resize(90);
+    await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    expect(row()?.style.minHeight).toBe("44px");
+  });
+
   it("tells a ToolbarItem where it stands, and draws its overflow form", async () => {
     const seen: string[] = [];
     function Probe() {
@@ -521,6 +585,19 @@ describe("ToolbarSearch", () => {
     ).toBe(true);
   });
 
+  it("keeps the bar as tall as its field while the icon stands in for it", async () => {
+    render(<Search />);
+    await settle();
+    expect(row()?.style.minHeight).toBe("32px");
+    await layout.resize(120);
+    expect(
+      document
+        .querySelector("[data-slot=toolbar-search]")
+        ?.hasAttribute("data-collapsed"),
+    ).toBe(true);
+    expect(row()?.style.minHeight).toBe("32px");
+  });
+
   it("never turns into its icon with a query", async () => {
     render(<Search initial="bug" />);
     await settle();
@@ -603,6 +680,33 @@ describe("SegmentedControl in a Toolbar", () => {
       ["Board", "true"],
       ["Calendar", "false"],
     ]);
+  });
+
+  it("keeps the bar as tall as its segments while the dropdown stands in for them", async () => {
+    render(
+      <Toolbar aria-label="Layout">
+        <SegmentedControl aria-label="View" defaultValue="board">
+          <SegmentedControlItem value="list" data-test-height="30">
+            List
+          </SegmentedControlItem>
+          <SegmentedControlItem value="board" data-test-height="30">
+            Board
+          </SegmentedControlItem>
+          <SegmentedControlItem value="calendar" data-test-height="30">
+            Calendar
+          </SegmentedControlItem>
+        </SegmentedControl>
+      </Toolbar>,
+    );
+    await settle();
+    expect(row()?.style.minHeight).toBe("30px");
+    await layout.resize(90);
+    expect(
+      document
+        .querySelector("[data-slot=segmented-control]")
+        ?.hasAttribute("data-collapsed"),
+    ).toBe(true);
+    expect(row()?.style.minHeight).toBe("30px");
   });
 });
 

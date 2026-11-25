@@ -57,6 +57,8 @@ export interface UnitMeasure {
   labelWidth?: number;
   dropdownWidth?: number;
   iconWidth?: number;
+  /** The tallest it is drawn in any of its forms, the one on the bar or one held out of sight. */
+  height?: number;
 }
 
 export interface UnitMeta {
@@ -108,6 +110,16 @@ export function outerWidth(el: Element): number {
   );
 }
 
+/** The height a part takes in its row, margins included. */
+export function outerHeight(el: Element): number {
+  const style = getComputedStyle(el);
+  return (
+    el.getBoundingClientRect().height +
+    (Number.parseFloat(style.marginTop) || 0) +
+    (Number.parseFloat(style.marginBottom) || 0)
+  );
+}
+
 const EMPTY: SolverResult = {
   views: {},
   overflow: [],
@@ -131,6 +143,9 @@ export class ToolbarStore {
   private scheduled = false;
   /** The row's width when a search took it. */
   private takeoverWidth = 0;
+  /** The row's min-height, and the frame that will write it. */
+  private minHeight = "";
+  private frame = 0;
   /** The answers since the last one that held, to catch two that alternate. */
   private chain: string[] = [];
   /** At this width, the answer kept over one that would only flip back. */
@@ -287,6 +302,8 @@ export class ToolbarStore {
     });
     return () => {
       live = false;
+      if (this.frame) cancelAnimationFrame(this.frame);
+      this.frame = 0;
       this.observer?.disconnect();
       this.observer = null;
       media?.removeEventListener("change", solve);
@@ -367,6 +384,7 @@ export class ToolbarStore {
     const mine = new Set<Element>();
     for (const record of records) if (record.el) mine.add(record.el);
     const units: Array<{ el: Element; unit: SolverUnit }> = [];
+    let tallest = 0;
     for (const record of records) {
       const el = record.el as HTMLElement;
       // A part wrapped in an element of the caller's is that element's; the
@@ -391,6 +409,7 @@ export class ToolbarStore {
           : 0;
       } else if (record.kind !== "spacer") {
         const measured = record.measure(view, el);
+        tallest = Math.max(tallest, measured.height ?? 0);
         unit.width = Math.ceil(measured.width);
         if (measured.labelWidth !== undefined)
           unit.labelWidth = Math.ceil(measured.labelWidth);
@@ -412,6 +431,7 @@ export class ToolbarStore {
         continue;
       const style = getComputedStyle(child);
       if (style.display === "none" || style.position === "absolute") continue;
+      tallest = Math.max(tallest, outerHeight(child));
       units.push({
         el: child,
         unit: {
@@ -432,6 +452,7 @@ export class ToolbarStore {
     const permanent = records.some(
       (record) => record.kind === "overflow" && record.meta.permanent,
     );
+    this.hold(tallest);
     const gap = Number.parseFloat(getComputedStyle(row).columnGap) || 0;
     const width = this.available();
     let next = solveToolbar({
@@ -493,6 +514,34 @@ export class ToolbarStore {
     const avoid = keep === next ? JSON.stringify(this.result) : key;
     this.held = { width, coarse, keep, avoid };
     return keep;
+  }
+
+  /**
+   * Keeps the row as tall as its tallest part in any form, so the bar keeps
+   * its height as a search turns into its icon or a part goes into the ⋯
+   * menu. Only the first height is written at once. A later one comes from
+   * parts that changed size (a style drawing them anew, a transition), heard
+   * through the ResizeObserver: the row resized while it delivers is a
+   * change it cannot deliver until the next frame, and it reports a loop.
+   */
+  private hold(tallest: number) {
+    const row = this.row;
+    // Measured as nothing, the bar is out of sight: it keeps what it had.
+    if (!row || tallest <= 0) return;
+    this.minHeight = `${tallest}px`;
+    if (row.style.minHeight === this.minHeight) return;
+    if (
+      row.style.minHeight === "" ||
+      typeof requestAnimationFrame !== "function"
+    ) {
+      row.style.minHeight = this.minHeight;
+      return;
+    }
+    if (this.frame) return;
+    this.frame = requestAnimationFrame(() => {
+      this.frame = 0;
+      if (this.row) this.row.style.minHeight = this.minHeight;
+    });
   }
 
   /** Lets go of a search's hold on the bar. */
@@ -599,7 +648,7 @@ export function useToolbarUnit(options: UnitOptions): Unit {
       meta: options.meta,
       measure: (view, node) => {
         const own = outerWidth(node);
-        const result: UnitMeasure = { width: own };
+        const result: UnitMeasure = { width: own, height: outerHeight(node) };
         if (labels.current.size > 0 && store) {
           let delta = 0;
           for (const entry of labels.current) delta += store.labelDelta(entry);

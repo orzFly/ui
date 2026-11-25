@@ -164,12 +164,20 @@ export function CommandTooltip({
 }) {
   const internal = React.useContext(ToolbarInternalContext);
   const [open, setOpen] = React.useState(false);
+  // Held shut, the tooltip still hears a hover or a focus open it, but not
+  // the pointer or the focus leave: an open taken while the words showed, or
+  // kept as they came back, would show it the moment they hide again,
+  // wherever the pointer is by then.
+  if (!enabled && open) setOpen(false);
   // Outside a toolbar, which provides them, only a command given a tooltip
   // has one, under a provider of its own.
   if (!internal && !enabled)
     return <Slot.Root {...props}>{children}</Slot.Root>;
   const tooltip = (
-    <Tooltip open={enabled && open} onOpenChange={setOpen}>
+    <Tooltip
+      open={enabled && open}
+      onOpenChange={(next) => setOpen(enabled && next)}
+    >
       <TooltipTrigger asChild {...props}>
         {children}
       </TooltipTrigger>

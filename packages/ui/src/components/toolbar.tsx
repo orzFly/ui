@@ -87,8 +87,10 @@ const noSubscribe = () => () => {};
  *
  * How many parts fit at a width follows the sizes the style and the pointer
  * draw them at; the caller sets their order, their groups and their
- * priorities, never a breakpoint. One Tab stop holds the bar, and the arrow
- * keys move between its commands; a search's field is a Tab stop of its own.
+ * priorities, never a breakpoint. Its height does not follow: it is as tall
+ * as its tallest part in any of its forms. One Tab stop holds the bar, and
+ * the arrow keys move between its commands; a search's field is a Tab stop
+ * of its own.
  */
 function Toolbar({
   edge,
@@ -1067,8 +1069,10 @@ function BarSeparator({
     <Separator
       orientation="vertical"
       data-slot="toolbar-separator"
+      // A Separator stretches to its row; given a height of its own, as this
+      // one is, a stretched item stands at the row's top instead.
       className={cn(
-        "mx-1 h-5",
+        "mx-1 h-5 data-vertical:self-center",
         unit.view === "hidden" && OUT_OF_FLOW,
         className,
       )}

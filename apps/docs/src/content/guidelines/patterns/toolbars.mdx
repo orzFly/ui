@@ -44,6 +44,10 @@ back in reverse, so a width always gets the same layout however it was reached.
 The `⋯` stands at the end of the first cluster that overflowed, so a command at the far end, the
 one a reader looks for there, keeps its place. Put it somewhere else with `ToolbarOverflow`.
 
+None of this changes the bar's height. It is as tall as its tallest part in any of its forms, so
+what lies below it stays put as a search gives way to its icon, a segmented control to its
+dropdown, or a part to the `⋯`.
+
 ## What fits follows the style and the pointer
 
 How many commands fit at a width is whatever their sizes in the style and on the pointer in use
@@ -97,6 +101,10 @@ inside the item, so take what it needs from the code it is written in. A command
 menu is called with the menu item's event, not its button's.
 
 ## Search
+
+A `ToolbarSearch`'s field takes the bar's `size`, as its commands do, so on a fine pointer a bar
+with a search is as tall as one without. On touch a field is taller, to hold its larger text, and
+the bar keeps that height while the icon stands in for it.
 
 A `ToolbarSearch` with a query never becomes its icon. Pressing the icon opens the field again at
 its narrowest, moving other commands into the menu to make room; only when nothing else could make
