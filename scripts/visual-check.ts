@@ -396,6 +396,8 @@ async function screenshot(tab: Tab): Promise<Buffer> {
     height: Math.min(Math.max(height, HEIGHT), MAX_HEIGHT),
     scale: 1,
   };
+  // Now and then, captureBeyondViewport lays the page out at 1×1 for a frame before it captures
+  // (UI-217): a component that cannot recover from its width collapsing shows it here first.
   const { data } = await tab.send<{ data: string }>("Page.captureScreenshot", {
     format: "png",
     clip,

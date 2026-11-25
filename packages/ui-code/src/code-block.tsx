@@ -97,25 +97,74 @@ function chunkComponent<P extends object>(
   };
 }
 
+type CodeViewComponentProps = CodeViewProps<undefined, undefined> & {
+  ref?: Ref<CodeViewHandle<undefined, undefined>>;
+};
+
+function setRef<T>(ref: Ref<T> | undefined, value: T | null) {
+  if (typeof ref === "function") ref(value);
+  else if (ref != null) ref.current = value;
+}
+
+/**
+ * pierre's CodeView, laid out again whenever its content's height changes.
+ *
+ * pierre measures each wrapped line at the width it is drawn at and keeps that height for lines
+ * it stops drawing. It lays out again when its box or the items it draws change size, but not
+ * when measuring those items moves others into its window. So when a box's width collapses and
+ * comes back (a pane dragged shut, a headless screenshot that lays the page out at 1×1), the
+ * lines it measured meanwhile are a character wide and hundreds of pixels tall. The items it
+ * draws again measure back to size, but those their shrinking pulls into view stay undrawn, and
+ * the drawn ones sit low in the box (UI-217).
+ */
+function settling(
+  CodeView: ComponentType<CodeViewComponentProps>,
+): ComponentType<CodeViewComponentProps> {
+  return function SettlingCodeView({
+    ref,
+    containerRef,
+    ...props
+  }: CodeViewComponentProps) {
+    const view = useRef<CodeViewHandle<undefined, undefined> | null>(null);
+    const [root, setRoot] = useState<HTMLDivElement | null>(null);
+    const viewRef = useCallback(
+      (handle: CodeViewHandle<undefined, undefined> | null) => {
+        view.current = handle;
+        setRef(ref, handle);
+      },
+      [ref],
+    );
+    const rootRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        setRoot(node);
+        setRef(containerRef, node);
+      },
+      [containerRef],
+    );
+    useEffect(() => {
+      if (root === null || typeof ResizeObserver === "undefined") return;
+      // The root's children are what pierre sizes to the content: the root
+      // itself is capped by the caller, and pierre already watches it.
+      const observer = new ResizeObserver(() =>
+        view.current?.getInstance()?.render(),
+      );
+      for (const child of root.children) observer.observe(child);
+      return () => observer.disconnect();
+    }, [root]);
+    return <CodeView {...props} ref={viewRef} containerRef={rootRef} />;
+  };
+}
+
 // @pierre/diffs is the heaviest dependency in the web bundle (T-24). Every
 // value import goes through chunkComponent() here so the library lands in its
 // own chunk, fetched the first time a code surface actually renders; the rest
 // of the app must only use type imports. Each loader waits for loadPierre()
 // too, so a palette's own syntax theme is registered before the first view.
 const LazyCodeView = chunkComponent(() =>
-  Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(
-    ([m]) =>
-      m.CodeView as ComponentType<
-        CodeViewProps<undefined, undefined> & {
-          ref?: Ref<CodeViewHandle<undefined, undefined>>;
-        }
-      >,
+  Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(([m]) =>
+    settling(m.CodeView as ComponentType<CodeViewComponentProps>),
   ),
 );
-
-type CodeViewComponentProps = CodeViewProps<undefined, undefined> & {
-  ref?: Ref<CodeViewHandle<undefined, undefined>>;
-};
 
 /**
  * CodeView with its tokenizing moved into pierre's worker pool, started from
@@ -126,7 +175,9 @@ type CodeViewComponentProps = CodeViewProps<undefined, undefined> & {
  */
 const LazyWorkerCodeView = chunkComponent(() =>
   Promise.all([import("@pierre/diffs/react"), loadPierre()]).then(([m]) => {
-    const CodeView = m.CodeView as ComponentType<CodeViewComponentProps>;
+    const CodeView = settling(
+      m.CodeView as ComponentType<CodeViewComponentProps>,
+    );
     // The pool keeps the theme it was created with and overrides each
     // view's own; a theme switch while it lives has to reach it here.
     function ThemeSync({ theme }: { theme: SyntaxTheme }) {
