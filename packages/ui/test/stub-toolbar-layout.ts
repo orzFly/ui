@@ -5,9 +5,11 @@ import { FakeResizeObserver } from "./fake-resize-observer.ts";
 /**
  * happy-dom lays nothing out, so a toolbar would read every width as 0 and
  * never move a part. This gives it a small model to read instead: an icon
- * 16px, a letter 7px, an icon button 28px (24 at `icon-sm`), a text button
- * its content plus 10px each side and 6px between, a separator 9px, an
- * input 200px, and the row the width the test sets. Everything is 28px
+ * 16px, a letter 7px, an icon button 28px (24 at `icon-sm`), the ⋯'s count
+ * its letters plus 4px each side, at least 16px, and the ⋯ holding one 3px
+ * and the count wider than its icon button, a text button its content plus
+ * 10px each side and 6px between, a separator 9px, an input 200px, and the
+ * row the width the test sets. Everything is 28px
  * tall, an input 32px, and a box as tall as its tallest child; a
  * `data-test-width` or `data-test-height` sets either. Out-of-flow elements
  * (`absolute`) keep their own size but add none to their parent's.
@@ -26,8 +28,17 @@ export function stubToolbarLayout(initial: number) {
     if (slot === "toolbar-label") return (el.textContent?.length ?? 0) * 7;
     if (slot === "toolbar-separator") return 9;
     if (slot === "toolbar-spacer") return 0;
+    if (slot === "toolbar-overflow-count")
+      return Math.max(16, (el.textContent?.length ?? 0) * 7 + 8);
     const size = html.dataset?.size;
-    if (size?.startsWith("icon")) return size === "icon-sm" ? 24 : 28;
+    if (size?.startsWith("icon")) {
+      const icon = size === "icon-sm" ? 24 : 28;
+      const count = [...el.children].find(
+        (kid) =>
+          (kid as HTMLElement).dataset?.slot === "toolbar-overflow-count",
+      );
+      return count ? icon + 3 + width(count) : icon;
+    }
     const kids = [...el.children].filter(inFlow).map(width);
     const text = [...el.childNodes]
       .filter((node) => node.nodeType === 3)

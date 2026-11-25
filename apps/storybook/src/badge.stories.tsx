@@ -9,6 +9,7 @@ const VARIANTS = [
   "success",
   "warning",
   "outline",
+  "marker",
   "ghost",
   "link",
 ] as const;

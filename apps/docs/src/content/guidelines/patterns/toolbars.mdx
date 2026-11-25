@@ -22,7 +22,7 @@ together and what goes first. Never hide a command at a breakpoint by hand.**
 Drag the frame's corner. As the bar narrows, the search narrows, the filters drop their names,
 the empty search gives way to its icon, and then the filters go into the `⋯` menu, the one at the
 end first. **New issue** stays to the last. Set a filter away from its default and it leaves the
-bar last, and marks the `⋯` while it is in there.
+bar last; once it is in the `⋯`, the `⋯` counts it.
 
 ## What gives way, in order
 
@@ -99,6 +99,25 @@ Anything else is a `ToolbarItem`. Give it `overflow`, what it is in the `⋯` me
 the bar. That form is drawn in the menu, outside the item: it reads nothing from the providers
 inside the item, so take what it needs from the code it is written in. A command moved into the
 menu is called with the menu item's event, not its button's.
+
+## Set away from its default
+
+A filter in use changes what the rest of the page shows, so it is the part a reader most needs to
+find again. A part set away from its default leaves the bar last within its priority. Once it is in
+the `⋯`, the `⋯` counts it, and its row in the menu is marked: a dot before its value, or after its
+name when it shows none, and the value in the row's own colour rather than the quiet one of the
+rows at their defaults. A list that has been narrowed keeps the reason in sight.
+
+Two kinds of part know it by themselves: a `ToolbarButton` whose `aria-pressed` is on, such as
+Mail's **Star**, and a `ToolbarGroup` with `selection="multiple"` that has something chosen. Tell
+the rest: `active` on a `ToolbarMenu`, a `ToolbarItem`, a `ToolbarButton` or a `ToolbarGroup`, and
+`toolbarActive` on a `FilterMenu` or a `SegmentedControl`, which also stand outside toolbars, where
+`active` would read as their chosen value. Pass it while the value differs from the one the page
+starts with, as the example's filters do with `active={status !== "open"}`.
+
+When given, `active` overrides what a part knows by itself: `active={false}` leaves a pressed
+toggle out of the count, and `active` counts a `selection="single"` group that picks what a list
+shows, while its choice is not the default one.
 
 ## Search
 

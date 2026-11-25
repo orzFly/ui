@@ -834,3 +834,302 @@ describe("SplitButton in a Toolbar", () => {
     expect(onMerge).toHaveBeenCalled();
   });
 });
+
+describe("Toolbar as it lays itself out again", () => {
+  /** Frames the test runs by hand, so it can look between them. */
+  function stubFrames() {
+    const frames = new Map<number, FrameRequestCallback>();
+    let next = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.set(++next, callback);
+      return next;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+    return {
+      frames,
+      run() {
+        const due = [...frames.values()];
+        frames.clear();
+        for (const callback of due) callback(0);
+      },
+    };
+  }
+
+  it("lets nothing in the row transition in the frame a new layout is first drawn in", async () => {
+    const clock = stubFrames();
+    const { unmount } = render(<Commands />);
+    await settle();
+    clock.run();
+    expect(row()?.hasAttribute("data-relayout")).toBe(false);
+    await layout.resize(90);
+    expect(overflowed("Snooze")).toBe(true);
+    expect(row()?.hasAttribute("data-relayout")).toBe(true);
+    clock.run();
+    expect(row()?.hasAttribute("data-relayout")).toBe(false);
+    // The same layout again is no new one.
+    await layout.resize(90);
+    expect(row()?.hasAttribute("data-relayout")).toBe(false);
+    expect(clock.frames.size).toBe(0);
+    await layout.resize(1000);
+    const el = row();
+    expect(el?.hasAttribute("data-relayout")).toBe(true);
+    unmount();
+    expect(el?.hasAttribute("data-relayout")).toBe(false);
+    expect(clock.frames.size).toBe(0);
+  });
+
+  it("draws nothing it holds for the ⋯ menu with a transition", async () => {
+    render(<Commands />);
+    await settle();
+    await layout.resize(90);
+    const snooze = screen.getByRole("button", { name: "Snooze", hidden: true });
+    expect(snooze.className).toContain("transition-none");
+    expect(snooze.className).not.toContain("transition-all");
+  });
+});
+
+describe("Toolbar parts set away from their defaults", () => {
+  const count = () =>
+    trigger()?.querySelector<HTMLElement>("[data-slot=toolbar-overflow-count]");
+
+  function Format({ active }: { active?: boolean }) {
+    return (
+      <Toolbar aria-label="Format">
+        <ToolbarButton aria-label="Archive">
+          <Icon />
+        </ToolbarButton>
+        <ToolbarButton aria-label="Delete">
+          <Icon />
+        </ToolbarButton>
+        <ToolbarButton aria-label="Bold" aria-pressed active={active}>
+          <Icon />
+        </ToolbarButton>
+      </Toolbar>
+    );
+  }
+
+  it("counts a pressed ToolbarButton as set away, unless told otherwise", async () => {
+    const { unmount } = render(<Format />);
+    await settle();
+    await layout.resize(60);
+    expect(overflowed("Bold")).toBe(false);
+    expect(overflowed("Archive")).toBe(true);
+    unmount();
+    await layout.resize(1000);
+    render(<Format active={false} />);
+    await settle();
+    await layout.resize(60);
+    expect(overflowed("Bold")).toBe(true);
+    expect(overflowed("Archive")).toBe(false);
+    expect(count()).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: "Bold", hidden: true })
+        .hasAttribute("active"),
+    ).toBe(false);
+  });
+
+  it("counts a single-choice ToolbarGroup given active, and marks its heading in the menu", async () => {
+    render(
+      <Toolbar aria-label="Layout">
+        <ToolbarButton aria-label="Archive">
+          <Icon />
+        </ToolbarButton>
+        <ToolbarGroup
+          label="Alignment"
+          selection="single"
+          defaultValue="right"
+          active
+        >
+          <ToolbarButton value="left" aria-label="Left">
+            <Icon />
+          </ToolbarButton>
+          <ToolbarButton value="right" aria-label="Right">
+            <Icon />
+          </ToolbarButton>
+        </ToolbarGroup>
+        <ToolbarButton aria-label="Delete">
+          <Icon />
+        </ToolbarButton>
+      </Toolbar>,
+    );
+    await settle();
+    const group = document.querySelector("[data-slot=toolbar-group]");
+    // 28 + 56 + 28 = 112: Delete and Archive go before the group.
+    await layout.resize(100);
+    expect(group?.hasAttribute("data-overflowed")).toBe(false);
+    expect(group?.hasAttribute("active")).toBe(false);
+    // All three: the ⋯ with its count, 28 + 3 + 16.
+    await layout.resize(50);
+    expect(group?.hasAttribute("data-overflowed")).toBe(true);
+    expect(count()?.textContent).toBe("1");
+    await openMore();
+    expect(
+      screen
+        .getByText("Alignment")
+        .querySelector("[data-slot=toolbar-active-mark]"),
+    ).not.toBeNull();
+  });
+
+  it("counts a SegmentedControl given toolbarActive", async () => {
+    render(
+      <Toolbar aria-label="Layout">
+        <ToolbarButton aria-label="Archive">
+          <Icon />
+        </ToolbarButton>
+        <SegmentedControl
+          aria-label="View"
+          defaultValue="board"
+          collapse="overflow"
+          toolbarActive
+        >
+          <SegmentedControlItem value="list">List</SegmentedControlItem>
+          <SegmentedControlItem value="board">Board</SegmentedControlItem>
+        </SegmentedControl>
+        <ToolbarButton aria-label="Delete">
+          <Icon />
+        </ToolbarButton>
+      </Toolbar>,
+    );
+    await settle();
+    const control = document.querySelector("[data-slot=segmented-control]");
+    // 28 + 63 + 28 = 119: Delete and Archive go first.
+    await layout.resize(100);
+    expect(control?.hasAttribute("data-overflowed")).toBe(false);
+    expect(trigger()?.getAttribute("aria-label")).toBe("More actions");
+    await layout.resize(50);
+    expect(control?.hasAttribute("data-overflowed")).toBe(true);
+    expect(trigger()?.getAttribute("aria-label")).toBe(
+      "More actions (1 active)",
+    );
+    await openMore();
+    expect(
+      screen.getByText("View").querySelector("[data-slot=toolbar-active-mark]"),
+    ).not.toBeNull();
+  });
+
+  function Menus({ active }: { active: boolean[] }) {
+    return (
+      <Toolbar aria-label="Issues">
+        {active.map((on, i) => (
+          <ToolbarMenu
+            // biome-ignore lint/suspicious/noArrayIndexKey: a fixed list
+            key={i}
+            icon={<Icon />}
+            label={`F${i}`}
+            active={on}
+          >
+            <DropdownMenuItem>Any</DropdownMenuItem>
+          </ToolbarMenu>
+        ))}
+      </Toolbar>
+    );
+  }
+
+  it("counts on the ⋯ the parts in it set away, in a marker badge hidden from a screen reader", async () => {
+    render(<Menus active={[true, false, true]} />);
+    await settle();
+    await layout.resize(60);
+    const badge = count();
+    expect(badge?.textContent).toBe("2");
+    expect(badge?.getAttribute("aria-hidden")).toBe("true");
+    expect(badge?.dataset.variant).toBe("marker");
+    expect(trigger()?.getAttribute("aria-label")).toBe(
+      "More actions (2 active)",
+    );
+  });
+
+  it("counts ten or more as 9+", async () => {
+    render(<Menus active={Array.from({ length: 10 }, () => true)} />);
+    await settle();
+    // The ⋯ with `9+`: 28 + 3 + 22.
+    await layout.resize(60);
+    expect(count()?.textContent).toBe("9+");
+    expect(trigger()?.getAttribute("aria-label")).toBe(
+      "More actions (10 active)",
+    );
+  });
+
+  it("counts nothing while only parts at their defaults are in the ⋯", async () => {
+    render(<Menus active={[false, false]} />);
+    await settle();
+    await layout.resize(30);
+    expect(trigger()).not.toBeNull();
+    expect(count()).toBeNull();
+    expect(trigger()?.getAttribute("aria-label")).toBe("More actions");
+  });
+
+  it("lays a permanent ⋯ out once with its count, not again for it", async () => {
+    render(
+      <Toolbar aria-label="Thread">
+        <ToolbarButton aria-label="Archive">
+          <Icon />
+        </ToolbarButton>
+        <ToolbarButton aria-label="Star" aria-pressed priority={-1}>
+          <Icon />
+        </ToolbarButton>
+        <ToolbarOverflow>
+          <DropdownMenuItem>Forward</DropdownMenuItem>
+        </ToolbarOverflow>
+      </Toolbar>,
+    );
+    await settle();
+    // Star in the ⋯: 28 and the ⋯ with its count, 47.
+    await layout.resize(76);
+    expect(overflowed("Star")).toBe(true);
+    expect(overflowed("Archive")).toBe(false);
+    expect(count()?.textContent).toBe("1");
+    // Measured in place with its count, which is not added twice.
+    await layout.resize(76);
+    await layout.resize(76);
+    expect(overflowed("Archive")).toBe(false);
+    expect(count()?.textContent).toBe("1");
+  });
+
+  it("marks the rows in the ⋯ menu of the parts set away, and leaves the others quiet", async () => {
+    render(
+      <Toolbar aria-label="Issues">
+        <ToolbarMenu icon={<Icon />} label="Status" value="Closed" active>
+          <DropdownMenuItem>Open</DropdownMenuItem>
+        </ToolbarMenu>
+        <ToolbarMenu icon={<Icon />} label="Owner" value="Anyone">
+          <DropdownMenuItem>Me</DropdownMenuItem>
+        </ToolbarMenu>
+        <ToolbarMenu icon={<Icon />} label="Labels" active>
+          <DropdownMenuItem>design</DropdownMenuItem>
+        </ToolbarMenu>
+        <FilterMenu
+          query=""
+          onQueryChange={() => {}}
+          sections={[{ id: "all", rows: [{ id: "alice" }] }]}
+          renderRow={(r) => r.id}
+          onSelect={() => {}}
+          listLabel="Author"
+          toolbarValue="Alice"
+          toolbarActive
+        >
+          <button type="button" data-test-width="90">
+            Author
+          </button>
+        </FilterMenu>
+      </Toolbar>,
+    );
+    await settle();
+    await layout.resize(60);
+    await openMore();
+    const mark = (name: string) =>
+      screen
+        .getByRole("menuitem", { name })
+        .querySelector("[data-slot=toolbar-active-mark]");
+    expect(mark("Status Closed")).not.toBeNull();
+    expect(mark("Owner Anyone")).toBeNull();
+    expect(mark("Labels")).not.toBeNull();
+    expect(mark("Author Alice")).not.toBeNull();
+    const quiet = (name: string) =>
+      screen
+        .getByRole("menuitem", { name })
+        .querySelector(".text-muted-foreground")?.textContent;
+    expect(quiet("Status Closed")).toBeUndefined();
+    expect(quiet("Owner Anyone")).toBe("Anyone");
+  });
+});

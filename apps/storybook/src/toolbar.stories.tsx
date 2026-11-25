@@ -216,7 +216,8 @@ export const LabelCollapse: Story = {
 /**
  * A search narrows first, then, while empty, gives way to its icon; pressed,
  * it opens again and other parts make room. Filters set away from their
- * defaults go into the ⋯ menu last, and mark it while they are there.
+ * defaults go into the ⋯ menu last, and are counted on it while they are
+ * there.
  */
 export const SearchAndFilters: Story = {
   render: function Render(args) {
@@ -266,6 +267,57 @@ export const SearchAndFilters: Story = {
 };
 
 /**
+ * Both filters set away from their defaults and in the ⋯ menu: the ⋯ counts
+ * them, and their rows in the menu are marked before their values.
+ */
+export const ActiveInOverflow: Story = {
+  render: function Render(args) {
+    const [query, setQuery] = useState("");
+    const [status, setStatus] = useState("closed");
+    const [owner, setOwner] = useState("me");
+    return (
+      <Toolbar {...args}>
+        <ToolbarSearch
+          label="Search issues"
+          placeholder="Search…"
+          value={query}
+          onValueChange={setQuery}
+        />
+        <ToolbarMenu
+          icon={<CircleDotIcon />}
+          label="Status"
+          value={status === "open" ? "Open" : "Closed"}
+          active={status !== "open"}
+        >
+          <DropdownMenuRadioGroup value={status} onValueChange={setStatus}>
+            <DropdownMenuRadioItem value="open">Open</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="closed">Closed</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </ToolbarMenu>
+        <ToolbarMenu
+          icon={<UserIcon />}
+          label="Owner"
+          value={owner === "anyone" ? "Anyone" : "Me"}
+          active={owner !== "anyone"}
+        >
+          <DropdownMenuRadioGroup value={owner} onValueChange={setOwner}>
+            <DropdownMenuRadioItem value="anyone">Anyone</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="me">Me</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </ToolbarMenu>
+        <ToolbarSpacer />
+        <ToolbarButton variant="default" priority="pin">
+          <PlusIcon />
+          <ToolbarLabel>New issue</ToolbarLabel>
+        </ToolbarButton>
+      </Toolbar>
+    );
+  },
+  args: { "aria-label": "Issues", size: "sm" },
+  decorators: [withResizable(200)],
+};
+
+/**
  * Two ways to choose one of a few: a `SegmentedControl` becomes a dropdown of
  * its value before anything moves, then radio items in the ⋯ menu; a
  * `ToolbarGroup` with `selection="single"` stays a row of toggles until it
@@ -281,6 +333,7 @@ export const SegmentedAndGroups: Story = {
           aria-label="View"
           value={view}
           onValueChange={setView}
+          toolbarActive={view !== "list"}
         >
           <SegmentedControlItem value="list">List</SegmentedControlItem>
           <SegmentedControlItem value="board">Board</SegmentedControlItem>

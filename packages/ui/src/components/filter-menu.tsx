@@ -29,6 +29,7 @@ import {
   PopoverTrigger,
 } from "./popover.tsx";
 import { RovingTaken } from "./toolbar/command.tsx";
+import { OverflowName, OverflowValue } from "./toolbar/overflow.tsx";
 import {
   OUT_OF_FLOW,
   slotProps,
@@ -114,7 +115,11 @@ export interface FilterMenuProps<R extends FilterMenuRow> {
   className?: string;
   /** In a `Toolbar`, how soon it gives up room. Outside one it is ignored. */
   priority?: ToolbarPriority;
-  /** In a `Toolbar`, set away from its default: it leaves the bar last, and marks the ⋯. */
+  /**
+   * In a `Toolbar`, set away from its default: it leaves the bar last within
+   * its `priority`, and is counted on the ⋯ while it is in there. Outside
+   * one it is ignored.
+   */
   toolbarActive?: boolean;
   /** Its row's name in the ⋯ menu; `listLabel` by default. */
   toolbarLabel?: ReactNode;
@@ -432,9 +437,13 @@ export function FilterMenu<R extends FilterMenuRow>({
             queueMicrotask(() => openRef.current(true));
           }}
         >
-          <span className="flex-1">{toolbarLabel ?? listLabel}</span>
+          <OverflowName
+            marked={toolbarActive === true && toolbarValue === undefined}
+          >
+            {toolbarLabel ?? listLabel}
+          </OverflowName>
           {toolbarValue !== undefined && (
-            <span className="text-muted-foreground">{toolbarValue}</span>
+            <OverflowValue active={toolbarActive}>{toolbarValue}</OverflowValue>
           )}
           <ChevronRightIcon aria-hidden />
         </DropdownMenuItem>

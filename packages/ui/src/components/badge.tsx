@@ -35,6 +35,13 @@ const badgeVariants = cva(
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
           STATIC_EDGE,
         ],
+        // Under raymond the marker keeps its fill inside the static edge, as
+        // raymond's module marker square does.
+        marker: [
+          "border-primary/35 bg-marker text-primary [a]:hover:border-primary",
+          STATIC_EDGE,
+          "raymond:bg-marker raymond:dark:bg-marker raymond:[a]:hover:bg-marker",
+        ],
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
@@ -46,6 +53,10 @@ const badgeVariants = cva(
   },
 );
 
+/**
+ * A short label or count. `marker` is in the module marker's colours: the
+ * accent on the marker tint, edged in the accent.
+ */
 function Badge({
   className,
   variant = "default",

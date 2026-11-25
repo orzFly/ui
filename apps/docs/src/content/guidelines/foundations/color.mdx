@@ -61,7 +61,12 @@ the contrast of the pair in the theme you are looking at.
 | The one main action in view | `bg-primary` | `text-primary-foreground` |
 | A second action beside it | `bg-secondary` | `text-secondary-foreground` |
 | A hovered or selected row, with a `state-cue` tick on its leading edge | `bg-accent` | `text-accent-foreground` |
-| A module marker's square, behind its icon | `bg-marker` | `text-primary` |
+| A module marker's square, behind its icon; a `Badge variant="marker"` | `bg-marker` | `text-primary` |
+
+The marker's colours mark one thing besides a module: something the user has set that is in force,
+such as the count a toolbar's `⋯` shows of the filters in use inside it. That is a
+`Badge variant="marker"`, edged in a tint of the accent, so it reads beside the one main action
+without competing with its fill.
 
 <Example of={MailSurfaces} />
 

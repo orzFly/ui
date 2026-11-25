@@ -98,6 +98,56 @@ describe("solveToolbar", () => {
     expect(narrow.activeCount).toBe(1);
   });
 
+  it("widens the ⋯ by its count of the parts in it set away from their defaults", () => {
+    const counted = {
+      overflowTriggerCountWidth: 36,
+      overflowTriggerWideCountWidth: 44,
+    };
+    const units = [
+      unit("a", 40),
+      unit("b", 40),
+      unit("c", 40, { active: true, priority: -1 }),
+    ];
+    // Without c: a + b + the counted ⋯ is 116, so b goes too.
+    expect(run(110, units).overflow).toEqual(["c"]);
+    const result = run(110, units, counted);
+    expect(result.overflow).toEqual(["b", "c"]);
+    expect(result.activeCount).toBe(1);
+    // A part at its default moved into the ⋯ leaves it as it was.
+    const plain = [unit("a", 40), unit("b", 40), unit("c", 40)];
+    expect(run(100, plain, counted).overflow).toEqual(["c"]);
+  });
+
+  it("takes the widest count's width from ten parts set away", () => {
+    const units = Array.from({ length: 10 }, (_, i) =>
+      unit(`f${i}`, 40, { active: true }),
+    );
+    const extra = {
+      overflowTriggerCountWidth: 36,
+      overflowTriggerWideCountWidth: 44,
+    };
+    // Nine in the ⋯ with one left: 40 + 36. All ten: 44 alone.
+    expect(run(76, units, extra).overflow).toHaveLength(9);
+    expect(run(75, units, extra).overflow).toHaveLength(10);
+    expect(run(44, units, extra).scrollable).toBe(false);
+    expect(run(43, units, extra).scrollable).toBe(true);
+  });
+
+  it("widens a permanent ToolbarOverflow's ⋯ by the same count", () => {
+    const units = [
+      unit("a", 40),
+      unit("b", 40, { active: true, priority: -1 }),
+      { id: "more", kind: "overflow", width: 26 } satisfies SolverUnit,
+    ];
+    const extra = {
+      permanentOverflow: true,
+      overflowTriggerCountWidth: 36,
+    };
+    // b in the ⋯: a + the ⋯ at 26 + 16 = 82.
+    expect(run(82, units, extra).overflow).toEqual(["b"]);
+    expect(run(81, units, extra).overflow).toEqual(["a", "b"]);
+  });
+
   it("hides labels of one priority together, on a fine pointer, before moving anything", () => {
     const units = [
       unit("a", 60, { labelWidth: 30 }),
@@ -281,18 +331,27 @@ describe("solveToolbar", () => {
       unit("new", 80, { priority: "pin" }),
     ];
     // Each narrower width's answer applies a longer run of the same steps,
-    // so widening takes them back in reverse and nothing flips.
-    let onBar = Number.POSITIVE_INFINITY;
-    let moved: string[] = [];
-    for (const each of sweep(units)) {
-      const result = JSON.parse(each) as ReturnType<typeof run>;
-      const count = Object.values(result.views).filter(
-        (view) => view === "bar",
-      ).length;
-      expect(count).toBeLessThanOrEqual(onBar);
-      expect(result.overflow).toEqual(expect.arrayContaining(moved));
-      onBar = count;
-      moved = result.overflow;
+    // so widening takes them back in reverse and nothing flips, however
+    // wide the ⋯'s count makes it.
+    for (const extra of [
+      {},
+      { overflowTriggerCountWidth: 36, overflowTriggerWideCountWidth: 44 },
+    ]) {
+      let onBar = Number.POSITIVE_INFINITY;
+      let moved: string[] = [];
+      for (const each of sweep(
+        [...units, unit("f3", 60, { active: true, priority: -1 })],
+        extra,
+      )) {
+        const result = JSON.parse(each) as ReturnType<typeof run>;
+        const count = Object.values(result.views).filter(
+          (view) => view === "bar",
+        ).length;
+        expect(count).toBeLessThanOrEqual(onBar);
+        expect(result.overflow).toEqual(expect.arrayContaining(moved));
+        onBar = count;
+        moved = result.overflow;
+      }
     }
   });
 });

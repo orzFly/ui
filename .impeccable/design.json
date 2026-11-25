@@ -252,6 +252,14 @@
       "description": "A 20px count or status chip.",
       "html": "<span class=\"ds-badge\">12</span>",
       "css": ".ds-badge { display: inline-flex; align-items: center; height: 20px; padding: 2px 8px; border-radius: 2px; background: var(--primary, #1f3d6b); color: var(--primary-foreground, #fff); font: 500 11px/16px 'Noto Sans Variable', system-ui, sans-serif; }"
+    },
+    {
+      "name": "Marker badge",
+      "kind": "chip",
+      "refersTo": "badge-marker",
+      "description": "The module marker's colours on a chip, for what the user has set that is in force: the count on a toolbar's ⋯.",
+      "html": "<span class=\"ds-badge-marker\">2</span>",
+      "css": ".ds-badge-marker { display: inline-flex; align-items: center; justify-content: center; height: 16px; min-width: 16px; padding: 0 4px; border: 1px solid color-mix(in oklab, var(--primary, #1f3d6b) 35%, transparent); border-radius: 2px; background: var(--marker, #d3ddec); color: var(--primary, #1f3d6b); font: 500 11px/1 'Noto Sans Variable', system-ui, sans-serif; font-variant-numeric: tabular-nums; }"
     }
   ],
   "narrative": {
@@ -267,7 +275,7 @@
     "rules": [
       {
         "name": "The One Ink Accent Rule",
-        "body": "Ai marks only where you are and what you can do: the primary action, focus, the current tab, links, the marker icon. It never fills a module, a strip or a decoration.",
+        "body": "Ai marks only where you are and what you can do: the primary action, focus, the current tab, links, the marker icon; and, on the marker tint as the icon is, a `marker` badge for what the user has set that is in force, such as the count on a toolbar's ⋯ of the filters in use inside it. It never fills a module, a strip or a decoration.",
         "section": "colors"
       },
       {

@@ -95,10 +95,11 @@ export interface LabelEntry {
 /**
  * Out of the flow and out of sight, still measured: a part in the ⋯ menu, a
  * hidden label, a probe. Its width is its own, unwrapped: no `w-max`, which
- * would take a button's `size-*` with it.
+ * would take a button's `size-*` with it. Nothing in it transitions: it is
+ * never seen to move, and the width it is measured at is the one it ends at.
  */
 export const OUT_OF_FLOW =
-  "pointer-events-none invisible absolute top-0 start-0 whitespace-nowrap";
+  "pointer-events-none invisible absolute top-0 start-0 whitespace-nowrap transition-none **:transition-none";
 
 /** The width a part takes in its row, margins included. */
 export function outerWidth(el: Element): number {
@@ -146,6 +147,9 @@ export class ToolbarStore {
   /** The row's min-height, and the frame that will write it. */
   private minHeight = "";
   private frame = 0;
+  /** The row marked `data-relayout`, and the frame that takes the mark off. */
+  private relayoutRow: HTMLElement | null = null;
+  private relayoutFrame = 0;
   /** The answers since the last one that held, to catch two that alternate. */
   private chain: string[] = [];
   /** At this width, the answer kept over one that would only flip back. */
@@ -164,6 +168,9 @@ export class ToolbarStore {
   pane: HTMLElement | null = null;
   iconRuler: HTMLElement | null = null;
   textRuler: HTMLElement | null = null;
+  /** The ⋯ with a one-digit count, and with the widest, `9+`. */
+  countRuler: HTMLElement | null = null;
+  wideCountRuler: HTMLElement | null = null;
   coarse = false;
   overflowOpen = false;
   /** The next close of the ⋯ menu leaves the focus where it is. */
@@ -304,6 +311,10 @@ export class ToolbarStore {
       live = false;
       if (this.frame) cancelAnimationFrame(this.frame);
       this.frame = 0;
+      if (this.relayoutFrame) cancelAnimationFrame(this.relayoutFrame);
+      this.relayoutFrame = 0;
+      this.relayoutRow?.removeAttribute("data-relayout");
+      this.relayoutRow = null;
       this.observer?.disconnect();
       this.observer = null;
       media?.removeEventListener("change", solve);
@@ -383,6 +394,11 @@ export class ToolbarStore {
     );
     const mine = new Set<Element>();
     for (const record of records) if (record.el) mine.add(record.el);
+    const ruler = (el: HTMLElement | null, otherwise: number) =>
+      el ? Math.ceil(outerWidth(el)) : otherwise;
+    const triggerWidth = ruler(this.iconRuler, 0);
+    const countWidth = ruler(this.countRuler, triggerWidth);
+    const wideCountWidth = ruler(this.wideCountRuler, triggerWidth);
     const units: Array<{ el: Element; unit: SolverUnit }> = [];
     let tallest = 0;
     for (const record of records) {
@@ -404,9 +420,17 @@ export class ToolbarStore {
       };
       if (style.display === "none") unit.cssHidden = true;
       else if (record.kind === "overflow") {
-        unit.width = record.meta.permanent
-          ? Math.ceil(outerWidth(el.firstElementChild ?? el))
-          : 0;
+        if (record.meta.permanent) {
+          // Without the count it shows now, which the solver adds back for
+          // the parts each step moves into it.
+          const shown = el.querySelector("[data-slot=toolbar-overflow-count]");
+          const count = !shown
+            ? 0
+            : (shown.textContent === "9+" ? wideCountWidth : countWidth) -
+              triggerWidth;
+          unit.width =
+            Math.ceil(outerWidth(el.firstElementChild ?? el)) - count;
+        }
       } else if (record.kind !== "spacer") {
         const measured = record.measure(view, el);
         tallest = Math.max(tallest, measured.height ?? 0);
@@ -458,9 +482,9 @@ export class ToolbarStore {
     let next = solveToolbar({
       availableWidth: width,
       gap,
-      overflowTriggerWidth: this.iconRuler
-        ? Math.ceil(outerWidth(this.iconRuler))
-        : 0,
+      overflowTriggerWidth: triggerWidth,
+      overflowTriggerCountWidth: countWidth,
+      overflowTriggerWideCountWidth: wideCountWidth,
       permanentOverflow: permanent,
       coarsePointer: coarse,
       units: units.map((each) => each.unit),
@@ -483,7 +507,30 @@ export class ToolbarStore {
     if (next.takeover) this.takeoverWidth = width;
     if (next.overflow.length === 0 && !permanent) this.overflowOpen = false;
     this.menuVersion++;
+    this.markRelayout();
     this.emit();
+  }
+
+  /**
+   * Marks the row for the frame a new layout is first drawn in, so nothing in
+   * it transitions there. A part going into the ⋯ menu moves to the row's
+   * start at once, and a `visibility` easing to hidden would draw it there,
+   * over the parts at the start, until it is done; one coming back would ease
+   * from hidden, leaving a hole for a frame. The mark goes at the start of
+   * the next frame, once the values have stopped changing, so taking it off
+   * starts nothing either.
+   */
+  private markRelayout() {
+    const row = this.row;
+    if (!row || typeof requestAnimationFrame !== "function") return;
+    row.setAttribute("data-relayout", "");
+    this.relayoutRow = row;
+    if (this.relayoutFrame) return;
+    this.relayoutFrame = requestAnimationFrame(() => {
+      this.relayoutFrame = 0;
+      this.relayoutRow?.removeAttribute("data-relayout");
+      this.relayoutRow = null;
+    });
   }
 
   /**
@@ -548,6 +595,7 @@ export class ToolbarStore {
   releaseTakeover() {
     if (!this.result.takeover) return;
     this.result = { ...this.result, takeover: false };
+    this.markRelayout();
     this.emit();
     this.schedule();
   }

@@ -111,6 +111,9 @@ components:
     rounded: "{rounded.chip}"
     padding: "2px 8px"
     height: "{spacing.chip}"
+  badge-marker:
+    backgroundColor: "{colors.marker-tint}"
+    textColor: "{colors.ai}"
   tab:
     backgroundColor: "{colors.strip}"
     textColor: "{colors.quiet-ink}"
@@ -176,7 +179,7 @@ A near-monochrome ink-on-white palette with a single deep indigo accent; dark mo
 - **Destructive** (destructive), **Success** (success), **Warning** (warning): status text held to 4.5:1 on ground and popover. A destructive button or menu item draws its text as destructive mixed with 65% foreground over a 10% destructive tint.
 
 ### Named Rules
-**The One Ink Accent Rule.** Ai marks only where you are and what you can do: the primary action, focus, the current tab, links, the marker icon. It never fills a module, a strip or a decoration.
+**The One Ink Accent Rule.** Ai marks only where you are and what you can do: the primary action, focus, the current tab, links, the marker icon; and, on the marker tint as the icon is, a `marker` badge for what the user has set that is in force, such as the count on a toolbar's ⋯ of the filters in use inside it. It never fills a module, a strip or a decoration.
 
 **The Held Floors Rule.** Every built-in palette passes the contrast checks in `packages/themes/src/contrast.ts`: text pairs 4.5:1 (ai-foreground on ai, ai on ground, quiet ink on ground and strip, status on ground and popover, the marker icon on its square); field edges, focus rings, state cues and chart series 3:1.
 
@@ -229,6 +232,7 @@ Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and c
 
 ### Chips
 - **Style:** 20px high, 2px radius, 11px medium label, ai fill by default.
+- **Marker:** `variant="marker"` takes the module marker's colours, ai on the marker tint, edged in 35% ai; raymond draws it in a static edge on the marker fill. It marks what the user has set that is in force: the count on a toolbar's ⋯ of what in there is set away from its default, at 16px high with tabular figures.
 
 ### Cards / Containers
 - **Corner Style:** square (0).
@@ -262,7 +266,7 @@ The 16px square that heads a card header, a viewer's toolbar, and a dialog or sh
 - **Do** keep overlays at a 100ms fade with no travel; under reduced motion, translate, scale, rotate and blur reset.
 
 ### Don't:
-- **Don't** use ai as a decorative fill or on anything that is not the current place or an action.
+- **Don't** use ai as a decorative fill or on anything that is not the current place, an action, or a `marker` badge for what the user has set.
 - **Don't** round a surface, overlay, row or tab.
 - **Don't** set UI text below 11px.
 - **Don't** mark selection, highlight or the current tab with a fill alone.

@@ -55,6 +55,10 @@ export interface SolverInput {
   gap: number;
   /** The ⋯ button's width, margins included. */
   overflowTriggerWidth: number;
+  /** The ⋯ with a one-digit count; `overflowTriggerWidth` by default. */
+  overflowTriggerCountWidth?: number;
+  /** The ⋯ with the widest count (`9+`); `overflowTriggerWidth` by default. */
+  overflowTriggerWideCountWidth?: number;
   /** A `ToolbarOverflow` with items of its own shows the ⋯ whether or not anything overflows. */
   permanentOverflow?: boolean;
   /** A coarse pointer skips hiding labels: an icon alone has no tooltip under a finger. */
@@ -127,6 +131,10 @@ function widthIn(unit: SolverUnit, view: UnitView): number {
  * set away from their defaults, then the cluster before the last spacer
  * before the one after it, from each cluster's end. Pinned parts that have a
  * form in the menu go last of all.
+ *
+ * The ⋯ widens to count the parts in it set away from their defaults, so its
+ * width at a step follows the parts that step has moved into it; the table
+ * of steps does not change.
  */
 export function solveToolbar(input: SolverInput): SolverResult {
   const units = input.units.filter((unit) => !unit.cssHidden);
@@ -170,15 +178,25 @@ export function solveToolbar(input: SolverInput): SolverResult {
 
   type Item = { kind: SolverUnit["kind"] | "trigger"; id: string; w: number };
 
+  const base = input.overflowTriggerWidth;
+  /** The ⋯'s width while it counts `active` parts set away from their defaults. */
+  const triggerWidth = (active: number) =>
+    active === 0
+      ? base
+      : active < 10
+        ? (input.overflowTriggerCountWidth ?? base)
+        : (input.overflowTriggerWideCountWidth ?? base);
+
   /** What stands on the bar, with the separators that part nothing hidden. */
   const lay = (current: Record<string, UnitView>) => {
     const trigger = place(current);
+    const active = units.filter(
+      (unit) =>
+        unit.kind === "unit" && unit.active && current[unit.id] === "overflow",
+    ).length;
+    const w = triggerWidth(active);
     const items: Item[] = [];
-    const triggerItem: Item = {
-      kind: "trigger",
-      id: "",
-      w: input.overflowTriggerWidth,
-    };
+    const triggerItem: Item = { kind: "trigger", id: "", w };
     for (const unit of units) {
       if (trigger?.at === "before" && trigger.id === unit.id) {
         items.push(triggerItem);
@@ -186,10 +204,11 @@ export function solveToolbar(input: SolverInput): SolverResult {
       const view = current[unit.id];
       if (unit.kind === "overflow") {
         if (trigger) {
+          // A permanent one is measured in place, without its count.
           items.push({
             kind: "trigger",
             id: unit.id,
-            w: permanent ? unit.width : input.overflowTriggerWidth,
+            w: permanent ? unit.width + w - base : w,
           });
         }
         continue;

@@ -15,7 +15,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
@@ -45,9 +44,14 @@ import {
 } from "./toolbar/command.tsx";
 import { FLAT, iconSize, TOGGLE, textSize } from "./toolbar/look.ts";
 import {
+  OverflowFace,
+  OverflowLabel,
   OverflowLabelsContext,
   OverflowMenu,
+  OverflowName,
   OverflowTrigger,
+  OverflowValue,
+  overflowClass,
   ToolbarOverflow,
 } from "./toolbar/overflow.tsx";
 import { ToolbarSearch } from "./toolbar/search.tsx";
@@ -240,7 +244,9 @@ function Toolbar({
           ref={rowRef}
           data-slot="toolbar-row"
           className={cn(
-            "relative flex min-w-0 flex-1 items-center gap-[inherit]",
+            // Nothing transitions in the frame a new layout is drawn in
+            // (`ToolbarStore`'s `markRelayout`).
+            "relative flex min-w-0 flex-1 items-center gap-[inherit] data-relayout:**:transition-none",
             // Before the bar is measured (a prerendered page), what does not
             // fit wraps onto a line of its own, cut off, rather than show
             // half a button.
@@ -292,35 +298,44 @@ function defaultActiveLabel(count: number) {
   return `More actions (${count} active)`;
 }
 
+type RulerField = "iconRuler" | "textRuler" | "countRuler" | "wideCountRuler";
+
 /**
  * An icon button and a text button of the bar's size, drawn as its commands
- * are, out of sight: what hiding a label gives back, and the ⋯'s width,
- * read from the style and pointer in force.
+ * are, and the ⋯ with a count of one digit and of `9+`, all out of sight:
+ * what hiding a label gives back, and the ⋯'s widths, read from the style
+ * and pointer in force.
  */
 function Rulers() {
   const internal = React.useContext(ToolbarInternalContext);
   const store = internal?.store;
-  const iconRef = React.useCallback(
-    (el: HTMLButtonElement | null) => {
+  const refs = React.useMemo(() => {
+    const ruler = (field: RulerField) => (el: HTMLButtonElement | null) => {
       if (!store) return;
-      store.iconRuler = el;
+      store[field] = el;
       if (!el) return;
       store.observe(el);
       return () => store.unobserve(el);
-    },
-    [store],
-  );
-  const textRef = React.useCallback(
-    (el: HTMLButtonElement | null) => {
-      if (!store) return;
-      store.textRuler = el;
-      if (!el) return;
-      store.observe(el);
-      return () => store.unobserve(el);
-    },
-    [store],
-  );
+    };
+    return {
+      icon: ruler("iconRuler"),
+      text: ruler("textRuler"),
+      count: ruler("countRuler"),
+      wideCount: ruler("wideCountRuler"),
+    };
+  }, [store]);
   if (!internal) return null;
+  const counted = (ref: (el: HTMLButtonElement | null) => void, n: number) => (
+    <Button
+      ref={ref}
+      variant="ghost"
+      size={iconSize(internal.size)}
+      tabIndex={-1}
+      className={overflowClass(n)}
+    >
+      <OverflowFace count={n} />
+    </Button>
+  );
   return (
     <div
       data-toolbar-internal=""
@@ -329,7 +344,7 @@ function Rulers() {
       className={cn(OUT_OF_FLOW, "flex")}
     >
       <Button
-        ref={iconRef}
+        ref={refs.icon}
         variant="ghost"
         size={iconSize(internal.size)}
         tabIndex={-1}
@@ -338,7 +353,7 @@ function Rulers() {
         <svg aria-hidden />
       </Button>
       <Button
-        ref={textRef}
+        ref={refs.text}
         variant="ghost"
         size={textSize(internal.size)}
         tabIndex={-1}
@@ -347,6 +362,8 @@ function Rulers() {
         <svg aria-hidden />
         <span />
       </Button>
+      {counted(refs.count, 8)}
+      {counted(refs.wideCount, 10)}
     </div>
   );
 }
@@ -388,6 +405,12 @@ type ToolbarGroupProps = Omit<
   /** The group's name, for a screen reader, and its heading in the ⋯ menu when only one may be chosen. */
   label?: string;
   priority?: ToolbarPriority;
+  /**
+   * Set away from its default: it leaves the bar last within its
+   * `priority`, and is counted on the ⋯ while it is in there. Defaults to
+   * having a selection, under `selection="multiple"`.
+   */
+  active?: boolean;
 } & GroupValueProps;
 
 /**
@@ -402,6 +425,9 @@ function ToolbarGroup(props: ToolbarGroupProps) {
   if (item?.surface === "overflow") return <GroupMenu {...props} />;
   return <GroupBar {...props} />;
 }
+
+const groupActive = (props: ToolbarGroupProps, values: readonly string[]) =>
+  props.active ?? (props.selection === "multiple" && values.length > 0);
 
 function useGroupState(props: ToolbarGroupProps): GroupState & {
   set: (next: string | string[]) => void;
@@ -444,6 +470,7 @@ function GroupBar(props: ToolbarGroupProps) {
   const {
     label,
     priority,
+    active: _active,
     selection = "none",
     value: _value,
     defaultValue: _defaultValue,
@@ -460,7 +487,7 @@ function GroupBar(props: ToolbarGroupProps) {
   const unit = useToolbarUnit({
     meta: {
       priority,
-      active: selection === "multiple" && values.length > 0,
+      active: groupActive(props, values),
       overflowable: true,
       group: true,
       // Controlled by this one, so the bar and the menu show one state.
@@ -544,7 +571,11 @@ function GroupMenu(props: ToolbarGroupProps) {
   if (selection === "single") {
     return (
       <GroupContext.Provider value={group}>
-        {label && <DropdownMenuLabel>{label}</DropdownMenuLabel>}
+        {label && (
+          <OverflowLabel active={groupActive(props, state.values)}>
+            {label}
+          </OverflowLabel>
+        )}
         <DropdownMenuRadioGroup
           aria-label={label}
           value={state.values[0] ?? ""}
@@ -582,6 +613,12 @@ type ToolbarButtonProps = Omit<
    */
   labelCollapse?: "auto" | "never";
   priority?: ToolbarPriority;
+  /**
+   * Set away from its default: it leaves the bar last within its
+   * `priority`, and is counted on the ⋯ while it is in there. Defaults to
+   * `aria-pressed`.
+   */
+  active?: boolean;
 };
 
 /**
@@ -634,6 +671,7 @@ function LoneToolbarButton({
   tooltip,
   labelCollapse: _labelCollapse,
   priority: _priority,
+  active: _active,
   className,
   ...props
 }: ToolbarButtonProps) {
@@ -681,6 +719,7 @@ function BarToolbarButton(props: ToolbarButtonProps) {
     tooltip,
     labelCollapse,
     priority,
+    active,
     asChild,
     disabled,
     className,
@@ -705,7 +744,7 @@ function BarToolbarButton(props: ToolbarButtonProps) {
   const unit = useToolbarUnit({
     meta: {
       priority: opensSurface ? "pin" : priority,
-      active: pressed(rest["aria-pressed"]),
+      active: active ?? pressed(rest["aria-pressed"]),
       overflowable: !opensSurface,
       renderOverflow: () => <ToolbarButton {...props} ref={undefined} />,
     },
@@ -878,7 +917,10 @@ interface ToolbarMenuProps {
   iconOnly?: boolean;
   /** The choice it holds, shown after its words (`Open`, `Alice`). */
   value?: React.ReactNode;
-  /** Set away from its default: it leaves the bar last within its priority, and marks the ⋯. */
+  /**
+   * Set away from its default: it leaves the bar last within its
+   * `priority`, and is counted on the ⋯ while it is in there.
+   */
   active?: boolean;
   variant?: "ghost" | "outline";
   labelCollapse?: "auto" | "never";
@@ -986,6 +1028,7 @@ function MenuSub({
   icon,
   label,
   value,
+  active,
   disabled,
   contentClassName,
   children,
@@ -994,9 +1037,11 @@ function MenuSub({
     <DropdownMenuSub>
       <DropdownMenuSubTrigger disabled={disabled}>
         {icon}
-        <span className="flex-1">{label}</span>
+        <OverflowName marked={active === true && value === undefined}>
+          {label}
+        </OverflowName>
         {value !== undefined && (
-          <span className="text-muted-foreground">{value}</span>
+          <OverflowValue active={active}>{value}</OverflowValue>
         )}
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent className={contentClassName}>
@@ -1108,6 +1153,10 @@ function ToolbarItem({
   priority?: ToolbarPriority;
   flex?: boolean;
   minWidth?: number;
+  /**
+   * Set away from its default: it leaves the bar last within its
+   * `priority`, and is counted on the ⋯ while it is in there.
+   */
   active?: boolean;
   overflow?:
     | React.ReactNode

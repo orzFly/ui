@@ -7,13 +7,13 @@ import { Button } from "./button.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "./dropdown-menu.tsx";
 import { CommandTooltip } from "./toolbar/command.tsx";
 import { FLAT, textSize } from "./toolbar/look.ts";
+import { OverflowLabel } from "./toolbar/overflow.tsx";
 import {
   OUT_OF_FLOW,
   outerHeight,
@@ -64,6 +64,7 @@ function SegmentedControl({
   onValueChange,
   collapse = "dropdown",
   priority,
+  toolbarActive = false,
   className,
   children,
   ref,
@@ -76,6 +77,12 @@ function SegmentedControl({
   collapse?: "dropdown" | "overflow" | "never";
   /** In a `Toolbar`, how soon it gives up room. */
   priority?: ToolbarPriority;
+  /**
+   * In a `Toolbar`, its value is set away from its default: it leaves the
+   * bar last within its `priority`, and is counted on the ⋯ while it is in
+   * there. Outside one it is ignored.
+   */
+  toolbarActive?: boolean;
 }) {
   const [own, setOwn] = React.useState(defaultValue);
   const value = controlled ?? own;
@@ -115,11 +122,12 @@ function SegmentedControl({
     enabled: item?.surface !== "overflow",
     meta: {
       priority: collapse === "never" ? "pin" : priority,
+      active: toolbarActive,
       overflowable: collapse !== "never",
       group: true,
       renderOverflow: () => (
         <>
-          {name && <DropdownMenuLabel>{name}</DropdownMenuLabel>}
+          {name && <OverflowLabel active={toolbarActive}>{name}</OverflowLabel>}
           <DropdownMenuRadioGroup
             aria-label={name}
             value={value ?? ""}
