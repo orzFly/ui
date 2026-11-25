@@ -55,8 +55,30 @@ jobs:
       # @orz/ui ships this commit's guidelines and skill; its prepack fails the publish without them.
       - run: pnpm --filter @orz/docs build:package
       # A detached tag checkout and the snapshot's rewritten manifests both fail pnpm's git
-      # checks. Versions already on npm are skipped, so a rerun publishes only what is missing.
-      - run: pnpm -r publish --no-git-checks --tag "${{ steps.version.outputs.dist-tag }}"
+      # checks. pnpm stops at the first package npm fails, and a registry hiccup can fail one
+      # whose version went through anyway. Versions already on npm are skipped, so each further
+      # attempt publishes only what is missing. The pauses grow because a version that went
+      # through can take a while to show, and until it does, publishing it again fails too.
+      - name: Publish
+        env:
+          DIST_TAG: ${{ steps.version.outputs.dist-tag }}
+        run: |
+          marker="$RUNNER_TEMP/publish-attempt"
+          for pause in 60 120 240 480 last; do
+            touch "$marker"
+            pnpm -r publish --no-git-checks --tag "$DIST_TAG" && exit 0
+            # npm's debug log, the only record of each request's status and of npm's own
+            # retries, is lost with the runner unless printed here.
+            log=$(find ~/.npm/_logs -name '*-debug-0.log' -newer "$marker" 2>/dev/null | sort | tail -n 1)
+            if [ -n "$log" ]; then
+              echo "::group::npm debug log $(basename "$log")"
+              cat "$log"
+              echo "::endgroup::"
+            fi
+            [ "$pause" = last ] && exit 1
+            echo "Publishing again in ${pause}s"
+            sleep "$pause"
+          done
 
   # Master's docs site at https://orzfly.github.io/ui/, Storybook at …/ui/storybook/, deployed
   # from the site the check built.
