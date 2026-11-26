@@ -1,6 +1,14 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { type ReactElement, useState } from "react";
+import { createPortal } from "react-dom";
 import { afterEach, describe, expect, it } from "vitest";
+import { ConfirmDialog } from "../src/components/confirm-dialog.tsx";
 import {
   Dialog,
   DialogContent,
@@ -357,6 +365,73 @@ it("still hands a dialog's focus to its trigger", async () => {
   fireEvent.keyDown(document, { key: "Escape" });
 
   await waitFor(() => expect(document.activeElement).toBe(trigger));
+});
+
+/** A part of the page rendered into another document, asking from there. */
+function AskedElsewhere({ body }: { body: HTMLElement }) {
+  const [open, setOpen] = useState(false);
+  return createPortal(
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        Submit
+      </button>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Submit with 2 unanswered?"
+        onConfirm={() => setOpen(false)}
+        container={body}
+      />
+    </>,
+    body,
+  );
+}
+
+/**
+ * The other window's document. happy-dom loads no frame, so it is a bare
+ * document: it keeps its own focus apart from this one's, which is what the
+ * restore has to tell apart, but shares this realm, so the `instanceof`
+ * across realms that a real Picture-in-Picture window brings needs a browser.
+ */
+describe("a confirm portalled into another window (UI-231)", () => {
+  const left = document.createElement("button");
+  afterEach(() => left.remove());
+
+  it("opens in the container, not in this document", async () => {
+    const other = document.implementation.createHTMLDocument("");
+    render(<AskedElsewhere body={other.body} />);
+    act(() => (other.querySelector("button") as HTMLElement).click());
+
+    await waitFor(() =>
+      expect(other.querySelector("[role=dialog]")).not.toBeNull(),
+    );
+    expect(document.querySelector("[role=dialog]")).toBeNull();
+  });
+
+  it("hands the focus back to its opener there, not to this window's", async () => {
+    const other = document.implementation.createHTMLDocument("");
+    // What last had the focus in the page the other window was opened from.
+    document.body.append(left);
+    left.focus();
+    render(<AskedElsewhere body={other.body} />);
+    const submit = other.querySelector("button") as HTMLElement;
+    submit.focus();
+    act(() => submit.click());
+    await waitFor(() =>
+      expect(other.querySelector("[role=dialog]")).not.toBeNull(),
+    );
+    const cancel = [...other.querySelectorAll("button")].find(
+      (button) => button.textContent === "Cancel",
+    ) as HTMLElement;
+
+    act(() => cancel.click());
+
+    await waitFor(() =>
+      expect(other.querySelector("[role=dialog]")).toBeNull(),
+    );
+    await waitFor(() => expect(other.activeElement).toBe(submit));
+    expect(document.activeElement).toBe(left);
+  });
 });
 
 // An overlay's duration is meant for its open/close keyframes; with the

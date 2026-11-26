@@ -14,7 +14,10 @@ import {
 } from "@orz/ui/components/dialog";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
+import { Pane } from "@orz/ui/components/pane";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { fn } from "storybook/test";
 
 const meta = {
@@ -139,4 +142,125 @@ export const ScrollingBody: Story = {
       </DialogContent>
     </Dialog>
   ),
+};
+
+const CONTAINER = `// \`pip\` is the window documentPictureInPicture.requestWindow() resolved
+// to, with the page's stylesheets copied in; this part of the page is
+// rendered into its body with createPortal.
+<Dialog>
+  <DialogTrigger asChild>
+    <Button variant="outline">Rename</Button>
+  </DialogTrigger>
+  <DialogContent container={pip.document.body}>
+    <DialogHeader>
+      <DialogTitle>Rename project</DialogTitle>
+    </DialogHeader>
+    <div className="grid gap-2">
+      <Label htmlFor="name">Name</Label>
+      <Input id="name" defaultValue="orzui" />
+    </div>
+    <DialogFooter>
+      <DialogClose asChild>
+        <Button variant="outline">Cancel</Button>
+      </DialogClose>
+      <Button>Save</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>`;
+
+/**
+ * Opens in another window's document: here a frame, standing in for a
+ * Picture-in-Picture window, which the trigger is rendered into.
+ */
+export const Container: Story = {
+  parameters: { docs: { source: { code: CONTAINER, language: "tsx" } } },
+  render: function Render(args) {
+    const [frame, setFrame] = useState<Document | null>(null);
+    useEffect(() => {
+      if (frame === null) return;
+      // A new window has none of the page's styles. Copied in as a
+      // Picture-in-Picture window's are, and kept in step, so the frame
+      // follows the toolbar's theme and style; a link is cloned once rather
+      // than replaced, which would flash the frame unstyled while it loads.
+      const clones = new Map<Element, Element>();
+      const mirror = () => {
+        const sources = [
+          ...document.head.querySelectorAll("style, link[rel=stylesheet]"),
+        ];
+        for (const [source, clone] of clones) {
+          if (sources.includes(source)) continue;
+          clone.remove();
+          clones.delete(source);
+        }
+        for (const source of sources) {
+          const clone = clones.get(source);
+          if (clone === undefined) {
+            const copy = source.cloneNode(true) as Element;
+            clones.set(source, copy);
+            frame.head.append(copy);
+          } else if (clone.textContent !== source.textContent) {
+            clone.textContent = source.textContent;
+          }
+        }
+        const root = frame.documentElement;
+        for (const name of root.getAttributeNames()) root.removeAttribute(name);
+        for (const { name, value } of document.documentElement.attributes)
+          root.setAttribute(name, value);
+      };
+      mirror();
+      let pending = 0;
+      const observer = new MutationObserver(() => {
+        cancelAnimationFrame(pending);
+        pending = requestAnimationFrame(mirror);
+      });
+      observer.observe(document.head, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+      observer.observe(document.documentElement, { attributes: true });
+      return () => {
+        observer.disconnect();
+        cancelAnimationFrame(pending);
+      };
+    }, [frame]);
+    return (
+      <>
+        <Pane purpose="window" asChild>
+          <iframe
+            title="Another window"
+            srcDoc="<!doctype html><title>Another window</title>"
+            className="h-80 w-full"
+            onLoad={(event) => setFrame(event.currentTarget.contentDocument)}
+          />
+        </Pane>
+        {frame !== null &&
+          createPortal(
+            <Dialog {...args}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="m-4">
+                  Rename
+                </Button>
+              </DialogTrigger>
+              <DialogContent container={frame.body}>
+                <DialogHeader>
+                  <DialogTitle>Rename project</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-2">
+                  <Label htmlFor="frame-name">Name</Label>
+                  <Input id="frame-name" defaultValue="orzui" />
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button>Save</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>,
+            frame.body,
+          )}
+      </>
+    );
+  },
 };

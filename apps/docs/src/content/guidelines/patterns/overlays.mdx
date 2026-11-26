@@ -85,6 +85,14 @@ button in the corner, so it can be closed with one tap on a phone, where there i
 A click outside a Dialog that holds typed input should not throw the input away: keep it for the
 next opening, or ask first. The click most likely meant to look at the page behind.
 
+## In another window
+
+An app may draw part of itself in a second window, such as a Picture-in-Picture window that keeps
+a call or a form in view over other apps. An overlay opened from there belongs there: pass that
+window's `document.body` as the overlay's `container`. Without it the overlay opens in the main
+window, behind the one the person is working in, and they are left waiting on a question they
+cannot see.
+
 ## On each platform
 
 ### Desktop & pointer

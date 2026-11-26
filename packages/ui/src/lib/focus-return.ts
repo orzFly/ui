@@ -9,13 +9,18 @@ const openers = new WeakMap<EventTarget, HTMLElement>();
  * viewer, a confirm before a delete — dropped it on `<body>` (UI-183).
  */
 export function rememberOpener(event: Event): void {
-  const active = document.activeElement;
-  if (
-    event.currentTarget !== null &&
-    active instanceof HTMLElement &&
-    active !== document.body
-  )
-    openers.set(event.currentTarget, active);
+  const content = event.currentTarget;
+  if (content === null) return;
+  // The overlay's own document, not this one: an overlay portalled into
+  // another window (Picture-in-Picture, UI-231) was opened from there, while
+  // this document names what last had the focus in this window, so returning
+  // to that on close took the focus out of the window in use. That window's
+  // elements are of its realm, which this realm's HTMLElement rejects.
+  const owner = (content as Node).ownerDocument ?? document;
+  const active = owner.activeElement;
+  const view = owner.defaultView ?? window;
+  if (active instanceof view.HTMLElement && active !== owner.body)
+    openers.set(content, active);
 }
 
 /**

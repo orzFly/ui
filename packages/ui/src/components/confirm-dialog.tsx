@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { Button } from "./button.tsx";
 import {
   Dialog,
@@ -32,6 +32,7 @@ export function ConfirmDialog({
   pending = false,
   onConfirm,
   children,
+  container,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -44,10 +45,12 @@ export function ConfirmDialog({
   onConfirm: () => void;
   /** Block content below the description, which is a paragraph. */
   children?: ReactNode;
+  /** The element the dialog is portalled into, `document.body` by default. */
+  container?: ComponentProps<typeof DialogContent>["container"];
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent container={container}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
