@@ -1,13 +1,15 @@
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
   waitFor,
 } from "@testing-library/react";
-import { type ReactElement, useState } from "react";
+import { Window } from "happy-dom";
+import { type ComponentProps, type ReactElement, useState } from "react";
 import { createPortal } from "react-dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ConfirmDialog } from "../src/components/confirm-dialog.tsx";
 import {
   Dialog,
@@ -431,6 +433,160 @@ describe("a confirm portalled into another window (UI-231)", () => {
     );
     await waitFor(() => expect(other.activeElement).toBe(submit));
     expect(document.activeElement).toBe(left);
+  });
+});
+
+/** A rename dialog in another window, opened from a trigger there. */
+function RenameElsewhere({
+  body,
+  ...props
+}: { body: HTMLElement } & Pick<
+  ComponentProps<typeof DialogContent>,
+  "onPointerDownOutside" | "onInteractOutside"
+> &
+  Pick<ComponentProps<typeof Dialog>, "onOpenChange">) {
+  const [line, setLine] = useState(true);
+  return createPortal(
+    <Dialog onOpenChange={props.onOpenChange}>
+      <DialogTrigger>Rename</DialogTrigger>
+      <DialogContent
+        container={body}
+        onPointerDownOutside={props.onPointerDownOutside}
+        onInteractOutside={props.onInteractOutside}
+      >
+        <DialogTitle>Rename project</DialogTitle>
+        <input aria-label="Name" defaultValue="orzui" />
+        {line && <p>Taken by another project</p>}
+        <button type="button" onClick={() => setLine(false)}>
+          Clear
+        </button>
+      </DialogContent>
+    </Dialog>,
+    body,
+  );
+}
+
+/**
+ * Another happy-dom window, for what Radix does with this window's document
+ * while its dialog is in that one's. It shares this realm, so its press on
+ * the scrim is one Radix would handle too; that it is handled once is what
+ * keeps a Radix that judges it across realms from closing the dialog twice.
+ */
+describe("a dialog portalled into another window (UI-232)", () => {
+  const windows: Window[] = [];
+  afterEach(async () => {
+    // Unmounted first: a closed window's document no longer gives the
+    // portal back.
+    cleanup();
+    for (const other of windows.splice(0)) await other.happyDOM.close();
+  });
+
+  async function open(
+    props: Omit<Parameters<typeof RenameElsewhere>[0], "body"> = {},
+  ) {
+    const view = new Window();
+    windows.push(view);
+    const other = view.document as unknown as Document;
+    render(<RenameElsewhere body={other.body} {...props} />);
+    const trigger = other.querySelector("button") as HTMLElement;
+    trigger.focus();
+    act(() => trigger.click());
+    await waitFor(() =>
+      expect(other.querySelector("[role=dialog]")).not.toBeNull(),
+    );
+    const field = other.querySelector("input") as HTMLInputElement;
+    const scrim = other.querySelector(
+      "[data-slot=dialog-overlay]",
+    ) as HTMLElement;
+    // Radix listens for a press outside from the next task on.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    return { other, trigger, field, scrim };
+  }
+
+  it("opens with the focus on its first field there", async () => {
+    const { other, field } = await open();
+    await waitFor(() => expect(other.activeElement).toBe(field));
+  });
+
+  it("brings Tab round from its last control to its first, and back", async () => {
+    const { other, field } = await open();
+    const close = other.querySelector(
+      "[data-slot=dialog-content] > [data-slot=dialog-close]",
+    ) as HTMLElement;
+    close.focus();
+
+    fireEvent.keyDown(close, { key: "Tab" });
+    expect(other.activeElement).toBe(field);
+
+    fireEvent.keyDown(field, { key: "Tab", shiftKey: true });
+    expect(other.activeElement).toBe(close);
+  });
+
+  it("sends the focus back when it lands behind the dialog", async () => {
+    const { other, trigger, field } = await open();
+    await waitFor(() => expect(other.activeElement).toBe(field));
+
+    act(() => trigger.focus());
+
+    expect(other.activeElement).toBe(field);
+  });
+
+  it("keeps the focus on its field when a line inside is removed", async () => {
+    const { other, field } = await open();
+    // Nothing holds the focus in this window, as when the button that
+    // opened the other one has gone: Radix takes that for the focused node
+    // having been removed.
+    expect(document.activeElement).toBe(document.body);
+    const clear = [...other.querySelectorAll("button")].find(
+      (button) => button.textContent === "Clear",
+    ) as HTMLElement;
+    act(() => field.focus());
+    act(() => clear.click());
+    await waitFor(() => expect(other.querySelector("p")).toBeNull());
+    await act(() => Promise.resolve());
+
+    expect(other.activeElement).toBe(field);
+  });
+
+  it("closes on a press of its scrim, once", async () => {
+    const onOpenChange = vi.fn();
+    const onPointerDownOutside = vi.fn();
+    const { other, scrim } = await open({ onOpenChange, onPointerDownOutside });
+
+    fireEvent.pointerDown(scrim, { button: 0 });
+    fireEvent.click(scrim);
+
+    await waitFor(() =>
+      expect(other.querySelector("[role=dialog]")).toBeNull(),
+    );
+    expect(onPointerDownOutside).toHaveBeenCalledTimes(1);
+    expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it("stays open when the press is prevented", async () => {
+    const { other, scrim } = await open({
+      onInteractOutside: (event) => event.preventDefault(),
+    });
+
+    fireEvent.pointerDown(scrim, { button: 0 });
+    fireEvent.click(scrim);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+    expect(other.querySelector("[role=dialog]")).not.toBeNull();
+  });
+
+  it("locks scrolling in its own window, not in this one", async () => {
+    const { other, scrim } = await open();
+    expect(other.documentElement.style.overflow).toBe("hidden");
+    expect(document.body.hasAttribute("data-scroll-locked")).toBe(false);
+
+    fireEvent.pointerDown(scrim, { button: 0 });
+    fireEvent.click(scrim);
+
+    await waitFor(() =>
+      expect(other.querySelector("[role=dialog]")).toBeNull(),
+    );
+    expect(other.documentElement.style.overflow).toBe("");
   });
 });
 

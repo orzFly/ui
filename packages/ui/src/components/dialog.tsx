@@ -1,8 +1,16 @@
 import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import * as React from "react";
-import { useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { rememberOpener, returnToOpener } from "../lib/focus-return.ts";
+import {
+  focusFirst,
+  holdFocus,
+  lockScroll,
+  loopTab,
+  otherDocument,
+  releaseFocus,
+} from "../lib/other-window.ts";
 import { cn } from "../lib/utils.ts";
 import { Button } from "./button.tsx";
 import { ModuleMarker } from "./card.tsx";
@@ -95,10 +103,41 @@ function releaseShadowDrag(
   releaseShadowScroll(event, horizontal, horizontal ? deltaX : deltaY);
 }
 
+const DialogOpen = React.createContext<{
+  open: boolean;
+  setOpen: (open: boolean) => void;
+} | null>(null);
+
 function Dialog({
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+  // Held here, and handed to Radix as controlled, because Radix keeps the
+  // state to its own parts: a dialog in another window draws its own scrim
+  // (UI-232), which has to close in the same render as the content to fade
+  // out with it.
+  const [uncontrolled, setUncontrolled] = useState(defaultOpen);
+  const open = openProp ?? uncontrolled;
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (openProp === undefined) setUncontrolled(next);
+      onOpenChange?.(next);
+    },
+    [openProp, onOpenChange],
+  );
+  const state = useMemo(() => ({ open, setOpen }), [open, setOpen]);
+  return (
+    <DialogOpen.Provider value={state}>
+      <DialogPrimitive.Root
+        data-slot="dialog"
+        open={open}
+        onOpenChange={setOpen}
+        {...props}
+      />
+    </DialogOpen.Provider>
+  );
 }
 
 function DialogTrigger({
@@ -119,6 +158,10 @@ function DialogClose({
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
+// Under raymond a modal window neither dims nor blurs what it covers.
+const overlayClasses =
+  "fixed inset-0 isolate z-50 bg-scrim duration-(--duration-overlay) supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 raymond:backdrop-blur-none";
+
 function DialogOverlay({
   className,
   ...props
@@ -126,12 +169,63 @@ function DialogOverlay({
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
-      className={cn(
-        // Under raymond a modal window neither dims nor blurs what it covers.
-        "fixed inset-0 isolate z-50 bg-scrim duration-(--duration-overlay) supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 raymond:backdrop-blur-none",
-        className,
-      )}
+      className={cn(overlayClasses, className)}
       {...props}
+    />
+  );
+}
+
+type PointerDownOutside = Parameters<
+  NonNullable<
+    React.ComponentProps<typeof DialogPrimitive.Content>["onPointerDownOutside"]
+  >
+>[0];
+
+/**
+ * The scrim of a dialog in another window's document (UI-232), in place of
+ * Radix's: its scroll lock holds this window's document, and it judges a
+ * press outside by `instanceof Node` against this realm's `Node`, which no
+ * node of another window is, so a press on it never closed the dialog.
+ *
+ * The press is kept from reaching that document, so a Radix that judges it
+ * correctly cannot close the dialog a second time.
+ */
+function OtherWindowOverlay({
+  owner,
+  open,
+  onPress,
+  ...props
+}: React.ComponentProps<"div"> & {
+  owner: Document;
+  open: boolean;
+  onPress: (press: PointerEvent, scrim: HTMLElement) => void;
+}) {
+  const pressed = useRef<PointerEvent | null>(null);
+  // For as long as the scrim is drawn, its closing fade included, as
+  // Radix's lock is.
+  useEffect(() => lockScroll(owner), [owner]);
+  return (
+    // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: a pointer's way out of the dialog; Escape is the keyboard's, and Radix's scrim carries no role either
+    <div
+      {...props}
+      data-slot="dialog-overlay"
+      data-state={open ? "open" : "closed"}
+      className={overlayClasses}
+      // The page beneath takes no pointer while a modal is open, and the
+      // scrim would inherit that; Radix's turns it back on the same way.
+      style={{ pointerEvents: "auto" }}
+      onPointerDown={(event) => {
+        event.nativeEvent.stopPropagation();
+        // As Radix's: a primary press closes on its click, any other button
+        // at once.
+        if (event.button === 0) pressed.current = event.nativeEvent;
+        else onPress(event.nativeEvent, event.currentTarget);
+      }}
+      onClick={(event) => {
+        const press = pressed.current;
+        pressed.current = null;
+        if (press !== null) onPress(press, event.currentTarget);
+      }}
     />
   );
 }
@@ -143,18 +237,56 @@ function DialogContent({
   onWheel,
   onTouchStart,
   onTouchMove,
+  onKeyDown,
   onOpenAutoFocus,
   onCloseAutoFocus,
+  onPointerDownOutside,
+  onInteractOutside,
   container,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> &
-  Pick<React.ComponentProps<typeof DialogPrimitive.Portal>, "container"> & {
-    showCloseButton?: boolean;
-  }) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  /**
+   * The element the dialog is portalled into, `document.body` by default.
+   * In another window's document (Picture-in-Picture) the dialog keeps the
+   * focus, closes on its scrim and locks scrolling there, as it does here.
+   */
+  container?: React.ComponentProps<typeof DialogPrimitive.Portal>["container"];
+  showCloseButton?: boolean;
+}) {
   const dragOrigin = useRef<{ x: number; y: number } | null>(null);
+  const owner = otherDocument(container);
+  const state = React.useContext(DialogOpen);
   return (
     <DialogPortal container={container}>
-      <DialogOverlay />
+      {owner !== null && state !== null ? (
+        <OtherWindowOverlay
+          owner={owner}
+          open={state.open}
+          onPress={(press, scrim) => {
+            // One event for both handlers, dispatched on the scrim as Radix
+            // dispatches its own, so `target` and `detail` read the same.
+            const view = scrim.ownerDocument.defaultView ?? window;
+            const outside: PointerDownOutside = new view.CustomEvent(
+              "dismissableLayer.pointerDownOutside",
+              { cancelable: true, detail: { originalEvent: press } },
+            );
+            const handle = (event: Event) => {
+              const pressed = event as PointerDownOutside;
+              onPointerDownOutside?.(pressed);
+              // Radix's modal content leaves a right click alone, and a
+              // control-click, which opens the context menu on macOS.
+              if (press.button === 2 || (press.button === 0 && press.ctrlKey))
+                pressed.preventDefault();
+              onInteractOutside?.(pressed);
+            };
+            scrim.addEventListener(outside.type, handle, { once: true });
+            scrim.dispatchEvent(outside);
+            if (!outside.defaultPrevented) state.setOpen(false);
+          }}
+        />
+      ) : (
+        <DialogOverlay />
+      )}
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
@@ -201,14 +333,28 @@ function DialogContent({
           if (!event.isPropagationStopped())
             releaseShadowDrag(event, dragOrigin.current);
         }}
+        onKeyDown={(event) => {
+          onKeyDown?.(event);
+          if (owner !== null) loopTab(event);
+        }}
         onOpenAutoFocus={(event) => {
           onOpenAutoFocus?.(event);
           rememberOpener(event);
+          if (owner === null) return;
+          holdFocus(event);
+          // Radix finds no candidate there to take the focus, by asking this
+          // document whether one did, and leaves it on the dialog itself.
+          if (event.defaultPrevented) return;
+          event.preventDefault();
+          focusFirst(event.currentTarget as HTMLElement);
         }}
         onCloseAutoFocus={(event) => {
+          releaseFocus(event);
           onCloseAutoFocus?.(event);
           returnToOpener(event);
         }}
+        onPointerDownOutside={onPointerDownOutside}
+        onInteractOutside={onInteractOutside}
         {...props}
       >
         {children}
