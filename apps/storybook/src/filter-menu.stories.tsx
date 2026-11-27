@@ -272,7 +272,9 @@ const meta = {
               selectedIds: event.selected
                 ? [...selectedIds, row.id]
                 : selectedIds.filter((id) => id !== row.id),
-              mixedIds: args.mixedIds?.filter((id) => id !== row.id),
+              mixedIds: event.mixed
+                ? [...(args.mixedIds ?? []), row.id]
+                : args.mixedIds?.filter((id) => id !== row.id),
             });
           }
         }}
@@ -369,8 +371,8 @@ export const Multiple: Story = {
 };
 
 /**
- * Cities on only some of the things being edited are partly picked; a pick
- * makes one picked.
+ * Cities on only some of the things being edited are partly picked. A pick
+ * makes one picked, the next unpicked, and the next partly picked again.
  */
 export const Mixed: Story = {
   args: {
