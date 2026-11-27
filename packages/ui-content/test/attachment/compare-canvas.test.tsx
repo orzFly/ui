@@ -1,3 +1,4 @@
+import { writeClipboard } from "@orz/ui/lib/clipboard";
 import {
   act,
   fireEvent,
@@ -23,15 +24,23 @@ import {
 } from "../../src/compare/index.ts";
 import { file } from "./fixtures.tsx";
 
+// Its own toast on a failure is @orz/ui's to test; the footer only has to
+// claim nothing when it fails.
+vi.mock("@orz/ui/lib/clipboard", () => ({ writeClipboard: vi.fn() }));
+
 // happy-dom lays nothing out; the canvas measures as 800×600, which puts a
 // 400-wide pair side by side with the second pane from x = 404.
 beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(800);
   vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(600);
   Element.prototype.setPointerCapture ??= () => {};
+  vi.mocked(writeClipboard).mockReset().mockResolvedValue(true);
 });
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 const image = (
   label: string,
@@ -384,5 +393,103 @@ describe("the viewer's comparison of drawings", () => {
       screen.getAllByRole("menuitem").map((item) => item.textContent),
     ).toEqual(["Fit0", "100%1"]);
     expect(screen.queryByText("Background")).toBeNull();
+  });
+});
+
+describe("the viewer's comparison footer", () => {
+  const V1 = "flowchart LR\n  A --> B";
+  const V2 = "sequenceDiagram\n  A->>B: hi";
+  const drawing = (
+    label: string,
+    text: string | undefined,
+    type?: string,
+  ): CompareItem => ({
+    label,
+    content: <svg />,
+    size: { width: 400, height: 300 },
+    source:
+      text === undefined
+        ? undefined
+        : { kind: "inline", text, lang: "mermaid", type },
+  });
+  const diagrams = (beforeType = "flowchart", afterType = "flowchart") => ({
+    title: "flow.mmd",
+    before: drawing("v1", V1, beforeType),
+    after: drawing("v2", V2, afterType),
+  });
+  const copy = () =>
+    screen.getByRole("button", { name: "Copy the source of v1" });
+  const live = () =>
+    [...screen.getByRole("dialog").querySelectorAll("[aria-live]")]
+      .map((el) => el.textContent)
+      .join("");
+
+  it("names the drawings' language and type, and copies each side's source", () => {
+    render(<Viewer pairs={[diagrams()]} />);
+    expect(screen.getByText("mermaid · flowchart")).toBeTruthy();
+    expect(copy().textContent).toBe("v1");
+    expect(
+      screen.getByRole("button", { name: "Copy the source of v2" }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /Download/ })).toBeNull();
+  });
+
+  it("names both types when the two draw different things", () => {
+    render(<Viewer pairs={[diagrams("flowchart", "sequenceDiagram")]} />);
+    expect(
+      screen.getByText("mermaid · flowchart → sequenceDiagram"),
+    ).toBeTruthy();
+  });
+
+  it("copies a side's source and says so for 1.5 s", async () => {
+    vi.useFakeTimers();
+    render(<Viewer pairs={[diagrams()]} />);
+    await act(async () => {
+      fireEvent.click(copy());
+    });
+    expect(writeClipboard).toHaveBeenCalledWith(V1);
+    expect(copy().querySelector("[data-icon=copied]")).not.toBeNull();
+    expect(live()).toBe("Copied");
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(copy().querySelector("[data-icon=copied]")).toBeNull();
+    expect(live()).toBe("");
+  });
+
+  it("leaves a copy's check behind when it pages", async () => {
+    render(<Viewer pairs={[diagrams(), diagrams()]} />);
+    await act(async () => {
+      fireEvent.click(copy());
+    });
+    expect(copy().querySelector("[data-icon=copied]")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "next comparison" }));
+    expect(copy().querySelector("[data-icon=copied]")).toBeNull();
+  });
+
+  it("claims nothing when there is no clipboard", async () => {
+    vi.mocked(writeClipboard).mockResolvedValue(false);
+    render(<Viewer pairs={[diagrams()]} />);
+    await act(async () => {
+      fireEvent.click(copy());
+    });
+    expect(copy().querySelector("[data-icon=copied]")).toBeNull();
+    expect(live()).toBe("");
+  });
+
+  it("draws no footer for a pair with neither files nor sources", () => {
+    render(
+      <Viewer
+        pairs={[
+          {
+            title: "flow.mmd",
+            before: drawing("v1", undefined),
+            after: drawing("v2", undefined),
+          },
+        ]}
+      />,
+    );
+    const last = screen.getByRole("dialog").lastElementChild;
+    expect(last?.querySelector('[data-slot="compare-bar"]')).not.toBeNull();
   });
 });
