@@ -1,6 +1,6 @@
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../src/components/dropdown-menu.tsx";
+import { isPlainClick } from "../src/lib/link.ts";
 
 function Menu() {
   return (
@@ -105,5 +106,114 @@ describe("DropdownMenuCheckboxItem", () => {
     expect(mixed.querySelector(".lucide-minus")).not.toBeNull();
     expect(mixed.querySelector(".lucide-check")).toBeNull();
     expect(set.querySelector(".lucide-check")).not.toBeNull();
+  });
+});
+
+describe("DropdownMenuItem as a link", () => {
+  function LinkMenu({
+    onSelect,
+    inPlace = false,
+    target,
+  }: {
+    onSelect?: () => void;
+    inPlace?: boolean;
+    target?: string;
+  }) {
+    return (
+      <DropdownMenu defaultOpen>
+        <DropdownMenuTrigger>Sections</DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem asChild onSelect={onSelect}>
+            <a
+              href="/board"
+              target={target}
+              onClick={(event) => {
+                // As a link that goes in place does, past isPlainClick.
+                if (inPlace && isPlainClick(event)) event.preventDefault();
+              }}
+            >
+              Board
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onSelect}>Rename</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  // Whether the page took the last click over, read once every handler in
+  // it has run; then the click is stopped short of happy-dom's navigation.
+  let tookOver: boolean | undefined;
+  const stop = (event: MouseEvent) => {
+    tookOver = event.defaultPrevented;
+    event.preventDefault();
+  };
+  beforeEach(() => {
+    tookOver = undefined;
+    window.addEventListener("click", stop);
+  });
+  afterEach(() => window.removeEventListener("click", stop));
+
+  const closed = (view: ReturnType<typeof render>) =>
+    waitFor(() => expect(view.queryByRole("menu")).toBeNull());
+
+  it("closes the menu on a plain click", async () => {
+    const view = render(<LinkMenu />);
+    fireEvent.click(await view.findByRole("menuitem", { name: "Board" }));
+    await closed(view);
+  });
+
+  it("closes the menu on a plain click the link went in place for", async () => {
+    const view = render(<LinkMenu inPlace />);
+    fireEvent.click(await view.findByRole("menuitem", { name: "Board" }));
+    expect(tookOver).toBe(true);
+    await closed(view);
+  });
+
+  it("closes the menu on a plain click on a link that opens elsewhere", async () => {
+    const view = render(<LinkMenu target="_blank" />);
+    fireEvent.click(await view.findByRole("menuitem", { name: "Board" }));
+    await closed(view);
+  });
+
+  it.each([
+    ["Ctrl", { ctrlKey: true }],
+    ["⌘", { metaKey: true }],
+    ["Shift", { shiftKey: true }],
+    ["Alt", { altKey: true }],
+  ])(
+    "leaves the menu open on a click with %s, to the browser",
+    async (_, keys) => {
+      const onSelect = vi.fn();
+      const view = render(<LinkMenu onSelect={onSelect} inPlace />);
+      fireEvent.click(
+        await view.findByRole("menuitem", { name: "Board" }),
+        keys,
+      );
+      // The link left it to the browser.
+      expect(tookOver).toBe(false);
+      await act(async () => {});
+      expect(view.getByRole("menu")).toBeTruthy();
+      expect(onSelect).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("closes the menu on Enter", async () => {
+    const view = render(<LinkMenu inPlace />);
+    const link = await view.findByRole("menuitem", { name: "Board" });
+    act(() => link.focus());
+    fireEvent.keyDown(link, { key: "Enter" });
+    expect(tookOver).toBe(true);
+    await closed(view);
+  });
+
+  it("leaves an item that is no link as it was", async () => {
+    const onSelect = vi.fn();
+    const view = render(<LinkMenu onSelect={onSelect} />);
+    fireEvent.click(await view.findByRole("menuitem", { name: "Rename" }), {
+      ctrlKey: true,
+    });
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    await closed(view);
   });
 });

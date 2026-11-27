@@ -1,7 +1,9 @@
 import { TabNav, TabNavLink } from "@orz/ui/components/tab-nav";
+import { isPlainClick } from "@orz/ui/lib/link";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ArrowUpRightIcon } from "lucide-react";
 import { useState } from "react";
+import { withWidth } from "./decorators.tsx";
 
 const SECTIONS = ["Start", "Guidelines", "Demos"];
 
@@ -20,6 +22,7 @@ const meta = {
             href={`#${section.toLowerCase()}`}
             current={section === current}
             onClick={(event) => {
+              if (!isPlainClick(event)) return;
               event.preventDefault();
               setCurrent(section);
             }}
@@ -40,3 +43,14 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+/** Too narrow for every link: the last ones wait in the ⋯, the current one stays. */
+export const Overflow: Story = {
+  decorators: [withWidth("w-56")],
+};
+
+/** Too narrow for the current link and the ⋯: the ⋯ alone, wearing the current mark. */
+export const CurrentInMenu: Story = {
+  tags: ["edge", "!autodocs"],
+  decorators: [withWidth("w-24")],
+};

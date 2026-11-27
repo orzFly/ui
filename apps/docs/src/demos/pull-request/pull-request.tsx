@@ -97,15 +97,10 @@ function AppBar() {
 /** The repository's sections, each a link to its own `#` place. */
 function RepoNav({ current }: { current: Section }) {
   return (
-    <Pane purpose="toolbar" asChild>
-      <TabNav aria-label="Repository" className="overflow-x-auto px-1 md:px-2">
+    <Pane purpose="toolbar" edge="bottom" className="px-1 md:px-2">
+      <TabNav aria-label="Repository">
         {SECTIONS.map(({ id, label, icon: Icon, count }) => (
-          <TabNavLink
-            key={id}
-            asChild
-            current={id === current}
-            className="shrink-0"
-          >
+          <TabNavLink key={id} asChild current={id === current}>
             <a href={`#${id}`}>
               <Icon />
               {label}

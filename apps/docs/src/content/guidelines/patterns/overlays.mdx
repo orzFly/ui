@@ -105,6 +105,9 @@ holds that window's page still, while the main window scrolls as before.
 - A HoverCard opens after a short hover and stays open while the pointer is over the card, so its
   links can be clicked.
 - Menus are fully keyboard-driven: arrows move, Enter picks, typing a letter jumps to an item.
+- A menu item that goes somewhere is a link, a `DropdownMenuItem` with `asChild` around an `a`. A
+  plain click goes there and closes the menu; a click with a modifier, a middle click or a right
+  click is the browser's (a new tab, a window, a download), and the menu stays open.
 
 ### Touch
 

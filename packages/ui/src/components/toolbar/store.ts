@@ -1,4 +1,11 @@
 import * as React from "react";
+import { useOverflowPart } from "../overflow/part.ts";
+import {
+  OverflowStore,
+  type PartRecord,
+  type PlanInput,
+} from "../overflow/store.ts";
+import { outerHeight, outerWidth } from "../overflow/util.ts";
 import {
   type SolverResult,
   type SolverUnit,
@@ -7,6 +14,14 @@ import {
   type UnitView,
 } from "./solver.ts";
 
+export {
+  dev,
+  OUT_OF_FLOW,
+  outerHeight,
+  outerWidth,
+  slotProps,
+  useComposedRef,
+} from "../overflow/util.ts";
 export type { ToolbarPriority, UnitView };
 
 export interface ToolbarCloseOverflowOptions {
@@ -76,13 +91,7 @@ export interface UnitMeta {
 
 type UnitKind = "unit" | "separator" | "spacer" | "overflow";
 
-interface UnitRecord {
-  id: string;
-  kind: UnitKind;
-  el: HTMLElement | null;
-  meta: UnitMeta;
-  measure: (view: UnitView, el: HTMLElement) => UnitMeasure;
-}
+type UnitRecord = PartRecord<UnitMeta, UnitMeasure>;
 
 /** A label that hides to fit: how much room it gives back when it does. */
 export interface LabelEntry {
@@ -90,35 +99,6 @@ export interface LabelEntry {
   /** `swap`: its button turns from a text size to an icon size; `stay`: its button keeps its size. */
   mode: "swap" | "stay";
   button: React.RefObject<HTMLElement | null>;
-}
-
-/**
- * Out of the flow and out of sight, still measured: a part in the ⋯ menu, a
- * hidden label, a probe. Its width is its own, unwrapped: no `w-max`, which
- * would take a button's `size-*` with it. Nothing in it transitions: it is
- * never seen to move, and the width it is measured at is the one it ends at.
- */
-export const OUT_OF_FLOW =
-  "pointer-events-none invisible absolute top-0 start-0 whitespace-nowrap transition-none **:transition-none";
-
-/** The width a part takes in its row, margins included. */
-export function outerWidth(el: Element): number {
-  const style = getComputedStyle(el);
-  return (
-    el.getBoundingClientRect().width +
-    (Number.parseFloat(style.marginLeft) || 0) +
-    (Number.parseFloat(style.marginRight) || 0)
-  );
-}
-
-/** The height a part takes in its row, margins included. */
-export function outerHeight(el: Element): number {
-  const style = getComputedStyle(el);
-  return (
-    el.getBoundingClientRect().height +
-    (Number.parseFloat(style.marginTop) || 0) +
-    (Number.parseFloat(style.marginBottom) || 0)
-  );
 }
 
 const EMPTY: SolverResult = {
@@ -132,37 +112,20 @@ const EMPTY: SolverResult = {
 };
 
 /**
- * One toolbar's parts, the layout they were last given and who listens: the
- * parts write themselves in as they render, without re-rendering each
- * other, and each reads back only its own place.
+ * One toolbar's parts on the shared overflow layer: its steps (labels,
+ * dropdowns, icons, then the ⋯ by priority), its rulers, a search that
+ * takes the bar, and a height kept to the tallest form of any part.
  */
-export class ToolbarStore {
-  private records = new Map<string, UnitRecord>();
-  private listeners = new Set<() => void>();
-  private observer: ResizeObserver | null = null;
-  private observed = new Set<Element>();
-  private scheduled = false;
+export class ToolbarStore extends OverflowStore<
+  UnitMeta,
+  SolverResult,
+  UnitMeasure
+> {
   /** The row's width when a search took it. */
   private takeoverWidth = 0;
   /** The row's min-height, and the frame that will write it. */
   private minHeight = "";
   private frame = 0;
-  /** The row marked `data-relayout`, and the frame that takes the mark off. */
-  private relayoutRow: HTMLElement | null = null;
-  private relayoutFrame = 0;
-  /** The answers since the last one that held, to catch two that alternate. */
-  private chain: string[] = [];
-  /** At this width, the answer kept over one that would only flip back. */
-  private held: {
-    width: number;
-    coarse: boolean;
-    keep: SolverResult;
-    avoid: string;
-  } | null = null;
-  result: SolverResult = EMPTY;
-  /** Bumped when what an overflowed part draws in the menu changes. */
-  menuVersion = 0;
-  row: HTMLElement | null = null;
   /** Under `fit`: the box the toolbar may grow to fill. */
   shell: HTMLElement | null = null;
   pane: HTMLElement | null = null;
@@ -171,97 +134,13 @@ export class ToolbarStore {
   /** The ⋯ with a one-digit count, and with the widest, `9+`. */
   countRuler: HTMLElement | null = null;
   wideCountRuler: HTMLElement | null = null;
-  coarse = false;
-  overflowOpen = false;
-  /** The next close of the ⋯ menu leaves the focus where it is. */
-  keepFocusOnClose = false;
-  /** The focus was in a part that just went to the menu: the ⋯ takes it. */
-  rescueFocus = false;
-  readonly triggerRef: React.RefObject<HTMLButtonElement | null> = {
-    current: null,
-  };
 
-  subscribe = (listener: () => void) => {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
-  };
-
-  private emit() {
-    for (const listener of [...this.listeners]) listener();
+  constructor() {
+    super(EMPTY);
   }
 
-  getResult = () => this.result;
-
-  viewOf(id: string): UnitView {
-    return this.result.views[id] ?? "bar";
-  }
-
-  setOverflowOpen(open: boolean) {
-    if (this.overflowOpen === open) return;
-    this.overflowOpen = open;
-    this.emit();
-  }
-
-  closeOverflow = (options?: ToolbarCloseOverflowOptions) => {
-    if (options?.restoreFocus === false) this.keepFocusOnClose = true;
-    this.setOverflowOpen(false);
-  };
-
-  register(record: UnitRecord) {
-    this.records.set(record.id, record);
-    if (record.el) this.observe(record.el);
-    this.schedule();
-  }
-
-  unregister(id: string) {
-    const record = this.records.get(id);
-    if (!record) return;
-    this.records.delete(id);
-    if (record.el) this.unobserve(record.el);
-    this.schedule();
-  }
-
-  /** The part's latest props: solved again only when they bear on the layout. */
-  update(id: string, meta: UnitMeta) {
-    const record = this.records.get(id);
-    if (!record) return;
-    const was = record.meta;
-    record.meta = meta;
-    if (
-      was.priority !== meta.priority ||
-      was.active !== meta.active ||
-      was.overflowable !== meta.overflowable ||
-      was.group !== meta.group ||
-      was.pinned !== meta.pinned ||
-      was.permanent !== meta.permanent
-    ) {
-      this.schedule();
-    }
-    if (
-      this.overflowOpen &&
-      (this.viewOf(id) === "overflow" || record.kind === "overflow")
-    ) {
-      this.menuVersion++;
-      this.emit();
-    }
-  }
-
-  setElement(id: string, el: HTMLElement | null) {
-    const record = this.records.get(id);
-    if (!record || record.el === el) return;
-    if (record.el) this.unobserve(record.el);
-    record.el = el;
-    if (el) this.observe(el);
-    this.schedule();
-  }
-
-  /** The parts in the ⋯ menu, in order, then the `ToolbarOverflow`'s own. */
-  overflowRecords() {
-    return this.result.overflow
-      .map((id) => this.records.get(id))
-      .filter((record): record is UnitRecord => record !== undefined);
+  override viewOf(id: string): UnitView {
+    return (this.result.views[id] ?? "bar") as UnitView;
   }
 
   permanentRecord() {
@@ -271,81 +150,17 @@ export class ToolbarStore {
     return undefined;
   }
 
-  observe(el: Element) {
-    this.observed.add(el);
-    this.observer?.observe(el);
-  }
-
-  unobserve(el: Element) {
-    this.observed.delete(el);
-    this.observer?.unobserve(el);
-  }
-
-  /** Starts watching sizes, the pointer and the style; the returned function stops. */
-  connect(): () => void {
-    const solve = () => this.solve();
-    if (typeof ResizeObserver !== "undefined") {
-      this.observer = new ResizeObserver(solve);
-      for (const el of this.observed) this.observer.observe(el);
-    }
-    const media =
-      typeof matchMedia === "function" ? matchMedia("(pointer: coarse)") : null;
-    media?.addEventListener("change", solve);
-    // A style or a forced pointer redraws the parts at other sizes, and a
-    // margin that changes (the touch room beside an icon button) is no
-    // resize of the part itself.
-    const mutations =
-      typeof MutationObserver === "undefined"
-        ? null
-        : new MutationObserver(solve);
-    mutations?.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-style", "data-pointer"],
-      subtree: true,
-    });
-    let live = true;
-    document.fonts?.ready.then(() => {
-      if (live) solve();
-    });
+  override connect(): () => void {
+    const stop = super.connect();
     return () => {
-      live = false;
       if (this.frame) cancelAnimationFrame(this.frame);
       this.frame = 0;
-      if (this.relayoutFrame) cancelAnimationFrame(this.relayoutFrame);
-      this.relayoutFrame = 0;
-      this.relayoutRow?.removeAttribute("data-relayout");
-      this.relayoutRow = null;
-      this.observer?.disconnect();
-      this.observer = null;
-      media?.removeEventListener("change", solve);
-      mutations?.disconnect();
+      stop();
     };
   }
 
-  /** Solves again once the current commit is done and every ref is set. */
-  schedule() {
-    if (this.scheduled) return;
-    this.scheduled = true;
-    queueMicrotask(() => {
-      this.scheduled = false;
-      this.solve();
-    });
-  }
-
-  private readCoarse(): boolean {
-    const forced = this.row
-      ?.closest("[data-pointer]")
-      ?.getAttribute("data-pointer");
-    if (forced === "coarse") return true;
-    if (forced === "fine") return false;
-    return (
-      typeof matchMedia === "function" &&
-      matchMedia("(pointer: coarse)").matches
-    );
-  }
-
   /** The room the row has for its parts. */
-  private available(): number {
+  protected override available(): number {
     const row = this.row;
     if (!row) return 0;
     if (this.shell && this.pane) {
@@ -357,6 +172,60 @@ export class ToolbarStore {
       return Math.floor(this.shell.clientWidth - chrome);
     }
     return Math.floor(row.clientWidth);
+  }
+
+  /**
+   * A search that holds the bar keeps it until it lets go or the bar
+   * widens; the other parts are undisplayed meanwhile and measure as
+   * nothing, so they are measured again once they are back.
+   */
+  protected override skip(coarseChanged: boolean): boolean {
+    if (!this.result.takeover) return false;
+    if (this.available() > this.takeoverWidth) this.releaseTakeover();
+    else if (coarseChanged) this.emit();
+    return true;
+  }
+
+  protected override affectsLayout(was: UnitMeta, meta: UnitMeta): boolean {
+    return (
+      was.priority !== meta.priority ||
+      was.active !== meta.active ||
+      was.overflowable !== meta.overflowable ||
+      was.group !== meta.group ||
+      was.pinned !== meta.pinned ||
+      was.permanent !== meta.permanent
+    );
+  }
+
+  /** A `ToolbarOverflow`'s own items are in the menu whether or not anything is folded. */
+  protected override drawnInMenu(record: UnitRecord): boolean {
+    return super.drawnInMenu(record) || record.kind === "overflow";
+  }
+
+  protected override isOwn(child: Element): boolean {
+    // The ⋯ the toolbar places itself is counted by the solver.
+    return (
+      super.isOwn(child) ||
+      child.hasAttribute("data-toolbar-internal") ||
+      child.getAttribute("data-slot") === "toolbar-overflow-trigger"
+    );
+  }
+
+  /** A `ToolbarOverflow` with items of its own keeps the ⋯ and its menu. */
+  protected override keepsMenu(): boolean {
+    for (const record of this.records.values()) {
+      if (
+        record.el?.isConnected &&
+        record.kind === "overflow" &&
+        record.meta.permanent
+      )
+        return true;
+    }
+    return false;
+  }
+
+  protected override solved(next: SolverResult, width: number) {
+    if (next.takeover) this.takeoverWidth = width;
   }
 
   /** What a label gives back when it hides. */
@@ -374,43 +243,34 @@ export class ToolbarStore {
     return gap + width;
   }
 
-  /** Measures every part and lays the bar out again, notifying only when that changes. */
-  solve() {
-    const row = this.row;
-    if (!row?.isConnected) return;
-    const coarse = this.readCoarse();
-    const coarseChanged = coarse !== this.coarse;
-    this.coarse = coarse;
-    // A search that holds the bar keeps it until it lets go or the bar
-    // widens; the other parts are undisplayed meanwhile and measure as
-    // nothing, so they are measured again once they are back.
-    if (this.result.takeover) {
-      if (this.available() > this.takeoverWidth) this.releaseTakeover();
-      else if (coarseChanged) this.emit();
-      return;
-    }
-    const records = [...this.records.values()].filter(
-      (record) => record.el?.isConnected,
-    );
-    const mine = new Set<Element>();
-    for (const record of records) if (record.el) mine.add(record.el);
+  protected override plan({
+    available,
+    gap,
+    coarse,
+    children,
+  }: PlanInput<UnitMeta, UnitMeasure>): SolverResult {
     const ruler = (el: HTMLElement | null, otherwise: number) =>
       el ? Math.ceil(outerWidth(el)) : otherwise;
     const triggerWidth = ruler(this.iconRuler, 0);
     const countWidth = ruler(this.countRuler, triggerWidth);
     const wideCountWidth = ruler(this.wideCountRuler, triggerWidth);
-    const units: Array<{ el: Element; unit: SolverUnit }> = [];
+    const units: SolverUnit[] = [];
     let tallest = 0;
-    for (const record of records) {
-      const el = record.el as HTMLElement;
-      // A part wrapped in an element of the caller's is that element's; the
-      // wrapper is counted whole, below.
-      if (el.parentElement !== row) continue;
-      const style = getComputedStyle(el);
-      const view = this.viewOf(record.id);
+    for (const child of children) {
+      const { el, record } = child;
+      if (!record) {
+        tallest = Math.max(tallest, outerHeight(el));
+        units.push({
+          id: child.id,
+          kind: "fixed",
+          width: Math.ceil(outerWidth(el)),
+          priority: "pin",
+        });
+        continue;
+      }
       const unit: SolverUnit = {
         id: record.id,
-        kind: record.kind,
+        kind: record.kind as UnitKind,
         width: 0,
         priority: record.meta.priority,
         active: record.meta.active,
@@ -418,7 +278,7 @@ export class ToolbarStore {
         group: record.meta.group,
         pinned: record.meta.pinned,
       };
-      if (style.display === "none") unit.cssHidden = true;
+      if (child.hidden) unit.cssHidden = true;
       else if (record.kind === "overflow") {
         if (record.meta.permanent) {
           // Without the count it shows now, which the solver adds back for
@@ -432,7 +292,7 @@ export class ToolbarStore {
             Math.ceil(outerWidth(el.firstElementChild ?? el)) - count;
         }
       } else if (record.kind !== "spacer") {
-        const measured = record.measure(view, el);
+        const measured = record.measure(child.view, el);
         tallest = Math.max(tallest, measured.height ?? 0);
         unit.width = Math.ceil(measured.width);
         if (measured.labelWidth !== undefined)
@@ -442,125 +302,19 @@ export class ToolbarStore {
         if (measured.iconWidth !== undefined)
           unit.iconWidth = Math.ceil(measured.iconWidth);
       }
-      units.push({ el, unit });
+      units.push(unit);
     }
-    let fixed = 0;
-    for (const child of row.children) {
-      // The ⋯ the toolbar places itself is counted by the solver.
-      if (
-        mine.has(child) ||
-        child.hasAttribute("data-toolbar-internal") ||
-        child.getAttribute("data-slot") === "toolbar-overflow-trigger"
-      )
-        continue;
-      const style = getComputedStyle(child);
-      if (style.display === "none" || style.position === "absolute") continue;
-      tallest = Math.max(tallest, outerHeight(child));
-      units.push({
-        el: child,
-        unit: {
-          id: `fixed-${fixed++}`,
-          kind: "fixed",
-          width: Math.ceil(outerWidth(child)),
-          priority: "pin",
-        },
-      });
-    }
-    units.sort((a, b) =>
-      a.el === b.el
-        ? 0
-        : a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING
-          ? -1
-          : 1,
-    );
-    const permanent = records.some(
-      (record) => record.kind === "overflow" && record.meta.permanent,
-    );
     this.hold(tallest);
-    const gap = Number.parseFloat(getComputedStyle(row).columnGap) || 0;
-    const width = this.available();
-    let next = solveToolbar({
-      availableWidth: width,
+    return solveToolbar({
+      availableWidth: available,
       gap,
       overflowTriggerWidth: triggerWidth,
       overflowTriggerCountWidth: countWidth,
       overflowTriggerWideCountWidth: wideCountWidth,
-      permanentOverflow: permanent,
+      permanentOverflow: this.keepsMenu(),
       coarsePointer: coarse,
-      units: units.map((each) => each.unit),
+      units,
     });
-    next = this.settle(next, width, coarse);
-    const same = JSON.stringify(next) === JSON.stringify(this.result);
-    if (same) {
-      this.chain = [];
-      if (coarseChanged) this.emit();
-      return;
-    }
-    const active = document.activeElement;
-    if (active && row.contains(active)) {
-      for (const id of next.overflow) {
-        if (this.viewOf(id) === "overflow") continue;
-        if (this.records.get(id)?.el?.contains(active)) this.rescueFocus = true;
-      }
-    }
-    this.result = next;
-    if (next.takeover) this.takeoverWidth = width;
-    if (next.overflow.length === 0 && !permanent) this.overflowOpen = false;
-    this.menuVersion++;
-    this.markRelayout();
-    this.emit();
-  }
-
-  /**
-   * Marks the row for the frame a new layout is first drawn in, so nothing in
-   * it transitions there. A part going into the ⋯ menu moves to the row's
-   * start at once, and a `visibility` easing to hidden would draw it there,
-   * over the parts at the start, until it is done; one coming back would ease
-   * from hidden, leaving a hole for a frame. The mark goes at the start of
-   * the next frame, once the values have stopped changing, so taking it off
-   * starts nothing either.
-   */
-  private markRelayout() {
-    const row = this.row;
-    if (!row || typeof requestAnimationFrame !== "function") return;
-    row.setAttribute("data-relayout", "");
-    this.relayoutRow = row;
-    if (this.relayoutFrame) return;
-    this.relayoutFrame = requestAnimationFrame(() => {
-      this.relayoutFrame = 0;
-      this.relayoutRow?.removeAttribute("data-relayout");
-      this.relayoutRow = null;
-    });
-  }
-
-  /**
-   * Widths read with fractions, and labels estimated while hidden, can put a
-   * bar on an edge where showing a part makes it not fit and hiding it makes
-   * it fit. When an answer comes back before any has held, the more
-   * collapsed of the two is kept until the width or the pointer changes.
-   */
-  private settle(
-    next: SolverResult,
-    width: number,
-    coarse: boolean,
-  ): SolverResult {
-    const held = this.held;
-    if (held && (held.width !== width || held.coarse !== coarse)) {
-      this.held = null;
-    }
-    const key = JSON.stringify(next);
-    if (this.held?.avoid === key) return this.held.keep;
-    if (!this.chain.includes(key)) {
-      this.chain.push(key);
-      return next;
-    }
-    this.chain = [];
-    const folded = (result: SolverResult) =>
-      Object.values(result.views).filter((view) => view !== "bar").length;
-    const keep = folded(next) >= folded(this.result) ? next : this.result;
-    const avoid = keep === next ? JSON.stringify(this.result) : key;
-    this.held = { width, coarse, keep, avoid };
-    return keep;
   }
 
   /**
@@ -642,9 +396,6 @@ export interface LabelHost {
 }
 export const LabelHostContext = React.createContext<LabelHost | null>(null);
 
-const noSubscribe = () => () => {};
-const bar = (): UnitView => "bar";
-
 export interface UnitOptions {
   kind?: UnitKind;
   /** `false` keeps a part that could be a unit out of the count. */
@@ -678,65 +429,29 @@ export function useToolbarUnit(options: UnitOptions): Unit {
   const internal = React.useContext(ToolbarInternalContext);
   const parent = React.useContext(ToolbarItemContext);
   const store = internal?.store ?? null;
-  const registered =
-    store !== null && options.enabled !== false && parent === null;
-  const id = React.useId();
-  const kind = options.kind ?? "unit";
-  const el = React.useRef<HTMLElement | null>(null);
   const labels = React.useRef(new Set<LabelEntry>());
-  const latest = React.useRef(options);
-  latest.current = options;
-
-  const record = React.useRef<UnitRecord | null>(null);
-  if (record.current === null) {
-    record.current = {
-      id,
-      kind,
-      el: null,
-      meta: options.meta,
-      measure: (view, node) => {
-        const own = outerWidth(node);
-        const result: UnitMeasure = { width: own, height: outerHeight(node) };
-        if (labels.current.size > 0 && store) {
-          let delta = 0;
-          for (const entry of labels.current) delta += store.labelDelta(entry);
-          if (view === "label") {
-            result.width = own + delta;
-            result.labelWidth = own;
-          } else {
-            result.labelWidth = own - delta;
-          }
+  const part = useOverflowPart<UnitMeta, UnitMeasure>({
+    store,
+    enabled: options.enabled !== false && parent === null,
+    kind: options.kind,
+    meta: options.meta,
+    measure: (view: UnitView, node) => {
+      const own = outerWidth(node);
+      const result: UnitMeasure = { width: own, height: outerHeight(node) };
+      if (labels.current.size > 0 && store) {
+        let delta = 0;
+        for (const entry of labels.current) delta += store.labelDelta(entry);
+        if (view === "label") {
+          result.width = own + delta;
+          result.labelWidth = own;
+        } else {
+          result.labelWidth = own - delta;
         }
-        return { ...result, ...latest.current.measure?.(view, node, own) };
-      },
-    };
-  }
-
-  const view = React.useSyncExternalStore(
-    registered && store ? store.subscribe : noSubscribe,
-    registered && store ? () => store.viewOf(id) : bar,
-    bar,
-  );
-
-  React.useLayoutEffect(() => {
-    if (!registered || !store || !record.current) return;
-    record.current.el = el.current;
-    store.register(record.current);
-    return () => store.unregister(id);
-  }, [registered, store, id]);
-
-  React.useLayoutEffect(() => {
-    if (registered && store) store.update(id, options.meta);
-  });
-
-  const ref = React.useCallback(
-    (node: HTMLElement | null) => {
-      el.current = node;
-      if (record.current) record.current.el = node;
-      if (registered && store) store.setElement(id, node);
+      }
+      return { ...result, ...options.measure?.(view, node, own) };
     },
-    [registered, store, id],
-  );
+  });
+  const view = part.view as UnitView;
 
   const labelsApi = React.useMemo<UnitLabels>(
     () => ({
@@ -769,10 +484,10 @@ export function useToolbarUnit(options: UnitOptions): Unit {
   );
 
   return {
-    id,
-    registered,
-    view: registered ? view : "bar",
-    ref,
+    id: part.id,
+    registered: part.registered,
+    view,
+    ref: part.ref,
     labels: labelsApi,
     internal,
     item,
@@ -780,39 +495,3 @@ export function useToolbarUnit(options: UnitOptions): Unit {
 }
 
 function noClose() {}
-
-/** The props that hold an overflowed part's place on the bar. */
-export function slotProps(overflowed: boolean) {
-  return overflowed
-    ? ({ inert: true, "data-overflowed": "" } as const)
-    : ({} as const);
-}
-
-/** Calls every ref it is given. */
-export function useComposedRef<T>(
-  ...refs: Array<React.Ref<T> | undefined>
-): React.RefCallback<T> {
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the refs are the dependencies
-  return React.useCallback(compose(refs), refs);
-}
-
-function compose<T>(refs: Array<React.Ref<T> | undefined>) {
-  return (node: T | null) => {
-    for (const ref of refs) {
-      if (typeof ref === "function") ref(node);
-      else if (ref) (ref as React.RefObject<T | null>).current = node;
-    }
-  };
-}
-
-// Only what is read here: the package builds without Node's types.
-declare const process: { env: { NODE_ENV?: string } };
-
-/** A bundler writes NODE_ENV in; a page loaded with none gets no warnings rather than an error. */
-export const dev = () => {
-  try {
-    return process.env.NODE_ENV !== "production";
-  } catch {
-    return false;
-  }
-};

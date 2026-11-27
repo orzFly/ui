@@ -18,6 +18,7 @@ import { CollapsibleGroups } from "../../../examples/navigation/collapsible-grou
 import { FolderTree } from "../../../examples/navigation/folder-tree.tsx";
 import { LineTabs } from "../../../examples/navigation/line-tabs.tsx";
 import { RepositoryFiles } from "../../../examples/navigation/repository-files.tsx";
+import { SectionsHeader } from "../../../examples/navigation/sections-header.tsx";
 
 **Build navigation from these and leave their look alone. A hand-made row or tab draws its
 own current state, and an app's places then read differently from screen to screen.**
@@ -61,6 +62,29 @@ a folder, each is a link, drawn by `Button asChild` or `ListItem asChild` around
 The default tabs draw the current one as a box joined to its panel below. Where the panel does
 not lie right under the tabs, as in a bar over a demo with its own sidebar, the box would hang
 over something else: use the line variant, laid flush on the bar's bottom rule.
+
+## When the sections do not fit
+
+<Example of={SectionsHeader} />
+
+A `TabNav` that runs out of room moves its links into a ⋯ at its end, from the last one back,
+the current one last; they come back in the same order as the room does. How many fit follows the
+widths the style and the pointer draw them at, so never hide a section by a breakpoint, which is
+measured off one name and is wrong for the next. Give the sections in the order of how much they
+matter: the last ones wait in the ⋯ first.
+
+While the current section is on the row it keeps its mark there. Once the ⋯ holds it too, the ⋯
+wears the mark and names the section in its own name, and the section is marked in the menu. Each
+row of the menu is the same link, so a router's link passed with `asChild` and a modified click
+work there as on the row.
+
+In a header it shares a row with other parts, and takes the room its links need before anything
+that grows beside it, and gives it up, down to the current section and the ⋯, before anything that
+shrinks. Drag the corner above: the search gives up its room first, then the sections fold, and
+only then does the project's name truncate. For that order, give a part that grows beside it, a
+search, `flex-1 basis-0` and its bounds (`min-w-32 max-w-64`), and let a name truncate with
+`min-w-0 truncate`. Do not order them with shrink weights (`shrink-[…]`): the `TabNav` still takes
+a share of every shortfall and folds a section while the search has room to spare.
 
 ## Groups that open and close
 
@@ -175,6 +199,8 @@ figures (`NavListCount`).
 
 ### Touch & mobile
 
-Under a coarse pointer every row and tab makes room for a thumb by itself. A `TabNav` has no room
-on a phone: put its sections in a `Sheet` opened from the header, as a `NavList` with each
-section a `NavListGroup` of its places, open on the section the reader is in, as this site does.
+Under a coarse pointer every row and tab makes room for a thumb by itself. On a phone, a few
+sections with no list of places each keep their `TabNav`, on a row of its own under the header,
+and what does not fit waits in its ⋯. Sections that each hold a list of places go in a `Sheet`
+opened from the header, as a `NavList` with each section a `NavListGroup` of its places, open on
+the section the reader is in, as this site does.

@@ -24,6 +24,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./dropdown-menu.tsx";
+import { useOverflowRoot } from "./overflow/root.ts";
 import {
   Pane,
   type PaneEdge,
@@ -147,18 +148,7 @@ function Toolbar({
     () => store.overflowOpen,
     () => false,
   );
-  const [hydrated, setHydrated] = React.useState(false);
-
-  React.useLayoutEffect(() => {
-    setHydrated(true);
-    return store.connect();
-  }, [store]);
-  React.useLayoutEffect(() => {
-    store.solve();
-    if (!store.rescueFocus) return;
-    store.rescueFocus = false;
-    store.triggerRef.current?.focus({ preventScroll: true });
-  });
+  const { hydrated } = useOverflowRoot(store);
   React.useEffect(() => {
     if (!result.scrollable || !dev()) return;
     console.warn(

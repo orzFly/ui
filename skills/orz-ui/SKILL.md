@@ -27,8 +27,9 @@ install line from the Start page (**Install**, and the **Packages** table), or f
 - Never hand-draw a control the library has (nav rows are `NavList`, a tree of places `Tree`,
   a tree of files `FileTree`, sections `TabNav`, menus `DropdownMenu`, confirmations
   `ConfirmDialog`, the count and actions over selected rows `SelectionBar`, a list ordered by hand
-  `Reorder`, a row of commands `Toolbar`). A toolbar moves what does not fit into its `⋯` in the
-  order you give it: never hide a command at a breakpoint by hand.
+  `Reorder`, a row of commands `Toolbar`). A `Toolbar` or a `TabNav` moves what does not fit
+  into its `⋯` in the order you give it: never hide a command or a section at a breakpoint by
+  hand.
 - Anything that goes somewhere (a folder, a section, an item, Back) is an `a[href]` to its URL,
   never a `button` that navigates in JS. Pass the router's link with `asChild`, or keep the `href`
   and take over only clicks `isPlainClick` from `@orz/ui/lib/link` passes, so middle-click,

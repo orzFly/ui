@@ -3,6 +3,7 @@ import { DropdownMenu as DropdownMenuPrimitive, Slot } from "radix-ui";
 import type * as React from "react";
 import { createContext, useContext, useRef, useState } from "react";
 import { cn } from "../lib/utils.ts";
+import { ChoiceMark, MARK_ROOM, MarkPlace } from "./dropdown-menu/mark.tsx";
 
 const OpenContext = createContext<{
   open: boolean;
@@ -148,15 +149,28 @@ function DropdownMenuGroup({
   );
 }
 
+/**
+ * An item that is a link (`asChild` around an `a[href]`) goes as a link
+ * does. A plain click goes and closes the menu, even when the link's own
+ * `onClick` handled it in place and prevented its default, which Radix
+ * reads as "keep the menu open". A click with a modifier is the browser's (a
+ * new tab, a window, a download), and the menu stays open for the next one.
+ */
 function DropdownMenuItem({
   className,
   inset,
   variant = "default",
+  onClick,
+  onSelect,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
   inset?: boolean;
   variant?: "default" | "destructive";
 }) {
+  const context = useContext(OpenContext);
+  // Whether the click being handled is a plain one on a link: set in the
+  // click, read in the select Radix dispatches from inside that same click.
+  const linkClick = useRef<"plain" | "modified" | null>(null);
   return (
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
@@ -175,6 +189,27 @@ function DropdownMenuItem({
         "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive raymond:data-[variant=destructive]:text-foreground raymond:data-[variant=destructive]:*:[svg]:text-current raymond:data-[variant=destructive]:focus:bg-accent raymond:data-[variant=destructive]:focus:text-accent-foreground raymond:data-[variant=destructive]:focus:**:text-accent-foreground",
         className,
       )}
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.currentTarget.matches("a[href]")) {
+          linkClick.current = null;
+          return;
+        }
+        const plain =
+          event.button === 0 &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.shiftKey &&
+          !event.altKey;
+        linkClick.current = plain ? "plain" : "modified";
+        // Radix selects, and so closes, only a click left to it.
+        if (plain && event.defaultPrevented) context?.setOpen(false);
+      }}
+      onSelect={(event) => {
+        onSelect?.(event);
+        if (linkClick.current === "modified") event.preventDefault();
+        linkClick.current = null;
+      }}
       {...props}
     />
   );
@@ -239,22 +274,17 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-item py-1 pr-8 pl-1.5 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:pr-2 raymond:pl-6 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex cursor-default items-center gap-1.5 rounded-item py-1 pl-1.5 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        MARK_ROOM,
         className,
       )}
       {...props}
     >
-      <span
-        className="pointer-events-none absolute right-2 flex items-center justify-center raymond:right-auto raymond:left-1.5"
-        data-slot="dropdown-menu-radio-item-indicator"
-      >
+      <MarkPlace slot="dropdown-menu-radio-item-indicator">
         <DropdownMenuPrimitive.ItemIndicator>
-          {/* Under raymond the chosen one of a group takes a bullet, the check
-              staying with a checkbox item. */}
-          <CheckIcon className="raymond:hidden" />
-          <span className="hidden size-1.5 rounded-full bg-current raymond:block" />
+          <ChoiceMark />
         </DropdownMenuPrimitive.ItemIndicator>
-      </span>
+      </MarkPlace>
       {children}
     </DropdownMenuPrimitive.RadioItem>
   );
