@@ -6,7 +6,9 @@ export {
   PIERRE_HIGHLIGHTER,
   PIERRE_THEME,
   PIERRE_THEME_TYPE,
+  redrawOnRemount,
   type SyntaxTheme,
+  usePierreSyntaxTheme,
   useSyntaxTheme,
 } from "./code-block.tsx";
 export {

@@ -48,7 +48,7 @@ slots from the side on screen. Outside a provider, blocks use pierre's pair.
 
 | Import | Contents |
 |---|---|
-| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `CodeWorkerProvider`, `useCodeWorkerFactory`, `fenceFilename`, `codeContent`, `patchContent`, `PatchView`, `FenceFrame`, `useInFenceFrame`, `FENCE_COLLAPSE_LINES`, `useSyntaxTheme`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
+| `@orz/ui-code` | `CodeBlock`, `CodeDiffBlock`, `CodeWorkerProvider`, `useCodeWorkerFactory`, `fenceFilename`, `codeContent`, `patchContent`, `PatchView`, `FenceFrame`, `useInFenceFrame`, `FENCE_COLLAPSE_LINES`, `useSyntaxTheme`, `usePierreSyntaxTheme`, `redrawOnRemount`, `PIERRE_THEME`, `PIERRE_THEME_TYPE`, `PIERRE_HIGHLIGHTER`, `LazyMultiFileDiff`, `type SyntaxTheme` |
 | `@orz/ui-code/word-diff` | `wordDiff`, `coalescedWordDiff`, `wordBag`, `bagWith`, types |
 | `@orz/ui-code/styles.css` | the `diffs-container` rules |
 
@@ -268,6 +268,43 @@ const options = useMemo(
 `LazyMultiFileDiff` draws `fallback` (nothing by default) while pierre's chunk loads instead of
 suspending, like every surface in this package: a page whose first render suspended for the chunk
 would be rendered again from scratch once it arrived.
+
+A pierre component imported straight from `@pierre/diffs/react` (to take annotations, say, which
+`LazyMultiFileDiff` does not type) needs two more pieces:
+
+- `usePierreSyntaxTheme` in place of `useSyntaxTheme`. A palette's own theme object reaches pierre
+  only through this package's loader, and pierre handed the name of a theme it does not know draws
+  nothing, so this hook is null until pierre has loaded and the theme is registered with it.
+- `redrawOnRemount` as `onPostRender`, or called from a handler of your own. A ref detached and
+  reattached (StrictMode in dev, a Suspense boundary above re-suspending) hands the same container
+  to a new pierre instance, which takes what the old one left there for its own drawing: before
+  the highlighter loads, an empty `<pre>` when there is no file header, so nothing is ever drawn.
+
+```tsx
+import {
+  PIERRE_HIGHLIGHTER,
+  PIERRE_THEME_TYPE,
+  redrawOnRemount,
+  usePierreSyntaxTheme,
+} from "@orz/ui-code";
+import { MultiFileDiff } from "@pierre/diffs/react";
+
+const theme = usePierreSyntaxTheme();
+const options = useMemo(
+  () =>
+    theme && {
+      theme,
+      themeType: PIERRE_THEME_TYPE,
+      preferredHighlighter: PIERRE_HIGHLIGHTER,
+      onPostRender: redrawOnRemount,
+    },
+  [theme],
+);
+
+options === null ? null : (
+  <MultiFileDiff oldFile={oldFile} newFile={newFile} options={options} />
+);
+```
 
 ## Failures
 
