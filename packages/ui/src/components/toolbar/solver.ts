@@ -49,6 +49,8 @@ export interface SolverUnit {
    * else has gone to the ⋯ menu and it still does not fit, it takes the bar.
    */
   pinned?: boolean;
+  /** Open, it keeps this view: it takes no folding step, and others fold around it. */
+  held?: UnitView;
 }
 
 export interface SolverInput {
@@ -118,7 +120,8 @@ function widthIn(unit: SolverUnit, view: UnitView): number {
  * then each part going to the ⋯ menu, lowest priority first, then those
  * set away from their defaults, then the cluster before the last spacer
  * before the one after it, from each cluster's end. Pinned parts that have a
- * form in the menu go last of all.
+ * form in the menu go last of all. A held part (one whose surface is open)
+ * stays in the view it has and takes no step.
  *
  * The ⋯ widens to count the parts in it set away from their defaults, so its
  * width at a step follows the parts that step has moved into it; the table
@@ -127,7 +130,7 @@ function widthIn(unit: SolverUnit, view: UnitView): number {
 export function solveToolbar(input: SolverInput): SolverResult {
   const units = input.units.filter((unit) => !unit.cssHidden);
   const views: Record<string, UnitView> = {};
-  for (const unit of input.units) views[unit.id] = "bar";
+  for (const unit of input.units) views[unit.id] = unit.held ?? "bar";
   const explicit = units.find((unit) => unit.kind === "overflow");
   const permanent = explicit !== undefined && input.permanentOverflow === true;
 
@@ -290,7 +293,7 @@ export function solveToolbar(input: SolverInput): SolverResult {
   const steps: FoldStep<UnitView>[] = [];
   const byPriority = new Map<number, string[]>();
   units.forEach((unit, index) => {
-    if (unit.kind !== "unit") return;
+    if (unit.kind !== "unit" || unit.held !== undefined) return;
     const key = (stage: number, active = 0) => [
       stage,
       rank(unit.priority),
