@@ -4,6 +4,10 @@ import {
   ContentRenderers,
   type ContentSource,
 } from "@orz/ui-content";
+import {
+  AttachmentViewerProvider,
+  imageContent,
+} from "@orz/ui-content/attachment";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
@@ -279,5 +283,43 @@ describe("loading", () => {
     expect(container.querySelector(".markdown-body")?.textContent).toBe(
       "Recovered.",
     );
+  });
+});
+
+describe("an embedded image", () => {
+  const shots = (href: string): ContentSource | null =>
+    href.startsWith("shots/")
+      ? { kind: "file", name: href.slice(6), url: `/files/${href.slice(6)}` }
+      : null;
+
+  const draw = (markdown: string) =>
+    render(
+      <ContentRenderers renderers={[imageContent()]}>
+        <AttachmentViewerProvider>
+          <Markdown plugins={[markdownEmbeds({ resolve: shots })]}>
+            {markdown}
+          </Markdown>
+        </AttachmentViewerProvider>
+      </ContentRenderers>,
+    );
+
+  it("is a link to the file that opens the viewer", () => {
+    draw("![shot](shots/a.png)");
+    const link = screen.getByRole("link", { name: "a.png" });
+    expect(link.getAttribute("href")).toBe("/files/a.png");
+    expect(fireEvent.click(link)).toBe(false);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("inside a link stays a plain image, the link's to click (UI-249)", () => {
+    const { container } = draw("[![shot](shots/a.png)](https://example.com/)");
+    const img = container.querySelector("img") as HTMLImageElement;
+    expect(img.getAttribute("src")).toBe("/files/a.png");
+    expect(img.getAttribute("alt")).toBe("shot");
+    expect(img.hasAttribute("data-linked-image")).toBe(false);
+    expect(container.querySelectorAll("a")).toHaveLength(1);
+    expect(img.closest("a")?.getAttribute("href")).toBe("https://example.com/");
+    expect(fireEvent.click(img)).toBe(true);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

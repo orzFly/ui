@@ -97,7 +97,10 @@ numbers, and the theme editor shows each token's ratio against the surface it is
   DOM, so the DOM follows the layout. No positive `tabIndex`.
 - **Returned.** A `Dialog`, `Sheet` or menu holds focus while open and gives it back to what opened
   it on close. When that opener is gone — a menu item that removed its own row — send focus to the
-  next meaningful control yourself, as `LoadFailure`'s `retryRef` exists to.
+  next meaningful control yourself, as `LoadFailure`'s `retryRef` exists to. What opened it is the
+  control the reader pressed, focused or not (Safari focuses no button or link it presses), so
+  open one from a control that can take the focus back, a button or a link, never a bare image or
+  `div` with a click handler.
 
 ## Keyboard
 

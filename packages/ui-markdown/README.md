@@ -139,7 +139,8 @@ function Doc({ source }: { source: string }) {
   whose source some registered renderer accepts is drawn by it, keeping the `<img>`'s class. A
   paragraph carrying a block embed becomes `div.markdown-paragraph`, decided from the markdown,
   `resolve` and the renderers' `accepts`, never from loaded data, so it cannot flip when the text
-  arrives. Links are not touched.
+  arrives. An image inside a link is a plain `<img>` of the file it resolves to, so a click on it
+  goes where the link does. Links are not touched.
 - **`markdownContent({ plugins?, maxDepth? })`** accepts files named `*.md`/`*.markdown` or typed
   `text/markdown`, in either placement. It shows the fallback link while loading, the message and a
   Retry button on failure, and the document once loaded, with the plugins of the enclosing

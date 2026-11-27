@@ -1,5 +1,5 @@
 import { RICH_CHIP_SKIN } from "@orz/ui/components/link-chip";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   AttachmentLink,
@@ -61,6 +61,18 @@ describe("AttachmentLink", () => {
     expect(fireEvent.click(link)).toBe(false);
     expect(screen.getByRole("dialog")).toBeTruthy();
     expect(screen.getByTestId("stub").textContent).toBe("stub:notes.txt");
+  });
+
+  // happy-dom's click moves no focus, as Safari's does not on a link.
+  it("takes the focus back when the viewer it opened closes (UI-249)", async () => {
+    const link = renderLink(NOTES);
+    fireEvent.pointerDown(link);
+    fireEvent.click(link);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+
+    fireEvent.keyDown(document.activeElement ?? document, { key: "Escape" });
+
+    await waitFor(() => expect(document.activeElement).toBe(link));
   });
 
   it.each(["ctrlKey", "metaKey", "shiftKey", "altKey"])(

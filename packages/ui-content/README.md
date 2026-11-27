@@ -258,7 +258,7 @@ The order matters, because the first renderer that accepts a source draws it:
 | Renderer | Accepts | Placement | Draws |
 |---|---|---|---|
 | `attachmentCard({ maxBytes?, maxDepth?, collapsedClassName? })` | text files that are not images | `document` | `DocumentCard` around `Next` |
-| `imageContent()` | images with a `url` | both | `<img>`; in a document, a click opens the viewer; in the viewer, a zoomable canvas |
+| `imageContent()` | images with a `url` | both | `<img>`; in a document under a viewer, a link to the file whose plain click opens the viewer; in the viewer, a zoomable canvas |
 | `htmlContent({ src? })` | HTML with a `url` | `viewer` | `<iframe sandbox="allow-scripts">` |
 | `pdfContent({ src? })` | PDF with a `url` | `viewer` | `<iframe>`, unsandboxed |
 | `videoContent()` | video with a `url` | both | `VideoPlayer`; in a document, under a header with the name and Download |

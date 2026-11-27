@@ -1,4 +1,5 @@
 import { Button } from "@orz/ui/components/button";
+import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import { Download } from "lucide-react";
 import { type ComponentType, useState } from "react";
@@ -53,14 +54,16 @@ function fileOf(source: ContentSource): FileSource {
 }
 
 /**
- * Images, in either placement. In a document the image opens the nearest
- * attachment viewer on click, and is a plain image outside one. In the viewer
- * it zooms and pans, with its controls in the viewer's title bar.
+ * Images, in either placement. In a document, under an attachment viewer,
+ * the image is a link to the file whose plain click opens the viewer; outside
+ * one it is a plain image. In the viewer it zooms and pans, with its controls
+ * in the viewer's title bar.
  */
 export function imageContent(): ContentRenderer {
   function ImageFile({ source, placement, className }: ContentProps) {
     const file = fileOf(source);
     const viewer = useAttachmentViewer();
+    const viewHref = useViewHref(file);
     const viewerImage = useViewerImage();
     const titleBar = useContentTitleBar(source);
     if (
@@ -96,13 +99,27 @@ export function imageContent(): ContentRenderer {
       return <img src={file.url} alt={file.name} className={className} />;
     }
     return (
-      // biome-ignore lint/a11y/useKeyWithClickEvents: zoom is a mouse affordance; the viewer dialog's links stay keyboard-reachable
-      <img
-        src={file.url}
-        alt={file.name}
-        className={cn("cursor-zoom-in", className)}
-        onClick={() => viewer.show(file)}
-      />
+      // A link to the file, as a thumbnail in `AttachmentList` is: Tab
+      // reaches it, a modified click opens the file where the reader asked,
+      // and the viewer hands the focus back to it on close (UI-249).
+      <a
+        href={viewHref}
+        // A block the picture's width, as preflight draws a bare <img>: an
+        // inline box would sit on a text line and add its gap below the
+        // picture, and an inline link around a block draws no ring.
+        className="block w-fit max-w-full outline-none focus-visible:focus-ring"
+        onClick={(e) => {
+          if (!isPlainClick(e)) return;
+          e.preventDefault();
+          viewer.show(file);
+        }}
+      >
+        <img
+          src={file.url}
+          alt={file.name}
+          className={cn("cursor-zoom-in", className)}
+        />
+      </a>
     );
   }
 

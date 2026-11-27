@@ -347,6 +347,60 @@ describe.each(["dialog", "sheet"] as const)(
         true,
       );
     });
+
+    // happy-dom's click moves no focus, which is Safari's press on a button
+    // or a link, and any browser's on an image.
+    it("hands focus back to a control its press left unfocused (UI-249)", async () => {
+      render(<OpenedByState as={as} />);
+      const row = screen.getByRole("button", { name: "notes.txt" });
+      expect(document.activeElement).toBe(document.body);
+      fireEvent.pointerDown(row);
+      fireEvent.click(row);
+      await waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      await waitFor(() => expect(document.activeElement).toBe(row));
+    });
+
+    it("hands it to the control, not to the box Safari focuses round it (UI-249)", async () => {
+      render(
+        <div tabIndex={-1} data-testid="box">
+          <OpenedByState as={as} />
+        </div>,
+      );
+      const row = screen.getByRole("button", { name: "notes.txt" });
+      fireEvent.pointerDown(row);
+      screen.getByTestId("box").focus();
+      fireEvent.click(row);
+      await waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      await waitFor(() => expect(document.activeElement).toBe(row));
+    });
+
+    it("forgets a press once the focus has moved on", async () => {
+      render(
+        <>
+          <OpenedByState as={as} />
+          <input aria-label="Comment" />
+        </>,
+      );
+      const row = screen.getByRole("button", { name: "notes.txt" });
+      const field = screen.getByLabelText("Comment");
+      fireEvent.pointerDown(row);
+      field.focus();
+      field.blur();
+      fireEvent.click(row);
+      await waitFor(() => expect(screen.getByRole("dialog")).toBeTruthy());
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(document.activeElement).toBe(document.body);
+    });
   },
 );
 
@@ -433,6 +487,37 @@ describe("a confirm portalled into another window (UI-231)", () => {
     );
     await waitFor(() => expect(other.activeElement).toBe(submit));
     expect(document.activeElement).toBe(left);
+  });
+
+  it("hands it back to a control there its press left unfocused (UI-249)", async () => {
+    const other = document.implementation.createHTMLDocument("");
+    render(<AskedElsewhere body={other.body} />);
+    const submit = other.querySelector("button") as HTMLElement;
+    const cancel = () =>
+      [...other.querySelectorAll("button")].find(
+        (button) => button.textContent === "Cancel",
+      ) as HTMLElement;
+    const ask = async () => {
+      // A bare document has no window for fireEvent to build the event in.
+      submit.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+      act(() => submit.click());
+      await waitFor(() =>
+        expect(other.querySelector("[role=dialog]")).not.toBeNull(),
+      );
+      act(() => cancel().click());
+      await waitFor(() =>
+        expect(other.querySelector("[role=dialog]")).toBeNull(),
+      );
+    };
+    // The first confirm there starts watching that window's presses.
+    submit.focus();
+    await ask();
+    submit.blur();
+    expect(other.activeElement).toBe(other.body);
+
+    await ask();
+
+    await waitFor(() => expect(other.activeElement).toBe(submit));
   });
 });
 

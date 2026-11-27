@@ -1,11 +1,28 @@
 import {
   Content,
   type ContentSource,
+  isImageFile,
   useContentDisplayOf,
 } from "@orz/ui-content";
 import { DeletedAttachmentMark } from "@orz/ui-content/attachment";
+import type { Element, Root } from "hast";
 import { isPairImage } from "./lib/rehype-image-pairs.ts";
 import type { MarkdownPlugin } from "./plugin.ts";
+
+/** Marks an `<img>` inside a link, as React hands it to an `img` override. */
+const LINKED_ATTR = "data-linked-image";
+
+function rehypeLinkedImages() {
+  const visit = (parent: Root | Element, linked: boolean): void => {
+    for (const child of parent.children) {
+      if (child.type !== "element") continue;
+      if (linked && child.tagName === "img")
+        child.properties.dataLinkedImage = "";
+      visit(child, linked || child.tagName === "a");
+    }
+  };
+  return (tree: Root) => visit(tree, false);
+}
 
 export type MarkdownEmbedsOptions = {
   /**
@@ -18,7 +35,8 @@ export type MarkdownEmbedsOptions = {
 /**
  * Draws a markdown image through `@orz/ui-content` when its address resolves to a source some
  * registered renderer accepts, such as `![spec](attachment-address)` resolving to a markdown file.
- * A file `resolve` marks `deleted` is a `DeletedAttachmentMark` instead.
+ * A file `resolve` marks `deleted` is a `DeletedAttachmentMark` instead. An image inside a link
+ * stays a plain image of the file, and a click on it is the link's.
  *
  * Returns a new plugin on every call, so memoise the call along with the rest of the plugin list.
  */
@@ -30,8 +48,12 @@ export function markdownEmbeds({
 
   return {
     name: "embeds",
+    rehypePlugins: [rehypeLinkedImages],
     components: {
-      img: function EmbedImage({ Next, node, ...props }) {
+      img: function EmbedImage({ Next, node, ...marked }) {
+        const { [LINKED_ATTR]: linked, ...props } = marked as typeof marked & {
+          [LINKED_ATTR]?: string;
+        };
         const displayOf = useContentDisplayOf();
         // A pair `imagePairs` folded into one image is its comparison to draw.
         if (isPairImage(node)) return <Next node={node} {...props} />;
@@ -46,6 +68,23 @@ export function markdownEmbeds({
         }
         if (source === null || displayOf(source, "document") === null) {
           return <Next node={node} {...props} />;
+        }
+        // The image renderer draws a link of its own, which a link cannot
+        // hold (UI-249).
+        if (
+          linked !== undefined &&
+          source.kind === "file" &&
+          isImageFile(source) &&
+          source.url !== undefined
+        ) {
+          return (
+            <Next
+              node={node}
+              {...props}
+              src={source.url}
+              alt={props.alt || source.name}
+            />
+          );
         }
         // The <img>'s class survives the swap: a decoration pass marks the
         // element the embed was written as (T-223).

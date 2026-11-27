@@ -370,7 +370,10 @@ export const AttachmentCardTooLarge: Story = {
   tags: ["edge", "!autodocs"],
 };
 
-/** An image in a document; a click opens it in the viewer, where it zooms and pans. */
+/**
+ * An image in a document, a link to the file; a plain click opens it in the viewer, where it
+ * zooms and pans, and closing the viewer hands the focus back to the image.
+ */
 export const Image: Story = {
   args: { source: file("gradient.png") },
   decorators: [withViewer({}), withRenderers(IMAGE)],

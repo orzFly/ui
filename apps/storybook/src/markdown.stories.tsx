@@ -635,3 +635,17 @@ export const EmbedCycle: Story = {
   decorators: [EMBED_RENDERERS],
   tags: ["edge", "!autodocs"],
 };
+
+/**
+ * An embedded image inside a link is a plain image, and a click on it goes where the link does.
+ * Alone, it is a link to the file whose plain click opens the viewer.
+ */
+export const LinkedImage: Story = {
+  args: {
+    children:
+      "[![logo](files/logo.svg)](https://example.com/) ![logo](files/logo.svg)",
+  },
+  render: (args) => <Markdown {...args} plugins={EMBED_PLUGINS} />,
+  decorators: ATTACHMENTS,
+  tags: ["edge", "!autodocs"],
+};

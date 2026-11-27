@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   AttachmentViewerProvider,
@@ -192,6 +198,33 @@ describe("imageContent", () => {
     expect(img.classList).toContain("cursor-zoom-in");
     fireEvent.click(img);
     expect(screen.getByRole("dialog").querySelector("img")).toBeTruthy();
+  });
+
+  it("is a link to the file, leaving a modified click to the browser", () => {
+    draw(file("shot.png"));
+    const link = screen.getByRole("link", { name: "shot.png" });
+    expect(link.getAttribute("href")).toBe(
+      "https://app.example/files/shot.png",
+    );
+    expect(fireEvent.click(link, { metaKey: true })).toBe(true);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  // happy-dom's click moves no focus, as no browser focuses a pressed <img>.
+  it("takes the focus back when the viewer it opened closes (UI-249)", async () => {
+    const { container } = draw(file("shot.png"));
+    const img = container.querySelector("img") as HTMLImageElement;
+    fireEvent.pointerDown(img);
+    fireEvent.click(img);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+
+    fireEvent.keyDown(document.activeElement ?? document, { key: "Escape" });
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("link", { name: "shot.png" }),
+      ),
+    );
   });
 
   it("is a plain image outside a provider", () => {
