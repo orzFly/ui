@@ -1,6 +1,8 @@
+import type { TagTokenName } from "./tag.ts";
+
 export type ColorScheme = "light" | "dark";
 
-/** The 38 UI custom properties, named as in CSS without the leading `--`. */
+/** The 47 UI custom properties, named as in CSS without the leading `--`. */
 export type TokenName =
   | "background"
   | "foreground"
@@ -30,6 +32,7 @@ export type TokenName =
   | "chart-3"
   | "chart-4"
   | "chart-5"
+  | TagTokenName
   | "sidebar"
   | "sidebar-foreground"
   | "sidebar-primary"
@@ -114,7 +117,7 @@ export interface TerminalPalette {
 export interface Palette extends TerminalPalette {
   tokens: Tokens;
   /**
-   * The colour tokens the theme's styles add beyond the 38 (each `Style`'s `tokens`), named as in
+   * The colour tokens the theme's styles add beyond the 47 (each `Style`'s `tokens`), named as in
    * CSS without the leading `--`.
    */
   styleTokens?: Record<string, string>;
@@ -150,7 +153,7 @@ export type Theme = ThemeHead & {
 export interface Style {
   id: string;
   label: string;
-  /** Colour tokens beyond the 38 that a palette of this style supplies in `styleTokens`. */
+  /** Colour tokens beyond the 47 that a palette of this style supplies in `styleTokens`. */
   tokens?: readonly string[];
 }
 

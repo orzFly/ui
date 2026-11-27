@@ -1,6 +1,10 @@
 import { contrast, painted, rgbOf } from "./rgb.ts";
 import { DEFAULT_STYLE } from "./styles.ts";
-import type { TokenName, Tokens } from "./types.ts";
+import { TAG_COLORS, tagFill } from "./tag.ts";
+import type { ColorScheme, TokenName, Tokens } from "./types.ts";
+
+/** A token, or a tag's own fill, worked out from the tag colour drawn on it. */
+export type ContrastSurface = TokenName | "tag-fill";
 
 /** A set of token pairs held to one WCAG floor. */
 export interface ContrastCheck {
@@ -12,11 +16,12 @@ export interface ContrastCheck {
     | "focus"
     | "state"
     | "chart"
-    | "marker";
+    | "marker"
+    | "tag";
   /** The lowest ratio the pairs may have. */
   floor: number;
   /** Each pair as [drawn, what it is drawn on]. */
-  pairs: readonly (readonly [TokenName, TokenName])[];
+  pairs: readonly (readonly [TokenName, ContrastSurface])[];
   /**
    * The styles whose drawing makes these pairs: a palette is held to the
    * check when its theme belongs to one of them. Absent, every style draws
@@ -43,7 +48,9 @@ const NON_TEXT = 3;
  * in a menu, on the page or in a sidebar, and the current tab by a primary
  * edge on the page; raymond fills the item with primary, which must stand out from the surface and
  * carry its primary-foreground text. A chart's series sits on the page; the module marker's icon,
- * drawn in primary, on its square.
+ * drawn in primary, on its square. The default style draws a tag's name in its colour on its own
+ * fill, that colour mixed into the page; raymond draws the colour as a swatch beside the page's
+ * text, which no pair here measures.
  */
 export const CONTRAST_CHECKS: readonly ContrastCheck[] = [
   {
@@ -147,23 +154,31 @@ export const CONTRAST_CHECKS: readonly ContrastCheck[] = [
     floor: TEXT,
     pairs: [["primary", "marker"]],
   },
+  {
+    id: "tag",
+    floor: TEXT,
+    styles: [DEFAULT_STYLE],
+    pairs: TAG_COLORS.map((color) => [`tag-${color}`, "tag-fill"] as const),
+  },
 ];
 
 export interface ContrastRow {
   check: ContrastCheck["id"];
   floor: number;
   foreground: TokenName;
-  surface: TokenName;
+  surface: ContrastSurface;
   ratio: number;
 }
 
 /**
  * Every pair of `CONTRAST_CHECKS` that the palette's styles draw, measured in
- * its tokens; `styles` is its theme's (`stylesOf`).
+ * its tokens; `styles` is its theme's (`stylesOf`). `scheme` picks the share
+ * of a tag's colour in its fill.
  */
 export function contrastRows(
   tokens: Tokens,
-  styles: readonly string[] = [DEFAULT_STYLE],
+  styles: readonly string[],
+  scheme: ColorScheme,
 ): ContrastRow[] {
   return CONTRAST_CHECKS.filter(
     (check) =>
@@ -171,7 +186,11 @@ export function contrastRows(
       check.styles.some((style) => styles.includes(style)),
   ).flatMap(({ id, floor, pairs }) =>
     pairs.map(([foreground, surface]) => {
-      const under = rgbOf(tokens[surface]);
+      const under = rgbOf(
+        surface === "tag-fill"
+          ? tagFill(tokens[foreground], tokens.background, scheme)
+          : tokens[surface],
+      );
       return {
         check: id,
         floor,

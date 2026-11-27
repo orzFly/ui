@@ -1,5 +1,6 @@
 import {
   builtinThemes,
+  type ColorScheme,
   resolvePalette,
   schemesOf,
   stylesOf,
@@ -17,6 +18,7 @@ export const resolvedPalettes: {
   name: string;
   tokens: Tokens;
   styles: readonly string[];
+  scheme: ColorScheme;
 }[] = builtinThemes.flatMap((theme) =>
   schemesOf(theme).flatMap((scheme) => {
     const seen = new Set<string>();
@@ -31,6 +33,7 @@ export const resolvedPalettes: {
           name: `${theme.id} ${scheme} ${id}`,
           tokens,
           styles: stylesOf(theme),
+          scheme,
         },
       ];
     });

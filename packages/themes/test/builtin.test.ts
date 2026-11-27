@@ -6,6 +6,7 @@ import {
   type ColorScheme,
   resolvePalette,
   schemesOf,
+  TAG_COLORS,
   TERMINAL_TOKEN_NAMES,
   type Theme,
   TOKEN_NAMES,
@@ -170,6 +171,7 @@ describe("the port from @orz/ui's styles.css", () => {
     "marker",
     "selection",
     "selection-foreground",
+    ...TAG_COLORS.map((color) => `tag-${color}`),
   ];
   // Raised in every palette to clear 3:1 as a field's edge;
   // field-contrast.test.ts holds it instead.

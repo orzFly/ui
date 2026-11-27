@@ -17,6 +17,7 @@ import { markerOf } from "./marker.ts";
 import { contrast, type Rgb, rgbOf } from "./rgb.ts";
 import { selectionOf } from "./selection.ts";
 import { textMateTheme } from "./syntax.ts";
+import { tagColorsOf } from "./tag.ts";
 import type {
   ColorScheme,
   Palette,
@@ -209,6 +210,7 @@ function paletteOf(
     "chart-3": series(p, p.warning, p["warning-foreground"]),
     "chart-4": series(p, p.destructive, p["destructive-foreground"]),
     "chart-5": p.info,
+    ...tagColorsOf(p, scheme),
     sidebar: p.sidebar,
     "sidebar-foreground": p["sidebar-foreground"],
     "sidebar-primary": p.primary,
@@ -235,7 +237,7 @@ function amoledOf(palette: Palette): NonNullable<Palette["variants"]> {
   const tokens = Object.fromEntries(
     Object.entries(palette.tokens).map(([name, value]) => [
       name,
-      oklchOf(value),
+      value.startsWith("#") ? oklchOf(value) : value,
     ]),
   ) as Tokens;
   const black = amoled({ ...palette, tokens });

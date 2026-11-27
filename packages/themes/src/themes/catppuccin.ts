@@ -2,7 +2,14 @@ import { amoled } from "../amoled.ts";
 import { grayOf, oklchOf } from "../color.ts";
 import { markerOf } from "../marker.ts";
 import { selectionOf } from "../selection.ts";
-import type { Palette, TerminalTokens, Theme, Tokens } from "../types.ts";
+import { tagColorsOf } from "../tag.ts";
+import type {
+  ColorScheme,
+  Palette,
+  TerminalTokens,
+  Theme,
+  Tokens,
+} from "../types.ts";
 
 /*
  * Catppuccin as published, with no value adjusted: the owner chose the
@@ -234,6 +241,7 @@ function paletteOf(
   label: string,
   syntax: string,
   gray: boolean,
+  scheme: ColorScheme,
 ): Palette {
   const neutral = (name: ColorName) => gray && NEUTRALS.has(name);
   const color = (name: ColorName) =>
@@ -291,6 +299,10 @@ function paletteOf(
     "chart-3": color("yellow"),
     "chart-4": color("red"),
     "chart-5": color("blue"),
+    ...tagColorsOf(
+      { background: color("base"), foreground: color("text") },
+      scheme,
+    ),
     sidebar: color("mantle"),
     "sidebar-foreground": color("subtext1"),
     "sidebar-primary": color("mauve"),
@@ -327,9 +339,21 @@ function paletteOf(
   return { label, tokens, terminal, syntax };
 }
 
-const lightPalette = paletteOf(latte, "Latte", "catppuccin-latte", false);
-const lightGray = paletteOf(latte, "Latte", "catppuccin-latte", true);
-const darkPalette = paletteOf(mocha, "Mocha", "catppuccin-mocha", false);
+const lightPalette = paletteOf(
+  latte,
+  "Latte",
+  "catppuccin-latte",
+  false,
+  "light",
+);
+const lightGray = paletteOf(latte, "Latte", "catppuccin-latte", true, "light");
+const darkPalette = paletteOf(
+  mocha,
+  "Mocha",
+  "catppuccin-mocha",
+  false,
+  "dark",
+);
 
 const DARK = [
   ["mocha", "Mocha", mocha],
@@ -351,7 +375,7 @@ for (const [id, name, flavor] of DARK) {
   if (id === "mocha") continue;
   darkVariants[id] = whole(
     name,
-    paletteOf(flavor, name, `catppuccin-${id}`, false),
+    paletteOf(flavor, name, `catppuccin-${id}`, false, "dark"),
   );
 }
 for (const [id, name, flavor] of DARK) {
@@ -359,7 +383,7 @@ for (const [id, name, flavor] of DARK) {
   lightVariants[`${id}-gray`] = whole(label, lightGray);
   darkVariants[`${id}-gray`] = whole(
     label,
-    paletteOf(flavor, name, `catppuccin-${id}`, true),
+    paletteOf(flavor, name, `catppuccin-${id}`, true, "dark"),
   );
 }
 // amoled() derives from oklch() values only.
@@ -368,7 +392,7 @@ const mochaOklch = {
   tokens: Object.fromEntries(
     Object.entries(darkPalette.tokens).map(([name, value]) => [
       name,
-      oklchOf(value),
+      value.startsWith("#") ? oklchOf(value) : value,
     ]),
   ) as Tokens,
 };
