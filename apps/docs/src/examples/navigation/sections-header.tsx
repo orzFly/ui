@@ -50,7 +50,7 @@ export function SectionsHeader() {
           <Input
             type="search"
             aria-label="Search issues"
-            placeholder="Search issues…"
+            placeholder="Search…"
             className="my-2 max-w-64 min-w-32 flex-1 basis-0"
           />
           <Button size="sm">
