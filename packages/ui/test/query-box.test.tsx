@@ -833,4 +833,16 @@ describe("QueryBox · history", () => {
     expect(onSubmit).not.toHaveBeenCalled();
     expect(box.texts()).not.toContain("is:open");
   });
+
+  it("swaps primary inside the highlighted row under raymond, so a query's keys stay seen", () => {
+    const box = mount({ past: PAST });
+    box.type("flaky");
+    box.key("ArrowDown");
+    expect(option(box, "flaky test").className).toContain(
+      "raymond:*:[--primary:var(--list-highlight-text)]",
+    );
+    expect(option(box, "a flaky test").className).not.toContain(
+      "--list-highlight",
+    );
+  });
 });

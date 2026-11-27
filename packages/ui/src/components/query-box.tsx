@@ -561,8 +561,13 @@ export function QueryBox<R>({
     "aria-selected": idx === hl,
     className: cn(
       OPTION,
+      // Under raymond primary and its text colour swap inside the
+      // highlighted row, as in a List's, so a query's keys and anything
+      // else drawn in primary stay seen on the highlight; the swap goes
+      // through --list-highlight, as two properties naming each other would
+      // be a cycle and draw nothing.
       idx === hl &&
-        "bg-accent text-accent-foreground state-cue raymond:bg-primary raymond:text-primary-foreground raymond:[--foreground:var(--primary-foreground)] raymond:[--muted-foreground:var(--primary-foreground)]",
+        "bg-accent text-accent-foreground state-cue raymond:bg-primary raymond:text-primary-foreground raymond:[--foreground:var(--primary-foreground)] raymond:[--muted-foreground:var(--primary-foreground)] raymond:[--list-highlight:var(--primary)] raymond:[--list-highlight-text:var(--primary-foreground)] raymond:*:[--primary:var(--list-highlight-text)] raymond:*:[--primary-foreground:var(--list-highlight)]",
     ),
     onMouseMove: () => setHighlight(idx),
     onClick: () => choose(rows[idx]),
