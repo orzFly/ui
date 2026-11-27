@@ -49,8 +49,14 @@ export const Overflow: Story = {
   decorators: [withWidth("w-56")],
 };
 
-/** Too narrow for the current link and the ⋯: the ⋯ alone, wearing the current mark. */
-export const CurrentInMenu: Story = {
+/** Too narrow for the current link and the ⋯: the current link keeps two letters and an ellipsis. */
+export const CurrentCutShort: Story = {
   tags: ["edge", "!autodocs"],
   decorators: [withWidth("w-24")],
+};
+
+/** Too narrow even for that: the ⋯ alone, wearing the current mark. */
+export const CurrentInMenu: Story = {
+  tags: ["edge", "!autodocs"],
+  decorators: [withWidth("w-16")],
 };

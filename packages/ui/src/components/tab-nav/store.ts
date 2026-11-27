@@ -48,10 +48,53 @@ function inColumn(el: HTMLElement): boolean {
   );
 }
 
+let context: CanvasRenderingContext2D | null | undefined;
+
+/** How wide `text` is in `el`'s font; `null` without a canvas to measure on. */
+function textWidth(el: Element, text: string): number | null {
+  if (context === undefined) {
+    try {
+      context = document.createElement("canvas").getContext("2d");
+    } catch {
+      context = null;
+    }
+  }
+  if (!context) return null;
+  const style = getComputedStyle(el);
+  context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  return context.measureText(text).width;
+}
+
+/**
+ * A link's width with all its words, and, when it has words of its own to
+ * cut short, its width with two letters of them and an ellipsis.
+ */
+function linkWidths(
+  el: HTMLElement,
+  view: string,
+): { width: number; narrowest?: number } {
+  const own = outerWidth(el);
+  const words = [...el.children].find(
+    (child) => child.getAttribute("data-slot") === "tab-nav-link-text",
+  );
+  if (!words) return { width: own };
+  const shown = words.getBoundingClientRect().width;
+  // Cut short, the words show less than they hold.
+  const whole = view === "cut" ? Math.max(shown, words.scrollWidth) : shown;
+  const width = own - shown + whole;
+  const letters = [...(words.textContent ?? "").trim()];
+  if (letters.length <= 2) return { width };
+  const cut =
+    textWidth(words, `${letters.slice(0, 2).join("")}…`) ??
+    (whole * 3) / letters.length;
+  return { width, narrowest: width - whole + Math.min(cut, whole) };
+}
+
 /**
  * One TabNav's links on the shared overflow layer: they fold from the end,
- * the current one last, and the TabNav's own box is sized from the two
- * widths that measures, so it never resizes with what it has folded.
+ * the current one cut short and then last, and the TabNav's own box is sized
+ * from the two widths that measures, so it never resizes with what it has
+ * folded.
  */
 export class TabNavStore extends OverflowStore<TabNavMeta, TabNavResult> {
   /** Its widths are written: the box is sized from them. */
@@ -88,11 +131,16 @@ export class TabNavStore extends OverflowStore<TabNavMeta, TabNavResult> {
         });
         continue;
       }
+      const { width, narrowest } = linkWidths(el, child.view);
       parts.push({
         id: child.id,
         kind: "link",
-        width: Math.ceil(record.measure(child.view, el).width),
+        width: Math.ceil(width),
         current: record.meta.current,
+        narrowest:
+          record.meta.current && narrowest !== undefined
+            ? Math.ceil(narrowest)
+            : undefined,
       });
       if (record.meta.current && currentName === null) {
         currentName = record.meta.name || el.textContent?.trim() || null;

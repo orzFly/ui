@@ -27,8 +27,9 @@ import {
  * on the row's rule. Laid flush against the bottom of a ruled header, its rule lands on the
  * header's. Name it with `aria-label`, as any `nav`.
  *
- * What does not fit goes into a ⋯ at the row's end, from the last link back, the current one
- * last; the ⋯ wears the current mark once that one is in it. How many fit follows the widths
+ * What does not fit goes into a ⋯ at the row's end, from the last link back. The current one
+ * stays, cutting its words short down to two letters and an ellipsis, and goes last, when not
+ * even that fits; the ⋯ then wears the current mark. How many fit follows the widths
  * the style and the pointer draw them at. In a row of other parts it takes the room its links
  * need before anything that grows beside it, and gives it up down to the current link and the
  * ⋯ before anything beside it shrinks; it never grows past its links.
@@ -138,7 +139,8 @@ function ownText(node: React.ReactNode): string {
  * linked page itself; it sets `aria-current`, `"page"` unless given another token. `asChild`
  * renders a router's link in its place. In a `TabNav`, it goes into the ⋯ menu when it does not
  * fit, as the same link with the same props and content; its `className` and `style` stay with
- * the row.
+ * the row. The current one cuts its words short instead, down to two letters and an ellipsis,
+ * before it goes too.
  */
 function TabNavLink({
   className,
@@ -176,8 +178,16 @@ function TabNavLink({
     },
   });
   const overflowed = part.view === "overflow";
+  const cut = part.view === "cut";
   const composed = useComposedRef(ref, part.ref);
   const Comp = asChild ? Slot.Root : "a";
+  // In a TabNav its own words are a box of their own, which the current link
+  // cuts short rather than fold while it still fits.
+  const content = !part.registered
+    ? children
+    : child
+      ? React.cloneElement(child, undefined, ownWords(childProps.children, cut))
+      : ownWords(children, cut);
   return (
     <Comp
       ref={composed}
@@ -188,12 +198,51 @@ function TabNavLink({
       aria-current={ariaCurrent(current)}
       {...slotProps(overflowed)}
       aria-hidden={overflowed || undefined}
-      className={cn(TAB, overflowed && OUT_OF_FLOW, className)}
+      className={cn(
+        TAB,
+        cut && "min-w-0 shrink",
+        overflowed && OUT_OF_FLOW,
+        className,
+      )}
       {...props}
     >
-      {children}
+      {content}
     </Comp>
   );
+}
+
+/**
+ * A node's own words, each run of them in a box of its own (`tab-nav-link-text`),
+ * cut short with an ellipsis under `cut`; its elements (an icon, a count) as they are.
+ * A run of white space alone stays bare, as a flex box drops it.
+ */
+function ownWords(node: React.ReactNode, cut: boolean): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let run = "";
+  const flush = () => {
+    if (run.trim() === "") out.push(run);
+    else {
+      out.push(
+        <span
+          key={`words-${out.length}`}
+          data-slot="tab-nav-link-text"
+          className={cut ? "min-w-0 truncate" : undefined}
+        >
+          {run}
+        </span>,
+      );
+    }
+    run = "";
+  };
+  for (const each of React.Children.toArray(node)) {
+    if (typeof each === "string" || typeof each === "number") run += each;
+    else {
+      if (run) flush();
+      out.push(each);
+    }
+  }
+  if (run) flush();
+  return out;
 }
 
 export { TabNav, TabNavLink };

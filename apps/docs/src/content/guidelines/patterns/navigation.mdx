@@ -73,10 +73,11 @@ widths the style and the pointer draw them at, so never hide a section by a brea
 measured off one name and is wrong for the next. Give the sections in the order of how much they
 matter: the last ones wait in the ⋯ first.
 
-While the current section is on the row it keeps its mark there. Once the ⋯ holds it too, the ⋯
-wears the mark and names the section in its own name, and the section is marked in the menu. Each
-row of the menu is the same link, so a router's link passed with `asChild` and a modified click
-work there as on the row.
+The current section stays on the row with its mark as long as it fits there at all: when it and the
+⋯ no longer fit, its name is cut short, down to two letters and an ellipsis. Only a row too narrow
+for even that puts it in the ⋯, which then wears the mark and names the section in its own name,
+and the section is marked in the menu. Each row of the menu is the same link, so a router's link
+passed with `asChild` and a modified click work there as on the row.
 
 In a header it shares a row with other parts, and takes the room its links need before anything
 that grows beside it, and gives it up, down to the current section and the ⋯, before anything that

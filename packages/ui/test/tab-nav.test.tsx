@@ -48,6 +48,10 @@ const link = (name: string) =>
     (el) => el.textContent === name,
   ) as HTMLElement;
 const folded = (name: string) => link(name).hasAttribute("data-overflowed");
+const cutShort = (name: string) =>
+  link(name)
+    .querySelector("[data-slot=tab-nav-link-text]")
+    ?.classList.contains("truncate") ?? false;
 const more = () =>
   document.querySelector<HTMLElement>(
     "[data-slot=tab-nav-overflow-trigger]",
@@ -81,19 +85,50 @@ describe("TabNav", () => {
     expect(more()).toHaveProperty("inert", true);
   });
 
-  it("passes over the current link, and marks the ⋯ once it folds it too", async () => {
+  it("passes over the current link, cuts its words short, and folds it only when not even that fits", async () => {
     render(<Sections current="Insights" />);
     await settle();
     // Settings, then Board, then List: Insights and the ⋯ are 72.
     await layout.resize(80);
     expect(SECTIONS.map(folded)).toEqual([true, true, false, true]);
-    expect(more().hasAttribute("data-current")).toBe(false);
+    expect(cutShort("Insights")).toBe(false);
+    // Short of that, Insights keeps two letters and an ellipsis: 21 without
+    // a canvas to measure on (three letters' share of its 56), and the ⋯.
     await layout.resize(71);
+    expect(SECTIONS.map(folded)).toEqual([true, true, false, true]);
+    expect(cutShort("Insights")).toBe(true);
+    expect(more().hasAttribute("data-current")).toBe(false);
+    await layout.resize(37);
+    expect(folded("Insights")).toBe(false);
+    await layout.resize(36);
     expect(SECTIONS.map(folded)).toEqual([true, true, true, true]);
     expect(more().hasAttribute("data-current")).toBe(true);
     expect(more().getAttribute("aria-label")).toBe(
       "More sections (current: Insights)",
     );
+    await layout.resize(1000);
+    expect(cutShort("Insights")).toBe(false);
+  });
+
+  it("cuts short only the current link's own words, leaving its icon whole", async () => {
+    render(
+      <TabNav aria-label="Sections">
+        <TabNavLink href="/list">List</TabNavLink>
+        <TabNavLink href="/board" current>
+          <svg aria-hidden />
+          Board
+        </TabNavLink>
+      </TabNav>,
+    );
+    await settle();
+    // Board is its icon 16 and its words 35; List folds, then the words cut.
+    await layout.resize(60);
+    const board = link("Board");
+    const words = board.querySelector("[data-slot=tab-nav-link-text]");
+    expect(words?.textContent).toBe("Board");
+    expect(words?.classList.contains("truncate")).toBe(true);
+    expect(board.querySelector("svg")?.parentElement).toBe(board);
+    expect(board.className.split(/\s+/)).toContain("min-w-0");
   });
 
   it("takes the ⋯'s names from its props", async () => {

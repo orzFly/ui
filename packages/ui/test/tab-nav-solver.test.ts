@@ -47,6 +47,30 @@ describe("solveTabNav", () => {
     expect(solve(150, sections("insights")).views.insights).toBe("bar");
   });
 
+  it("cuts the current link's words short before it folds it", () => {
+    const parts = sections("insights").map((part) =>
+      part.current ? { ...part, narrowest: 30 } : part,
+    );
+    // Insights in full and the ⋯ need 100; cut short, 60.
+    expect(solve(100, parts).views.insights).toBe("bar");
+    const cut = solve(99, parts);
+    expect(cut.views.insights).toBe("cut");
+    expect(cut.overflow).toEqual(["list", "board", "settings"]);
+    expect(cut.currentFolded).toBe(false);
+    expect(solve(60, parts).views.insights).toBe("cut");
+    const folded = solve(59, parts);
+    expect(folded.views.insights).toBe("overflow");
+    expect(folded.currentFolded).toBe(true);
+    // The box's least stays the current link in full and the ⋯.
+    expect(cut.least).toBe(100);
+  });
+
+  it("cuts a lone current link short without a ⋯", () => {
+    const layout = solve(30, [{ ...link("list", 40, true), narrowest: 25 }]);
+    expect(layout.views.list).toBe("cut");
+    expect(layout.more).toBe(false);
+  });
+
   it("folds the current link last, leaving only the ⋯", () => {
     // Insights and the ⋯ need 100.
     const layout = solve(99, sections("insights"), "Insights");
