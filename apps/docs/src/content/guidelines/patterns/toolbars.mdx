@@ -90,7 +90,9 @@ there, its `value` beside its name. A `FilterMenu` in a toolbar becomes a row na
 `toolbarLabel` and `toolbarValue`; choosing the row opens the filter against the `⋯` and gives the
 focus back to the `⋯` when it closes. While it is open it stays where it stood, on the bar or in the
 `⋯`, however its picks change its width, so a `selection="multiple"` one opened from the `⋯` takes
-several picks in a row and still closes back to the `⋯`. A `SplitButton` becomes its command and a submenu of the
+several picks in a row and still closes back to the `⋯`. The parts before it still give way, and
+move its trigger; its menu stays put while the pointer is on it or near it, and slides over once
+the pointer has gone. A `SplitButton` becomes its command and a submenu of the
 others, or the others after it with `overflow="group"`.
 
 A `ToolbarButton` wrapped in a menu or popover trigger of your own cannot be followed into the

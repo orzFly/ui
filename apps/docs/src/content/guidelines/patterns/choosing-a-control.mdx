@@ -125,11 +125,13 @@ a reference picker's `Europe…` writes `Europe: ` into the box and lists what i
 
 <Example of={LabelsForSelected} />
 
-Three tasks are selected, and **Labels** edits the labels on all of them. With
-`selection="multiple"` each row is on or off by itself, and each pick takes effect at once while
-the menu stays open for the next. A label on only some of the tasks is partly picked, through
-`mixedIds`, and a pick gives it to all of them. Put what is picked first as the menu opens and as
-the query changes, never as a row is picked, so nothing moves under the pointer. A row that does
+**Labels** edits the labels on the tasks ticked below. With `selection="multiple"` each row is
+on or off by itself, and each pick takes effect at once while the menu stays open for the next. A
+label on only some of the tasks is partly picked, through `mixedIds`. A pick gives it to all of
+them, the next takes it off all of them, and the one after puts it back on just the ones it was on
+(`event.mixed`), so a slip costs two more picks rather than the tasks' own labels. Put what is
+picked first as the menu opens and as the query changes, never as a row is picked, so nothing moves
+under the pointer. A row that does
 something rather than being one of the choices, `Create “…”`, is an `action`: it takes no box.
 
 <Example of={FontSizeNumberInput} />

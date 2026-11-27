@@ -14,6 +14,7 @@ export const meta = {
     "ui/Primitives/Toaster",
     "ui/Reorder",
     "ui/Hooks/useSlashShortcut",
+    "ui/Hooks/usePointerHold",
     "ui/Hooks/useMediaQuery",
     "ui-codemirror/EditorShortcutsHelp",
   ],
@@ -54,6 +55,11 @@ Hover tells a person what they are about to press; it never holds the only way t
   on every row on a touch screen; Shift+F10 opens it from the keyboard. That is not hover-only.
   Nor is a selectable tree's checkbox, which shows on a row's icon under the pointer: Space
   selects the focused row, and the row's menu holds **Select**.
+- Nothing moves out from under a pointer that is still on it. A part whose place follows what it
+  changes, a menu whose trigger the bar moves as its picks widen it or a picture whose zoom grows
+  the dialog around its controls, stays put while the pointer is on it or near it, and moves once
+  the pointer has gone, through `usePointerHold`. `FilterMenu` and the attachment viewer do this
+  themselves.
 
 <DoDont>
   <Do show={<VisibleRowActions />}>
