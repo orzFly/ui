@@ -38,9 +38,11 @@ function segmentMeasurer(element: Element, text: string) {
   // Canvas creates neither a DOM text copy nor a second selectable identity.
   const context = document.createElement("canvas").getContext("2d");
   if (context) {
+    // `font` carries the stretch as a keyword already. `fontStretch` is left
+    // alone: computed style gives it as a percentage, which canvas rejects with
+    // a console warning on every measure.
     context.font = style.font;
     context.fontKerning = style.fontKerning as CanvasFontKerning;
-    context.fontStretch = style.fontStretch as CanvasFontStretch;
     context.fontVariantCaps = style.fontVariantCaps as CanvasFontVariantCaps;
     context.textRendering = style.textRendering as CanvasTextRendering;
     context.letterSpacing =
