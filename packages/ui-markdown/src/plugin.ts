@@ -31,9 +31,12 @@ export type MarkdownPlugin = {
   name: string;
   /** Appended, in list order, after the fixed syntax chain. */
   remarkPlugins?: PluggableList;
-  /** Appended, in list order, after `rehypeDetails`. */
+  /** Appended, in list order, after `rehypeDetails` and `rehypeHeadingLevels`. */
   rehypePlugins?: PluggableList;
-  /** Wrap any element. `Next` renders it the way the plugins after this one would. */
+  /**
+   * Wrap any element. `Next` renders it the way the plugins after this one would. A heading is
+   * keyed by the level it is drawn at (`headingLevel`), not by the `#`s it was written with.
+   */
   components?: { [Tag in WrappableTag]?: ElementWrapper<Tag> };
   /** Wrap a parsed code block. The innermost `Next` is the registry. */
   fence?: ComponentType<FenceProps & { Next: ComponentType<FenceProps> }>;

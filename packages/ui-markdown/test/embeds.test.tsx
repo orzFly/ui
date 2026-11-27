@@ -22,6 +22,7 @@ const FILES: Record<string, string> = {
   "outer.md": "Outer body.\n\n![inner](files/inner.md)",
   "inner.md": "Inner body.\n\n![deepest](files/deepest.md)",
   "deepest.md": "Deepest body.",
+  "titled.md": "# Embedded\n\n## Embedded part",
 };
 
 const loaders = new Map(
@@ -63,6 +64,39 @@ describe("an embedded markdown file", () => {
     );
   });
 
+  it("starts its headings a level below its host's (UI-256)", async () => {
+    render(
+      <ContentRenderers renderers={RENDERERS}>
+        <Markdown plugins={PLUGINS}>
+          {"# Host\n\n![titled](files/titled.md)"}
+        </Markdown>
+      </ContentRenderers>,
+    );
+    await settle();
+    expect(screen.getByRole("heading", { name: "Host" }).tagName).toBe("H1");
+    expect(screen.getByRole("heading", { name: "Embedded" }).tagName).toBe(
+      "H2",
+    );
+    expect(screen.getByRole("heading", { name: "Embedded part" }).tagName).toBe(
+      "H3",
+    );
+  });
+
+  it("counts its headings from the host's headingLevel", async () => {
+    render(
+      <ContentRenderers renderers={RENDERERS}>
+        <Markdown plugins={PLUGINS} headingLevel={2}>
+          {"# Host\n\n![titled](files/titled.md)"}
+        </Markdown>
+      </ContentRenderers>,
+    );
+    await settle();
+    expect(screen.getByRole("heading", { name: "Host" }).tagName).toBe("H2");
+    expect(screen.getByRole("heading", { name: "Embedded" }).tagName).toBe(
+      "H3",
+    );
+  });
+
   it("is a link one level deeper", async () => {
     const { container } = render(
       <ContentRenderers renderers={RENDERERS}>
@@ -92,6 +126,20 @@ describe("an embedded markdown file", () => {
     expect(
       container.querySelector("a[href='/files/deepest.md']"),
     ).not.toBeNull();
+  });
+
+  it("keeps # an h1 in viewer placement, outside any <Markdown>", async () => {
+    const source = resolve("files/titled.md");
+    if (source === null) throw new Error("unresolved");
+    render(
+      <ContentRenderers renderers={RENDERERS}>
+        <Content source={source} placement="viewer" />
+      </ContentRenderers>,
+    );
+    await settle();
+    expect(screen.getByRole("heading", { name: "Embedded" }).tagName).toBe(
+      "H1",
+    );
   });
 
   it("renders even at depth in viewer placement", async () => {

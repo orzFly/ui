@@ -365,6 +365,7 @@ export function Notes() {
                             <ClientOnly fallback={<PreviewSkeleton />}>
                               <Markdown
                                 plugins={PLUGINS}
+                                headingLevel={2}
                                 className="mx-auto max-w-prose"
                               >
                                 {preview}

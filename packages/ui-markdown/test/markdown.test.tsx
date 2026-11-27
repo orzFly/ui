@@ -134,6 +134,99 @@ describe("plugin passes", () => {
     );
     expect(tags).toContain("details");
   });
+
+  it("runs a rehype pass after the headings have moved to headingLevel", () => {
+    const tags: string[] = [];
+    const plugins: MarkdownPlugin[] = [
+      {
+        name: "probe",
+        rehypePlugins: [
+          () => (tree: HastRoot) => {
+            for (const child of tree.children) {
+              if (child.type === "element") tags.push(child.tagName);
+            }
+          },
+        ],
+      },
+    ];
+    render(
+      <Markdown plugins={plugins} headingLevel={2}>
+        {"# Title"}
+      </Markdown>,
+    );
+    expect(tags).toEqual(["h2"]);
+  });
+});
+
+describe("heading levels", () => {
+  const ALL = "# 1\n\n## 2\n\n### 3\n\n#### 4\n\n##### 5\n\n###### 6";
+  const levels = (container: HTMLElement) =>
+    [...container.querySelectorAll("h1, h2, h3, h4, h5, h6")].map(
+      (heading) => `${heading.tagName.toLowerCase()} ${heading.textContent}`,
+    );
+
+  it("draws each heading at the level it is written at by default", () => {
+    const { container } = render(<Markdown>{ALL}</Markdown>);
+    expect(levels(container)).toEqual([
+      "h1 1",
+      "h2 2",
+      "h3 3",
+      "h4 4",
+      "h5 5",
+      "h6 6",
+    ]);
+  });
+
+  it("draws # at headingLevel and the rest after it, stopping at h6", () => {
+    const { container } = render(<Markdown headingLevel={3}>{ALL}</Markdown>);
+    expect(levels(container)).toEqual([
+      "h3 1",
+      "h4 2",
+      "h5 3",
+      "h6 4",
+      "h6 5",
+      "h6 6",
+    ]);
+  });
+
+  it("holds a headingLevel outside 1 to 6 to the nearest end", () => {
+    const low = render(<Markdown headingLevel={0}>{"# a"}</Markdown>);
+    expect(levels(low.container)).toEqual(["h1 a"]);
+    const high = render(<Markdown headingLevel={9}>{"# b"}</Markdown>);
+    expect(levels(high.container)).toEqual(["h6 b"]);
+    const none = render(<Markdown headingLevel={Number.NaN}>{"# c"}</Markdown>);
+    expect(levels(none.container)).toEqual(["h1 c"]);
+  });
+
+  it("starts a <Markdown> inside another a level below it", () => {
+    const nest: MarkdownPlugin = {
+      name: "nest",
+      components: {
+        blockquote: () => <Markdown>{"# Inner\n\n## Inner part"}</Markdown>,
+      },
+    };
+    const { container } = render(
+      <Markdown plugins={[nest]} headingLevel={2}>
+        {"# Outer\n\n> quoted"}
+      </Markdown>,
+    );
+    expect(levels(container)).toEqual([
+      "h2 Outer",
+      "h3 Inner",
+      "h4 Inner part",
+    ]);
+  });
+
+  it("hands a heading to the plugin wrapping the level it is drawn at", () => {
+    const { container } = render(
+      <Markdown plugins={[wrapH2("outer")]} headingLevel={2}>
+        {"# Title"}
+      </Markdown>,
+    );
+    expect(
+      container.querySelector("[data-wrap='outer'] > h2")?.textContent,
+    ).toBe("Title");
+  });
 });
 
 describe("fences", () => {

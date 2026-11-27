@@ -14,6 +14,7 @@ import type { PluggableList } from "unified";
 import { fenceTitle } from "./lib/fence-meta.ts";
 import { MARKDOWN_SYNTAX_PLUGINS } from "./lib/markdown-processor.ts";
 import { rehypeDetails } from "./lib/rehype-details.ts";
+import { rehypeHeadingLevels } from "./lib/rehype-heading-levels.ts";
 import {
   CODE_CONTENT_START_ATTR,
   parseSourceLoc,
@@ -38,6 +39,15 @@ export const MarkdownPluginsContext = createContext<
 
 /** Whether the nearest `<Markdown>` lets a long code block scroll in its frame. */
 const CollapseFencesContext = createContext(true);
+
+/** The level the nearest `<Markdown>` draws a `#` at; undefined outside one. */
+const HeadingLevelContext = createContext<number | undefined>(undefined);
+
+function clampLevel(level: number): number {
+  return Number.isFinite(level)
+    ? Math.min(6, Math.max(1, Math.floor(level)))
+    : 1;
+}
 
 /**
  * Pull the code text, the fence tag and the info string after the tag out of
@@ -210,6 +220,12 @@ export type MarkdownProps = {
    * review that annotates lines cannot reach one scrolled out of its frame.
    */
   collapseLongFences?: boolean;
+  /**
+   * The level a `#` heading is drawn at, 1 to 6; each deeper heading follows it down, stopping at
+   * `h6`. Default: a level below the enclosing document's, for a document embedded in another,
+   * else 1.
+   */
+  headingLevel?: number;
   ref?: Ref<HTMLDivElement>;
 };
 
@@ -218,6 +234,10 @@ export type MarkdownProps = {
  * two-column table, and raw HTML escaped to its source except `<details>`/`<summary>` folds.
  * Plugins append remark and rehype passes to that chain and wrap elements and code blocks; they
  * cannot remove any of it. Code blocks are drawn through `@orz/ui-content`'s registry.
+ *
+ * A document drawn inside another, such as a file `markdownContent` embeds, starts its headings a
+ * level below its host's `#` (`headingLevel`), so its title sits under the host's and the page
+ * keeps one outline.
  *
  * Keep `plugins` stable. A fresh array, or a fresh plugin object in it, makes react-markdown
  * reparse the document and React remount every overridden element, and either one collapses a live
@@ -232,11 +252,16 @@ export const Markdown = memo(function Markdown({
   plugins = NO_PLUGINS,
   className,
   collapseLongFences,
+  headingLevel,
   ref,
 }: MarkdownProps) {
   // Unset, a document embedded in another follows its host.
   const outerCollapse = useContext(CollapseFencesContext);
   const collapseFences = collapseLongFences ?? outerCollapse;
+  const outerLevel = useContext(HeadingLevelContext);
+  const level = clampLevel(
+    headingLevel ?? (outerLevel === undefined ? 1 : outerLevel + 1),
+  );
   // The override map must be referentially stable across re-renders: every
   // entry is a component built here, and a fresh map makes React treat each
   // one as a NEW component type, unmounting and rebuilding those DOM
@@ -248,8 +273,9 @@ export const Markdown = memo(function Markdown({
 
   // `rehypeDetails` goes first so that every later pass walks the tree the
   // reader will get, rather than one where a fold is still a pair of raw HTML
-  // strings. The memos are the identity rule above, applied to the plugin
-  // lists react-markdown compares.
+  // strings; for the same reason a plugin's pass sees the headings at the
+  // levels they are drawn at. The memos are the identity rule above, applied
+  // to the plugin lists react-markdown compares.
   const remarkPlugins = useMemo<PluggableList>(
     () => [
       ...MARKDOWN_SYNTAX_PLUGINS,
@@ -260,9 +286,10 @@ export const Markdown = memo(function Markdown({
   const rehypePlugins = useMemo<PluggableList>(
     () => [
       rehypeDetails,
+      [rehypeHeadingLevels, { level }],
       ...plugins.flatMap((plugin) => plugin.rehypePlugins ?? []),
     ],
-    [plugins],
+    [plugins, level],
   );
 
   return (
@@ -272,13 +299,15 @@ export const Markdown = memo(function Markdown({
     >
       <MarkdownPluginsContext.Provider value={plugins}>
         <CollapseFencesContext.Provider value={collapseFences}>
-          <ReactMarkdown
-            remarkPlugins={remarkPlugins}
-            rehypePlugins={rehypePlugins}
-            components={components}
-          >
-            {children}
-          </ReactMarkdown>
+          <HeadingLevelContext.Provider value={level}>
+            <ReactMarkdown
+              remarkPlugins={remarkPlugins}
+              rehypePlugins={rehypePlugins}
+              components={components}
+            >
+              {children}
+            </ReactMarkdown>
+          </HeadingLevelContext.Provider>
         </CollapseFencesContext.Provider>
       </MarkdownPluginsContext.Provider>
     </div>

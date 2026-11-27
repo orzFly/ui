@@ -15,6 +15,7 @@ export const meta = {
     "ui/ThemeEditor",
     "ui/Hooks/useScrollInsets",
     "ui/Hooks/useSlashShortcut",
+    "ui-markdown/Markdown",
   ],
 };
 
@@ -178,7 +179,9 @@ Fix it and save: the toast that confirms it is announced without moving the focu
 - **An error says what to fix** ([SC 3.3.1](https://www.w3.org/TR/WCAG22/#error-identification)), in
   text beside the field, and the field gets `aria-invalid`, which @orz/ui's inputs draw in red.
 - **Structure is markup.** Headings are `h1`–`h3` in order, lists are lists, and a table of data is
-  a `Table`, so a screen reader's headings and table navigation work.
+  a `Table`, so a screen reader's headings and table navigation work. A `Markdown` under the page's
+  own `h1`, such as an issue's body under its title, takes `headingLevel={2}`, so the body's `#` is
+  not a second `h1`; a document embedded in it moves a level further down by itself.
 
 ## Motion and zoom
 

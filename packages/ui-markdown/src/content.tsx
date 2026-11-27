@@ -121,7 +121,7 @@ function isMarkdownFile(source: ContentSource): boolean {
  * The registry entry for markdown files, in either placement. Register it ahead of any renderer
  * that takes every text file, since the first renderer that accepts wins; that renderer draws the
  * file's source when the reader toggles to it, and a file over `MARKDOWN_RENDER_MAX_CHARS` opens
- * that way.
+ * that way. Embedded in a `<Markdown>`, a document's headings start a level below its host's.
  *
  * Returns a new renderer on every call, so call it once, where the renderer list is built.
  */

@@ -242,6 +242,20 @@ const ATTACHMENTS = [
 const LINKS_DOC =
   "See [the guide](files/guide.md), [the logo](files/logo.svg), [the archive](files/bundle.zip) and [an outside page](https://example.com).";
 
+const HEADING_DOC = `# Release 0.4
+
+Everything between the branch cut and the tag. The team's release guide, as it stands:
+
+![release guide](files/guide.md)
+`;
+
+const HEADING_SNIPPET = `import { Markdown, markdownEmbeds } from "@orz/ui-markdown";
+
+const plugins = [markdownEmbeds({ resolve })];
+
+// \`#\` is an h2 here, and the guide's own \`#\` an h3.
+<Markdown headingLevel={2} plugins={plugins}>{source}</Markdown>`;
+
 /** In-memory documents, addressed as `files/<name>`: react-markdown refuses a `file:` URL. */
 const FILES: Record<string, string> = {
   "overview.md": `## Overview
@@ -262,7 +276,7 @@ depth limit:
 
 ![overview](files/overview.md)
 `,
-  "context.md": `## Embedded
+  "context.md": `# Embedded
 
 This document is drawn by \`markdownContent\` inside the page's \`<Markdown>\`,
 so it takes the page's plugins rather than its own:
@@ -549,6 +563,17 @@ export const Fences: Story = {
 export const CollapseLongFences: Story = {
   args: { children: FENCES_DOC, collapseLongFences: false },
   decorators: [CODE],
+};
+
+/**
+ * `headingLevel` is the level a `#` is drawn at; the rest follow it down. A document embedded in
+ * this one starts a level further down still, so the guide's `#` is an `h3`.
+ */
+export const HeadingLevel: Story = {
+  args: { children: HEADING_DOC, headingLevel: 2 },
+  render: (args) => <Markdown {...args} plugins={EMBED_PLUGINS} />,
+  decorators: ATTACHMENTS,
+  parameters: code(HEADING_SNIPPET),
 };
 
 /** Raw HTML and refused links are shown as what was typed. */
