@@ -614,7 +614,8 @@ export const MarkdownEmbeds: Story = {
 
 /**
  * A paragraph that is two images and an arrow, `![v1](a.png) → ![v2](b.png)`, is one comparison,
- * its sides tagged by the alts. A click on either picture opens the document's pairs in the viewer.
+ * its sides tagged by the alts. A click on either picture opens it in the viewer, paging through
+ * every comparison below the provider.
  */
 export const ImagePairs: Story = {
   args: { children: PAIRS_DOC },
