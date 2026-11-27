@@ -754,6 +754,34 @@ describe("ColorPicker chips", () => {
     expect(screen.getByText("4.49:1 vs background · AA large")).toBeTruthy();
   });
 
+  it("measures against a surface worked out from the colour being picked", () => {
+    // The surface is the picked colour itself lightened halfway to white, as a
+    // tag's fill follows its ink.
+    const half = (hex: string) =>
+      `#${[1, 3, 5]
+        .map((i) =>
+          Math.round((Number.parseInt(hex.slice(i, i + 2), 16) + 255) / 2)
+            .toString(16)
+            .padStart(2, "0"),
+        )
+        .join("")}`;
+    const contrastWith = vi.fn(half);
+    renderPicker({
+      value: "#000000",
+      contrastWith,
+      contrastLabel: "its fill",
+    });
+    expect(contrastWith).toHaveBeenLastCalledWith("#000000");
+    const chip = screen.getByText(/vs its fill/);
+    expect(chip.textContent).toBe("5.31:1 vs its fill · AA");
+    expect(chip.getAttribute("title")).toBe("WCAG 2 contrast against #808080");
+    fireEvent.change(textField(), { target: { value: "#404040" } });
+    expect(contrastWith).toHaveBeenLastCalledWith("#404040");
+    expect(screen.getByText(/vs its fill/).textContent).toBe(
+      "3.96:1 vs its fill · AA large",
+    );
+  });
+
   it("hides the contrast chip without contrastWith or when it does not parse", () => {
     const { container, unmount } = renderPicker({ value: "#777777" });
     expect(container.querySelector("[data-contrast]")).toBeNull();

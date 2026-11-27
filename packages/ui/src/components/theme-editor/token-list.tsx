@@ -1,15 +1,16 @@
-import type {
-  AnyCustomTheme,
-  ColorScheme,
-  CustomTheme,
-  TerminalTokenName,
-  TerminalTokens,
-  TokenName,
-  Tokens,
+import {
+  type AnyCustomTheme,
+  type ColorScheme,
+  type CustomTheme,
+  type TerminalTokenName,
+  type TerminalTokens,
+  type TokenName,
+  type Tokens,
+  tagFill,
 } from "@orz/themes";
 import { ChevronRightIcon, RotateCcwIcon } from "lucide-react";
 import { type Dispatch, useId, useState } from "react";
-import { contrastRatio, parseColor } from "../../lib/color.ts";
+import { contrastRatio, formatColor, parseColor } from "../../lib/color.ts";
 import { cn } from "../../lib/utils.ts";
 import { Button } from "../button.tsx";
 import { ColorPickerPopover } from "../color-picker.tsx";
@@ -69,12 +70,26 @@ export type TokenListProps = TokenListCommon &
 export function TokenList(props: TokenListProps) {
   const { draft, dispatch, openGroups, onOpenGroupsChange } = props;
   if (props.kind === "ui") {
-    const { scheme } = props;
+    const { scheme, values } = props;
+    const contrastOf = (name: TokenName): Contrast | undefined => {
+      const against = UI_CONTRAST_WITH[name];
+      if (against === undefined) return undefined;
+      if (against !== "tag-fill") {
+        return { against: values[against], label: against };
+      }
+      const ground = parseColor(values.background);
+      if (ground === null) return undefined;
+      const page = formatColor(ground.color, "hex", { alpha: false });
+      return {
+        against: (color) => tagFill(color, page, scheme),
+        label: "its fill",
+      };
+    };
     return (
       <TokenListView
         groups={UI_TOKEN_GROUPS}
-        values={props.values}
-        contrastWith={UI_CONTRAST_WITH}
+        values={values}
+        contrastOf={contrastOf}
         format="oklch"
         showState={sideMode(draft, scheme) === "based"}
         // The UI list only ever shows a UI theme.
@@ -98,7 +113,12 @@ export function TokenList(props: TokenListProps) {
     <TokenListView
       groups={TERMINAL_TOKEN_GROUPS}
       values={props.values}
-      contrastWith={TERMINAL_CONTRAST_WITH}
+      contrastOf={(name) => {
+        const against = TERMINAL_CONTRAST_WITH[name];
+        return against === undefined
+          ? undefined
+          : { against: props.values[against], label: against };
+      }}
       format="hex"
       showState={mode === "based" || mode === "follow"}
       overridden={(name) => isTerminalOverridden(draft, scheme, name)}
@@ -113,10 +133,16 @@ export function TokenList(props: TokenListProps) {
   );
 }
 
+/** What a single token's popover measures it against, and what it calls that. */
+interface Contrast {
+  against: string | ((color: string) => string);
+  label: string;
+}
+
 interface ViewProps<N extends string> {
   groups: readonly TokenGroup<N>[];
   values: Readonly<Record<N, string>>;
-  contrastWith: Readonly<Partial<Record<N, N>>>;
+  contrastOf: (name: N) => Contrast | undefined;
   format: "oklch" | "hex";
   /** A based side (or terminal): rows say inherited or overridden. */
   showState: boolean;
@@ -137,7 +163,7 @@ const CHECKERBOARD = {
 function TokenListView<N extends string>({
   groups,
   values,
-  contrastWith,
+  contrastOf,
   format,
   showState,
   overridden,
@@ -202,15 +228,15 @@ function TokenListView<N extends string>({
     for (const [name, value] of Object.entries(values) as [N, string][]) {
       if (name !== entry.name) others.add(value);
     }
-    const against = contrastWith[entry.name];
+    const contrast = contrastOf(entry.name);
     return (
       <ColorPickerPopover
         value={values[entry.name]}
         format={format}
         alpha
         swatches={[{ label: "This theme", colors: [...others] }]}
-        contrastWith={against === undefined ? undefined : values[against]}
-        contrastLabel={against}
+        contrastWith={contrast?.against}
+        contrastLabel={contrast?.label}
         onValueChange={(value) => onPreview?.(entry.name, value)}
         onValueCommit={(value) => onCommit(entry.name, value)}
         onOpenChange={(open) => {

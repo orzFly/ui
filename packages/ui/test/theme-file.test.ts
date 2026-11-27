@@ -608,6 +608,23 @@ describe("entry messages", () => {
     });
   });
 
+  it("takes a fully custom side written before the tag colours", () => {
+    const tokens = Object.fromEntries(
+      Object.entries(light.tokens).filter(([name]) => !name.startsWith("tag-")),
+    );
+    const entry = only(
+      file({
+        label: "Untagged",
+        light: { tokens, terminal: { tokens: light.terminal } },
+      }),
+    );
+    expect(entry.status).toBe("ok");
+    expect(entry.theme).toEqual({
+      label: "Untagged",
+      light: { tokens, terminal: { tokens: light.terminal } },
+    });
+  });
+
   it("rejects a value that is not a colour", () => {
     const entry = only(
       file({

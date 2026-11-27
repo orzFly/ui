@@ -2,8 +2,10 @@ import {
   builtinThemes,
   type ColorScheme,
   type CustomTheme,
+  TAG_COLORS,
   type TerminalTokenName,
   type TokenName,
+  tagFill,
 } from "@orz/themes";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -283,6 +285,34 @@ describe("TokenList rows", () => {
     expect(ratios[1]?.textContent).toBe("2.84:1");
     expect(ratios[1]?.hasAttribute("data-low")).toBe(true);
     expect(ratios[1]?.className).toContain("text-warning");
+  });
+});
+
+describe("TokenList tags", () => {
+  it("lists the nine tag colours in one strip after Charts", () => {
+    render(<Harness initial={based} />);
+    const order = Array.from(
+      document.querySelectorAll("section > button[aria-expanded]"),
+      (b) => b.textContent,
+    );
+    expect(order.indexOf("Tags")).toBe(order.indexOf("Charts") + 1);
+    fireEvent.click(group("Tags"));
+    for (const color of TAG_COLORS) expect(swatch(`tag-${color}`)).toBeTruthy();
+    const strip = swatch("tag-red").closest("li");
+    expect(strip?.style.gridTemplateColumns).toBe("repeat(9, minmax(0, 1fr))");
+  });
+
+  it("measures a tag colour against its own fill", () => {
+    const light = {
+      base: { theme: "solarized" },
+      tokens: { background: "#ffffff", "tag-red": "#c03030" },
+    };
+    render(<Harness initial={{ ...based, light }} />);
+    // Open already: it holds an override.
+    openPicker("tag-red");
+    const chip = screen.getByText(/vs its fill/);
+    const fill = tagFill("#c03030", "#ffffff", "light");
+    expect(chip.getAttribute("title")).toBe(`WCAG 2 contrast against ${fill}`);
   });
 });
 
