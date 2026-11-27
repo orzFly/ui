@@ -101,6 +101,17 @@ describe("MermaidCompare", () => {
     expect(screen.getByText("flow.mmd")).toBeTruthy();
   });
 
+  it("labels each side's size in whole pixels, as a viewBox's fractions round", async () => {
+    results.set(OLD, { ok: true, svg: OLD_SVG, width: 639.3125, height: 190 });
+    const container = mount();
+    await waitFor(() => expect(drawn(container)).toHaveLength(2));
+    expect(
+      [...container.querySelectorAll('[data-slot="compare-label"]')].map(
+        (label) => label.lastElementChild?.textContent,
+      ),
+    ).toEqual(["639×190", "1360×164"]);
+  });
+
   it("switches to the source diff and back", async () => {
     const container = mount();
     await waitFor(() => expect(drawn(container)).toHaveLength(2));

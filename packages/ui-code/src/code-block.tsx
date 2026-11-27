@@ -29,7 +29,11 @@ import {
   type CodeWorkerFactory,
   useCodeWorkerFactory,
 } from "./code-worker.tsx";
-import { ensureSyntaxTheme, loadPierre } from "./syntax-registry.ts";
+import {
+  ensureSyntaxTheme,
+  loadPierre,
+  pierreLoaded,
+} from "./syntax-registry.ts";
 import {
   indentWrappedLines,
   WRAP_INDENT_CSS,
@@ -317,6 +321,33 @@ export function useSyntaxTheme(): SyntaxTheme {
   return cached;
 }
 
+/**
+ * `useSyntaxTheme` for a pierre component an app imports and renders itself,
+ * rather than through this package's blocks or `LazyMultiFileDiff`: null until
+ * pierre has loaded here and every theme object picked is registered with it.
+ * A palette's own theme object reaches pierre only through this package's
+ * loader, and pierre handed its name before that draws nothing.
+ */
+export function usePierreSyntaxTheme(): SyntaxTheme | null {
+  const theme = useSyntaxTheme();
+  const [loaded, setLoaded] = useState(pierreLoaded);
+  useEffect(() => {
+    if (loaded) return;
+    let live = true;
+    loadPierre().then(
+      () => {
+        if (live) setLoaded(true);
+      },
+      // The app's own pierre import fails the same way, and says so there.
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [loaded]);
+  return loaded ? theme : null;
+}
+
 // pierre's own font stack, not the page's monospace, which resolves to a
 // different face and would shift every glyph when pierre lands.
 const PIERRE_FONT_FAMILY =
@@ -485,29 +516,37 @@ function handlePostRender(container: HTMLElement): void {
   }
 }
 
-const DRAWN_DIFF_CONTAINERS = new WeakSet<HTMLElement>();
+const DRAWN_CONTAINERS = new WeakSet<HTMLElement>();
 
 /**
- * A ref detached and reattached — StrictMode in dev, or a Suspense boundary
- * above re-suspending — cleans pierre's diff instance up and hands the same
- * `diffs-container` to a new one, which hydrates whatever the old one left
- * there instead of rendering. Left an empty `<pre>` before the highlighter
- * loaded, it never renders at all (UI-110); left plain lines while the shared
- * highlighter was up but the file's grammar was not, it takes them for
- * highlighted output and never starts that load, so the diff stays
- * uncoloured. A second mount on a container therefore redraws; a first mount
- * costs nothing extra.
+ * An `onPostRender` handler for a pierre `File` or diff an app renders
+ * itself, which redraws a container on its second mount. A ref detached and
+ * reattached (StrictMode in dev, or a Suspense boundary above re-suspending)
+ * cleans pierre's instance up and hands the same `diffs-container` to a new
+ * one, which hydrates whatever the old one left there instead of rendering.
+ * Left an empty `<pre>` before the highlighter loaded, it never renders at
+ * all (UI-110); left plain lines while the shared highlighter was up but the
+ * file's grammar was not, it takes them for highlighted output and never
+ * starts that load, so the code stays uncoloured. A first mount costs nothing
+ * extra. An app with a handler of its own calls this one from it.
  */
+export function redrawOnRemount(
+  container: HTMLElement,
+  instance: { rerender: () => void },
+  phase: PostRenderPhase,
+): void {
+  if (phase !== "mount") return;
+  if (DRAWN_CONTAINERS.has(container)) instance.rerender();
+  else DRAWN_CONTAINERS.add(container);
+}
+
 function handleFenceDiffPostRender(
   container: HTMLElement,
   instance: { rerender: () => void },
   phase: PostRenderPhase,
 ): void {
   if (phase === "unmount") return;
-  if (phase === "mount") {
-    if (DRAWN_DIFF_CONTAINERS.has(container)) instance.rerender();
-    else DRAWN_DIFF_CONTAINERS.add(container);
-  }
+  redrawOnRemount(container, instance, phase);
   handlePostRender(container);
 }
 
@@ -762,6 +801,20 @@ export function fenceFilename(tag: string | undefined): string {
 }
 
 /**
+ * A count that rises each time `value` changes. CodeView keeps the record it
+ * holds under an item's id until the item comes with another `version`, so an
+ * item whose content changed under the same id has to carry a new one, or the
+ * view goes on drawing the old content.
+ */
+function useGeneration(value: unknown): number {
+  const last = useRef({ value, generation: 0 });
+  if (!Object.is(last.current.value, value)) {
+    last.current = { value, generation: last.current.generation + 1 };
+  }
+  return last.current.generation;
+}
+
+/**
  * Read-only code rendering through pierre CodeView: syntax highlighting
  * from the filename, dark/light theme in step with the revision diffs.
  * Until pierre renders its first line the same text shows unhighlighted, laid
@@ -815,17 +868,19 @@ export function CodeBlock({
   /** Caps the height for a long file: CodeView virtualizes against its box. */
   className?: string;
 }) {
+  const generation = useGeneration(contents);
   const items = useMemo(
     () => [
       {
         id: filename,
         type: "file" as const,
+        version: generation * 2 + (plain ? 1 : 0),
         file: plain
           ? { name: filename, contents, lang: "text" as const }
           : { name: filename, contents },
       },
     ],
-    [filename, contents, plain],
+    [filename, contents, plain, generation],
   );
   const syntaxTheme = useSyntaxTheme();
   const options = useMemo(
@@ -1081,6 +1136,10 @@ export function PatchFiles({
     () => patchOptions(syntaxTheme, headerHeight),
     [syntaxTheme, headerHeight],
   );
+  // One count per input rather than one for the whole list, so folding a
+  // file changes that file's version alone and the rest keep their layout.
+  const patchGeneration = useGeneration(patches);
+  const messageGeneration = useGeneration(messages);
   const items = useMemo(() => {
     let position = 0;
     return patches.flatMap((patch, index): CodeViewItem<undefined>[] => {
@@ -1091,8 +1150,7 @@ export function PatchFiles({
           type: "diff",
           fileDiff,
           collapsed,
-          // CodeView only takes a changed item from a changed version.
-          version: collapsed ? 0 : 1,
+          version: patchGeneration * 2 + (collapsed ? 0 : 1),
         };
       });
       const message = messages[index];
@@ -1102,6 +1160,7 @@ export function PatchFiles({
           id: patchCommitId(index),
           type: "file",
           collapsed: message === "",
+          version: messageGeneration,
           file: {
             name: patchCommitId(index),
             contents: message,
@@ -1111,7 +1170,7 @@ export function PatchFiles({
         ...files,
       ];
     });
-  }, [patches, messages, collapsedFiles]);
+  }, [patches, messages, collapsedFiles, patchGeneration, messageGeneration]);
   const [degraded, setDegraded] = useState(false);
   const warned = useRef(false);
   const containerRef = useCallback((node: HTMLDivElement | null) => {

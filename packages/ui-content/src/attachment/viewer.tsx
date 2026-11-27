@@ -25,6 +25,7 @@ import {
   createContext,
   createElement,
   type ReactNode,
+  type RefObject,
   useCallback,
   useContext,
   useEffect,
@@ -86,8 +87,12 @@ export type AttachmentViewerState =
 export type AttachmentViewerControls = {
   /** Opens the viewer on `items[index]`, paging through `items`. */
   open(items: ViewerSource[], index: number): void;
-  /** Opens the viewer on one file, paging through the set `group` gives it. */
-  show(file: FileSource): void;
+  /**
+   * Opens the viewer on one file, paging through the set `group` gives it. `previewAnyway`
+   * says the reader has already agreed to see this text file past the auto-preview size (in a
+   * card, say), so the viewer draws it without asking again until it pages away.
+   */
+  show(file: FileSource, options?: { previewAnyway?: boolean }): void;
   /** Opens the viewer on `pairs[index]`, paging through `pairs`. */
   openCompare(pairs: ComparePair[], index: number): void;
 };
@@ -96,7 +101,17 @@ type ViewerContext = AttachmentViewerControls & {
   viewHref: ((file: FileSource) => string | undefined) | undefined;
   textPreviewMaxBytes: number;
   textPreviewHardMaxBytes: number;
+  /** `previewKey` of the file the last opening was told the reader agreed to preview. */
+  agreed: RefObject<string | null>;
 };
+
+/**
+ * Names a file across the objects that stand for it: `group` may hand the viewer its own copy
+ * of the file a card opened.
+ */
+function previewKey(file: FileSource): string {
+  return JSON.stringify([file.url ?? null, file.name, file.size ?? null]);
+}
 
 const AttachmentViewerContext = createContext<ViewerContext | null>(null);
 
@@ -164,20 +179,30 @@ export function AttachmentViewerProvider({
   const latest = useRef({ state, controlled, group, onStateChange });
   latest.current = { state, controlled, group, onStateChange };
 
+  // Held apart from the state, which a controlled app may hand back as a
+  // copy; every change but the opening that set it forgets it, a page too.
+  const agreed = useRef<string | null>(null);
   // Every change is reported, a second close included: an app that closes
   // by stepping back through history may have that step refused (a router
   // guarding unsaved work), and the reader must still be able to ask again.
-  const setState = useCallback((next: AttachmentViewerState | null) => {
-    if (!latest.current.controlled) setOwnState(next);
-    latest.current.onStateChange?.(next);
-  }, []);
+  const setState = useCallback(
+    (next: AttachmentViewerState | null, agreedKey: string | null = null) => {
+      agreed.current = agreedKey;
+      if (!latest.current.controlled) setOwnState(next);
+      latest.current.onStateChange?.(next);
+    },
+    [],
+  );
   const open = useCallback(
     (items: ViewerSource[], index: number) => setState({ items, index }),
     [setState],
   );
   const show = useCallback(
-    (file: FileSource) =>
-      setState(latest.current.group?.(file) ?? { items: [file], index: 0 }),
+    (file: FileSource, options?: { previewAnyway?: boolean }) =>
+      setState(
+        latest.current.group?.(file) ?? { items: [file], index: 0 },
+        options?.previewAnyway ? previewKey(file) : null,
+      ),
     [setState],
   );
   const openCompare = useCallback(
@@ -192,6 +217,7 @@ export function AttachmentViewerProvider({
       viewHref,
       textPreviewMaxBytes,
       textPreviewHardMaxBytes,
+      agreed,
     }),
     [
       open,
@@ -350,8 +376,11 @@ function ViewerBody({
 }) {
   const canPreview = useCanPreview(file);
   const gate = useGate(file);
+  const viewer = useContext(AttachmentViewerContext);
   // For this opening only: the body is keyed by file.
-  const [asked, setAsked] = useState(false);
+  const [asked, setAsked] = useState(
+    () => viewer?.agreed.current === previewKey(file),
+  );
   return (
     <ViewerPane maximized={maximized}>
       {!canPreview ? (

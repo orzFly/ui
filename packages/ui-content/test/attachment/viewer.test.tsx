@@ -256,6 +256,67 @@ describe("AttachmentViewerProvider", () => {
     expect(within(dialog).getByText("Preview anyway")).toBeTruthy();
   });
 
+  it("draws a large file it is told the reader agreed to, until it pages away", () => {
+    const big = file("big.txt", { size: TEXT_PREVIEW_MAX_BYTES + 1 });
+    const other = file("other.txt", { size: 10 });
+    function Agreed() {
+      const viewer = useAttachmentViewer();
+      return (
+        <button
+          type="button"
+          onClick={() => viewer?.show(big, { previewAnyway: true })}
+        >
+          agreed
+        </button>
+      );
+    }
+    render(
+      <ContentRenderers renderers={RENDERERS}>
+        {/* The group hands back copies, as an app's own list of files would. */}
+        <AttachmentViewerProvider
+          group={() => ({ items: [{ ...big }, { ...other }], index: 0 })}
+        >
+          <Agreed />
+          <Opener target={big} />
+        </AttachmentViewerProvider>
+      </ContentRenderers>,
+    );
+    fireEvent.click(screen.getByText("agreed"));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByTestId("stub").textContent).toBe("stub:big.txt");
+    fireEvent.click(within(dialog).getByLabelText("next attachment"));
+    fireEvent.click(within(dialog).getByLabelText("previous attachment"));
+    expect(within(dialog).getByText("Preview anyway")).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByText("open"));
+    expect(screen.getByText("Preview anyway")).toBeTruthy();
+  });
+
+  it("still refuses a file past the hard cap it is told the reader agreed to", () => {
+    const huge = file("huge.txt", { size: TEXT_PREVIEW_HARD_MAX_BYTES + 1 });
+    function Agreed() {
+      const viewer = useAttachmentViewer();
+      return (
+        <button
+          type="button"
+          onClick={() => viewer?.show(huge, { previewAnyway: true })}
+        >
+          agreed
+        </button>
+      );
+    }
+    render(
+      <ContentRenderers renderers={RENDERERS}>
+        <AttachmentViewerProvider>
+          <Agreed />
+        </AttachmentViewerProvider>
+      </ContentRenderers>,
+    );
+    fireEvent.click(screen.getByText("agreed"));
+    expect(screen.getByText("This file is too large to preview.")).toBeTruthy();
+    expect(screen.queryByTestId("stub")).toBeNull();
+  });
+
   it("applies its own hard cap", () => {
     const dialog = renderProvider(file("notes.txt", { size: 100 }), {
       textPreviewMaxBytes: 10,

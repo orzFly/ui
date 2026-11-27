@@ -26,6 +26,11 @@ export function ensureSyntaxTheme(theme: TextMateTheme): string {
   return theme.name;
 }
 
+/** Whether `loadPierre` has finished, so a theme picked now is registered at once. */
+export function pierreLoaded(): boolean {
+  return pierre !== undefined;
+}
+
 /** Loads pierre once and registers every theme picked before it arrived. */
 export function loadPierre(): Promise<void> {
   loading ??= import("@pierre/diffs").then((module) => {

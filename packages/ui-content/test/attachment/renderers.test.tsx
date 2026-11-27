@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
@@ -21,6 +22,7 @@ import {
   type ContentRenderer,
   ContentRenderers,
   type Placement,
+  TEXT_PREVIEW_MAX_BYTES,
   useContentDisplay,
 } from "../../src/index.ts";
 import { file, stubText } from "./fixtures.tsx";
@@ -151,6 +153,35 @@ describe("attachmentCard", () => {
     draw(file("notes.txt", { size: 5 }));
     fireEvent.click(screen.getByLabelText("expand notes.txt"));
     expect(screen.getByRole("dialog").textContent).toContain("stub:notes.txt");
+  });
+
+  it("expands a large file it was asked to preview without asking again", () => {
+    draw(file("big.txt", { size: TEXT_PREVIEW_MAX_BYTES + 1 }));
+    fireEvent.click(screen.getByText("Preview anyway"));
+    fireEvent.click(screen.getByLabelText("expand big.txt"));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByTestId("stub").textContent).toBe("stub:big.txt");
+    expect(within(dialog).queryByText("Preview anyway")).toBeNull();
+  });
+
+  it("expands a file it drew under its own higher cap without asking", () => {
+    render(
+      <ContentRenderers
+        renderers={[attachmentCard({ maxBytes: 100 }), stubText]}
+      >
+        <AttachmentViewerProvider textPreviewMaxBytes={10}>
+          <Content
+            source={file("notes.txt", { size: 50 })}
+            placement="document"
+          />
+        </AttachmentViewerProvider>
+      </ContentRenderers>,
+    );
+    fireEvent.click(screen.getByLabelText("expand notes.txt"));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByTestId("stub").textContent).toBe(
+      "stub:notes.txt",
+    );
   });
 
   it("draws no expand control for text of unknown size", () => {

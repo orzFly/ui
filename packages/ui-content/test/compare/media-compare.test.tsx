@@ -107,6 +107,21 @@ describe("MediaCompare", () => {
     expect(marked).toEqual(["400", "460"]);
   });
 
+  it("labels a fractional size in whole pixels, and marks only what still differs", () => {
+    const { container } = renderCompare({
+      before: side("v2", { width: 639.3125, height: 190 }),
+      after: side("v5", { width: 638.8, height: 212.5 }),
+    });
+    const sizes = [
+      ...container.querySelectorAll('[data-slot="compare-label"]'),
+    ].map((label) => label.lastElementChild?.textContent);
+    expect(sizes).toEqual(["639×190", "639×213"]);
+    const marked = [...container.querySelectorAll("mark[data-changed]")].map(
+      (mark) => mark.textContent,
+    );
+    expect(marked).toEqual(["190", "213"]);
+  });
+
   it("titles each side's name with all of it, for when a long one is cut", () => {
     const long = "Safari 18 on an iPhone 15 Pro";
     const { container } = renderCompare({ after: side(long, SAME) });

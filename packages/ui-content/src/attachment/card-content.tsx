@@ -96,7 +96,10 @@ export function attachmentCard(
         // Only when the viewer would draw it: a text file of unknown size
         // would open on the download pane.
         onExpand={
-          viewer !== null && canPreview ? () => viewer.show(source) : undefined
+          viewer !== null && canPreview
+            ? // The reader is looking at the text already, asked for or not.
+              () => viewer.show(source, { previewAnyway: true })
+            : undefined
         }
         className={className}
       >
