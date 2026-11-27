@@ -54,6 +54,12 @@ import {
 import { Input } from "../src/components/input.tsx";
 import { Label } from "../src/components/label.tsx";
 import {
+  LinkCard,
+  LinkCardDescription,
+  LinkCardLabel,
+  LinkCardTitle,
+} from "../src/components/link-card.tsx";
+import {
   NavList,
   NavListCount,
   NavListGroup,
@@ -519,10 +525,45 @@ describe("ModuleGrid", () => {
     expect(inner.className).toContain("in-data-[slot=module-grid]:p-0");
   });
 
+  it("gives way to the caller's padding and gap", () => {
+    const { container } = render(
+      <ModuleGrid className="gap-0 p-0">
+        <Card>One</Card>
+      </ModuleGrid>,
+    );
+    const classes = container
+      .querySelector('[data-slot="module-grid"]')
+      ?.className.split(" ");
+    expect(classes).toContain("p-0");
+    expect(classes).toContain("gap-0");
+    expect(classes).not.toContain("p-module");
+    expect(classes).not.toContain("gap-module");
+  });
+
   it("leaves each card its own border", () => {
     const { container } = render(<Card>One</Card>);
     const card = container.querySelector('[data-slot="card"]');
     expect(card?.className.split(" ")).toContain("border");
     expect(card?.className).not.toContain("ring-1");
+  });
+});
+
+describe("LinkCard", () => {
+  it("keeps its label's and description's text size beside their colour", () => {
+    const { container } = render(
+      <LinkCard href="#next">
+        <LinkCardLabel>Next</LinkCardLabel>
+        <LinkCardTitle>Forms</LinkCardTitle>
+        <LinkCardDescription>Fields and their labels</LinkCardDescription>
+      </LinkCard>,
+    );
+    const classesOf = (slot: string) =>
+      container.querySelector(`[data-slot="${slot}"]`)?.className.split(" ") ??
+      [];
+    expect(classesOf("link-card-label")).toContain("text-prose-xs");
+    expect(classesOf("link-card-description")).toContain("text-prose-sm");
+    expect(classesOf("link-card-description")).toContain(
+      "text-muted-foreground",
+    );
   });
 });
