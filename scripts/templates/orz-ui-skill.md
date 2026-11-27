@@ -35,9 +35,9 @@ install line from the Start page (**Install**, and the **Packages** table), or f
   into its `⋯` in the order you give it: never hide a command or a section at a breakpoint by
   hand.
 - Anything that goes somewhere (a folder, a section, an item, Back) is an `a[href]` to its URL,
-  never a `button` that navigates in JS. Pass the router's link with `asChild`, or keep the `href`
-  and take over only clicks `isPlainClick` from `@orz/ui/lib/link` passes, so middle-click,
-  Ctrl/⌘/Shift-click and the context menu still work.
+  never a `button` that navigates in JS. Pass the router's link with `asChild` (a `FilterMenu`
+  row's from `rowLink`), or keep the `href` and take over only clicks `isPlainClick` from
+  `@orz/ui/lib/link` passes, so middle-click, Ctrl/⌘/Shift-click and the context menu still work.
 - Write nothing the screen already shows: no subtitle restating its heading, no grey line under
   every label. What a setting, option or section does, when its label does not say, goes behind
   an `InfoPopover` right after the label. Empty, failed and done messages, a field's error and a
