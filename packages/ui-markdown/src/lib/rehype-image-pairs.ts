@@ -2,12 +2,19 @@ import type { Element, ElementContent, Root } from "hast";
 
 /**
  * Marks the `<img>` that stands for a whole pair, as React hands it to an
- * `img` override. It is the pair's second image, carrying the first's address
- * and alt in `PAIR_BEFORE_SRC_ATTR` and `PAIR_BEFORE_ALT_ATTR`.
+ * `img` override. It is the pair's second image, keeping its own position, and
+ * carries the first's address, alt and source offset in the attributes below.
  */
 export const PAIR_ATTR = "data-image-pair";
 export const PAIR_BEFORE_SRC_ATTR = "data-pair-before-src";
 export const PAIR_BEFORE_ALT_ATTR = "data-pair-before-alt";
+/**
+ * The first image's start offset in the source, a number; absent when that
+ * image had no position. Folding drops the image from the tree, so a pass that
+ * maps source ranges onto it (a diff, a revision mark) finds an edit to the
+ * first image by this offset.
+ */
+export const PAIR_BEFORE_AT_ATTR = "data-pair-before-at";
 
 const ARROW = /^\s*(?:→|->)\s*$/;
 
@@ -63,10 +70,11 @@ function inlineRunLength(li: Element): number {
 }
 
 /**
- * Folds each pair into its second image alone, carrying the first's address
- * and alt, so an `img` override draws the comparison and the paragraph around
- * it stays the element it was: the `<p>` keeps its source-line stamp and any
- * class a later pass puts on it. The `<img>` keeps its own position.
+ * Folds each pair into its second image alone, carrying the first's address,
+ * alt and source offset, so an `img` override draws the comparison and the
+ * paragraph around it stays the element it was: the `<p>` keeps its
+ * source-line stamp and any class a later pass puts on it. The `<img>` keeps
+ * its own position.
  */
 export function rehypeImagePairs() {
   const visit = (parent: Root | Element): void => {
@@ -88,6 +96,8 @@ export function rehypeImagePairs() {
         after.properties.dataPairBeforeAlt = String(
           before.properties.alt ?? "",
         );
+        const at = before.position?.start.offset;
+        if (at !== undefined) after.properties.dataPairBeforeAt = at;
         child.children = [after, ...child.children.slice(run)];
       }
       visit(child);

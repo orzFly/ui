@@ -197,7 +197,7 @@ refuses is drawn as source text before `resolve` sees it: use relative addresses
 | `@orz/ui-markdown/lib/rehype-source-lines` | `rehypeSourceLines`, `SOURCE_LINE_ATTR`, `CODE_CONTENT_START_ATTR`, `parseSourceLoc` |
 | `@orz/ui-markdown/lib/rehype-details` | `rehypeDetails` |
 | `@orz/ui-markdown/lib/rehype-heading-levels` | `rehypeHeadingLevels`, `RehypeHeadingLevelsOptions` |
-| `@orz/ui-markdown/lib/rehype-image-pairs` | `rehypeImagePairs`, `imagePairOf`, `isPairImage`, `pairLabel`, `PAIR_ATTR`, `PAIR_BEFORE_SRC_ATTR`, `PAIR_BEFORE_ALT_ATTR` |
+| `@orz/ui-markdown/lib/rehype-image-pairs` | `rehypeImagePairs`, `imagePairOf`, `isPairImage`, `pairLabel`, `PAIR_ATTR`, `PAIR_BEFORE_SRC_ATTR`, `PAIR_BEFORE_ALT_ATTR`, `PAIR_BEFORE_AT_ATTR` |
 | `@orz/ui-markdown/lib/fence-meta` | `fenceTitle` |
 | `@orz/ui-markdown/styles.css` | the `.markdown-body` typography |
 

@@ -12,7 +12,11 @@ import {
   type MarkdownPlugin,
   markdownEmbeds,
 } from "../src/index.ts";
-import { pairLabel } from "../src/lib/rehype-image-pairs.ts";
+import {
+  PAIR_BEFORE_AT_ATTR,
+  pairLabel,
+  rehypeImagePairs,
+} from "../src/lib/rehype-image-pairs.ts";
 import {
   rehypeSourceLines,
   SOURCE_LINE_ATTR,
@@ -97,6 +101,22 @@ describe("imagePairs", () => {
         .querySelector(".markdown-paragraph")
         ?.getAttribute(SOURCE_LINE_ATTR),
     ).toBe("3-4");
+  });
+
+  it("carries the first image's source offset on the pair", () => {
+    const fold: MarkdownPlugin = {
+      name: "fold",
+      rehypePlugins: [rehypeImagePairs],
+    };
+    const markdown = "Intro.\n\n![a](/a.png) → ![b](/b.png)\n";
+    const { container } = render(
+      <Markdown plugins={[fold]}>{markdown}</Markdown>,
+    );
+    const imgs = container.querySelectorAll("img");
+    expect(imgs).toHaveLength(1);
+    expect(imgs[0]?.getAttribute(PAIR_BEFORE_AT_ATTR)).toBe(
+      String(markdown.indexOf("![a]")),
+    );
   });
 
   it("leaves the images alone without the plugin", () => {
