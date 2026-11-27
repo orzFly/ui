@@ -52,6 +52,29 @@ export const SizesAndShapes: Story = {
   ),
 };
 
+const BOXES = ["size-4", "size-5", "size-7", "size-12", "size-16"] as const;
+
+/**
+ * A box of any size, given in `className`: the fallback's letters shrink with
+ * a box too small for them, and narrow to fit one they are wider than. A
+ * bigger box keeps them at the fallback's text size.
+ */
+export const AnySize: Story = {
+  render: (args) => (
+    <div className="flex flex-col gap-3">
+      {["A", "AL", "WWW"].map((initials) => (
+        <div key={initials} className="flex items-center gap-3">
+          {BOXES.map((box) => (
+            <Avatar {...args} key={box} className={box}>
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+          ))}
+        </div>
+      ))}
+    </div>
+  ),
+};
+
 export const WithImage: Story = {
   args: { size: "lg" },
   render: (args) => (

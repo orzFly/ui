@@ -87,7 +87,9 @@ menu of people. The face is found before the word is read. There the name says w
 where the person is one fact in a line of text ("alice committed 2 hours ago"), or where every row
 is the same person. An avatar never stands in for the name: one shown alone, in a stack or a
 narrow column, carries the name as its `aria-label`, and on a pointer a tooltip as well.
-A mark that is not a person, a project or an organisation, takes `shape="square"`.
+A mark that is not a person, a project or an organisation, takes `shape="square"`. Where none of
+the three sizes fits the line it sits in, size the `Avatar` with a `className`: its initials shrink
+to fit the box.
 
 ## On each platform
 
