@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { selectionSource } from "../src/selection.ts";
-import { parseToml } from "../src/toml.ts";
+import { readToml } from "../src/toml-reader.ts";
 import type { JsonDocument, NodeFacts } from "../src/types.ts";
 
 function parsed(text: string): JsonDocument {
-  const result = parseToml(text);
+  const result = readToml(text);
   if (!result.ok) throw new Error(result.error.message);
   return result.document;
 }
@@ -53,7 +53,7 @@ name = "static"
 weight = 0.25
 `;
 
-describe("parseToml", () => {
+describe("readToml", () => {
   it("builds the tree the mockup's file builds", () => {
     const document = parsed(MOCKUP);
     expect(document.value).toEqual({
@@ -380,7 +380,7 @@ n = 3
 
   describe("errors", () => {
     it("fails a key defined twice", () => {
-      expect(parseToml("a = 1\na = 2\n")).toEqual({
+      expect(readToml("a = 1\na = 2\n")).toEqual({
         ok: false,
         error: {
           message: "Defining a key multiple times is invalid",
@@ -392,7 +392,7 @@ n = 3
     });
 
     it("fails a table defined twice", () => {
-      const result = parseToml("[a]\nx = 1\n[a]\n");
+      const result = readToml("[a]\nx = 1\n[a]\n");
       expect(result.ok).toBe(false);
       if (result.ok) return;
       expect(result.error.message).toBe(
@@ -402,7 +402,7 @@ n = 3
     });
 
     it("fails an unterminated inline table at its end", () => {
-      expect(parseToml("x = { a = 1")).toEqual({
+      expect(readToml("x = { a = 1")).toEqual({
         ok: false,
         error: {
           message: "Unterminated inline table",

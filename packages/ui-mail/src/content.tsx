@@ -9,10 +9,12 @@ import {
   useContentTitleBar,
 } from "@orz/ui-content";
 import { useEffect, useRef, useState } from "react";
+import { loadPostalMime } from "./load-postal-mime.ts";
 import {
   MailError,
   type MailRaw,
   MailReading,
+  MailUnavailable,
   useParsedMail,
 } from "./mail-message.tsx";
 import { MailView } from "./mail-view.tsx";
@@ -106,6 +108,18 @@ function ParsedMail({
   const parsed = useParsedMail(raw);
   const controlsTarget = useContentTitleBar(source);
   if (parsed.status === "reading") return <MailReading />;
+  if (parsed.status === "unavailable") {
+    // Alone in the pane, so centred in it. Without a url the fallback is only
+    // the name, which the viewer's title already shows.
+    return (
+      <div className="grid h-full content-center justify-items-center gap-3 p-4">
+        <MailUnavailable parsed={parsed} />
+        {source.url !== undefined && (
+          <ContentFallback source={source} placement={placement} />
+        )}
+      </div>
+    );
+  }
   if (parsed.status === "error") {
     return (
       <MailError error={parsed.error}>
@@ -123,6 +137,11 @@ function LoadedMail({
 }: ContentProps & { source: FileSource }) {
   const [attempt, setAttempt] = useState(0);
   const raw = useMailRaw(source, attempt);
+  // Fetched beside the message rather than after it. A failure here is
+  // reported by the parse, which asks again.
+  useEffect(() => {
+    loadPostalMime().catch(() => {});
+  }, []);
   if (raw.status === "loading") {
     return (
       <ContentFallback
@@ -180,6 +199,8 @@ function Eml(props: ContentProps) {
  * viewer only, with its plain/HTML switch in the viewer's title bar. Register it before
  * `hexContent`, which takes every file that is not text. Give the file a `url` where you can: its
  * bytes keep an 8bit body in its own charset, which the text from `load` may have lost.
+ * postal-mime is fetched, beside the message, the first time one opens; when that fetch fails
+ * the viewer says so, with a Retry.
  */
 export const emlContent: ContentRenderer = {
   name: "eml",

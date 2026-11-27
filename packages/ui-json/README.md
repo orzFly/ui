@@ -48,7 +48,7 @@ if (parsed.ok) <JsonView document={parsed.document} />;
 import { JsonView } from "@orz/ui-json";
 import { parseYaml } from "@orz/ui-json/yaml";
 
-const parsed = parseYaml(text);
+const parsed = await parseYaml(text);
 if (parsed.ok) <JsonView document={parsed.document} />;
 ```
 
@@ -56,9 +56,22 @@ if (parsed.ok) <JsonView document={parsed.document} />;
 import { JsonView } from "@orz/ui-json";
 import { parseToml } from "@orz/ui-json/toml";
 
-const parsed = parseToml(text);
+const parsed = await parseToml(text);
 if (parsed.ok) <JsonView document={parsed.document} />;
 ```
+
+## Loading
+
+`yaml` and `toml-eslint-parser` are only reached through `import()`, so a bundler splits each,
+with the reader over it, into a chunk of its own, fetched the first time `parseYaml` or `parseToml`
+runs. That is why the two return a promise, where `parseJson` returns its result at once: an app
+that registers `yamlContent` and `tomlContent` at its root carries neither parser until a file
+opens. Text that does not parse resolves to the error; the promise rejects only when the chunk
+does not arrive, and the next call fetches it again.
+
+The renderers fetch the parser beside the file's text and show the file's name until both have
+arrived. When the parser does not arrive, the text shows as the renderers after them draw it, under
+the reason and a Retry that fetches it again.
 
 ## Entry points
 

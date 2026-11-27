@@ -18,7 +18,7 @@ const MESSAGE: AttachmentItem = {
 /**
  * `emlContent` in the registry: in a viewer, a `.eml` or `message/rfc822` file is drawn as a
  * `MailMessage`, its plain/HTML switch in the viewer's title bar. Its attachments open in a second
- * viewer over the first.
+ * viewer over the first. postal-mime is fetched the first time a message opens.
  */
 const meta = {
   title: "ui-mail/Content",

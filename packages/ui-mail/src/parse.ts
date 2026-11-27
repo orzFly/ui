@@ -1,5 +1,6 @@
-import PostalMime, { type Address } from "postal-mime";
+import type { Address } from "postal-mime";
 import { isFlowedBody } from "./body-format.ts";
+import { loadPostalMime } from "./load-postal-mime.ts";
 
 export type MailAddress = { name: string; address: string };
 
@@ -95,11 +96,14 @@ function toArrayBuffer(content: ArrayBuffer | Uint8Array | string) {
  * Reads a raw message (RFC 5322, with its MIME parts). Bytes decode each part in its own charset;
  * a string has already been decoded once, so an 8bit body in a charset other than UTF-8 may come
  * out garbled. Rejects input with no headers at all, and a message past postal-mime's limits on
- * nesting, parts or header size.
+ * nesting, parts or header size. The first call fetches postal-mime, which the app's bundler
+ * splits into a chunk of its own; it rejects too when that fetch fails, and the next call
+ * fetches it again.
  */
 export async function parseMail(
   raw: ArrayBuffer | Uint8Array | string,
 ): Promise<MailData> {
+  const { default: PostalMime } = await loadPostalMime();
   const email = await PostalMime.parse(raw, {
     attachmentEncoding: "arraybuffer",
   });

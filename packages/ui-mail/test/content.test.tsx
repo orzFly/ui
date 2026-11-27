@@ -4,6 +4,22 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { emlContent, MAIL_PREVIEW_MAX_BYTES } from "../src/index.ts";
 
+/** Whether postal-mime's chunk fails to arrive. */
+const chunk = vi.hoisted(() => ({ fails: false }));
+
+vi.mock("../src/load-postal-mime.ts", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../src/load-postal-mime.ts")>();
+  return {
+    loadPostalMime: () =>
+      chunk.fails
+        ? Promise.reject(
+            new Error("Failed to fetch dynamically imported module"),
+          )
+        : actual.loadPostalMime(),
+  };
+});
+
 const RAW = [
   "From: alice <noreply@example.com>",
   "Subject: Hello",
@@ -23,6 +39,7 @@ const eml = (extra: Partial<Extract<ContentSource, { kind: "file" }>> = {}) =>
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  chunk.fails = false;
 });
 
 function draw(source: ContentSource) {
@@ -110,6 +127,24 @@ describe("emlContent", () => {
     vi.stubGlobal("fetch", fetch);
     draw(eml());
     expect(await screen.findByText("503 Service Unavailable")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect((await screen.findByRole("heading")).textContent).toBe("Hello");
+  });
+
+  it("says when the parser does not load, links the download, and loads it again on Retry", async () => {
+    chunk.fails = true;
+    vi.stubGlobal("fetch", async () => new Response(RAW));
+    draw(eml());
+    expect(
+      await screen.findByText("Couldn't load the mail reader."),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Failed to fetch dynamically imported module"),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "hello.eml" }).getAttribute("download"),
+    ).toBe("hello.eml");
+    chunk.fails = false;
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect((await screen.findByRole("heading")).textContent).toBe("Hello");
   });

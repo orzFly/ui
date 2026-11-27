@@ -73,11 +73,12 @@ selection as it was written, its indent taken off and comments included.
 
 - Parse JSONC and JSON5 with `parseJson` and pass the `document`. A value the app already parsed
   goes in as `value`; it shows no comments and offers no Copy source.
-- Parse YAML with `parseYaml` from `@orz/ui-json/yaml` and pass the `document`; its anchors,
-  aliases and tags show on their rows, and an alias opens onto what it names.
-- Parse TOML with `parseToml` from `@orz/ui-json/toml` and pass the `document`. Its headers build
-  the tree a program reads, and Copy source on a table written in more than one place copies each
-  place.
+- Parse YAML with `parseYaml` from `@orz/ui-json/yaml` and pass the `document` it resolves to;
+  its anchors, aliases and tags show on their rows, and an alias opens onto what it names.
+- Parse TOML with `parseToml` from `@orz/ui-json/toml` and pass the `document` it resolves to. Its
+  headers build the tree a program reads, and Copy source on a table written in more than one
+  place copies each place. `parseYaml` and `parseToml` fetch their parser on their first call, so
+  neither weighs on a page that never reads YAML or TOML.
 - Give the view a `summary` when the data has a shape a collapsed row can name. An app showing
   agent traces passes `agentTraceSummary`, so a collapsed message reads as its speaker and its
   text, and a tool call as the call.
@@ -85,7 +86,7 @@ selection as it was written, its indent taken off and comments included.
   file opens as a tree, and one that does not parse shows as text under the error. Register
   `yamlContent` beside it, from `@orz/ui-json/yaml/content`, for `.yaml` and `.yml` files, and
   `tomlContent`, from `@orz/ui-json/toml/content`, for `.toml` files and the lock files written
-  in TOML.
+  in TOML. Register them at the app's root: each fetches its parser only when a file opens.
 
 
 ## On each platform

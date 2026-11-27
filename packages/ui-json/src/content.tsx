@@ -4,7 +4,7 @@ import type {
   ContentSource,
 } from "@orz/ui-content";
 import type { ComponentType } from "react";
-import { DocumentContent } from "./loaded-document.tsx";
+import { DocumentContent, type DocumentParse } from "./loaded-document.tsx";
 import { type JsonDialect, parseJson } from "./parse.ts";
 
 /**
@@ -19,13 +19,17 @@ const DIALECT_NAME: Record<JsonDialect, string> = {
   json5: "JSON5",
 };
 
-const PARSE: Record<
-  JsonDialect,
-  (text: string) => ReturnType<typeof parseJson>
-> = {
+const PARSE: Record<JsonDialect, DocumentParse> = {
   json: (text) => parseJson(text, { dialect: "json" }),
   jsonc: (text) => parseJson(text, { dialect: "jsonc" }),
   json5: (text) => parseJson(text, { dialect: "json5" }),
+};
+
+// The JSON parser is this package's own, already loaded.
+const LOAD: Record<JsonDialect, () => Promise<DocumentParse>> = {
+  json: async () => PARSE.json,
+  jsonc: async () => PARSE.jsonc,
+  json5: async () => PARSE.json5,
 };
 
 /** The dialect a file is read in: its extension's, or JSON when only its type said JSON. */
@@ -50,7 +54,7 @@ function Json(props: ContentProps & { Next: ComponentType<ContentProps> }) {
     <DocumentContent
       {...props}
       source={source}
-      parse={PARSE[dialect]}
+      load={LOAD[dialect]}
       format={DIALECT_NAME[dialect]}
       maxBytes={JSON_PREVIEW_MAX_BYTES}
     />

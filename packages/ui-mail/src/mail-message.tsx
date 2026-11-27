@@ -1,41 +1,84 @@
+import { LoadFailure } from "@orz/ui/components/load-failure";
 import { cn } from "@orz/ui/lib/utils";
-import { type ReactNode, useEffect, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { loadPostalMime } from "./load-postal-mime.ts";
 import { MailView } from "./mail-view.tsx";
 import { type MailData, parseMail } from "./parse.ts";
 
 export type MailRaw = ArrayBuffer | Uint8Array | string;
 
+type Settled =
+  | { status: "ready"; mail: MailData }
+  | { status: "error"; error: Error }
+  | { status: "unavailable"; error: Error };
+
+/** postal-mime could not be fetched. */
+type Unavailable = {
+  status: "unavailable";
+  error: Error;
+  /** Fetches it again. */
+  retry: () => void;
+  /** Whether a retry is under way. */
+  retrying: boolean;
+};
+
 type Parsed =
   | { status: "reading" }
-  | { status: "ready"; mail: MailData }
-  | { status: "error"; error: Error };
+  | Exclude<Settled, { status: "unavailable" }>
+  | Unavailable;
+
+const asError = (error: unknown) =>
+  error instanceof Error ? error : new Error(String(error));
 
 /** The parse of `raw`, dropped when `raw` changes or the caller unmounts before it settles. */
 export function useParsedMail(raw: MailRaw): Parsed {
-  const [parsed, setParsed] = useState<{ raw: MailRaw; parsed: Parsed }>();
+  const [attempt, setAttempt] = useState(0);
+  const [settled, setSettled] = useState<{
+    raw: MailRaw;
+    attempt: number;
+    result: Settled;
+  }>();
   useEffect(() => {
     let current = true;
-    parseMail(raw).then(
-      (mail) => {
-        if (current) setParsed({ raw, parsed: { status: "ready", mail } });
-      },
-      (error: unknown) => {
-        if (current) {
-          setParsed({
-            raw,
-            parsed: {
-              status: "error",
-              error: error instanceof Error ? error : new Error(String(error)),
-            },
-          });
-        }
-      },
+    const settle = (result: Settled) => {
+      if (current) setSettled({ raw, attempt, result });
+    };
+    // Loaded on its own first, so a chunk that did not arrive is told apart
+    // from a message that does not parse, which reading again cannot mend.
+    loadPostalMime().then(
+      () =>
+        parseMail(raw).then(
+          (mail) => settle({ status: "ready", mail }),
+          (error: unknown) =>
+            settle({ status: "error", error: asError(error) }),
+        ),
+      (error: unknown) =>
+        settle({ status: "unavailable", error: asError(error) }),
     );
     return () => {
       current = false;
     };
-  }, [raw]);
-  return parsed?.raw === raw ? parsed.parsed : { status: "reading" };
+  }, [raw, attempt]);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  return useMemo((): Parsed => {
+    if (settled?.raw !== raw) return { status: "reading" };
+    const { result } = settled;
+    if (settled.attempt !== attempt) {
+      // The failure stays, its Retry disabled, until the next attempt settles.
+      return result.status === "unavailable"
+        ? { ...result, retry, retrying: true }
+        : { status: "reading" };
+    }
+    return result.status === "unavailable"
+      ? { ...result, retry, retrying: false }
+      : result;
+  }, [settled, raw, attempt, retry]);
 }
 
 export function MailReading({ className }: { className?: string }) {
@@ -65,6 +108,26 @@ export function MailError({
   );
 }
 
+/** postal-mime did not arrive: what failed, the browser's words for it, and Retry. */
+export function MailUnavailable({
+  parsed,
+  className,
+}: {
+  parsed: Unavailable;
+  className?: string;
+}) {
+  return (
+    <LoadFailure
+      orientation="vertical"
+      message="Couldn't load the mail reader."
+      detail={parsed.error.message}
+      onRetry={parsed.retry}
+      retrying={parsed.retrying}
+      className={className}
+    />
+  );
+}
+
 export type MailMessageProps = {
   /** The message as sent. Bytes decode each part in its own charset; a string may garble an 8bit body. */
   raw: MailRaw;
@@ -79,6 +142,9 @@ export type MailMessageProps = {
 export function MailMessage({ raw, className }: MailMessageProps) {
   const parsed = useParsedMail(raw);
   if (parsed.status === "reading") return <MailReading className={className} />;
+  if (parsed.status === "unavailable") {
+    return <MailUnavailable parsed={parsed} className={className} />;
+  }
   if (parsed.status === "error") {
     return <MailError error={parsed.error} className={className} />;
   }

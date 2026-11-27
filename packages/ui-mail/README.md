@@ -16,7 +16,7 @@ pnpm add @orz/ui-mail @orz/query @orz/themes @orz/ui @orz/ui-content lucide-reac
 <!-- /generated -->
 
 MIME parsing is [postal-mime](https://github.com/postalsys/postal-mime)'s, the one runtime
-dependency, about 71 KB gzipped; it is why this is a package of its own. `@orz/ui-content` is a peer
+dependency, about 30 KB gzipped; it is why this is a package of its own. `@orz/ui-content` is a peer
 dependency so that the app and every content package share one registry.
 
 ## CSS
@@ -75,6 +75,15 @@ render `MailMessage` under `ContentRenderers`.
 
 `parseMail(raw)` is the parser on its own, resolving to a `MailData`, and rejecting input with no
 headers or past postal-mime's limits.
+
+## Loading
+
+postal-mime is only reached through `import()`, so a bundler splits it into a chunk of its own,
+fetched the first time a message is read: an app that registers `emlContent` at its root carries
+none of it until a message opens. `emlContent` fetches it beside the message's bytes. Until it has
+arrived the message says it is reading; when it does not arrive, the message says so with the
+browser's reason and a Retry that fetches it again, and `parseMail` rejects, fetching it again on
+the next call.
 
 ## HTML bodies
 

@@ -16,7 +16,7 @@ import {
   WRAP_PREVIEW_LIMIT,
 } from "../src/tree.ts";
 import type { JsonDocument } from "../src/types.ts";
-import { parseYaml } from "../src/yaml.ts";
+import { readYaml } from "../src/yaml-reader.ts";
 
 const none = new Set<string>();
 const paths = (rows: JsonRow[]) => rows.map((row) => row.path);
@@ -266,7 +266,7 @@ describe("collectExpandable", () => {
 
 describe("YAML", () => {
   function yaml(text: string): JsonDocument {
-    const result = parseYaml(text);
+    const result = readYaml(text);
     if (!result.ok) throw new Error(result.error.message);
     return result.document;
   }

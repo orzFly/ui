@@ -4,8 +4,8 @@ import type {
   ContentSource,
 } from "@orz/ui-content";
 import type { ComponentType } from "react";
-import { DocumentContent } from "./loaded-document.tsx";
-import { parseYaml } from "./yaml.ts";
+import { loadYamlReader } from "./load-yaml.ts";
+import { DocumentContent, type DocumentParse } from "./loaded-document.tsx";
 
 /**
  * Past this a file goes to the renderers after this one: `yaml` reads about a megabyte in a
@@ -28,7 +28,8 @@ function isYaml(source: ContentSource): boolean {
   return mime !== undefined && YAML_MIMES.has(mime);
 }
 
-const parse = (text: string) => parseYaml(text);
+const load = (): Promise<DocumentParse> =>
+  loadYamlReader().then(({ readYaml }) => readYaml);
 
 function Yaml(props: ContentProps & { Next: ComponentType<ContentProps> }) {
   const { source } = props;
@@ -37,7 +38,7 @@ function Yaml(props: ContentProps & { Next: ComponentType<ContentProps> }) {
     <DocumentContent
       {...props}
       source={source}
-      parse={parse}
+      load={load}
       format="YAML"
       maxBytes={YAML_PREVIEW_MAX_BYTES}
     />
@@ -48,7 +49,9 @@ function Yaml(props: ContentProps & { Next: ComponentType<ContentProps> }) {
  * The registry entry for YAML files: a file named `.yaml` or `.yml`, or typed
  * `application/yaml`, `application/x-yaml`, `text/yaml` or `text/x-yaml`, up to 2 MB, drawn as
  * a `JsonView` in the viewer only. Text that does not parse goes to the renderers after it,
- * under the parse error, so list it before the code renderer.
+ * under the parse error, so list it before the code renderer. The `yaml` package is fetched,
+ * beside the file's text, the first time a YAML file opens; when that fetch fails the text goes
+ * to the renderers after it too, under the reason and a Retry.
  */
 export const yamlContent: ContentRenderer = {
   name: "yaml",

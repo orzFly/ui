@@ -5,8 +5,8 @@ import {
   ContentRenderers,
   type ContentSource,
 } from "@orz/ui-content";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { jsonContent } from "../src/content.tsx";
 import { tomlContent } from "../src/toml-content.tsx";
 import type { JsonDocument } from "../src/types.ts";
@@ -18,6 +18,35 @@ vi.mock("../src/json-view.tsx", () => ({
     <div data-testid="tree">{JSON.stringify(document.value)}</div>
   ),
 }));
+
+/** Whether the YAML reader's chunk arrives, fails, or is still on its way. */
+const yamlChunk = vi.hoisted(() => ({
+  state: "arrives" as "arrives" | "fails" | "waits",
+  release: () => {},
+}));
+
+vi.mock("../src/load-yaml.ts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/load-yaml.ts")>();
+  return {
+    loadYamlReader: () => {
+      if (yamlChunk.state === "fails") {
+        return Promise.reject(
+          new Error("Failed to fetch dynamically imported module"),
+        );
+      }
+      if (yamlChunk.state === "waits") {
+        return new Promise((resolve) => {
+          yamlChunk.release = () => resolve(actual.loadYamlReader());
+        });
+      }
+      return actual.loadYamlReader();
+    },
+  };
+});
+
+afterEach(() => {
+  yamlChunk.state = "arrives";
+});
 
 /** What the renderers after this one draw: the text, as a code renderer would. */
 const codeContent: ContentRenderer = {
@@ -151,6 +180,39 @@ describe("yamlContent", () => {
     mountYaml(file("big.yaml", `a: "${"x".repeat(2 * 1024 * 1024)}"\n`));
     expect((await screen.findByTestId("code")).textContent).toBe("big.yaml");
     expect(screen.queryByTestId("tree")).toBeNull();
+  });
+
+  it("waits for the reader as for the text", async () => {
+    yamlChunk.state = "waits";
+    const load = vi.fn(async () => "a: 1\n");
+    mountYaml(file("ci.yml", "", { load }));
+    // The text arrives; the file's name holds the place until the reader does.
+    await act(async () => {});
+    expect(load).toHaveBeenCalled();
+    expect(screen.getByText("ci.yml").tagName).toBe("SPAN");
+    expect(screen.queryByTestId("code")).toBeNull();
+    yamlChunk.state = "arrives";
+    yamlChunk.release();
+    expect((await screen.findByTestId("tree")).textContent).toBe('{"a":1}');
+  });
+
+  it("shows the text under the reason when the reader does not load, and loads it again on Retry", async () => {
+    yamlChunk.state = "fails";
+    mountYaml(file("ci.yml", "a: 1\n"));
+    expect((await screen.findByTestId("code")).textContent).toBe("ci.yml");
+    expect(
+      screen.getByText(
+        "Couldn't load the YAML reader: Failed to fetch dynamically imported module",
+      ),
+    ).toBeTruthy();
+    yamlChunk.state = "waits";
+    const retry = screen.getByRole("button", { name: "Retry" });
+    fireEvent.click(retry);
+    // The failure stays while the retry runs, its Retry disabled.
+    expect((retry as HTMLButtonElement).disabled).toBe(true);
+    yamlChunk.state = "arrives";
+    yamlChunk.release();
+    expect((await screen.findByTestId("tree")).textContent).toBe('{"a":1}');
   });
 });
 

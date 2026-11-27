@@ -36,27 +36,38 @@ const parsed = parseJson(text, { dialect: "json5" });
 
 {parsed.ok && <JsonView document={parsed.document} />}`;
 
-const yamlDocument = (text: string) => {
-  const parsed = parseYaml(text);
+const yamlDocument = async (text: string) => {
+  const parsed = await parseYaml(text);
   return parsed.ok ? parsed.document : { value: null };
 };
+
+const PIPELINE = await yamlDocument(pipelineYaml);
+const MANIFESTS = await yamlDocument(manifestsYaml);
+const RECURSIVE = await yamlDocument(
+  "# a list that holds itself\nloop: &loop\n  - first\n  - *loop\nagain: *loop\n",
+);
 
 const YAML = `import { JsonView } from "@orz/ui-json";
 import { parseYaml } from "@orz/ui-json/yaml";
 
-const parsed = parseYaml(text);
+const parsed = await parseYaml(text);
 
 {parsed.ok && <JsonView document={parsed.document} />}`;
 
-const tomlDocument = (text: string) => {
-  const parsed = parseToml(text);
+const tomlDocument = async (text: string) => {
+  const parsed = await parseToml(text);
   return parsed.ok ? parsed.document : { value: null };
 };
+
+const SERVICE = await tomlDocument(serviceToml);
+const SCATTERED = await tomlDocument(
+  '[server]\nhost = "0.0.0.0"\nport = 8080\n\n[logging]\nlevel = "info"\n\n[server.tls]\nenabled = false\n',
+);
 
 const TOML = `import { JsonView } from "@orz/ui-json";
 import { parseToml } from "@orz/ui-json/toml";
 
-const parsed = parseToml(text);
+const parsed = await parseToml(text);
 
 {parsed.ok && <JsonView document={parsed.document} />}`;
 
@@ -153,7 +164,7 @@ export const Json5Comments: Story = {
  * opens onto what it names; its menu's Go to anchor selects the anchor.
  */
 export const Yaml: Story = {
-  args: { document: yamlDocument(pipelineYaml), value: undefined },
+  args: { document: PIPELINE, value: undefined },
   parameters: {
     docs: { source: { code: YAML, language: "tsx" } },
   },
@@ -166,7 +177,7 @@ export const Yaml: Story = {
  * table written in more than one place copies each place.
  */
 export const Toml: Story = {
-  args: { document: tomlDocument(serviceToml), value: undefined },
+  args: { document: SERVICE, value: undefined },
   parameters: {
     docs: { source: { code: TOML, language: "tsx" } },
   },
@@ -261,7 +272,7 @@ export const HugeString: Story = {
 /** A stream of three YAML documents: the root lists them, a row each. */
 export const YamlStream: Story = {
   tags: ["edge", "!autodocs"],
-  args: { document: yamlDocument(manifestsYaml), value: undefined },
+  args: { document: MANIFESTS, value: undefined },
   parameters: {
     docs: { source: { code: YAML, language: "tsx" } },
   },
@@ -270,12 +281,7 @@ export const YamlStream: Story = {
 /** An alias inside the node it names holds itself: its row is a leaf, and Expand all stops there. */
 export const RecursiveAlias: Story = {
   tags: ["edge", "!autodocs"],
-  args: {
-    document: yamlDocument(
-      "# a list that holds itself\nloop: &loop\n  - first\n  - *loop\nagain: *loop\n",
-    ),
-    value: undefined,
-  },
+  args: { document: RECURSIVE, value: undefined },
   parameters: {
     docs: { source: { code: YAML, language: "tsx" } },
   },
@@ -285,9 +291,7 @@ export const RecursiveAlias: Story = {
 export const TomlScatteredTable: Story = {
   tags: ["edge", "!autodocs"],
   args: {
-    document: tomlDocument(
-      '[server]\nhost = "0.0.0.0"\nport = 8080\n\n[logging]\nlevel = "info"\n\n[server.tls]\nenabled = false\n',
-    ),
+    document: SCATTERED,
     value: undefined,
     selection: { type: "value", path: "$.server" },
   },

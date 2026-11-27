@@ -9,11 +9,14 @@ import type { ReactNode } from "react";
  */
 export function WarningStrip({
   children,
+  action,
   dismiss,
   onDismiss,
   className,
 }: {
   children: ReactNode;
+  /** A button that acts on what it says, such as Retry, before the dismiss button. */
+  action?: ReactNode;
   /** The dismiss button's name; without `onDismiss` there is none. */
   dismiss?: string;
   onDismiss?: () => void;
@@ -25,11 +28,12 @@ export function WarningStrip({
       data-slot="json-warning"
       className={cn(
         "flex flex-none items-start gap-2 border-b border-warning/40 bg-warning/8 py-0.5 pr-1 pl-2 text-ui-sm text-warning raymond:border-(--3d-shadow) raymond:bg-(--info) raymond:text-(--info-foreground)",
-        !onDismiss && "py-1 pr-2",
+        !onDismiss && !action && "py-1 pr-2",
         className,
       )}
     >
       <span className="flex-1 self-center">{children}</span>
+      {action}
       {onDismiss && (
         <ToolbarButton
           size="icon-xs"

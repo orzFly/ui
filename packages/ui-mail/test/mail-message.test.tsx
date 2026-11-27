@@ -1,6 +1,36 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { MailMessage } from "../src/index.ts";
+
+/** Whether postal-mime's chunk arrives, fails, or is still on its way. */
+const chunk = vi.hoisted(() => ({
+  state: "arrives" as "arrives" | "fails" | "waits",
+  release: () => {},
+}));
+
+vi.mock("../src/load-postal-mime.ts", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../src/load-postal-mime.ts")>();
+  return {
+    loadPostalMime: () => {
+      if (chunk.state === "fails") {
+        return Promise.reject(
+          new Error("Failed to fetch dynamically imported module"),
+        );
+      }
+      if (chunk.state === "waits") {
+        return new Promise((resolve) => {
+          chunk.release = () => resolve(actual.loadPostalMime());
+        });
+      }
+      return actual.loadPostalMime();
+    },
+  };
+});
+
+afterEach(() => {
+  chunk.state = "arrives";
+});
 
 const mail = (...lines: string[]) => lines.join("\r\n");
 
@@ -195,5 +225,24 @@ describe("MailMessage", () => {
     render(<MailMessage raw="not a message at all" />);
     expect(await screen.findByText("Couldn't read this message.")).toBeTruthy();
     expect(screen.getByText("No mail headers found.")).toBeTruthy();
+  });
+
+  it("says when the parser does not load, and loads it again on Retry", async () => {
+    chunk.state = "fails";
+    render(<MailMessage raw={HTML_ONLY} />);
+    expect(
+      await screen.findByText("Couldn't load the mail reader."),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Failed to fetch dynamically imported module"),
+    ).toBeTruthy();
+    chunk.state = "waits";
+    const retry = screen.getByRole("button", { name: "Retry" });
+    fireEvent.click(retry);
+    // The failure stays while the retry runs, its Retry disabled.
+    expect((retry as HTMLButtonElement).disabled).toBe(true);
+    chunk.state = "arrives";
+    chunk.release();
+    expect((await screen.findByRole("heading")).textContent).toBe("html");
   });
 });

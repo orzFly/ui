@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { parse as yamlParse } from "yaml";
 import type { JsonDocument, NodeFacts } from "../src/types.ts";
-import { type ParseYamlOptions, parseYaml } from "../src/yaml.ts";
+import type { ParseYamlOptions } from "../src/yaml.ts";
+import { readYaml } from "../src/yaml-reader.ts";
 
 function ok(text: string, options?: ParseYamlOptions): JsonDocument {
-  const result = parseYaml(text, options);
+  const result = readYaml(text, options);
   if (!result.ok) {
     throw new Error(
       `${result.error.message} at ${result.error.line}:${result.error.column}`,
@@ -14,7 +15,7 @@ function ok(text: string, options?: ParseYamlOptions): JsonDocument {
 }
 
 function fails(text: string, options?: ParseYamlOptions) {
-  const result = parseYaml(text, options);
+  const result = readYaml(text, options);
   if (result.ok) throw new Error(`parsed: ${text}`);
   return result.error;
 }
@@ -71,7 +72,7 @@ apiVersion: apps/v1
 kind: Deployment
 `;
 
-describe("parseYaml", () => {
+describe("readYaml", () => {
   it("reads the pipeline: its values, facts and comments", () => {
     const doc = ok(PIPELINE);
     const value = doc.value as Record<string, Record<string, unknown>>;
@@ -367,7 +368,7 @@ describe("parseYaml", () => {
         } catch {
           theirs = false;
         }
-        expect(parseYaml(text).ok).toBe(theirs);
+        expect(readYaml(text).ok).toBe(theirs);
       }
     });
   });
@@ -544,8 +545,8 @@ describe("parseYaml", () => {
     it("never throws on deep nesting", () => {
       const depth = 5000;
       const text = `${"[".repeat(depth)}${"]".repeat(depth)}`;
-      expect(() => parseYaml(text)).not.toThrow();
-      const result = parseYaml(text);
+      expect(() => readYaml(text)).not.toThrow();
+      const result = readYaml(text);
       if (result.ok) {
         let value = result.document.value;
         let levels = 0;

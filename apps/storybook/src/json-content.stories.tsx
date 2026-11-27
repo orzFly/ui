@@ -27,7 +27,8 @@ const paneHeight: Decorator = (Story) => (
 /**
  * `jsonContent`, `yamlContent` and `tomlContent` in the registry: in a viewer, a `.json`,
  * `.jsonc`, `.json5`, `.yaml`, `.yml` or `.toml` file is drawn as a tree, its comments kept. Text that does not parse goes to
- * the next renderer, under the error.
+ * the next renderer, under the error. `yamlContent` and `tomlContent` fetch their parser the first
+ * time they draw a file.
  */
 const meta = {
   title: "ui-json/Content",

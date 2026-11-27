@@ -4,8 +4,8 @@ import type {
   ContentSource,
 } from "@orz/ui-content";
 import type { ComponentType } from "react";
-import { DocumentContent } from "./loaded-document.tsx";
-import { parseToml } from "./toml.ts";
+import { loadTomlReader } from "./load-toml.ts";
+import { DocumentContent, type DocumentParse } from "./loaded-document.tsx";
 
 /**
  * Past this a file goes to the renderers after this one: the parser reads about a megabyte in a
@@ -26,7 +26,8 @@ function isToml(source: ContentSource): boolean {
   );
 }
 
-const parse = (text: string) => parseToml(text);
+const load = (): Promise<DocumentParse> =>
+  loadTomlReader().then(({ readToml }) => readToml);
 
 function Toml(props: ContentProps & { Next: ComponentType<ContentProps> }) {
   const { source } = props;
@@ -35,7 +36,7 @@ function Toml(props: ContentProps & { Next: ComponentType<ContentProps> }) {
     <DocumentContent
       {...props}
       source={source}
-      parse={parse}
+      load={load}
       format="TOML"
       maxBytes={TOML_PREVIEW_MAX_BYTES}
     />
@@ -46,7 +47,9 @@ function Toml(props: ContentProps & { Next: ComponentType<ContentProps> }) {
  * The registry entry for TOML files: a file named `.toml`, `Cargo.lock`, `poetry.lock`,
  * `uv.lock` or `Pipfile` (in any case), or typed `application/toml`, up to 8 MB, drawn as a
  * `JsonView` in the viewer only. Text that does not parse goes to the renderers after it, under
- * the parse error, so list it before the code renderer.
+ * the parse error, so list it before the code renderer. `toml-eslint-parser` is fetched, beside
+ * the file's text, the first time a TOML file opens; when that fetch fails the text goes to the
+ * renderers after it too, under the reason and a Retry.
  */
 export const tomlContent: ContentRenderer = {
   name: "toml",

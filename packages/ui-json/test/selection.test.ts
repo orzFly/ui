@@ -16,7 +16,7 @@ import {
 } from "../src/selection.ts";
 import { flatten } from "../src/tree.ts";
 import type { JsonDocument, JsonSelection, NodeFacts } from "../src/types.ts";
-import { parseYaml } from "../src/yaml.ts";
+import { readYaml } from "../src/yaml-reader.ts";
 
 const value = {
   model: "model-large",
@@ -337,7 +337,7 @@ describe("selectionSource over YAML", () => {
       - key: value
         other: 2
 `;
-  const parsed = parseYaml(text);
+  const parsed = readYaml(text);
   const document = (parsed.ok ? parsed.document : undefined) as JsonDocument;
 
   it("copies a block member as YAML that pastes at the start of a line", () => {

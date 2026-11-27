@@ -18,7 +18,7 @@ import { JsonView } from "../src/json-view.tsx";
 import { parseJson } from "../src/parse.ts";
 import { ROW_BUDGET } from "../src/tree.ts";
 import type { JsonSelection } from "../src/types.ts";
-import { parseYaml } from "../src/yaml.ts";
+import { readYaml } from "../src/yaml-reader.ts";
 
 const value = {
   model: "model-large",
@@ -353,7 +353,7 @@ build:
 loop: &loop [1, *loop]
 `;
   const pipeline = () => {
-    const parsed = parseYaml(PIPELINE);
+    const parsed = readYaml(PIPELINE);
     if (!parsed.ok) throw new Error(parsed.error.message);
     return parsed.document;
   };
@@ -431,7 +431,7 @@ loop: &loop [1, *loop]
   });
 
   it("opens the anchor's ancestors to reach it", async () => {
-    const parsed = parseYaml(
+    const parsed = readYaml(
       "deep:\n  inner:\n    target: &t {k: v}\nuse: *t\n",
     );
     if (!parsed.ok) throw new Error();
