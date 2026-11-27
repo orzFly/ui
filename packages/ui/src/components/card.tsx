@@ -13,7 +13,12 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-surface bg-card py-(--card-spacing) text-ui text-card-foreground border [--card-spacing:--spacing(3)] has-[>[data-slot=card-header]]:pt-0 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(2)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-surface *:[img:last-child]:rounded-b-surface",
+        // Clipped, not hidden: a hidden overflow makes the card a scroll
+        // container, whose least height in a flex column or an auto grid
+        // track is 0, so each card of a stack in a scroller was squashed to
+        // its padding. Its least width stays 0, as it was, so the card still
+        // narrows to its column and clips a wider child.
+        "group/card flex min-w-0 flex-col gap-(--card-spacing) overflow-clip rounded-surface bg-card py-(--card-spacing) text-ui text-card-foreground border [--card-spacing:--spacing(3)] has-[>[data-slot=card-header]]:pt-0 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(2)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-surface *:[img:last-child]:rounded-b-surface",
         // Under raymond a card is a group box: the border gives way to an
         // etched frame, a dark line with a lit one a pixel down and right,
         // drawn behind the content. With a header the frame's top runs
