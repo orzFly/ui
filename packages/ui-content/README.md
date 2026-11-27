@@ -318,7 +318,8 @@ import { VideoPlayer } from "@orz/ui-content/attachment";
   reaches decides once the text is loaded (`codeContent` draws text over 1 MiB without
   highlighting);
 - otherwise it draws the frame with the size, a download button and, inside a provider, an expand
-  button that opens the viewer. Loading and load errors are drawn by the renderer `Next` reaches,
+  button that opens the viewer on the text without asking again, whatever the viewer's own cap.
+  Loading and load errors are drawn by the renderer `Next` reaches,
   which may also put controls in the frame's title bar (`useContentTitleBar`).
 
 ### The viewer
@@ -335,7 +336,7 @@ import { VideoPlayer } from "@orz/ui-content/attachment";
   onStateChange={(state) => void}            // each opening below it, each page, and null to close
 >
 
-useAttachmentViewer(): { open(items, index), show(file), openCompare(pairs, index) } | null // null outside a provider
+useAttachmentViewer(): { open(items, index), show(file, { previewAnyway }?), openCompare(pairs, index) } | null // null outside a provider
 useViewerCompare(pair, anchor): (() => void) | undefined // a comparison's onOpen, paging the provider's comparisons
 useCanPreview(file): boolean   // whether a plain click should open the viewer
 useViewHref(file): string      // viewHref(file) ?? file.url ?? ""
@@ -367,7 +368,9 @@ the outer one, so a surface can page through its own set.
 - **`useCanPreview`** is true when some registered renderer accepts the file in `"viewer"`
   placement and, for a text file, its size is known. A text file over `textPreviewMaxBytes` opens
   on "Large files aren't previewed automatically." with Preview anyway, which holds until the
-  viewer pages away; one over `textPreviewHardMaxBytes` opens on "This file is too large to
+  viewer pages away. `show(file, { previewAnyway: true })` says the reader has agreed already, as
+  a card's expand does, and opens on the text, again until the viewer pages away. One over
+  `textPreviewHardMaxBytes` opens on "This file is too large to
   preview.", with the footer's Download. A patch is not asked about. HTML is not capped: the
   browser streams it into the frame rather than this tab drawing it as text. HTML that no frame
   takes (no `htmlContent`, or no `url`) reaches the text renderers, which apply their own cap. `attachmentCard` draws

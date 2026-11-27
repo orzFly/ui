@@ -357,7 +357,10 @@ export const AttachmentCard: Story = {
   parameters: code(CARD_SNIPPET),
 };
 
-/** Text over the card's size cap is not loaded: the card says so and offers the download. */
+/**
+ * Text over the card's size cap is not loaded until asked: the card says so and offers the
+ * download. Once previewed, its expand opens the viewer on the text without asking again.
+ */
 export const AttachmentCardTooLarge: Story = {
   args: {
     source: {
@@ -366,7 +369,7 @@ export const AttachmentCardTooLarge: Story = {
       size: 2 * 1024 * 1024,
     },
   },
-  decorators: [withRenderers(CARD, codeContent)],
+  decorators: [withViewer({}), withRenderers(CARD, codeContent)],
   tags: ["edge", "!autodocs"],
 };
 
