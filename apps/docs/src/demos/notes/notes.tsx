@@ -35,9 +35,11 @@ import {
 import { useDeferredValue, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
+import { useViewerHistory } from "../viewer-history.ts";
 import { noteCompletions } from "./completions.ts";
 import { type ListedNote, NoteList } from "./note-list.tsx";
 import {
+  findFile,
   matches,
   NOTES,
   resolveFile,
@@ -176,6 +178,8 @@ export function Notes() {
     });
   };
 
+  const viewer = useViewerHistory(findFile);
+
   const edit = (id: string, body: string) =>
     setNotes((list) =>
       list.map((each) =>
@@ -188,7 +192,10 @@ export function Notes() {
   return (
     <TooltipProvider>
       <ContentRenderers renderers={RENDERERS}>
-        <AttachmentViewerProvider>
+        <AttachmentViewerProvider
+          state={viewer.state}
+          onStateChange={viewer.onStateChange}
+        >
           <Pane purpose="app" className="flex h-full overflow-hidden">
             <Pane purpose="panel" edge={{ md: "end" }} asChild>
               <nav

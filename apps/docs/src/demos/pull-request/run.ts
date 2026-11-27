@@ -7,7 +7,10 @@ import {
   PULL_REQUEST_ME,
   type PullRequestEvent,
 } from "@orz/fixtures/pull-request.ts";
-import type { AttachmentItem } from "@orz/ui-content/attachment";
+import type {
+  AttachmentItem,
+  AttachmentViewerState,
+} from "@orz/ui-content/attachment";
 
 export {
   CI_RUN,
@@ -131,4 +134,11 @@ export function runFiles(): RunFiles {
     ),
   };
   return files;
+}
+
+/** The artifact named `name`, among the others to page through; null for any other name. */
+export function findArtifact(name: string): AttachmentViewerState | null {
+  const { artifacts } = runFiles();
+  const index = artifacts.findIndex((file) => file.name === name);
+  return index === -1 ? null : { items: artifacts, index };
 }

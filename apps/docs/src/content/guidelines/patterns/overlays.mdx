@@ -12,6 +12,7 @@ export const meta = {
     "ui/Primitives/HoverCard",
     "ui/Primitives/Tooltip",
     "ui/ConfirmDialog",
+    "ui-content/AttachmentViewerProvider",
   ],
 };
 
@@ -84,6 +85,16 @@ button in the corner, so it can be closed with one tap on a phone, where there i
 
 A click outside a Dialog that holds typed input should not throw the input away: keep it for the
 next opening, or ask first. The click most likely meant to look at the page behind.
+
+An overlay the reader reads in rather than answers, such as the attachment viewer, which takes
+most of a phone's screen, or a Sheet of a task's details, is a place to them, and Back is how they
+leave a place. Opening it takes an entry in the browser's history, so Back closes it rather
+than leaving the page behind. Paging, or opening another file from inside it, replaces that entry,
+so Back never walks through every file looked at. Its own close button steps back over the entry
+it took; opened from a link, it has none, and closing replaces the address instead. Where the app
+can find what it shows again, the address names it, so a reload or a shared link reopens it.
+`AttachmentViewerProvider` takes `state` and `onStateChange` for this: it reports each opening,
+page and close, and shows what the app gives it.
 
 ## In another window
 
