@@ -1,15 +1,101 @@
 import { CheckIcon, ChevronRightIcon, MinusIcon } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive, Slot } from "radix-ui";
 import type * as React from "react";
-import { createContext, useContext, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { isModifiedClick } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
+import {
+  FilterBox,
+  finePointer,
+  isComposing,
+} from "./dropdown-menu/filter-box.tsx";
 import { ChoiceMark, MARK_ROOM, MarkPlace } from "./dropdown-menu/mark.tsx";
 
 const OpenContext = createContext<{
   open: boolean;
   setOpen: (open: boolean) => void;
 } | null>(null);
+
+/** From `DropdownMenuSub` to its trigger and content. */
+interface SubContextValue {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  /** The pointerType of the last press, or mouse move, on the trigger; null after a key. */
+  opener: React.RefObject<string | null>;
+  /** Whether its content filters: set by `DropdownMenuSubContent` while it renders with a query. */
+  filtered: boolean;
+  setFiltered: (filtered: boolean) => void;
+  /** The filter box while the submenu is open with one. */
+  box: React.RefObject<HTMLInputElement | null>;
+  /** What the trigger taking the focus does, set by a filtering content while it is open. */
+  triggerFocused: React.RefObject<(() => void) | null>;
+}
+
+const SubContext = createContext<SubContextValue | null>(null);
+
+type Highlight = { id: string | null; by: "user" | "hit" };
+
+/** From a filtering `DropdownMenuSubContent` to its rows. */
+interface FilterContextValue {
+  highlighted: string | null;
+  /** `hit` follows the first row as the list changes; `user` stays where keys or the pointer put it. */
+  highlight: (id: string | null, by: Highlight["by"]) => void;
+}
+
+const FilterContext = createContext<FilterContextValue | null>(null);
+
+/**
+ * What a row merges onto its Radix item inside a filtering submenu, where
+ * the focus stays in the box: the row is an option whose highlight the
+ * submenu sets, and the mouse moves that highlight instead of the focus.
+ * Outside one it adds no key at all: Radix spreads a row's props after its
+ * own `role` and `data-highlighted`, so even an undefined one would win.
+ */
+function useFilterRow({
+  id,
+  disabled,
+  onPointerMove,
+  onPointerLeave,
+}: {
+  id?: string;
+  disabled?: boolean;
+  onPointerMove?: React.PointerEventHandler<HTMLDivElement>;
+  onPointerLeave?: React.PointerEventHandler<HTMLDivElement>;
+}) {
+  const filter = useContext(FilterContext);
+  const own = useId();
+  if (filter === null) return null;
+  const rowId = id ?? own;
+  const highlighted = filter.highlighted === rowId;
+  return {
+    id: rowId,
+    role: "option",
+    "aria-selected": highlighted,
+    "data-highlighted": highlighted ? "" : undefined,
+    // preventDefault() is what makes Radix skip focusing the row, and on
+    // leaving it, focusing the submenu: either would take the box's focus.
+    onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => {
+      onPointerMove?.(event);
+      if (event.defaultPrevented || event.pointerType !== "mouse") return;
+      event.preventDefault();
+      if (!disabled && !highlighted) filter.highlight(rowId, "user");
+    },
+    onPointerLeave: (event: React.PointerEvent<HTMLDivElement>) => {
+      onPointerLeave?.(event);
+      if (event.defaultPrevented || event.pointerType !== "mouse") return;
+      event.preventDefault();
+      if (highlighted) filter.highlight(null, "user");
+    },
+  } as const;
+}
 
 // Held here rather than left to Radix so the trigger can open the menu from a
 // click, which Radix's own trigger never does.
@@ -169,6 +255,7 @@ function DropdownMenuItem({
   variant?: "default" | "destructive";
 }) {
   const context = useContext(OpenContext);
+  const filterRow = useFilterRow(props);
   // Whether the click being handled is a plain one on a link: set in the
   // click, read in the select Radix dispatches from inside that same click.
   const linkClick = useRef<"plain" | "modified" | null>(null);
@@ -207,6 +294,7 @@ function DropdownMenuItem({
         linkClick.current = null;
       }}
       {...props}
+      {...filterRow}
     />
   );
 }
@@ -220,6 +308,7 @@ function DropdownMenuCheckboxItem({
 }: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem> & {
   inset?: boolean;
 }) {
+  const filterRow = useFilterRow(props);
   return (
     <DropdownMenuPrimitive.CheckboxItem
       data-slot="dropdown-menu-checkbox-item"
@@ -230,6 +319,7 @@ function DropdownMenuCheckboxItem({
       )}
       checked={checked}
       {...props}
+      {...filterRow}
     >
       <span
         className="pointer-events-none absolute right-2 flex items-center justify-center raymond:right-auto raymond:left-1.5"
@@ -265,6 +355,7 @@ function DropdownMenuRadioItem({
 }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem> & {
   inset?: boolean;
 }) {
+  const filterRow = useFilterRow(props);
   return (
     <DropdownMenuPrimitive.RadioItem
       data-slot="dropdown-menu-radio-item"
@@ -275,6 +366,7 @@ function DropdownMenuRadioItem({
         className,
       )}
       {...props}
+      {...filterRow}
     >
       <MarkPlace slot="dropdown-menu-radio-item-indicator">
         <DropdownMenuPrimitive.ItemIndicator>
@@ -339,20 +431,68 @@ function DropdownMenuShortcut({
   );
 }
 
+// Held here rather than left to Radix so a filtering submenu's Escape can
+// close it alone, where Radix's closes the whole menu.
 function DropdownMenuSub({
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
-  return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />;
+  const [uncontrolled, setUncontrolled] = useState(defaultOpen);
+  const open = openProp ?? uncontrolled;
+  const setOpen = (next: boolean) => {
+    if (openProp === undefined) setUncontrolled(next);
+    onOpenChange?.(next);
+  };
+  const opener = useRef<string | null>(null);
+  const box = useRef<HTMLInputElement | null>(null);
+  const triggerFocused = useRef<(() => void) | null>(null);
+  const [filtered, setFiltered] = useState(false);
+  return (
+    <SubContext.Provider
+      value={{
+        open,
+        setOpen,
+        opener,
+        filtered,
+        setFiltered,
+        box,
+        triggerFocused,
+      }}
+    >
+      <DropdownMenuPrimitive.Sub
+        data-slot="dropdown-menu-sub"
+        open={open}
+        onOpenChange={setOpen}
+        {...props}
+      />
+    </SubContext.Provider>
+  );
 }
+
+/** A key that types into a filter box rather than acting in the menu. Space stays Radix's key to open a submenu. */
+const typesIntoBox = (event: React.KeyboardEvent) =>
+  [...event.key].length === 1 &&
+  event.key !== " " &&
+  !event.ctrlKey &&
+  !event.metaKey &&
+  !event.altKey &&
+  !isComposing(event.nativeEvent);
 
 function DropdownMenuSubTrigger({
   className,
   inset,
   children,
+  onPointerDown,
+  onPointerMove,
+  onFocus,
+  onKeyDown,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
   inset?: boolean;
 }) {
+  const sub = useContext(SubContext);
   return (
     <DropdownMenuPrimitive.SubTrigger
       data-slot="dropdown-menu-sub-trigger"
@@ -362,6 +502,41 @@ function DropdownMenuSubTrigger({
         className,
       )}
       {...props}
+      // Only while it filters: Radix spreads these props after its own
+      // aria-haspopup="menu", so an undefined one would remove it.
+      {...(sub?.filtered ? { "aria-haspopup": "dialog" as const } : {})}
+      onPointerDown={(event) => {
+        onPointerDown?.(event);
+        if (sub !== null) sub.opener.current = event.pointerType;
+      }}
+      onPointerMove={(event) => {
+        onPointerMove?.(event);
+        if (event.defaultPrevented || sub === null) return;
+        if (event.pointerType === "mouse") sub.opener.current = "mouse";
+        // preventDefault() is what makes Radix skip focusing the trigger,
+        // which would take the focus back from the box being typed in.
+        const box = sub.box.current;
+        if (sub.open && box !== null && document.activeElement === box) {
+          event.preventDefault();
+        }
+      }}
+      onFocus={(event) => {
+        onFocus?.(event);
+        if (sub?.open) sub.triggerFocused.current?.();
+      }}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        if (sub === null) return;
+        sub.opener.current = null;
+        const box = sub.box.current;
+        if (event.defaultPrevented || !sub.open || box === null) return;
+        if (!typesIntoBox(event)) return;
+        // The character follows the focus into the box. Stopped here, it
+        // never reaches the parent menu, whose jump to a row by its first
+        // letter would close the submenu.
+        box.focus({ preventScroll: true });
+        event.stopPropagation();
+      }}
     >
       {/* Slottable, so `asChild` callers keep working: Slot takes exactly one
           child, and the arrow beside `children` would be a second one. Wrapped,
@@ -377,6 +552,384 @@ function DropdownMenuSubTrigger({
   );
 }
 
+type DropdownMenuSubFilterProps =
+  | {
+      /** The text in the filter box. Controlled. */
+      query: string;
+      /** Called as the box is typed in, and with "" each time the submenu opens. */
+      onQueryChange: (query: string) => void;
+      /** Defaults to "Filter…". */
+      placeholder?: string;
+      /** The box's accessible name. Defaults to "Filter". */
+      inputLabel?: string;
+      /** Shown where the rows go when there are none. Defaults to FilterMenu's. */
+      empty?: (query: string) => React.ReactNode;
+    }
+  | {
+      query?: never;
+      onQueryChange?: never;
+      placeholder?: never;
+      inputLabel?: never;
+      empty?: never;
+    };
+
+type SubFilter = Extract<DropdownMenuSubFilterProps, { query: string }>;
+
+type SubContentProps = React.ComponentProps<
+  typeof DropdownMenuPrimitive.SubContent
+>;
+
+/** How long a hover-opened submenu waits, its trigger still focused, before its box takes the focus. */
+const FILTER_FOCUS_MS = 500;
+
+/** The rows a filtering submenu's highlight may land on, in order. */
+const PICKABLE = '[role="option"]:not([data-disabled])';
+
+const NO_HIGHLIGHT: Highlight = { id: null, by: "user" };
+
+const nothingMatches = (query: string) =>
+  query === "" ? "Nothing to pick" : `No matches for "${query}"`;
+
+/** The trigger a submenu is labelled by, which is where its focus goes back to. */
+function triggerOf(content: Element | null | undefined) {
+  const id = content?.getAttribute("aria-labelledby");
+  return id ? document.getElementById(id) : null;
+}
+
+/**
+ * The props a filtering submenu lays over its content's: the box and the
+ * list as its children, and the focus, key and pointer rules that keep the
+ * focus in the box. Null for a submenu that does not filter. Its hooks run
+ * either way, so a submenu given a query while open keeps its Radix content
+ * rather than mounting a new one.
+ */
+function useSubFilter(filter: SubFilter | null, props: SubContentProps) {
+  const sub = useContext(SubContext);
+  const open = sub?.open ?? false;
+  const setFiltered = sub?.setFiltered;
+  const opener = sub?.opener;
+  const triggerFocused = sub?.triggerFocused;
+  const ownBox = useRef<HTMLInputElement>(null);
+  const box = sub?.box ?? ownBox;
+  // State, not a ref: Radix mounts the content a render after it opens, and
+  // the wait for a resting mouse needs the trigger the content names.
+  const [list, setList] = useState<HTMLDivElement | null>(null);
+  const listId = useId();
+  const [highlight, setHighlight] = useState<Highlight>(NO_HIGHLIGHT);
+  // The size it had before the first letter, kept while it is open: fewer
+  // rows would shrink it, and a submenu pushed up to fit the screen would
+  // then slide back down beside its trigger, the box and caret with it.
+  const [lock, setLock] = useState<{ width: number; height: number } | null>(
+    null,
+  );
+  const [none, setNone] = useState(false);
+  const [labelledBy, setLabelledBy] = useState<string>();
+  // What the last press on the submenu came from: only a mouse drags a link.
+  const pressedWith = useRef<string | null>(null);
+  const pressing = useRef(false);
+  const pressOver = useRef<AbortController | null>(null);
+  useEffect(() => () => pressOver.current?.abort(), []);
+
+  const latest = useRef(filter);
+  useLayoutEffect(() => {
+    latest.current = filter;
+  });
+
+  const filtering = filter !== null;
+  useLayoutEffect(() => {
+    if (!filtering || setFiltered === undefined) return;
+    setFiltered(true);
+    return () => setFiltered(false);
+  }, [filtering, setFiltered]);
+
+  // Before the first frame, so an opening never shows the last filter.
+  useLayoutEffect(() => {
+    const now = latest.current;
+    if (!open || now === null) return;
+    setHighlight(NO_HIGHLIGHT);
+    setLock(null);
+    pressing.current = false;
+    if (now.query !== "") now.onQueryChange("");
+  }, [open]);
+
+  // The rows are the caller's, so the highlight and the empty state follow
+  // them as drawn.
+  useLayoutEffect(() => {
+    if (list === null) return;
+    const rows = [...list.querySelectorAll<HTMLElement>(PICKABLE)];
+    if (highlight.by === "hit") {
+      const first = rows[0]?.id ?? null;
+      if (first !== highlight.id) setHighlight({ id: first, by: "hit" });
+    } else if (
+      highlight.id !== null &&
+      !rows.some((row) => row.id === highlight.id)
+    ) {
+      setHighlight(NO_HIGHLIGHT);
+    }
+    const nothing = list.querySelector('[role="option"]') === null;
+    if (nothing !== none) setNone(nothing);
+    const label =
+      list.parentElement?.getAttribute("aria-labelledby") ?? undefined;
+    if (label !== labelledBy) setLabelledBy(label);
+  });
+
+  // A mouse resting on the trigger means to go on into the submenu; one
+  // crossing it on the way to another row does not.
+  useEffect(() => {
+    if (!open || !filtering || opener === undefined || list === null) return;
+    let timer = 0;
+    const wait = () => {
+      window.clearTimeout(timer);
+      const from = triggerOf(list.parentElement);
+      const resting = () =>
+        opener.current === "mouse" &&
+        from !== null &&
+        document.activeElement === from;
+      if (!resting() || !finePointer(from)) return;
+      timer = window.setTimeout(() => {
+        if (resting()) box.current?.focus({ preventScroll: true });
+      }, FILTER_FOCUS_MS);
+    };
+    if (triggerFocused) triggerFocused.current = wait;
+    wait();
+    return () => {
+      window.clearTimeout(timer);
+      if (triggerFocused) triggerFocused.current = null;
+    };
+  }, [open, filtering, opener, triggerFocused, box, list]);
+
+  if (filter === null) return null;
+  const {
+    query,
+    onQueryChange,
+    placeholder = "Filter…",
+    inputLabel = "Filter",
+    empty = nothingMatches,
+  } = filter;
+
+  const moveTo = (row: HTMLElement | undefined) => {
+    if (row === undefined) return;
+    setHighlight({ id: row.id, by: "user" });
+    row.scrollIntoView?.({ block: "nearest" });
+  };
+
+  const onBoxKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    const rows = [...(list?.querySelectorAll<HTMLElement>(PICKABLE) ?? [])];
+    const at = rows.findIndex((row) => row.id === highlight.id);
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowUp": {
+        event.preventDefault();
+        event.stopPropagation();
+        const down = event.key === "ArrowDown";
+        if (at < 0) moveTo(down ? rows[0] : rows.at(-1));
+        else moveTo(rows[at + (down ? 1 : -1)]);
+        return;
+      }
+      case "Home":
+      case "End":
+        event.preventDefault();
+        event.stopPropagation();
+        moveTo(event.key === "Home" ? rows[0] : rows.at(-1));
+        return;
+      case "Enter":
+        event.stopPropagation();
+        if (isComposing(event.nativeEvent)) return;
+        event.preventDefault();
+        if (highlight.id !== null) {
+          document.getElementById(highlight.id)?.click();
+        }
+        return;
+      // Radix keeps Tab in the menu, and has seen Escape already.
+      case "Tab":
+      case "Escape":
+        return;
+    }
+    const input = event.currentTarget;
+    const back =
+      list?.parentElement?.getAttribute("dir") === "rtl"
+        ? "ArrowRight"
+        : "ArrowLeft";
+    // From the start of the box the arrow back goes on to Radix, which
+    // closes the submenu.
+    if (
+      event.key === back &&
+      input.selectionStart === 0 &&
+      input.selectionEnd === 0
+    ) {
+      return;
+    }
+    // Every other key is the box's. Let through, a letter would jump to a
+    // row by its first letter, and the arrow back would close the submenu
+    // from the middle of the text.
+    event.stopPropagation();
+  };
+
+  return {
+    role: "dialog",
+    // Radix marks its menus vertical, which a dialog is not.
+    "aria-orientation": undefined,
+    style: {
+      ...(lock && {
+        minWidth: `min(${lock.width}px, 100dvw - 1rem)`,
+        minHeight: `min(${lock.height}px, 100dvh - 1rem)`,
+      }),
+      ...props.style,
+    },
+    onFocus: (event: React.FocusEvent<HTMLDivElement>) => {
+      props.onFocus?.(event);
+      const input = box.current;
+      if (event.defaultPrevented || input === null) return;
+      if (event.target === input || pressing.current) return;
+      if (event.target === event.currentTarget) {
+        // Entered from a key. preventDefault() is what makes Radix skip
+        // focusing the first row; the highlight lands on it instead.
+        event.preventDefault();
+        setHighlight({ id: null, by: "hit" });
+      } else {
+        const row = event.target.closest('[role="option"]');
+        if (row !== null && list?.contains(row)) {
+          setHighlight({ id: row.id, by: "user" });
+        }
+      }
+      input.focus({ preventScroll: true });
+    },
+    // Hover only, and only with a fine pointer: the box taking the focus
+    // raises an on-screen keyboard over the rows.
+    onPointerEnter: (event: React.PointerEvent<HTMLDivElement>) => {
+      props.onPointerEnter?.(event);
+      if (event.defaultPrevented || event.pointerType !== "mouse") return;
+      if (finePointer(event.currentTarget)) {
+        box.current?.focus({ preventScroll: true });
+      }
+    },
+    onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
+      props.onPointerDown?.(event);
+      pressedWith.current = event.pointerType;
+    },
+    /**
+     * Pressing anything but the box (a row, the search icon, padding) would
+     * move the focus into the submenu, away from where the keys go. A link
+     * row pressed with the mouse's left button is the exception: the browser
+     * starts a drag of it (onto the bookmarks bar, into another tab) only
+     * from a press that moved the focus to it, so the focus goes back once
+     * the press is over, on its release or the drag's end.
+     */
+    onMouseDown: (event: React.MouseEvent<HTMLDivElement>) => {
+      props.onMouseDown?.(event);
+      if (event.defaultPrevented) return;
+      const target = event.target as Element;
+      if (target === box.current) return;
+      const row = target.closest('[role="option"]');
+      const drag =
+        row?.matches("a[href]") &&
+        event.button === 0 &&
+        pressedWith.current === "mouse";
+      if (!drag) {
+        event.preventDefault();
+        return;
+      }
+      const held = document.activeElement;
+      pressing.current = true;
+      pressOver.current?.abort();
+      const over = new AbortController();
+      pressOver.current = over;
+      const back = () => {
+        over.abort();
+        pressing.current = false;
+        const active = document.activeElement;
+        if (
+          held instanceof HTMLElement &&
+          active instanceof Element &&
+          active.matches('[role="option"]') &&
+          list?.contains(active)
+        ) {
+          held.focus({ preventScroll: true });
+        }
+      };
+      const options = { capture: true, signal: over.signal };
+      window.addEventListener("mouseup", back, options);
+      window.addEventListener("dragend", back, options);
+    },
+    onEscapeKeyDown: (event: KeyboardEvent) => {
+      props.onEscapeKeyDown?.(event);
+      if (event.defaultPrevented) return;
+      // Radix's submenu would close the whole menu, where this one closes
+      // alone, as the menu pattern has it.
+      event.preventDefault();
+      if (isComposing(event)) return;
+      const from = triggerOf(list?.parentElement);
+      sub?.setOpen(false);
+      from?.focus({ preventScroll: true });
+    },
+    children: (
+      <>
+        <FilterBox
+          ref={box}
+          aria-label={inputLabel}
+          expanded
+          aria-controls={listId}
+          aria-activedescendant={highlight.id ?? undefined}
+          placeholder={placeholder}
+          value={query}
+          onChange={(event) => {
+            const text = event.target.value;
+            const content = list?.parentElement;
+            if (lock === null && text !== "" && content) {
+              const { width, height } = content.getBoundingClientRect();
+              setLock({ width, height });
+            }
+            setHighlight((now) => ({ id: now.id, by: "hit" }));
+            onQueryChange(text);
+          }}
+          onKeyDown={onBoxKeyDown}
+        />
+        <div
+          ref={setList}
+          id={listId}
+          role="listbox"
+          aria-labelledby={labelledBy}
+          className="min-h-0 flex-1 overflow-y-auto p-1"
+        >
+          <FilterContext.Provider
+            value={{
+              highlighted: highlight.id,
+              highlight: (id, by) => setHighlight({ id, by }),
+            }}
+          >
+            {props.children}
+          </FilterContext.Provider>
+          {none && (
+            <div
+              role="presentation"
+              className="px-2 py-4 text-center text-muted-foreground text-ui"
+            >
+              {empty(query)}
+            </div>
+          )}
+        </div>
+      </>
+    ),
+  };
+}
+
+/**
+ * Given `query` and `onQueryChange`, the submenu filters: a filter box over
+ * its rows, which the caller filters and passes as children. They are
+ * `DropdownMenuItem`, `DropdownMenuCheckboxItem` and
+ * `DropdownMenuRadioItem`, with groups, labels and separators between them,
+ * but no `DropdownMenuSub` of their own.
+ *
+ * The focus stays in the box once it has it, so a letter always filters and
+ * never jumps to a row: ↑↓, Home and End walk a highlight the box's
+ * `aria-activedescendant` follows, Enter clicks the highlighted row, and the
+ * arrow back from the start of the box, or Escape, closes this submenu
+ * alone. The box takes the focus from a key that enters the submenu or types
+ * while it is open, from a mouse entering it, or from a mouse resting on its
+ * trigger a moment. Without a fine pointer only a key or a tap on the box
+ * gives it the focus, so no on-screen keyboard rises unasked. Each opening
+ * starts unfiltered, calling `onQueryChange("")`.
+ */
 function DropdownMenuSubContent({
   className,
   // MenuSubContent hardwires `side` after spreading these through, but both
@@ -385,8 +938,21 @@ function DropdownMenuSubContent({
   // scrolling focus restore never happens here.
   sticky = "always",
   collisionPadding = 8,
+  query,
+  onQueryChange,
+  placeholder,
+  inputLabel,
+  empty,
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+}: SubContentProps & DropdownMenuSubFilterProps) {
+  const filter = useSubFilter(
+    query === undefined || onQueryChange === undefined
+      ? null
+      : { query, onQueryChange, placeholder, inputLabel, empty },
+    props,
+  );
+  // A filtering submenu is named after its trigger, as its list is.
+  const { role: _role, "aria-labelledby": _labelledBy, ...unnamed } = props;
   return (
     <DropdownMenuPrimitive.SubContent
       data-slot="dropdown-menu-sub-content"
@@ -404,9 +970,13 @@ function DropdownMenuSubContent({
         // carry: a height cap with the overflow clipped only hides the items
         // it cuts off, which is the symptom being fixed rather than a fix.
         "z-50 max-h-[calc(100dvh-1rem)] max-w-[min(calc(100dvw-1rem),var(--radix-dropdown-menu-content-available-width,100dvw))] min-w-[96px] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-overlay bg-popover p-1 text-popover-foreground shadow-overlay ring-1 ring-border raymond:ring-0 duration-(--duration-overlay) transition-none data-[side=bottom]:slide-in-from-top-overlay data-[side=left]:slide-in-from-right-overlay data-[side=right]:slide-in-from-left-overlay data-[side=top]:slide-in-from-bottom-overlay data-open:animate-in data-open:fade-in-0 data-open:zoom-in-(--overlay-zoom) data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-(--overlay-zoom)",
+        // Filtering, the box stays put over the list, which scrolls.
+        filter &&
+          "flex max-h-[min(24rem,calc(100dvh-1rem))] flex-col overflow-hidden p-0",
         className,
       )}
-      {...props}
+      {...(filter ? unnamed : props)}
+      {...filter}
     />
   );
 }
