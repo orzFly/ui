@@ -7,16 +7,7 @@ import type { Window as HappyWindow } from "happy-dom";
 import { act, type ComponentType } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { toast } from "sonner";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BinaryInspector } from "../src/demos/binary-inspector/binary-inspector.tsx";
 import { ConfigEditor } from "../src/demos/config-editor/config-editor.tsx";
 import { Mail } from "../src/demos/mail/mail.tsx";
@@ -103,20 +94,34 @@ async function draw(Demo: ComponentType, width: number) {
 }
 
 /**
- * The site mounts one Toaster for every page; a describe whose demo toasts mounts one here too.
- * Only the newest few toasts are drawn, so each test starts with none.
+ * The site mounts one Toaster for every page; a describe whose demo toasts mounts one here too,
+ * afresh for each test. A Toaster takes in every toast not yet dismissed when it mounts, so the
+ * toasts of earlier tests are dismissed first, and each test starts with none.
  */
 function mountToaster() {
+  let host: HTMLElement;
   let toaster: Root;
-  beforeAll(async () => {
-    const host = document.createElement("div");
+  beforeEach(async () => {
+    toast.dismiss();
+    host = document.createElement("div");
     document.body.append(host);
     toaster = createRoot(host);
     await act(async () => toaster.render(<Toaster />));
   });
-  afterAll(() => act(() => toaster.unmount()));
-  beforeEach(() => act(() => toast.dismiss()));
+  afterEach(() => {
+    act(() => toaster.unmount());
+    host.remove();
+  });
 }
+
+/**
+ * Waits for the toasts raised so far to be drawn. Sonner's Toaster takes a new toast in a
+ * zero-delay timer, while an awaited `act` returns after one `setImmediate`, which Node runs
+ * first unless its millisecond clock has ticked since the toast. Node runs timers of one delay
+ * in the order they were set, so a zero-delay timer set now runs after sonner's.
+ */
+const toastsDrawn = () =>
+  act(() => new Promise((resolve) => setTimeout(resolve)));
 
 /** Opens a Radix menu from its trigger, as Enter does: a click alone does not. */
 const openMenu = (trigger: Element | null | undefined) =>
@@ -445,6 +450,7 @@ describe("settings", () => {
     await click(button(container, "Discard changes"));
     expect(dialog()).toBeNull();
     expect(name()?.value).toBe("alice");
+    await toastsDrawn();
     expect(document.body.textContent).toContain("Changes discarded");
     await click(button(document, "Undo"));
     expect(name()?.value).toBe("alice2");
@@ -726,6 +732,7 @@ describe("mail", () => {
       ),
     );
     expect(container.querySelector("#compose-subject")).toBeNull();
+    await toastsDrawn();
     expect(document.body.textContent).toContain("Saved to Drafts");
     await showPlace(container, "Drafts");
     expect(subjects(container)).toContain("Lunch on Friday");
@@ -739,6 +746,7 @@ describe("mail", () => {
       "alice",
     );
     await click(sendButton());
+    await toastsDrawn();
     expect(document.body.textContent).toContain("Message sent");
     expect(subjects(container)).not.toContain("Lunch on Friday");
     await showPlace(container, "Sent");
@@ -778,6 +786,7 @@ describe("mail", () => {
     await click(forever());
     await answer("Delete forever");
     expect(subjects(container)).not.toContain(subject);
+    await toastsDrawn();
     expect(document.body.textContent).toContain("Conversation deleted forever");
   });
 
@@ -935,6 +944,7 @@ describe("notes", () => {
       ),
     );
     expect(rows(container)).not.toContain("Job states");
+    await toastsDrawn();
     expect(document.body.textContent).toContain("Deleted “Job states”");
     await click(button(document.body, "Undo"));
     expect(rows(container)).toContain("Job states");
@@ -1219,7 +1229,7 @@ describe("tasks", () => {
     expect(dialog()).toBeNull();
     expect(keys(container)).not.toContain(a);
     expect(keys(container)).not.toContain(b);
-    // A toast dismissed by an earlier test may still be fading out, Undo and all.
+    await toastsDrawn();
     const closed = [...document.querySelectorAll("[data-sonner-toast]")].find(
       (each) => each.textContent?.includes("Closed 2 tasks"),
     );
@@ -1257,6 +1267,7 @@ describe("tasks", () => {
     await click(button(container, "Delete 1 task…"));
     await click(button(dialog() ?? document, "Delete task"));
     expect(keys(container)).not.toContain("T-60");
+    await toastsDrawn();
     expect(document.body.textContent).toContain("Deleted T-60");
   });
 
@@ -1280,16 +1291,7 @@ describe("tasks", () => {
 });
 
 describe("config-editor", () => {
-  // The site mounts one Toaster for every page; the demo's toasts need it here too.
-  let toaster: Root;
-  beforeAll(async () => {
-    const host = document.createElement("div");
-    document.body.append(host);
-    toaster = createRoot(host);
-    await act(async () => toaster.render(<Toaster />));
-  });
-  afterAll(() => act(() => toaster.unmount()));
-  beforeEach(() => act(() => toast.dismiss()));
+  mountToaster();
 
   const click = (element: Element | null | undefined) =>
     act(async () => {
@@ -1346,6 +1348,7 @@ describe("config-editor", () => {
     });
     expect(problem(container)).toContain("Valid JSON");
     await click(button(container, "Save"));
+    await toastsDrawn();
     expect(document.body.textContent).toContain("deploy.json saved");
     expect(container.textContent).not.toContain("Unsaved");
   });
@@ -1379,6 +1382,7 @@ describe("config-editor", () => {
     await click(button(dialog() ?? document, "Discard changes"));
     expect(dialog()).toBeNull();
     expect(text(container)).toContain('"replicas": 3,');
+    await toastsDrawn();
     await click(
       [...document.querySelectorAll("button")].findLast(
         (each) => each.textContent === "Undo",
