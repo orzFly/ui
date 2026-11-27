@@ -8,6 +8,9 @@ import {
 } from "../src/components/filter-menu.tsx";
 import { isPlainClick } from "../src/lib/link.ts";
 
+/** What a pick under single selection carries. */
+const PICKED = expect.objectContaining({ selected: true });
+
 interface Place {
   id: string;
   label: string;
@@ -146,7 +149,7 @@ describe("FilterMenu link rows", () => {
     fireEvent.click(row("Atlas"));
     // Left to the browser, which follows the link.
     expect(tookOver).toBe(false);
-    expect(onSelect).toHaveBeenCalledWith(PROJECTS[0]);
+    expect(onSelect).toHaveBeenCalledWith(PROJECTS[0], PICKED);
     expect(isOpen()).toBeNull();
   });
 
@@ -158,7 +161,7 @@ describe("FilterMenu link rows", () => {
     fireEvent.click(row("Atlas"));
     expect(go).toHaveBeenCalledWith("/projects/atlas");
     expect(tookOver).toBe(true);
-    expect(onSelect).toHaveBeenCalledWith(PROJECTS[0]);
+    expect(onSelect).toHaveBeenCalledWith(PROJECTS[0], PICKED);
     expect(isOpen()).toBeNull();
   });
 
@@ -191,7 +194,7 @@ describe("FilterMenu link rows", () => {
     expect(clicked).toBe(atlas);
     expect(tookOver).toBe(true);
     expect(go).toHaveBeenCalledWith("/projects/atlas");
-    expect(onSelect).toHaveBeenCalledWith(PROJECTS[0]);
+    expect(onSelect).toHaveBeenCalledWith(PROJECTS[0], PICKED);
     expect(isOpen()).toBeNull();
   });
 
@@ -212,7 +215,7 @@ describe("FilterMenu link rows", () => {
     const box = open();
     fireEvent.keyDown(box, { key: "End" });
     fireEvent.keyDown(box, { key: "Enter" });
-    expect(onSelect).toHaveBeenLastCalledWith(PROJECTS[3]);
+    expect(onSelect).toHaveBeenLastCalledWith(PROJECTS[3], PICKED);
     open();
     fireEvent.click(row("Inbox"), { ctrlKey: true });
     expect(onSelect).toHaveBeenCalledTimes(2);
@@ -308,7 +311,7 @@ describe("FilterMenu link rows", () => {
     expect(isOpen()).toBeTruthy();
     fireEvent.click(q3);
     expect(go).toHaveBeenCalledWith("/projects/atlas/q3");
-    expect(onSelect).toHaveBeenCalledWith(BOARDS.atlas?.[0]);
+    expect(onSelect).toHaveBeenCalledWith(BOARDS.atlas?.[0], PICKED);
     expect(isOpen()).toBeNull();
   });
 });

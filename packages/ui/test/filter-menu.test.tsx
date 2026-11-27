@@ -11,15 +11,20 @@ import {
   FilterMenu,
   type FilterMenuHandle,
   type FilterMenuSection,
+  type FilterMenuSelectEvent,
   MatchedText,
   matchText,
 } from "../src/components/filter-menu.tsx";
 import { POINTER_FINE } from "../src/hooks/use-media-query.ts";
 
+/** What a pick under single selection carries. */
+const PICKED = expect.objectContaining({ selected: true });
+
 interface Fruit {
   id: string;
   label: string;
   disabled?: boolean;
+  action?: boolean;
 }
 
 const FRUIT: Fruit[] = [
@@ -236,7 +241,7 @@ describe("FilterMenu", () => {
     let box = open();
     fireEvent.change(box, { target: { value: "alm" } });
     key(box, "Enter");
-    expect(onSelect).toHaveBeenCalledWith(NUTS[0]);
+    expect(onSelect).toHaveBeenCalledWith(NUTS[0], PICKED);
     expect(screen.queryByRole("listbox")).toBeNull();
     expect(onHighlight.mock.calls.at(-1)?.[0]).toBeNull();
 
@@ -282,7 +287,7 @@ describe("FilterMenu", () => {
     fireEvent.click(screen.getByRole("option", { name: "Plum" }));
     expect(onSelect).not.toHaveBeenCalled();
     fireEvent.click(pear);
-    expect(onSelect).toHaveBeenCalledWith(FRUIT[1]);
+    expect(onSelect).toHaveBeenCalledWith(FRUIT[1], PICKED);
     expect(document.activeElement).not.toBe(box);
   });
 
@@ -514,6 +519,144 @@ describe("FilterMenu", () => {
   });
 });
 
+describe("FilterMenu picks under single selection", () => {
+  /** A ref picker's shape: a region row completes the box, a city picks. */
+  function Completing({
+    onSelect,
+  }: {
+    onSelect?: (row: Fruit, event: FilterMenuSelectEvent) => void;
+  }) {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState("");
+    const [extra, setExtra] = useState<Fruit[]>([]);
+    const rows = useMemo(
+      () =>
+        [
+          { id: "nuts:", label: "Nuts…", action: true },
+          ...extra,
+          ...FRUIT,
+          ...NUTS,
+        ].filter((row) => matchText(row.label, query.replace(/^nuts:/, ""))),
+      [query, extra],
+    );
+    return (
+      <>
+        <FilterMenu
+          open={open}
+          onOpenChange={setOpen}
+          query={query}
+          onQueryChange={setQuery}
+          sections={[{ id: "all", rows }]}
+          renderRow={(row) => row.label}
+          onSelect={(row, event) => {
+            onSelect?.(row, event);
+            if (row.id === "nuts:") {
+              event.preventDefault();
+              setQuery("nuts:");
+            } else if (row.id === "pear") {
+              // Waits for something, then closes the menu itself.
+              event.preventDefault();
+              setExtra([{ id: "apricot", label: "Apricot" }]);
+            }
+          }}
+          inputLabel="Filter fruit"
+        >
+          <button type="button">Pick</button>
+        </FilterMenu>
+        <button type="button" onClick={() => setOpen(false)}>
+          Done
+        </button>
+      </>
+    );
+  }
+
+  it("tells a pick it asks for the row selected", () => {
+    const onSelect = vi.fn();
+    render(<Completing onSelect={onSelect} />);
+    const box = open();
+    fireEvent.change(box, { target: { value: "alm" } });
+    key(box, "Enter");
+    const [row, event] = onSelect.mock.calls[0] ?? [];
+    expect(row).toBe(NUTS[0]);
+    expect(event).toMatchObject({ selected: true, defaultPrevented: false });
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  it("stays open on a pick whose default is prevented, its focus, query and highlight as they were", () => {
+    const onSelect = vi.fn();
+    render(<Completing onSelect={onSelect} />);
+    const box = open();
+    fireEvent.change(box, { target: { value: "p" } });
+    expect(highlighted()).toBe("Apple");
+    key(box, "ArrowDown");
+    key(box, "Enter");
+    expect(onSelect.mock.calls[0]?.[1]).toMatchObject({
+      selected: true,
+      defaultPrevented: true,
+    });
+    expect(screen.getByRole("listbox")).toBeTruthy();
+    expect(document.activeElement).toBe(box);
+    expect(box).toHaveProperty("value", "p");
+    // A row arrived ahead of it, which a first hit's highlight would take.
+    expect(options()[0]).toBe("Apricot");
+    expect(highlighted()).toBe("Pear");
+  });
+
+  it("follows a query the pick sets to its first hit, then closes through open as any close", async () => {
+    render(<Completing />);
+    const box = open();
+    key(box, "ArrowDown");
+    expect(highlighted()).toBe("Nuts…");
+    key(box, "Enter");
+    expect(box).toHaveProperty("value", "nuts:");
+    expect(highlighted()).toBe("Nuts…");
+    fireEvent.change(box, { target: { value: "nuts:pe" } });
+    expect(highlighted()).toBe("Pear");
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("listbox")).toBeNull();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Pick" }),
+      ),
+    );
+  });
+
+  it("draws no check on an action row, even one named as selected, and closes on it", () => {
+    const onSelect = vi.fn();
+    function Plain() {
+      return (
+        <FilterMenu
+          query=""
+          onQueryChange={() => {}}
+          sections={[
+            {
+              id: "all",
+              rows: [
+                { id: "new", label: "New fruit…", action: true },
+                ...FRUIT,
+              ],
+            },
+          ]}
+          selectedId="new"
+          renderRow={(row, state) => `${row.label}${state.selected ? "*" : ""}`}
+          onSelect={onSelect}
+          inputLabel="Filter fruit"
+        >
+          <button type="button">Pick</button>
+        </FilterMenu>
+      );
+    }
+    render(<Plain />);
+    open();
+    const action = screen.getByRole("option", { name: "New fruit…" });
+    expect(action.hasAttribute("data-selected")).toBe(false);
+    expect(action.querySelector("svg")).toBeNull();
+    fireEvent.click(action);
+    expect(onSelect.mock.calls[0]?.[1]).toMatchObject({ selected: true });
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+});
+
 /** A touch screen's primary pointer, which is not fine. */
 function stubTouchScreen() {
   vi.stubGlobal("matchMedia", (query: string) => ({
@@ -583,7 +726,7 @@ describe("FilterMenu without a fine pointer", () => {
 
     act(() => list.focus());
     key(list, "Enter");
-    expect(onSelect).toHaveBeenCalledWith(FRUIT[3]);
+    expect(onSelect).toHaveBeenCalledWith(FRUIT[3], PICKED);
     expect(screen.queryByRole("listbox")).toBeNull();
   });
 
