@@ -55,16 +55,20 @@ sense for the pictures; a pair that can only sit side by side has no mode contro
 
 ## In the viewer
 
-Detail a page cannot show is read in the attachment viewer: pass `onOpen`, and open the pair with
-`openCompare` from `useAttachmentViewer`, or as `{ compare, index }` in a controlled viewer's
-`state`. Hand it every comparison on the page, in reading order, so paging walks through them
-as the page does. Both versions share one zoom and one position there, so a wheel or a drag over
-either moves both, and the mode bar under them is the page's own when a `CompareModeProvider`
-holds them all.
+Detail a page cannot show is read in the attachment viewer. Below an `AttachmentViewerProvider`,
+pass `onOpen` what `useViewerCompare(pair, anchor)` returns, the anchor being an element of the
+comparison: the provider hands the viewer every comparison below it, in reading order, so paging
+walks through them as the page does, whichever drew them. A nested provider pages its own apart,
+for a surface whose comparisons are read on their own. With a lone `AttachmentViewer` and no
+provider, hand it the page's comparisons yourself, as `{ compare, index }` in its `state`. Both
+versions share one zoom and one position there, so a wheel or a drag over either moves both, and
+the mode bar under them is the page's own when a `CompareModeProvider` holds them all.
 
 A side drawn as a node rather than an image file, such as a diagram's SVG, zooms as vectors, side
 by side being its only mode. The two sit left and right, to be read across, unless the viewer is
-as narrow as a page on which the comparison stacks; there they stack too.
+as narrow as a page on which the comparison stacks; there they stack too. Give such a side the
+text it was drawn from as its `source`: the viewer's footer names its language and what it
+draws, and offers each side's source to copy, as it offers an image's file to download.
 
 ## Pairs an author writes
 
@@ -73,8 +77,9 @@ between them, `![v1](before.png) → ![v2](after.png)` (or `->`). Register `imag
 same `resolve` as `markdownEmbeds` and that paragraph is one `MediaCompare`, tagged by the two
 alts, or Before and After where an alt is only the file's name. Anywhere else, in a sentence or
 with a third image, the images stay images: the author chose the pair, so never pair images for
-them. Under an `AttachmentViewerProvider` a click opens the document's pairs in the viewer, in
-reading order.
+them. Under an `AttachmentViewerProvider` a click opens the pair in the viewer, paging through
+every comparison below the provider in reading order, the rest of the page's as well as the
+document's own.
 
 ## Diagrams
 
@@ -82,4 +87,6 @@ A changed diagram is compared as a picture too: `MermaidCompare` draws both vers
 source side by side, and colours what changed, the participant renamed or the node added, rather
 than leaving the reader to spot it. Use it where the two sources are at hand, such as a review of a
 document's versions; a source diff is one toggle away, and is what shows until both are drawn.
-A diagram on its own opens in the viewer from its block's toolbar, to be zoomed as an image is.
+In the viewer, the footer names the diagrams' type as their sources spell it, and copies either
+version's source. A diagram on its own opens in the viewer from its block's toolbar, to be zoomed
+as an image is, with its type and its source to copy in the same place.

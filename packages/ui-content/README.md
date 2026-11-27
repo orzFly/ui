@@ -335,7 +335,8 @@ import { VideoPlayer } from "@orz/ui-content/attachment";
   onStateChange={(state) => void}            // each opening below it, each page, and null to close
 >
 
-useAttachmentViewer(): { open(items, index), show(file) } | null  // null outside a provider
+useAttachmentViewer(): { open(items, index), show(file), openCompare(pairs, index) } | null // null outside a provider
+useViewerCompare(pair, anchor): (() => void) | undefined // a comparison's onOpen, paging the provider's comparisons
 useCanPreview(file): boolean   // whether a plain click should open the viewer
 useViewHref(file): string      // viewHref(file) ?? file.url ?? ""
 useStoredImageLook(storageKey): [ImageLook, (look: ImageLook) => void]
@@ -349,6 +350,14 @@ the outer one, so a surface can page through its own set.
   returns undefined, "Open in new tab" is left out.
 - **`group`** lets a click on one file page through the set it belongs to, positioned on it. A file
   it returns null for opens alone.
+- **`useViewerCompare`** puts a comparison drawn below the provider in the provider's set, and
+  returns its `onOpen`: a click opens the viewer on it, paging through every comparison in the set
+  in document order, whichever component drew it (`imagePairs`, `MermaidCompare`, an app's own
+  `MediaCompare`). `anchor` is an element of the comparison, which places it in that order; the
+  order is read at the click, so a comparison that mounted late or left the page is placed right.
+  It returns undefined outside a provider and while `pair` is null, as while a side still loads.
+  A nested provider's comparisons are a set of their own, and so are those of a document drawn in
+  the viewer, which page among themselves.
 - **`state`** and **`onStateChange`** hand what the viewer shows to the app, so that it can live in
   the app's history: Back closes the viewer, and the URL can name the file. Controlled, the
   provider shows `state` alone (`null` is closed) and passes every opening below it, every page and
@@ -372,6 +381,21 @@ height when maximized); a renderer in `"viewer"` placement sizes to it, as in
 between the name and the pager, through `ContentTitleBar`, for controls of its own.
 `AttachmentViewer` is the same dialog on its own, for an app that holds `{ items, index } | null`
 itself and has nothing below a provider to open it, and takes the same `imageLook` props.
+
+Under the body, the footer names what is shown on the left, cut to fit, and offers what can be
+done with it on the right:
+
+| Shown | Left | Right |
+|---|---|---|
+| a file | its type and size | Open in new tab, Download |
+| inline text | its `lang` and `type` (`InlineSource.type`, such as a diagram's) | Copy |
+| two images | the new side's type, and both sizes | each side's download |
+| two drawn sides | the new side's source's `lang` and `type`, both types when they differ | each side's source to copy |
+
+A drawn side carries the text it comes from as `CompareItem.source`; a pair with neither files
+nor sources has no footer, and `ComparePair.footer` replaces the row. Copy turns into a check for
+a moment and is announced as Copied; a failure is a toast. The actions are drawn as text, and on
+touch each takes a hit area of the touch spacing.
 
 An image in the viewer sits on a canvas. The wheel zooms about the pointer, as do a trackpad pinch
 (ctrl+wheel, or Safari's gesture events) and a two-finger pinch on a phone; dragging pans once

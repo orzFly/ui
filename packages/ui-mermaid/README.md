@@ -58,8 +58,9 @@ Within an `AttachmentViewerProvider` from `@orz/ui-content/attachment`, the tool
 diagram also has **Open in the viewer**, which opens the block's source in the viewer as an inline
 source titled by its `title` (else "Diagram"). There this renderer draws the diagram alone in
 `ZoomCanvas`, zoomed and panned as an image is and redrawn as vectors at every zoom; one that does
-not parse is its source view and the parser's message. A file opened in the viewer is the block,
-with its Source toggle.
+not parse is its source view and the parser's message. The viewer's footer names the diagram's
+type, the keyword its source opens with (`flowchart`, `sequenceDiagram`), and copies the source.
+A file opened in the viewer is the block, with its Source toggle.
 
 ## `MermaidBlock`
 
@@ -98,7 +99,9 @@ back, and when neither parses, the comparison is `@orz/ui-code`'s `CodeDiffBlock
 sources; the Source toggle switches to that diff and back. A side that does not parse shows the
 parser's message and its source. Within an `AttachmentViewerProvider`, either picture, or the
 toolbar's **Open in the viewer**, opens both in the viewer as drawings at one zoom, left and right,
-or one above the other in a viewer as narrow as a page on which the comparison stacks.
+or one above the other in a viewer as narrow as a page on which the comparison stacks, paging
+through the provider's other comparisons. The viewer's footer names the diagrams' type, both when
+the two versions differ in it, and copies either version's source.
 
 ## Theme
 
