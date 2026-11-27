@@ -1,3 +1,5 @@
+import type { CompletionValue } from "@orz/query";
+import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
@@ -7,7 +9,7 @@ import { List, ListItem } from "@orz/ui/components/list";
 import { RefreshFailure } from "@orz/ui/components/load-failure";
 import { LoadMoreFooter } from "@orz/ui/components/load-more";
 import { Pane } from "@orz/ui/components/pane";
-import { QueryBox } from "@orz/ui/components/query-box";
+import { QueryBox, type ValueRowContent } from "@orz/ui/components/query-box";
 import { SelectionBar } from "@orz/ui/components/selection-bar";
 import {
   Sheet,
@@ -261,6 +263,35 @@ interface BulkActions {
   onDeleteForever: (ids: string[]) => void;
 }
 
+/** A value offered in the search box, drawn as the rest of the mailbox draws it. */
+function drawValue({
+  option,
+  spec,
+}: CompletionValue): ValueRowContent | undefined {
+  if (spec.kind !== "named") return undefined;
+  if (spec.source === "label") {
+    return {
+      body: (
+        <Badge variant="marker" color={INBOX_LABEL_COLORS[option.value]}>
+          {option.value}
+        </Badge>
+      ),
+    };
+  }
+  if (spec.source === "person") {
+    return {
+      leading: (
+        <Avatar size="sm">
+          <AvatarFallback>
+            {nameOf(option.value).slice(0, 1).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      ),
+    };
+  }
+  return undefined;
+}
+
 /** A check for new mail, as the list's toolbar shows it. */
 interface Refresh {
   pending: boolean;
@@ -377,6 +408,7 @@ function ThreadList({
               </span>
             </div>
           )}
+          renderValue={drawValue}
           listAlign="start"
           leading={<SearchIcon />}
           inputProps={{

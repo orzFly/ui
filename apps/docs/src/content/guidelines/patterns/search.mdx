@@ -1,7 +1,7 @@
 export const meta = {
   title: "Search",
   description:
-    "A box people search from keeps the queries they ran: which boxes keep them, in which bucket, and when a query counts as searched.",
+    "A box people search from keeps the queries they ran and draws values as the app does: which boxes keep them, in which bucket, when a query counts as searched, and how a value looks.",
   order: 38,
   api: ["ui/QueryBox"],
 };
@@ -67,3 +67,16 @@ keyboard, as in a browser's address bar.
 Forgetting asks nothing and offers no Undo. What goes is a query, which can be searched again,
 and the row goes from under the finger that tapped its ×, so nothing vanishes unseen
 ([Destructive actions](/guidelines/patterns/destructive-actions/)).
+
+## Drawing values
+
+Draw a value in the panel as the app draws it everywhere else, so it is known at a glance: a label
+as its chip, a status as its pill, a person with their avatar. Put what each is drawn from on the
+provider's options (a label's colour, a person's login) and draw it in `renderValue`. A mark such
+as an avatar takes the icon's place and leaves the words where every row's words start; a chip
+takes the value's text; the hint still follows. Keep the value's name in the row either way: it is
+what a screen reader reads and what the reader matched by typing.
+
+Type `label:` or `assignee:` in the example at the top. The schema already offers `@me`; the
+member search restates it with who that is, and the box keeps one `@me`, where it stood, now with
+an avatar.
