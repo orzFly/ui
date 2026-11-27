@@ -119,6 +119,24 @@ function labelOf(id: string): string {
   return tail ? `${label} › ${tail}` : label;
 }
 
+const LINKS_SOURCE = `import { FilterMenu, MatchedText } from "@orz/ui/components/filter-menu";
+
+<FilterMenu
+  query={query}
+  onQueryChange={setQuery}
+  sections={sections}
+  selectedId={city}
+  onSelect={(row) => setCity(row.id)}
+  // Or a router's link: (row) => <Link to="/cities/$id" params={{ id: row.id }} />
+  rowLink={(row) => \`#\${row.id}\`}
+  renderRow={(row, state) => <MatchedText text={row.label} query={state.query} />}
+  inputLabel="Filter cities"
+  placeholder="Filter cities…"
+  listLabel="Cities"
+>
+  <Button variant="outline">{label}</Button>
+</FilterMenu>`;
+
 const meta = {
   title: "ui/FilterMenu",
   parameters: { guidelines: "/guidelines/patterns/choosing-a-control/" },
@@ -148,6 +166,7 @@ const meta = {
     getSubmenu: { control: false },
     submenuFilter: { control: false },
     submenuLabel: { control: false },
+    rowLink: { control: false },
   },
   render: function Render(args, context) {
     const updateArgs = argsUpdater(context);
@@ -232,4 +251,16 @@ export const WithSearchableSubmenus: Story = {
     listLabel: "Regions",
     className: "w-56",
   },
+};
+
+/**
+ * Each city is a place with a page of its own, so each row is its link: a
+ * middle or modified click opens it in a new tab and leaves the menu open,
+ * and the row drags onto the bookmarks bar.
+ */
+export const WithLinks: Story = {
+  args: {
+    rowLink: (row) => `#${row.id}`,
+  },
+  parameters: { docs: { source: { code: LINKS_SOURCE, language: "tsx" } } },
 };
