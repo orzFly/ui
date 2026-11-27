@@ -1,5 +1,9 @@
 import { CodeBlock, CodeDiffBlock } from "@orz/ui-code";
-import { useAttachmentViewer } from "@orz/ui-content/attachment";
+import {
+  type ComparePair,
+  type InlineSource,
+  useViewerCompare,
+} from "@orz/ui-content/attachment";
 import {
   type CompareSide,
   DEFAULT_COMPARE_LABELS,
@@ -12,6 +16,7 @@ import {
   OpenInViewer,
   SourceToggle,
 } from "./diagram-parts.tsx";
+import { diagramType } from "./lib/diagram-type.ts";
 import { colourChanges } from "./lib/mermaid-change.ts";
 import type { DiagramResult } from "./render.ts";
 import { useDiagram } from "./use-diagram.ts";
@@ -26,7 +31,8 @@ import { useDiagram } from "./use-diagram.ts";
  * Until both renders are back, and when neither parses, it is the source
  * diff; Source switches to it and back. A side that does not parse shows its
  * error and its source. Within an `AttachmentViewerProvider` either picture,
- * or the toolbar, opens both in the viewer at one zoom.
+ * or the toolbar, opens both in the viewer at one zoom, paging through the
+ * provider's other comparisons, with each side's source to copy.
  */
 export function MermaidCompare({
   before,
@@ -49,7 +55,6 @@ export function MermaidCompare({
   const old = useDiagram(probe, before);
   const next = useDiagram(probe, after);
   const [showSource, setShowSource] = useState(false);
-  const viewer = useAttachmentViewer();
 
   // During render rather than in an effect: the colours have to arrive with
   // the diagrams, or they would paint one frame plain first.
@@ -94,32 +99,29 @@ export function MermaidCompare({
           ),
         };
 
-  const open =
-    viewer === null || marked === null || old?.ok !== true || next?.ok !== true
-      ? undefined
-      : () =>
-          viewer.openCompare(
-            [
-              {
-                title: title ?? "Diagram",
-                before: {
-                  label: labels.before,
-                  size: { width: old.width, height: old.height },
-                  content: (
-                    <DiagramDrawing svg={marked.before} className="size-full" />
-                  ),
-                },
-                after: {
-                  label: labels.after,
-                  size: { width: next.width, height: next.height },
-                  content: (
-                    <DiagramDrawing svg={marked.after} className="size-full" />
-                  ),
-                },
-              },
-            ],
-            0,
-          );
+  const pair: ComparePair | null =
+    marked === null || old?.ok !== true || next?.ok !== true
+      ? null
+      : {
+          title: title ?? "Diagram",
+          before: {
+            label: labels.before,
+            size: { width: old.width, height: old.height },
+            content: (
+              <DiagramDrawing svg={marked.before} className="size-full" />
+            ),
+            source: inline(before),
+          },
+          after: {
+            label: labels.after,
+            size: { width: next.width, height: next.height },
+            content: (
+              <DiagramDrawing svg={marked.after} className="size-full" />
+            ),
+            source: inline(after),
+          },
+        };
+  const open = useViewerCompare(pair, probe);
 
   return (
     // The palette is read in here, off the colours the comparison paints.
@@ -158,3 +160,10 @@ export function MermaidCompare({
     </div>
   );
 }
+
+const inline = (text: string): InlineSource => ({
+  kind: "inline",
+  text,
+  lang: "mermaid",
+  type: diagramType(text),
+});

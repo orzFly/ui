@@ -452,6 +452,20 @@ describe("a diagram in the viewer", () => {
     expect(container.querySelector(".mermaid-diagram")).not.toBeNull();
   });
 
+  it("names the diagram's type in the footer, and copies its source", async () => {
+    const container = mountInViewer(INLINE);
+    await drawn(container);
+    fireEvent.click(screen.getByRole("button", OPEN));
+    const dialog = await screen.findByRole("dialog");
+    const footer = dialog.lastElementChild as HTMLElement;
+    expect(within(footer).getByText("mermaid · flowchart")).toBeTruthy();
+    vi.mocked(writeClipboard).mockClear();
+    await act(async () => {
+      fireEvent.click(within(footer).getByRole("button", { name: "Copy" }));
+    });
+    expect(writeClipboard).toHaveBeenCalledWith(DIAGRAM);
+  });
+
   it("is titled Diagram when the fence names no file", async () => {
     const container = mountInViewer(INLINE);
     await drawn(container);
