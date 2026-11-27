@@ -96,7 +96,9 @@ function Harness({
             setQuery("");
             return;
           }
-          setMixed((ids) => ids.filter((id) => id !== row.id));
+          setMixed((ids) =>
+            event.mixed ? [...ids, row.id] : ids.filter((id) => id !== row.id),
+          );
           setSelected((ids) =>
             event.selected
               ? [...ids, row.id]
@@ -256,6 +258,53 @@ describe("FilterMenu with multiple selection", () => {
     expect(box.hasAttribute("aria-activedescendant")).toBe(false);
   });
 
+  it("cycles a row partly picked as the menu opened through all, none and back", () => {
+    const onSelect = vi.fn<OnSelect>();
+    render(<Harness onSelect={onSelect} />);
+    open();
+    const asks = () => {
+      const event = onSelect.mock.calls.at(-1)?.[1];
+      return [event?.selected, event?.mixed];
+    };
+    const states = [];
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(option("docs"));
+      states.push([...asks(), option("docs").getAttribute("aria-checked")]);
+    }
+    expect(states).toEqual([
+      [true, false, "true"],
+      [false, false, "false"],
+      [false, true, "mixed"],
+      [true, false, "true"],
+    ]);
+    // A row that was not partly picked only ever turns on and off.
+    fireEvent.click(option("perf"));
+    expect(asks()).toEqual([true, false]);
+    fireEvent.click(option("perf"));
+    expect(asks()).toEqual([false, false]);
+    fireEvent.click(option("perf"));
+    expect(asks()).toEqual([true, false]);
+  });
+
+  it("forgets the rows partly picked once it closes, and takes them anew as it opens", () => {
+    const onSelect = vi.fn<OnSelect>();
+    render(<Harness onSelect={onSelect} />);
+    let box = open();
+    fireEvent.click(option("docs"));
+    fireEvent.click(option("docs"));
+    key(box, "Escape");
+    // Opened again with docs on nothing: it is a plain row now.
+    box = open();
+    expect(option("docs").getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(option("docs"));
+    fireEvent.click(option("docs"));
+    expect(onSelect.mock.calls.at(-1)?.[1]).toMatchObject({
+      selected: false,
+      mixed: false,
+    });
+    expect(box).toBeTruthy();
+  });
+
   it("highlights an action row that comes first, and picks it with Enter", () => {
     const onSelect = vi.fn<OnSelect>();
     render(<Harness onSelect={onSelect} />);
@@ -354,7 +403,16 @@ describe("FilterMenu with multiple selection", () => {
     expect(onSelect.mock.calls.at(-1)?.[0].id).toBe("ui");
     expect(option("ui").getAttribute("aria-checked")).toBe("true");
     expect(document.activeElement).toBe(list);
-    expect(highlighted()).toBe("ui");
+    // A touch hovers nothing: a highlight left on the row would read as it
+    // being picked.
+    expect(highlighted()).toBeUndefined();
+    // A pen neither; a mouse leaves it where it pointed.
+    fireEvent.pointerDown(option("bug"), { pointerType: "pen" });
+    fireEvent.click(option("bug"));
+    expect(highlighted()).toBeUndefined();
+    fireEvent.pointerDown(option("docs"), { pointerType: "mouse" });
+    fireEvent.click(option("docs"));
+    expect(highlighted()).toBe("docs");
     key(screen.getByRole("combobox"), "Escape");
     await waitFor(() =>
       expect(document.activeElement).toBe(

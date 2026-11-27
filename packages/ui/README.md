@@ -553,8 +553,11 @@ menu stays open as rows are picked. `selectedIds` lists the picked rows, the sub
 `mixedIds` the rows partly picked, a label on some of the items being edited, which draw a dash.
 The component keeps no selection of its own: `event.selected` says what the pick asks the row to
 become (false for a picked row, true for any other, a mixed one included), and the row changes once
-the ids passed in do. The highlight rests on no row until the user moves it or types, so an Enter
-on opening picks nothing; after a pick it stays on that row. Link rows are picked as actions are.
+the ids passed in do. A row that was in `mixedIds` as the menu opened goes mixed, picked, unpicked
+and round again: on the way back `event.mixed` is true, and the caller puts it back on just the
+items it was on. The highlight rests on no row until the user moves it or types, so an Enter on
+opening picks nothing; after a pick by the mouse or a key it stays on that row, and after a touch or
+a pen, which hover nothing, on none. Link rows are picked as actions are.
 
 ```tsx
 <FilterMenu
@@ -564,11 +567,14 @@ on opening picks nothing; after a pick it stays on that row. Link rows are picke
   query={query}
   onQueryChange={setQuery}
   sections={[{ id: "labels", rows }]}
-  onSelect={(row, event) =>
+  onSelect={(row, event) => {
     setLabels((ids) =>
       event.selected ? [...ids, row.id] : ids.filter((id) => id !== row.id),
-    )
-  }
+    );
+    setOnSome((ids) =>
+      event.mixed ? [...ids, row.id] : ids.filter((id) => id !== row.id),
+    );
+  }}
   renderRow={(row) => <MatchedText text={row.label} query={query} />}
   inputLabel="Filter labels"
 >
@@ -577,7 +583,11 @@ on opening picks nothing; after a pick it stays on that row. Link rows are picke
 ```
 
 In a `Toolbar` an open `FilterMenu` stays where it stood, on the bar or in the `⋯`, however its picks
-change its trigger's width, and is laid out again once it has closed.
+change its trigger's width, and is laid out again once it has closed. Its surface stays put while
+the pointer is on it or near it, so a pick that moves the trigger (the bar folding a part before it,
+a row of badges before it growing) moves no row out from under the pointer; once the pointer has
+gone, it slides over to the trigger. The hold is `usePointerHold` from
+`@orz/ui/hooks/use-pointer-hold`, for a part of an app's own that moves as it is used.
 
 ## Colour picker
 
@@ -680,7 +690,7 @@ import { MediaControls } from "@orz/ui/components/media-controls";
 |---|---|
 | `@orz/ui` | `cn` |
 | `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `checkbox`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `empty-state`, `field`, `file-tree`, `filter-menu`, `group-heading`, `highlighted-input`, `hover-card`, `info-popover`, `inline-code`, `input`, `kbd`, `label`, `link-card`, `link-chip`, `list`, `load-failure`, `load-more`, `media-controls`, `nav-list`, `number-input`, `pane`, `popover`, `query-box`, `query-highlight`, `radio-group`, `reorder`, `segmented-control`, `select`, `selection-action`, `selection-bar`, `separator`, `sheet`, `skeleton`, `slider`, `sonner`, `split-button`, `switch`, `tab-nav`, `table`, `tabs`, `text-link`, `textarea`, `theme-editor`, `theme-menu`, `toggle`, `toolbar`, `tooltip`, `tree`, `unsaved-changes-dialog` |
-| `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-query-history`, `use-selection`, `use-slash-shortcut`, `use-sweep-select`, `viewport-chrome` |
+| `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-pointer-hold`, `use-query-completion`, `use-query-history`, `use-selection`, `use-slash-shortcut`, `use-sweep-select`, `viewport-chrome` |
 | `@orz/ui/lib/<name>` | `cell-width`, `cell-width-table`, `clipboard`, `color`, `edge-scroll`, `file-tree`, `focus-return`, `link`, `other-window`, `platform`, `reorder-places`, `scroll-map`, `tag-color`, `text-metrics`, `theme-file`, `tree-rows`, `tree-window`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `useStyle`, `themePaintGuardScript`, `themePaintCookieStyle`, `themePaintCookieRootAttributes`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |
