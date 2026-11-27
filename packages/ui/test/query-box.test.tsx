@@ -148,6 +148,27 @@ describe("QueryBox · keyboard model", () => {
     expect(onSubmit).toHaveBeenCalledWith("部署", undefined, false);
   });
 
+  it("submits an empty box from its submit row, aimed at or clicked", () => {
+    // Where an empty query goes, a search page say, is the app's to decide.
+    const onSubmit = vi.fn();
+    const box = mount({ onSubmit });
+    box.type("  ");
+    const submit = box
+      .options()
+      .findIndex((o) => o.matches("[data-row=submit]"));
+    for (let i = 0; i <= submit; i += 1) box.key("ArrowDown");
+    box.key("Enter");
+    expect(onSubmit).toHaveBeenCalledWith("", undefined, false);
+    expect(box.listbox()).toBeNull();
+    box.type("");
+    fireEvent.click(
+      box.container.querySelector("[data-row=submit]") as HTMLElement,
+    );
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    expect(onSubmit).toHaveBeenLastCalledWith("", undefined, false);
+    expect(box.listbox()).toBeNull();
+  });
+
   it("takes the first completion on Tab with nothing highlighted", () => {
     const box = mount();
     box.type("部署 har");

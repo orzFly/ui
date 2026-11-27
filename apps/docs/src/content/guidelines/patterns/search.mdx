@@ -18,6 +18,12 @@ newest first. Type `fl` and the one it begins rises above the submit row; type `
 it only appears in waits below it. Tab loads a past query to keep editing; Enter or a click runs
 it again.
 
+## An empty box
+
+The submit row stays when the box is empty, and `renderSubmitRow` gets `""`. Choosing it submits
+the empty query, so draw the row as the place an empty query goes: every issue, all mail, or a
+search page that explains the syntax. Enter with no row picked still submits nothing.
+
 ## Which boxes keep a history
 
 Give `history` to a box a reader comes back to search from: the search in an app's header, the

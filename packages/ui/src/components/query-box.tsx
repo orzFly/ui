@@ -266,7 +266,7 @@ export function QueryBox<R>({
   /**
    * Enter with nothing highlighted, or on the submit row; `chosen` when an app row was
    * highlighted; `fromHistory` when a history row was, its query then being submitted as it
-   * was searched before.
+   * was searched before. An empty box submits only from a row: `""` from its submit row.
    */
   onSubmit: (
     query: string,
@@ -278,7 +278,7 @@ export function QueryBox<R>({
   history?: Pick<QueryHistory, "entries" | "remove">;
   /** The address of a query's results; given, each history row is a link there. */
   queryHref?: (query: string) => string;
-  /** The row that submits the query as typed, always present. */
+  /** The row that submits the query as typed, always present; given `""` in an empty box. */
   renderSubmitRow: (query: string, option: OptionProps) => ReactNode;
   /** Rows offered at most, the submit row not counted. */
   limit?: number;
@@ -461,10 +461,10 @@ export function QueryBox<R>({
       accept(chosen.row.apply);
       return;
     }
-    // An empty box has nothing to submit — unless a row is what is being
-    // submitted, a past query say.
-    if (query === "" && chosen?.kind !== "app" && chosen?.kind !== "history")
-      return;
+    // An empty box with nothing aimed at has nothing to submit. A row picked
+    // there is submitted all the same, the submit row included: where an
+    // empty query goes (a search page, everything unfiltered) is the app's.
+    if (query === "" && chosen === undefined) return;
     // A past query is submitted as it was searched, in place of the value.
     const submitted = chosen?.kind === "history" ? chosen.entry.q : query;
     if (chosen?.kind === "history") emit(submitted);

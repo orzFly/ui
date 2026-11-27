@@ -372,7 +372,9 @@ function ThreadList({
                 className="size-3.5 shrink-0 text-muted-foreground"
                 aria-hidden
               />
-              <span className="truncate">Search for “{query}”</span>
+              <span className="truncate">
+                {query === "" ? "All mail" : `Search for “${query}”`}
+              </span>
             </div>
           )}
           listAlign="start"

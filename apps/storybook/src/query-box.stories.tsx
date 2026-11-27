@@ -65,7 +65,9 @@ const history = useQueryHistory({ storageKey: "app:search-history", scope: proje
     history.record(query);
     search(query);
   }}
-  renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
+  renderSubmitRow={(query, option) => (
+    <div {...option}>{query === "" ? "All issues" : \`Search for “\${query}”\`}</div>
+  )}
   inputProps={{ "aria-label": "Search" }}
 />`;
 
@@ -86,7 +88,9 @@ const history = useQueryHistory({ storageKey: "app:search-history", scope: "issu
     history.record(query);
     navigate(\`/issues?q=\${encodeURIComponent(query)}\`);
   }}
-  renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
+  renderSubmitRow={(query, option) => (
+    <div {...option}>{query === "" ? "All issues" : \`Search for “\${query}”\`}</div>
+  )}
   inputProps={{ "aria-label": "Search issues" }}
 />`;
 
@@ -105,7 +109,9 @@ const meta = {
           className="size-3.5 shrink-0 text-muted-foreground"
           aria-hidden
         />
-        <span className="truncate">Search for “{query}”</span>
+        <span className="truncate">
+          {query === "" ? "All issues" : `Search for “${query}”`}
+        </span>
       </div>
     ),
     listAlign: "start",
@@ -151,10 +157,11 @@ const meta = {
         }}
         onSubmit={(query, chosen, fromHistory) => {
           setValue(query);
-          setEntries((all) => [
-            { q: query, t: Date.now() },
-            ...all.filter((e) => e.q.toLowerCase() !== query.toLowerCase()),
-          ]);
+          if (query !== "")
+            setEntries((all) => [
+              { q: query, t: Date.now() },
+              ...all.filter((e) => e.q.toLowerCase() !== query.toLowerCase()),
+            ]);
           args.onSubmit(query, chosen, fromHistory);
         }}
       />

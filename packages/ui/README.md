@@ -471,7 +471,9 @@ const history = useQueryHistory({ storageKey: "app:search-history", scope: proje
 ```
 
 Nothing in the panel is preselected, so Enter submits the query as typed unless the reader arrowed
-onto a row. Tab takes the highlighted completion, or the first one. Escape closes the panel, and a
+onto a row; in an empty box it submits nothing, but picking the submit row there submits `""`, so
+draw that row as wherever an empty query goes. Tab takes the highlighted completion, or the first
+one. Escape closes the panel, and a
 second Escape goes to `onEscape`. Pass `options: undefined` for a list that has not loaded: its
 values paint as valid rather than flashing amber, and `onOpenChange` tells you when the box is in
 use, so loading can wait until then.
