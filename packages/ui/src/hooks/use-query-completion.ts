@@ -3,6 +3,7 @@ import {
   type CompletionRow,
   filterOptions,
   keyRows,
+  mergeOptions,
   parseQuery,
   providerOf,
   type QueryPart,
@@ -128,17 +129,20 @@ export function useQueryCompletion({
       } else {
         // The schema's own values (an enum's set, the specials) need no
         // request, so they are offered first and at once; the provider's
-        // answer follows as it was given, already matched to the prefix.
+        // answer follows as it was given, already matched to the prefix,
+        // and takes the place of a value of the schema's it restates.
         const builtins = slotValues(slot);
         const known = builtins === "fetch" ? [] : builtins;
         const fetched =
           wanted === null ? undefined : cache.current.get(wanted.cacheKey);
         loading = fetched === undefined && failed !== wanted?.cacheKey;
         completions.push(
-          valueRows(schema, value, slot, [
-            ...filterOptions(known, slot.typed),
-            ...(fetched ?? []),
-          ]),
+          valueRows(
+            schema,
+            value,
+            slot,
+            mergeOptions(filterOptions(known, slot.typed), fetched ?? []),
+          ),
         );
       }
     }

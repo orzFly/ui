@@ -137,6 +137,24 @@ describe("useQueryCompletion", () => {
     expect(search).toHaveBeenCalledTimes(2);
   });
 
+  it("lets a search's answer restate the schema's own value in its place", async () => {
+    const { provider, calls } = searchProvider();
+    const { result } = mount({
+      value: "assignee:",
+      providers: { member: provider },
+    });
+    expect(texts(result)).toEqual(["@me"]);
+    await act(() => vi.advanceTimersByTimeAsync(150));
+    const me = { value: "@me", hint: "Alice" };
+    await act(async () => calls[0]?.resolve([{ value: "alice" }, me]));
+    const rows = result.current.completions.flatMap((c) => c.rows);
+    expect(rows.map((r) => r.id)).toEqual([
+      "value:assignee:@me",
+      "value:assignee:alice",
+    ]);
+    expect(rows[0]?.value?.option).toBe(me);
+  });
+
   it("offers no fetched rows when the search fails", async () => {
     const { provider, calls } = searchProvider();
     const { result } = mount({

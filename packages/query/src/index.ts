@@ -20,9 +20,11 @@ export {
 export {
   type CompletionRow,
   type CompletionSlot,
+  type CompletionValue,
   commandCompletionSlot,
   filterOptions,
   keyRows,
+  mergeOptions,
   orderRows,
   queryCompletionSlot,
   quoteArgument,

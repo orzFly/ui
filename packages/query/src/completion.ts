@@ -66,6 +66,18 @@ export type SourceResult<Row> = {
 };
 
 /**
+ * Where a value row's value came from: the option as its provider gave it
+ * (or as the schema spells an enum value or a special), and the key and spec
+ * it is a value of. An app knows its options by `spec.source`, and draws
+ * them from whatever else it put on them.
+ */
+export type CompletionValue = {
+  option: ValueOption;
+  key: string;
+  spec: ValueSpec;
+};
+
+/**
  * One offered completion. A single line: an icon, the syntax in a monospace
  * run, and at most a very short grey note beside it — never a second line of
  * description. The dropdown is something to glance at mid-keystroke.
@@ -79,6 +91,8 @@ export type CompletionRow = {
   icon: "key" | "value";
   /** The whole query after accepting this, and where the caret lands. */
   apply: { value: string; caret: number };
+  /** A value row's value, for an app that draws it as it does elsewhere. */
+  value?: CompletionValue;
 };
 
 const EMPTY: SourceResult<CompletionRow> = { matched: false, rows: [] };
@@ -335,8 +349,10 @@ export function commandCompletionSlot<T>(
 
 /**
  * The values a slot can take: the enum's set, the specials, and the
- * provider's snapshot, in that order. `"fetch"` tells the caller to ask a
- * `search` provider for `slot.typed` and call again with what it answered.
+ * provider's snapshot, in that order, a provider's option restating one of
+ * the first two in its place (`mergeOptions`). `"fetch"` tells the caller to
+ * ask a `search` provider for `slot.typed` and call again with what it
+ * answered.
  */
 export function slotValues(
   slot: ValueSlot,
@@ -350,9 +366,36 @@ export function slotValues(
   ].map((value) => ({ value }));
   if (provider === undefined) return builtins;
   if ("search" in provider) {
-    return fetched === undefined ? "fetch" : [...builtins, ...fetched];
+    return fetched === undefined ? "fetch" : mergeOptions(builtins, fetched);
   }
-  return [...builtins, ...(provider.options ?? [])];
+  return mergeOptions(builtins, provider.options ?? []);
+}
+
+/**
+ * `base`, each option that `over` restates (the same value, whatever its
+ * case) replaced by `over`'s in its place, then the rest of `over` in their
+ * own order. How a provider says more about a value the schema already
+ * offers (who `@me` is) without the value being offered twice.
+ */
+export function mergeOptions(
+  base: readonly ValueOption[],
+  over: readonly ValueOption[],
+): ValueOption[] {
+  const restated = new Map<string, ValueOption>();
+  for (const option of over) {
+    const lower = option.value.toLowerCase();
+    if (!restated.has(lower)) restated.set(lower, option);
+  }
+  const placed = new Set<string>();
+  const merged = base.map((option) => {
+    const lower = option.value.toLowerCase();
+    placed.add(lower);
+    return restated.get(lower) ?? option;
+  });
+  return [
+    ...merged,
+    ...over.filter((option) => !placed.has(option.value.toLowerCase())),
+  ];
 }
 
 /** Options that `typed` prefixes, case-insensitively. */
@@ -472,6 +515,7 @@ export function valueRows(
         apply: slot.inBraces
           ? splice(query, slot.from, slot.to, text)
           : spliceThenSpace(query, slot.from, slot.to, text),
+        value: { option: o, key: slot.key, spec: slot.spec },
       };
     }),
   };
