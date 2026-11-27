@@ -535,10 +535,15 @@ export function CompareLabel({
   other: CompareSide;
   className?: string;
 }) {
+  // A drawing's natural size can be a fraction (a mermaid viewBox is), but the
+  // label speaks in whole pixels, as an image's does; two sizes that round
+  // alike read the same, so they are not marked either.
   const dimension = (key: keyof Size) => {
-    const value = side.size?.[key];
+    const value = side.size === null ? undefined : Math.round(side.size[key]);
     const differs =
-      other.size !== null && value !== undefined && value !== other.size[key];
+      other.size !== null &&
+      value !== undefined &&
+      value !== Math.round(other.size[key]);
     return differs ? (
       <mark
         data-changed=""
