@@ -1,5 +1,12 @@
-import { PROVIDERS, QUALIFIERS } from "@orz/fixtures/query.ts";
+import {
+  type LabelOption,
+  type MemberOption,
+  PROVIDERS,
+  QUALIFIERS,
+} from "@orz/fixtures/query.ts";
 import { type CompiledQuerySchema, defineQuerySchema } from "@orz/query";
+import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
+import { Badge } from "@orz/ui/components/badge";
 import { QueryBox } from "@orz/ui/components/query-box";
 import {
   type QueryHistoryEntry,
@@ -94,6 +101,48 @@ const history = useQueryHistory({ storageKey: "app:search-history", scope: "issu
   inputProps={{ "aria-label": "Search issues" }}
 />`;
 
+// Written by hand: `renderValue`'s body is the story's point, and the
+// generated snippet prints a function as `() => {}`.
+const valueSource = `import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
+import { Badge } from "@orz/ui/components/badge";
+import { QueryBox } from "@orz/ui/components/query-box";
+
+// The options carry what the app draws them from; the member search answers
+// \`@me\` too, with who that is.
+const providers: ValueProviders = {
+  label: { options: labels.map(({ name, color }) => ({ value: name, color })) },
+  member: { search: (prefix, signal) => searchMembers(prefix, signal) },
+};
+
+<QueryBox
+  schema={schema}
+  providers={providers}
+  value={value}
+  onValueChange={setValue}
+  onSubmit={search}
+  renderValue={({ option, spec }) => {
+    if (spec.kind !== "named") return;
+    if (spec.source === "label") {
+      const { color } = option as LabelOption;
+      return { body: <Badge variant="marker" color={color}>{option.value}</Badge> };
+    }
+    if (spec.source === "member" && "login" in option) {
+      const { login } = option as MemberOption;
+      return {
+        leading: (
+          <Avatar size="sm">
+            <AvatarFallback>{login.slice(0, 1).toUpperCase()}</AvatarFallback>
+          </Avatar>
+        ),
+      };
+    }
+  }}
+  renderSubmitRow={(query, option) => (
+    <div {...option}>{query === "" ? "All issues" : \`Search for “\${query}”\`}</div>
+  )}
+  inputProps={{ "aria-label": "Search" }}
+/>`;
+
 const meta = {
   title: "ui/QueryBox",
   component: QueryBox,
@@ -127,6 +176,7 @@ const meta = {
     history: { control: false },
     queryHref: { control: false },
     renderSubmitRow: { control: false },
+    renderValue: { control: false },
     leading: { control: false },
   },
   parameters: {
@@ -237,5 +287,42 @@ export const StoredHistory: Story = {
         }}
       />
     );
+  },
+};
+
+/**
+ * Values drawn as the app draws them elsewhere: type `label:` for each
+ * label's chip, or `assignee:` for each member's avatar. The member search
+ * restates `@me` with who that is, and when it answers, `@me` gains its
+ * avatar in the place it already had rather than appearing twice.
+ */
+export const RenderValue: Story = {
+  args: {
+    renderValue: ({ option, spec }) => {
+      if (spec.kind !== "named") return;
+      if (spec.source === "label") {
+        const { color } = option as LabelOption;
+        return {
+          body: (
+            <Badge variant="marker" color={color}>
+              {option.value}
+            </Badge>
+          ),
+        };
+      }
+      if (spec.source === "member" && "login" in option) {
+        const { login } = option as MemberOption;
+        return {
+          leading: (
+            <Avatar size="sm">
+              <AvatarFallback>{login.slice(0, 1).toUpperCase()}</AvatarFallback>
+            </Avatar>
+          ),
+        };
+      }
+    },
+  },
+  parameters: {
+    docs: { source: { code: valueSource, language: "tsx" } },
   },
 };
