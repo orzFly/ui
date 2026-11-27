@@ -1,4 +1,9 @@
-import { TASK_LABELS, TASK_PEOPLE } from "@orz/fixtures/tasks.ts";
+import {
+  TASK_LABEL_COLORS,
+  TASK_LABELS,
+  TASK_PEOPLE,
+} from "@orz/fixtures/tasks.ts";
+import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
@@ -125,7 +130,9 @@ function NewTaskForm({ onCreate }: { onCreate: (task: NewTask) => void }) {
               <SelectItem value={NONE}>None</SelectItem>
               {TASK_LABELS.map((each) => (
                 <SelectItem key={each} value={each}>
-                  {each}
+                  <Badge variant="marker" color={TASK_LABEL_COLORS[each]}>
+                    {each}
+                  </Badge>
                 </SelectItem>
               ))}
             </SelectContent>

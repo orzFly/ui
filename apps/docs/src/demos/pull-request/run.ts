@@ -4,6 +4,7 @@ import { syntheticBytes } from "@orz/fixtures/hex.ts";
 import seriesText from "@orz/fixtures/patch/series.patch?raw";
 import {
   PULL_REQUEST,
+  PULL_REQUEST_LABEL_COLORS,
   PULL_REQUEST_ME,
   type PullRequestEvent,
 } from "@orz/fixtures/pull-request.ts";
@@ -16,6 +17,7 @@ export {
   CI_RUN,
   type CiJob,
   PULL_REQUEST,
+  PULL_REQUEST_LABEL_COLORS,
   PULL_REQUEST_ME,
   type PullRequestEvent,
 };

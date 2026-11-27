@@ -1,4 +1,8 @@
-import { TASK_PEOPLE, type Task } from "@orz/fixtures/tasks.ts";
+import {
+  TASK_LABEL_COLORS,
+  TASK_PEOPLE,
+  type Task,
+} from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
@@ -259,7 +263,11 @@ export function TaskTable({
               <TableCell className="max-lg:hidden">
                 <span className="flex gap-1">
                   {task.labels.map((label) => (
-                    <Badge key={label} variant="outline">
+                    <Badge
+                      key={label}
+                      variant="marker"
+                      color={TASK_LABEL_COLORS[label]}
+                    >
                       {label}
                     </Badge>
                   ))}

@@ -39,6 +39,16 @@ export const TASK_LABELS = [
   "release",
 ] as const;
 
+/** The colour the board stores for each label, a tag colour's name. */
+export const TASK_LABEL_COLORS: Readonly<Record<string, string>> = {
+  bug: "red",
+  ci: "teal",
+  docs: "blue",
+  design: "purple",
+  perf: "orange",
+  release: "green",
+};
+
 /** Oldest first: the task at index `i` is `T-<i + 1>`. */
 const TITLES: readonly (readonly [string, string])[] = [
   ["Set up the workspace build", "ci"],

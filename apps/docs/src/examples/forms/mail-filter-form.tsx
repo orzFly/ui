@@ -1,5 +1,11 @@
-import { INBOX_LABELS, INBOX_ME, INBOX_PEOPLE } from "@orz/fixtures/inbox.ts";
+import {
+  INBOX_LABEL_COLORS,
+  INBOX_LABELS,
+  INBOX_ME,
+  INBOX_PEOPLE,
+} from "@orz/fixtures/inbox.ts";
 import { defineQuerySchema, type ValueProviders } from "@orz/query";
+import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
 import { FieldError } from "@orz/ui/components/field";
@@ -112,7 +118,9 @@ export function MailFilterForm() {
           <SelectContent>
             {INBOX_LABELS.map((label) => (
               <SelectItem key={label} value={label}>
-                {label}
+                <Badge variant="marker" color={INBOX_LABEL_COLORS[label]}>
+                  {label}
+                </Badge>
               </SelectItem>
             ))}
           </SelectContent>

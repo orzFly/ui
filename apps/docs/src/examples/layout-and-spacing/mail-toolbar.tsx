@@ -1,4 +1,5 @@
-import { INBOX_LABELS } from "@orz/fixtures/inbox.ts";
+import { INBOX_LABEL_COLORS, INBOX_LABELS } from "@orz/fixtures/inbox.ts";
+import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { Input } from "@orz/ui/components/input";
 import {
@@ -31,7 +32,9 @@ export function MailToolbar() {
             <SelectItem value="all">All labels</SelectItem>
             {INBOX_LABELS.map((label) => (
               <SelectItem key={label} value={label}>
-                {label}
+                <Badge variant="marker" color={INBOX_LABEL_COLORS[label]}>
+                  {label}
+                </Badge>
               </SelectItem>
             ))}
           </SelectContent>

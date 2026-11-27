@@ -1,4 +1,5 @@
 import {
+  INBOX_LABEL_COLORS,
   INBOX_LABELS,
   INBOX_ME,
   INBOX_PEOPLE,
@@ -16,6 +17,7 @@ import {
 } from "@orz/query";
 
 export {
+  INBOX_LABEL_COLORS,
   INBOX_LABELS,
   INBOX_ME,
   INBOX_PEOPLE,

@@ -1,6 +1,11 @@
 import { TOKENS } from "@orz/fixtures/account.ts";
-import { INBOX_LABELS, INBOX_THREADS } from "@orz/fixtures/inbox.ts";
+import {
+  INBOX_LABEL_COLORS,
+  INBOX_LABELS,
+  INBOX_THREADS,
+} from "@orz/fixtures/inbox.ts";
 import { PULL_REQUEST } from "@orz/fixtures/pull-request.ts";
+import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
 import {
@@ -162,7 +167,9 @@ export function OverlayKinds() {
                     }
                     onSelect={(event) => event.preventDefault()}
                   >
-                    {label}
+                    <Badge variant="marker" color={INBOX_LABEL_COLORS[label]}>
+                      {label}
+                    </Badge>
                   </DropdownMenuCheckboxItem>
                 ))}
               </DropdownMenuContent>
