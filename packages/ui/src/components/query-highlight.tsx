@@ -21,10 +21,17 @@ import type { ReactNode } from "react";
  */
 const KEY_CLASS = "text-primary";
 const PUNCT_CLASS = "text-muted-foreground";
+/**
+ * A special value (`@me`, `none`) is a valid one that stands for something
+ * the app resolves, so it keeps the valid tint and adds an abbreviation's
+ * dotted underline. A tint of its own cannot tell it apart: a theme has no
+ * second accent, a primary-based tint reads as valid where primary is grey,
+ * and a fixed hue reads as valid where primary is that hue.
+ */
 const VALUE_CLASS: Record<ValueVerdict, string> = {
   valid: "text-foreground bg-primary/12 rounded-[min(var(--radius-item),3px)]",
   special:
-    "text-foreground bg-violet-500/15 rounded-[min(var(--radius-item),3px)]",
+    "text-foreground bg-primary/12 rounded-[min(var(--radius-item),3px)] underline decoration-dotted decoration-[1.5px] underline-offset-3",
   invalid: "text-warning underline decoration-wavy",
   unknown:
     "text-foreground bg-primary/12 rounded-[min(var(--radius-item),3px)]",

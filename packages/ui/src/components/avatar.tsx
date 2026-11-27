@@ -44,21 +44,72 @@ function AvatarImage({
   );
 }
 
+/**
+ * The share of the box's width the letters may take: three of the widest
+ * capitals (`WWW`) fit, inside a circle as well.
+ */
+const FIT_WIDTH = 0.84;
+
+/**
+ * A ref that scales the glyph down until it is at most FIT_WIDTH of its
+ * parent's width. A ref rather than an effect: Radix mounts the fallback's
+ * contents only once it decides to show them, which can be renders after
+ * AvatarFallback's own mount. The first ResizeObserver report is the first
+ * measure, so a page of avatars forces no layout each; the glyph's own size
+ * changes when a web font lands, which measures again. `scale` leaves the
+ * layout box alone, so setting it reports nothing back.
+ */
+function fitWidth(glyph: HTMLElement | null) {
+  const box = glyph?.parentElement;
+  if (!glyph || !box || typeof ResizeObserver === "undefined") return;
+  let glyphWidth = 0;
+  let boxWidth = 0;
+  const observer = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.target === glyph) glyphWidth = entry.contentRect.width;
+      else boxWidth = entry.contentRect.width;
+    }
+    const room = boxWidth * FIT_WIDTH;
+    glyph.style.scale = glyphWidth > room ? String(room / glyphWidth) : "";
+  });
+  observer.observe(glyph);
+  observer.observe(box);
+  return () => observer.disconnect();
+}
+
 function AvatarFallback({
   className,
+  children,
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
   return (
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
+        // Out of flow, as the glyph inside it is: a block in flow here puts
+        // a line break into what a selection across the avatar copies, as
+        // from a mention inline in a sentence.
         // Under raymond the letter is the face's dark shadow, which a
         // selected row's highlight text does not reach.
-        "flex size-full items-center justify-center rounded-[inherit] bg-muted text-ui text-muted-foreground group-data-[size=sm]/avatar:text-ui-sm raymond:text-(--3d-dark-shadow) raymond:group-data-[size=sm]/avatar:text-[9px] raymond:group-data-[size=sm]/avatar:leading-none",
+        "absolute inset-0 @container-size rounded-[inherit] bg-muted text-ui text-muted-foreground group-data-[size=sm]/avatar:text-ui-sm raymond:text-(--3d-dark-shadow) raymond:group-data-[size=sm]/avatar:text-[9px] raymond:group-data-[size=sm]/avatar:leading-none",
         className,
       )}
       {...props}
-    />
+    >
+      {/* The fallback's text size is the most the letters take. A box too
+          short for it brings them down to 9/16 of its height, the largest
+          share any size draws them at (raymond's 16px small one), so every
+          size keeps its type in every style. Centred by translation rather
+          than by flex or text-align, which would start a glyph wider than
+          the box at an edge. */}
+      <span
+        ref={fitWidth}
+        data-slot="avatar-fallback-glyph"
+        className="absolute top-1/2 left-1/2 -translate-1/2 text-[length:min(1em,56.25cqh)] whitespace-nowrap"
+      >
+        {children}
+      </span>
+    </AvatarPrimitive.Fallback>
   );
 }
 

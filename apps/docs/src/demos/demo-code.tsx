@@ -22,11 +22,12 @@ import { cn } from "@orz/ui/lib/utils";
 import { CodeBlock } from "@orz/ui-code";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
+import { sourceHref } from "./demo-page-state.ts";
 import { type DemoFile, loadDemoFiles } from "./demo-source.ts";
-import { sourceHref } from "./demo-state.ts";
 
 const GROUPS: { group: DemoFile["group"]; title: (dir: string) => string }[] = [
   { group: "demo", title: (dir) => `demos/${dir}` },
+  { group: "shared", title: () => "demos" },
   { group: "fixtures", title: () => "@orz/fixtures" },
 ];
 
@@ -34,7 +35,15 @@ const GROUPS: { group: DemoFile["group"]; title: (dir: string) => string }[] = [
 const shortName = (file: DemoFile) =>
   file.group === "fixtures"
     ? file.name.replace(/^@orz\/fixtures\//, "")
-    : file.name;
+    : file.group === "shared"
+      ? file.name.replace(/^\.\.\//, "")
+      : file.name;
+
+/** Where a file lives in the site's source, as the bar above it names it. */
+const pathOf = (dir: string, file: DemoFile) =>
+  file.group === "fixtures"
+    ? file.name
+    : `demos/${file.group === "demo" ? `${dir}/` : ""}${shortName(file)}`;
 
 const lineCount = (contents: string) => contents.trimEnd().split("\n").length;
 
@@ -69,7 +78,7 @@ export function DemoCode({
   }
   const file = files.find(({ name }) => name === source) ?? files[0];
   if (file === undefined) return null;
-  const path = file.group === "demo" ? `demos/${dir}/${file.name}` : file.name;
+  const path = pathOf(dir, file);
   return (
     <div className="flex h-full min-h-0">
       <Pane

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCsf } from "storybook/internal/csf-tools";
 import { workspaces } from "../../../scripts/install.ts";
+import { sharedImports } from "../src/demos/demo-imports.ts";
 
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 export const STORIES = join(ROOT, "apps/storybook/src");
@@ -121,19 +122,33 @@ const byPackage = (a: string, b: string) => {
   return key(a).localeCompare(key(b));
 };
 
-/** The Storybook pages each demo's own files use, by the demo's directory. */
+/**
+ * The Storybook pages each demo uses, by the demo's directory: what its own files import, and
+ * what the files they import from beside it in `src/demos/` do.
+ */
 export function demoApis(pages = storyPages()): Record<string, string[]> {
   const out: Record<string, string[]> = {};
-  for (const entry of readdirSync(DEMOS, { withFileTypes: true })) {
+  const entries = readdirSync(DEMOS, { withFileTypes: true });
+  const shared = Object.fromEntries(
+    entries
+      .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name))
+      .map((entry) => [
+        entry.name,
+        readFileSync(join(DEMOS, entry.name), "utf8"),
+      ]),
+  );
+  for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const titles = new Set<string>();
-    const files = filesIn(join(DEMOS, entry.name), (file) =>
+    const own = filesIn(join(DEMOS, entry.name), (file) =>
       /\.tsx?$/.test(file),
-    );
-    for (const file of files) {
-      for (const { spec, names } of packageImports(
-        readFileSync(file, "utf8"),
-      )) {
+    ).map((file) => readFileSync(file, "utf8"));
+    const sources = [
+      ...own,
+      ...sharedImports(own, shared).map((name) => shared[name] ?? ""),
+    ];
+    for (const source of sources) {
+      for (const { spec, names } of packageImports(source)) {
         for (const name of names) {
           const title = pageFor(spec, name, pages);
           if (title) titles.add(title);

@@ -170,7 +170,8 @@ type Story = StoryObj<typeof meta>;
  * down and press Enter. `assignee:` asks a slow search provider, so its rows
  * arrive after a short wait. Braces are on: `label:{kind:bug,area:` completes
  * inside the group. A value the schema does not know (`is:opne`,
- * `label:nope`) is underlined.
+ * `label:nope`) is underlined in a wave; `assignee:@me`, which stands for
+ * whoever is signed in, is underlined in dots.
  *
  * Past queries come from `history`: an empty box lists them all; a typed
  * value offers those it begins above the submit row and those it is only
