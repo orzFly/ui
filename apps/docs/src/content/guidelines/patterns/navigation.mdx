@@ -10,6 +10,7 @@ export const meta = {
     "ui/FileTree",
     "ui/Primitives/Tabs",
     "ui/Primitives/LinkCard",
+    "ui/FilterMenu",
   ],
 };
 
@@ -17,6 +18,7 @@ import { AppFrame } from "../../../examples/navigation/app-frame.tsx";
 import { CollapsibleGroups } from "../../../examples/navigation/collapsible-groups.tsx";
 import { FolderTree } from "../../../examples/navigation/folder-tree.tsx";
 import { LineTabs } from "../../../examples/navigation/line-tabs.tsx";
+import { ProjectSwitcher } from "../../../examples/navigation/project-switcher.tsx";
 import { RepositoryFiles } from "../../../examples/navigation/repository-files.tsx";
 import { SectionsHeader } from "../../../examples/navigation/sections-header.tsx";
 
@@ -40,6 +42,7 @@ row's leading edge.
 | Go between places in a hierarchy the reader opens and closes: folders, machines, a file's parts | `Tree`, a `TreeItem` for each place |
 | Go between a repository's files and folders, by path | `FileTree`, a `FileTreeItem` for each |
 | Go to a section of the page in view, from a column beside it | `NavList variant="rail"` |
+| Go to one of more places than a header has room for, by name: the project, repository or workspace the app is in | `FilterMenu` behind a button naming the current one, each row a link through `rowLink` |
 | Send the reader to another page from inside the prose, saying what is there | `LinkCard`, with a `LinkCardTitle` and a `LinkCardDescription`; `variant="row"` for a list of pages |
 | Show one of a few views of the same thing, in place | `Tabs` |
 | The same, in a bar over a pane that has a surface of its own | `Tabs` with `TabsList variant="line"` |
@@ -86,6 +89,21 @@ only then does the project's name truncate. For that order, give a part that gro
 search, `flex-1 basis-0` and its bounds (`min-w-32 max-w-64`), and let a name truncate with
 `min-w-0 truncate`. Do not order them with shrink weights (`shrink-[…]`): the `TabNav` still takes
 a share of every shortfall and folds a section while the search has room to spare.
+
+## Switching between many places
+
+<Example of={ProjectSwitcher} />
+
+A switcher goes to one of more places than a header has room for, the reader finding it by name:
+the project the app is in, here, or a repository, a workspace. It is a `FilterMenu` behind a button
+that names the current one, and each of its rows is a link: `rowLink` returns its `href`, or a
+router's link, here to the same section of the other project, since the header's sections stay
+where they are.
+
+A plain click or Enter goes there and closes the menu. A middle or modified click opens the project
+in a new tab and leaves the menu open for the next one, and a row drags onto the bookmarks bar as
+any link does. A router's link, returned with no children, keeps its own handling, as one passed
+with `asChild` does. `onSelect` only hears that a row was picked: do not navigate there as well.
 
 ## Groups that open and close
 

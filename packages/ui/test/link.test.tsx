@@ -1,7 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { describe, expect, it } from "vitest";
-import { isPlainClick, isPlainPress } from "../src/lib/link.ts";
+import {
+  isModifiedClick,
+  isPlainClick,
+  isPlainPress,
+} from "../src/lib/link.ts";
 
 /** Clicks a link and returns what `test` (`isPlainClick` unless given) said of the click. */
 function click(
@@ -79,5 +83,31 @@ describe("isPlainPress", () => {
   it("is false for another button or a link that opens elsewhere", () => {
     expect(press({ button: 1 })).toBe(false);
     expect(press({}, { target: "_blank" })).toBe(false);
+  });
+});
+
+describe("isModifiedClick", () => {
+  const modified = (
+    init: Parameters<typeof fireEvent.click>[1] = {},
+    props: ComponentProps<"a"> = {},
+  ) => click(init, props, isModifiedClick);
+
+  it("is false for a plain left click, handled before or not", () => {
+    expect(modified()).toBe(false);
+    expect(modified({}, { onClick: (event) => event.preventDefault() })).toBe(
+      false,
+    );
+  });
+
+  it.each(["ctrlKey", "metaKey", "shiftKey", "altKey"])(
+    "is true with %s held",
+    (modifier) => {
+      expect(modified({ [modifier]: true })).toBe(true);
+    },
+  );
+
+  it("is true for another button, and false for a link that opens elsewhere", () => {
+    expect(modified({ button: 1 })).toBe(true);
+    expect(modified({}, { target: "_blank" })).toBe(false);
   });
 });

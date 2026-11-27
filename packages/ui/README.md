@@ -505,6 +505,24 @@ submenu without moving the highlight. A row with a submenu is a split button: cl
 it, and clicking its chevron, past the divider, opens the submenu instead. `submenuLabel(row)` names
 the submenu's listbox.
 
+A row that is a place (a project in a switcher, a page) goes by a link. `rowLink(row)` returns its
+`href`, and the row is drawn as an `a` to it; or a router's link with no children, and the row is
+drawn as that link. Either way it is still an option of the listbox, and a row it returns nothing
+for stays a plain option.
+
+```tsx
+<FilterMenu rowLink={(page) => page.href} … />
+<FilterMenu
+  rowLink={(project) => <Link to="/projects/$slug" params={{ slug: project.slug }} />}
+  …
+/>
+```
+
+A plain click or Enter goes there and closes the menu, and `onSelect`, optional here, only hears of
+it. A click with a modifier, a middle click or a right click is the browser's (a new tab, a window,
+the link's own menu), and the menu stays open for the next; a row can be dragged out, onto the
+bookmarks bar, as any link can. Submenu rows take links the same way.
+
 ## Colour picker
 
 `ColorPicker` is the panel, rendered inline; `ColorPickerPopover` puts it behind a trigger that
