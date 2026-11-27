@@ -66,7 +66,8 @@ export interface ColorPickerProps {
   defaultChromaLock?: boolean;
   onChromaLockChange?: (locked: boolean) => void;
   swatches?: readonly string[] | readonly SwatchGroup[];
-  contrastWith?: string;
+  /** What the colour is measured against: a colour, or one worked out from the colour being picked (as `#rrggbb`). */
+  contrastWith?: string | ((color: string) => string);
   /** Default "background". */
   contrastLabel?: string;
   /** Default true; the button still only appears where window.EyeDropper exists. */
@@ -895,8 +896,11 @@ export function ColorPicker({
 
   // --- chips ---
   const colorGamut = gamutOf(color);
-  const contrastTarget =
-    contrastWith === undefined ? null : parseColor(contrastWith);
+  const against =
+    typeof contrastWith === "function"
+      ? contrastWith(formatColor(color, "hex", { alpha: false }))
+      : contrastWith;
+  const contrastTarget = against === undefined ? null : parseColor(against);
   const ratio =
     contrastTarget === null ? null : contrastRatio(color, contrastTarget.color);
 
@@ -1277,7 +1281,7 @@ export function ColorPicker({
           <div className="flex h-5 items-center">
             <span
               data-contrast
-              title={`WCAG 2 contrast against ${contrastWith}`}
+              title={`WCAG 2 contrast against ${against}`}
               className={cn(
                 "min-w-0 truncate rounded-chip border px-1.5 py-px",
                 ratio >= 4.5

@@ -131,7 +131,7 @@ syntax theme and its JSON round trip.
   and the rest stay near it. Highlights, fills and opaque borders (`accent`, `muted`, `secondary`,
   `border`, `marker`, …) keep their contrast with the background instead, so a hovered row or a menu
   highlight reads as clearly on black as on the dark palette. Every token keeps its hue and
-  chroma. Text, primary, chart, diff and ring tokens, and values carrying
+  chroma. Text, primary, chart, tag, diff and ring tokens, and values carrying
   alpha, stay as they are, and the terminal background becomes `#000000`. A theme opts in with
   `variants: { amoled: amoled(palette) }`, and can spread over the result to retune a token.
 - `composeTheme(custom, themes)` turns a `CustomTheme` into a `Theme` against the current list.
@@ -154,21 +154,32 @@ syntax theme and its JSON round trip.
   lightness until it stands `SELECTION_APART` (an OKLab distance) off the page, a card, a popover,
   `muted` and the sidebar, as far as `foreground` on it keeps 4.5:1. A custom side saved before
   `selection` existed gets it this way, with `foreground` as its `selection-foreground`.
+- `tagColorsOf({ background, foreground }, scheme)` is the nine tag colours (`tag-red` …
+  `tag-gray`) for a palette that names none. Every palette uses the same hues, `TAG_HUES`, so a
+  `blue` tag is blue under every theme; the palette decides lightness and chroma. Each colour steps
+  away from the page until its text reads at 4.65:1 on its own fill, which `tagFill(ink, background,
+  scheme)` mixes from the colour and the page by the scheme's `TAG_FILL` share; `gray` takes the
+  foreground's hue and at most a trace of its chroma. A custom side saved before the tag colours
+  existed gets them this way. `TAG_COLORS` lists the names in order, and `tagBlend(hue, chroma)`
+  says where any other colour falls among them: between two hue-adjacent names, then part of the way
+  toward `gray`.
 - `xtermTheme(terminal)` maps terminal tokens onto xterm.js's `ITheme` field names:
   `terminal.options.theme = xtermTheme(tokens)`.
-- `contrastRows(tokens)`, from `@orz/themes/contrast`, measures a palette against
+- `contrastRows(tokens, styles, scheme)`, from `@orz/themes/contrast`, measures a palette against
   `CONTRAST_CHECKS`: the token pairs this package's tests hold every built-in theme to, each with
-  its WCAG floor (4.5:1 for text, selected text and the module marker's icon, 3:1 for a field's edge, a focus
-  ring, the bar on a highlighted row, the current tab's edge and a chart's series). A row carries the pair,
-  its ratio and its floor, so a theme editor or a test of your own palette can list what falls
-  short.
+  its WCAG floor (4.5:1 for text, selected text, the module marker's icon and a tag's text on its
+  own fill, 3:1 for a field's edge, a focus ring, the bar on a highlighted row, the current tab's edge
+  and a chart's series). `styles` is the theme's (`stylesOf`), since each style draws some pairs of its
+  own, and `scheme` picks the share of a tag's colour in its fill, a surface written `tag-fill`. A
+  row carries the pair, its ratio and its floor, so a theme editor or a test of your own palette can
+  list what falls short.
 
 ## Entry points
 
 | Import | Contents |
 |---|---|
 | `@orz/themes` | `builtinThemes`, each built-in theme, the functions above but `contrastRows`, `TOKEN_NAMES`, `TERMINAL_TOKEN_NAMES`, `LATE_TOKEN_NAMES`, `DEFAULT_VARIANT`, types |
-| `@orz/themes/contrast` | `contrastRows`, `CONTRAST_CHECKS`, `ContrastCheck`, `ContrastRow` |
+| `@orz/themes/contrast` | `contrastRows`, `CONTRAST_CHECKS`, `ContrastCheck`, `ContrastRow`, `ContrastSurface` |
 | `@orz/themes/themes/<name>` | `afterglow`, `catppuccin`, `default`, `dracula`, `github`, `gruvbox`, `monokai`, `nord`, `one-dark`, `picotera`, `pro-citrus`, `pro-graphite`, `pro-lagoon`, `pro-lavender`, `pro-matcha`, `pro-nord`, `pro-sakura`, `pro-sand`, `solarized`, `tokyo-night`, `vs`, `windows-standard` |
 
 ## Sources

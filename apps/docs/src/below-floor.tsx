@@ -8,7 +8,7 @@ import {
   type Tokens,
   variantsOf,
 } from "@orz/themes";
-import { contrastRows } from "@orz/themes/contrast";
+import { type ContrastSurface, contrastRows } from "@orz/themes/contrast";
 import { InlineCode } from "@orz/ui/components/inline-code";
 import {
   Table,
@@ -22,7 +22,7 @@ import {
 interface Shortfall {
   palette: string;
   token: TokenName;
-  surfaces: TokenName[];
+  surfaces: ContrastSurface[];
   /** The lowest ratio across the surfaces. */
   ratio: number;
   /** The strictest floor the pair at `ratio` misses. */
@@ -55,7 +55,7 @@ function shortfalls(): Shortfall[] {
         const variants = names.includes("") ? "" : names.join(", ");
         const palette = `${theme.label} ${side}${variants ? ` · ${variants}` : ""}`;
         const byToken = new Map<TokenName, Shortfall>();
-        for (const row of contrastRows(tokens, stylesOf(theme))) {
+        for (const row of contrastRows(tokens, stylesOf(theme), scheme)) {
           if (row.ratio >= row.floor) continue;
           const seen = byToken.get(row.foreground);
           if (!seen) {
@@ -111,7 +111,11 @@ export function BelowFloor() {
                 {surfaces.map((surface, index) => (
                   <span key={surface}>
                     {index > 0 && ", "}
-                    <InlineCode>{surface}</InlineCode>
+                    {surface === "tag-fill" ? (
+                      "its own fill"
+                    ) : (
+                      <InlineCode>{surface}</InlineCode>
+                    )}
                   </span>
                 ))}
               </TableCell>

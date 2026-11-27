@@ -47,6 +47,16 @@ export const INBOX_LABELS = [
   "support",
 ] as const;
 
+/** The colour the mailbox stores for each label, a tag colour's name. */
+export const INBOX_LABEL_COLORS: Readonly<Record<string, string>> = {
+  review: "purple",
+  ci: "teal",
+  design: "pink",
+  release: "green",
+  docs: "blue",
+  support: "orange",
+};
+
 /** Minutes after 2026-10-26 08:00 UTC, as an ISO string. */
 const at = (minutes: number) =>
   new Date(Date.UTC(2026, 9, 26, 8, 0) + minutes * 60_000).toISOString();

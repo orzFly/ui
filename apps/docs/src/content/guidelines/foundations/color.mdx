@@ -12,12 +12,14 @@ export const meta = {
   ],
 };
 
+import { TAG_COLORS } from "@orz/ui/components/badge";
 import { GraySecondaryLine } from "../../../examples/color/gray-secondary-line.tsx";
 import { JobStatusAsDots } from "../../../examples/color/job-status-as-dots.tsx";
 import { JobStatusInWords } from "../../../examples/color/job-status-in-words.tsx";
 import { MailSurfaces } from "../../../examples/color/mail-surfaces.tsx";
 import { MergeBox } from "../../../examples/color/merge-box.tsx";
 import { MutedSecondaryLine } from "../../../examples/color/muted-secondary-line.tsx";
+import { TagColors } from "../../../examples/color/tag-colors.tsx";
 import { TokenPairs, TokenSwatches } from "../../../token-swatches.tsx";
 
 **Draw with the tokens, never with a colour.** `bg-card`, `text-muted-foreground` and `border` say
@@ -149,6 +151,34 @@ an icon, or both.
     Show a state as a colour alone, and in a hard-coded red that no theme can change.
   </Dont>
 </DoDont>
+
+### Tags
+
+<TokenSwatches tokens={TAG_COLORS.map((color) => `tag-${color}`)} />
+
+A tag, the label a user puts on a task or a conversation, takes one of nine named colours:
+`Badge variant="marker"` with a `color` writes its name in the colour, on a light fill of its own
+colour. Like the chart series, the colours tell tags apart and say nothing themselves: a red tag is
+not an error, and the accent still marks only where the user is and what they can do. Every theme
+keeps each colour's hue, so a `blue` tag is blue whichever theme the user picks, and sets its
+lightness so the name holds 4.5:1 on its own fill.
+
+<Example of={TagColors} />
+
+- **The colour the app stores.** Where people pick a tag's colour, store what they picked and pass
+  it to `color`: one of the names, or any colour value, such as one an import from a forge brings.
+  A value is drawn at its own hue from the theme's colours, so GitHub's `#d73a4a` stays a red that
+  reads in every theme.
+- **A colour from the tag.** Where tags have no colour of their own, `autoTagColor(id)` picks one
+  from the tag's id, the same one everywhere. Give it the id, not the name on screen, which a rename
+  or a translation changes. `autoTagColor` never picks `gray`, which is left for a tag meant to have
+  no colour at all.
+- Eight colours repeat soon, and a handful of tags will share one. Where every tag must look apart,
+  store a colour for each.
+
+The name is the tag; the colour only helps the eye find it. Wherever a tag is picked, in a filter's
+menu, a sidebar or a `Select`, draw the tag itself, as the list does, so the colour that finds it
+in the list finds it where it is chosen.
 
 ## Tints
 

@@ -1,4 +1,5 @@
 import {
+  INBOX_LABEL_COLORS,
   INBOX_PEOPLE,
   INBOX_THREADS,
   type InboxThread,
@@ -61,7 +62,11 @@ export function QuietThread() {
               </h3>
               <p className="flex gap-1">
                 {THREAD.labels.map((label) => (
-                  <Badge key={label} variant="outline">
+                  <Badge
+                    key={label}
+                    variant="marker"
+                    color={INBOX_LABEL_COLORS[label]}
+                  >
                     {label}
                   </Badge>
                 ))}

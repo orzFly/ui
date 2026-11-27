@@ -30,6 +30,7 @@ import {
   CI_RUN,
   COMMITS,
   PULL_REQUEST,
+  PULL_REQUEST_LABEL_COLORS,
   PULL_REQUEST_ME,
   type PullRequestEvent,
 } from "./run.ts";
@@ -296,7 +297,11 @@ function Sidebar() {
         </GroupHeading>
         <p className="flex flex-wrap gap-1">
           {PULL_REQUEST.labels.map((label) => (
-            <Badge key={label} variant="outline">
+            <Badge
+              key={label}
+              variant="marker"
+              color={PULL_REQUEST_LABEL_COLORS[label]}
+            >
               {label}
             </Badge>
           ))}

@@ -43,7 +43,9 @@ install line from the Start page (**Install**, and the **Packages** table), or f
   an `InfoPopover` right after the label. Empty, failed and done messages, a field's error and a
   limit needed while typing stay on screen (Principles, **Shown, not told**; Writing,
   **Explanations**).
-- Never pass sizes for touch, and never write a colour: use the theme's tokens.
+- Never pass sizes for touch, and never write a colour: use the theme's tokens. A tag's colour is
+  the exception that is data: a name from `TAG_COLORS`, `autoTagColor(id)` for a tag with none, or
+  the value the user stored, passed to `Badge variant="marker"` as `color`.
 - No component for what you need? Compose it from library components before drawing your own.
 - A light tweak on top (a token colour, a size, a weight) is fine when it holds up in every style
   and theme; check it in each. Prefer leaving a component's hover/current/selected look to it:

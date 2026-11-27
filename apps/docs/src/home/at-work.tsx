@@ -1,7 +1,7 @@
 import castText from "@orz/fixtures/asciinema/session.cast?raw";
 import { CI_RUN } from "@orz/fixtures/ci-run.ts";
 import seriesText from "@orz/fixtures/patch/series.patch?raw";
-import { TASKS } from "@orz/fixtures/tasks.ts";
+import { TASK_LABEL_COLORS, TASKS } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { MediaControls } from "@orz/ui/components/media-controls";
 import {
@@ -96,7 +96,11 @@ export function TasksModule({ className }: { className?: string }) {
                 <span className="flex items-center gap-2">
                   <span className="truncate font-medium">{task.title}</span>
                   {task.labels.map((label) => (
-                    <Badge key={label} variant="outline">
+                    <Badge
+                      key={label}
+                      variant="marker"
+                      color={TASK_LABEL_COLORS[label]}
+                    >
                       {label}
                     </Badge>
                   ))}

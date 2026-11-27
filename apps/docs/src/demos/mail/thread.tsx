@@ -38,6 +38,7 @@ import { ActionButton } from "./keys.tsx";
 import { mailHref } from "./location.ts";
 import {
   folderOf,
+  INBOX_LABEL_COLORS,
   INBOX_LABELS,
   INBOX_PEOPLE,
   type InboxMessage,
@@ -226,7 +227,9 @@ function ThreadToolbar({
             // A reader ticks several in a row; the menu stays open for the next.
             onSelect={(event) => event.preventDefault()}
           >
-            {label}
+            <Badge variant="marker" color={INBOX_LABEL_COLORS[label]}>
+              {label}
+            </Badge>
           </DropdownMenuCheckboxItem>
         ))}
       </ToolbarMenu>
@@ -306,7 +309,11 @@ export function Thread({
             {thread.labels.length > 0 && (
               <p className="mt-1 flex flex-wrap gap-1">
                 {thread.labels.map((label) => (
-                  <Badge key={label} variant="outline">
+                  <Badge
+                    key={label}
+                    variant="marker"
+                    color={INBOX_LABEL_COLORS[label]}
+                  >
                     {label}
                   </Badge>
                 ))}

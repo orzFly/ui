@@ -1,4 +1,9 @@
-import { TASK_LABELS, TASK_PEOPLE } from "@orz/fixtures/tasks.ts";
+import {
+  TASK_LABEL_COLORS,
+  TASK_LABELS,
+  TASK_PEOPLE,
+} from "@orz/fixtures/tasks.ts";
+import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
   FilterMenu,
@@ -17,6 +22,8 @@ interface Choice {
   label: string;
   /** Drawn before the label: an avatar for a person. */
   lead?: ReactNode;
+  /** A label's colour: the row draws the label as the table does. */
+  color?: string;
 }
 
 const STATUS_SECTIONS: FilterMenuSection<Choice>[] = [
@@ -61,7 +68,11 @@ const LABEL_SECTIONS: FilterMenuSection<Choice>[] = [
   {
     id: "labels",
     label: "Labels",
-    rows: TASK_LABELS.map((label) => ({ id: label, label })),
+    rows: TASK_LABELS.map((label) => ({
+      id: label,
+      label,
+      color: TASK_LABEL_COLORS[label],
+    })),
   },
 ];
 
@@ -98,7 +109,13 @@ function Filter({
       renderRow={(row, state) => (
         <span className="flex min-w-0 items-center gap-2">
           {row.lead}
-          <MatchedText text={row.label} query={state.query} />
+          {row.color === undefined ? (
+            <MatchedText text={row.label} query={state.query} />
+          ) : (
+            <Badge variant="marker" color={row.color}>
+              <MatchedText text={row.label} query={state.query} />
+            </Badge>
+          )}
         </span>
       )}
       placeholder={`Filter ${name.toLowerCase()}…`}

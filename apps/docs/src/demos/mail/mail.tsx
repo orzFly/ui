@@ -77,6 +77,7 @@ import {
   findThread,
   folderOf,
   hasWords,
+  INBOX_LABEL_COLORS,
   INBOX_ME,
   type InboxThread,
   type MailboxState,
@@ -242,7 +243,8 @@ function ThreadRow({
             {thread.labels.map((label) => (
               <Badge
                 key={label}
-                variant="outline"
+                variant="marker"
+                color={INBOX_LABEL_COLORS[label]}
                 className="mr-1 h-4 gap-1 px-1 align-[1px] text-ui-xs"
               >
                 {label}

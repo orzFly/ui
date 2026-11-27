@@ -23,6 +23,17 @@ export {
   themesForStyle,
 } from "./styles.ts";
 export { textMateTheme } from "./syntax.ts";
+export {
+  TAG_COLORS,
+  TAG_FILL,
+  TAG_HUES,
+  type TagBlend,
+  type TagColor,
+  type TagTokenName,
+  tagBlend,
+  tagColorsOf,
+  tagFill,
+} from "./tag.ts";
 export { afterglow } from "./themes/afterglow.ts";
 export { catppuccin } from "./themes/catppuccin.ts";
 export { defaultTheme } from "./themes/default.ts";

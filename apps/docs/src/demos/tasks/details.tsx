@@ -1,4 +1,5 @@
 import {
+  TASK_LABEL_COLORS,
   TASK_PEOPLE,
   type Task,
   type TaskStatus,
@@ -170,7 +171,11 @@ export function TaskDetails({
           ) : (
             <span className="flex flex-wrap gap-1">
               {task.labels.map((label) => (
-                <Badge key={label} variant="outline">
+                <Badge
+                  key={label}
+                  variant="marker"
+                  color={TASK_LABEL_COLORS[label]}
+                >
                   {label}
                 </Badge>
               ))}

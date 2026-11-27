@@ -16,6 +16,15 @@ colors:
   destructive: "#c8102e"
   success: "#12733a"
   warning: "#975a00"
+  tag-red: "#b43938"
+  tag-orange: "#9b4e01"
+  tag-yellow: "#7d6001"
+  tag-green: "#01732b"
+  tag-teal: "#036e69"
+  tag-blue: "#0961bb"
+  tag-purple: "#794db6"
+  tag-pink: "#aa3977"
+  tag-gray: "#5f6570"
 typography:
   title:
     fontFamily: "Noto Sans Variable, ui-sans-serif, system-ui, sans-serif"
@@ -178,10 +187,13 @@ A near-monochrome ink-on-white palette with a single deep indigo accent; dark mo
 ### Status
 - **Destructive** (destructive), **Success** (success), **Warning** (warning): status text held to 4.5:1 on ground and popover. A destructive button or menu item draws its text as destructive mixed with 65% foreground over a 10% destructive tint.
 
-### Named Rules
-**The One Ink Accent Rule.** Ai marks only where you are and what you can do: the primary action, focus, the current tab, links, the marker icon; and, on the marker tint as the icon is, a `marker` badge for what the user has set that is in force, such as the count on a toolbar's ⋯ of the filters in use inside it. It never fills a module, a strip or a decoration.
+### Tag Colours
+- **Tag Red** (tag-red) through **Tag Pink** (tag-pink), and **Tag Gray** (tag-gray): nine named colours a tag is drawn in, its name in the colour on a fill of it mixed into the ground, 16% in light and 24% in dark. Every theme keeps each colour's hue (red 25, orange 55, yellow 88, green 148, teal 190, blue 255, purple 300, pink 350; gray takes ink's) and sets lightness and chroma so the name holds 4.5:1 on its own fill: on the default palette's light side they run from `#b43938` (red) to `#5f6570` (gray), and on its dark side every one sits at oklch L 0.72. `tagColorsOf()` derives them for a palette that names none. Like the chart series, they tell categories apart and carry no meaning of their own; any other colour value is drawn between the two named colours its hue falls between.
 
-**The Held Floors Rule.** Every built-in palette passes the contrast checks in `packages/themes/src/contrast.ts`: text pairs 4.5:1 (ai-foreground on ai, ai on ground, quiet ink on ground and strip, status on ground and popover, the marker icon on its square); field edges, focus rings, state cues and chart series 3:1.
+### Named Rules
+**The One Ink Accent Rule.** Ai marks only where you are and what you can do: the primary action, focus, the current tab, links, the marker icon; and, on the marker tint as the icon is, a `marker` badge for what the user has set that is in force, such as the count on a toolbar's ⋯ of the filters in use inside it. It never fills a module, a strip or a decoration. The tag colours are not accents: they tell tags apart and mark neither a place nor an action.
+
+**The Held Floors Rule.** Every built-in palette passes the contrast checks in `packages/themes/src/contrast.ts`: text pairs 4.5:1 (ai-foreground on ai, ai on ground, quiet ink on ground and strip, status on ground and popover, the marker icon on its square, a tag's name on its own fill under the default style); field edges, focus rings, state cues and chart series 3:1.
 
 ## Typography
 
@@ -233,6 +245,7 @@ Square. Surfaces, overlays, frames, rows and tabs carry 0 radius; controls and c
 ### Chips
 - **Style:** 20px high, 2px radius, 11px medium label, ai fill by default.
 - **Marker:** `variant="marker"` takes the module marker's colours, ai on the marker tint, edged in 35% ai; raymond draws it in a static edge on the marker fill. It marks what the user has set that is in force: the count on a toolbar's ⋯ of what in there is set away from its default, at 16px high with tabular figures.
+- **Tag:** `variant="marker"` with a `color` is a tag: its name in the tag colour on its own fill, edged in 35% of the colour, at the chip's size; the colour is a name, `autoTagColor()`'s pick for the tag's id, or a value the app stores. Raymond draws it with no edge or fill, as the text around it with a 7px swatch of the colour before the name, in a 1px edge of the text's colour, so a highlighted row turns the name and the edge white and the swatch keeps its colour.
 
 ### Cards / Containers
 - **Corner Style:** square (0).
@@ -270,3 +283,4 @@ The 16px square that heads a card header, a viewer's toolbar, and a dialog or sh
 - **Don't** round a surface, overlay, row or tab.
 - **Don't** set UI text below 11px.
 - **Don't** mark selection, highlight or the current tab with a fill alone.
+- **Don't** say a state with a tag colour: a red tag is not an error, and a status has its own colours and words.

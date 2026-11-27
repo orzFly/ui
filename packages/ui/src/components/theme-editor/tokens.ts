@@ -1,4 +1,8 @@
-import type { TerminalTokenName, TokenName } from "@orz/themes";
+import {
+  TAG_COLORS,
+  type TerminalTokenName,
+  type TokenName,
+} from "@orz/themes";
 
 export interface TokenEntry<N extends string> {
   name: N;
@@ -95,6 +99,19 @@ export const UI_TOKEN_GROUPS: readonly TokenGroup<TokenName>[] = [
     ],
   },
   {
+    id: "tags",
+    label: "Tags",
+    rows: [
+      {
+        kind: "strip",
+        tokens: TAG_COLORS.map((color) => ({
+          name: `tag-${color}` as const,
+          label: color[0].toUpperCase() + color.slice(1),
+        })),
+      },
+    ],
+  },
+  {
     id: "sidebar",
     label: "Sidebar",
     rows: [
@@ -175,28 +192,34 @@ export function groupTokens<N extends string>(group: TokenGroup<N>): N[] {
 }
 
 /**
- * The surface a single token is drawn on, for its popover's contrast ratio.
- * Pair members are absent: their row shows the pair's ratio.
+ * The surface a single token is drawn on, for its popover's contrast ratio:
+ * a token, or a tag's own fill, which follows the colour being picked. Pair
+ * members are absent: their row shows the pair's ratio.
  */
-export const UI_CONTRAST_WITH: Readonly<Partial<Record<TokenName, TokenName>>> =
-  {
-    destructive: "background",
-    success: "background",
-    warning: "background",
-    border: "background",
-    input: "background",
-    ring: "background",
-    marker: "primary",
-    "chart-1": "background",
-    "chart-2": "background",
-    "chart-3": "background",
-    "chart-4": "background",
-    "chart-5": "background",
-    "diff-addition": "background",
-    "diff-deletion": "background",
-    "sidebar-border": "sidebar",
-    "sidebar-ring": "sidebar",
-  };
+export const UI_CONTRAST_WITH: Readonly<
+  Partial<Record<TokenName, TokenName | "tag-fill">>
+> = {
+  ...Object.fromEntries(
+    TAG_COLORS.map((color) => [`tag-${color}`, "tag-fill"] as const),
+  ),
+
+  destructive: "background",
+  success: "background",
+  warning: "background",
+  border: "background",
+  input: "background",
+  ring: "background",
+  marker: "primary",
+  "chart-1": "background",
+  "chart-2": "background",
+  "chart-3": "background",
+  "chart-4": "background",
+  "chart-5": "background",
+  "diff-addition": "background",
+  "diff-deletion": "background",
+  "sidebar-border": "sidebar",
+  "sidebar-ring": "sidebar",
+};
 
 export const TERMINAL_CONTRAST_WITH: Readonly<
   Partial<Record<TerminalTokenName, TerminalTokenName>>

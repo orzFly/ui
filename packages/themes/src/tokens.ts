@@ -1,4 +1,9 @@
+import { TAG_COLORS, type TagTokenName } from "./tag.ts";
 import type { TerminalTokenName, TokenName } from "./types.ts";
+
+const TAG_TOKEN_NAMES: readonly TagTokenName[] = TAG_COLORS.map(
+  (color) => `tag-${color}` as const,
+);
 
 /** UI names in `@orz/ui` styles.css `:root` order; renderDeclarations emits in this order. */
 export const TOKEN_NAMES: readonly TokenName[] = [
@@ -32,6 +37,7 @@ export const TOKEN_NAMES: readonly TokenName[] = [
   "chart-3",
   "chart-4",
   "chart-5",
+  ...TAG_TOKEN_NAMES,
   "sidebar",
   "sidebar-foreground",
   "sidebar-primary",
@@ -52,6 +58,7 @@ export const LATE_TOKEN_NAMES: readonly TokenName[] = [
   "marker",
   "selection",
   "selection-foreground",
+  ...TAG_TOKEN_NAMES,
 ];
 
 /** Terminal names; renderTerminalDeclarations emits in this order. */

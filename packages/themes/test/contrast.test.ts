@@ -3,6 +3,15 @@ import { CONTRAST_CHECKS, contrastRows } from "../src/contrast.ts";
 import { builtinThemes, DEFAULT_STYLE, resolvePalette } from "../src/index.ts";
 import { contrast, distance, painted, rgbOf } from "../src/rgb.ts";
 import { SELECTION_APART, SELECTION_SURFACES } from "../src/selection.ts";
+import {
+  blendOf,
+  labOfValue,
+  lchOf,
+  onFill,
+  TAG_COLORS,
+  TAG_HUES,
+  type TagColor,
+} from "../src/tag.ts";
 import { failures, resolvedPalettes as resolved } from "./palettes.ts";
 
 // A check id names one floor; each style may add its own pairs under it.
@@ -15,8 +24,8 @@ describe.each([...floors])("%s contrast", (id, floor) => {
         CONTRAST_CHECKS.filter((check) => check.id === id).map((c) => c.floor),
       ).size,
     ).toBe(1);
-    const rows = resolved.flatMap(({ name, tokens, styles }) =>
-      contrastRows(tokens, styles)
+    const rows = resolved.flatMap(({ name, tokens, styles, scheme }) =>
+      contrastRows(tokens, styles, scheme)
         .filter((row) => row.check === id)
         .map((row) => ({
           name: `${name} ${row.foreground}/${row.surface}`,
@@ -94,5 +103,90 @@ describe("sidebar state fill", () => {
         ratio: contrast(rgbOf(tokens["sidebar-accent"]), rgbOf(tokens.sidebar)),
       }));
     expect(failures("sidebar-fill", rows, SIDEBAR_FILL)).toEqual([]);
+  });
+});
+
+type Chromatic = Exclude<TagColor, "gray">;
+const CHROMATIC = TAG_COLORS.filter((c): c is Chromatic => c !== "gray");
+const tag = (tokens: Record<string, string>, color: TagColor) =>
+  labOfValue(tokens[`tag-${color}`]);
+
+describe("tag colour blends", () => {
+  // A colour value between two hue-adjacent named colours, leaning toward
+  // gray, is drawn as a color-mix() of them; each such mix keeps 4.5:1 on its
+  // own fill.
+  it("hold 4.5:1 on their own fill between every two hue-adjacent colours", () => {
+    const rows = resolved
+      .filter(({ styles }) => styles.includes(DEFAULT_STYLE))
+      .flatMap(({ name, tokens, scheme }) =>
+        CHROMATIC.flatMap((from, i) => {
+          const to = CHROMATIC[(i + 1) % CHROMATIC.length];
+          return Array.from({ length: 11 }, (_, step) => step * 10).flatMap(
+            (toShare) =>
+              [0, 25, 50, 75, 100].map((grayShare) => {
+                const ink = blendOf(
+                  tag(tokens, from),
+                  tag(tokens, to),
+                  tag(tokens, "gray"),
+                  toShare / 100,
+                  grayShare / 100,
+                );
+                return {
+                  name: `${name} ${from}→${to} ${toShare}% gray ${grayShare}%`,
+                  ratio: onFill(ink, labOfValue(tokens.background), scheme),
+                };
+              }),
+          );
+        }),
+      );
+    expect(rows.length).toBeGreaterThan(10000);
+    expect(failures("tag-blend", rows, 4.5)).toEqual([]);
+  });
+});
+
+describe("tag colour hues", () => {
+  const apart = (x: number, y: number) => {
+    const turn = Math.abs(x - y) % 360;
+    return Math.min(turn, 360 - turn);
+  };
+
+  it("keep each colour nearer its own base hue than any other's", () => {
+    const wrong = resolved.flatMap(({ name, tokens }) =>
+      CHROMATIC.flatMap((color) => {
+        const hue = lchOf(tag(tokens, color))[2];
+        const nearest = CHROMATIC.reduce((best, other) =>
+          apart(hue, TAG_HUES[other]) < apart(hue, TAG_HUES[best])
+            ? other
+            : best,
+        );
+        return nearest === color
+          ? []
+          : [`${name} ${color} ${hue.toFixed(1)}° is nearer ${nearest}`];
+      }),
+    );
+    expect(wrong).toEqual([]);
+  });
+
+  it("keep gray all but neutral", () => {
+    const rows = resolved.map(({ name, tokens }) => ({
+      name: `${name} gray`,
+      chroma: lchOf(tag(tokens, "gray"))[1],
+    }));
+    expect(
+      rows.filter((r) => r.chroma > 0.03).map((r) => `${r.name} ${r.chroma}`),
+    ).toEqual([]);
+  });
+
+  it("keep every two colours 0.04 apart in OKLab", () => {
+    const close = resolved.flatMap(({ name, tokens }) =>
+      CHROMATIC.flatMap((x, i) =>
+        CHROMATIC.slice(i + 1).flatMap((y) => {
+          const [a, b] = [tag(tokens, x), tag(tokens, y)];
+          const gap = Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+          return gap < 0.04 ? [`${name} ${x}/${y} ${gap.toFixed(3)}`] : [];
+        }),
+      ),
+    );
+    expect(close).toEqual([]);
   });
 });

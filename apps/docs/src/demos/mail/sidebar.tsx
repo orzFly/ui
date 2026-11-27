@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
+import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
   DropdownMenu,
@@ -39,7 +40,7 @@ import {
 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { placeHref } from "./location.ts";
-import { INBOX_LABELS } from "./mailbox.ts";
+import { INBOX_LABEL_COLORS, INBOX_LABELS } from "./mailbox.ts";
 
 /** A place in the sidebar: a folder or a filter, each no more than a saved search. */
 interface Place {
@@ -175,7 +176,12 @@ export function Sidebar({
                     <NavListLink current={query === `label:${label}`} asChild>
                       <PlaceLink query={`label:${label}`} onShow={onShow}>
                         <TagIcon />
-                        {label}
+                        <Badge
+                          variant="marker"
+                          color={INBOX_LABEL_COLORS[label]}
+                        >
+                          {label}
+                        </Badge>
                       </PlaceLink>
                     </NavListLink>
                   </NavListItem>
@@ -282,7 +288,9 @@ export function Rail({
               key={label}
               onSelect={() => onShow(`label:${label}`)}
             >
-              {label}
+              <Badge variant="marker" color={INBOX_LABEL_COLORS[label]}>
+                {label}
+              </Badge>
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

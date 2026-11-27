@@ -4,6 +4,12 @@ export type PullRequestEvent =
   | { kind: "push"; author: string; at: string; commit: string }
   | { kind: "check"; at: string; run: number; status: "passed" | "failed" };
 
+/** Each label's colour as the forge stores it, a colour value of its own. */
+export const PULL_REQUEST_LABEL_COLORS: Readonly<Record<string, string>> = {
+  enhancement: "#a2eeef",
+  network: "#1d76db",
+};
+
 /**
  * The pull request `patch/series.patch` is the change of, and `CI_RUN` its last run: opened by
  * alice, reviewed by claude-agent, with a docs commit from bot-one on top that the run fails on.

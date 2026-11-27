@@ -1,4 +1,5 @@
 import {
+  INBOX_LABEL_COLORS,
   INBOX_LABELS,
   INBOX_THREADS,
   type InboxThread,
@@ -97,7 +98,9 @@ export function ThreadToolbar() {
                   }
                   onSelect={(event) => event.preventDefault()}
                 >
-                  {label}
+                  <Badge variant="marker" color={INBOX_LABEL_COLORS[label]}>
+                    {label}
+                  </Badge>
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
@@ -115,7 +118,11 @@ export function ThreadToolbar() {
         <p className="flex flex-wrap gap-1">
           {archived && <Badge>Archive</Badge>}
           {labels.map((label) => (
-            <Badge key={label} variant="outline">
+            <Badge
+              key={label}
+              variant="marker"
+              color={INBOX_LABEL_COLORS[label]}
+            >
               {label}
             </Badge>
           ))}

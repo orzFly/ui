@@ -49,6 +49,17 @@ const palette: Palette = {
     "chart-3": "#800000",
     "chart-4": "#800080",
     "chart-5": "#008080",
+    // Raymond draws a tag's colour as a swatch beside black text, never as
+    // text, so these are Paint's default colours rather than inks held to 4.5:1.
+    "tag-red": "#ff0000",
+    "tag-orange": "#ff8040",
+    "tag-yellow": "#ffff00",
+    "tag-green": "#008000",
+    "tag-teal": "#008080",
+    "tag-blue": "#0000ff",
+    "tag-purple": "#8000ff",
+    "tag-pink": "#ff0080",
+    "tag-gray": "#808080",
     sidebar: FACE,
     "sidebar-foreground": "#000000",
     "sidebar-primary": HIGHLIGHT,

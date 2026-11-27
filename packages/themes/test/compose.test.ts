@@ -10,6 +10,7 @@ import {
   selectionOf,
   type TokenName,
   type Tokens,
+  tagColorsOf,
 } from "../src/index.ts";
 import { duo, ink, night, term, terminal, tokens } from "./fixtures.ts";
 
@@ -99,7 +100,21 @@ describe("composeTheme", () => {
       marker: markerOf(saved),
       selection: selectionOf(saved),
       "selection-foreground": saved.foreground,
+      ...tagColorsOf(saved, "dark"),
     });
+  });
+
+  it("keeps a detached side's own tag colours", () => {
+    const own = tokens(0.2, { "tag-red": "#ff0000" });
+    const theme = composeTheme(
+      {
+        id: "c",
+        label: "Custom",
+        dark: { tokens: own, terminal: { tokens: terminal("#777777") } },
+      },
+      themes,
+    );
+    expect(theme?.dark?.tokens).toEqual(own);
   });
 
   describe("terminal", () => {
