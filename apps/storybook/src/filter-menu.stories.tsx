@@ -176,7 +176,7 @@ const meta = {
             selectedId: row.id.split("/")[0],
             selectedSubmenuId: args.getSubmenu ? row.id : undefined,
           });
-          args.onSelect(row);
+          args.onSelect?.(row);
         }}
       >
         <Button variant="outline" className="w-48 justify-between">

@@ -1,8 +1,9 @@
 import { CheckIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
-import { Toolbar as ToolbarPrimitive } from "radix-ui";
+import { Slot, Toolbar as ToolbarPrimitive } from "radix-ui";
 import type {
   ComponentProps,
   KeyboardEvent,
+  MouseEvent,
   PointerEvent,
   ReactElement,
   ReactNode,
@@ -10,6 +11,7 @@ import type {
   RefObject,
 } from "react";
 import {
+  cloneElement,
   Fragment,
   useCallback,
   useEffect,
@@ -20,6 +22,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { isModifiedClick } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
 import { DropdownMenuItem } from "./dropdown-menu.tsx";
 import {
@@ -89,8 +92,20 @@ export interface FilterMenuProps<R extends FilterMenuRow> {
    * `selectedId` untouched, the pointer left the list, or the menu closed.
    */
   onHighlight?: (row: R | null) => void;
-  /** The menu closes after it. */
-  onSelect: (row: R) => void;
+  /**
+   * A row was picked, by a click or Enter; the menu closes after it. A
+   * `rowLink` row has gone by its link by then, so this only hears of it.
+   */
+  onSelect?: (row: R) => void;
+  /**
+   * Where a row that is a place goes: its `href`, drawn as an `a`, or a
+   * router's link with no children, which the row is drawn as, its content
+   * inside. A plain click or Enter goes there and closes the menu; a click
+   * with a modifier, a middle click or a right click is the browser's (a new
+   * tab, a window, the link's own menu), and the menu stays open. Undefined
+   * for a row that is no place.
+   */
+  rowLink?: (row: R) => string | ReactElement | undefined;
   /**
    * A row's submenu rows, filtered for `query`: what its filter box holds, or
    * `""` without one. Undefined or empty for `""` = no submenu. Ids unique
@@ -349,6 +364,7 @@ export function FilterMenu<R extends FilterMenuRow>({
   selectedId,
   onHighlight,
   onSelect,
+  rowLink,
   getSubmenu,
   submenuFilter,
   selectedSubmenuId,
@@ -741,8 +757,88 @@ export function FilterMenu<R extends FilterMenuRow>({
 
   const choose = (row: R) => {
     if (row.disabled) return;
-    onSelect(row);
+    onSelect?.(row);
     setOpen(false);
+  };
+
+  /**
+   * A row's click. A link row goes by its link, whether the browser follows
+   * it, a router's link takes it over after this, or the caller's own
+   * handler did before; this only closes the menu, and leaves a click with a
+   * modifier to the browser. Preventing the default here would stop a
+   * router's link, which goes only for a click nobody handled.
+   */
+  const onRowClick = (event: MouseEvent<HTMLElement>, row: R) => {
+    if (!event.currentTarget.matches("a[href]")) {
+      choose(row);
+      return;
+    }
+    if (row.disabled) {
+      event.preventDefault();
+      return;
+    }
+    if (!isModifiedClick(event)) choose(row);
+  };
+
+  const linkOf = (row: R): ReactElement | undefined => {
+    const link = rowLink?.(row);
+    // biome-ignore lint/a11y/useAnchorContent: the row's content goes inside
+    return typeof link === "string" ? <a href={link} /> : link;
+  };
+
+  /** Enter: a link row is clicked, so it goes as a plain click would. */
+  const activate = (row: R, id: string) => {
+    const el = document.getElementById(id);
+    if (el?.matches("a[href]")) el.click();
+    else choose(row);
+  };
+
+  // What the last press on the surface came from: only a mouse drags a link.
+  const pressedWith = useRef<string | null>(null);
+  const pressOver = useRef<AbortController | null>(null);
+  useEffect(() => () => pressOver.current?.abort(), []);
+  /**
+   * Pressing anything but a control (a row, the search icon, padding) would
+   * move focus onto the surface, out of the box and its keys. A link row
+   * pressed with the mouse's left button is the exception: the browser starts
+   * a drag of it (onto the bookmarks bar, into another tab) only from a press
+   * that moved the focus to it, so the box takes the focus back once the
+   * press is over, on its release or the drag's end.
+   */
+  const onSurfaceMouseDown = (event: MouseEvent) => {
+    const target = event.target as Element;
+    const row = target.closest('[role="option"]');
+    const control = target.closest(FOCUSABLE);
+    if (control !== null && control !== row) return;
+    const drag =
+      row?.matches("a[href]") &&
+      event.button === 0 &&
+      pressedWith.current === "mouse";
+    if (!drag) {
+      event.preventDefault();
+      return;
+    }
+    pressOver.current?.abort();
+    const over = new AbortController();
+    pressOver.current = over;
+    const back = () => {
+      over.abort();
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLElement &&
+        active.matches('[role="option"]') &&
+        (list.current?.contains(active) || submenu.current?.contains(active))
+      ) {
+        const box = inSubBoxRef.current ? subInput.current : input.current;
+        box?.focus({ preventScroll: true });
+      }
+    };
+    const options = { capture: true, signal: over.signal };
+    window.addEventListener("mouseup", back, options);
+    window.addEventListener("dragend", back, options);
+  };
+  const onSurfacePointerDown = (event: PointerEvent) => {
+    pressedWith.current = event.pointerType;
   };
 
   const moveIntoSubmenu = (row: R) => {
@@ -821,7 +917,7 @@ export function FilterMenu<R extends FilterMenuRow>({
       case "Enter": {
         event.preventDefault();
         const row = at < 0 ? undefined : from[at];
-        if (row) choose(row);
+        if (row) activate(row, inSubmenu ? subOptionId(at) : optionId(at));
         return;
       }
       case "Tab":
@@ -840,7 +936,7 @@ export function FilterMenu<R extends FilterMenuRow>({
 
   // The row's height and the surface's sides: the submenu sits against the
   // surface's border whatever the list's padding and scrollbar take.
-  const anchorRow = useCallback((row: HTMLDivElement | null) => {
+  const anchorRow = useCallback((row: HTMLElement | null) => {
     anchor.current = row && {
       // Through it, floating-ui follows the row's scrolling and resizing.
       contextElement: row,
@@ -928,13 +1024,8 @@ export function FilterMenu<R extends FilterMenuRow>({
           "flex max-h-[min(24rem,var(--radix-popover-content-available-height))] flex-col overflow-hidden p-0",
           className,
         )}
-        // Pressing anything but a control (a row, the search icon, padding)
-        // would move focus onto the surface, out of the box and its keys.
-        onMouseDown={(event) => {
-          if (!(event.target as Element).closest(FOCUSABLE)) {
-            event.preventDefault();
-          }
-        }}
+        onPointerDown={onSurfacePointerDown}
+        onMouseDown={onSurfaceMouseDown}
         onEscapeKeyDown={(event) => {
           // That Escape cancels the composition, not the menu.
           if (isEscapeOfComposition(event)) event.preventDefault();
@@ -1059,10 +1150,46 @@ export function FilterMenu<R extends FilterMenuRow>({
                   )}
                 </>
               );
+              const link = linkOf(row);
+              const Row = link ? Slot.Root : "div";
+              const content = (
+                <>
+                  {split ? (
+                    <span data-slot="submenu-action" className={ACTION_CLASS}>
+                      {cell}
+                    </span>
+                  ) : (
+                    cell
+                  )}
+                  {split && (
+                    <span
+                      aria-hidden
+                      data-slot="submenu-trigger"
+                      className="relative flex w-6.5 shrink-0 items-center justify-end self-stretch pr-2 text-muted-foreground group-aria-expanded/option:text-foreground"
+                      // A split button's other half: it opens the submenu,
+                      // where the rest of the row picks the row. A touch
+                      // has no hover to open it any other way. In a link
+                      // row it goes nowhere.
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        if (row.disabled || (highlighted && submenuOpen))
+                          return;
+                        clearGrace();
+                        move(row);
+                      }}
+                    >
+                      <span
+                        data-slot="submenu-divider"
+                        className="absolute inset-y-1.5 left-0 w-px bg-current opacity-20"
+                      />
+                      <ChevronRightIcon aria-hidden />
+                    </span>
+                  )}
+                </>
+              );
               return (
-                // biome-ignore lint/a11y/useKeyWithClickEvents: the filter box takes the keys; focus never comes here
-                // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-expanded marks the option that owns a submenu listbox
-                <div
+                <Row
                   key={row.id}
                   ref={highlighted ? anchorRow : undefined}
                   id={optionId(index)}
@@ -1096,39 +1223,12 @@ export function FilterMenu<R extends FilterMenuRow>({
                   onPointerLeave={
                     highlighted && split ? onParentLeave : undefined
                   }
-                  onClick={() => choose(row)}
+                  onClick={(event: MouseEvent<HTMLElement>) =>
+                    onRowClick(event, row)
+                  }
                 >
-                  {split ? (
-                    <span data-slot="submenu-action" className={ACTION_CLASS}>
-                      {cell}
-                    </span>
-                  ) : (
-                    cell
-                  )}
-                  {split && (
-                    <span
-                      aria-hidden
-                      data-slot="submenu-trigger"
-                      className="relative flex w-6.5 shrink-0 items-center justify-end self-stretch pr-2 text-muted-foreground group-aria-expanded/option:text-foreground"
-                      // A split button's other half: it opens the submenu,
-                      // where the rest of the row picks the row. A touch
-                      // has no hover to open it any other way.
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (row.disabled || (highlighted && submenuOpen))
-                          return;
-                        clearGrace();
-                        move(row);
-                      }}
-                    >
-                      <span
-                        data-slot="submenu-divider"
-                        className="absolute inset-y-1.5 left-0 w-px bg-current opacity-20"
-                      />
-                      <ChevronRightIcon aria-hidden />
-                    </span>
-                  )}
-                </div>
+                  {link ? cloneElement(link, undefined, content) : content}
+                </Row>
               );
             });
             return section.label === undefined ? (
@@ -1186,11 +1286,8 @@ export function FilterMenu<R extends FilterMenuRow>({
               if (subIndex >= 0 || inSubBox) backToParent();
               else setOpen(false);
             }}
-            onMouseDown={(event) => {
-              if (!(event.target as Element).closest(FOCUSABLE)) {
-                event.preventDefault();
-              }
-            }}
+            onPointerDown={onSurfacePointerDown}
+            onMouseDown={onSurfaceMouseDown}
             // Hover only: a tap's leave comes with the pointer lifting, not
             // moving off, and would close the submenu under the tap.
             onPointerEnter={(event) => {
@@ -1258,9 +1355,20 @@ export function FilterMenu<R extends FilterMenuRow>({
               {subRows.map((row, index) => {
                 const highlighted = index === subIndex;
                 const selected = row.id === selectedSubmenuId;
+                const link = linkOf(row);
+                const Row = link ? Slot.Root : "div";
+                const content = (
+                  <>
+                    {renderRow(row, { highlighted, selected, query: subText })}
+                    {selected && (
+                      <Mark className="right-2">
+                        <CheckIcon aria-hidden />
+                      </Mark>
+                    )}
+                  </>
+                );
                 return (
-                  // biome-ignore lint/a11y/useKeyWithClickEvents: the filter box takes the keys; focus never comes here
-                  <div
+                  <Row
                     key={row.id}
                     id={subOptionId(index)}
                     role="option"
@@ -1274,15 +1382,12 @@ export function FilterMenu<R extends FilterMenuRow>({
                     onPointerMove={() => {
                       if (!row.disabled && !highlighted) moveIntoSubmenu(row);
                     }}
-                    onClick={() => choose(row)}
+                    onClick={(event: MouseEvent<HTMLElement>) =>
+                      onRowClick(event, row)
+                    }
                   >
-                    {renderRow(row, { highlighted, selected, query: subText })}
-                    {selected && (
-                      <Mark className="right-2">
-                        <CheckIcon aria-hidden />
-                      </Mark>
-                    )}
-                  </div>
+                    {link ? cloneElement(link, undefined, content) : content}
+                  </Row>
                 );
               })}
             </div>
