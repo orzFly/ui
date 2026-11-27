@@ -478,6 +478,11 @@ second Escape goes to `onEscape`. Pass `options: undefined` for a list that has 
 values paint as valid rather than flashing amber, and `onOpenChange` tells you when the box is in
 use, so loading can wait until then.
 
+A value row is its value in monospace and its hint. `renderValue` draws it as the app draws that
+value elsewhere: given the option as its provider gave it, with the key and spec it is a value of,
+it returns a `leading` mark for the icon's place (an avatar, centred on the icon so every row's
+text still starts at one edge) and a `body` for the text (a label's chip); the hint still follows.
+
 Past queries follow everything else in the panel: Tab loads one, Enter submits it with
 `fromHistory`, and Shift+Delete or its × forgets it. The box records nothing itself; `record` a
 query in `onSubmit`, where the app knows a search ran.

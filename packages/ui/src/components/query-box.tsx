@@ -1,6 +1,7 @@
 import {
   type CompiledQuerySchema,
   type CompletionRow,
+  type CompletionValue,
   orderRows,
   parseQuery,
   type SourceResult,
@@ -61,6 +62,17 @@ export type RowSource<R> = {
   apply?: (row: R) => { value: string; caret: number } | null;
   /** Shift+Delete on the highlighted row. */
   remove?: (row: R) => void;
+};
+
+/**
+ * What `renderValue` draws in a value row. Either part left out stays the
+ * box's own.
+ */
+export type ValueRowContent = {
+  /** In the icon's place: an avatar, a colour's swatch. */
+  leading?: ReactNode;
+  /** In place of the value's text: a label's chip, a status's pill. The hint still follows. */
+  body?: ReactNode;
 };
 
 type BoxRow<R> =
@@ -124,6 +136,18 @@ const COMPLETION_ICON = {
   key: FilterIcon,
   value: TagIcon,
 } satisfies Record<CompletionRow["icon"], typeof FilterIcon>;
+
+/**
+ * The icon column, which a value row's own `leading` stands in: as wide as
+ * the icon, so the text after it starts where every row's does. Anything
+ * wider, an avatar, is centred on it and reaches past it evenly into the
+ * padding and the gap, rather than pushing this one row's text along.
+ * An avatar is sized here to the line of the value's text (under raymond its
+ * own small size, let past the line by a pixel each way), so a person's row
+ * stands as tall as any other value's.
+ */
+const VALUE_LEADING =
+  "flex w-3.5 shrink-0 justify-center *:data-[slot=avatar]:size-4.5 raymond:*:data-[slot=avatar]:size-4 raymond:*:data-[slot=avatar]:-my-px";
 
 /**
  * A ghost icon button's look, but no button: a second action inside the
@@ -250,6 +274,7 @@ export function QueryBox<R>({
   history,
   queryHref,
   renderSubmitRow,
+  renderValue,
   limit = 20,
   onEscape,
   onOpenChange,
@@ -280,6 +305,13 @@ export function QueryBox<R>({
   queryHref?: (query: string) => string;
   /** The row that submits the query as typed, always present; given `""` in an empty box. */
   renderSubmitRow: (query: string, option: OptionProps) => ReactNode;
+  /**
+   * Draws a value row's value as the app draws it elsewhere: a label as its
+   * chip, a person with their avatar. Given the option as its provider gave
+   * it, with the key and spec it is a value of; nothing returned draws the
+   * box's own.
+   */
+  renderValue?: (value: CompletionValue) => ValueRowContent | null | undefined;
   /** Rows offered at most, the submit row not counted. */
   limit?: number;
   /**
@@ -702,6 +734,10 @@ export function QueryBox<R>({
               );
             }
             const Icon = COMPLETION_ICON[row.row.icon];
+            const drawn =
+              row.row.value === undefined
+                ? undefined
+                : renderValue?.(row.row.value);
             return (
               // A button, not a link: it goes nowhere, it rewrites the query
               // in place. Focus stays in the input regardless — the listbox
@@ -712,13 +748,26 @@ export function QueryBox<R>({
                 {...option}
                 onClick={() => accept(row.row.apply)}
               >
-                <Icon
-                  className="size-3.5 shrink-0 text-muted-foreground"
-                  aria-hidden
-                />
-                <span className="truncate font-mono text-ui-sm">
-                  {row.row.text}
-                </span>
+                {drawn?.leading == null ? (
+                  <Icon
+                    className="size-3.5 shrink-0 text-muted-foreground"
+                    aria-hidden
+                  />
+                ) : (
+                  // The words say which value it is; the mark only shows it.
+                  <span
+                    aria-hidden
+                    data-slot="query-value-leading"
+                    className={VALUE_LEADING}
+                  >
+                    {drawn.leading}
+                  </span>
+                )}
+                {drawn?.body ?? (
+                  <span className="truncate font-mono text-ui-sm">
+                    {row.row.text}
+                  </span>
+                )}
                 {row.row.hint !== undefined && (
                   <span className="truncate text-muted-foreground text-ui-sm">
                     {row.row.hint}

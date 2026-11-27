@@ -1,9 +1,13 @@
-import type { ValueProviders } from "@orz/query";
+import type { CompletionValue, ValueProviders } from "@orz/query";
 import { act, fireEvent, render } from "@testing-library/react";
 import { type FormEvent, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { todouSchema } from "../../query/test/fixtures/todou-schema.ts";
-import { QueryBox, type RowSource } from "../src/components/query-box.tsx";
+import {
+  QueryBox,
+  type RowSource,
+  type ValueRowContent,
+} from "../src/components/query-box.tsx";
 import type { QueryHistoryEntry } from "../src/hooks/use-query-history.ts";
 
 const PROVIDERS: ValueProviders = {
@@ -57,6 +61,7 @@ function Harness({
   past?: readonly string[];
   onRemovePast?: (query: string) => void;
   queryHref?: (query: string) => string;
+  renderValue?: (value: CompletionValue) => ValueRowContent | undefined;
 }) {
   const [value, setValue] = useState(initial);
   const [entries, setEntries] = useState<readonly QueryHistoryEntry[]>(() =>
@@ -99,6 +104,9 @@ function Harness({
             },
           })}
       {...(props.queryHref === undefined ? {} : { queryHref: props.queryHref })}
+      {...(props.renderValue === undefined
+        ? {}
+        : { renderValue: props.renderValue })}
     />
   );
 }
@@ -865,5 +873,78 @@ describe("QueryBox · history", () => {
     expect(option(box, "a flaky test").className).not.toContain(
       "--list-highlight",
     );
+  });
+});
+
+describe("QueryBox · value rows the app draws", () => {
+  type Member = { value: string; hint?: string; login: string };
+  const members: Member[] = [
+    { value: "alice", hint: "Alice", login: "alice" },
+    // The schema's own `@me`, restated with who that is.
+    { value: "@ME", hint: "Alice", login: "alice" },
+  ];
+  const MEMBERS: ValueProviders = {
+    ...PROVIDERS,
+    member: { options: members },
+  };
+
+  it("draws the app's mark and words for a value, its hint still after them", () => {
+    const renderValue = vi.fn(
+      ({ option, spec }: CompletionValue): ValueRowContent | undefined => {
+        if (spec.kind !== "named") return undefined;
+        if (spec.source === "label")
+          return { body: <b data-chip>{option.value}</b> };
+        if (spec.source === "member")
+          return {
+            leading: (
+              <span data-slot="avatar">{(option as Member).login[0]}</span>
+            ),
+          };
+        return undefined;
+      },
+    );
+    const box = mount({ providers: MEMBERS, renderValue });
+    box.type("label:");
+    const chip = box.options()[0]?.querySelector("[data-chip]");
+    expect(chip?.textContent).toBe("area:web");
+    // The words take the monospace text's place; nothing else is drawn.
+    expect(box.options()[0]?.querySelector(".font-mono")).toBeNull();
+    expect(box.options()[0]?.querySelector("svg")).not.toBeNull();
+
+    box.type("assignee:");
+    const row = box.options()[0] as HTMLElement;
+    const lead = row.querySelector("[data-slot=query-value-leading]");
+    expect(lead?.getAttribute("aria-hidden")).toBe("true");
+    expect(lead?.textContent).toBe("a");
+    // In the icon's place, and the value and hint as ever after it.
+    expect(row.querySelector("svg")).toBeNull();
+    expect(row.textContent).toBe("a@MEAlice");
+    expect(renderValue).toHaveBeenCalledWith({
+      option: { value: "@ME", hint: "Alice", login: "alice" },
+      key: "assignee",
+      spec: todouSchema.qualifiers.assignee?.value,
+    });
+  });
+
+  it("offers a value its provider restates once, in the schema's place", () => {
+    const box = mount({ providers: MEMBERS });
+    box.type("assignee:");
+    expect(box.texts()).toEqual([
+      "@MEAlice",
+      "aliceAlice",
+      "Search for “assignee:”",
+    ]);
+  });
+
+  it("draws the box's own row for what the app leaves, and asks nothing for a key", () => {
+    const renderValue = vi.fn(() => undefined);
+    const box = mount({ renderValue });
+    box.type("har");
+    expect(renderValue).not.toHaveBeenCalled();
+    box.type("state:");
+    expect(renderValue).toHaveBeenCalled();
+    const row = box.options()[0] as HTMLElement;
+    expect(row.querySelector(".font-mono")?.textContent).toBe("open");
+    expect(row.querySelector("[data-slot=query-value-leading]")).toBeNull();
   });
 });
