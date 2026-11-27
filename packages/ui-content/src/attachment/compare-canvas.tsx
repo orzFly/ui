@@ -15,6 +15,7 @@ import {
   CompareLabel,
   CompareModes,
   type CompareSide,
+  STACKED_BELOW_REM,
   STRIP,
   SwipeHandle,
 } from "../compare/media-compare.tsx";
@@ -52,7 +53,9 @@ export type ComparePair = {
   footer?: ReactNode;
   /**
    * The modes offered. Default: all four for two images, side by side alone
-   * when a side is drawn `content`, which then always sits left and right.
+   * when a side is drawn `content`, which then sits left and right, or one
+   * above the other in a viewer as narrow as a page where `MediaCompare`
+   * stacks its sides.
    */
   modes?: readonly CompareMode[];
 };
@@ -99,6 +102,14 @@ function keepSliderKeys(e: { key: string; stopPropagation(): void }) {
   if (SLIDER_KEYS.has(e.key)) e.stopPropagation();
 }
 
+/** The px in a rem, as the page's container queries count it; 16 with no styles. */
+function rootFontSize(): number {
+  const size = Number.parseFloat(
+    getComputedStyle(document.documentElement).fontSize,
+  );
+  return size > 0 && Number.isFinite(size) ? size : 16;
+}
+
 function useWindowHeight() {
   const [height, setHeight] = useState(() =>
     typeof window === "undefined" ? 0 : window.innerHeight,
@@ -118,9 +129,11 @@ type Hover = { pane: number; x: number; y: number };
  * zoom and one position for both, from the union of their sizes with their
  * top-left corners together, so wherever either is zoomed or dragged the
  * other follows. Side by side cuts the canvas into two panes showing that
- * same view, left and right or one above the other, whichever draws the
- * pictures larger; the overlay modes stack both in one. Mount it keyed by
- * the pair, as ImageCanvas is by its image.
+ * same view: two images left and right or one above the other, whichever
+ * draws them larger, and a drawing left and right unless the canvas rests
+ * as narrow as a page where `MediaCompare` stacks its sides; the overlay
+ * modes stack both in one. Mount it keyed by the pair, as ImageCanvas is by
+ * its image.
  */
 export function CompareCanvas({
   pair,
@@ -176,11 +189,14 @@ export function CompareCanvas({
       // The arrangement is chosen against the tallest the canvas may get and
       // the width it rests at, so it does not flip while a restored canvas
       // grows with the zoom; the panes then split the canvas at the size it
-      // has now. A drawing sits left and right whatever its shape: the two
-      // read against each other.
+      // has now. A drawing sits left and right whatever its shape, the two
+      // read against each other, except where the page's comparison would
+      // stack too: halves that narrow draw it smaller than the page did.
       const cap = maximized ? height : windowHeight * 0.75;
       const direction = isDrawn
-        ? "row"
+        ? rest < STACKED_BELOW_REM * rootFontSize()
+          ? "column"
+          : "row"
         : sideBySidePanes(
             rest,
             cap,

@@ -117,7 +117,7 @@ const pairs: ComparePair[] = [
     before: { label: "v1", file: before, size: { width: 720, height: 400 } },
     after: { label: "v2", file: after, size: { width: 720, height: 460 } },
   },
-  // A side drawn as a node (an SVG) zooms as vectors, always left and right.
+  // A side drawn as a node (an SVG) zooms as vectors, side by side its only mode.
   { title: "flow.mmd", before: { label: "v1", content: <svg …/>, size }, after: … },
 ];
 

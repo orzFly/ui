@@ -97,7 +97,8 @@ since the colour would no longer point at anything.
 back, and when neither parses, the comparison is `@orz/ui-code`'s `CodeDiffBlock` of the two
 sources; the Source toggle switches to that diff and back. A side that does not parse shows the
 parser's message and its source. Within an `AttachmentViewerProvider`, either picture, or the
-toolbar's **Open in the viewer**, opens both in the viewer as drawings at one zoom, side by side.
+toolbar's **Open in the viewer**, opens both in the viewer as drawings at one zoom, left and right,
+or one above the other in a viewer as narrow as a page on which the comparison stacks.
 
 ## Theme
 

@@ -61,6 +61,14 @@ export const STRIP: Record<"before" | "after", string> = {
   after: "before:bg-(--diff-addition)",
 };
 
+/**
+ * The width, in rem, below which a comparison's two sides sit one above the
+ * other: on the page, `SideBySide`'s container query; in the viewer, a pair
+ * with a drawn side. The query keeps its own literal, since Tailwind reads
+ * only literal class names, and a test holds it to this.
+ */
+export const STACKED_BELOW_REM = 30;
+
 export type MediaCompareProps = {
   before: CompareSide;
   after: CompareSide;

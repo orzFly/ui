@@ -295,19 +295,52 @@ describe("the viewer's comparison of drawings", () => {
     ...canvas().querySelectorAll<HTMLElement>('[data-slot="compare-drawing"]'),
   ];
 
-  it("stays side by side, left and right, whatever the shared mode", () => {
+  const places = () =>
+    [
+      ...canvas().querySelectorAll<HTMLElement>('[data-slot="compare-pane"]'),
+    ].map((pane) => [pane.style.left, pane.style.top]);
+  // Narrower than the page's comparison stacks at, with no styles to read a
+  // root font size from.
+  const narrow = () =>
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(360);
+
+  it("stays side by side whatever the shared mode, left and right in a wide canvas", () => {
     render(<Viewer pairs={[DRAWINGS]} mode="swipe" />);
     expect(canvas().dataset.mode).toBe("2up");
     expect(canvas().dataset.direction).toBe("row");
     expect(screen.queryByRole("group", { name: "Comparison" })).toBeNull();
-    expect(
-      [
-        ...canvas().querySelectorAll<HTMLElement>('[data-slot="compare-pane"]'),
-      ].map((pane) => [pane.style.left, pane.style.top]),
-    ).toEqual([
+    expect(places()).toEqual([
       ["0px", "0px"],
       ["404px", "0px"],
     ]);
+  });
+
+  it("stacks one above the other in a canvas as narrow as a stacked page comparison", () => {
+    narrow();
+    render(<Viewer pairs={[DRAWINGS]} />);
+    expect(canvas().dataset.direction).toBe("column");
+    const [first, second] = places();
+    expect(first).toEqual(["0px", "0px"]);
+    expect(second?.[0]).toBe("0px");
+    expect(Number.parseFloat(second?.[1] ?? "")).toBeGreaterThan(0);
+  });
+
+  it("stays stacked once maximized in a narrow canvas", () => {
+    narrow();
+    render(<Viewer pairs={[DRAWINGS]} />);
+    fireEvent.click(screen.getByRole("button", { name: "maximize" }));
+    expect(screen.getByRole("button", { name: "restore size" })).toBeTruthy();
+    expect(canvas().dataset.direction).toBe("column");
+  });
+
+  it("leaves two images to their own rule in a narrow canvas", () => {
+    narrow();
+    const tall: ComparePair = {
+      before: image("v1", "a.png", { size: { width: 300, height: 2000 } }),
+      after: image("v2", "a.png", { size: { width: 300, height: 2000 } }),
+    };
+    render(<Viewer pairs={[tall]} />);
+    expect(canvas().dataset.direction).toBe("row");
   });
 
   it("draws each side's content at its natural size under one transform, with no checkerboard", () => {

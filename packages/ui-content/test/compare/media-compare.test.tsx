@@ -7,6 +7,7 @@ import {
   MediaCompare,
   type MediaCompareProps,
 } from "../../src/compare/index.ts";
+import { STACKED_BELOW_REM } from "../../src/compare/media-compare.tsx";
 
 // happy-dom never fires `load`, so these hand the sizes over directly.
 const side = (
@@ -165,6 +166,15 @@ describe("MediaCompare", () => {
     expect(failed?.style.width).toBe("");
     expect(drawn?.style.maxWidth).toBe("1456px");
     expect(drawn?.style.width).toBe("100%");
+  });
+
+  // The class has to be a literal for Tailwind to see it; the viewer stacks
+  // a drawing at the constant.
+  it("stacks the sides at the width the viewer stacks a drawing at", () => {
+    renderCompare();
+    expect(slot("compare-sides")?.className.split(" ")).toContain(
+      `@max-[${STACKED_BELOW_REM}rem]:grid-cols-1`,
+    );
   });
 
   it("lines the overlay's sides up at the top centre when asked", () => {
