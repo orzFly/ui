@@ -405,9 +405,10 @@ pulls an image edge inside the canvas. Restored, fit never enlarges an image; ma
 the window. Paging starts every image at fit; maximize keeps the zoom and the point at the centre.
 Restored, the canvas asks for the image's height at its zoom, so zooming in grows the dialog up to
 the pane's height before it pans, and the height tweens as it changes (not under
-`prefers-reduced-motion`). While the mouse is over the zoom controls or ‹ ›, the canvas keeps the
+`prefers-reduced-motion`). While the pointer is on the zoom controls or ‹ ›, the canvas keeps the
 height it had when the pointer arrived, so the controls do not slide out from under it; it lets go
-400 ms after the pointer leaves, or at once on a key, a press or a wheel.
+once the pointer has gone `POINTER_HOLD_DISTANCE` px from them (`@orz/ui/hooks/use-pointer-hold`),
+or, off them, at once on a key, a press or a wheel.
 
 In the title bar, − and + step the zoom (hidden on a phone, where pinch does it), and the readout
 opens a menu: Fit (key `0`), 100% (key `1`), a black or checkerboard background, and smooth or
