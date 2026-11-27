@@ -56,6 +56,17 @@ export function clearDone(): number {
 }
 `;
 
+const LONG_LINES = `export async function syncAttachments(store: AttachmentStore, remote: RemoteClient): Promise<SyncReport> {
+  const pending = await store.list({ state: "pending", limit: 50, orderBy: "createdAt" });
+  for (const attachment of pending) {
+    if (attachment.size > remote.maxUploadBytes) {
+      report.skipped.push({ id: attachment.id, reason: \`larger than \${remote.maxUploadBytes} bytes\` });
+      continue;
+    }
+    await remote.upload(attachment.id, await store.read(attachment.id), { retries: 3 });
+  }
+}`;
+
 const FENCES = [
   {
     tag: "python",
@@ -109,6 +120,15 @@ export const InFenceFrame: Story = {
 
 export const LineNumbers: Story = {
   args: { filename: "tasks.ts", contents: WHOLE_FILE, lineNumbers: true },
+};
+
+/**
+ * In a narrow column a long line wraps. Each row it wraps onto starts past the line's own
+ * indentation, behind a faint ↳, so it reads as the same statement at any depth.
+ */
+export const Wrapping: Story = {
+  args: { filename: "sync.ts", contents: LONG_LINES },
+  decorators: [withWidth("max-w-sm")],
 };
 
 export const FenceTags: Story = {

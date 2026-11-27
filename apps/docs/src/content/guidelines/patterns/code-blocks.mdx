@@ -42,6 +42,14 @@ away, and a patch is cut once it is long. They are cut as every long block in a 
 [Long content](/guidelines/patterns/long-content/) for where **Show all** goes and how to turn it
 off.
 
+## Long lines
+
+A fence, a snippet and a diff wrap a line too long for the column rather than scroll it sideways,
+so a phone shows all of it. Each row a line wraps onto starts a little past the line's own
+indentation, behind a faint ↳, so the reader can tell a statement that goes on from the next one
+at any depth. A commit message is prose and wraps flush. A whole file shown with its line numbers
+scrolls sideways instead, keeping each line on one row beside its number.
+
 ## Copy
 
 **Copy** turns into a check for a moment and says "Copied" to a screen reader. It shows no toast:

@@ -30,6 +30,12 @@ import {
   useCodeWorkerFactory,
 } from "./code-worker.tsx";
 import { ensureSyntaxTheme, loadPierre } from "./syntax-registry.ts";
+import {
+  indentWrappedLines,
+  WRAP_INDENT_CSS,
+  WRAP_MARKER_STYLE,
+  wrapLineStyle,
+} from "./wrap-indent.ts";
 
 type Chunk<P> =
   | { status: "loaded"; Component: ComponentType<P> }
@@ -321,6 +327,19 @@ const PIERRE_FONT_FAMILY =
 const PLAIN_PRE =
   "m-0 rounded-none bg-transparent p-0 [font:inherit] raymond:shadow-none";
 
+// A block per line carries the line's own hang. The newlines stay in the text
+// between the blocks, so it copies and reads as written.
+function wrappedLines(contents: string): ReactNode {
+  const lines = contents.split("\n");
+  return lines.map((line, index) => (
+    // biome-ignore lint/suspicious/noArrayIndexKey: a line is its position
+    <span key={index} style={wrapLineStyle(line)}>
+      <span aria-hidden style={WRAP_MARKER_STYLE} />
+      {index < lines.length - 1 ? `${line}\n` : line}
+    </span>
+  ));
+}
+
 /**
  * The code, unhighlighted, drawn as pierre draws it: what every code surface
  * shows until pierre has drawn, and for good when it cannot. Anything else
@@ -328,9 +347,10 @@ const PLAIN_PRE =
  * margin, left unpainted, then its background (`diffs-container`'s, in
  * styles.css) with 8px above and below the lines; its font at 13px on 20px
  * lines with tabs two wide, or what pierre's `--diffs-*` properties make them;
- * 1ch either side of a line. A snippet wraps; a file scrolls sideways beside
- * its line numbers, which take pierre's gutter: 2ch before, at least 3ch wide,
- * 1ch and its 2px rule after, the foreground mixed 65% into the background.
+ * 1ch either side of a line. A snippet wraps, hanging each line's continuation
+ * rows as pierre does; a file scrolls sideways beside its line numbers, which
+ * take pierre's gutter: 2ch before, at least 3ch wide, 1ch and its 2px rule
+ * after, the foreground mixed 65% into the background.
  */
 export function PlainCodeFallback({
   contents,
@@ -365,13 +385,15 @@ export function PlainCodeFallback({
         <pre
           className={cn(
             PLAIN_PRE,
-            "min-w-0 flex-1 px-[1ch]",
+            "min-w-0 flex-1",
             lineNumbers
-              ? "overflow-x-auto"
+              ? "overflow-x-auto px-[1ch]"
               : "wrap-anywhere whitespace-pre-wrap",
           )}
         >
-          <code className={PLAIN_PRE}>{contents}</code>
+          <code className={PLAIN_PRE}>
+            {lineNumbers ? contents : wrappedLines(contents)}
+          </code>
         </pre>
       </div>
     </div>
@@ -447,6 +469,7 @@ function handlePostRender(container: HTMLElement): void {
       }
     }
   }
+  if (shadow != null) indentWrappedLines(shadow);
   if (shadow?.querySelector("[data-line]") != null) {
     for (
       let node: Element | null = container;
@@ -534,7 +557,9 @@ const SELECTION_CSS = `
 
 // The only file items in a patch view are commit messages, and a message's
 // line numbers count nothing the reader can use. pierre's own
-// disableLineNumbers would take them off the diffs as well.
+// disableLineNumbers would take them off the diffs as well. A message is
+// prose, so its rows wrap flush: the hang and ↳ that part a statement from its
+// continuation would only break the left edge a reader's eye returns to.
 const COMMIT_MESSAGE_CSS = `
 [data-file] [data-gutter-buffer], [data-file] [data-column-number] {
   min-width: 0; padding: 0; border-right: 0;
@@ -542,6 +567,8 @@ const COMMIT_MESSAGE_CSS = `
 [data-file] [data-column-number]::before { min-width: 0; }
 [data-file] [data-line-number-content] { display: none; }
 [data-file] [data-line] { min-height: 1lh; }
+[data-file][data-overflow] [data-line] { text-indent: 0; }
+[data-file][data-overflow] [data-line]::after { content: none; }
 `;
 
 // pierre rounds "N unmodified lines" in its own layers, and a value from
@@ -585,7 +612,11 @@ function patchOptions(
     overflow: "wrap",
     preferredHighlighter: PIERRE_HIGHLIGHTER,
     onPostRender: handlePostRender,
-    unsafeCSS: SELECTION_CSS + COMMIT_MESSAGE_CSS + SQUARE_SEPARATOR_CSS,
+    unsafeCSS:
+      SELECTION_CSS +
+      COMMIT_MESSAGE_CSS +
+      SQUARE_SEPARATOR_CSS +
+      WRAP_INDENT_CSS,
     layout: { paddingTop: 0, paddingBottom: 0, gap: 8 },
     itemMetrics: { diffHeaderHeight: headerHeight },
     // Each item's header row stays pinned to the top of the box while the
@@ -609,7 +640,7 @@ function snippetOptions(
     disableLineNumbers: true,
     overflow: "wrap",
     preferredHighlighter: PIERRE_HIGHLIGHTER,
-    unsafeCSS: SELECTION_CSS,
+    unsafeCSS: SELECTION_CSS + WRAP_INDENT_CSS,
     onPostRender: handlePostRender,
   } as const;
   SNIPPET_OPTIONS.set(theme, options);
@@ -647,7 +678,7 @@ function fenceDiffOptions(
     diffStyle: "unified",
     overflow: "wrap",
     preferredHighlighter: PIERRE_HIGHLIGHTER,
-    unsafeCSS: SELECTION_CSS,
+    unsafeCSS: SELECTION_CSS + WRAP_INDENT_CSS,
     // Off — pierre's default — unchanged context collapses to "N unmodified
     // lines" past a single line of it. That reads well in a whole file's
     // diff and badly in a fence the reader opened the document to read: a
@@ -755,7 +786,11 @@ export function CodeBlock({
 }: {
   filename: string;
   contents: string;
-  /** Line numbers suit whole files; snippets read better without. */
+  /**
+   * Line numbers suit whole files; snippets read better without. With them a
+   * long line scrolls sideways; without, it wraps, each row it wraps onto
+   * starting past the line's own indentation behind a faint ↳.
+   */
   lineNumbers?: boolean;
   /**
    * A Copy button at the block's top right, in a column of its own so it never
