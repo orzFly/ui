@@ -1043,6 +1043,17 @@ export function FilterMenu<R extends FilterMenuRow>({
           tabbing.current = null;
           const outside = interactedOutside.current;
           interactedOutside.current = false;
+          // Radix calls this a task after the surface has gone, the focus
+          // having fallen from it to the body. Found anywhere else, it was
+          // put there since, as another menu opening does, and taking it back
+          // would close that menu. An exit animation keeps this surface
+          // listening long enough to see the move as an outside interaction;
+          // without one, nothing else tells it.
+          const active = document.activeElement;
+          if (active !== null && active !== document.body) {
+            event.preventDefault();
+            return;
+          }
           // Opened from the ⋯ menu, it goes back to the ⋯: its own trigger
           // is out of sight. A click elsewhere has put the focus there.
           const from =

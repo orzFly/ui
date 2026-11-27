@@ -317,6 +317,46 @@ describe("FilterMenu", () => {
     );
   });
 
+  it("leaves the focus with a menu its pick opens", async () => {
+    function Steps() {
+      const [second, setSecond] = useState(false);
+      return (
+        <>
+          <FilterMenu
+            query=""
+            onQueryChange={() => {}}
+            onSelect={() => setSecond(true)}
+            sections={[{ id: "all", rows: FRUIT }]}
+            renderRow={(row) => row.label}
+            inputLabel="Filter fruit"
+          >
+            <button type="button">Fruit</button>
+          </FilterMenu>
+          <FilterMenu
+            open={second}
+            onOpenChange={setSecond}
+            query=""
+            onQueryChange={() => {}}
+            sections={[{ id: "all", rows: NUTS }]}
+            renderRow={(row) => row.label}
+            inputLabel="Filter nuts"
+          >
+            <button type="button">Nuts</button>
+          </FilterMenu>
+        </>
+      );
+    }
+    render(<Steps />);
+    fireEvent.click(screen.getByRole("button", { name: "Fruit" }));
+    fireEvent.click(screen.getByRole("option", { name: "Apple" }));
+    const box = screen.getByRole("combobox", { name: "Filter nuts" });
+    expect(document.activeElement).toBe(box);
+    // Past the zero-delay timer in which Radix hands the first menu's focus back.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(document.activeElement).toBe(box);
+    expect(screen.getByRole("listbox").textContent).toContain("Almond");
+  });
+
   it("drops a highlighted row that leaves the list, and keeps one that stays", () => {
     const onHighlight = vi.fn();
     const { rerender } = render(<Harness onHighlight={onHighlight} />);
