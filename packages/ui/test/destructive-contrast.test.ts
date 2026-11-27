@@ -203,7 +203,7 @@ describe("destructive menu item contrast", () => {
     return m ? Number(m[1]) / 100 : null;
   };
   const rest = share("");
-  const focus = share("focus:");
+  const focus = share("data-highlighted:");
 
   // Resting on the popover, and focused on bg-destructive/10 (dark: /20).
   const surfaces = (scheme: string, tokens: Record<string, string>) => {
