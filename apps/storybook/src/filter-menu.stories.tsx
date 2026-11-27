@@ -212,7 +212,11 @@ export default meta;
 // `FilterMenuRow`, without the labels the args read.
 type Story = StoryObj<typeof FilterMenu<Place>>;
 
-/** Sections with labels; try `sao`, `kyo` or `zur`, diacritics folded. */
+/**
+ * Sections with labels; try `sao`, `kyo` or `zur`, diacritics folded. With
+ * the toolbar's pointer at coarse it opens as on a phone, the focus on the
+ * list and the filter box left for a tap.
+ */
 export const Playground: Story = {};
 
 /** One unlabelled section: the shape a plain select-like list takes. */

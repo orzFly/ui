@@ -251,6 +251,24 @@ describe("FilterMenu link rows", () => {
     expect(document.activeElement).toBe(box);
   });
 
+  it("gives a drag's focus back to the list where the menu opened on it", () => {
+    render(
+      <div data-pointer="coarse">
+        <Harness />
+      </div>,
+    );
+    open();
+    const list = screen.getByRole("listbox", { name: "Projects" });
+    expect(document.activeElement).toBe(list);
+    const atlas = row("Atlas");
+    fireEvent.pointerDown(atlas, { pointerType: "mouse" });
+    expect(fireEvent.mouseDown(atlas)).toBe(true);
+    act(() => atlas.focus());
+    fireEvent.mouseUp(atlas);
+    // Not the box, which would raise the on-screen keyboard.
+    expect(document.activeElement).toBe(list);
+  });
+
   it("keeps the focus in the box for any other press on a row", () => {
     render(<Harness />);
     open();

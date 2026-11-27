@@ -765,6 +765,23 @@ describe("FilterMenu in a Toolbar", () => {
       "More actions (1 active)",
     );
   });
+
+  it("opens from the ⋯ menu on the list, without a fine pointer", async () => {
+    render(
+      <div data-pointer="coarse">
+        <Filters />
+      </div>,
+    );
+    await settle();
+    await layout.resize(60);
+    expect(await openMore()).toEqual(["StatusOpen"]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Status Open" }));
+    await settle();
+    await settle();
+    expect(document.activeElement).toBe(
+      screen.getByRole("listbox", { name: "Status" }),
+    );
+  });
 });
 
 describe("FilterMenu with a ToolbarButton for its trigger", () => {

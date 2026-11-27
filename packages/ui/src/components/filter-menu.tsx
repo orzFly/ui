@@ -22,6 +22,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { POINTER_FINE } from "../hooks/use-media-query.ts";
 import { isModifiedClick } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
 import { DropdownMenuItem } from "./dropdown-menu.tsx";
@@ -215,6 +216,30 @@ const FOCUSABLE =
 const TABBABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 
+/**
+ * A `[data-pointer]` ancestor first, as `touch:` reads it, so a preview that
+ * forces touch sizing opens the menu as a phone does; then the primary pointer.
+ */
+function finePointer(el: Element | null): boolean {
+  const forced = el?.closest("[data-pointer]")?.getAttribute("data-pointer");
+  if (forced === "coarse" || forced === "fine") return forced === "fine";
+  return typeof matchMedia !== "function" || matchMedia(POINTER_FINE).matches;
+}
+
+/** A key that types a character, rather than moving or acting. */
+const types = (event: KeyboardEvent) =>
+  [...event.key].length === 1 && !event.ctrlKey && !event.metaKey;
+
+/** Keys that move the highlight, which the box's `aria-activedescendant` reports. */
+const MOVES = new Set([
+  "ArrowDown",
+  "ArrowUp",
+  "ArrowLeft",
+  "ArrowRight",
+  "Home",
+  "End",
+]);
+
 /** Focuses the first element after (or before) `from` in tab order that takes it. */
 function focusBeside(
   from: HTMLElement,
@@ -346,6 +371,11 @@ const isEscapeOfComposition = (event: globalThis.KeyboardEvent) =>
  * in the box, so typing always filters, and the arrow keys walk a highlight
  * that `aria-activedescendant` follows. The caller filters; this component
  * owns the surface, the highlight and the keys.
+ *
+ * Without a fine pointer, on a touch screen, it opens with the focus on the
+ * list instead, so no on-screen keyboard rises over the rows: a tap on the
+ * box brings the keyboard, and a key pressed on a hardware one moves the
+ * focus into the box, which takes that key as its own.
  *
  * In a `Toolbar` its trigger is one of the bar's commands. Moved into the ⋯
  * menu it is a row there, naming it and its value, which opens the menu
@@ -818,6 +848,9 @@ export function FilterMenu<R extends FilterMenuRow>({
       event.preventDefault();
       return;
     }
+    // Opened without a fine pointer, the list holds the focus, and the box
+    // taking it back would raise the on-screen keyboard.
+    const held = document.activeElement === list.current ? list.current : null;
     pressOver.current?.abort();
     const over = new AbortController();
     pressOver.current = over;
@@ -830,7 +863,7 @@ export function FilterMenu<R extends FilterMenuRow>({
         (list.current?.contains(active) || submenu.current?.contains(active))
       ) {
         const box = inSubBoxRef.current ? subInput.current : input.current;
-        box?.focus({ preventScroll: true });
+        (held ?? box)?.focus({ preventScroll: true });
       }
     };
     const options = { capture: true, signal: over.signal };
@@ -865,10 +898,11 @@ export function FilterMenu<R extends FilterMenuRow>({
     report(parent ?? null);
   };
 
-  /** Both boxes' keys; `box` says which one they were pressed in. */
+  /** Both boxes' keys; `box` says which one they are for, `field` is that box. */
   const onKeyDown = (
-    event: KeyboardEvent<HTMLInputElement>,
+    event: KeyboardEvent,
     box: "menu" | "submenu",
+    field: HTMLInputElement,
   ) => {
     // Safari ends a composition with an Enter whose isComposing is already
     // false; keyCode 229 still marks it as the IME's.
@@ -876,7 +910,6 @@ export function FilterMenu<R extends FilterMenuRow>({
     const inSubmenu = box === "submenu" || subIndex >= 0;
     const from = inSubmenu ? subRows : rows;
     const at = inSubmenu ? subIndex : highlightIndex;
-    const field = event.currentTarget;
     let next: R | undefined;
     switch (event.key) {
       case "ArrowDown":
@@ -932,6 +965,24 @@ export function FilterMenu<R extends FilterMenuRow>({
     if (!next) return;
     if (inSubmenu) moveIntoSubmenu(next);
     else move(next);
+  };
+
+  /**
+   * The list's keys, which only a hardware keyboard sends: it holds the focus
+   * only when opened without a fine pointer. The box takes the focus for a key
+   * that types or moves the highlight, which it reports; Enter and Tab act
+   * from here.
+   */
+  const onListKeyDown = (event: KeyboardEvent) => {
+    const sub = inSubBox ? subInput.current : null;
+    const box = sub ?? input.current;
+    if (!box) return;
+    if (types(event) || MOVES.has(event.key)) {
+      box.focus({ preventScroll: true });
+    }
+    // A character is left to the browser, which types it where the focus
+    // now is.
+    if (!types(event)) onKeyDown(event, sub ? "submenu" : "menu", box);
   };
 
   // The row's height and the surface's sides: the submenu sits against the
@@ -1031,9 +1082,14 @@ export function FilterMenu<R extends FilterMenuRow>({
           if (isEscapeOfComposition(event)) event.preventDefault();
         }}
         onOpenAutoFocus={(event) => {
-          // The box, not the first tabbable, which may be in `header`.
+          // The box, not the first tabbable, which may be in `header`. Without
+          // a fine pointer the list: the box would raise the on-screen
+          // keyboard over the rows before anyone asked to type.
           event.preventDefault();
-          input.current?.focus({ preventScroll: true });
+          const target = finePointer(trigger.current)
+            ? input.current
+            : list.current;
+          target?.focus({ preventScroll: true });
         }}
         onInteractOutside={(event) => {
           if (!event.defaultPrevented) interactedOutside.current = true;
@@ -1085,7 +1141,7 @@ export function FilterMenu<R extends FilterMenuRow>({
           placeholder={placeholder}
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          onKeyDown={(event) => onKeyDown(event, "menu")}
+          onKeyDown={(event) => onKeyDown(event, "menu", event.currentTarget)}
           // Pressed back into while the submenu's box had the keys.
           onFocus={() => {
             if (subKeys) backToParent();
@@ -1097,7 +1153,11 @@ export function FilterMenu<R extends FilterMenuRow>({
           id={listId}
           role="listbox"
           aria-label={listLabel}
-          className="min-h-0 flex-1 overflow-y-auto p-1"
+          // Where the focus lands without a fine pointer. No ring: the
+          // highlight shows where the keys act, as it does from the box.
+          tabIndex={-1}
+          className="min-h-0 flex-1 overflow-y-auto p-1 outline-none"
+          onKeyDown={onListKeyDown}
           onWheel={stopRevealOnResize}
           onTouchMove={stopRevealOnResize}
           // Where a drag of the scrollbar starts, too.
@@ -1342,7 +1402,9 @@ export function FilterMenu<R extends FilterMenuRow>({
                       0,
                   });
                 }}
-                onKeyDown={(event) => onKeyDown(event, "submenu")}
+                onKeyDown={(event) =>
+                  onKeyDown(event, "submenu", event.currentTarget)
+                }
                 onFocus={() => {
                   if (!subKeys) enterSubBox();
                 }}

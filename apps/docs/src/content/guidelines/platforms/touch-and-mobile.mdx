@@ -196,7 +196,9 @@ it for their controls.
   `enterKeyHint` (`"search"`, `"send"`, `"next"`) for the label on the return key.
 - Do not focus a field on arrival on a phone; that raises the keyboard over a page the person came
   to read. Ask `useMediaQuery(POINTER_FINE)` first, as
-  [Desktop & pointer](/guidelines/platforms/desktop-and-pointer/) shows.
+  [Desktop & pointer](/guidelines/platforms/desktop-and-pointer/) shows. `FilterMenu` asks for
+  itself: without a fine pointer it opens with the focus on its list, so the keyboard stays down
+  over the rows until the search field is tapped.
 - Never turn off pinch zoom (`maximum-scale=1`, `user-scalable=no`): people who need larger text
   zoom ([WCAG 1.4.4](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)).
 

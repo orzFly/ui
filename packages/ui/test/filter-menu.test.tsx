@@ -14,6 +14,7 @@ import {
   MatchedText,
   matchText,
 } from "../src/components/filter-menu.tsx";
+import { POINTER_FINE } from "../src/hooks/use-media-query.ts";
 
 interface Fruit {
   id: string;
@@ -510,5 +511,92 @@ describe("FilterMenu", () => {
     expect(onHighlight.mock.calls.at(-1)?.[0]).toBeNull();
     rerender(menu(true, "pe"));
     expect(onQueryChange).toHaveBeenLastCalledWith("");
+  });
+});
+
+/** A touch screen's primary pointer, which is not fine. */
+function stubTouchScreen() {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query !== POINTER_FINE,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+}
+
+describe("FilterMenu without a fine pointer", () => {
+  it("opens with the focus on the list, so no on-screen keyboard rises", () => {
+    stubTouchScreen();
+    render(<Harness selectedId="pear" />);
+    const box = open();
+    expect(document.activeElement).toBe(
+      screen.getByRole("listbox", { name: "Fruit" }),
+    );
+    expect(highlighted()).toBe("Pear");
+    // A tap on a row leaves the focus there; one on the box moves it in.
+    const apple = screen.getByRole("option", { name: "Apple" });
+    fireEvent.pointerDown(apple, { pointerType: "touch" });
+    expect(fireEvent.mouseDown(apple)).toBe(false);
+    expect(fireEvent.mouseDown(box)).toBe(true);
+  });
+
+  it("asks a data-pointer ancestor before the primary pointer", () => {
+    const { unmount } = render(
+      <div data-pointer="coarse">
+        <Harness />
+      </div>,
+    );
+    open();
+    expect(document.activeElement).toBe(screen.getByRole("listbox"));
+    unmount();
+
+    stubTouchScreen();
+    render(
+      <div data-pointer="fine">
+        <Harness />
+      </div>,
+    );
+    const box = open();
+    expect(document.activeElement).toBe(box);
+  });
+
+  it("hands a hardware keyboard's keys from the list to the box", () => {
+    stubTouchScreen();
+    const onSelect = vi.fn();
+    render(<Harness selectedId="pear" onSelect={onSelect} />);
+    const box = open();
+    const list = screen.getByRole("listbox", { name: "Fruit" });
+
+    // Neither types nor moves anything.
+    key(list, "Shift");
+    key(list, "a", { ctrlKey: true });
+    expect(document.activeElement).toBe(list);
+
+    // A character is left to the browser, to type where the focus now is.
+    expect(fireEvent.keyDown(list, { key: "a" })).toBe(true);
+    expect(document.activeElement).toBe(box);
+
+    act(() => list.focus());
+    key(list, "ArrowDown");
+    expect(document.activeElement).toBe(box);
+    expect(highlighted()).toBe("Frappé");
+
+    act(() => list.focus());
+    key(list, "Enter");
+    expect(onSelect).toHaveBeenCalledWith(FRUIT[3]);
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  it("closes on Tab from the list, moving focus past the trigger", async () => {
+    stubTouchScreen();
+    render(<Harness />);
+    open();
+    key(screen.getByRole("listbox"), "Tab");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "after" }),
+      ),
+    );
   });
 });
