@@ -173,8 +173,9 @@ function Doc({ source }: { source: string }) {
   name. `resolve` has `markdownEmbeds`' signature: a resolved file is drawn from its `url` and
   named by its `name`, and one marked `deleted` is a side that failed. The paragraph becomes
   `div.markdown-paragraph`, keeping its props. Within an `AttachmentViewerProvider`, a click on
-  either picture opens the pair with `openCompare`, paging through every pair the plugin draws in
-  document order. `markdownEmbeds` leaves a pair to it, in either order.
+  either picture opens the pair in the viewer through `useViewerCompare`, paging through every
+  comparison below the provider in document order, other documents' and the app's own included.
+  `markdownEmbeds` leaves a pair to it, in either order.
 - **`externalLinks({ origin? })`** opens a link to an http(s) address on another origin (default
   `window.location.origin`) in a new tab, with `rel="noopener noreferrer"`; `styles.css` draws a ↗
   after it, except on an image link. Relative, same-origin, fragment and `mailto:` links are left

@@ -6,10 +6,13 @@ import {
   DialogContent,
   DialogTitle,
 } from "@orz/ui/components/dialog";
+import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
 import {
+  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CopyIcon,
   DownloadIcon,
   ExternalLinkIcon,
   FileIcon,
@@ -49,6 +52,7 @@ import {
   pairMode,
   pairTitle,
 } from "./compare-canvas.tsx";
+import { CompareSet } from "./compare-set.tsx";
 import { fileIcon } from "./icon.ts";
 import { DEFAULT_IMAGE_LOOK, type ImageLook } from "./image-look.ts";
 import { releaseWidth, restingWidth, type Widening } from "./use-zoom-pan.ts";
@@ -63,6 +67,8 @@ export type FileSource = Extract<ContentSource, { kind: "file" }>;
  */
 export type InlineSource = Extract<ContentSource, { kind: "inline" }> & {
   title?: string;
+  /** What the text draws, named after `lang` in the viewer's footer: a diagram's type, say. */
+  type?: string;
 };
 
 /** What the viewer pages through: files, and text drawn as a file is. */
@@ -140,7 +146,8 @@ export type AttachmentViewerProviderProps = {
 /**
  * Owns one viewer dialog for everything below it: link chips, inline images,
  * list rows and document cards all open this one rather than mounting a
- * dialog each. A nested provider shadows the outer one.
+ * dialog each, and the comparisons below it that `useViewerCompare` puts in
+ * its set page as one. A nested provider shadows the outer one.
  */
 export function AttachmentViewerProvider({
   viewHref,
@@ -202,7 +209,7 @@ export function AttachmentViewerProvider({
 
   return (
     <AttachmentViewerContext.Provider value={value}>
-      {children}
+      <CompareSet openCompare={openCompare}>{children}</CompareSet>
       <AttachmentViewer
         state={state}
         onNavigate={(index) => {
@@ -393,87 +400,173 @@ function ViewerPane({
   );
 }
 
-function ViewerFooter({ file }: { file: FileSource }) {
-  const viewer = useContext(AttachmentViewerContext);
-  const tab = viewer?.viewHref?.(file);
+// A footer's actions are text with an icon, smaller than a touch target.
+const FOOTER_ACTION =
+  "relative inline-flex items-center gap-1 font-medium hover:underline touch:hit-area";
+
+const COPIED_MS = 1500;
+
+/**
+ * Copies `text`, and turns its icon into a check a moment: the reader is
+ * looking at it. A failure is the clipboard helper's toast.
+ */
+function CopyAction({
+  text,
+  which,
+  "aria-label": ariaLabel,
+  children,
+}: {
+  text: string;
+  /** The comparison's side it copies, ticked as its download is. */
+  which?: "before" | "after";
+  "aria-label"?: string;
+  children: ReactNode;
+}) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return (
+    <>
+      <button
+        type="button"
+        data-side={which}
+        aria-label={ariaLabel}
+        className={FOOTER_ACTION}
+        onClick={async () => {
+          if (!(await writeClipboard(text))) return;
+          clearTimeout(timer.current);
+          setCopied(true);
+          timer.current = setTimeout(() => setCopied(false), COPIED_MS);
+        }}
+      >
+        {which !== undefined && <CompareTick which={which} />}
+        {copied ? (
+          <CheckIcon data-icon="copied" className="size-3.5" />
+        ) : (
+          <CopyIcon className="size-3.5" />
+        )}
+        {children}
+      </button>
+      <span className="sr-only" aria-live="polite">
+        {copied ? "Copied" : ""}
+      </span>
+    </>
+  );
+}
+
+/** What is shown, cut to fit on the left, and what can be done with it on the right. */
+function FooterRow({ meta, children }: { meta: string; children: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 text-ui-sm text-muted-foreground">
-      <span className="truncate">
-        {[
-          file.mime,
-          file.size !== undefined ? formatSize(file.size) : undefined,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-      </span>
-      <span className="flex shrink-0 items-center gap-3">
-        {tab !== undefined && (
-          <a
-            href={tab}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-medium hover:underline"
-          >
-            <ExternalLinkIcon className="size-3.5" />
-            Open in new tab
-          </a>
-        )}
-        {file.url !== undefined && (
-          <a
-            href={file.url}
-            download={file.name}
-            className="inline-flex items-center gap-1 font-medium hover:underline"
-          >
-            <DownloadIcon className="size-3.5" />
-            Download
-          </a>
-        )}
-      </span>
+      <span className="truncate">{meta}</span>
+      <span className="flex shrink-0 items-center gap-3">{children}</span>
     </div>
   );
 }
 
+const joined = (parts: (string | undefined)[]) =>
+  parts.filter(Boolean).join(" · ");
+
+function ViewerFooter({ file }: { file: FileSource }) {
+  const viewer = useContext(AttachmentViewerContext);
+  const tab = viewer?.viewHref?.(file);
+  return (
+    <FooterRow
+      meta={joined([
+        file.mime,
+        file.size !== undefined ? formatSize(file.size) : undefined,
+      ])}
+    >
+      {tab !== undefined && (
+        <a
+          href={tab}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={FOOTER_ACTION}
+        >
+          <ExternalLinkIcon className="size-3.5" />
+          Open in new tab
+        </a>
+      )}
+      {file.url !== undefined && (
+        <a href={file.url} download={file.name} className={FOOTER_ACTION}>
+          <DownloadIcon className="size-3.5" />
+          Download
+        </a>
+      )}
+    </FooterRow>
+  );
+}
+
+/** Inline text's footer: its language and what it draws, and the text to copy. */
+function InlineFooter({ source }: { source: InlineSource }) {
+  return (
+    <FooterRow meta={joined([source.lang, source.type])}>
+      <CopyAction text={source.text}>Copy</CopyAction>
+    </FooterRow>
+  );
+}
+
 /**
- * A comparison's footer: the new side's type and both sizes, and each side
- * to download. No new tab: the comparison is the thing being looked at.
+ * A comparison's footer. Of two images: the new side's type and both sizes,
+ * and each side to download. Of two drawings: the new side's language and
+ * what it draws, both when the two draw different things, and each side's
+ * source to copy. No new tab: the comparison is the thing being looked at.
+ * Nothing when the pair carries neither, rather than an empty row.
  */
 function CompareFooter({ pair }: { pair: ComparePair }) {
   const before = pair.before.file;
   const after = pair.after.file;
-  return (
-    <div className="flex items-center justify-between gap-3 text-ui-sm text-muted-foreground">
-      <span className="truncate">
-        {[
-          after?.mime,
-          before?.size !== undefined && after?.size !== undefined
+  const from = pair.before.source;
+  const to = pair.after.source;
+  const meta =
+    after !== undefined
+      ? joined([
+          after.mime,
+          before?.size !== undefined && after.size !== undefined
             ? `${formatSize(before.size)} → ${formatSize(after.size)}`
             : undefined,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-      </span>
-      <span className="flex shrink-0 items-center gap-3">
-        {(["before", "after"] as const).map((which) => {
-          const side = pair[which];
-          if (side.file?.url === undefined) return null;
-          return (
-            <a
-              key={which}
-              href={side.file.url}
-              download={side.file.name}
-              data-side={which}
-              aria-label={`Download ${side.label}`}
-              className="inline-flex items-center gap-1 font-medium hover:underline"
-            >
-              <CompareTick which={which} />
-              <DownloadIcon className="size-3.5" />
-              {side.label}
-            </a>
-          );
-        })}
-      </span>
-    </div>
-  );
+        ])
+      : joined([
+          to?.lang,
+          from?.type !== undefined &&
+          to?.type !== undefined &&
+          from.type !== to.type
+            ? `${from.type} → ${to.type}`
+            : to?.type,
+        ]);
+  const actions = (["before", "after"] as const).flatMap((which) => {
+    const side = pair[which];
+    if (side.file?.url !== undefined)
+      return [
+        <a
+          key={which}
+          href={side.file.url}
+          download={side.file.name}
+          data-side={which}
+          aria-label={`Download ${side.label}`}
+          className={FOOTER_ACTION}
+        >
+          <CompareTick which={which} />
+          <DownloadIcon className="size-3.5" />
+          {side.label}
+        </a>,
+      ];
+    if (side.source !== undefined)
+      return [
+        <CopyAction
+          key={which}
+          text={side.source.text}
+          which={which}
+          aria-label={`Copy the source of ${side.label}`}
+        >
+          {side.label}
+        </CopyAction>,
+      ];
+    return [];
+  });
+  if (meta === "" && actions.length === 0) return null;
+  return <FooterRow meta={meta}>{actions}</FooterRow>;
 }
 
 function keepsArrowKeys(target: EventTarget): boolean {
@@ -531,6 +624,9 @@ export function AttachmentViewer({
         ? state.items.length
         : state.compare.length;
   const noun = pair !== undefined ? "comparison" : "attachment";
+  // The comparisons a document in here draws page among themselves, not
+  // with the page's: undefined outside a provider, where nothing opens them.
+  const openCompare = useContext(AttachmentViewerContext)?.openCompare;
   // Paging between pictures tweens from one's height to the next; from
   // anything else, including a closed viewer, the picture lands at once. The
   // width a zoom widened the dialog to goes the same way, at once. Run after
@@ -667,7 +763,7 @@ export function AttachmentViewer({
         )}
       >
         {open && (
-          <>
+          <CompareSet openCompare={openCompare}>
             <div className="flex items-center gap-1">
               <DialogTitle
                 className="min-w-0 flex-1"
@@ -742,14 +838,17 @@ export function AttachmentViewer({
               </>
             )}
             {inline !== undefined && (
-              <ViewerImageContext.Provider value={image}>
-                <InlineBody
-                  key={`${state?.index}:inline`}
-                  source={inline}
-                  maximized={maximized}
-                  titleBar={titleBar}
-                />
-              </ViewerImageContext.Provider>
+              <>
+                <ViewerImageContext.Provider value={image}>
+                  <InlineBody
+                    key={`${state?.index}:inline`}
+                    source={inline}
+                    maximized={maximized}
+                    titleBar={titleBar}
+                  />
+                </ViewerImageContext.Provider>
+                <InlineFooter key={state?.index} source={inline} />
+              </>
             )}
             {pair !== undefined && (
               <>
@@ -778,10 +877,13 @@ export function AttachmentViewer({
                   fade={fade}
                   onFade={setFade}
                 />
-                {pair.footer ?? <CompareFooter pair={pair} />}
+                {/* Keyed by page, so a copy's check does not carry over to the next. */}
+                {pair.footer ?? (
+                  <CompareFooter key={state?.index} pair={pair} />
+                )}
               </>
             )}
-          </>
+          </CompareSet>
         )}
       </DialogContent>
     </Dialog>

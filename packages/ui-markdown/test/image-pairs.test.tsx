@@ -216,6 +216,34 @@ describe("imagePairs in the viewer", () => {
     ).toBe("/download/b.png");
   });
 
+  it("pages through the pairs of every document below the provider", () => {
+    const { container } = render(
+      <AttachmentViewerProvider>
+        <Markdown plugins={[imagePairs({ resolve })]}>
+          {"![v1](files/a.png) → ![v2](files/b.png)\n"}
+        </Markdown>
+        <Markdown plugins={[imagePairs()]}>
+          {"![old](/c.png) -> ![new](/d.png)\n"}
+        </Markdown>
+      </AttachmentViewerProvider>,
+    );
+    load(container);
+    const second = compares(container)[1] as HTMLElement;
+    fireEvent.click(
+      within(second).getAllByRole("button", {
+        name: "Open in the viewer",
+      })[0] as HTMLElement,
+    );
+    const dialog = screen.getByRole("dialog");
+    const heading = () => within(dialog).getByRole("heading").textContent;
+    expect(heading()).toBe("c.png → d.png");
+    expect(within(dialog).getByText("2 / 2")).toBeTruthy();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "previous comparison" }),
+    );
+    expect(heading()).toBe("a.png → b.png");
+  });
+
   it("waits for both sides' sizes before it opens", () => {
     const plugins = [imagePairs()];
     render(

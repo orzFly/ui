@@ -45,7 +45,10 @@ export const Flowchart: Story = {
   args: { before: FLOW_BEFORE, after: FLOW_AFTER },
 };
 
-/** Within an `AttachmentViewerProvider` either picture opens both in the viewer at one zoom. */
+/**
+ * Within an `AttachmentViewerProvider` either picture opens both in the viewer at one zoom, and
+ * the footer there copies either side's source.
+ */
 export const Viewer: Story = {
   args: { title: "review.mmd" },
   decorators: [withViewer()],

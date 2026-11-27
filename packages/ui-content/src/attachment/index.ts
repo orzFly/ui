@@ -7,6 +7,7 @@ export {
   attachmentCard,
 } from "./card-content.tsx";
 export type { CompareItem, ComparePair } from "./compare-canvas.tsx";
+export { useViewerCompare } from "./compare-set.tsx";
 export {
   ContentCollapse,
   ContentCollapseBody,

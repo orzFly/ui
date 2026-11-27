@@ -5,6 +5,7 @@ import {
 } from "@orz/ui-content/attachment";
 import { type CSSProperties, type ReactNode, useRef, useState } from "react";
 import { ErrorLine, OpenInViewer, SourceToggle } from "./diagram-parts.tsx";
+import { diagramType } from "./lib/diagram-type.ts";
 import { useDiagram } from "./use-diagram.ts";
 
 /**
@@ -77,6 +78,7 @@ export function MermaidBlock({
                         kind: "inline",
                         text: source,
                         lang: "mermaid",
+                        type: diagramType(source),
                         title: title ?? "Diagram",
                       },
                     ],

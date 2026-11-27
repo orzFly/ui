@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { writeClipboard } from "@orz/ui/lib/clipboard";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AttachmentViewer,
   AttachmentViewerProvider,
@@ -17,6 +18,12 @@ import {
   TEXT_PREVIEW_HARD_MAX_BYTES,
 } from "../../src/index.ts";
 import { file, stubText } from "./fixtures.tsx";
+
+vi.mock("@orz/ui/lib/clipboard", () => ({ writeClipboard: vi.fn() }));
+
+beforeEach(() => {
+  vi.mocked(writeClipboard).mockReset().mockResolvedValue(true);
+});
 
 const RENDERERS = [stubText];
 const HTML = [htmlContent()];
@@ -430,5 +437,79 @@ describe("AttachmentViewer edges", () => {
       />,
     );
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
+describe("AttachmentViewer footer", () => {
+  const inline = (extra: { type?: string } = {}) =>
+    render(
+      <Controlled
+        initial={{
+          items: [
+            {
+              kind: "inline",
+              text: "flowchart LR\n  A --> B",
+              lang: "mermaid",
+              ...extra,
+            },
+          ],
+          index: 0,
+        }}
+      />,
+    );
+  // The title falls back to the language too.
+  const footer = () =>
+    screen.getByRole("dialog").lastElementChild as HTMLElement;
+
+  it("names inline text's language and type, and copies the text", async () => {
+    inline({ type: "flowchart" });
+    expect(within(footer()).getByText("mermaid · flowchart")).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(within(footer()).getByRole("button", { name: "Copy" }));
+    });
+    expect(writeClipboard).toHaveBeenCalledWith("flowchart LR\n  A --> B");
+  });
+
+  it("names inline text's language alone when it gives no type", () => {
+    inline();
+    expect(within(footer()).getByText("mermaid")).toBeTruthy();
+  });
+
+  it("gives every action a touch target", () => {
+    const { unmount } = render(
+      <ContentRenderers renderers={RENDERERS}>
+        <AttachmentViewerProvider
+          viewHref={(f) => `https://app.example/view/${f.name}`}
+        >
+          <Opener target={ITEMS[0] as FileSource} />
+        </AttachmentViewerProvider>
+      </ContentRenderers>,
+    );
+    fireEvent.click(screen.getByText("open"));
+    const links = [
+      screen.getByText("Open in new tab").closest("a"),
+      screen.getByText("Download").closest("a"),
+    ];
+    for (const link of links)
+      expect(link?.className).toContain("touch:hit-area");
+    unmount();
+
+    const image = (name: string) =>
+      ({
+        label: name,
+        file: file(`${name}.png`, { mime: "image/png" }),
+        size: { width: 4, height: 3 },
+      }) as const;
+    render(
+      <Controlled
+        initial={{
+          compare: [{ before: image("v1"), after: image("v2") }],
+          index: 0,
+        }}
+      />,
+    );
+    expect(
+      screen.getByRole("link", { name: "Download v1" }).className,
+    ).toContain("touch:hit-area");
   });
 });

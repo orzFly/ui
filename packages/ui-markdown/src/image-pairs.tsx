@@ -3,21 +3,14 @@ import {
   type ComparePair,
   DeletedAttachmentMark,
   type FileSource,
-  useAttachmentViewer,
+  useViewerCompare,
 } from "@orz/ui-content/attachment";
 import {
   type CompareSide,
   DEFAULT_COMPARE_LABELS,
   MediaCompare,
 } from "@orz/ui-content/compare";
-import {
-  type SyntheticEvent,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type SyntheticEvent, useCallback, useRef, useState } from "react";
 import {
   isPairImage,
   pairLabel,
@@ -37,19 +30,14 @@ export type ImagePairsOptions = {
 
 type Size = { width: number; height: number };
 
-type Entry = {
-  anchor(): HTMLElement | null;
-  pair(): ComparePair | null;
-};
-
 type Image = { src: string; alt: string };
 
 /**
  * Draws a paragraph that is exactly two images with an arrow between them, `![v1](a.png) →
  * ![v2](b.png)` (or `->`), as one `MediaCompare`, its sides tagged by the two alts, or Before and
  * After where an alt is empty or only the file's name. Within an `AttachmentViewerProvider` a
- * click on either picture opens the pair in the viewer, paging through every pair this plugin
- * draws, in document order. Anywhere else in a sentence, the images stay images.
+ * click on either picture opens the pair in the viewer, paging through every comparison below
+ * the provider, in document order. Anywhere else in a sentence, the images stay images.
  *
  * Put it before `markdownEmbeds` or after it, as you like: the embeds plugin leaves a pair alone.
  * Returns a new plugin on every call, so memoise the call along with the rest of the plugin list.
@@ -57,33 +45,6 @@ type Image = { src: string; alt: string };
 export function imagePairs({
   resolve,
 }: ImagePairsOptions = {}): MarkdownPlugin {
-  // Every pair this plugin draws, so the viewer pages through all of them.
-  const entries = new Map<symbol, Entry>();
-  const register = (key: symbol, entry: Entry) => {
-    entries.set(key, entry);
-    return () => {
-      entries.delete(key);
-    };
-  };
-  const shown = (key: symbol) => {
-    const all = [...entries]
-      .map(([k, entry]) => ({ k, anchor: entry.anchor(), pair: entry.pair() }))
-      .filter(
-        (e): e is { k: symbol; anchor: HTMLElement; pair: ComparePair } =>
-          e.anchor?.isConnected === true && e.pair !== null,
-      )
-      .sort((a, b) =>
-        a.anchor.compareDocumentPosition(b.anchor) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-          ? -1
-          : 1,
-      );
-    return {
-      pairs: all.map((e) => e.pair),
-      index: all.findIndex((e) => e.k === key),
-    };
-  };
-
   function ImagePair({
     before,
     after,
@@ -124,21 +85,8 @@ export function imagePairs({
             after: { label: labels.after, size: afterSize, file: afterFile },
           };
 
-    const viewer = useAttachmentViewer();
     const anchor = useRef<HTMLDivElement>(null);
-    const latest = useRef(pair);
-    useLayoutEffect(() => {
-      latest.current = pair;
-    });
-    const [key] = useState(() => Symbol("image pair"));
-    useEffect(
-      () =>
-        register(key, {
-          anchor: () => anchor.current,
-          pair: () => latest.current,
-        }),
-      [key],
-    );
+    const open = useViewerCompare(pair, anchor);
 
     const side = (
       label: string,
@@ -178,14 +126,7 @@ export function imagePairs({
             setBeforeSize,
           )}
           after={side(labels.after, after, afterFile, afterSize, setAfterSize)}
-          onOpen={
-            viewer === null || pair === null
-              ? undefined
-              : () => {
-                  const { pairs, index } = shown(key);
-                  if (index !== -1) viewer.openCompare(pairs, index);
-                }
-          }
+          onOpen={open}
           className={className}
         />
       </div>

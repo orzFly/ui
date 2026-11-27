@@ -27,7 +27,7 @@ import {
   type View,
 } from "./image-zoom.ts";
 import { releaseWidth, useZoomPan, type Widening } from "./use-zoom-pan.ts";
-import type { FileSource } from "./viewer.tsx";
+import type { FileSource, InlineSource } from "./viewer.tsx";
 import { CHECKER, CORNER } from "./zoom-canvas.tsx";
 import { ZoomControls } from "./zoom-controls.tsx";
 
@@ -41,6 +41,8 @@ export type CompareItem = {
   file?: FileSource;
   /** Drawn in place of `file`'s image, at `size`: an SVG, say, zoomed as vectors. */
   content?: ReactNode;
+  /** The text a drawn side comes from: the footer names its `lang` and `type`, and offers it to copy. */
+  source?: InlineSource;
 };
 
 /** Two versions the viewer shows at one zoom and one position. */
@@ -49,7 +51,10 @@ export type ComparePair = {
   after: CompareItem;
   /** The title bar's. Default: the files' names. */
   title?: string;
-  /** Under the comparison's bar. Default: each side's type, size and download. */
+  /**
+   * Under the comparison's bar. Default: the new side's type and both sizes, or its source's
+   * `lang` and `type`, and each side to download, or its source to copy.
+   */
   footer?: ReactNode;
   /**
    * The modes offered. Default: all four for two images, side by side alone

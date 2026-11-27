@@ -7,16 +7,19 @@ import {
   AttachmentList,
   AttachmentViewerProvider,
   AttachmentViewer as AttachmentViewerView,
+  type CompareItem,
   type ComparePair,
   TEXT_PREVIEW_HARD_MAX_BYTES,
   TEXT_PREVIEW_MAX_BYTES,
   useAttachmentViewer,
   useCanPreview,
   useStoredImageLook,
+  useViewerCompare,
   useViewHref,
 } from "@orz/ui-content/attachment";
-import { MediaCompare } from "@orz/ui-content/compare";
+import { type CompareSide, MediaCompare } from "@orz/ui-content/compare";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useRef } from "react";
 import { argsUpdater } from "./args.ts";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
 
@@ -66,10 +69,16 @@ const SCREENSHOT: AttachmentItem[] = [
   { ...SETTINGS_PAIR.after.file, key: "settings-after.svg" },
 ];
 
-/** A drawing's version, as a diagram renderer would hand it over. */
-const flow = (label: string, boxes: number): ComparePair["before"] => ({
+/** A drawing's version, as a diagram renderer would hand it over, with the source it comes from. */
+const flow = (label: string, boxes: number): CompareItem => ({
   label,
   size: { width: 120 * boxes, height: 80 },
+  source: {
+    kind: "inline",
+    text: `flowchart LR\n  ${"ABCDEFGH".slice(0, boxes).split("").join(" --> ")}`,
+    lang: "mermaid",
+    type: "flowchart",
+  },
   content: (
     <svg
       viewBox={`0 0 ${120 * boxes} 80`}
@@ -97,13 +106,27 @@ const flow = (label: string, boxes: number): ComparePair["before"] => ({
   ),
 });
 
-const PAIRS: ComparePair[] = [
-  {
-    before: { label: "v1", ...SETTINGS_PAIR.before },
-    after: { label: "v2", ...SETTINGS_PAIR.after },
-  },
-  { title: "flow.mmd", before: flow("v1", 3), after: flow("v2", 4) },
-];
+const SETTINGS: ComparePair = {
+  before: { label: "v1", ...SETTINGS_PAIR.before },
+  after: { label: "v2", ...SETTINGS_PAIR.after },
+};
+const FLOW: ComparePair = {
+  title: "flow.mmd",
+  before: flow("v1", 3),
+  after: flow("v2", 4),
+};
+const PAIRS: ComparePair[] = [SETTINGS, FLOW];
+
+/** A side of a comparison in the viewer, drawn on the page. */
+const onPage = (item: CompareItem, alt: string): CompareSide => ({
+  label: item.label,
+  size: item.size,
+  content:
+    item.content ??
+    (item.file?.url !== undefined ? (
+      <img src={item.file.url} alt={alt} />
+    ) : null),
+});
 
 const COMPARE = `import {
   AttachmentViewer,
@@ -117,8 +140,18 @@ const pairs: ComparePair[] = [
     before: { label: "v1", file: before, size: { width: 720, height: 400 } },
     after: { label: "v2", file: after, size: { width: 720, height: 460 } },
   },
-  // A side drawn as a node (an SVG) zooms as vectors, side by side its only mode.
-  { title: "flow.mmd", before: { label: "v1", content: <svg …/>, size }, after: … },
+  // A side drawn as a node (an SVG) zooms as vectors, side by side its only mode. Its source
+  // is what the footer names and copies.
+  {
+    title: "flow.mmd",
+    before: {
+      label: "v1",
+      content: <svg …/>,
+      size,
+      source: { kind: "inline", text: v1, lang: "mermaid", type: "flowchart" },
+    },
+    after: …,
+  },
 ];
 
 const [state, setState] = useState<AttachmentViewerState | null>(null);
@@ -165,6 +198,30 @@ const USE_ATTACHMENT_VIEWER = `import { useAttachmentViewer } from "@orz/ui-cont
 const viewer = useAttachmentViewer(); // null outside a provider
 viewer?.open(files, index); // pages through files
 viewer?.show(file); // pages through group(file)`;
+
+const USE_VIEWER_COMPARE = `import {
+  AttachmentViewerProvider,
+  type ComparePair,
+  useViewerCompare,
+} from "@orz/ui-content/attachment";
+import { MediaCompare } from "@orz/ui-content/compare";
+
+function Comparison({ pair }: { pair: ComparePair }) {
+  const anchor = useRef<HTMLDivElement>(null);
+  // undefined outside a provider, or while pair is null
+  const open = useViewerCompare(pair, anchor);
+  return (
+    <div ref={anchor}>
+      <MediaCompare before={…} after={…} onOpen={open} />
+    </div>
+  );
+}
+
+// Every comparison below the provider pages as one, in document order.
+<AttachmentViewerProvider>
+  <Comparison pair={settings} />
+  <Comparison pair={flow} />
+</AttachmentViewerProvider>`;
 
 const USE_CAN_PREVIEW = `import { useCanPreview } from "@orz/ui-content/attachment";
 
@@ -299,6 +356,43 @@ export const UseAttachmentViewer: Story = {
   },
   decorators: [withViewer({ group })],
   parameters: code(USE_ATTACHMENT_VIEWER),
+};
+
+/**
+ * Puts a comparison drawn on the page in the provider's set: either opens the viewer on itself,
+ * paging through both in document order. The drawing's footer names its source and copies it.
+ */
+export const UseViewerCompare: Story = {
+  name: "useViewerCompare",
+  render: function Render() {
+    const settings = useRef<HTMLDivElement>(null);
+    const diagram = useRef<HTMLDivElement>(null);
+    const openSettings = useViewerCompare(SETTINGS, settings);
+    const openDiagram = useViewerCompare(FLOW, diagram);
+    return (
+      <div className="grid gap-6">
+        <div ref={settings}>
+          <MediaCompare
+            before={onPage(SETTINGS.before, "Settings, v1")}
+            after={onPage(SETTINGS.after, "Settings, v2")}
+            onOpen={openSettings}
+          />
+        </div>
+        <div ref={diagram}>
+          <MediaCompare
+            before={onPage(FLOW.before, "Flow, v1")}
+            after={onPage(FLOW.after, "Flow, v2")}
+            modes={["2up"]}
+            backdrop="page"
+            title={FLOW.title}
+            onOpen={openDiagram}
+          />
+        </div>
+      </div>
+    );
+  },
+  decorators: [withViewer()],
+  parameters: code(USE_VIEWER_COMPARE),
 };
 
 /** Whether a plain click on a file opens the viewer, or falls through to the browser. */

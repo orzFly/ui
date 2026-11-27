@@ -1,5 +1,7 @@
+import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { AttachmentViewerProvider } from "@orz/ui-content/attachment";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -35,6 +37,9 @@ const renderDiagram = vi.hoisted(() =>
 vi.mock("../src/render.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../src/render.ts")>()),
   renderDiagram,
+}));
+vi.mock("@orz/ui/lib/clipboard", () => ({
+  writeClipboard: vi.fn(async () => true),
 }));
 
 const OLD = "flowchart LR\n  A[旧]";
@@ -183,5 +188,64 @@ describe("MermaidCompare", () => {
     ).toHaveLength(2);
     // Side by side is a drawing's only mode.
     expect(dialog.querySelector('[aria-label="Comparison"]')).toBeNull();
+  });
+
+  describe("in the viewer", () => {
+    beforeEach(() => {
+      vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(
+        800,
+      );
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(
+        600,
+      );
+    });
+
+    it("names the diagrams' type in the footer, and copies either side's source", async () => {
+      const container = mount(
+        <AttachmentViewerProvider>
+          <MermaidCompare before={OLD} after={NEW} title="flow.mmd" />
+        </AttachmentViewerProvider>,
+      );
+      await waitFor(() => expect(drawn(container)).toHaveLength(2));
+      fireEvent.click(
+        screen.getAllByRole("button", {
+          name: "Open in the viewer",
+        })[0] as HTMLElement,
+      );
+      const dialog = await screen.findByRole("dialog");
+      const footer = dialog.lastElementChild as HTMLElement;
+      expect(within(footer).getByText("mermaid · flowchart")).toBeTruthy();
+      await act(async () => {
+        fireEvent.click(
+          within(footer).getByRole("button", {
+            name: "Copy the source of Before",
+          }),
+        );
+      });
+      expect(writeClipboard).toHaveBeenCalledWith(OLD);
+    });
+
+    it("pages through every comparison below the provider", async () => {
+      const container = mount(
+        <AttachmentViewerProvider>
+          <MermaidCompare before={OLD} after={NEW} title="first.mmd" />
+          <MermaidCompare before={OLD} after={NEW} title="second.mmd" />
+        </AttachmentViewerProvider>,
+      );
+      await waitFor(() => expect(drawn(container)).toHaveLength(4));
+      const opens = screen.getAllByRole("button", {
+        name: "Open in the viewer",
+      });
+      // Each comparison's two pictures and its toolbar's button.
+      fireEvent.click(opens[3] as HTMLElement);
+      const dialog = await screen.findByRole("dialog");
+      const heading = () => within(dialog).getByRole("heading").textContent;
+      expect(heading()).toBe("second.mmd");
+      expect(within(dialog).getByText("2 / 2")).toBeTruthy();
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "previous comparison" }),
+      );
+      expect(heading()).toBe("first.mmd");
+    });
   });
 });
