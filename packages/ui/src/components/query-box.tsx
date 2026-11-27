@@ -6,8 +6,13 @@ import {
   type SourceResult,
   type ValueProviders,
 } from "@orz/query";
-import { FilterIcon, TagIcon } from "lucide-react";
-import type { ComponentProps, KeyboardEvent, ReactNode } from "react";
+import { ClockIcon, FilterIcon, TagIcon, XIcon } from "lucide-react";
+import type {
+  ComponentProps,
+  KeyboardEvent,
+  MouseEvent,
+  ReactNode,
+} from "react";
 import {
   Fragment,
   useEffect,
@@ -17,7 +22,13 @@ import {
   useState,
 } from "react";
 import { useQueryCompletion } from "../hooks/use-query-completion.ts";
+import type {
+  QueryHistory,
+  QueryHistoryEntry,
+} from "../hooks/use-query-history.ts";
+import { isPlainClick } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
+import { buttonVariants } from "./button.tsx";
 import { type CaretPosition, HighlightedInput } from "./highlighted-input.tsx";
 import { highlightQuery } from "./query-highlight.tsx";
 
@@ -36,7 +47,7 @@ export type OptionProps = {
   onClick: () => void;
 };
 
-/** Rows the app adds to the panel: history, jumps, anything that is not syntax. */
+/** Rows the app adds to the panel: jumps, anything that is not syntax or history. */
 export type RowSource<R> = {
   id: string;
   /** Whether the caret is on something this source recognises; see `orderRows`. */
@@ -55,7 +66,8 @@ export type RowSource<R> = {
 type BoxRow<R> =
   | { kind: "submit" }
   | { kind: "completion"; row: CompletionRow }
-  | { kind: "app"; source: RowSource<R>; row: R };
+  | { kind: "app"; source: RowSource<R>; row: R }
+  | { kind: "history"; entry: QueryHistoryEntry };
 
 /**
  * `w-full` because a `<button>` row resolves `width: auto` to fit-content and
@@ -72,7 +84,35 @@ const NONE = -1;
 function rowKey<R>(row: BoxRow<R>): string {
   if (row.kind === "submit") return "submit";
   if (row.kind === "app") return `${row.source.id}:${row.source.key(row.row)}`;
+  if (row.kind === "history") return `history:${row.entry.q}`;
   return `completion:${row.row.id}`;
+}
+
+/**
+ * Past queries in two bands: those the box's value begins, and those it is
+ * only part of; the one it equals is in neither, as taking it would change
+ * nothing. Matched against the whole value, not the word at the caret: a past
+ * query is a whole search, not the end of a word. Both bands yield, so they
+ * take only the room the other rows leave, and the first counts as matched,
+ * which puts it above the submit row.
+ */
+function historyResults<R>(
+  entries: readonly QueryHistoryEntry[],
+  value: string,
+): SourceResult<BoxRow<R>>[] {
+  const needle = value.trim().toLowerCase();
+  const prefix: BoxRow<R>[] = [];
+  const within: BoxRow<R>[] = [];
+  for (const entry of entries) {
+    const q = entry.q.toLowerCase();
+    if (q === needle) continue;
+    if (q.startsWith(needle)) prefix.push({ kind: "history", entry });
+    else if (q.includes(needle)) within.push({ kind: "history", entry });
+  }
+  return [
+    { matched: true, yields: true, rows: prefix },
+    { matched: false, yields: true, rows: within },
+  ];
 }
 
 /**
@@ -84,6 +124,101 @@ const COMPLETION_ICON = {
   key: FilterIcon,
   value: TagIcon,
 } satisfies Record<CompletionRow["icon"], typeof FilterIcon>;
+
+/**
+ * A ghost icon button's look, but no button: a second action inside the
+ * option, as a FilterMenu row's submenu half is. An option's children are
+ * presentational, so a real button there would be read as nothing and nest
+ * one control in another; the keyboard's way is Shift+Delete. `-my-1` keeps
+ * the row its pointer height, as InfoPopover's button keeps a label's line.
+ * A pointer that can hover brings it up on the highlighted row, which moving
+ * onto a row makes it; with nothing to hover (touch, some styluses) it stays
+ * on every row, or it could never be reached. Not `transition-all`, which
+ * would keep it on a row the highlight has left for the length of a fade.
+ * Under raymond the highlight's fill shows through it, and only its bevel
+ * rises under the pointer.
+ */
+const REMOVE = cn(
+  buttonVariants({
+    variant: "ghost",
+    size: "icon-xs",
+    className:
+      "-my-1 text-muted-foreground transition-[color,background-color,box-shadow] hover:text-foreground can-hover:invisible can-hover:group-hover/option:visible can-hover:group-aria-selected/option:visible raymond:hover:bg-transparent",
+  }),
+);
+
+/** A past query, in the schema's colours, with its × to forget it. */
+function HistoryRow({
+  entry,
+  option,
+  href,
+  schema,
+  providers,
+  onChoose,
+  onRemove,
+}: {
+  entry: QueryHistoryEntry;
+  option: OptionProps;
+  href: string | undefined;
+  schema: CompiledQuerySchema;
+  providers: ValueProviders;
+  onChoose: () => void;
+  onRemove: () => void;
+}) {
+  const props = {
+    ...option,
+    className: cn(option.className, "group/option"),
+    onClick: (event: MouseEvent<HTMLElement>) => {
+      if (href !== undefined) {
+        // A modified or middle click is the browser's: a new tab, a window.
+        if (!isPlainClick(event)) return;
+        event.preventDefault();
+      }
+      onChoose();
+    },
+  };
+  const content = (
+    <>
+      <ClockIcon
+        className="size-3.5 shrink-0 text-muted-foreground"
+        aria-hidden
+      />
+      <span className="min-w-0 flex-1 truncate">
+        {highlightQuery(
+          entry.q,
+          parseQuery(schema, entry.q),
+          schema,
+          providers,
+        )}
+      </span>
+      <span
+        aria-hidden
+        data-slot="query-history-remove"
+        className={REMOVE}
+        // Kept from the row, whose click would submit the query, and from a
+        // link row's default, which would go there or open a tab.
+        onClick={(event) => {
+          event.stopPropagation();
+          event.preventDefault();
+          onRemove();
+        }}
+        onAuxClick={(event) => {
+          event.stopPropagation();
+          event.preventDefault();
+        }}
+      >
+        <XIcon />
+      </span>
+    </>
+  );
+  return href === undefined ? (
+    <div {...props}>{content}</div>
+  ) : (
+    <a {...props} href={href}>
+      {content}
+    </a>
+  );
+}
 
 /**
  * A query box: `HighlightedInput` with the schema's colours, its completions,
@@ -98,6 +233,12 @@ const COMPLETION_ICON = {
  * stay in the input and `Content` wants to take it. Nothing is ever
  * preselected: the reader is typing a query, so Enter belongs to the query
  * unless they arrowed onto something else. Tab is the key that takes an offer.
+ *
+ * Given a `history`, the panel offers past queries after everything else:
+ * those the value begins above the submit row, those it is only part of
+ * below it. Tab loads one into the box, Enter or a click submits it, and
+ * Shift+Delete or its × forgets it. The box records nothing itself; the app
+ * records a query in `onSubmit`, where it knows a search really ran.
  */
 export function QueryBox<R>({
   schema,
@@ -106,6 +247,8 @@ export function QueryBox<R>({
   onValueChange,
   onSubmit,
   sources = [],
+  history,
+  queryHref,
   renderSubmitRow,
   limit = 20,
   onEscape,
@@ -120,9 +263,21 @@ export function QueryBox<R>({
   providers: ValueProviders;
   value: string;
   onValueChange: (value: string) => void;
-  /** Enter with nothing highlighted, or on the submit row; `chosen` when an app row was highlighted. */
-  onSubmit: (query: string, chosen: R | undefined) => void;
+  /**
+   * Enter with nothing highlighted, or on the submit row; `chosen` when an app row was
+   * highlighted; `fromHistory` when a history row was, its query then being submitted as it
+   * was searched before.
+   */
+  onSubmit: (
+    query: string,
+    chosen: R | undefined,
+    fromHistory: boolean,
+  ) => void;
   sources?: readonly RowSource<R>[];
+  /** Past queries offered in the panel: `useQueryHistory`'s, or any with the same shape. */
+  history?: Pick<QueryHistory, "entries" | "remove">;
+  /** The address of a query's results; given, each history row is a link there. */
+  queryHref?: (query: string) => string;
   /** The row that submits the query as typed, always present. */
   renderSubmitRow: (query: string, option: OptionProps) => ReactNode;
   /** Rows offered at most, the submit row not counted. */
@@ -176,6 +331,7 @@ export function QueryBox<R>({
       matched: result.matched,
       rows: result.rows.map((row): BoxRow<R> => ({ kind: "completion", row })),
     })),
+    ...(history === undefined ? [] : historyResults<R>(history.entries, value)),
   ];
   const rows = orderRows<BoxRow<R>>(results, { kind: "submit" }, limit);
   const query = value.trim();
@@ -268,11 +424,11 @@ export function QueryBox<R>({
   /**
    * What Tab takes — the submit row is not an offer.
    *
-   * A highlighted app row with `apply` loads what it says into the box,
-   * which is what Tab already means: take the offer and keep editing. With
-   * nothing highlighted Tab still falls back to the first *completion* and
-   * never to an app row — an unaimed Tab means "finish the word I am
-   * typing", and a whole past query is a long way from that.
+   * A highlighted past query, or app row with `apply`, loads what it says
+   * into the box, which is what Tab already means: take the offer and keep
+   * editing. With nothing highlighted Tab still falls back to the first
+   * *completion* and never to either — an unaimed Tab means "finish the word
+   * I am typing", and a whole past query is a long way from that.
    *
    * Only a completion above the submit row counts, one the typed word really
    * matches. The key table under an empty word is there to be read; taking
@@ -284,6 +440,8 @@ export function QueryBox<R>({
   ): { value: string; caret: number } | null => {
     const at = rows[from];
     if (at?.kind === "completion") return at.row.apply;
+    if (at?.kind === "history")
+      return { value: at.entry.q, caret: at.entry.q.length };
     if (at?.kind === "app") {
       const apply = at.source.apply?.(at.row);
       if (apply != null) return apply;
@@ -303,12 +461,33 @@ export function QueryBox<R>({
       accept(chosen.row.apply);
       return;
     }
-    // An empty box has nothing to submit — unless an app row is what is
-    // being submitted, a past query say.
-    if (query === "" && chosen?.kind !== "app") return;
+    // An empty box has nothing to submit — unless a row is what is being
+    // submitted, a past query say.
+    if (query === "" && chosen?.kind !== "app" && chosen?.kind !== "history")
+      return;
+    // A past query is submitted as it was searched, in place of the value.
+    const submitted = chosen?.kind === "history" ? chosen.entry.q : query;
+    if (chosen?.kind === "history") emit(submitted);
     setDismissed(true);
     setHighlight(NONE);
-    onSubmit(query, chosen?.kind === "app" ? chosen.row : undefined);
+    onSubmit(
+      submitted,
+      chosen?.kind === "app" ? chosen.row : undefined,
+      chosen?.kind === "history",
+    );
+  };
+
+  /** Forgets a past query, or an app row that can be removed. */
+  const removeRow = (row: BoxRow<R> | undefined): boolean => {
+    if (row?.kind === "history" && history !== undefined) {
+      history.remove(row.entry.q);
+      return true;
+    }
+    if (row?.kind === "app" && row.source.remove !== undefined) {
+      row.source.remove(row.row);
+      return true;
+    }
+    return false;
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -351,9 +530,11 @@ export function QueryBox<R>({
     } else if (e.key === "Delete" && e.shiftKey) {
       // The address bar's own gesture for the same thing. macOS has no
       // Delete key of its own; a button on the row is the path there.
-      const at = rows[hl];
-      if (at?.kind !== "app" || at.source.remove === undefined) return;
-      at.source.remove(at.row);
+      // The highlight moves to the row taking this one's place, so a run of
+      // them goes without arrowing back onto each.
+      const next = rows[hl + 1] ?? rows[hl - 1];
+      if (!removeRow(rows[hl])) return;
+      setHighlightKey(next === undefined ? null : rowKey(next));
     } else if (e.key === "ArrowDown") {
       setHighlight(Math.min(hl + 1, rows.length - 1));
     } else if (e.key === "ArrowUp") {
@@ -405,7 +586,8 @@ export function QueryBox<R>({
         {...inputProps}
         inputRef={input}
         // The browser's own drop-down would cover this panel, and it knows
-        // neither the syntax nor the app's values (T-268).
+        // neither the syntax nor the app's values (T-268); past queries come
+        // from `history` instead.
         autoComplete="off"
         // A combobox, so a screen reader follows `aria-activedescendant`
         // through the rows while focus stays here with the caret.
@@ -490,6 +672,28 @@ export function QueryBox<R>({
                 <Fragment key={rowKey(row)}>
                   {row.source.render(row.row, option)}
                 </Fragment>
+              );
+            }
+            if (row.kind === "history") {
+              return (
+                <HistoryRow
+                  key={rowKey(row)}
+                  entry={row.entry}
+                  option={option}
+                  href={queryHref?.(row.entry.q)}
+                  schema={schema}
+                  providers={providers}
+                  onChoose={() => choose(row)}
+                  onRemove={() => {
+                    removeRow(row);
+                    // Unlike Shift+Delete, nothing is highlighted after: the
+                    // pointer is where it was, and on touch the tap had
+                    // highlighted this row, so a highlight passed on would
+                    // make the keyboard's Search key submit the next query
+                    // rather than what was typed.
+                    setHighlight(NONE);
+                  }}
+                />
               );
             }
             const Icon = COMPLETION_ICON[row.row.icon];

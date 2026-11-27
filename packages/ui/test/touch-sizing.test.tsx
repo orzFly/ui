@@ -247,6 +247,35 @@ describe("touch sizes", () => {
     }
   });
 
+  it("QueryBox history rows are the touch spacing tall, their × always shown on touch", () => {
+    render(
+      <QueryBox
+        schema={todouSchema}
+        providers={{}}
+        value=""
+        onValueChange={() => {}}
+        onSubmit={() => {}}
+        history={{
+          entries: [{ q: "flaky test", t: 0 }],
+          remove: () => {},
+        }}
+        renderSubmitRow={(query, option) => <div {...option}>{query}</div>}
+        inputProps={{ "aria-label": "Search" }}
+      />,
+    );
+    act(() => screen.getByLabelText("Search").focus());
+    const row = screen.getAllByRole("option")[0] as HTMLElement;
+    expect(row.textContent).toBe("flaky test");
+    expect(classesOf(row)).toContain("touch:min-h-touch");
+    const remove = row.querySelector(
+      "[data-slot=query-history-remove]",
+    ) as HTMLElement;
+    expectHitAreaOnly(remove);
+    // Hidden only where a pointer can hover to bring it up.
+    expect(classesOf(remove)).toContain("can-hover:invisible");
+    expect(classesOf(remove)).not.toContain("invisible");
+  });
+
   it("FilterMenu rows are the touch spacing tall; its search field keeps 16px text", () => {
     const sections: FilterMenuSection<{ id: string }>[] = [
       { id: "s", label: "S", rows: [{ id: "a" }, { id: "b" }] },
