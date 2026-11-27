@@ -157,7 +157,7 @@ export function demoApis(pages = storyPages()): Record<string, string[]> {
 const INTERNAL = {
   input: ["input.tsx", "slot:input"],
   switch: ["switch.tsx", "slot:switch"],
-  checkbox: ["checkbox.tsx", "slot:checkbox"],
+  checkbox: ["checkbox/mark.tsx", "CHECKBOX_BOX"],
   radioGroup: ["radio-group.tsx", "slot:radio-group"],
   radioGroupItem: ["radio-group.tsx", "slot:radio-group-item"],
   selectTrigger: ["select.tsx", "slot:select-trigger"],
@@ -185,7 +185,10 @@ export type InternalClasses = Record<keyof typeof INTERNAL, string>;
 const CLASS_LIST = /"([^"\n]* [^"\n]*)"/;
 
 function find(source: string, needle: string): string[] {
-  const named = new RegExp(`^const ${needle} =\\s*"([^"]*)"`, "m").exec(source);
+  const named = new RegExp(
+    `^(?:export )?const ${needle} =\\s*"([^"]*)"`,
+    "m",
+  ).exec(source);
   if (named) return [named[1] ?? ""];
   if (needle.startsWith("slot:")) {
     const at = source.split(`data-slot="${needle.slice(5)}"`);

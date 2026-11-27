@@ -6,6 +6,11 @@ import {
 } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
+import {
+  FilterMenu,
+  MatchedText,
+  matchText,
+} from "@orz/ui/components/filter-menu";
 import { GroupHeading } from "@orz/ui/components/group-heading";
 import { LinkChip } from "@orz/ui/components/link-chip";
 import {
@@ -21,17 +26,24 @@ import {
   CircleCheckIcon,
   CircleDotIcon,
   LinkIcon,
+  PlusIcon,
+  TagIcon,
   Trash2Icon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { isOpen, STATUSES, taskKey } from "./board.ts";
 import { taskHref } from "./location.ts";
-import { PersonAvatar, Stamp, StatusDot } from "./parts.tsx";
+import { IconButton, PersonAvatar, Stamp, StatusDot } from "./parts.tsx";
+import { usePickedFirst } from "./use-picked-first.ts";
 
 /** What the details pane does to its task. */
 export interface DetailActions {
   onStatus: (status: TaskStatus) => void;
   onAssign: (login: string | null) => void;
+  /** Puts a label on the task, or takes it off. */
+  onLabel: (label: string, on: boolean) => void;
+  /** Makes a label that did not exist, and puts it on the task. */
+  onCreateLabel: (label: string) => void;
   onClose: () => void;
   onReopen: () => void;
   onDelete: () => void;
@@ -60,6 +72,76 @@ function Field({
       )}
       <div className="min-w-0">{children}</div>
     </div>
+  );
+}
+
+interface LabelRow {
+  id: string;
+  label: string;
+  action?: boolean;
+}
+
+/** The task's labels, each picked on or off at once, and a label made from the query. */
+function EditLabels({
+  task,
+  labels,
+  actions,
+}: {
+  task: Task;
+  labels: readonly string[];
+  actions: DetailActions;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const name = query.trim();
+  const rows: LabelRow[] = usePickedFirst(labels, task.labels, open, query)
+    .filter((label) => matchText(label, query))
+    .map((label) => ({ id: label, label }));
+  const known = labels.some(
+    (label) => label.toLowerCase() === name.toLowerCase(),
+  );
+  if (name !== "" && !known) {
+    // Names are trimmed, so no label's id starts with a space.
+    rows.push({ id: " create", label: `Create “${name}”`, action: true });
+  }
+  return (
+    <FilterMenu
+      selection="multiple"
+      selectedIds={task.labels}
+      onOpenChange={setOpen}
+      query={query}
+      onQueryChange={setQuery}
+      sections={[{ id: "labels", rows }]}
+      onSelect={(row, event) => {
+        if (row.action) {
+          actions.onCreateLabel(name);
+          setQuery("");
+        } else {
+          actions.onLabel(row.id, event.selected);
+        }
+      }}
+      renderRow={(row, state) =>
+        row.action ? (
+          <>
+            <PlusIcon aria-hidden />
+            <span className="truncate">{row.label}</span>
+          </>
+        ) : (
+          <Badge variant="marker" color={TASK_LABEL_COLORS[row.id]}>
+            <MatchedText text={row.label} query={state.query} />
+          </Badge>
+        )
+      }
+      placeholder="Filter or create…"
+      inputLabel="Filter labels"
+      listLabel="Labels"
+      align="start"
+      className="w-56"
+    >
+      <IconButton label="Edit labels" size="icon-sm">
+        <TagIcon />
+      </IconButton>
+    </FilterMenu>
   );
 }
 
@@ -108,11 +190,14 @@ function TaskLinks({
 export function TaskDetails({
   task,
   tasks,
+  labels,
   actions,
 }: {
   task: Task;
   /** Every task, to resolve the ones this one links to, and the ones linking here. */
   tasks: readonly Task[];
+  /** Every label there is, the ones made in the demo included. */
+  labels: readonly string[];
   actions: DetailActions;
 }) {
   const related = task.related
@@ -166,11 +251,11 @@ export function TaskDetails({
           </Select>
         </Field>
         <Field label="Labels">
-          {task.labels.length === 0 ? (
-            <span className="text-muted-foreground">None</span>
-          ) : (
-            <span className="flex flex-wrap gap-1">
-              {task.labels.map((label) => (
+          <span className="flex flex-wrap items-center gap-1">
+            {task.labels.length === 0 ? (
+              <span className="text-muted-foreground">None</span>
+            ) : (
+              task.labels.map((label) => (
                 <Badge
                   key={label}
                   variant="marker"
@@ -178,9 +263,10 @@ export function TaskDetails({
                 >
                   {label}
                 </Badge>
-              ))}
-            </span>
-          )}
+              ))
+            )}
+            <EditLabels task={task} labels={labels} actions={actions} />
+          </span>
         </Field>
         <Field label="Updated">
           <Stamp at={task.updated} />

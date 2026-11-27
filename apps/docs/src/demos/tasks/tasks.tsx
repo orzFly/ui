@@ -1,4 +1,4 @@
-import { TASKS, type Task } from "@orz/fixtures/tasks.ts";
+import { TASK_LABELS, TASKS, type Task } from "@orz/fixtures/tasks.ts";
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
 import { EmptyState } from "@orz/ui/components/empty-state";
@@ -34,6 +34,7 @@ import {
   type Filters,
   fetchTasks,
   isOpen,
+  labelTask,
   matches,
   type Page,
   personOf,
@@ -84,6 +85,8 @@ interface Search {
  */
 export function Tasks() {
   const [tasks, setTasks] = useState<readonly Task[]>(TASKS);
+  // The filter, the details and a new task all pick from it, so a label made in one is in all.
+  const [labels, setLabels] = useState<readonly string[]>(TASK_LABELS);
   const [search, setSearch] = useState<Search>({
     filters: DEFAULT_FILTERS,
     tasks: TASKS,
@@ -211,6 +214,13 @@ export function Tasks() {
         `${taskKey(task.id)} is ${statusLabel(status)}`,
       ),
     onAssign: (login) => assign(task.id, login),
+    // No toast, unlike the status: the menu shows the result, and picking it again undoes it.
+    onLabel: (label, on) =>
+      setTasks((all) => labelTask(all, task.id, label, on)),
+    onCreateLabel: (label) => {
+      setLabels((all) => [...all, label]);
+      setTasks((all) => labelTask(all, task.id, label, true));
+    },
     onClose: () => close([task.id]),
     onReopen: () => reopen([task.id]),
     onDelete: () => askDelete([task.id]),
@@ -253,7 +263,7 @@ export function Tasks() {
                 value={filters.text}
                 onValueChange={(text) => filter({ text })}
               />
-              <FilterBar filters={filters} onChange={filter} />
+              <FilterBar filters={filters} labels={labels} onChange={filter} />
               <ToolbarSpacer />
               <ToolbarButton
                 variant="default"
@@ -386,6 +396,7 @@ export function Tasks() {
                 <TaskDetails
                   task={task}
                   tasks={tasks}
+                  labels={labels}
                   actions={detailActions}
                 />
               </div>
@@ -414,6 +425,7 @@ export function Tasks() {
                 <TaskDetails
                   task={task}
                   tasks={tasks}
+                  labels={labels}
                   actions={detailActions}
                 />
               </SheetBody>
@@ -431,6 +443,7 @@ export function Tasks() {
         onConfirm={confirmDelete}
       />
       <NewTaskDialog
+        labels={labels}
         open={creating}
         onOpenChange={setCreating}
         onCreate={(draft) => {

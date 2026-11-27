@@ -82,6 +82,8 @@ export interface UnitMeta {
   overflowable: boolean;
   group?: boolean;
   pinned?: boolean;
+  /** Its surface is open: the bar keeps it where it is until it closes. */
+  held?: boolean;
   /** A `ToolbarOverflow` with items of its own. */
   permanent?: boolean;
   renderOverflow?: () => React.ReactNode;
@@ -193,6 +195,7 @@ export class ToolbarStore extends OverflowStore<
       was.overflowable !== meta.overflowable ||
       was.group !== meta.group ||
       was.pinned !== meta.pinned ||
+      was.held !== meta.held ||
       was.permanent !== meta.permanent
     );
   }
@@ -278,6 +281,7 @@ export class ToolbarStore extends OverflowStore<
         group: record.meta.group,
         pinned: record.meta.pinned,
       };
+      if (record.meta.held) unit.held = this.viewOf(record.id);
       if (child.hidden) unit.cssHidden = true;
       else if (record.kind === "overflow") {
         if (record.meta.permanent) {

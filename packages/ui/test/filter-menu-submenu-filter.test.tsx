@@ -8,6 +8,9 @@ import {
   matchText,
 } from "../src/components/filter-menu.tsx";
 
+/** What a pick under single selection carries. */
+const PICKED = expect.objectContaining({ selected: true });
+
 interface Row {
   id: string;
   label: string;
@@ -146,7 +149,7 @@ describe("FilterMenu submenu filter", () => {
     expect(screen.getByRole("option", { name: "Pear" })).toBeTruthy();
 
     key(subBox(), "Enter");
-    expect(onSelect).toHaveBeenCalledWith(VARIETIES.apple?.[2]);
+    expect(onSelect).toHaveBeenCalledWith(VARIETIES.apple?.[2], PICKED);
     expect(ids(onHighlight)).toEqual([
       "apple",
       "apple:gala",

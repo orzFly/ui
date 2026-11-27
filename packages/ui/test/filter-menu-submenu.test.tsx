@@ -13,6 +13,9 @@ import {
   matchText,
 } from "../src/components/filter-menu.tsx";
 
+/** What a pick under single selection carries. */
+const PICKED = expect.objectContaining({ selected: true });
+
 interface Row {
   id: string;
   label: string;
@@ -298,7 +301,7 @@ describe("FilterMenu submenus", () => {
     key(box, "ArrowRight");
     key(box, "ArrowDown");
     key(box, "Enter");
-    expect(onSelect).toHaveBeenLastCalledWith(VARIETIES.apple?.[1]);
+    expect(onSelect).toHaveBeenLastCalledWith(VARIETIES.apple?.[1], PICKED);
     expect(screen.queryByRole("listbox")).toBeNull();
 
     box = open();
@@ -307,7 +310,7 @@ describe("FilterMenu submenus", () => {
     const damson = screen.getByRole("option", { name: "Damson" });
     expect(fireEvent.mouseDown(damson)).toBe(false);
     fireEvent.click(damson);
-    expect(onSelect).toHaveBeenLastCalledWith(VARIETIES.plum?.[0]);
+    expect(onSelect).toHaveBeenLastCalledWith(VARIETIES.plum?.[0], PICKED);
   });
 
   it("highlights submenu rows under the pointer, and leaving into the submenu reports no null", () => {
@@ -558,7 +561,7 @@ describe("FilterMenu submenus", () => {
     ).toBeTruthy();
     expect(onSelect).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("option", { name: "Plum" }));
-    expect(onSelect).toHaveBeenCalledWith(ROWS[2]);
+    expect(onSelect).toHaveBeenCalledWith(ROWS[2], PICKED);
   });
 
   it("lights only a split row's left half, the one that picks the row", () => {

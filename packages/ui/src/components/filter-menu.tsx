@@ -8,7 +8,6 @@ import type {
   ReactElement,
   ReactNode,
   Ref,
-  RefObject,
 } from "react";
 import {
   cloneElement,
@@ -23,8 +22,10 @@ import {
   useState,
 } from "react";
 import { POINTER_FINE } from "../hooks/use-media-query.ts";
+import { usePointerHold } from "../hooks/use-pointer-hold.ts";
 import { isModifiedClick } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
+import { CheckboxMark } from "./checkbox/mark.tsx";
 import { DropdownMenuItem } from "./dropdown-menu.tsx";
 import {
   Popover,
@@ -46,6 +47,12 @@ export interface FilterMenuRow {
   /** Unique across every section. */
   id: string;
   disabled?: boolean;
+  /**
+   * Does something when picked rather than being one of the choices:
+   * `Create “…”`, a completion that fills the box. It is never checked and
+   * wears no mark, and under multiple selection no box.
+   */
+  action?: boolean;
 }
 
 export interface FilterMenuSection<R extends FilterMenuRow> {
@@ -56,9 +63,34 @@ export interface FilterMenuSection<R extends FilterMenuRow> {
 
 export interface FilterMenuRowState {
   highlighted: boolean;
+  /** Single: the committed row. Multiple: in `selectedIds`. */
   selected: boolean;
+  /** Multiple: in `mixedIds` and not in `selectedIds`. Always false under single. */
+  mixed: boolean;
   /** What the row's own list is filtered by: the menu's query, or its submenu's. */
   query: string;
+}
+
+export interface FilterMenuSelectEvent {
+  /**
+   * What the pick asks the row to become. Single: always true. Multiple:
+   * false for a selected row, true for any other (a mixed row becomes
+   * selected), except a row `mixed` asks back.
+   */
+  readonly selected: boolean;
+  /**
+   * Multiple: the pick asks a row that was in `mixedIds` as the menu opened,
+   * and is now in neither list, to be partly selected again: back on just
+   * the items it was on. Such a row goes mixed, selected, unselected and
+   * round again. Always false under single.
+   */
+  readonly mixed: boolean;
+  /**
+   * Single: the menu stays open, its focus, query and highlight as they are;
+   * close it through `open` when done. Multiple: the menu stays open anyway.
+   */
+  preventDefault(): void;
+  readonly defaultPrevented: boolean;
 }
 
 export interface FilterMenuSubmenuFilter {
@@ -68,11 +100,40 @@ export interface FilterMenuSubmenuFilter {
 }
 
 export interface FilterMenuHandle {
-  /** The highlight back on `selectedId`, firing `onHighlight(null)`; for a control in `header` that commits at once. */
+  /**
+   * The highlight back on `selectedId`, or on no row under multiple
+   * selection, firing `onHighlight(null)`; for a control in `header` that
+   * commits at once.
+   */
   resetHighlight(): void;
 }
 
-export interface FilterMenuProps<R extends FilterMenuRow> {
+type FilterMenuSelection =
+  | {
+      /** One row at a time; picking one closes the menu. The default. */
+      selection?: "single";
+      /** The committed row: checked, and where the highlight rests when nobody moved it. */
+      selectedId?: string;
+      /** The committed row inside a submenu: checked there. */
+      selectedSubmenuId?: string;
+      selectedIds?: never;
+      mixedIds?: never;
+    }
+  | {
+      /** Each row on or off by itself; the menu stays open. */
+      selection: "multiple";
+      /** Selected rows, in the menu and its submenus alike. */
+      selectedIds: readonly string[];
+      /** Rows partly selected: a label on some of the items being edited. */
+      mixedIds?: readonly string[];
+      selectedId?: never;
+      selectedSubmenuId?: never;
+    };
+
+export type FilterMenuProps<R extends FilterMenuRow> = FilterMenuBaseProps<R> &
+  FilterMenuSelection;
+
+export interface FilterMenuBaseProps<R extends FilterMenuRow> {
   ref?: Ref<FilterMenuHandle>;
   /** The trigger, rendered through `PopoverTrigger asChild`. */
   children: ReactElement;
@@ -85,8 +146,6 @@ export interface FilterMenuProps<R extends FilterMenuRow> {
   /** Already filtered for `query`; sections without rows are skipped. */
   sections: readonly FilterMenuSection<R>[];
   renderRow: (row: R, state: FilterMenuRowState) => ReactNode;
-  /** The committed row: checked, and where the highlight rests when nobody moved it. */
-  selectedId?: string;
   /**
    * The row the user moved the highlight to, by key, pointer or typing.
    * `null` means "show the committed state": the highlight rests on
@@ -94,17 +153,21 @@ export interface FilterMenuProps<R extends FilterMenuRow> {
    */
   onHighlight?: (row: R | null) => void;
   /**
-   * A row was picked, by a click or Enter; the menu closes after it. A
-   * `rowLink` row has gone by its link by then, so this only hears of it.
+   * A row was picked, by a click or Enter. Under single selection the menu
+   * closes after it unless `event.preventDefault()` is called; under multiple
+   * it stays open, and the row stays as it is until `selectedIds` and
+   * `mixedIds` say otherwise. A `rowLink` row has gone by its link by then,
+   * so this only hears of it.
    */
-  onSelect?: (row: R) => void;
+  onSelect?: (row: R, event: FilterMenuSelectEvent) => void;
   /**
    * Where a row that is a place goes: its `href`, drawn as an `a`, or a
    * router's link with no children, which the row is drawn as, its content
    * inside. A plain click or Enter goes there and closes the menu; a click
    * with a modifier, a middle click or a right click is the browser's (a new
    * tab, a window, the link's own menu), and the menu stays open. Undefined
-   * for a row that is no place.
+   * for a row that is no place. Under multiple selection a link row is
+   * picked as an `action` row is, never checked.
    */
   rowLink?: (row: R) => string | ReactElement | undefined;
   /**
@@ -115,8 +178,6 @@ export interface FilterMenuProps<R extends FilterMenuRow> {
   getSubmenu?: (row: R, query: string) => readonly R[] | undefined;
   /** Gives a row's submenu its own filter box; undefined = none. */
   submenuFilter?: (row: R) => FilterMenuSubmenuFilter | undefined;
-  /** The committed row inside a submenu: checked there. */
-  selectedSubmenuId?: string;
   /** Accessible name of a row's submenu listbox. */
   submenuLabel?: (row: R) => string;
   header?: ReactNode;
@@ -289,10 +350,12 @@ const ROW_CLASS =
 
 const CELL_CLASS = "gap-1.5 py-1 pl-1.5";
 
+// A checkbox's mark keeps the window's text colour under raymond: its dash
+// is drawn in the current colour, which would go white on the box's white.
 const OPTION_CLASS = cn(
   ROW_CLASS,
   CELL_CLASS,
-  "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-highlighted:state-cue raymond:data-highlighted:**:text-accent-foreground",
+  "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-highlighted:state-cue raymond:data-highlighted:**:not-data-[slot=checkbox-mark]:not-in-data-[slot=checkbox-mark]:text-accent-foreground",
 );
 
 /**
@@ -302,8 +365,43 @@ const OPTION_CLASS = cn(
 const ACTION_CLASS = cn(
   "relative flex min-w-0 flex-1 items-center self-stretch rounded-item pr-6.5",
   CELL_CLASS,
-  "group-data-highlighted/option:bg-accent group-data-highlighted/option:text-accent-foreground group-data-highlighted/option:state-cue raymond:group-data-highlighted/option:**:text-accent-foreground",
+  "group-data-highlighted/option:bg-accent group-data-highlighted/option:text-accent-foreground group-data-highlighted/option:state-cue raymond:group-data-highlighted/option:**:not-data-[slot=checkbox-mark]:not-in-data-[slot=checkbox-mark]:text-accent-foreground",
 );
+
+/**
+ * A row's box under multiple selection. Under raymond the box is 13px, and
+ * 3px of margin give it an icon's 16px, so an action row's icon stands in its
+ * column and the names line up. On the highlight's fill the empty box's
+ * input-coloured edge falls under 3:1 in most palettes; the row's text
+ * colour holds it.
+ */
+const BOX_CLASS =
+  "raymond:mr-0.5 raymond:ml-px group-data-highlighted/option:data-[state=unchecked]:border-accent-foreground";
+
+/**
+ * A row's cell under multiple selection. Under raymond a row is as tall as
+ * its text, 21px: with less padding a 16px icon, an action row's, no longer
+ * makes its row taller than a 13px box does.
+ */
+const MULTIPLE_CELL = "raymond:py-0.5";
+
+/**
+ * A row's part in the selection; `null` for a row that is no choice: an
+ * action, or under multiple selection a link.
+ */
+type Pick = "selected" | "mixed" | "unselected" | null;
+
+const BOX_STATE = {
+  selected: "checked",
+  mixed: "indeterminate",
+  unselected: "unchecked",
+} as const;
+
+const ARIA_CHECKED = {
+  selected: true,
+  mixed: "mixed",
+  unselected: false,
+} as const;
 
 function step<R extends FilterMenuRow>(
   from: readonly R[],
@@ -372,6 +470,10 @@ const isEscapeOfComposition = (event: globalThis.KeyboardEvent) =>
  * that `aria-activedescendant` follows. The caller filters; this component
  * owns the surface, the highlight and the keys.
  *
+ * Under `selection="multiple"` each row is on or off by itself, drawn with a
+ * checkbox's look, a partly selected one with its dash; a pick leaves the
+ * menu open, and what is selected is the caller's to say.
+ *
  * Without a fine pointer, on a touch screen, it opens with the focus on the
  * list instead, so no on-screen keyboard rises over the rows: a tap on the
  * box brings the keyboard, and a key pressed on a hardware one moves the
@@ -391,7 +493,10 @@ export function FilterMenu<R extends FilterMenuRow>({
   onQueryChange,
   sections,
   renderRow,
+  selection = "single",
   selectedId,
+  selectedIds,
+  mixedIds,
   onHighlight,
   onSelect,
   rowLink,
@@ -470,11 +575,22 @@ export function FilterMenu<R extends FilterMenuRow>({
   const mode = useRef<"rest" | "hit" | "user">("rest");
   const interactedOutside = useRef(false);
   const openRef = useRef<(next: boolean) => void>(() => {});
+  // Mounted: open, or fading out after closing.
+  const [surface, setSurface] = useState(false);
+  const contentRef = useCallback((el: HTMLDivElement | null) => {
+    content.current = el;
+    setSurface(el !== null);
+  }, []);
   const unit = useToolbarUnit({
     meta: {
       priority,
       active: toolbarActive,
       overflowable: true,
+      // A pick widens or narrows the trigger and sets it away from its
+      // default, and the bar would move it to or from the ⋯, the surface
+      // with it. Held until the surface has gone, it is laid out again only
+      // then, before the focus goes back.
+      held: open || surface,
       renderOverflow: () => (
         <DropdownMenuItem
           onSelect={() => {
@@ -498,6 +614,66 @@ export function FilterMenu<R extends FilterMenuRow>({
   });
   const overflowed = unit.view === "overflow";
   const moreRef = unit.internal?.store.triggerRef;
+  // Whether the surface stands against the ⋯, for the focus on closing, by
+  // when the bar may have put the trigger back.
+  const fromMore = useRef(false);
+  if (open) fromMore.current = overflowed;
+
+  // A pick re-lays the bar out, or the caller's row, and moves the trigger
+  // or the ⋯; the surface stands where it was while the pointer is on it or
+  // near it, so no row slides out from under the pointer, and slides over to
+  // its anchor once the pointer has gone.
+  const holding = usePointerHold(
+    () => [content.current, submenu.current],
+    open,
+  );
+  const anchorOf = useCallback(
+    () => (overflowed ? moreRef?.current : null) ?? trigger.current,
+    [overflowed, moreRef],
+  );
+  const [pin, setPin] = useState<DOMRect | null>(null);
+  useLayoutEffect(() => {
+    setPin(holding ? (anchorOf()?.getBoundingClientRect() ?? null) : null);
+  }, [holding, anchorOf]);
+  // A new one at each opening, which Radix hands to the surface anew: until
+  // it learns of this anchor, the trigger is its own, and React's strict mode
+  // attaches that again after this one, by then a trigger since replaced.
+  const placed = useMemo(
+    () => ({
+      // Read by floating-ui as it starts following the anchor, by then mounted.
+      get contextElement() {
+        return anchorOf() ?? undefined;
+      },
+      getBoundingClientRect: () =>
+        (open ? pin : null) ??
+        anchorOf()?.getBoundingClientRect() ??
+        new DOMRect(),
+    }),
+    [open, pin, anchorOf],
+  );
+  const wasPinned = useRef(false);
+  useLayoutEffect(() => {
+    const was = wasPinned.current;
+    wasPinned.current = pin !== null;
+    const surface = content.current;
+    const wrapper = surface?.parentElement;
+    if (!was || pin !== null || !open || !surface || !wrapper) return;
+    // How long the slide takes is the style's, in the surface's class.
+    const duration = getComputedStyle(surface)
+      .getPropertyValue("--filter-menu-slide")
+      .trim();
+    if (duration === "" || Number.parseFloat(duration) === 0) return;
+    // On the wrapper floating-ui places by its transform, which it sets anew
+    // once it has heard of the anchor's change, after this commit.
+    wrapper.style.transition = `transform ${duration} ease-out`;
+    const done = () => {
+      wrapper.style.transition = "";
+    };
+    wrapper.addEventListener("transitionend", done, { once: true });
+    const timer = setTimeout(done, 1000);
+    return () => clearTimeout(timer);
+  }, [pin, open]);
+
   const base = useId();
   const listId = `${base}-list`;
   const submenuId = `${base}-submenu`;
@@ -539,8 +715,46 @@ export function FilterMenu<R extends FilterMenuRow>({
     report(row);
   };
 
+  const multiple = selection === "multiple";
+  // Under multiple selection no row is the one committed, so the highlight
+  // rests on none: on opening, with the box cleared, and once reset.
   const committed =
-    selectedId !== undefined && indexOf.has(selectedId) ? selectedId : null;
+    !multiple && selectedId !== undefined && indexOf.has(selectedId)
+      ? selectedId
+      : null;
+  const picked = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const partly = useMemo(() => new Set(mixedIds), [mixedIds]);
+  // The rows partly selected as the menu opened, which a pick cycles back
+  // to: the caller's ids change with every pick.
+  const mixedAtOpen = useRef<ReadonlySet<string>>(new Set());
+  const openSeen = useRef(false);
+  if (open !== openSeen.current) {
+    openSeen.current = open;
+    if (open) {
+      mixedAtOpen.current = new Set(
+        [...partly].filter((id) => !picked.has(id)),
+      );
+    }
+  }
+  const pickOf = (row: R, inSubmenu: boolean): Pick => {
+    if (row.action) return null;
+    if (!multiple) {
+      const id = inSubmenu ? selectedSubmenuId : selectedId;
+      return row.id === id ? "selected" : "unselected";
+    }
+    if (rowLink?.(row) !== undefined) return null;
+    if (picked.has(row.id)) return "selected";
+    return partly.has(row.id) ? "mixed" : "unselected";
+  };
+  /** The box a row wears before its content under multiple selection. */
+  const boxOf = (pick: Pick) =>
+    multiple && pick !== null ? (
+      <CheckboxMark state={BOX_STATE[pick]} className={BOX_CLASS} />
+    ) : null;
+  // Under multiple selection the state is the row's own, and aria-selected,
+  // which a single one's highlight carries, would say it twice.
+  const checkedOf = (pick: Pick) =>
+    multiple && pick !== null ? ARIA_CHECKED[pick] : undefined;
 
   /** The highlight back on the committed row, which shows no preview. */
   const rest = useCallback(() => {
@@ -785,10 +999,66 @@ export function FilterMenu<R extends FilterMenuRow>({
     }, ms);
   };
 
-  const choose = (row: R) => {
+  /** What a pick asks the row to become: partly selected rows cycle through all, none, and back. */
+  const nextOf = (row: R, inSubmenu: boolean) => {
+    const pick = multiple ? pickOf(row, inSubmenu) : null;
+    if (pick === "selected") return { selected: false, mixed: false };
+    if (pick === "unselected" && mixedAtOpen.current.has(row.id)) {
+      return { selected: false, mixed: true };
+    }
+    return { selected: true, mixed: false };
+  };
+
+  /** `by` a key, or a pointer: a touch or a pen, which hovers nothing, leaves no highlight behind. */
+  const choose = (row: R, inSubmenu: boolean, by: "key" | "pointer") => {
     if (row.disabled) return;
-    onSelect?.(row);
-    setOpen(false);
+    let prevented = false;
+    const event: FilterMenuSelectEvent = {
+      ...nextOf(row, inSubmenu),
+      preventDefault: () => {
+        prevented = true;
+      },
+      get defaultPrevented() {
+        return prevented;
+      },
+    };
+    onSelect?.(row, event);
+    if (!multiple && !prevented) {
+      setOpen(false);
+      return;
+    }
+    // Staying open, the highlight stays on the row as the caller's data
+    // changes under it, until the query does; the box and the focus are left
+    // as they are. A highlight a touch left would read as the row picked.
+    const lifted =
+      by === "pointer" &&
+      (pressedWith.current === "touch" || pressedWith.current === "pen");
+    if (lifted) {
+      if (inSubmenu) {
+        // The parent keeps it, and with it its submenu open.
+        mode.current = "user";
+        subMode.current = "user";
+        setSubHighlight(null);
+        report(parent ?? null);
+      } else {
+        mode.current = "rest";
+        setHighlightState(committed);
+        report(null);
+      }
+      return;
+    }
+    mode.current = "user";
+    if (inSubmenu) {
+      subMode.current = "user";
+      if (subHighlight !== row.id) {
+        setSubHighlight(row.id);
+        report(row);
+      }
+    } else if (highlight !== row.id) {
+      // A tap, which moved no highlight: picking a parent opens no submenu.
+      setHighlightState(row.id);
+      report(row);
+    }
   };
 
   /**
@@ -798,16 +1068,21 @@ export function FilterMenu<R extends FilterMenuRow>({
    * modifier to the browser. Preventing the default here would stop a
    * router's link, which goes only for a click nobody handled.
    */
-  const onRowClick = (event: MouseEvent<HTMLElement>, row: R) => {
+  const onRowClick = (
+    event: MouseEvent<HTMLElement>,
+    row: R,
+    inSubmenu: boolean,
+  ) => {
+    const by = clickedByKey.current ? "key" : "pointer";
     if (!event.currentTarget.matches("a[href]")) {
-      choose(row);
+      choose(row, inSubmenu, by);
       return;
     }
     if (row.disabled) {
       event.preventDefault();
       return;
     }
-    if (!isModifiedClick(event)) choose(row);
+    if (!isModifiedClick(event)) choose(row, inSubmenu, by);
   };
 
   const linkOf = (row: R): ReactElement | undefined => {
@@ -817,10 +1092,19 @@ export function FilterMenu<R extends FilterMenuRow>({
   };
 
   /** Enter: a link row is clicked, so it goes as a plain click would. */
-  const activate = (row: R, id: string) => {
+  const clickedByKey = useRef(false);
+  const activate = (row: R, id: string, inSubmenu: boolean) => {
     const el = document.getElementById(id);
-    if (el?.matches("a[href]")) el.click();
-    else choose(row);
+    if (!el?.matches("a[href]")) {
+      choose(row, inSubmenu, "key");
+      return;
+    }
+    clickedByKey.current = true;
+    try {
+      el.click();
+    } finally {
+      clickedByKey.current = false;
+    }
   };
 
   // What the last press on the surface came from: only a mouse drags a link.
@@ -950,7 +1234,9 @@ export function FilterMenu<R extends FilterMenuRow>({
       case "Enter": {
         event.preventDefault();
         const row = at < 0 ? undefined : from[at];
-        if (row) activate(row, inSubmenu ? subOptionId(at) : optionId(at));
+        if (row) {
+          activate(row, inSubmenu ? subOptionId(at) : optionId(at), inSubmenu);
+        }
         return;
       }
       case "Tab":
@@ -1062,17 +1348,19 @@ export function FilterMenu<R extends FilterMenuRow>({
       ) : (
         triggerPart
       )}
-      {/* Its own trigger is out of sight while it is in the ⋯ menu. */}
-      {overflowed && moreRef && (
-        <PopoverAnchor virtualRef={moreRef as RefObject<HTMLButtonElement>} />
-      )}
+      {/* The ⋯ while it is in the ⋯ menu, its own trigger out of sight;
+          held in place while the pointer is near. Always mounted: Radix
+          wraps the trigger in an anchor of its own only without one, and
+          swapping the wrapper in and out remounts the trigger. */}
+      <PopoverAnchor virtualRef={{ current: placed }} />
       <PopoverContent
-        ref={content}
+        ref={contentRef}
         align={align}
         side={side}
         sideOffset={sideOffset}
         className={cn(
-          "flex max-h-[min(24rem,var(--radix-popover-content-available-height))] flex-col overflow-hidden p-0",
+          // Under raymond nothing slides, as nothing did in Windows 2000.
+          "flex max-h-[min(24rem,var(--radix-popover-content-available-height))] flex-col overflow-hidden p-0 [--filter-menu-slide:150ms] motion-reduce:[--filter-menu-slide:0s] raymond:[--filter-menu-slide:0s]",
           className,
         )}
         onPointerDown={onSurfacePointerDown}
@@ -1110,14 +1398,29 @@ export function FilterMenu<R extends FilterMenuRow>({
             event.preventDefault();
             return;
           }
-          // Opened from the ⋯ menu, it goes back to the ⋯: its own trigger
-          // is out of sight. A click elsewhere has put the focus there.
-          const from =
-            overflowed && moreRef?.current ? moreRef.current : trigger.current;
+          // Opened from the ⋯ menu, it goes back to the ⋯. The bar, laid out
+          // again as the surface went, may have moved the trigger since: into
+          // the ⋯, which takes the focus for it, or back onto the bar with
+          // the ⋯ gone, so the trigger takes it. Read from the store: this
+          // handler is the one the surface last rendered with. A click
+          // elsewhere has put the focus there.
+          const inMore =
+            unit.registered &&
+            unit.internal?.store.viewOf(unit.id) === "overflow";
+          const more =
+            (fromMore.current || inMore) && moreRef?.current
+              ? moreRef.current
+              : null;
+          fromMore.current = false;
+          const from = more ?? trigger.current;
           if (direction === null) {
-            if (!overflowed || outside || !from) return;
+            if (outside || !from) return;
             event.preventDefault();
             from.focus({ preventScroll: true });
+            // A ToolbarOverflow with nothing in it is held out of sight.
+            if (from === more && document.activeElement !== more) {
+              trigger.current?.focus({ preventScroll: true });
+            }
             return;
           }
           if (!from) return;
@@ -1153,6 +1456,7 @@ export function FilterMenu<R extends FilterMenuRow>({
           id={listId}
           role="listbox"
           aria-label={listLabel}
+          aria-multiselectable={multiple || undefined}
           // Where the focus lands without a fine pointer. No ring: the
           // highlight shows where the keys act, as it does from the box.
           tabIndex={-1}
@@ -1202,15 +1506,22 @@ export function FilterMenu<R extends FilterMenuRow>({
             const options = section.rows.map((row) => {
               const index = flatIndex++;
               const highlighted = index === highlightIndex;
-              const selected = row.id === selectedId;
+              const pick = pickOf(row, false);
+              const selected = pick === "selected";
               const split = hasSubmenu(row);
               // One gutter for every row of a menu with submenus, so what
               // renderRow puts at the right edge lines up.
               const gutter = getSubmenu !== undefined;
               const cell = (
                 <>
-                  {renderRow(row, { highlighted, selected, query })}
-                  {selected && (
+                  {boxOf(pick)}
+                  {renderRow(row, {
+                    highlighted,
+                    selected,
+                    mixed: pick === "mixed",
+                    query,
+                  })}
+                  {!multiple && selected && (
                     <Mark
                       className={
                         split ? "right-0.5" : gutter ? "right-7" : "right-2"
@@ -1226,7 +1537,14 @@ export function FilterMenu<R extends FilterMenuRow>({
               const content = (
                 <>
                   {split ? (
-                    <span data-slot="submenu-action" className={ACTION_CLASS}>
+                    <span
+                      data-slot="submenu-action"
+                      className={
+                        multiple
+                          ? cn(ACTION_CLASS, "pr-1.5", MULTIPLE_CELL)
+                          : ACTION_CLASS
+                      }
+                    >
                       {cell}
                     </span>
                   ) : (
@@ -1266,7 +1584,10 @@ export function FilterMenu<R extends FilterMenuRow>({
                   id={optionId(index)}
                   role="option"
                   tabIndex={-1}
-                  aria-selected={highlighted && subIndex < 0}
+                  aria-selected={
+                    multiple ? undefined : highlighted && subIndex < 0
+                  }
+                  aria-checked={checkedOf(pick)}
                   aria-disabled={row.disabled || undefined}
                   aria-haspopup={split ? "listbox" : undefined}
                   aria-expanded={split ? highlighted && submenuOpen : undefined}
@@ -1276,7 +1597,17 @@ export function FilterMenu<R extends FilterMenuRow>({
                   className={
                     split
                       ? ROW_CLASS
-                      : cn(OPTION_CLASS, gutter ? "pr-13" : "pr-8")
+                      : cn(
+                          OPTION_CLASS,
+                          // Room after the content for the check, which a
+                          // box before it replaces, and in a menu with
+                          // submenus for the chevron.
+                          multiple
+                            ? [gutter ? "pr-8" : "pr-1.5", MULTIPLE_CELL]
+                            : gutter
+                              ? "pr-13"
+                              : "pr-8",
+                        )
                   }
                   onPointerMove={(event) => {
                     if (row.disabled) return;
@@ -1295,7 +1626,7 @@ export function FilterMenu<R extends FilterMenuRow>({
                     highlighted && split ? onParentLeave : undefined
                   }
                   onClick={(event: MouseEvent<HTMLElement>) =>
-                    onRowClick(event, row)
+                    onRowClick(event, row, false)
                   }
                 >
                   {link ? cloneElement(link, undefined, content) : content}
@@ -1414,6 +1745,7 @@ export function FilterMenu<R extends FilterMenuRow>({
               id={submenuId}
               role="listbox"
               aria-label={parent ? submenuLabel?.(parent) : undefined}
+              aria-multiselectable={multiple || undefined}
               className="min-h-0 flex-1 overflow-y-auto p-1"
             >
               {/* Not while it fades out, emptied by the parent it lost. */}
@@ -1427,13 +1759,20 @@ export function FilterMenu<R extends FilterMenuRow>({
               )}
               {subRows.map((row, index) => {
                 const highlighted = index === subIndex;
-                const selected = row.id === selectedSubmenuId;
+                const pick = pickOf(row, true);
+                const selected = pick === "selected";
                 const link = linkOf(row);
                 const Row = link ? Slot.Root : "div";
                 const content = (
                   <>
-                    {renderRow(row, { highlighted, selected, query: subText })}
-                    {selected && (
+                    {boxOf(pick)}
+                    {renderRow(row, {
+                      highlighted,
+                      selected,
+                      mixed: pick === "mixed",
+                      query: subText,
+                    })}
+                    {!multiple && selected && (
                       <Mark className="right-2">
                         <CheckIcon aria-hidden />
                       </Mark>
@@ -1446,17 +1785,21 @@ export function FilterMenu<R extends FilterMenuRow>({
                     id={subOptionId(index)}
                     role="option"
                     tabIndex={-1}
-                    aria-selected={highlighted}
+                    aria-selected={multiple ? undefined : highlighted}
+                    aria-checked={checkedOf(pick)}
                     aria-disabled={row.disabled || undefined}
                     data-highlighted={highlighted ? "" : undefined}
                     data-selected={selected ? "" : undefined}
                     data-disabled={row.disabled ? "" : undefined}
-                    className={cn(OPTION_CLASS, "pr-8")}
+                    className={cn(
+                      OPTION_CLASS,
+                      multiple ? ["pr-1.5", MULTIPLE_CELL] : "pr-8",
+                    )}
                     onPointerMove={() => {
                       if (!row.disabled && !highlighted) moveIntoSubmenu(row);
                     }}
                     onClick={(event: MouseEvent<HTMLElement>) =>
-                      onRowClick(event, row)
+                      onRowClick(event, row, true)
                     }
                   >
                     {link ? cloneElement(link, undefined, content) : content}

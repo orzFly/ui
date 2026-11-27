@@ -23,24 +23,25 @@ export const personOf = (login: string) =>
 
 /**
  * What the toolbar narrows the list to. `status` is a group (`open`, `closed`, `any`) or one
- * open stage; `assignee` is `anyone`, `nobody` or a login; `label` is `any` or a label.
+ * open stage; `assignee` is `anyone`, `nobody` or a login; `labels` are the labels a task
+ * carries every one of, none for any.
  */
 export interface Filters {
   status: "open" | "closed" | "any" | Exclude<TaskStatus, "closed">;
   assignee: string;
-  label: string;
+  labels: readonly string[];
   text: string;
 }
 
 export const DEFAULT_FILTERS: Filters = {
   status: "open",
   assignee: "anyone",
-  label: "any",
+  labels: [],
   text: "",
 };
 
 export function matches(task: Task, filters: Filters): boolean {
-  const { status, assignee, label } = filters;
+  const { status, assignee, labels } = filters;
   if (status === "open" && !isOpen(task)) return false;
   if (status === "closed" && isOpen(task)) return false;
   if (status !== "open" && status !== "closed" && status !== "any") {
@@ -50,7 +51,7 @@ export function matches(task: Task, filters: Filters): boolean {
   if (assignee !== "anyone" && assignee !== "nobody") {
     if (task.assignee !== assignee) return false;
   }
-  if (label !== "any" && !task.labels.includes(label)) return false;
+  if (!labels.every((label) => task.labels.includes(label))) return false;
   const text = filters.text.trim().toLowerCase();
   if (text === "") return true;
   return (
@@ -127,6 +128,28 @@ export function changeTasks(
     });
   return [next, undo];
 }
+
+/**
+ * The task with `label` put on or taken off. No undo: picking it again in the same menu takes
+ * it back.
+ */
+export const labelTask = (
+  tasks: readonly Task[],
+  id: number,
+  label: string,
+  on: boolean,
+): Task[] =>
+  tasks.map((task) =>
+    task.id !== id
+      ? task
+      : {
+          ...task,
+          labels: on
+            ? [...new Set([...task.labels, label])]
+            : task.labels.filter((each) => each !== label),
+          updated: new Date().toISOString(),
+        },
+  );
 
 export const deleteTasks = (tasks: readonly Task[], ids: readonly number[]) =>
   tasks.filter((task) => !ids.includes(task.id));

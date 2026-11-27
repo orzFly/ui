@@ -354,4 +354,46 @@ describe("solveToolbar", () => {
       }
     }
   });
+
+  it("keeps a held part in the ⋯ menu however much room comes back", () => {
+    const result = run(400, [
+      unit("a", 40),
+      unit("b", 40, { held: "overflow" }),
+      unit("c", 40),
+    ]);
+    expect(result.views).toEqual({ a: "bar", b: "overflow", c: "bar" });
+    expect(result.overflow).toEqual(["b"]);
+    expect(result.trigger).toEqual({ at: "end" });
+  });
+
+  it("keeps a held part on the bar, folding the others around it", () => {
+    const units = [
+      unit("a", 40, { priority: 1 }),
+      unit("b", 60, { held: "bar", labelWidth: 30 }),
+      unit("c", 40),
+    ];
+    // Not held, b would hide its label first and fit beside both.
+    const free = [units[0], unit("b", 60, { labelWidth: 30 }), units[2]];
+    expect(run(120, free as SolverUnit[]).views).toEqual({
+      a: "bar",
+      b: "label",
+      c: "bar",
+    });
+    // Held, it keeps its label, and c goes, then a, though b is the lowest.
+    expect(run(120, units).views).toEqual({
+      a: "bar",
+      b: "bar",
+      c: "overflow",
+    });
+    expect(run(80, units).views).toEqual({
+      a: "overflow",
+      b: "bar",
+      c: "overflow",
+    });
+    // With nothing left to fold, it stays whole and the bar scrolls.
+    expect(run(70, units)).toMatchObject({
+      views: { a: "overflow", b: "bar", c: "overflow" },
+      scrollable: true,
+    });
+  });
 });

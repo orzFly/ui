@@ -3,6 +3,7 @@ import { Checkbox as CheckboxPrimitive } from "radix-ui";
 import type * as React from "react";
 
 import { cn } from "../lib/utils.ts";
+import { CHECKBOX_BOX, CHECKBOX_INDICATOR } from "./checkbox/mark.tsx";
 
 /**
  * Picks an item, or agrees to something, for an action that runs later.
@@ -15,24 +16,12 @@ function Checkbox({
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
-      className={cn(
-        // Under raymond a sunken well on the window colour, the mark in the
-        // window's own text colour rather than --foreground, which a
-        // highlighted row turns white around it: 13px, the check a 7px pixel
-        // mark, grey while held down or disabled.
-        // Inline-level, as Radix expects: inside a form it adds a hidden input
-        // after the box and pulls it back by its own width, which lands on the
-        // box only when the two share a line. After a block-level box the
-        // input drops to the line below, out of a table cell and into the
-        // table's scroll.
-        "peer relative inline-flex size-4 shrink-0 cursor-pointer align-middle items-center justify-center rounded-[min(var(--radius-control),4px)] border border-input shadow-sunken transition-colors outline-none focus-visible:focus-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 dark:bg-input/15 dark:aria-invalid:ring-destructive/40 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground dark:data-[state=indeterminate]:bg-primary touch:hit-area raymond:size-3.25 raymond:border-0 raymond:bg-(--window) raymond:active:bg-(--3d-face) raymond:disabled:bg-(--3d-face) raymond:disabled:opacity-100 raymond:[--input:transparent] raymond:[--primary-foreground:var(--popover-foreground)] raymond:[--primary:var(--window)]",
-        className,
-      )}
+      className={cn(CHECKBOX_BOX, className)}
       {...props}
     >
       <CheckboxPrimitive.Indicator
         data-slot="checkbox-indicator"
-        className="group grid place-content-center text-current [&>svg]:size-3.5 raymond:size-1.75 raymond:data-[state=checked]:[&>svg]:hidden raymond:data-[state=checked]:bg-no-repeat raymond:data-[state=checked]:bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%277%27%20height=%277%27%3E%3Cpath%20d=%27M6%200h1v3H6v1H5v1H4v1H3v1H2V6H1V5H0V2h1v1h1v1h1V3h1V2h1V1h1z%27/%3E%3C/svg%3E')] raymond:[&>svg]:size-1.75 raymond:[&>svg]:stroke-4"
+        className={CHECKBOX_INDICATOR}
       >
         <CheckIcon className="group-data-[state=indeterminate]:hidden" />
         <MinusIcon className="hidden group-data-[state=indeterminate]:block" />

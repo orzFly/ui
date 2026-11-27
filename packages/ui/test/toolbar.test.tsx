@@ -784,6 +784,142 @@ describe("FilterMenu in a Toolbar", () => {
   });
 });
 
+describe("FilterMenu held where it stands in a Toolbar while open", () => {
+  const LABELS = ["bug", "docs", "ui"].map((id) => ({ id }));
+
+  /** A multiple-selection filter whose trigger is as wide as the test says. */
+  function Labels({ width }: { width: number }) {
+    const [query, setQuery] = useState("");
+    const [picked, setPicked] = useState<string[]>([]);
+    return (
+      <Toolbar aria-label="Issues">
+        <ToolbarButton aria-label="Archive">
+          <Icon />
+        </ToolbarButton>
+        <FilterMenu
+          selection="multiple"
+          selectedIds={picked}
+          query={query}
+          onQueryChange={setQuery}
+          sections={[{ id: "all", rows: LABELS }]}
+          renderRow={(row) => row.id}
+          onSelect={(row, event) =>
+            setPicked((ids) =>
+              event.selected
+                ? [...ids, row.id]
+                : ids.filter((id) => id !== row.id),
+            )
+          }
+          listLabel="Labels"
+          toolbarActive={picked.length > 0}
+        >
+          <button type="button" data-test-width={width}>
+            Labels
+          </button>
+        </FilterMenu>
+        <ToolbarButton aria-label="Delete">
+          <Icon />
+        </ToolbarButton>
+      </Toolbar>
+    );
+  }
+
+  const labels = () =>
+    screen.getByRole("button", { name: "Labels", hidden: true });
+  const inMore = (name: string) =>
+    screen
+      .getByRole("button", { name, hidden: true })
+      .closest("[data-overflowed]") !== null;
+
+  /** Opens Labels from its row in the ⋯ menu. */
+  async function openFromMore() {
+    expect(await openMore()).toContain("Labels");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Labels" }));
+    await settle();
+    await settle();
+    return screen.getByRole("combobox", { name: "Filter" });
+  }
+
+  it("stays in the ⋯ while picks change its width and set it away, and hands the focus back to the ⋯", async () => {
+    const { rerender } = render(<Labels width={90} />);
+    await settle();
+    // Archive and the ⋯ fit in 100; Labels does not beside them.
+    await layout.resize(100);
+    expect(inMore("Labels")).toBe(true);
+    const box = await openFromMore();
+    fireEvent.click(screen.getByRole("option", { name: "bug" }));
+    fireEvent.click(screen.getByRole("option", { name: "ui" }));
+    await settle();
+    expect(screen.getByRole("listbox", { name: "Labels" })).toBeTruthy();
+    expect(
+      screen
+        .getAllByRole("option")
+        .map((el) => el.getAttribute("aria-checked")),
+    ).toEqual(["true", "false", "true"]);
+    // Narrow enough to stand on the bar, and set away from its default.
+    rerender(<Labels width={30} />);
+    await layout.resize(100);
+    expect(inMore("Labels")).toBe(true);
+    expect(trigger()).toBeTruthy();
+    expect(trigger()?.getAttribute("aria-label")).toBe(
+      "More actions (1 active)",
+    );
+    rerender(<Labels width={90} />);
+    await layout.resize(100);
+    fireEvent.keyDown(box, { key: "Escape" });
+    await settle();
+    await settle();
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(inMore("Labels")).toBe(true);
+    expect(document.activeElement).toBe(trigger());
+  });
+
+  it("goes back to the bar once closed if it fits there, the focus on its trigger once the ⋯ has gone", async () => {
+    const { rerender } = render(<Labels width={90} />);
+    await settle();
+    await layout.resize(100);
+    const box = await openFromMore();
+    fireEvent.click(screen.getByRole("option", { name: "docs" }));
+    rerender(<Labels width={30} />);
+    await layout.resize(100);
+    expect(inMore("Labels")).toBe(true);
+    fireEvent.keyDown(box, { key: "Escape" });
+    await settle();
+    await settle();
+    expect(inMore("Labels")).toBe(false);
+    expect(trigger()).toBeNull();
+    expect(document.activeElement).toBe(labels());
+  });
+
+  it("stays on the bar while open, the others going to the ⋯, and is laid out as ever once closed", async () => {
+    const { rerender, unmount } = render(<Labels width={90} />);
+    await settle();
+    await layout.resize(200);
+    expect(trigger()).toBeNull();
+    fireEvent.click(labels());
+    await settle();
+    expect(screen.getByRole("listbox", { name: "Labels" })).toBeTruthy();
+    // Too wide for all three: Delete goes, then Labels would, but Archive does.
+    rerender(<Labels width={160} />);
+    await layout.resize(200);
+    expect(inMore("Labels")).toBe(false);
+    expect(inMore("Archive")).toBe(true);
+    expect(inMore("Delete")).toBe(true);
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
+    await settle();
+    await settle();
+    const closed = ["Archive", "Labels", "Delete"].map(inMore);
+    expect(closed).toEqual([false, true, true]);
+    expect(document.activeElement).toBe(trigger());
+
+    unmount();
+    render(<Labels width={160} />);
+    await settle();
+    await layout.resize(200);
+    expect(["Archive", "Labels", "Delete"].map(inMore)).toEqual(closed);
+  });
+});
+
 describe("FilterMenu with a ToolbarButton for its trigger", () => {
   it("is one stop for the arrow keys", async () => {
     render(

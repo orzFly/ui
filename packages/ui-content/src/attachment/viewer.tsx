@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@orz/ui/components/dialog";
+import { usePointerHold } from "@orz/ui/hooks/use-pointer-hold";
 import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
 import {
@@ -73,11 +74,6 @@ export type InlineSource = Extract<ContentSource, { kind: "inline" }> & {
 
 /** What the viewer pages through: files, and text drawn as a file is. */
 export type ViewerSource = FileSource | InlineSource;
-
-// Long enough to cover a pointer crossing the image between two controls,
-// short enough that leaving for good does not read as the viewer lagging.
-const RELEASE_DELAY = 400;
-const RELEASE_NOW = ["keydown", "pointerdown", "wheel"] as const;
 
 /**
  * What the viewer is showing, and the position in it: a set of files, or
@@ -643,63 +639,24 @@ export function AttachmentViewer({
     widening.current = restingWidth();
   }, [itemKey, pair, dialog]);
 
-  // While the pointer is over − 100%▾ + or ‹ ›, the image keeps the height
-  // it had when the pointer arrived, and takes its own once the pointer
-  // leaves: the dialog is centred, so a height change slides the title bar
-  // out from under the pointer, and the next click on + lands on the image
-  // and toggles back to fit, or the next click on › misses. One region for
-  // both groups, so crossing the gap between them is not a leave. Listened
-  // to on the DOM rather than through React: the zoom controls are
-  // portalled in by the image renderer, so in React's tree they sit outside
-  // this region, while the zoom menu's items, portalled out to the body, sit
-  // inside it — and choosing Fit or 100% there should not be held. Leaving
-  // lets go only after RELEASE_DELAY, so a trip from one control to another
-  // the long way round, over the image, is not a leave either; a key, a
-  // press or a wheel in the meantime lets go at once, since the pointer is
-  // no longer travelling.
+  // While the pointer is on − 100%▾ + or ‹ ›, or near them, the image keeps
+  // the height it had when the pointer arrived, and takes its own once the
+  // pointer has gone: the dialog is centred, so a height change slides the
+  // title bar out from under the pointer, and the next click on + lands on
+  // the image and toggles back to fit, or the next click on › misses. One
+  // region for both groups, so crossing the gap between them is not a
+  // leave. Measured on the DOM rather than through React: the zoom controls
+  // are portalled in by the image renderer, so in React's tree they sit
+  // outside this region, while the zoom menu's items, portalled out to the
+  // body, sit inside it — and choosing Fit or 100% there, a press off the
+  // region, lets go. Closing unmounts the region, and the hold with it.
   const [holdRegion, setHoldRegion] = useState<HTMLElement | null>(null);
+  const holding = usePointerHold(() => [holdRegion], holdRegion !== null);
   const [held, setHeld] = useState<number | null>(null);
-  useEffect(() => {
-    if (holdRegion === null) return;
-    let pending: number | undefined;
-    const cancel = () => {
-      window.clearTimeout(pending);
-      pending = undefined;
-      for (const type of RELEASE_NOW)
-        window.removeEventListener(type, release, true);
-    };
-    const release = () => {
-      cancel();
-      setHeld(null);
-    };
-    const enter = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
-      if (pending !== undefined) cancel();
-      else setHeld(lastHeight.current);
-    };
-    const leave = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse" || pending !== undefined) return;
-      pending = window.setTimeout(release, RELEASE_DELAY);
-      for (const type of RELEASE_NOW)
-        window.addEventListener(type, release, {
-          capture: true,
-          passive: true,
-        });
-    };
-    holdRegion.addEventListener("pointerenter", enter);
-    holdRegion.addEventListener("pointerleave", leave);
-    return () => {
-      cancel();
-      holdRegion.removeEventListener("pointerenter", enter);
-      holdRegion.removeEventListener("pointerleave", leave);
-    };
-  }, [holdRegion]);
-  // Closing unmounts the region under the pointer, which never reports
-  // leaving it.
+  useLayoutEffect(() => {
+    setHeld(holding ? lastHeight.current : null);
+  }, [holding]);
   const open = item !== undefined || pair !== undefined;
-  useEffect(() => {
-    if (!open) setHeld(null);
-  }, [open]);
   // A comparison's mode carries across paging, shared with the comparisons
   // on the page when a CompareModeProvider holds them all. Its split and
   // opacity carry across paging and modes, and start over at every opening.

@@ -1,3 +1,4 @@
+import { POINTER_HOLD_DISTANCE } from "@orz/ui/hooks/use-pointer-hold";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -57,6 +58,26 @@ function load(img: HTMLImageElement, w = 1600, h = 1200) {
 const canvas = () => screen.getByTestId("image-canvas");
 const titleBar = () => screen.getByRole("heading").parentElement as HTMLElement;
 
+/** The region − 100%▾ + and ‹ › share, laid out at (500, 10), 120×28. */
+function controls() {
+  const region = screen.getByLabelText("next attachment")
+    .parentElement as HTMLElement;
+  region.getBoundingClientRect = () =>
+    DOMRect.fromRect({ x: 500, y: 10, width: 120, height: 28 });
+  return region;
+}
+
+/** Moves the pointer to `below` px under the region's bottom edge: inside it when negative. */
+function pointTo(region: HTMLElement, below: number) {
+  const { left, bottom } = region.getBoundingClientRect();
+  const y = bottom + below;
+  act(() => {
+    window.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: left + 10, clientY: y }),
+    );
+  });
+}
+
 describe("the viewer's image", () => {
   it("draws on a canvas, with its zoom controls in the title bar", () => {
     render(<Viewer items={[SHOT]} />);
@@ -97,37 +118,23 @@ describe("the viewer's image", () => {
   });
 
   it("grows with the zoom, but holds its height while the pointer is on the title-bar controls", () => {
-    vi.useFakeTimers();
-    try {
-      render(
-        <Viewer items={[SHOT, file("other.png", { mime: "image/png" })]} />,
-      );
-      const el = canvas();
-      Object.defineProperty(el, "clientWidth", { value: 800 });
-      Object.defineProperty(el, "clientHeight", { value: 600 });
-      load(el.querySelector("img") as HTMLImageElement);
-      expect(el.style.height).toBe("600px");
+    render(<Viewer items={[SHOT, file("other.png", { mime: "image/png" })]} />);
+    const el = canvas();
+    Object.defineProperty(el, "clientWidth", { value: 800 });
+    Object.defineProperty(el, "clientHeight", { value: 600 });
+    load(el.querySelector("img") as HTMLImageElement);
+    expect(el.style.height).toBe("600px");
 
-      const region = screen.getByLabelText("next attachment")
-        .parentElement as HTMLElement;
-      fireEvent.pointerEnter(region, { pointerType: "mouse" });
-      fireEvent.click(screen.getByLabelText("zoom in"));
-      expect(el.style.height).toBe("600px");
+    pointTo(controls(), -10);
+    fireEvent.click(screen.getByLabelText("zoom in"));
+    expect(el.style.height).toBe("600px");
 
-      // Leaving lets go only after a delay, so a trip over the image
-      // between two controls is not a leave.
-      fireEvent.pointerLeave(region, { pointerType: "mouse" });
-      act(() => {
-        vi.advanceTimersByTime(399);
-      });
-      expect(el.style.height).toBe("600px");
-      act(() => {
-        vi.advanceTimersByTime(1);
-      });
-      expect(el.style.height).toBe("750px");
-    } finally {
-      vi.useRealTimers();
-    }
+    // Off the controls but near them, as on a trip over the image between
+    // two of them, it still holds; gone further, it lets go.
+    pointTo(controls(), POINTER_HOLD_DISTANCE);
+    expect(el.style.height).toBe("600px");
+    pointTo(controls(), POINTER_HOLD_DISTANCE + 1);
+    expect(el.style.height).toBe("750px");
   });
 
   it("widens the dialog with the zoom, and gives the width back at fit", () => {
@@ -153,13 +160,12 @@ describe("the viewer's image", () => {
     Object.defineProperty(el, "clientWidth", { value: 800 });
     Object.defineProperty(el, "clientHeight", { value: 600 });
     load(el.querySelector("img") as HTMLImageElement);
-    const region = screen.getByLabelText("next attachment")
-      .parentElement as HTMLElement;
-    fireEvent.pointerEnter(region, { pointerType: "mouse" });
+    pointTo(controls(), -10);
     fireEvent.click(screen.getByLabelText("zoom in"));
     const dialog = screen.getByRole("dialog");
     expect(dialog.style.minWidth).toBe("");
-    fireEvent.pointerLeave(region, { pointerType: "mouse" });
+    // Off the controls, a key says the pointer is not on its way back.
+    pointTo(controls(), 20);
     fireEvent.keyDown(window, { key: "Shift" });
     expect(dialog.style.minWidth).toBe("min(100% - 2rem, 1000px)");
   });

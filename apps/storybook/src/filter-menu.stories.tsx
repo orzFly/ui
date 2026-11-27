@@ -6,7 +6,7 @@ import {
   matchText,
 } from "@orz/ui/components/filter-menu";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { fn } from "storybook/test";
 import { argsUpdater } from "./args.ts";
@@ -16,6 +16,7 @@ interface Place {
   label: string;
   region?: string;
   disabled?: boolean;
+  action?: boolean;
 }
 
 const CITIES: Place[] = [
@@ -112,12 +113,59 @@ function stopsOf(row: Place, query: string): Place[] | undefined {
 }
 
 /** The trigger's text for a picked id: `kyoto`, or `kyoto/Gion` inside a submenu. */
-function labelOf(id: string): string {
+function labelOf(id: string, added: readonly Place[] = []): string {
   const [head = "", tail] = id.split("/");
   const label =
-    [...CITIES, ...REGIONS].find((row) => row.id === head)?.label ?? head;
+    [...CITIES, ...REGIONS, ...added].find((row) => row.id === head)?.label ??
+    head;
   return tail ? `${label} › ${tail}` : label;
 }
+
+/** `text` is `label`, folded as the filter folds it: `malmo` is `Malmö`. */
+function sameName(label: string, text: string): boolean {
+  const range = matchText(label, text);
+  return range !== null && range.start === 0 && range.end === label.length;
+}
+
+/** A region's row in `StayingOpen`: it narrows the list to the region rather than picking. */
+const REGION_ROWS: Place[] = ["Europe", "Americas", "Asia"].map((region) => ({
+  id: `in:${region}`,
+  label: `${region}…`,
+  region,
+  action: true,
+}));
+
+/** `Europe: lis` is the cities of Europe filtered by `lis`. */
+function inRegion(query: string): { region: string; rest: string } | null {
+  const match = /^(Europe|Americas|Asia):\s*(.*)$/.exec(query);
+  return match ? { region: match[1] ?? "", rest: match[2] ?? "" } : null;
+}
+
+const STAYING_OPEN_SOURCE = `import { FilterMenu, MatchedText } from "@orz/ui/components/filter-menu";
+
+<FilterMenu
+  query={query}
+  onQueryChange={setQuery}
+  // A row per region (\`Europe…\`, marked \`action\`), then the cities;
+  // under \`Europe: \` only Europe's.
+  sections={sections}
+  selectedId={city}
+  onSelect={(row, event) => {
+    if (row.action) {
+      // Narrows the list rather than picking: the menu stays open.
+      event.preventDefault();
+      setQuery(\`\${row.region}: \`);
+      return;
+    }
+    setCity(row.id);
+  }}
+  renderRow={(row) => <MatchedText text={row.label} query={needle} />}
+  inputLabel="Filter cities"
+  placeholder="Filter cities…"
+  listLabel="Cities"
+>
+  <Button variant="outline">{label}</Button>
+</FilterMenu>`;
 
 const LINKS_SOURCE = `import { FilterMenu, MatchedText } from "@orz/ui/components/filter-menu";
 
@@ -148,9 +196,15 @@ const meta = {
     onHighlight: fn(),
     sections: BY_REGION,
     selectedId: "kyoto",
-    renderRow: (row, state) => (
-      <MatchedText text={row.label} query={state.query} />
-    ),
+    renderRow: (row, state) =>
+      row.action ? (
+        <>
+          <PlusIcon aria-hidden />
+          <span>{row.label}</span>
+        </>
+      ) : (
+        <MatchedText text={row.label} query={state.query} />
+      ),
     inputLabel: "Filter cities",
     placeholder: "Filter cities…",
     listLabel: "Cities",
@@ -171,15 +225,25 @@ const meta = {
   render: function Render(args, context) {
     const updateArgs = argsUpdater(context);
     const [query, setQuery] = useState("");
+    // Under multiple selection, cities added by the `Add “…”` row.
+    const [added, setAdded] = useState<Place[]>([]);
+    const multiple = args.selection === "multiple";
+    const selectedIds = args.selectedIds ?? [];
     // The menu takes its sections already filtered for the query.
-    const sections = useMemo(
-      () =>
-        args.sections.map((s) => ({
-          ...s,
-          rows: s.rows.filter((r) => matchText(r.label, query)),
-        })),
-      [args.sections, query],
-    );
+    const sections = useMemo(() => {
+      const last = args.sections.length - 1;
+      const filtered = args.sections.map((s, i) => ({
+        ...s,
+        rows: [...s.rows, ...(i === last ? added : [])].filter((r) =>
+          matchText(r.label, query),
+        ),
+      }));
+      const typed = query.trim();
+      const known = [...CITIES, ...added].some((c) => sameName(c.label, typed));
+      if (!multiple || typed === "" || known) return filtered;
+      const add = { id: "add", label: `Add “${typed}”`, action: true };
+      return [...filtered, { id: "add", rows: [add] }];
+    }, [args.sections, query, added, multiple]);
     return (
       <FilterMenu
         {...args}
@@ -189,17 +253,41 @@ const meta = {
           args.onQueryChange(q);
         }}
         sections={sections}
-        onSelect={(row) => {
-          // An undefined arg is dropped, so a plain city clears the submenu pick.
-          updateArgs({
-            selectedId: row.id.split("/")[0],
-            selectedSubmenuId: args.getSubmenu ? row.id : undefined,
-          });
-          args.onSelect?.(row);
+        onSelect={(row, event) => {
+          args.onSelect?.(row, event);
+          if (!multiple) {
+            // An undefined arg is dropped, so a plain city clears the submenu pick.
+            updateArgs({
+              selectedId: row.id.split("/")[0],
+              selectedSubmenuId: args.getSubmenu ? row.id : undefined,
+            });
+          } else if (row.action) {
+            const label = query.trim();
+            const city = { id: `added:${label}`, label };
+            setAdded((cities) => [...cities, city]);
+            updateArgs({ selectedIds: [...selectedIds, city.id] });
+            setQuery("");
+          } else {
+            updateArgs({
+              selectedIds: event.selected
+                ? [...selectedIds, row.id]
+                : selectedIds.filter((id) => id !== row.id),
+              mixedIds: event.mixed
+                ? [...(args.mixedIds ?? []), row.id]
+                : args.mixedIds?.filter((id) => id !== row.id),
+            });
+          }
         }}
       >
         <Button variant="outline" className="w-48 justify-between">
-          {labelOf(args.selectedSubmenuId ?? args.selectedId ?? "")}
+          {multiple ? (
+            <span className="truncate">
+              {selectedIds.map((id) => labelOf(id, added)).join(", ") ||
+                "Cities"}
+            </span>
+          ) : (
+            labelOf(args.selectedSubmenuId ?? args.selectedId ?? "")
+          )}
           <ChevronDownIcon />
         </Button>
       </FilterMenu>
@@ -267,4 +355,88 @@ export const WithLinks: Story = {
     rowLink: (row) => `#${row.id}`,
   },
   parameters: { docs: { source: { code: LINKS_SOURCE, language: "tsx" } } },
+};
+
+/**
+ * Each city on or off by itself, the menu open throughout. A name that is no
+ * city yet gets an `Add “…”` row, an `action`, which adds it checked.
+ */
+export const Multiple: Story = {
+  args: {
+    selection: "multiple",
+    selectedIds: ["lisbon", "kyoto"],
+    selectedId: undefined,
+    sections: [{ id: "all", rows: CITIES }],
+  },
+};
+
+/**
+ * Cities on only some of the things being edited are partly picked. A pick
+ * makes one picked, the next unpicked, and the next partly picked again.
+ */
+export const Mixed: Story = {
+  args: {
+    selection: "multiple",
+    selectedIds: ["kyoto"],
+    mixedIds: ["lisbon", "seoul", "sao-paulo"],
+    selectedId: undefined,
+    sections: [{ id: "all", rows: CITIES }],
+  },
+};
+
+/**
+ * A region's row narrows the list to its cities rather than picking: its
+ * `onSelect` prevents the default, so the menu stays open, and writes
+ * `Europe: ` into the box. A city picks and closes as ever.
+ */
+export const StayingOpen: Story = {
+  parameters: {
+    docs: { source: { code: STAYING_OPEN_SOURCE, language: "tsx" } },
+  },
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
+    const [query, setQuery] = useState("");
+    const scope = inRegion(query);
+    const needle = scope ? scope.rest : query;
+    const sections = useMemo(() => {
+      const within = inRegion(query);
+      const cities = args.sections
+        .filter((s) => !within || s.id === within.region)
+        .map((s) => ({
+          ...s,
+          rows: s.rows.filter((r) =>
+            matchText(r.label, within ? within.rest : query),
+          ),
+        }));
+      if (within) return cities;
+      const regions = REGION_ROWS.filter((r) => matchText(r.label, query));
+      return [{ id: "regions", rows: regions }, ...cities];
+    }, [args.sections, query]);
+    return (
+      <FilterMenu
+        {...args}
+        query={query}
+        onQueryChange={(q) => {
+          setQuery(q);
+          args.onQueryChange(q);
+        }}
+        sections={sections}
+        renderRow={(row) => <MatchedText text={row.label} query={needle} />}
+        onSelect={(row, event) => {
+          args.onSelect?.(row, event);
+          if (row.action) {
+            event.preventDefault();
+            setQuery(`${row.region}: `);
+            return;
+          }
+          updateArgs({ selectedId: row.id });
+        }}
+      >
+        <Button variant="outline" className="w-48 justify-between">
+          {labelOf(args.selectedId ?? "")}
+          <ChevronDownIcon />
+        </Button>
+      </FilterMenu>
+    );
+  },
 };

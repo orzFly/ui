@@ -26,6 +26,7 @@ import { ControlsCompared } from "../../../examples/choosing-a-control/controls-
 import { DuplicateOf } from "../../../examples/choosing-a-control/duplicate-of.tsx";
 import { FontSizeNumberInput } from "../../../examples/choosing-a-control/font-size-number-input.tsx";
 import { LabelColours } from "../../../examples/choosing-a-control/label-colours.tsx";
+import { LabelsForSelected } from "../../../examples/choosing-a-control/labels-for-selected.tsx";
 import { NotifyRadioGroup } from "../../../examples/choosing-a-control/notify-radio-group.tsx";
 import { NotifySelect } from "../../../examples/choosing-a-control/notify-select.tsx";
 import { ProfileChoices } from "../../../examples/choosing-a-control/profile-choices.tsx";
@@ -78,6 +79,7 @@ one, and the box above them turns partly checked; press it to select none.
 | One of a few icon toggles in a toolbar: an alignment | Immediately | `ToolbarGroup` with `selection="single"` |
 | Any number of tags or filters over a list, each on or off | Immediately | `Toggle`s, side by side |
 | Exactly one of a list too long to scan, or one that grows with people's own data: a task, a person, a label | Either | `FilterMenu`, behind a button that shows the pick |
+| Any number of a list too long to scan, or one that grows with people's own data: labels, assignees | Immediately, each pick | `FilterMenu` with `selection="multiple"` |
 | A number people know exactly: a count, a port, a font size | Either | `NumberInput` |
 | A value along a range, where the exact number matters less than the feel | Either | `Slider` |
 | A colour | Either | `ColorPickerPopover`, with the app's palette as `swatches` |
@@ -116,6 +118,21 @@ one screen, or holds things people add themselves, whose number nobody can promi
 that fits, like the time zones above, stays a Select. A `FilterMenu` whose rows are places, a
 project switcher, goes rather than picks: each row is a link
 ([Navigation](/guidelines/patterns/navigation/#switching-between-many-places)).
+
+A pick that should leave the menu open calls `event.preventDefault()` in `onSelect`: one whose
+result comes later, where the menu closes once it has, or a row that only completes the query, as
+a reference picker's `Europe…` writes `Europe: ` into the box and lists what is in it.
+
+<Example of={LabelsForSelected} />
+
+**Labels** edits the labels on the tasks ticked below. With `selection="multiple"` each row is
+on or off by itself, and each pick takes effect at once while the menu stays open for the next. A
+label on only some of the tasks is partly picked, through `mixedIds`. A pick gives it to all of
+them, the next takes it off all of them, and the one after puts it back on just the ones it was on
+(`event.mixed`), so a slip costs two more picks rather than the tasks' own labels. Put what is
+picked first as the menu opens and as the query changes, never as a row is picked, so nothing moves
+under the pointer. A row that does
+something rather than being one of the choices, `Create “…”`, is an `action`: it takes no box.
 
 <Example of={FontSizeNumberInput} />
 
