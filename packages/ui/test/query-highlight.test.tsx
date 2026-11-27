@@ -115,8 +115,8 @@ describe("value verdicts", () => {
   });
 
   it("knows the values that stand for themselves", () => {
-    expect(valueClass("assignee:@me")).toContain("bg-violet-500/15");
-    expect(valueClass("harness:none", {})).toContain("bg-violet-500/15");
+    expect(valueClass("assignee:@me")).toContain("decoration-dotted");
+    expect(valueClass("harness:none", {})).toContain("decoration-dotted");
   });
 
   it("compares a provided name case-insensitively", () => {
@@ -146,7 +146,7 @@ describe("braces", () => {
       ["{area:web,kind:bug}", expect.stringContaining("bg-primary/12")],
     ]);
     const [, , mixed] = spans("assignee:{@me,alice}", KNOWN, bracesSchema);
-    expect(mixed?.[1]).toContain("bg-violet-500/15");
+    expect(mixed?.[1]).toContain("decoration-dotted");
     const [, , bad] = spans("label:{area:web,nope}", KNOWN, bracesSchema);
     expect(bad?.[0]).toBe("{area:web,nope}");
     expect(bad?.[1]).toContain("decoration-wavy");

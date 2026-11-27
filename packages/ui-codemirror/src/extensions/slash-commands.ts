@@ -312,11 +312,8 @@ function commandHighlight<T>(
   );
 }
 
-/** Tailwind's violet-500 and amber-700/400, the query highlight's colours. */
-const VIOLET = "var(--color-violet-500, oklch(60.6% 0.25 292.717))";
-const AMBER = "var(--color-amber-700, oklch(55.5% 0.163 48.998))";
-const AMBER_DARK = "var(--color-amber-400, oklch(82.8% 0.189 84.429))";
-
+// An argument draws as a value does in @orz/ui's highlightQuery, written out
+// again here because a CodeMirror theme cannot use its classes.
 const commandTheme = EditorView.theme({
   ".cm-command-line": {
     backgroundColor: "color-mix(in oklab, var(--primary) 18%, transparent)",
@@ -333,17 +330,15 @@ const commandTheme = EditorView.theme({
     borderRadius: "min(var(--radius-item), 3px)",
   },
   ".cm-command-arg-special": {
-    backgroundColor: `color-mix(in oklab, ${VIOLET} 15%, transparent)`,
+    textDecoration: "underline dotted",
+    textDecorationThickness: "1.5px",
+    textUnderlineOffset: "3px",
   },
   ".cm-command-arg-invalid": {
     backgroundColor: "transparent",
-    color: AMBER,
-    textDecoration: `underline wavy ${AMBER}`,
+    color: "var(--warning)",
+    textDecoration: "underline wavy var(--warning)",
     textDecorationSkipInk: "none",
-  },
-  ".dark & .cm-command-arg-invalid": {
-    color: AMBER_DARK,
-    textDecorationColor: AMBER_DARK,
   },
 });
 
