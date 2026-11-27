@@ -7,6 +7,7 @@ import {
   type AttachmentViewerState,
   type FileSource,
   useAttachmentViewer,
+  type ViewerSource,
 } from "@orz/ui-content/attachment";
 import type { Window as HappyWindow } from "happy-dom";
 import { act, type ComponentType } from "react";
@@ -120,10 +121,9 @@ const text = (name: string): FileSource => ({
   url: `https://app.example/files/${name}`,
 });
 const ITEMS = [text("a.txt"), text("b.txt")];
-const SNIPPET: AttachmentViewerState = {
-  items: [{ kind: "inline", text: "x", lang: "txt", title: "Snippet" }],
-  index: 0,
-};
+const SNIPPET: ViewerSource[] = [
+  { kind: "inline", text: "x", lang: "txt", title: "Snippet" },
+];
 
 const find = (name: string): AttachmentViewerState | null => {
   const index = ITEMS.findIndex((file) => file.name === name);
@@ -137,10 +137,7 @@ function Openers() {
       <button type="button" onClick={() => viewer?.open(ITEMS, 0)}>
         files
       </button>
-      <button
-        type="button"
-        onClick={() => viewer?.open(SNIPPET.items, SNIPPET.index)}
-      >
+      <button type="button" onClick={() => viewer?.open(SNIPPET, 0)}>
         snippet
       </button>
     </>
