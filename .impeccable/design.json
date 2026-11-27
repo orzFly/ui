@@ -108,6 +108,60 @@
         "displayName": "Warning",
         "canonical": "#975a00",
         "dark": "oklch(0.8 0.14 75)"
+      },
+      "tag-red": {
+        "role": "categorical",
+        "displayName": "Tag Red",
+        "canonical": "#b43938",
+        "dark": "oklch(0.72 0.13 25)"
+      },
+      "tag-orange": {
+        "role": "categorical",
+        "displayName": "Tag Orange",
+        "canonical": "#9b4e01",
+        "dark": "oklch(0.72 0.13 55)"
+      },
+      "tag-yellow": {
+        "role": "categorical",
+        "displayName": "Tag Yellow",
+        "canonical": "#7d6001",
+        "dark": "oklch(0.72 0.13 88)"
+      },
+      "tag-green": {
+        "role": "categorical",
+        "displayName": "Tag Green",
+        "canonical": "#01732b",
+        "dark": "oklch(0.72 0.13 148)"
+      },
+      "tag-teal": {
+        "role": "categorical",
+        "displayName": "Tag Teal",
+        "canonical": "#036e69",
+        "dark": "oklch(0.72 0.124 190)"
+      },
+      "tag-blue": {
+        "role": "categorical",
+        "displayName": "Tag Blue",
+        "canonical": "#0961bb",
+        "dark": "oklch(0.72 0.13 255)"
+      },
+      "tag-purple": {
+        "role": "categorical",
+        "displayName": "Tag Purple",
+        "canonical": "#794db6",
+        "dark": "oklch(0.72 0.13 300)"
+      },
+      "tag-pink": {
+        "role": "categorical",
+        "displayName": "Tag Pink",
+        "canonical": "#aa3977",
+        "dark": "oklch(0.72 0.13 350)"
+      },
+      "tag-gray": {
+        "role": "categorical",
+        "displayName": "Tag Gray",
+        "canonical": "#5f6570",
+        "dark": "oklch(0.72 0.012 258)"
       }
     },
     "typographyMeta": {
@@ -260,6 +314,14 @@
       "description": "The module marker's colours on a chip, for what the user has set that is in force: the count on a toolbar's ⋯.",
       "html": "<span class=\"ds-badge-marker\">2</span>",
       "css": ".ds-badge-marker { display: inline-flex; align-items: center; justify-content: center; height: 16px; min-width: 16px; padding: 0 4px; border: 1px solid color-mix(in oklab, var(--primary, #1f3d6b) 35%, transparent); border-radius: 2px; background: var(--marker, #d3ddec); color: var(--primary, #1f3d6b); font: 500 11px/1 'Noto Sans Variable', system-ui, sans-serif; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Tag",
+      "kind": "chip",
+      "refersTo": "badge-marker",
+      "description": "A marker badge in a tag's colour: the name in the colour on its own fill, edged in 35% of it.",
+      "html": "<span class=\"ds-tag\" style=\"--tag-ink: var(--tag-blue, #0961bb)\">docs</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; height: 20px; padding: 2px 8px; border: 1px solid color-mix(in oklab, var(--tag-ink) 35%, transparent); border-radius: 2px; background: color-mix(in oklab, var(--tag-ink) 16%, var(--background, #fff)); color: var(--tag-ink); font: 500 11px/16px 'Noto Sans Variable', system-ui, sans-serif; }"
     }
   ],
   "narrative": {
@@ -275,12 +337,12 @@
     "rules": [
       {
         "name": "The One Ink Accent Rule",
-        "body": "Ai marks only where you are and what you can do: the primary action, focus, the current tab, links, the marker icon; and, on the marker tint as the icon is, a `marker` badge for what the user has set that is in force, such as the count on a toolbar's ⋯ of the filters in use inside it. It never fills a module, a strip or a decoration.",
+        "body": "Ai marks only where you are and what you can do: the primary action, focus, the current tab, links, the marker icon; and, on the marker tint as the icon is, a `marker` badge for what the user has set that is in force, such as the count on a toolbar's ⋯ of the filters in use inside it. It never fills a module, a strip or a decoration. The tag colours are not accents: they tell tags apart and mark neither a place nor an action.",
         "section": "colors"
       },
       {
         "name": "The Held Floors Rule",
-        "body": "Every built-in palette passes the contrast checks in `packages/themes/src/contrast.ts`: text pairs 4.5:1 (ai-foreground on ai, ai on ground, quiet ink on ground and strip, status on ground and popover, the marker icon on its square); field edges, focus rings, state cues and chart series 3:1.",
+        "body": "Every built-in palette passes the contrast checks in `packages/themes/src/contrast.ts`: text pairs 4.5:1 (ai-foreground on ai, ai on ground, quiet ink on ground and strip, status on ground and popover, the marker icon on its square, a tag's name on its own fill under the default style); field edges, focus rings, state cues and chart series 3:1.",
         "section": "colors"
       },
       {
@@ -310,7 +372,8 @@
       "**Don't** use ai as a decorative fill or on anything that is not the current place or an action.",
       "**Don't** round a surface, overlay, row or tab.",
       "**Don't** set UI text below 11px.",
-      "**Don't** mark selection, highlight or the current tab with a fill alone."
+      "**Don't** mark selection, highlight or the current tab with a fill alone.",
+      "**Don't** say a state with a tag colour: a red tag is not an error, and a status has its own colours and words."
     ]
   }
 }

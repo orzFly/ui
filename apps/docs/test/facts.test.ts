@@ -8,6 +8,7 @@ import {
   raymondStyle,
   themesForStyle,
 } from "@orz/themes";
+import { autoTagColor, TAG_COLORS } from "@orz/ui/components/badge";
 import { createThemeStore, useStyle } from "@orz/ui/theme";
 import { describe, expect, it } from "vitest";
 import { workspaces } from "../../../scripts/install.ts";
@@ -163,6 +164,18 @@ describe("color", () => {
     );
     expect(tokens.length).toBeGreaterThan(0);
     expect(raymondStyle.tokens).toEqual(expect.arrayContaining(tokens));
+  });
+
+  it("names the tag colour autoTagColor never picks", () => {
+    const text = read("apps/docs/src/content/guidelines/foundations/color.mdx");
+    const picked = new Set(
+      Array.from({ length: 2000 }, (_, i) => autoTagColor(`tag ${i}`)),
+    );
+    const never = TAG_COLORS.filter((color) => !picked.has(color));
+    expect(never.length).toBeGreaterThan(0);
+    expect(named(text, /, which is left for a tag/)).toEqual(
+      ["autoTagColor", ...never].sort(),
+    );
   });
 });
 
