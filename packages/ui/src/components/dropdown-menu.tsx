@@ -176,6 +176,19 @@ function DropdownMenuItem({
       data-slot="dropdown-menu-item"
       data-inset={inset}
       data-variant={variant}
+      className={cn(
+        // The destructive label mixes in --foreground as Button's destructive
+        // variant does: bare text-destructive on its focus tint measured
+        // 3.44-4.47:1 in 19 of the 38 palettes. The icon keeps bare
+        // --destructive, which clears the 3:1 an icon needs.
+        // test/destructive-contrast.test.ts pins both. Under raymond this
+        // and every other item highlights in the highlight colour, the
+        // palette's primary; accent stays the soft fill an app's rows use.
+        // A destructive item is drawn as any other, as Button's destructive
+        // is: the wording carries the danger.
+        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive raymond:data-[variant=destructive]:text-foreground raymond:data-[variant=destructive]:*:[svg]:text-current raymond:data-[variant=destructive]:focus:bg-accent raymond:data-[variant=destructive]:focus:text-accent-foreground raymond:data-[variant=destructive]:focus:**:text-accent-foreground",
+        className,
+      )}
       onClick={(event) => {
         onClick?.(event);
         if (!event.currentTarget.matches("a[href]")) {
@@ -197,19 +210,6 @@ function DropdownMenuItem({
         if (linkClick.current === "modified") event.preventDefault();
         linkClick.current = null;
       }}
-      className={cn(
-        // The destructive label mixes in --foreground as Button's destructive
-        // variant does: bare text-destructive on its focus tint measured
-        // 3.44-4.47:1 in 19 of the 38 palettes. The icon keeps bare
-        // --destructive, which clears the 3:1 an icon needs.
-        // test/destructive-contrast.test.ts pins both. Under raymond this
-        // and every other item highlights in the highlight colour, the
-        // palette's primary; accent stays the soft fill an app's rows use.
-        // A destructive item is drawn as any other, as Button's destructive
-        // is: the wording carries the danger.
-        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-[color-mix(in_oklab,var(--destructive),var(--foreground)_65%)] dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive raymond:data-[variant=destructive]:text-foreground raymond:data-[variant=destructive]:*:[svg]:text-current raymond:data-[variant=destructive]:focus:bg-accent raymond:data-[variant=destructive]:focus:text-accent-foreground raymond:data-[variant=destructive]:focus:**:text-accent-foreground",
-        className,
-      )}
       {...props}
     />
   );
