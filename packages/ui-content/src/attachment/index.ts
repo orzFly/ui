@@ -7,6 +7,17 @@ export {
   attachmentCard,
 } from "./card-content.tsx";
 export type { CompareItem, ComparePair } from "./compare-canvas.tsx";
+export {
+  ContentCollapse,
+  ContentCollapseBody,
+  type ContentCollapseProps,
+  useContentCollapse,
+} from "./content-collapse.tsx";
+export {
+  ContentFrame,
+  ContentHeader,
+  type ContentHeaderProps,
+} from "./content-frame.tsx";
 export { DeletedAttachmentMark } from "./deleted.tsx";
 export { DocumentCard, type DocumentCardProps } from "./document-card.tsx";
 export { fileIcon } from "./icon.ts";

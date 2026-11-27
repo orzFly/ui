@@ -286,12 +286,12 @@ describe("a mermaid source's frame", () => {
     result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
     const container = mount({ ...INLINE, title: "flow.mmd" });
     await drawn(container);
-    const head = slot(container, "fence-head") as HTMLElement;
+    const head = slot(container, "content-header") as HTMLElement;
     expect(head.querySelector('a[download="flow.mmd"]')).not.toBeNull();
     expect(within(head).getByRole("button", { name: "Source" })).toBeTruthy();
   });
 
-  it("caps a long source, never the drawn diagram", async () => {
+  it("cuts a long source, never the drawn diagram", async () => {
     result.next = { ok: true, svg: SVG, width: 1360, height: 164 };
     const text = Array.from(
       { length: FENCE_COLLAPSE_LINES + 1 },
@@ -299,9 +299,14 @@ describe("a mermaid source's frame", () => {
     ).join("\n");
     const container = mount({ ...INLINE, text: `flowchart LR\n${text}` });
     await drawn(container);
-    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Show all/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Source" }));
-    expect(screen.getByRole("button", { name: "Expand" })).toBeTruthy();
+    // The line above the arrows, flowchart LR, counts too.
+    expect(
+      screen.getByRole("button", {
+        name: `Show all ${FENCE_COLLAPSE_LINES + 2} lines`,
+      }),
+    ).toBeTruthy();
   });
 
   it("reads its palette inside the frame, off the colours it paints", async () => {

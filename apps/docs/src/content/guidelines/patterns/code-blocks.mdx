@@ -18,15 +18,15 @@ import { FramedFences } from "../../../examples/code-blocks/framed-fences.tsx";
 import { JsonPayload } from "../../../examples/code-blocks/json-payload.tsx";
 
 **Give every block of code in a document the same frame: Copy, its language or the file it is, and
-a cap on a long one. The frame carries the controls, so the code itself is never covered and never
+a cut on a long one. The frame carries the controls, so the code itself is never covered and never
 moves.**
 
 <Example of={FramedFences} />
 
 Three fences from a setup note. The first names its file, so a header says `compose.yaml` and the
 name downloads the block. The second has only a language, which shows with **Copy** when the
-pointer is over the block. The third is longer than {FENCE_COLLAPSE_LINES} lines, so it scrolls
-inside its frame until **Expand** lets the whole of it into the page.
+pointer is over the block. The third is longer than {FENCE_COLLAPSE_LINES} lines, so it is cut,
+and **Show all** under it lets the whole of it into the page.
 
 ## Naming a file
 
@@ -37,11 +37,10 @@ one: a config to drop in, a script to run. A snippet that is only read keeps its
 
 ## Long blocks
 
-A block past {FENCE_COLLAPSE_LINES} lines scrolls in its frame, so the prose after it is not pushed
-a screen away. Every line stays in the page, and find-in-page still reaches a match past the cap.
-Turn this off with `collapseLongFences={false}` on `Markdown` where every line has to stay in view:
-a review that annotates lines cannot reach one scrolled out of its frame. A document embedded in
-another follows its host.
+A block past {FENCE_COLLAPSE_LINES} lines is cut, so the prose after it is not pushed a screen
+away, and a patch is cut once it is long. They are cut as every long block in a document is; see
+[Long content](/guidelines/patterns/long-content/) for where **Show all** goes and how to turn it
+off.
 
 ## Copy
 
@@ -53,8 +52,8 @@ the eyes are already on the button. Only a failure toasts, since the button cann
 
 A mermaid diagram sits in the same frame, its **Source** toggle in a toolbar that never hides,
 since it is the only way to the source. A patch draws the frame's header with its file list and
-**raw** beside Copy. Inside a card or the viewer, which lend their own title bar, a patch puts its
-controls there and draws no frame.
+**raw** beside Copy, and under an attachment viewer a ⤢ that opens it there. Inside a card or the
+viewer, which lend their own title bar, a patch puts its controls there and draws no frame.
 
 ## Data as a tree
 
@@ -100,3 +99,4 @@ selection as it was written, its indent taken off and comments included.
 
 - With no hover to bring it up, the toolbar stays shown and takes a row of its own above the code,
   so it never sits on the first line for good.
+- A named block's header and a cut block's bar grow to a finger's height.

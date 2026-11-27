@@ -1,15 +1,11 @@
-import { Button } from "@orz/ui/components/button";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import { cn } from "@orz/ui/lib/utils";
 import { DownloadIcon, Maximize2Icon } from "lucide-react";
-import {
-  type ComponentType,
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ComponentType, type ReactNode, useState } from "react";
 import { ContentTitleBar } from "../title-bar.tsx";
 import type { ContentSource } from "../types.ts";
+import { ContentCollapse, ContentCollapseBody } from "./content-collapse.tsx";
+import { ContentFrame, ContentHeader } from "./content-frame.tsx";
 import { fileIcon } from "./icon.ts";
 
 export type DocumentCardProps = {
@@ -28,16 +24,20 @@ export type DocumentCardProps = {
   downloadUrl?: string;
   /** Opens the full document; without it the card draws no expand controls. */
   onExpand?: () => void;
-  /** Height cap for the collapsed body. */
-  collapsedClassName?: string;
   className?: string;
   children: ReactNode;
 };
 
+const BUTTON = "text-muted-foreground raymond:text-foreground";
+
 /**
- * A bordered card with a filename header and a height-capped body. Generic on
- * purpose: an attachment embed puts the drawn file in it, and an app can put
- * anything else there, with version chips or review state in `headerActions`.
+ * A bordered card with a filename header and a body cut at the shared cap, whose bar opens
+ * `onExpand` (the viewer) or, without it, shows the rest in place. Generic on purpose: an
+ * attachment embed puts the drawn file in it, and an app can put anything else there, with
+ * version chips or review state in `headerActions`.
+ *
+ * The body keeps a padding around what it holds, except around a renderer whose root carries
+ * `data-content-flush`, a view that fills the frame edge to edge.
  */
 export function DocumentCard({
   name,
@@ -47,130 +47,71 @@ export function DocumentCard({
   titleBarFor,
   downloadUrl,
   onExpand,
-  collapsedClassName = "max-h-80",
   className,
   children,
 }: DocumentCardProps) {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [overflowing, setOverflowing] = useState(false);
   const [titleBar, setTitleBar] = useState<HTMLElement | null>(null);
-
-  // The cap sits on the outer box, so growth of the inner content (lazy
-  // code block upgrade, images loading) never resizes the observed border
-  // box — observe the inner one.
-  useEffect(() => {
-    const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (outer === null || inner === null) return;
-    const check = () =>
-      setOverflowing(inner.offsetHeight > outer.clientHeight + 1);
-    check();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(check);
-    observer.observe(inner);
-    return () => observer.disconnect();
-  }, []);
-
   const Icon = icon ?? fileIcon({ name });
-  const title = (
-    <>
-      <Icon className="size-4 shrink-0 text-muted-foreground" />
-      <span
-        className={cn("truncate font-medium", onExpand && "hover:underline")}
-      >
-        {name}
-      </span>
-      {meta !== undefined && (
-        <span className="shrink-0 text-ui-sm text-muted-foreground">
-          {meta}
-        </span>
-      )}
-    </>
-  );
 
-  // Under raymond the card is a document: a sunken well in the window colour,
-  // its header a band of the face along the top with flat toolbar buttons. On
-  // touch the header is the touch spacing tall, since the card clips.
   return (
-    <section
-      className={cn(
-        "my-2 overflow-hidden rounded-frame ring-1 ring-border raymond:bg-(--window) raymond:p-0.5 raymond:shadow-sunken raymond:ring-0 raymond:[--background:var(--window)]",
-        className,
-      )}
-    >
-      <div className="flex items-center gap-1 border-b bg-muted/40 py-1 pr-1.5 pl-3 text-ui touch:min-h-touch raymond:border-b-0 raymond:bg-(--3d-face)">
-        {onExpand ? (
-          <button
-            type="button"
-            onClick={onExpand}
-            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
-          >
-            {title}
-          </button>
-        ) : (
-          <span className="flex min-w-0 flex-1 items-center gap-2 py-1">
-            {title}
-          </span>
-        )}
-        {titleBarFor !== undefined && (
-          <span ref={setTitleBar} className="contents" />
-        )}
-        {headerActions}
-        {downloadUrl !== undefined && (
-          <Button
-            asChild
-            variant="ghost"
-            size="icon-sm"
-            className="text-muted-foreground raymond:text-foreground"
-          >
-            <a
-              href={downloadUrl}
-              download={name}
-              aria-label={`download ${name}`}
-            >
-              <DownloadIcon className="size-3.5" />
-            </a>
-          </Button>
-        )}
-        {onExpand && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onExpand}
-            aria-label={`expand ${name}`}
-            className="text-muted-foreground raymond:text-foreground"
-          >
-            <Maximize2Icon className="size-3.5" />
-          </Button>
-        )}
-      </div>
-      <div
-        ref={outerRef}
-        className={cn("relative overflow-hidden", collapsedClassName)}
-      >
-        <div ref={innerRef} className="p-3">
-          {titleBarFor === undefined ? (
-            children
-          ) : (
-            <ContentTitleBar source={titleBarFor} target={titleBar}>
-              {children}
-            </ContentTitleBar>
+    <ContentFrame className={cn("my-2", className)}>
+      <ContentCollapse collapse="measure" onOpen={onExpand}>
+        <ContentHeader
+          icon={<Icon />}
+          name={
+            onExpand ? (
+              <button
+                type="button"
+                onClick={onExpand}
+                className="max-w-full cursor-pointer truncate text-left hover:underline"
+              >
+                {name}
+              </button>
+            ) : (
+              name
+            )
+          }
+          meta={meta}
+        >
+          {titleBarFor !== undefined && (
+            <span ref={setTitleBar} className="contents" />
           )}
-        </div>
-        {overflowing &&
-          (onExpand ? (
-            <button
+          {headerActions}
+          {downloadUrl !== undefined && (
+            <ToolbarButton asChild size="icon-xs" className={BUTTON}>
+              <a
+                href={downloadUrl}
+                download={name}
+                aria-label={`download ${name}`}
+              >
+                <DownloadIcon />
+              </a>
+            </ToolbarButton>
+          )}
+          {onExpand && (
+            <ToolbarButton
               type="button"
+              size="icon-xs"
               onClick={onExpand}
-              className="absolute inset-x-0 bottom-0 flex h-16 cursor-pointer items-end justify-center bg-gradient-to-t from-background to-transparent pb-1.5 text-ui-sm font-medium text-muted-foreground hover:text-foreground"
+              aria-label={`expand ${name}`}
+              className={BUTTON}
             >
-              Show full document
-            </button>
-          ) : (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
-          ))}
-      </div>
-    </section>
+              <Maximize2Icon />
+            </ToolbarButton>
+          )}
+        </ContentHeader>
+        <ContentCollapseBody>
+          <div className="p-3 has-[>[data-content-flush]]:p-0">
+            {titleBarFor === undefined ? (
+              children
+            ) : (
+              <ContentTitleBar source={titleBarFor} target={titleBar}>
+                {children}
+              </ContentTitleBar>
+            )}
+          </div>
+        </ContentCollapseBody>
+      </ContentCollapse>
+    </ContentFrame>
   );
 }

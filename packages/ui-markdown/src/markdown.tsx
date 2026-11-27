@@ -215,9 +215,10 @@ export type MarkdownProps = {
   /** Added to the `.markdown-body` root. */
   className?: string;
   /**
-   * Let a code block past `FENCE_COLLAPSE_LINES` scroll inside its frame, behind Expand (default:
-   * the enclosing document's choice, else on). Off where every line has to stay on the page: a
-   * review that annotates lines cannot reach one scrolled out of its frame.
+   * Cut a code block past `FENCE_COLLAPSE_LINES`, and a long patch, behind Show all (default: the
+   * enclosing document's choice, else on). Off where every line has to stay on the page: a review
+   * that annotates lines cannot point at one a cut hides. Off, code blocks are drawn whole and a
+   * patch scrolls in a box of its own. Embedded file cards are cut either way.
    */
   collapseLongFences?: boolean;
   /**

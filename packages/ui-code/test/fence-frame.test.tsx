@@ -82,33 +82,65 @@ describe("FenceFrame", () => {
     expect(liveText(container)).toBe("");
   });
 
-  it("caps a collapsible block in a focusable scroller that Expand lifts", () => {
+  it("cuts a collapsible block behind a bar that names its lines and shows them in place", () => {
     const { container } = render(
       <FenceFrame text={TEXT} collapsible>
         <pre>{TEXT}</pre>
       </FenceFrame>,
     );
-    const scroller = screen.getByRole("region", { name: "Code" });
-    expect(scroller.tabIndex).toBe(0);
-    expect(scroller.className).toMatch(/(^|\s)max-h-/);
-    // A scroller's lines would pass under a toolbar reaching into it.
-    expect(slot(container, "fence-tools")?.className).not.toContain("-mb-3");
+    const bar = screen.getByRole("button", { name: "Show all 2 lines" });
+    expect(bar.dataset.slot).toBe("content-collapse-bar");
+    expect(slot(container, "content-collapse")?.textContent).toBe(TEXT);
+    // No scroller to tab to, and no Expand above.
+    expect(container.querySelector("[tabindex]")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
+    // Nothing scrolls under a toolbar reaching into the content.
+    expect(slot(container, "fence-tools")?.className).toContain("-mb-3");
 
-    fireEvent.click(screen.getByRole("button", { name: "Expand" }));
-    expect(scroller.hasAttribute("data-expanded")).toBe(true);
-    expect(scroller.className).not.toMatch(/(^|\s)max-h-/);
-    fireEvent.click(screen.getByRole("button", { name: "Collapse" }));
-    expect(scroller.className).toMatch(/(^|\s)max-h-/);
+    fireEvent.click(bar);
+    expect(bar.getAttribute("aria-expanded")).toBe("true");
+    expect(bar.textContent).toBe("Show less");
   });
 
-  it("has neither scroller nor Expand when not collapsible", () => {
+  it("has no bar when not collapsible", () => {
     render(
       <FenceFrame text={TEXT}>
         <pre>{TEXT}</pre>
       </FenceFrame>,
     );
-    expect(screen.queryByRole("region", { name: "Code" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Show/ })).toBeNull();
+  });
+
+  it("measures a block whose length is not known up front", () => {
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(800);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(
+      1000,
+    );
+    render(
+      <FenceFrame text={TEXT} collapsible="measure">
+        <pre>{TEXT}</pre>
+      </FenceFrame>,
+    );
+    // A measured block is not counted in lines.
+    expect(screen.getByRole("button", { name: "Show all" })).toBeTruthy();
+  });
+
+  it("opens the block from ⤢ and from its bar, given onOpen", () => {
+    const onOpen = vi.fn();
+    render(
+      <FenceFrame text={TEXT} icon={<span />} collapsible onOpen={onOpen}>
+        <pre>{TEXT}</pre>
+      </FenceFrame>,
+    );
+    const open = screen.getByRole("button", { name: "Open in the viewer" });
+    // After the block's own controls, before Copy.
+    expect(open.nextElementSibling?.getAttribute("aria-label")).toBe("Copy");
+    fireEvent.click(open);
+    const bar = screen.getByRole("button", { name: "Show all" });
+    expect(bar.getAttribute("aria-haspopup")).toBe("dialog");
+    fireEvent.click(bar);
+    expect(onOpen).toHaveBeenCalledTimes(2);
+    expect(bar.hasAttribute("aria-expanded")).toBe(false);
   });
 
   it("heads a named block with a download of it, and revokes it on unmount", () => {
@@ -124,7 +156,12 @@ describe("FenceFrame", () => {
     const link = container.querySelector('a[download="compose.yaml"]');
     expect(link?.getAttribute("href")).toBe("blob:x");
     expect(link?.textContent).toBe("compose.yaml");
-    expect(slot(container, "fence-head")?.className).toContain("select-none");
+    const head = slot(container, "content-header");
+    expect(head?.className).toContain("select-none");
+    // A code file's icon, in the module marker.
+    expect(
+      slot(head as Element, "module-marker")?.querySelector("svg"),
+    ).not.toBeNull();
     expect(slot(container, "fence-tools")).toBeNull();
     // The filename says what the language would.
     expect(
@@ -160,14 +197,21 @@ describe("FenceFrame", () => {
     expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
   });
 
-  it("puts `leading` in a standing header instead of the floating toolbar", () => {
+  it("heads a block given an icon, naming it by its language, muted", () => {
     const { container } = render(
-      <FenceFrame leading={<button type="button">Mode</button>}>
+      <FenceFrame icon={<svg data-testid="icon" />} lang="patch">
         <div />
       </FenceFrame>,
     );
-    const head = slot(container, "fence-head");
-    expect(head?.querySelector("button")?.textContent).toBe("Mode");
+    const head = slot(container, "content-header");
+    expect(
+      slot(head as Element, "module-marker")?.contains(
+        screen.getByTestId("icon"),
+      ),
+    ).toBe(true);
+    const lang = screen.getByText("patch");
+    expect(head?.contains(lang)).toBe(true);
+    expect(lang.className).not.toContain("text-foreground");
     expect(slot(container, "fence-tools")).toBeNull();
   });
 
@@ -188,7 +232,7 @@ describe("FenceFrame", () => {
     const tools = classes(slot(container, "fence-tools"));
     expect(tools).toContain("touch:mt-hit-xs");
     expect(tools).not.toContain("touch:mr-hit-xs");
-    const head = classes(slot(container, "fence-head"));
+    const head = classes(slot(container, "content-header"));
     expect(head).toContain("touch:min-h-touch");
     expect(head).not.toContain("touch:pr-hit-xs");
     for (const button of container.querySelectorAll("button")) {

@@ -1,0 +1,94 @@
+export const meta = {
+  title: "Long content",
+  description:
+    "A long block in a document is cut at one height, fading out above a Show all bar: code shows the rest in place, a patch or an embedded file opens in the viewer.",
+  order: 38,
+  api: [
+    "ui-content/ContentFrame",
+    "ui-content/DocumentCard",
+    "ui-code/FenceFrame",
+    "ui-code/PatchView",
+    "ui-markdown/Markdown",
+  ],
+};
+
+import { FENCE_COLLAPSE_LINES } from "@orz/ui-code";
+import { LongBlocks } from "../../../examples/long-content/long-blocks.tsx";
+
+**Cut every long block in a document the same way: at one height, fading out, with a Show all bar
+across its foot. A reader who has learnt it on one block reads them all, and nothing scrolls
+inside the page they are scrolling.**
+
+<Example of={LongBlocks} />
+
+A note with a long pipeline, a patch series and an embedded runbook. Each is cut at the same
+height. **Show all** under the pipeline draws the rest of it in place, and **Show less** cuts it
+again without moving the bar. The bars under the patch and the runbook open them in the
+attachment viewer, as their headers' ⤢ does; the page behind keeps them cut.
+
+## When a block is cut
+
+- A code block past {FENCE_COLLAPSE_LINES} lines is cut from the first frame, so a page
+  rendered on the server does not jump. Its bar names how many lines it has.
+- Any other block is measured: a patch, an embedded file, a block of your own. It is cut only
+  when it is clearly taller than the cut, since a bar that shows a few lines more costs about
+  what they do. It is measured again as it grows (an image arriving, a file unfolding) and as the
+  window changes.
+- A short block has no bar, and a header's ⤢ and its name stay the ways into the viewer.
+
+## Where Show all goes
+
+- **In place**, for code: the reader is reading it, and a dialog for the next few lines is a
+  detour.
+  **Show less** keeps the bar where it was on the screen and scrolls the page up to it.
+- **In the viewer**, for a patch or an embedded file: what they hold reads better at the
+  viewer's size, with its file list and paging. Pass the block an `onOpen` (a card's `onExpand`)
+  that opens the viewer.
+- Where there is no viewer to open (no `AttachmentViewerProvider`, a file the viewer cannot
+  draw), or the block is already inside the viewer, the bar shows the rest in place. A reader
+  can always reach the end of a block.
+
+## What stays in the page
+
+What is past the cut stays in the document, so find in page reaches it. When find in page, Tab
+or a link lands on something past the cut of a block that expands in place, the block opens and
+keeps that thing where it was on the screen. A patch or a code file drawn in a card shows only
+its first screen until it is opened: the rest is laid out when the reader asks for it.
+
+## Turning it off
+
+`collapseLongFences={false}` on `Markdown` leaves its code blocks whole and its patches in a
+scroller of their own, for a review whose comments point at lines a cut would hide. A document
+embedded in another follows its host. Embedded files are cut whatever it says: their length is
+the file's, not the author's.
+
+## Blocks inside blocks
+
+Each block is cut on its own. A card cut above a long code block hides that block's bar too; the
+viewer shows the card whole, bar and all. A card shown in place opens itself, not the blocks
+inside it.
+
+## A block of your own
+
+Build it from the same parts, so it is cut as every other block is: `ContentFrame` for the edge,
+`ContentHeader` for the name and controls, and `ContentCollapse` around the header and a
+`ContentCollapseBody`. A view that lays out only what is on screen reads `useContentCollapse` to
+size its box. A renderer drawing into a card that fills it edge to edge marks its root
+`data-content-flush`, and the card drops its padding around it.
+
+## On each platform
+
+### Desktop & pointer
+
+- The header and the bar are each a row tall, and the bar is one target across the block's whole
+  width.
+
+### Touch
+
+- The header and the bar grow to a finger's height. Nothing about the cut needs hover: the fade
+  and the bar are always there.
+
+### Print
+
+- A printed page has no bar to press: blocks print whole, and a patch or a code file drawn in a
+  card prints the screen it shows.

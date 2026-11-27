@@ -1,11 +1,15 @@
 import { Button } from "@orz/ui/components/button";
-import { ModuleMarker } from "@orz/ui/components/card";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@orz/ui/components/popover";
 import { cn } from "@orz/ui/lib/utils";
+import {
+  useAttachmentViewer,
+  useContentCollapse,
+  useViewerImage,
+} from "@orz/ui-content/attachment";
 import type {
   CodeViewItem,
   FileDiffMetadata,
@@ -19,7 +23,15 @@ import {
   FileDiffIcon,
   GitCommitHorizontalIcon,
 } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { CappedCodeBlock } from "./capped-code-block.tsx";
 import {
@@ -29,7 +41,7 @@ import {
   patchCommitId,
   patchFileId,
 } from "./code-block.tsx";
-import { FenceFrame } from "./fence-frame.tsx";
+import { FENCE_COLLAPSE_LINES, FenceFrame } from "./fence-frame.tsx";
 import {
   formatCommitDate,
   type PatchCommit,
@@ -280,11 +292,20 @@ const FIT_CLASS = {
   // view lays out every line. The 3.5rem leaves room for a frame's own bar
   // inside the 75vh pane.
   pane: "max-h-[calc(75vh-3.5rem)] overflow-auto",
-  // Any cap past the card's own works: the card hides the rest, and the
-  // reader expands the card rather than scrolling inside it. A card capped
-  // taller than the screen, or not at all, cuts the patch at one screen.
+  // Any cap past the cut works: the collapse around hides the rest, and its
+  // bar shows it all rather than the diffs scrolling. One screen is past the
+  // cut, and keeps the view from laying out every line while it is measured.
   clipped: "max-h-screen overflow-hidden",
 } as const;
+
+type Fit = keyof typeof FIT_CLASS;
+
+/** The box the diffs are drawn in: the collapse around picks it, where there is one. */
+function useFit(fit: Fit): Fit {
+  const collapse = useContentCollapse();
+  if (collapse === null) return fit;
+  return collapse.expanded ? "flow" : "clipped";
+}
 
 export type PatchViewProps = {
   /** Names the raw view's highlighting. */
@@ -298,14 +319,18 @@ export type PatchViewProps = {
    */
   invalidNote?: boolean;
   /**
-   * The box the diffs scroll in, which has to be capped for the view to
-   * virtualize. `flow` (default): within a document, up to 70vh. `pane`: the
-   * attachment viewer, within its 75vh pane. `clipped`: inside a card that
-   * hides its overflow below one screen, so the diffs do not scroll and the
-   * file list does not jump, since nothing the reader can do would scroll
-   * back.
+   * The box the diffs scroll in outside a `ContentCollapse`, which has to be capped for the view
+   * to virtualize. `flow` (default): within a document, up to 70vh. `pane`: the attachment
+   * viewer, within its 75vh pane. `clipped`: one screen, not scrolled. Inside a collapse the
+   * collapse picks: `clipped` while cut or short, so the file list does not jump, since nothing
+   * the reader can do would scroll back; `flow` once expanded in place.
    */
-  fit?: keyof typeof FIT_CLASS;
+  fit?: Fit;
+  /**
+   * In a frame of its own, cut a patch taller than 1.5 times the cap behind a bar that opens it
+   * in the viewer (in place where there is none). Default true; false keeps the 70vh scroller.
+   */
+  collapsible?: boolean;
   /**
    * Where the surrounding title bar takes the controls (`useContentTitleBar`);
    * null until it has mounted. Undefined, the patch draws a frame of its own,
@@ -318,91 +343,105 @@ export type PatchViewProps = {
   lang?: string;
 };
 
-/**
- * A unified diff drawn as one diff per file, each commit's subject, author and
- * message above its files. The file list and the way back to the text as
- * written are controls of the surface around it: a card or viewer lends a spot
- * in its title bar, and a fence, which has none, gets a frame with one.
- * Text that does not parse cleanly stays that text: see `parsePatch` for why a
- * half-parsed patch is never drawn.
- */
-export function PatchView({
-  filename,
-  text,
-  lineNumbers = false,
-  invalidNote = false,
-  fit = "flow",
-  titleBar,
-  title,
-  lang,
-}: PatchViewProps) {
-  const [parsed, setParsed] = useState<Parsed>({ kind: "pending" });
-  const [raw, setRaw] = useState(false);
-  // What the reader set by hand, by file position; the rest follow `large`.
-  const [folded, setFolded] = useState<ReadonlyMap<number, boolean>>(
-    () => new Map(),
+type Drawn = {
+  files: FileDiffMetadata[];
+  stats: Stat[];
+  commits: (PatchCommit | null)[];
+  messages: (string | null)[];
+  large: Set<number>;
+};
+
+type ViewRef = RefObject<CodeViewHandle<undefined, undefined> | null>;
+
+/** The file list and the way back to the text as written. */
+function PatchControls({
+  drawn,
+  fit,
+  raw,
+  onRaw,
+  collapsed,
+  onUnfold,
+  view,
+}: {
+  drawn: Drawn;
+  fit: Fit;
+  raw: boolean;
+  onRaw: () => void;
+  collapsed: ReadonlySet<number>;
+  onUnfold: (index: number) => void;
+  view: ViewRef;
+}) {
+  const box = useFit(fit);
+  const { files, stats } = drawn;
+  return (
+    <span className="inline-flex shrink-0 items-center gap-0.5">
+      {files.length > 1 && !raw && (
+        <FilesMenu
+          files={files}
+          stats={stats}
+          onJump={
+            box === "clipped"
+              ? undefined
+              : (index) => {
+                  if (collapsed.has(index)) onUnfold(index);
+                  view.current?.scrollTo({
+                    type: "item",
+                    id: patchFileId(index),
+                    align: "start",
+                  });
+                }
+          }
+        />
+      )}
+      <Button
+        type="button"
+        size="xs"
+        variant="ghost"
+        aria-pressed={raw}
+        title={raw ? "Back to the diff" : "The patch as written"}
+        className={cn(
+          "font-normal text-muted-foreground",
+          raw && "bg-muted text-foreground pressed-cue",
+          // Under raymond a toolbar button that latches, sunk by a pixel
+          // over the dithered face while on, as @orz/ui's Toggle is.
+          "raymond:aria-pressed:bg-(--3d-highlight) raymond:aria-pressed:bg-[conic-gradient(var(--3d-face)_25%,transparent_0_50%,var(--3d-face)_0_75%,transparent_0)] raymond:aria-pressed:bg-size-[2px_2px] raymond:aria-pressed:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:aria-pressed:hover:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)]",
+        )}
+        onClick={onRaw}
+      >
+        <CodeIcon />
+        raw
+      </Button>
+    </span>
   );
-  const view = useRef<CodeViewHandle<undefined, undefined>>(null);
+}
 
-  useEffect(() => {
-    let live = true;
-    setParsed({ kind: "pending" });
-    setFolded(new Map());
-    // A fence body arrives without its last newline. The patch's own
-    // "\ No newline at end of file" markers carry that fact, not this one.
-    parsePatch(text.endsWith("\n") ? text : `${text}\n`).then(
-      (patches) => {
-        if (live) {
-          setParsed(
-            patches === null ? { kind: "invalid" } : { kind: "patch", patches },
-          );
-        }
-      },
-      () => {
-        if (live) setParsed({ kind: "unavailable" });
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [text]);
-
-  const patches = parsed.kind === "patch" ? parsed.patches : null;
-  const drawn = useMemo(() => {
-    if (patches === null) return null;
-    const files = patches.flatMap((patch) => patch.files);
-    const stats = files.map(countLines);
-    const commits = patches.map((patch) =>
-      parsePatchCommit(patch.patchMetadata ?? ""),
-    );
-    const messages = commits.map((commit) => commit?.body ?? null);
-    // A lone file is what the reader opened the patch for.
-    const large = new Set<number>();
-    if (files.length > 1) {
-      stats.forEach((stat, index) => {
-        if (stat.plus + stat.minus > LARGE_DIFF_LINES) large.add(index);
-      });
-    }
-    return { files, stats, commits, messages, large };
-  }, [patches]);
-  const collapsed = useMemo(() => {
-    const shut = new Set<number>();
-    drawn?.files.forEach((_, index) => {
-      if (folded.get(index) ?? drawn.large.has(index)) shut.add(index);
-    });
-    return shut;
-  }, [drawn, folded]);
-  const clipped = fit === "clipped";
+/** One diff per file under its commit, in the box `fit` and the collapse around pick. */
+function PatchDiffs({
+  patches,
+  drawn,
+  fit,
+  text,
+  collapsed,
+  onFold,
+  view,
+}: {
+  patches: ParsedPatch[];
+  drawn: Drawn;
+  fit: Fit;
+  text: string;
+  collapsed: ReadonlySet<number>;
+  onFold: (index: number, shut: boolean) => void;
+  view: ViewRef;
+}) {
+  const box = useFit(fit);
+  const clipped = box === "clipped";
   const headers = useMemo(() => {
     const rows = new Map<string, ReactNode>();
-    if (drawn === null) return rows;
     drawn.commits.forEach((commit, index) => {
       if (commit !== null) {
         rows.set(patchCommitId(index), <CommitHeader commit={commit} />);
       }
     });
-    const fold = (index: number, shut: boolean) =>
-      setFolded((was) => new Map(was).set(index, shut));
     drawn.files.forEach((file, index) => {
       const shut = collapsed.has(index);
       rows.set(
@@ -434,31 +473,136 @@ export function PatchView({
                       align: "start",
                     });
                   }
-                  fold(index, !shut);
+                  onFold(index, !shut);
                 }
               : undefined
           }
           onLoad={
             shut && drawn.large.has(index)
-              ? () => fold(index, false)
+              ? () => onFold(index, false)
               : undefined
           }
         />,
       );
     });
     return rows;
-  }, [drawn, collapsed, clipped]);
+  }, [drawn, collapsed, clipped, onFold, view]);
+  return (
+    <PatchFiles
+      patches={patches}
+      messages={drawn.messages}
+      collapsedFiles={collapsed}
+      text={text}
+      viewRef={view}
+      renderHeader={(item: CodeViewItem<undefined>) => headers.get(item.id)}
+      className={FIT_CLASS[box]}
+    />
+  );
+}
+
+/** The text while it is parsed, in the box the diffs will take. */
+function PendingPatch({ text, fit }: { text: string; fit: Fit }) {
+  return (
+    <LoadingCodeFallback contents={text} className={FIT_CLASS[useFit(fit)]} />
+  );
+}
+
+/**
+ * A unified diff drawn as one diff per file, each commit's subject, author and
+ * message above its files. The file list and the way back to the text as
+ * written are controls of the surface around it: a card or viewer lends a spot
+ * in its title bar, and a fence, which has none, gets a frame with one, and,
+ * under an attachment viewer, a way to open the patch there.
+ * Text that does not parse cleanly stays that text: see `parsePatch` for why a
+ * half-parsed patch is never drawn.
+ */
+export function PatchView({
+  filename,
+  text,
+  lineNumbers = false,
+  invalidNote = false,
+  fit = "flow",
+  collapsible = true,
+  titleBar,
+  title,
+  lang,
+}: PatchViewProps) {
+  const [parsed, setParsed] = useState<Parsed>({ kind: "pending" });
+  const [raw, setRaw] = useState(false);
+  // What the reader set by hand, by file position; the rest follow `large`.
+  const [folded, setFolded] = useState<ReadonlyMap<number, boolean>>(
+    () => new Map(),
+  );
+  const view = useRef<CodeViewHandle<undefined, undefined>>(null);
+  const viewer = useAttachmentViewer();
+  // Already in the viewer, the patch is what it would open.
+  const inViewer = useViewerImage() !== null;
+
+  useEffect(() => {
+    let live = true;
+    setParsed({ kind: "pending" });
+    setFolded(new Map());
+    // A fence body arrives without its last newline. The patch's own
+    // "\ No newline at end of file" markers carry that fact, not this one.
+    parsePatch(text.endsWith("\n") ? text : `${text}\n`).then(
+      (patches) => {
+        if (live) {
+          setParsed(
+            patches === null ? { kind: "invalid" } : { kind: "patch", patches },
+          );
+        }
+      },
+      () => {
+        if (live) setParsed({ kind: "unavailable" });
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [text]);
+
+  const patches = parsed.kind === "patch" ? parsed.patches : null;
+  const drawn = useMemo((): Drawn | null => {
+    if (patches === null) return null;
+    const files = patches.flatMap((patch) => patch.files);
+    const stats = files.map(countLines);
+    const commits = patches.map((patch) =>
+      parsePatchCommit(patch.patchMetadata ?? ""),
+    );
+    const messages = commits.map((commit) => commit?.body ?? null);
+    // A lone file is what the reader opened the patch for.
+    const large = new Set<number>();
+    if (files.length > 1) {
+      stats.forEach((stat, index) => {
+        if (stat.plus + stat.minus > LARGE_DIFF_LINES) large.add(index);
+      });
+    }
+    return { files, stats, commits, messages, large };
+  }, [patches]);
+  const collapsed = useMemo(() => {
+    const shut = new Set<number>();
+    drawn?.files.forEach((_, index) => {
+      if (folded.get(index) ?? drawn.large.has(index)) shut.add(index);
+    });
+    return shut;
+  }, [drawn, folded]);
+  const fold = useCallback(
+    (index: number, shut: boolean) =>
+      setFolded((was) => new Map(was).set(index, shut)),
+    [],
+  );
 
   // With no title bar to borrow, text not (yet) drawn as a patch is still a
-  // code block, framed as every other one is.
+  // code block, framed and cut as every other one is.
   const framed = titleBar === undefined;
+  const asCode = collapsible && text.split("\n").length > FENCE_COLLAPSE_LINES;
   if (parsed.kind === "pending") {
     return framed ? (
-      <FenceFrame text={text} lang={lang} title={title}>
+      <FenceFrame text={text} lang={lang} title={title} collapsible={asCode}>
         <LoadingCodeFallback contents={text} />
       </FenceFrame>
     ) : (
-      <LoadingCodeFallback contents={text} className={FIT_CLASS[fit]} />
+      <PendingPatch text={text} fit={fit} />
     );
   }
   if (patches === null || drawn === null) {
@@ -478,7 +622,12 @@ export function PatchView({
           </p>
         )}
         {framed ? (
-          <FenceFrame text={text} lang={lang} title={title}>
+          <FenceFrame
+            text={text}
+            lang={lang}
+            title={title}
+            collapsible={asCode}
+          >
             {code}
           </FenceFrame>
         ) : (
@@ -488,48 +637,16 @@ export function PatchView({
     );
   }
 
-  const { files, stats, messages } = drawn;
   const controls = (
-    <span className="inline-flex shrink-0 items-center gap-0.5">
-      {files.length > 1 && !raw && (
-        <FilesMenu
-          files={files}
-          stats={stats}
-          onJump={
-            clipped
-              ? undefined
-              : (index) => {
-                  if (collapsed.has(index)) {
-                    setFolded((was) => new Map(was).set(index, false));
-                  }
-                  view.current?.scrollTo({
-                    type: "item",
-                    id: patchFileId(index),
-                    align: "start",
-                  });
-                }
-          }
-        />
-      )}
-      <Button
-        type="button"
-        size="xs"
-        variant="ghost"
-        aria-pressed={raw}
-        title={raw ? "Back to the diff" : "The patch as written"}
-        className={cn(
-          "font-normal text-muted-foreground",
-          raw && "bg-muted text-foreground pressed-cue",
-          // Under raymond a toolbar button that latches, sunk by a pixel
-          // over the dithered face while on, as @orz/ui's Toggle is.
-          "raymond:aria-pressed:bg-(--3d-highlight) raymond:aria-pressed:bg-[conic-gradient(var(--3d-face)_25%,transparent_0_50%,var(--3d-face)_0_75%,transparent_0)] raymond:aria-pressed:bg-size-[2px_2px] raymond:aria-pressed:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)] raymond:aria-pressed:hover:shadow-[inset_1px_1px_var(--3d-shadow),inset_-1px_-1px_var(--3d-highlight)]",
-        )}
-        onClick={() => setRaw((shown) => !shown)}
-      >
-        <CodeIcon />
-        raw
-      </Button>
-    </span>
+    <PatchControls
+      drawn={drawn}
+      fit={fit}
+      raw={raw}
+      onRaw={() => setRaw((shown) => !shown)}
+      collapsed={collapsed}
+      onUnfold={(index) => fold(index, false)}
+      view={view}
+    />
   );
   const body = raw ? (
     <CappedCodeBlock
@@ -540,14 +657,14 @@ export function PatchView({
       copy={!framed}
     />
   ) : (
-    <PatchFiles
+    <PatchDiffs
       patches={patches}
-      messages={messages}
-      collapsedFiles={collapsed}
+      drawn={drawn}
+      fit={fit}
       text={text}
-      viewRef={view}
-      renderHeader={(item: CodeViewItem<undefined>) => headers.get(item.id)}
-      className={FIT_CLASS[fit]}
+      collapsed={collapsed}
+      onFold={fold}
+      view={view}
     />
   );
 
@@ -565,13 +682,24 @@ export function PatchView({
     <FenceFrame
       text={text}
       title={title}
-      leading={
-        title === undefined && (
-          <>
-            <ModuleMarker icon={<FileDiffIcon />} />
-            <span className="font-bold text-foreground">patch</span>
-          </>
-        )
+      icon={<FileDiffIcon />}
+      lang={title === undefined ? "patch" : undefined}
+      collapsible={collapsible && "measure"}
+      onOpen={
+        viewer !== null && !inViewer
+          ? () =>
+              viewer.open(
+                [
+                  {
+                    kind: "inline",
+                    text,
+                    lang: lang ?? "patch",
+                    title: title ?? "Patch",
+                  },
+                ],
+                0,
+              )
+          : undefined
       }
       actions={controls}
     >

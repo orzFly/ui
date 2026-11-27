@@ -257,12 +257,12 @@ The order matters, because the first renderer that accepts a source draws it:
 
 | Renderer | Accepts | Placement | Draws |
 |---|---|---|---|
-| `attachmentCard({ maxBytes?, maxDepth?, collapsedClassName? })` | text files that are not images | `document` | `DocumentCard` around `Next` |
+| `attachmentCard({ maxBytes?, maxDepth? })` | text files that are not images | `document` | `DocumentCard` around `Next` |
 | `imageContent()` | images with a `url` | both | `<img>`; in a document under a viewer, a link to the file whose plain click opens the viewer; in the viewer, a zoomable canvas |
 | `htmlContent({ src? })` | HTML with a `url` | `viewer` | `<iframe sandbox="allow-scripts">` |
 | `pdfContent({ src? })` | PDF with a `url` | `viewer` | `<iframe>`, unsandboxed |
-| `videoContent()` | video with a `url` | both | `VideoPlayer`; in a document, under a header with the name and Download |
-| `audioContent()` | audio with a `url` | both | `AudioPlayer`; in a document, under a header with the file's icon, name and Download |
+| `videoContent()` | video with a `url` | both | `VideoPlayer`; in a document, under a `ContentHeader` with the file's icon, name and Download |
+| `audioContent()` | audio with a `url` | both | `AudioPlayer`; in a document, under a `ContentHeader` with the file's icon, name and Download |
 
 A file with no `url` is never accepted by the binary renderers, and falls through to the
 registry's fallback. In a document an HTML file is text, so `attachmentCard` frames its source; a
@@ -407,11 +407,24 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
 - **`<DeletedAttachmentMark name className?>`** is what a document shows for a link or embed of a
   deleted file: the name struck through, with the word "deleted". `@orz/ui-markdown`'s
   `attachmentLinks` and `markdownEmbeds` draw it for a file their `resolve` marks `deleted`.
-- **`<DocumentCard name icon? meta? headerActions? titleBarFor? downloadUrl? onExpand? collapsedClassName?>`**
-  is the frame `attachmentCard` draws, for anything else that wants it: a header with the name, a
-  muted note, extra actions, download and expand, around a height-capped body that offers "Show full
-  document" when it overflows. Without `onExpand` it draws no expand controls. With `titleBarFor`,
-  it lends a spot in the header, after the name, to the renderer drawing that source.
+- **`<DocumentCard name icon? meta? headerActions? titleBarFor? downloadUrl? onExpand?>`**
+  is the frame `attachmentCard` draws, for anything else that wants it: a `ContentHeader` with the
+  name, a muted note, extra actions, download and ⤢, around a body cut as every long block is,
+  whose **Show all** bar calls `onExpand` (the viewer). Without `onExpand` it draws no ⤢, the name
+  is plain text, and the bar shows the rest in place. With `titleBarFor`, it lends a spot in the
+  header, after the name, to the renderer drawing that source. The body keeps a padding, except
+  around a renderer whose root carries `data-content-flush`, a view that fills the card edge to
+  edge, as `@orz/ui-code`'s files do.
+- **`<ContentFrame>`**, **`<ContentHeader icon name? lang? meta?>`** and
+  **`<ContentCollapse collapse onOpen? lines?>`** with **`<ContentCollapseBody>`** are the parts
+  every block in a document is built from: the edge, the strip that names a block (its icon in the
+  module marker, then its controls), and the cut. `ContentCollapse` holds whether a block is cut,
+  for the header and the body inside it; the body cuts at 20 lines' height (or half the screen)
+  and fades above a **Show all** bar, which calls `onOpen` or, without it or inside the viewer,
+  draws the rest in place. `collapse` is `true` for a length known up front, `"measure"` to cut
+  once the body proves taller than one and a half times the cut. A view that virtualizes against
+  its own box reads **`useContentCollapse()`** to pick that box. `DocumentCard` and
+  `@orz/ui-code`'s `FenceFrame` are these parts put together.
 - **`fileIcon(file)`** is the lucide icon for a file's kind: image, HTML, patch, text, archive,
   audio, video, mail, else a generic file.
 
@@ -422,6 +435,6 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
 | Import | Contents |
 |---|---|
 | `@orz/ui-content` | `Content`, `ContentRenderers`, `ContentFallback`, the `useContent…` hooks, `ContentTitleBar`, `useContentTitleBar`, `useSourceText`, the file-kind predicates, `formatSize`, `textPreviewGate` and its limits, types |
-| `@orz/ui-content/attachment` | the attachment renderers, viewer, links, cards and icons, and `ZoomCanvas` for a renderer that zooms in the viewer |
+| `@orz/ui-content/attachment` | the attachment renderers, viewer, links, cards and icons, the parts a block in a document is built from, and `ZoomCanvas` for a renderer that zooms in the viewer |
 | `@orz/ui-content/compare` | `MediaCompare`, its labels, mode control and swipe handle, `CompareModeProvider`, `useCompareMode` |
 | `@orz/ui-content/styles.css` | `@source "./dist"` |

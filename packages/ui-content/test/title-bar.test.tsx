@@ -50,7 +50,7 @@ function draw(source: ContentSource) {
 
 /** The card's header row, which holds its name. */
 const header = () => {
-  const row = document.querySelector("section")?.firstElementChild;
+  const row = document.querySelector("[data-slot=content-header]");
   if (!(row instanceof HTMLElement)) throw new Error("no header");
   return row;
 };

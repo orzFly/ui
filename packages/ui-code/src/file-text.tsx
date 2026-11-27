@@ -56,9 +56,9 @@ function LoadedText({
   }
   // A code view only hands its className to pierre's view, which is not
   // mounted while the plain-text stand-in shows; the wrapper keeps it on the
-  // root throughout.
+  // root throughout. The view fills a card edge to edge, as a fence's frame.
   return (
-    <div className={className}>
+    <div data-content-flush="" className={className}>
       {
         // pierre numbers the empty line after a file's final newline, so
         // every well-formed file would end on a blank numbered line.

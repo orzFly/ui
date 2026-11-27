@@ -4,7 +4,11 @@ import {
   ContentRenderers,
   type ContentSource,
 } from "@orz/ui-content";
-import { attachmentCard } from "@orz/ui-content/attachment";
+import {
+  AttachmentViewerProvider,
+  attachmentCard,
+  useAttachmentViewer,
+} from "@orz/ui-content/attachment";
 import {
   fireEvent,
   render,
@@ -13,7 +17,7 @@ import {
   within,
 } from "@testing-library/react";
 import { type ReactNode, type Ref, useImperativeHandle, useState } from "react";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { codeContent } from "../src/content.tsx";
 import { patchContent } from "../src/patch-content.tsx";
 import { LARGE_DIFF_LINES, PatchView } from "../src/patch-view.tsx";
@@ -180,23 +184,48 @@ const patchFile = (
 
 /** The card's header row, which holds its name. */
 const cardHeader = () => {
-  const row = document.querySelector("section")?.firstElementChild;
+  // A fence's frame takes a slot of its own.
+  const row = document.querySelector(
+    "[data-slot=content-frame] > [data-slot=content-header]",
+  );
   if (!(row instanceof HTMLElement)) throw new Error("no header");
   return row;
 };
 
+/** The box the diffs are drawn in. */
+const box = () => screen.getByTestId("codeview").getAttribute("data-class");
+
+/** Every element measures `height`, in a window 800px tall: past 1.5 times the cut at 600. */
+function measure(height: number) {
+  vi.spyOn(window, "innerHeight", "get").mockReturnValue(800);
+  vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(
+    height,
+  );
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("PatchView", () => {
   it("draws one diff per file, behind a height cap", async () => {
-    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    render(
+      <PatchView filename="x.patch" text={TWO_FILES} collapsible={false} />,
+    );
     // The first render on a loaded machine comes to ~1 s, the default wait.
     await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]), {
       timeout: 3000,
     });
     // CodeView virtualizes against its own box; without the cap a 1 MB patch
     // laid out every line and froze the tab for 15 s.
-    const cls = screen.getByTestId("codeview").getAttribute("data-class");
-    expect(cls).toMatch(/\bmax-h-/);
-    expect(cls).toMatch(/\boverflow-auto\b/);
+    expect(box()).toMatch(/\bmax-h-\[70vh\]/);
+    expect(box()).toMatch(/\boverflow-auto\b/);
+  });
+
+  it("draws the diffs one screen tall, unscrolled, in a frame that may cut them", async () => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    expect(box()).toMatch(/\bmax-h-screen overflow-hidden\b/);
   });
 
   it("keeps each file's header pinned while the file scrolls under it", async () => {
@@ -206,7 +235,9 @@ describe("PatchView", () => {
   });
 
   it("lists the files with their counts and toggles to the raw text", async () => {
-    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    render(
+      <PatchView filename="x.patch" text={TWO_FILES} collapsible={false} />,
+    );
     const summary = await screen.findByRole("button", { name: /2 files/ });
     expect(summary.textContent).toContain("+3");
     expect(summary.textContent).toContain("−1");
@@ -223,17 +254,18 @@ describe("PatchView", () => {
     expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]);
   });
 
-  it("does not jump inside a clipped card", async () => {
-    render(<PatchView filename="x.patch" text={TWO_FILES} fit="clipped" />);
+  it.each([
+    ["clipped", { fit: "clipped", collapsible: false }],
+    ["in a frame that may cut it", {}],
+  ] as const)("does not jump when %s", async (_, props) => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} {...props} />);
     fireEvent.click(await screen.findByRole("button", { name: /2 files/ }));
     await waitFor(() =>
       expect(document.querySelector('li[title="src/b.ts"]')).not.toBeNull(),
     );
     const menu = within(await screen.findByRole("dialog"));
     expect(menu.queryByRole("button", { name: /b\.ts/ })).toBeNull();
-    expect(screen.getByTestId("codeview").getAttribute("data-class")).toMatch(
-      /\boverflow-hidden\b/,
-    );
+    expect(box()).toMatch(/\boverflow-hidden\b/);
   });
 
   it("refuses a hunk whose counts do not add up, and says so", async () => {
@@ -357,6 +389,130 @@ describe("patchContent", () => {
     expect(screen.queryByText("patch")).toBeNull();
     const codeview = screen.getByTestId("codeview");
     expect(codeview.getAttribute("data-class")).toMatch(/\boverflow-hidden\b/);
+  });
+
+  it("draws a patch a card cuts unscrolled, then scrolls and jumps once the card shows it all", async () => {
+    measure(1000);
+    // No viewer, so the card expands in place.
+    draw(patchFile("x.patch", TWO_FILES), [attachmentCard(), ...RENDERERS]);
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    expect(box()).toMatch(/\bmax-h-screen overflow-hidden\b/);
+    fireEvent.click(screen.getByRole("button", { name: /2 files/ }));
+    let menu = within(await screen.findByRole("dialog"));
+    expect(menu.queryByRole("button", { name: /b\.ts/ })).toBeNull();
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: "Escape",
+    });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: "Show all" }));
+    expect(box()).toMatch(/\bmax-h-\[70vh\] overflow-auto\b/);
+    fireEvent.click(screen.getByRole("button", { name: /2 files/ }));
+    menu = within(await screen.findByRole("dialog"));
+    expect(menu.getByRole("button", { name: /b\.ts/ })).toBeTruthy();
+  });
+
+  it.each([
+    ["its bar", "Show all"],
+    ["⤢", "Open in the viewer"],
+  ])(
+    "opens a tall patch fence in the viewer from %s, drawn in the pane",
+    async (_, name) => {
+      measure(1000);
+      render(
+        <ContentRenderers renderers={RENDERERS}>
+          <AttachmentViewerProvider>
+            <Content
+              source={{ kind: "inline", text: TWO_FILES, lang: "diff" }}
+              placement="document"
+            />
+          </AttachmentViewerProvider>
+        </ContentRenderers>,
+      );
+      await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+      const bar = screen.getByRole("button", { name: "Show all" });
+      expect(bar.getAttribute("aria-haspopup")).toBe("dialog");
+      fireEvent.click(screen.getByRole("button", { name }));
+      const dialog = await screen.findByRole("dialog");
+      await waitFor(() =>
+        expect(
+          within(dialog).getByTestId("codeview").getAttribute("data-class"),
+        ).toMatch(/\bmax-h-\[calc\(75vh-3\.5rem\)\]/),
+      );
+      // Still cut on the page behind.
+      expect(bar.hasAttribute("aria-expanded")).toBe(false);
+    },
+  );
+
+  it("expands a tall patch fence in place with no viewer, into a scroller", async () => {
+    measure(1000);
+    draw({ kind: "inline", text: TWO_FILES, lang: "diff" });
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    expect(
+      screen.queryByRole("button", { name: "Open in the viewer" }),
+    ).toBeNull();
+    const bar = screen.getByRole("button", { name: "Show all" });
+    expect(bar.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(bar);
+    expect(box()).toMatch(/\bmax-h-\[70vh\] overflow-auto\b/);
+  });
+
+  it("never cuts a patch fence whose source says not to", async () => {
+    measure(1000);
+    draw({ kind: "inline", text: TWO_FILES, lang: "diff", collapse: false });
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    expect(
+      document.querySelector("[data-slot=content-collapse-bar]"),
+    ).toBeNull();
+    expect(box()).toMatch(/\bmax-h-\[70vh\] overflow-auto\b/);
+  });
+
+  it("expands a patch fence in place inside the viewer, with no ⤢", async () => {
+    measure(1000);
+    const notes: ContentSource = {
+      kind: "file",
+      name: "notes.md",
+      mime: "text/markdown",
+      size: 1,
+    };
+    const doc: ContentRenderer = {
+      name: "doc",
+      accepts: (source) => source === notes,
+      Component: () => (
+        <Content
+          source={{ kind: "inline", text: TWO_FILES, lang: "diff" }}
+          placement="document"
+        />
+      ),
+    };
+    function Open() {
+      const viewer = useAttachmentViewer();
+      return (
+        <button type="button" onClick={() => viewer?.open([notes], 0)}>
+          open notes
+        </button>
+      );
+    }
+    render(
+      <ContentRenderers renderers={[doc, ...RENDERERS]}>
+        <AttachmentViewerProvider>
+          <Open />
+        </AttachmentViewerProvider>
+      </ContentRenderers>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "open notes" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    await waitFor(() => expect(diffs()).toEqual(["src/a.ts", "src/b.ts"]));
+    expect(
+      dialog.queryByRole("button", { name: "Open in the viewer" }),
+    ).toBeNull();
+    const bar = dialog.getByRole("button", { name: "Show all" });
+    expect(bar.getAttribute("aria-haspopup")).toBeNull();
+    fireEvent.click(bar);
+    expect(bar.getAttribute("aria-expanded")).toBe("true");
+    expect(dialog.getByTestId("codeview").getAttribute("data-class")).toMatch(
+      /\bmax-h-\[70vh\] overflow-auto\b/,
+    );
   });
 
   it("frames a fence inside a document card, leaving the card's title bar alone", async () => {
@@ -486,7 +642,9 @@ describe("PatchView folding files", () => {
   });
 
   it("unfolds a folded file the file list jumps to", async () => {
-    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    render(
+      <PatchView filename="x.patch" text={TWO_FILES} collapsible={false} />,
+    );
     fireEvent.click(
       await screen.findByRole("button", { name: "Collapse src/b.ts" }),
     );
@@ -517,7 +675,9 @@ describe("PatchView folding files", () => {
   });
 
   it("scrolls back to a file's header when folding it from partway down", async () => {
-    render(<PatchView filename="x.patch" text={TWO_FILES} />);
+    render(
+      <PatchView filename="x.patch" text={TWO_FILES} collapsible={false} />,
+    );
     const collapse = await screen.findByRole("button", {
       name: "Collapse src/a.ts",
     });
@@ -539,8 +699,8 @@ describe("PatchView folding files", () => {
     expect(collapsedDiffs()).toEqual(["src/a.ts"]);
   });
 
-  it("does not scroll a clipped card back", async () => {
-    render(<PatchView filename="x.patch" text={TWO_FILES} fit="clipped" />);
+  it("does not scroll clipped diffs back", async () => {
+    render(<PatchView filename="x.patch" text={TWO_FILES} />);
     const collapse = await screen.findByRole("button", {
       name: "Collapse src/a.ts",
     });

@@ -24,8 +24,6 @@ export type AttachmentCardOptions = {
    * agree on which level turns into a link.
    */
   maxDepth?: number;
-  /** Height cap for the card's collapsed body. Default `max-h-80`. */
-  collapsedClassName?: string;
 };
 
 /**
@@ -69,7 +67,6 @@ export function attachmentCard(
           meta={meta}
           downloadUrl={source.url}
           className={className}
-          collapsedClassName={options.collapsedClassName}
         >
           <p className="text-ui text-muted-foreground">
             {gate === "refuse" ? (
@@ -102,7 +99,6 @@ export function attachmentCard(
           viewer !== null && canPreview ? () => viewer.show(source) : undefined
         }
         className={className}
-        collapsedClassName={options.collapsedClassName}
       >
         <Next source={source} placement="document" />
       </DocumentCard>

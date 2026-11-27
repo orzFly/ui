@@ -3,18 +3,71 @@ import {
   type ContentRenderer,
   type ContentSource,
   isTextFile,
+  type Placement,
+  useContentTitleBar,
 } from "@orz/ui-content";
+import { useContentCollapse } from "@orz/ui-content/attachment";
+import { createPortal } from "react-dom";
 import { CappedCodeBlock } from "./capped-code-block.tsx";
 import { fenceFilename } from "./code-block.tsx";
 import {
+  CopyButton,
   FENCE_COLLAPSE_LINES,
   FenceFrame,
   useInFenceFrame,
 } from "./fence-frame.tsx";
-import { FileText } from "./file-text.tsx";
+import { type FileSource, FileText } from "./file-text.tsx";
 
 function accepts(source: ContentSource): boolean {
   return source.kind === "inline" || isTextFile(source);
+}
+
+/** The box a file's code view is drawn in, which it virtualizes against. */
+function fileBox(
+  placement: Placement,
+  collapse: { expanded: boolean } | null,
+): string {
+  // The viewer's pane hands down the height it may fill.
+  if (placement === "viewer") {
+    return "max-h-(--attachment-pane-height) overflow-auto";
+  }
+  // Cut by the card's collapse, which shows the rest: one screen, so the
+  // view lays out no more, never scrolled down, but a long line still
+  // scrolls sideways.
+  if (collapse !== null && !collapse.expanded) {
+    return "max-h-screen overflow-y-hidden overflow-x-auto";
+  }
+  return "max-h-[70vh] overflow-auto";
+}
+
+function CodeFile({
+  source,
+  placement,
+  text,
+}: {
+  source: FileSource;
+  placement: Placement;
+  text: string;
+}) {
+  const collapse = useContentCollapse();
+  const titleBar = useContentTitleBar(source);
+  // In a card, Copy joins the card's header, as a fence's sits in its own.
+  const headed = placement === "document" && titleBar !== undefined;
+  return (
+    <>
+      {headed &&
+        titleBar !== null &&
+        createPortal(<CopyButton text={text} />, titleBar)}
+      <CappedCodeBlock
+        filename={source.name}
+        contents={text}
+        lineNumbers
+        offThread
+        copy={!headed}
+        capClassName={fileBox(placement, collapse)}
+      />
+    </>
+  );
 }
 
 function Code({ source, placement, className }: ContentProps) {
@@ -22,19 +75,7 @@ function Code({ source, placement, className }: ContentProps) {
     return (
       <FileText source={source} placement={placement} className={className}>
         {(text) => (
-          <CappedCodeBlock
-            filename={source.name}
-            contents={text}
-            lineNumbers
-            offThread
-            // A document's file sits in a card that clips its body; the
-            // viewer's pane hands down the height it may fill.
-            capClassName={
-              placement === "viewer"
-                ? "max-h-(--attachment-pane-height) overflow-auto"
-                : "max-h-80 overflow-hidden"
-            }
-          />
+          <CodeFile source={source} placement={placement} text={text} />
         )}
       </FileText>
     );
@@ -90,7 +131,8 @@ function InlineCode({
  * `CodeWorkerProvider` lends, a file inside a height cap.
  *
  * An inline source sits in a `FenceFrame`: Copy, its language or the `title` it names, and past
- * `FENCE_COLLAPSE_LINES` a cap behind Expand unless its `collapse` is false.
+ * `FENCE_COLLAPSE_LINES` cut at the shared cap behind Show all unless its `collapse` is false. A
+ * file in an embed card puts its Copy in the card's header.
  */
 export const codeContent: ContentRenderer = {
   name: "code",

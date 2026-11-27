@@ -399,7 +399,7 @@ A fence with only a language shows it, and Copy, on hover:
 pnpm install && pnpm test
 \`\`\`
 
-A long one scrolls inside its frame until Expand:
+A long one is cut, with a bar to show all of it:
 
 \`\`\`yaml
 pipeline:

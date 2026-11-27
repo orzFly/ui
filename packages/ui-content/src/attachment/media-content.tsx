@@ -1,4 +1,4 @@
-import { Button } from "@orz/ui/components/button";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
 import { Download } from "lucide-react";
@@ -18,6 +18,7 @@ import type {
   ContentSource,
   Placement,
 } from "../types.ts";
+import { ContentHeader } from "./content-frame.tsx";
 import { fileIcon } from "./icon.ts";
 import { ImageCanvas } from "./image-canvas.tsx";
 import { AudioPlayer, VideoPlayer } from "./media-player.tsx";
@@ -193,24 +194,30 @@ export function pdfContent(options: FrameContentOptions = {}): ContentRenderer {
 const UNPLAYABLE = "This browser can't play this file.";
 
 /** The name and Download over a player in a document; in the viewer the title bar has both. */
-function MediaHeader({ file, icon }: { file: FileSource; icon?: boolean }) {
+function MediaHeader({ file }: { file: FileSource }) {
   const Icon = fileIcon(file);
   return (
-    // On touch as tall as Download's hit area, which the player clips.
-    <div className="flex items-center gap-2 border-b bg-card py-1 pr-1 pl-3 text-card-foreground text-ui-sm touch:min-h-touch">
-      {icon && <Icon aria-hidden className="size-4 shrink-0" />}
-      <span className="min-w-0 flex-1 truncate" title={file.name}>
-        {file.name}
-      </span>
+    <ContentHeader
+      icon={<Icon />}
+      name={<span title={file.name}>{file.name}</span>}
+    >
       {file.url !== undefined && (
-        <Button asChild size="xs" variant="ghost">
-          <a href={file.url} download={file.name}>
+        <ToolbarButton
+          asChild
+          size="icon-xs"
+          className="text-muted-foreground raymond:text-foreground"
+        >
+          <a
+            href={file.url}
+            download={file.name}
+            aria-label="Download"
+            title="Download"
+          >
             <Download />
-            Download
           </a>
-        </Button>
+        </ToolbarButton>
       )}
-    </div>
+    </ContentHeader>
   );
 }
 
@@ -271,9 +278,7 @@ export function audioContent(): ContentRenderer {
         src={file.url ?? ""}
         title={file.name}
         header={
-          placement === "document" ? (
-            <MediaHeader file={file} icon />
-          ) : undefined
+          placement === "document" ? <MediaHeader file={file} /> : undefined
         }
         onError={() => setFailed(true)}
         className={cn(placement === "viewer" && "w-full", className)}

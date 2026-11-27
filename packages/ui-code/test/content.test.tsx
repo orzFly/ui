@@ -3,12 +3,14 @@ import {
   type ContentRenderer,
   ContentRenderers,
   type ContentSource,
+  ContentTitleBar,
   TEXT_PREVIEW_HARD_MAX_BYTES,
   TEXT_PREVIEW_MAX_BYTES,
   useContentDisplay,
 } from "@orz/ui-content";
+import { attachmentCard } from "@orz/ui-content/attachment";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { exceedsBytes } from "../src/capped-code-block.tsx";
 import { codeContent } from "../src/content.tsx";
 import { FENCE_COLLAPSE_LINES, FenceFrame } from "../src/fence-frame.tsx";
@@ -268,7 +270,8 @@ describe("size cap", () => {
     const block = await screen.findByTestId("code-block");
     expect(block.dataset.plain).toBe("true");
     expect(block.dataset.lineNumbers).toBe("true");
-    expect(block.className).toBe("max-h-80 overflow-hidden");
+    // In a document with no card around, a scroller of its own.
+    expect(block.className).toBe("max-h-[70vh] overflow-auto");
   });
 
   it("caps a plain file to the viewer's pane", async () => {
@@ -298,7 +301,7 @@ describe("size cap", () => {
     expect(block.dataset.plain).toBe("false");
     // Highlighted off the main thread, inside the same cap plain text gets.
     expect(block.dataset.offThread).toBe("true");
-    expect(block.className).toBe("max-h-80 overflow-hidden");
+    expect(block.className).toBe("max-h-[70vh] overflow-auto");
   });
 
   it("draws a file of unknown size plain once it loads over the cap", async () => {
@@ -357,22 +360,24 @@ describe("an inline source's frame", () => {
 
   it("heads a block that names a file with a download of it", () => {
     draw({ kind: "inline", text: "a: 1", lang: "yaml", title: "x.yaml" });
-    expect(slot("fence-head")?.querySelector('a[download="x.yaml"]')).not.toBe(
-      null,
-    );
+    expect(
+      slot("content-header")?.querySelector('a[download="x.yaml"]'),
+    ).not.toBe(null);
     expect(slot("fence-tools")).toBeNull();
   });
 
-  it(`caps a block of ${FENCE_COLLAPSE_LINES + 1} lines behind Expand`, () => {
+  it(`cuts a block of ${FENCE_COLLAPSE_LINES + 1} lines behind Show all`, () => {
     draw(inline(lines(FENCE_COLLAPSE_LINES + 1)));
-    expect(screen.getByRole("region", { name: "Code" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Expand" })).toBeTruthy();
+    const bar = screen.getByRole("button", {
+      name: `Show all ${FENCE_COLLAPSE_LINES + 1} lines`,
+    });
+    expect(bar.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
   });
 
   it(`leaves a block of ${FENCE_COLLAPSE_LINES} lines whole`, () => {
     draw(inline(lines(FENCE_COLLAPSE_LINES)));
-    expect(screen.queryByRole("region", { name: "Code" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
+    expect(slot("content-collapse-bar")).toBeNull();
   });
 
   it("leaves a long block whole when its source says so", () => {
@@ -381,8 +386,7 @@ describe("an inline source's frame", () => {
       text: lines(FENCE_COLLAPSE_LINES + 1),
       collapse: false,
     });
-    expect(screen.queryByRole("region", { name: "Code" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Expand" })).toBeNull();
+    expect(slot("content-collapse-bar")).toBeNull();
   });
 
   it("draws no frame of its own inside another surface's frame", () => {
@@ -407,6 +411,67 @@ describe("an inline source's frame", () => {
     draw(file("a.py", { load: async () => "print(1)" }));
     const block = await screen.findByTestId("code-block");
     expect(slot("fence-frame")).toBeNull();
+    expect(block.dataset.copy).toBe("true");
+  });
+});
+
+describe("a file in an embed card", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** A long file: past 1.5 times the cut, in a window 800px tall. */
+  function long() {
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(800);
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(
+      1000,
+    );
+  }
+
+  const inCard = (source: ContentSource) =>
+    draw(source, [attachmentCard(), codeContent]);
+
+  it("is cut by the card, a long line still scrolling sideways, and scrolls once expanded", async () => {
+    long();
+    inCard(file("a.py", { size: 8, load: async () => "print(1)" }));
+    const block = await screen.findByTestId("code-block");
+    expect(block.className).toBe(
+      "max-h-screen overflow-y-hidden overflow-x-auto",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Show all" }));
+    expect(block.className).toBe("max-h-[70vh] overflow-auto");
+  });
+
+  it("puts Copy in the card's header, none beside the code", async () => {
+    inCard(file("a.py", { size: 8, load: async () => "print(1)" }));
+    const block = await screen.findByTestId("code-block");
+    expect(block.dataset.copy).toBe("false");
+    const copy = await screen.findByRole("button", { name: "Copy" });
+    expect(
+      document.querySelector("[data-slot=content-header]")?.contains(copy),
+    ).toBe(true);
+  });
+
+  it("fills the card edge to edge once loaded", async () => {
+    inCard(file("a.py", { size: 8, load: async () => "print(1)" }));
+    const block = await screen.findByTestId("code-block");
+    const root = block.closest("[data-content-flush]");
+    expect(root).not.toBeNull();
+    expect(root?.parentElement?.className).toContain(
+      "has-[>[data-content-flush]]:p-0",
+    );
+  });
+
+  it("keeps its own Copy in the viewer", async () => {
+    const viewed = file("a.py", { size: 8, load: async () => "print(1)" });
+    render(
+      <ContentRenderers renderers={[codeContent]}>
+        <ContentTitleBar source={viewed} target={document.createElement("div")}>
+          <Content source={viewed} placement="viewer" />
+        </ContentTitleBar>
+      </ContentRenderers>,
+    );
+    const block = await screen.findByTestId("code-block");
     expect(block.dataset.copy).toBe("true");
   });
 });

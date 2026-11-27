@@ -52,7 +52,9 @@ export async function retryOnce<T>(attempt: () => Promise<T>): Promise<T> {
 - [ ] Should the pause grow with each attempt? Only once we retry more than once.
 - [ ] Log the first failure, or only the second?
 
-The current implementation: [fetch-task.ts](files/fetch-task.ts).
+The current implementation: [fetch-task.ts](files/fetch-task.ts). The series sent for review:
+
+![series](files/series.patch)
 `;
 
 const RELEASE = `# Release 0.4 checklist

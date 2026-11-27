@@ -27,6 +27,9 @@ import { file, stubText } from "./fixtures.tsx";
 
 const INNER = file("inner.txt", { size: 5 });
 
+/** A card's frame. */
+const FRAME = "[data-slot=content-frame]";
+
 /** Draws `host.txt` as a document that embeds `inner.txt`, one level further down. */
 const host: ContentRenderer = {
   name: "host",
@@ -75,7 +78,7 @@ function draw(
 describe("attachmentCard", () => {
   it("frames a text file and draws the next renderer inside", () => {
     const { container } = draw(file("notes.txt", { size: 1536 }));
-    const frame = container.querySelector("section");
+    const frame = container.querySelector(FRAME);
     expect(frame?.textContent).toContain("notes.txt");
     expect(frame?.textContent).toContain("1.5 KB");
     expect(screen.getByTestId("stub").textContent).toBe("stub:notes.txt");
@@ -125,10 +128,10 @@ describe("attachmentCard", () => {
   it("frames at depth 1 and draws a chip at depth 2", () => {
     const { container } = draw(file("host.txt", { size: 5 }));
     // host.txt, at depth 1, is framed and drawn by `host`.
-    expect(container.querySelectorAll("section")).toHaveLength(1);
+    expect(container.querySelectorAll(FRAME)).toHaveLength(1);
     const inner = screen.getByTestId("host");
     // inner.txt, embedded inside it, is past the limit: a chip, not a frame.
-    expect(inner.querySelector("section")).toBeNull();
+    expect(inner.querySelector(FRAME)).toBeNull();
     const chip = inner.querySelector("a");
     expect(chip?.textContent).toBe("inner.txt");
     expect(inner.querySelector("[data-testid=stub]")).toBeNull();
@@ -141,7 +144,7 @@ describe("attachmentCard", () => {
         <Content source={file("host.txt", { size: 5 })} placement="document" />
       </ContentRenderers>,
     );
-    expect(container.querySelectorAll("section")).toHaveLength(2);
+    expect(container.querySelectorAll(FRAME)).toHaveLength(2);
   });
 
   it("expands into the viewer inside a provider", () => {
@@ -166,7 +169,7 @@ describe("attachmentCard", () => {
     const { container } = draw(file("notes.txt", { size: 5 }), "document", {
       className: "marked",
     });
-    expect(container.querySelector("section")?.classList).toContain("marked");
+    expect(container.querySelector(FRAME)?.classList).toContain("marked");
   });
 
   it("leaves the viewer placement and images alone", () => {

@@ -66,8 +66,30 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** `PatchView` on its own, with no surrounding title bar: it frames itself, with Copy. */
+const OPENS_IN_VIEWER = `import { codeContent, PatchView, patchContent } from "@orz/ui-code";
+import { ContentRenderers } from "@orz/ui-content";
+import { AttachmentViewerProvider } from "@orz/ui-content/attachment";
+
+<ContentRenderers renderers={[patchContent, codeContent]}>
+  <AttachmentViewerProvider>
+    <PatchView filename="series.patch" text={seriesText} />
+  </AttachmentViewerProvider>
+</ContentRenderers>`;
+
+/**
+ * `PatchView` on its own, with no surrounding title bar: it frames itself, with Copy. Taller than
+ * one and a half times the shared cap, it is cut there, and Show all draws the rest in place.
+ */
 export const Playground: Story = {};
+
+/**
+ * Under an attachment viewer the frame has ⤢, and the bar of a long patch opens it in the viewer
+ * rather than expanding it on the page.
+ */
+export const OpensInViewer: Story = {
+  decorators: [withViewer(), withRenderers(patchContent, codeContent)],
+  parameters: { docs: { source: { code: OPENS_IN_VIEWER, language: "tsx" } } },
+};
 
 /** A fence's filename heads the frame in place of "patch", and downloads the patch. */
 export const Title: Story = { args: { title: "series.patch" } };

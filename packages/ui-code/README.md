@@ -111,10 +111,16 @@ A code block's frame, which `codeContent`, `patchContent` and `@orz/ui-mermaid` 
   pointer can hover (`can-hover:`), and shows on hover or once focus is inside. Without hover, or
   with `toolbarAlwaysVisible`, it takes a row of its own above the content instead, so it never
   covers a line for good.
-- A `title` (a filename) draws a header in place of the toolbar, whose name is an `a[href]` with
-  `download` on a blob of the text. `leading` draws the header too, with its controls first.
-- `collapsible` caps the content at 20 lines (or half the screen) to scroll inside the frame, with
-  Expand to lift the cap. Every line stays in the DOM, so find-in-page still reaches them.
+- A `title` (a filename) draws `@orz/ui-content`'s `ContentHeader` in place of the toolbar, the
+  header every named block in a document takes, whose name is an `a[href]` with `download` on a
+  blob of the text. An `icon` draws the header too, with `lang` as its name.
+- `collapsible` cuts the content at 20 lines (or half the screen), fading out above a **Show
+  all** bar that draws the rest in place, as every long block in a document is cut
+  (`ContentCollapse`). `true` cuts from the first frame and names `text`'s line count;
+  `"measure"` cuts once the content proves taller than one and a half times the cut. Every line
+  stays in the DOM, so find-in-page still reaches them, and expands the block.
+- `onOpen` adds a ⤢ before Copy, and the bar of a cut block opens it there instead, as a patch
+  opens in the attachment viewer.
 
 The content is the children's alone. A code view inside reads `useInFenceFrame()` and leaves the
 frame and Copy to it.
@@ -134,11 +140,13 @@ accepts every inline source, whatever its `lang`, and every file `isTextFile` ca
 placement:
 
 - An inline source, such as a markdown fence, is a `CodeBlock` named `fenceFilename(lang)`, in a
-  `FenceFrame` (below) that carries its language or `title`, and caps it past
+  `FenceFrame` (below) that carries its language or `title`, and cuts it past
   `FENCE_COLLAPSE_LINES` unless the source's `collapse` is false.
 - A file is loaded through `useSourceText` and drawn as a `CodeBlock` under its own name, with
   line numbers and without its final newline, tokenized off the main thread when a
-  `CodeWorkerProvider` is mounted, and capped to the viewer's pane or a card's collapsed body. While it loads, it is the registry's fallback: a
+  `CodeWorkerProvider` is mounted. It is capped to the viewer's pane; in a card, to one screen
+  while the card is cut, a long line still scrolling sideways, and to 70vh once the card shows it
+  all, with Copy in the card's header. While it loads, it is the registry's fallback: a
   download link, or the bare name when there is no `url`. A failed load shows that fallback, the
   error and a Retry button.
 
@@ -162,8 +170,7 @@ reaches it with a large file cannot freeze the tab:
   registry's fallback and "This file is too large to preview."
 - Text over 1 MiB, declared or found once loaded, is drawn plain: still a virtualized code view
   with line numbers for a file, but with no highlighting, which is what costs. A file's plain view
-  is capped at the viewer's pane height, or at a card's collapsed height in a document. The viewer
-  and `attachmentCard` ask before they draw a file that large.
+  is capped as above. The viewer and `attachmentCard` ask before they draw a file that large.
 
 ### `patchContent`
 
@@ -186,11 +193,15 @@ const RENDERERS = [attachmentCard(), markdownContent(), patchContent, codeConten
   `attachmentCard` lends its card's). With none, the patch draws a `FenceFrame` of its own, with
   Copy and the fence's `title` as a download, which is what a fence gets, so a fence inside a
   markdown card never takes over the card's bar.
-- The diffs scroll inside a height-capped box, which is what lets pierre virtualize them: 70vh in a
-  document, the viewer's 75vh pane less its bar (maximized too, for now). Inside a card, whose
-  collapsed body hides its overflow, they do not scroll and the file list does not jump; the card
-  expands instead. That assumes the card's `collapsedClassName` caps it below one screen: past it,
-  the patch is cut at one screen.
+- In a document a patch is cut as every long block is (`ContentCollapse`), once it proves taller
+  than one and a half times the cut, and its **Show all** bar opens it in the attachment viewer;
+  a fence's frame has a ⤢ that does the same. Where there is no viewer, or inside the viewer, the
+  bar shows the rest in place. `collapsible={false}` (a fence whose `collapse` is false) keeps it
+  whole, in a scroller of its own.
+- The diffs are drawn in a height-capped box, which is what lets pierre virtualize them. While
+  the patch is cut, or short, the box is one screen and does not scroll, and the file list does
+  not jump, since nothing would scroll back; shown in place, it is a 70vh scroller, and in the
+  viewer the 75vh pane less its bar (maximized too, for now). Outside a collapse, `fit` picks it.
 - Each file's header row stays pinned to the top of the box while the file scrolls under it.
 - With more than one file, a chevron at the start of each header folds that file down to its row
   and back. Jumping to a folded file from the file list unfolds it, and folding a file whose top has

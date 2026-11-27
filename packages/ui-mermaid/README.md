@@ -49,7 +49,7 @@ The block sits in `@orz/ui-code`'s `FenceFrame`, with Copy and, once drawn, the 
 a toolbar that never hides, since it is the only way to the source; an inline source's `title`
 heads the frame with a download of it. The source shows until the first render lands, in place of a
 diagram that does not parse (with a one-line summary of the parser's message under it), and behind
-the Source toggle; a long one is capped behind Expand as other fences are, the drawn diagram never.
+the Source toggle; a long one is cut behind Show all as other fences are, the drawn diagram never.
 That source view is `Next`: the renderers registered after this one draw it, so it is highlighted
 when a code renderer is registered and a plain `<pre><code>` when none is. A file is loaded once: the source view gets its text as an inline
 source tagged `mermaid`. A file that fails to load shows the message and a Retry button.
@@ -72,7 +72,7 @@ import { MermaidBlock } from "@orz/ui-mermaid";
 <MermaidBlock source={text} sourceView={<MySourceView text={text} />} className="my-4" />
 ```
 
-`sourceView` defaults to a plain `<pre><code>`, and is drawn inside the frame. `title` heads the frame with a download of the source, and `collapsible` caps a long source behind Expand. `className` goes on the frame.
+`sourceView` defaults to a plain `<pre><code>`, and is drawn inside the frame. `title` heads the frame with a download of the source, and `collapsible` cuts a long source behind Show all. `className` goes on the frame.
 
 ## `MermaidCompare`
 

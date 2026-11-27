@@ -25,6 +25,8 @@ function Patch({ source, placement, className }: ContentProps) {
         <PatchView
           filename={fenceFilename(source.lang)}
           text={source.text}
+          collapsible={source.collapse !== false}
+          fit={placement === "viewer" ? "pane" : undefined}
           titleBar={titleBar}
           title={source.title}
           lang={source.lang}
@@ -40,15 +42,8 @@ function Patch({ source, placement, className }: ContentProps) {
           text={text}
           lineNumbers
           invalidNote
-          // A document that lends its title bar is a card, which hides what
-          // overflows its collapsed body.
-          fit={
-            placement === "viewer"
-              ? "pane"
-              : titleBar !== undefined
-                ? "clipped"
-                : "flow"
-          }
+          // In a card, the card's collapse picks the box.
+          fit={placement === "viewer" ? "pane" : undefined}
           titleBar={titleBar}
         />
       )}
@@ -64,7 +59,9 @@ function Patch({ source, placement, className }: ContentProps) {
  *
  * A fence that is not a patch, such as a bare `+`/`-` snippet, stays highlighted text; a file
  * that is not one says so above its text. The controls go into the title bar a surrounding card
- * lends (`useContentTitleBar`), or into a frame of the patch's own.
+ * lends (`useContentTitleBar`), or into a frame of the patch's own. In a document a long patch is
+ * cut at the shared cap, and its bar opens it in the attachment viewer, unless its `collapse` is
+ * false.
  */
 export const patchContent: ContentRenderer = {
   name: "patch",

@@ -36,7 +36,7 @@ export function MermaidBlock({
   sourceView?: ReactNode;
   /** A filename for the source, which the frame's header offers as a download. */
   title?: string;
-  /** Caps the source shown to scroll in the frame, behind Expand; never the drawn diagram. */
+  /** Cuts the source shown at the shared cap, behind Show all; never the drawn diagram. */
   collapsible?: boolean;
   /** On the frame. */
   className?: string;
