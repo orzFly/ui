@@ -1,4 +1,4 @@
-import { CheckIcon, ChevronRightIcon, SearchIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { Slot, Toolbar as ToolbarPrimitive } from "radix-ui";
 import type {
   ComponentProps,
@@ -21,11 +21,15 @@ import {
   useRef,
   useState,
 } from "react";
-import { POINTER_FINE } from "../hooks/use-media-query.ts";
 import { usePointerHold } from "../hooks/use-pointer-hold.ts";
 import { isModifiedClick } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
 import { CheckboxMark } from "./checkbox/mark.tsx";
+import {
+  FilterBox,
+  finePointer,
+  isComposing,
+} from "./dropdown-menu/filter-box.tsx";
 import { DropdownMenuItem } from "./dropdown-menu.tsx";
 import {
   Popover,
@@ -277,16 +281,6 @@ const FOCUSABLE =
 const TABBABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 
-/**
- * A `[data-pointer]` ancestor first, as `touch:` reads it, so a preview that
- * forces touch sizing opens the menu as a phone does; then the primary pointer.
- */
-function finePointer(el: Element | null): boolean {
-  const forced = el?.closest("[data-pointer]")?.getAttribute("data-pointer");
-  if (forced === "coarse" || forced === "fine") return forced === "fine";
-  return typeof matchMedia !== "function" || matchMedia(POINTER_FINE).matches;
-}
-
 /** A key that types a character, rather than moving or acting. */
 const types = (event: KeyboardEvent) =>
   [...event.key].length === 1 && !event.ctrlKey && !event.metaKey;
@@ -415,33 +409,6 @@ function step<R extends FilterMenuRow>(
   return undefined;
 }
 
-function FilterBox({
-  expanded,
-  ...props
-}: ComponentProps<"input"> & { expanded: boolean }) {
-  return (
-    // Under raymond a text box: a sunken well in the window colour, inset
-    // from the menu's frame, with no rule under it.
-    <div className="flex items-center gap-2 border-b px-2.5 raymond:m-1 raymond:gap-1 raymond:border-b-0 raymond:bg-(--window) raymond:px-1 raymond:shadow-sunken">
-      <SearchIcon
-        aria-hidden
-        className="size-4 shrink-0 text-muted-foreground"
-      />
-      <input
-        type="text"
-        role="combobox"
-        aria-expanded={expanded}
-        aria-autocomplete="list"
-        autoComplete="off"
-        autoCorrect="off"
-        spellCheck={false}
-        className="h-control-lg min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground md:text-ui touch:h-field-touch touch:text-base"
-        {...props}
-      />
-    </div>
-  );
-}
-
 function Mark({
   className,
   children,
@@ -460,9 +427,6 @@ function Mark({
     </span>
   );
 }
-
-const isEscapeOfComposition = (event: globalThis.KeyboardEvent) =>
-  event.isComposing || event.keyCode === 229;
 
 /**
  * A popover with a filter box over a list, the combobox pattern: focus stays
@@ -1367,7 +1331,7 @@ export function FilterMenu<R extends FilterMenuRow>({
         onMouseDown={onSurfaceMouseDown}
         onEscapeKeyDown={(event) => {
           // That Escape cancels the composition, not the menu.
-          if (isEscapeOfComposition(event)) event.preventDefault();
+          if (isComposing(event)) event.preventDefault();
         }}
         onOpenAutoFocus={(event) => {
           // The box, not the first tabbable, which may be in `header`. Without
@@ -1684,7 +1648,7 @@ export function FilterMenu<R extends FilterMenuRow>({
             // while the submenu is open.
             onEscapeKeyDown={(event) => {
               event.preventDefault();
-              if (isEscapeOfComposition(event)) return;
+              if (isComposing(event)) return;
               if (subIndex >= 0 || inSubBox) backToParent();
               else setOpen(false);
             }}

@@ -180,7 +180,10 @@ const INTERNAL = {
   tabsTrigger: ["tabs.tsx", "slot:tabs-trigger"],
   dropdownMenuItem: ["dropdown-menu.tsx", "slot:dropdown-menu-item"],
   highlightedInput: ["highlighted-input.tsx", "touch:h-field-touch border"],
-  filterBox: ["filter-menu.tsx", "touch:h-field-touch touch:text-base"],
+  filterBox: [
+    "dropdown-menu/filter-box.tsx",
+    "touch:h-field-touch touch:text-base",
+  ],
   filterRow: ["filter-menu.tsx", "ROW_CLASS"],
   filterCell: ["filter-menu.tsx", "CELL_CLASS"],
   queryOption: ["query-box.tsx", "OPTION"],
