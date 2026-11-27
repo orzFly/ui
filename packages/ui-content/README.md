@@ -318,9 +318,10 @@ import { VideoPlayer } from "@orz/ui-content/attachment";
   reaches decides once the text is loaded (`codeContent` draws text over 1 MiB without
   highlighting);
 - otherwise it draws the frame with the size, a download button and, inside a provider, an expand
-  button that opens the viewer on the text without asking again, whatever the viewer's own cap.
-  Loading and load errors are drawn by the renderer `Next` reaches,
-  which may also put controls in the frame's title bar (`useContentTitleBar`).
+  button that opens the viewer on the text without asking again, whatever the viewer's
+  `textPreviewMaxBytes` (its `textPreviewHardMaxBytes` still refuses). Loading and load errors are
+  drawn by the renderer `Next` reaches, which may also put controls in the frame's title bar
+  (`useContentTitleBar`).
 
 ### The viewer
 
