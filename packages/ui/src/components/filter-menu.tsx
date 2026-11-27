@@ -558,11 +558,22 @@ export function FilterMenu<R extends FilterMenuRow>({
   const mode = useRef<"rest" | "hit" | "user">("rest");
   const interactedOutside = useRef(false);
   const openRef = useRef<(next: boolean) => void>(() => {});
+  // Mounted: open, or fading out after closing.
+  const [surface, setSurface] = useState(false);
+  const contentRef = useCallback((el: HTMLDivElement | null) => {
+    content.current = el;
+    setSurface(el !== null);
+  }, []);
   const unit = useToolbarUnit({
     meta: {
       priority,
       active: toolbarActive,
       overflowable: true,
+      // A pick widens or narrows the trigger and sets it away from its
+      // default, and the bar would move it to or from the ⋯, the surface
+      // with it. Held until the surface has gone, it is laid out again only
+      // then, before the focus goes back.
+      held: open || surface,
       renderOverflow: () => (
         <DropdownMenuItem
           onSelect={() => {
@@ -586,6 +597,10 @@ export function FilterMenu<R extends FilterMenuRow>({
   });
   const overflowed = unit.view === "overflow";
   const moreRef = unit.internal?.store.triggerRef;
+  // Whether the surface stands against the ⋯, for the focus on closing, by
+  // when the bar may have put the trigger back.
+  const fromMore = useRef(false);
+  if (open) fromMore.current = overflowed;
   const base = useId();
   const listId = `${base}-list`;
   const submenuId = `${base}-submenu`;
@@ -1215,7 +1230,7 @@ export function FilterMenu<R extends FilterMenuRow>({
         <PopoverAnchor virtualRef={moreRef as RefObject<HTMLButtonElement>} />
       )}
       <PopoverContent
-        ref={content}
+        ref={contentRef}
         align={align}
         side={side}
         sideOffset={sideOffset}
@@ -1258,14 +1273,29 @@ export function FilterMenu<R extends FilterMenuRow>({
             event.preventDefault();
             return;
           }
-          // Opened from the ⋯ menu, it goes back to the ⋯: its own trigger
-          // is out of sight. A click elsewhere has put the focus there.
-          const from =
-            overflowed && moreRef?.current ? moreRef.current : trigger.current;
+          // Opened from the ⋯ menu, it goes back to the ⋯. The bar, laid out
+          // again as the surface went, may have moved the trigger since: into
+          // the ⋯, which takes the focus for it, or back onto the bar with
+          // the ⋯ gone, so the trigger takes it. Read from the store: this
+          // handler is the one the surface last rendered with. A click
+          // elsewhere has put the focus there.
+          const inMore =
+            unit.registered &&
+            unit.internal?.store.viewOf(unit.id) === "overflow";
+          const more =
+            (fromMore.current || inMore) && moreRef?.current
+              ? moreRef.current
+              : null;
+          fromMore.current = false;
+          const from = more ?? trigger.current;
           if (direction === null) {
-            if (!overflowed || outside || !from) return;
+            if (outside || !from) return;
             event.preventDefault();
             from.focus({ preventScroll: true });
+            // A ToolbarOverflow with nothing in it is held out of sight.
+            if (from === more && document.activeElement !== more) {
+              trigger.current?.focus({ preventScroll: true });
+            }
             return;
           }
           if (!from) return;
