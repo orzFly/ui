@@ -350,6 +350,21 @@ describe("touch sizes", () => {
     );
   });
 
+  it("a TabNav's ⋯ is a tab with a hit area, at least the touch spacing wide", () => {
+    render(
+      <TabNav aria-label="Sections">
+        <TabNavLink href="#a" current>
+          A
+        </TabNavLink>
+      </TabNav>,
+    );
+    const more = document.querySelector(
+      "[data-slot=tab-nav-overflow-trigger]",
+    ) as Element;
+    expect(classesOf(more)).toContain("touch:hit-area");
+    expect(classesOf(more)).toContain("touch:min-w-touch");
+  });
+
   it("NavList links are the touch spacing tall", () => {
     render(
       <NavList>
