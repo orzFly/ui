@@ -4,12 +4,8 @@ import * as React from "react";
 import { cn } from "../../lib/utils.ts";
 import { Badge } from "../badge.tsx";
 import { Button } from "../button.tsx";
-import {
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../dropdown-menu.tsx";
+import { DropdownMenuLabel, DropdownMenuTrigger } from "../dropdown-menu.tsx";
+import { OverflowMenu as SharedOverflowMenu } from "../overflow/menu.tsx";
 import { CommandTooltip } from "./command.tsx";
 import { FLAT, iconSize } from "./look.ts";
 import {
@@ -226,32 +222,20 @@ export function OverflowMenu({ align }: { align: "start" | "end" }) {
     [store],
   );
   if (!store || !item) return null;
-  const records = store.overflowRecords();
-  const breaks = new Set(store.result.breaks);
   const own = store.permanentRecord();
   const permanent = own?.meta.permanent === true;
   return (
-    <DropdownMenuContent
+    <SharedOverflowMenu
+      store={store}
       align={align}
       data-slot="toolbar-overflow-content"
       className={cn("w-auto min-w-44", own?.meta.contentClassName)}
-      onCloseAutoFocus={(event) => {
-        // An item that opened its own surface has the focus, or is about to.
-        if (!store.keepFocusOnClose) return;
-        store.keepFocusOnClose = false;
-        event.preventDefault();
-      }}
-    >
-      <ToolbarItemContext.Provider value={item}>
-        {records.map((record) => (
-          <React.Fragment key={record.id}>
-            {breaks.has(record.id) && <DropdownMenuSeparator />}
-            {record.meta.renderOverflow?.()}
-          </React.Fragment>
-        ))}
-        {records.length > 0 && permanent && <DropdownMenuSeparator />}
-        {permanent && own?.meta.renderOverflow?.()}
-      </ToolbarItemContext.Provider>
-    </DropdownMenuContent>
+      surface={(children) => (
+        <ToolbarItemContext.Provider value={item}>
+          {children}
+        </ToolbarItemContext.Provider>
+      )}
+      after={permanent ? own?.meta.renderOverflow?.() : undefined}
+    />
   );
 }

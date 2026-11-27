@@ -1,3 +1,5 @@
+import { type FoldStep, foldSteps, sortSteps } from "../overflow/fold.ts";
+
 /**
  * How soon a part of a toolbar gives up its room: a number, lower first, or
  * `"pin"`, which stays on the bar until nothing else is left to move.
@@ -90,20 +92,6 @@ export interface SolverResult {
 
 const rank = (priority: ToolbarPriority | undefined) =>
   priority === "pin" ? Number.POSITIVE_INFINITY : (priority ?? 0);
-
-interface Step {
-  key: readonly number[];
-  ids: readonly string[];
-  view: UnitView;
-}
-
-function compareKeys(a: readonly number[], b: readonly number[]) {
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const d = (a[i] ?? 0) - (b[i] ?? 0);
-    if (d !== 0) return d;
-  }
-  return 0;
-}
 
 function widthIn(unit: SolverUnit, view: UnitView): number {
   switch (view) {
@@ -298,9 +286,8 @@ export function solveToolbar(input: SolverInput): SolverResult {
   };
 
   if (input.availableWidth <= 0) return finish(views);
-  if (lay(views).total <= input.availableWidth) return finish(views);
 
-  const steps: Step[] = [];
+  const steps: FoldStep<UnitView>[] = [];
   const byPriority = new Map<number, string[]>();
   units.forEach((unit, index) => {
     if (unit.kind !== "unit") return;
@@ -332,15 +319,14 @@ export function solveToolbar(input: SolverInput): SolverResult {
   for (const [p, ids] of byPriority) {
     steps.push({ key: [2, p], ids, view: "label" });
   }
-  steps.sort((a, b) => compareKeys(a.key, b.key));
-
-  const current = { ...views };
-  for (const step of steps) {
-    for (const id of step.ids) current[id] = step.view;
-    if (lay(current).total <= input.availableWidth) return finish(current);
-  }
+  const folded = foldSteps(
+    views,
+    sortSteps(steps),
+    (current) => lay(current).total <= input.availableWidth,
+  );
+  if (folded.fitted) return finish(folded.views);
   if (units.some((unit) => unit.pinned)) {
-    return finish(current, { takeover: true });
+    return finish(folded.views, { takeover: true });
   }
-  return finish(current, { scrollable: true });
+  return finish(folded.views, { scrollable: true });
 }
