@@ -541,6 +541,44 @@ it. A click with a modifier, a middle click or a right click is the browser's (a
 the link's own menu), and the menu stays open for the next; a row can be dragged out, onto the
 bookmarks bar, as any link can. Submenu rows take links the same way.
 
+`onSelect(row, event)` closes the menu after it returns unless it calls `event.preventDefault()`:
+a pick whose result comes later, where the caller closes the menu through `open` once it has, or a
+row that only completes the query. The menu then keeps its focus, its query and its highlight,
+which stays on the picked row until the query changes. A row marked `action: true` does something
+rather than being one of the choices (`Create “…”`, a completion): it is never checked and wears no
+mark.
+
+With `selection="multiple"` each row is on or off by itself, drawn with a checkbox's look, and the
+menu stays open as rows are picked. `selectedIds` lists the picked rows, the submenus' included, and
+`mixedIds` the rows partly picked, a label on some of the items being edited, which draw a dash.
+The component keeps no selection of its own: `event.selected` says what the pick asks the row to
+become (false for a picked row, true for any other, a mixed one included), and the row changes once
+the ids passed in do. The highlight rests on no row until the user moves it or types, so an Enter
+on opening picks nothing; after a pick it stays on that row. Link rows are picked as actions are.
+
+```tsx
+<FilterMenu
+  selection="multiple"
+  selectedIds={labels}
+  mixedIds={onSome}
+  query={query}
+  onQueryChange={setQuery}
+  sections={[{ id: "labels", rows }]}
+  onSelect={(row, event) =>
+    setLabels((ids) =>
+      event.selected ? [...ids, row.id] : ids.filter((id) => id !== row.id),
+    )
+  }
+  renderRow={(row) => <MatchedText text={row.label} query={query} />}
+  inputLabel="Filter labels"
+>
+  <Button variant="outline">Labels</Button>
+</FilterMenu>
+```
+
+In a `Toolbar` an open `FilterMenu` stays where it stood, on the bar or in the `⋯`, however its picks
+change its trigger's width, and is laid out again once it has closed.
+
 ## Colour picker
 
 `ColorPicker` is the panel, rendered inline; `ColorPickerPopover` puts it behind a trigger that
