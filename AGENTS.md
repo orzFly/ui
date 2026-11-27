@@ -210,7 +210,11 @@ file per route.
   that file as its source.
 - A demo is `content/demos/<name>.mdx`, `layout: "bare"`, wrapping its component in `DemoPage`,
   and its files live in `src/demos/<name>/`, the directory named after the page: the Code view
-  lists that directory, then the text fixtures its files import. The demo's root takes `h-full`
+  lists that directory, then the files directly in `src/demos/` that its files import (code
+  several demos share, such as `useHash` and `useViewerHistory`), then the text fixtures these
+  import. A shared file there holds demo code only; the demo page's own state lives in
+  `demo-page-state.ts`, which no demo imports. What a demo imports from further out (`ClientOnly`,
+  `hrefOf`) is the site's, and the Code view leaves it out. The demo's root takes `h-full`
   and lays itself out in the box `DemoPage` gives it, the window below the site header; it draws
   no card or border of its own.
 - The site header runs the window's full width. Every page that is not bare, the 404 included,

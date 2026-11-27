@@ -1,6 +1,7 @@
 import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { sharedImports } from "../src/demos/demo-imports.ts";
 import {
   demoFileNames,
   fixtureImports,
@@ -29,6 +30,53 @@ describe("demo source", () => {
       "fixtures @orz/fixtures/inbox.ts",
     ]);
     expect(files[0]?.contents).toContain("export function Mail");
+  });
+
+  it("lists the files beside a demo's directory that it imports, after its own", async () => {
+    const files = await loadDemoFiles("pull-request");
+    const groups = files.map(({ group }) => group);
+    expect(groups.indexOf("shared")).toBeGreaterThan(
+      groups.lastIndexOf("demo"),
+    );
+    expect(
+      files.filter(({ group }) => group === "shared").map(({ name }) => name),
+    ).toEqual(["../demo-state.ts", "../viewer-history.ts"]);
+  });
+
+  // A reader who meets `import … from "../x.ts"` in the Code view finds x.ts there too; only
+  // what lies outside src/demos/ (the site's `ClientOnly`, `hrefOf`) is left out.
+  it.each(pages)(
+    "lists every file in src/demos/ that %s's files reach",
+    async (page) => {
+      const files = await loadDemoFiles(page);
+      const listed = new Set(
+        files
+          .filter(({ group }) => group !== "fixtures")
+          .map(({ name }) => join("demos", page, name)),
+      );
+      for (const file of files.filter(({ group }) => group !== "fixtures")) {
+        const at = dirname(join("demos", page, file.name));
+        for (const [, spec = ""] of file.contents.matchAll(
+          /\bfrom\s+["'](\.\.?\/[^"'?]+)["']/g,
+        )) {
+          const target = join(at, spec);
+          if (target.startsWith("demos/")) {
+            expect(listed, `${file.name} imports ${spec}`).toContain(target);
+          }
+        }
+      }
+    },
+  );
+
+  it("follows a shared file's imports of the files beside it", () => {
+    expect(
+      sharedImports(['import { a } from "../one.ts";'], {
+        "one.ts":
+          'import { b } from "./two.ts";\nimport x from "../../site.ts";',
+        "two.ts": 'import { a } from "./one.ts";',
+        "three.ts": "",
+      }),
+    ).toEqual(["one.ts", "two.ts"]);
   });
 
   it("reads fixture imports across lines and past a query", () => {

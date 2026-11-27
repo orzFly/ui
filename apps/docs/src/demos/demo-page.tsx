@@ -32,13 +32,13 @@ import { loadedPage, pages } from "../pages.ts";
 import { BASE, Link, useRouter } from "../router.tsx";
 import { storybookHref } from "../routes.ts";
 import { DemoCode } from "./demo-code.tsx";
-import { demoFileNames } from "./demo-source.ts";
 import {
   setAboutOpen,
   setSourceParam,
   useAboutOpen,
   useSourceParam,
-} from "./demo-state.ts";
+} from "./demo-page-state.ts";
+import { demoFileNames } from "./demo-source.ts";
 
 /** The Storybook pages a demo's files use, worked out from their imports. */
 const apiOf = (route: string) => demoApis[demoDir(route)] ?? [];
@@ -54,8 +54,9 @@ export const demoDir = (route: string) => route.split("/").at(-2) ?? "";
 /**
  * A demo's page: a bar over the demo, which fills the rest of the window below the site header.
  * The demo's root takes `h-full` and lays itself out in that box; anything taller scrolls inside
- * it. The bar switches between the demo and its source (the files under `src/demos/<page>/` and
- * the fixtures they import), forces either pointer's sizes, opens the About panel with `meta`'s
+ * it. The bar switches between the demo and its source (the files under `src/demos/<page>/`, the
+ * files beside them in `src/demos/` they import, and the fixtures), forces either pointer's sizes,
+ * opens the About panel with `meta`'s
  * description and `meta.guidelines`, and takes the frame full screen. A demo page is
  * `layout: "bare"`.
  */

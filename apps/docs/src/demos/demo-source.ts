@@ -1,8 +1,13 @@
+import { sharedImports } from "./demo-imports.ts";
+
 /** A file a demo's Code view shows. */
 export interface DemoFile {
-  /** Its key in `?source=`: the path under the demo's directory, or the fixture's import path. */
+  /**
+   * Its key in `?source=`: the path under the demo's directory, a shared file's path from there
+   * (`../demo-state.ts`), or the fixture's import path.
+   */
   name: string;
-  group: "demo" | "fixtures";
+  group: "demo" | "shared" | "fixtures";
   contents: string;
 }
 
@@ -10,6 +15,11 @@ type Loaders = Record<string, () => Promise<string>>;
 
 // Lazy, so a page only fetches a demo's source when its Code view opens.
 const DEMO_FILES: Loaders = import.meta.glob<string>("./*/**/*.{ts,tsx}", {
+  query: "?raw",
+  import: "default",
+});
+// The files directly in src/demos/: what demos share, and the demo page's own.
+const SHARED_FILES: Loaders = import.meta.glob<string>("./*.{ts,tsx}", {
   query: "?raw",
   import: "default",
 });
@@ -53,7 +63,11 @@ function load(loaders: Loaders, path: string): Promise<string> {
   return loader();
 }
 
-/** A demo's files, then the text fixtures they import. */
+/**
+ * A demo's files, then the files directly in `src/demos/` they import, then the text fixtures
+ * all of these import. What a demo imports from further out (`ClientOnly`, `hrefOf`) is the
+ * site's, and is left out.
+ */
 export async function loadDemoFiles(dir: string): Promise<DemoFile[]> {
   const own = await Promise.all(
     demoFileNames(dir).map(async (name) => ({
@@ -62,12 +76,30 @@ export async function loadDemoFiles(dir: string): Promise<DemoFile[]> {
       contents: await load(DEMO_FILES, `./${dir}/${name}`),
     })),
   );
-  const fixtures = await Promise.all(
-    fixtureImports(own.map((file) => file.contents)).map(async (path) => ({
-      name: `${FIXTURES}${path}`,
-      group: "fixtures" as const,
-      contents: await load(FIXTURE_FILES, `${FIXTURES_DIR}${path}`),
-    })),
+  const everyShared: Record<string, string> = Object.fromEntries(
+    await Promise.all(
+      Object.entries(SHARED_FILES).map(async ([path, loader]) => [
+        path.slice("./".length),
+        await loader(),
+      ]),
+    ),
   );
-  return [...own, ...fixtures];
+  const shared = sharedImports(
+    own.map((file) => file.contents),
+    everyShared,
+  ).map((name) => ({
+    name: `../${name}`,
+    group: "shared" as const,
+    contents: everyShared[name] ?? "",
+  }));
+  const fixtures = await Promise.all(
+    fixtureImports([...own, ...shared].map((file) => file.contents)).map(
+      async (path) => ({
+        name: `${FIXTURES}${path}`,
+        group: "fixtures" as const,
+        contents: await load(FIXTURE_FILES, `${FIXTURES_DIR}${path}`),
+      }),
+    ),
+  );
+  return [...own, ...shared, ...fixtures];
 }
