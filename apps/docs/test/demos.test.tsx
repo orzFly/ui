@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { EditorView } from "@codemirror/view";
+import { TASKS } from "@orz/fixtures/tasks.ts";
 import { Toaster } from "@orz/ui/components/sonner";
 import type { Window as HappyWindow } from "happy-dom";
 import { act, type ComponentType } from "react";
@@ -1193,6 +1194,69 @@ describe("tasks", () => {
     expect(container.textContent).toContain("No tasks match");
     await click(button(container, "Clear filters"));
     expect(keys(container)[0]).toBe("T-60");
+  });
+
+  const option = (name: string) =>
+    [...document.querySelectorAll<HTMLElement>("[role=option]")].find(
+      (each) => each.textContent === name,
+    );
+  const trigger = (container: HTMLElement, name: string) =>
+    [...container.querySelectorAll("button")].find((each) =>
+      each.textContent?.startsWith(`${name}:`),
+    );
+
+  it("lists only the tasks with every label picked, the menu open for the next", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    await pick(container, "Label", "bug");
+    expect(option("bug")?.getAttribute("aria-checked")).toBe("true");
+    await click(option("docs"));
+    expect(document.querySelector("[role=listbox]")).not.toBeNull();
+    expect(trigger(container, "Label")?.textContent).toBe("Label:bug, docs");
+    const shown = keys(container);
+    expect(shown.length).toBeGreaterThan(0);
+    for (const key of shown) {
+      const labels = TASKS.find((each) => `T-${each.id}` === key)?.labels;
+      expect(labels).toEqual(expect.arrayContaining(["bug", "docs"]));
+    }
+    expect(shown.length).toBeLessThan(
+      TASKS.filter(
+        (each) => each.status !== "closed" && each.labels.includes("bug"),
+      ).length,
+    );
+  });
+
+  it("puts labels on a task and takes them off from its details, and makes new ones", async () => {
+    const container = await draw(Tasks, WIDTHS.desktop);
+    await click(row(container, "T-60")?.querySelector("td:nth-child(4)"));
+    const aside = container.querySelector("aside");
+    const badges = () =>
+      [...(aside?.querySelectorAll("[data-slot=badge]") ?? [])].map(
+        (each) => each.textContent,
+      );
+    expect(badges()).toEqual(["docs", "bug"]);
+    await click(aside?.querySelector("[aria-label='Edit labels']"));
+    await click(option("docs"));
+    expect(badges()).toEqual(["bug"]);
+    expect(document.querySelector("[role=listbox]")).not.toBeNull();
+
+    const box = document.querySelector<HTMLInputElement>(
+      "[role=combobox][aria-label='Filter labels']",
+    );
+    await type(box, "triage");
+    await click(option("Create “triage”"));
+    expect(badges()).toEqual(["bug", "triage"]);
+    expect(box?.value).toBe("");
+    expect(document.querySelector("[role=listbox]")).not.toBeNull();
+    expect(option("triage")?.getAttribute("aria-checked")).toBe("true");
+
+    // The Label filter has it too.
+    await act(async () => {
+      box?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    await pick(container, "Label", "triage");
+    expect(keys(container)).toEqual(["T-60"]);
   });
 
   it("shows a task's details beside the list, in the URL", async () => {

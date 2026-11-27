@@ -1,8 +1,4 @@
-import {
-  TASK_LABEL_COLORS,
-  TASK_LABELS,
-  TASK_PEOPLE,
-} from "@orz/fixtures/tasks.ts";
+import { TASK_LABEL_COLORS, TASK_PEOPLE } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
@@ -16,14 +12,13 @@ import { ChevronDownIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { DEFAULT_FILTERS, type Filters, STATUSES } from "./board.ts";
 import { PersonAvatar } from "./parts.tsx";
+import { usePickedFirst } from "./use-picked-first.ts";
 
 interface Choice {
   id: string;
   label: string;
   /** Drawn before the label: an avatar for a person. */
   lead?: ReactNode;
-  /** A label's colour: the row draws the label as the table does. */
-  color?: string;
 }
 
 const STATUS_SECTIONS: FilterMenuSection<Choice>[] = [
@@ -63,19 +58,6 @@ const ASSIGNEE_SECTIONS: FilterMenuSection<Choice>[] = [
   },
 ];
 
-const LABEL_SECTIONS: FilterMenuSection<Choice>[] = [
-  { id: "any", rows: [{ id: "any", label: "Any label" }] },
-  {
-    id: "labels",
-    label: "Labels",
-    rows: TASK_LABELS.map((label) => ({
-      id: label,
-      label,
-      color: TASK_LABEL_COLORS[label],
-    })),
-  },
-];
-
 /** A toolbar button naming the filter and its value, which opens a menu that can be searched. */
 function Filter({
   name,
@@ -109,13 +91,7 @@ function Filter({
       renderRow={(row, state) => (
         <span className="flex min-w-0 items-center gap-2">
           {row.lead}
-          {row.color === undefined ? (
-            <MatchedText text={row.label} query={state.query} />
-          ) : (
-            <Badge variant="marker" color={row.color}>
-              <MatchedText text={row.label} query={state.query} />
-            </Badge>
-          )}
+          <MatchedText text={row.label} query={state.query} />
         </span>
       )}
       placeholder={`Filter ${name.toLowerCase()}…`}
@@ -136,17 +112,76 @@ function Filter({
   );
 }
 
+/** The Label filter: any number of labels, a task listed only when it carries all of them. */
+function LabelFilter({
+  labels,
+  value,
+  onChange,
+}: {
+  /** Every label there is. */
+  labels: readonly string[];
+  value: readonly string[];
+  onChange: (value: string[]) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const rows = usePickedFirst(labels, value, open, query)
+    .filter((label) => matchText(label, query))
+    .map((label) => ({ id: label, label }));
+  const shown =
+    labels.filter((label) => value.includes(label)).join(", ") || "Any label";
+  return (
+    <FilterMenu
+      selection="multiple"
+      selectedIds={value}
+      onOpenChange={setOpen}
+      query={query}
+      onQueryChange={setQuery}
+      sections={[{ id: "labels", rows }]}
+      onSelect={(row, event) =>
+        onChange(
+          event.selected
+            ? [...value, row.id]
+            : value.filter((label) => label !== row.id),
+        )
+      }
+      renderRow={(row, state) => (
+        <Badge variant="marker" color={TASK_LABEL_COLORS[row.id]}>
+          <MatchedText text={row.label} query={state.query} />
+        </Badge>
+      )}
+      placeholder="Filter labels…"
+      inputLabel="Filter labels"
+      listLabel="Label"
+      align="start"
+      className="w-56"
+      toolbarLabel="Label"
+      toolbarValue={shown}
+      toolbarActive={value.length > 0}
+    >
+      <Button variant="outline" size="sm" className="max-w-60 shrink-0">
+        <span className="text-muted-foreground">Label:</span>
+        <span className="truncate">{shown}</span>
+        <ChevronDownIcon className="text-muted-foreground" />
+      </Button>
+    </FilterMenu>
+  );
+}
+
 export function FilterBar({
   filters,
+  labels,
   onChange,
 }: {
   filters: Filters;
+  /** Every label there is, the ones made in the demo included. */
+  labels: readonly string[];
   onChange: (next: Partial<Filters>) => void;
 }) {
   const changed =
     filters.status !== DEFAULT_FILTERS.status ||
     filters.assignee !== DEFAULT_FILTERS.assignee ||
-    filters.label !== DEFAULT_FILTERS.label;
+    filters.labels.length > 0;
   return (
     <>
       <Filter
@@ -163,12 +198,10 @@ export function FilterBar({
         fallback={DEFAULT_FILTERS.assignee}
         onChange={(assignee) => onChange({ assignee })}
       />
-      <Filter
-        name="Label"
-        sections={LABEL_SECTIONS}
-        value={filters.label}
-        fallback={DEFAULT_FILTERS.label}
-        onChange={(label) => onChange({ label })}
+      <LabelFilter
+        labels={labels}
+        value={filters.labels}
+        onChange={(next) => onChange({ labels: next })}
       />
       {changed && (
         <ToolbarButton
@@ -176,7 +209,7 @@ export function FilterBar({
             onChange({
               status: DEFAULT_FILTERS.status,
               assignee: DEFAULT_FILTERS.assignee,
-              label: DEFAULT_FILTERS.label,
+              labels: DEFAULT_FILTERS.labels,
             })
           }
         >

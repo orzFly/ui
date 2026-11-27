@@ -1,8 +1,4 @@
-import {
-  TASK_LABEL_COLORS,
-  TASK_LABELS,
-  TASK_PEOPLE,
-} from "@orz/fixtures/tasks.ts";
+import { TASK_LABEL_COLORS, TASK_PEOPLE } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
@@ -38,10 +34,13 @@ const NONE = "none";
  * cancelled task leaves nothing behind for the next.
  */
 export function NewTaskDialog({
+  labels,
   open,
   onOpenChange,
   onCreate,
 }: {
+  /** Every label there is, the ones made in the demo included. */
+  labels: readonly string[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (task: NewTask) => void;
@@ -55,13 +54,19 @@ export function NewTaskDialog({
             It starts as To do, at the top of the list.
           </DialogDescription>
         </DialogHeader>
-        {open && <NewTaskForm onCreate={onCreate} />}
+        {open && <NewTaskForm labels={labels} onCreate={onCreate} />}
       </DialogContent>
     </Dialog>
   );
 }
 
-function NewTaskForm({ onCreate }: { onCreate: (task: NewTask) => void }) {
+function NewTaskForm({
+  labels,
+  onCreate,
+}: {
+  labels: readonly string[];
+  onCreate: (task: NewTask) => void;
+}) {
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState(NONE);
   const [label, setLabel] = useState(NONE);
@@ -128,7 +133,7 @@ function NewTaskForm({ onCreate }: { onCreate: (task: NewTask) => void }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NONE}>None</SelectItem>
-              {TASK_LABELS.map((each) => (
+              {labels.map((each) => (
                 <SelectItem key={each} value={each}>
                   <Badge variant="marker" color={TASK_LABEL_COLORS[each]}>
                     {each}
