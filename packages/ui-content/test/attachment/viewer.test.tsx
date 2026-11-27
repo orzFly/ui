@@ -261,6 +261,110 @@ describe("AttachmentViewerProvider", () => {
   });
 });
 
+describe("AttachmentViewerProvider, controlled", () => {
+  const provider = (
+    props: Omit<AttachmentViewerProviderProps, "children">,
+    target: FileSource = ITEMS[0] as FileSource,
+  ) => (
+    <ContentRenderers renderers={RENDERERS}>
+      <AttachmentViewerProvider {...props}>
+        <Opener target={target} />
+      </AttachmentViewerProvider>
+    </ContentRenderers>
+  );
+
+  it("asks the app to open rather than opening itself", () => {
+    const onStateChange = vi.fn();
+    render(
+      provider(
+        {
+          state: null,
+          onStateChange,
+          group: (f) => ({ items: ITEMS, index: ITEMS.indexOf(f) }),
+        },
+        ITEMS[2] as FileSource,
+      ),
+    );
+    fireEvent.click(screen.getByText("open"));
+    expect(onStateChange).toHaveBeenCalledWith({ items: ITEMS, index: 2 });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("shows the state it is given, and follows it", () => {
+    const { rerender } = render(
+      provider({ state: { items: ITEMS, index: 1 } }),
+    );
+    expect(title()).toBe("b.txt");
+    rerender(provider({ state: { items: ITEMS, index: 2 } }));
+    expect(title()).toBe("c.txt");
+    rerender(provider({ state: null }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("reports a page and a close, and leaves both to the app", () => {
+    const onStateChange = vi.fn();
+    render(provider({ state: { items: ITEMS, index: 0 }, onStateChange }));
+    fireEvent.click(screen.getByLabelText("next attachment"));
+    expect(onStateChange).toHaveBeenLastCalledWith({ items: ITEMS, index: 1 });
+    expect(title()).toBe("a.txt");
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(onStateChange).toHaveBeenLastCalledWith(null);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("reports a second close the app has not answered yet", () => {
+    const onStateChange = vi.fn();
+    render(provider({ state: { items: ITEMS, index: 0 }, onStateChange }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(onStateChange.mock.calls).toEqual([[null], [null]]);
+  });
+
+  it("pages a comparison by its index", () => {
+    const onStateChange = vi.fn();
+    const side = (label: string) => ({
+      label,
+      content: <svg />,
+      size: { width: 200, height: 100 },
+    });
+    const compare = [
+      { title: "a.mmd", before: side("v1"), after: side("v2") },
+      { title: "b.mmd", before: side("v2"), after: side("v3") },
+    ];
+    render(provider({ state: { compare, index: 0 }, onStateChange }));
+    fireEvent.click(screen.getByLabelText("next comparison"));
+    expect(onStateChange).toHaveBeenCalledWith({ compare, index: 1 });
+  });
+
+  it("reports its changes when it holds the state itself", () => {
+    const onStateChange = vi.fn();
+    render(provider({ onStateChange }));
+    fireEvent.click(screen.getByText("open"));
+    expect(onStateChange).toHaveBeenCalledWith({
+      items: [ITEMS[0]],
+      index: 0,
+    });
+    expect(title()).toBe("a.txt");
+  });
+
+  it("keeps its controls when an inline onStateChange changes", () => {
+    const seen = new Set<unknown>();
+    function Probe() {
+      seen.add(useAttachmentViewer());
+      return null;
+    }
+    const tree = () => (
+      <AttachmentViewerProvider state={null} onStateChange={() => {}}>
+        <Probe />
+      </AttachmentViewerProvider>
+    );
+    const { rerender } = render(tree());
+    rerender(tree());
+    expect(seen.size).toBe(1);
+  });
+});
+
 describe("AttachmentViewer edges", () => {
   it("draws HTML of unknown or large size in its frame", () => {
     for (const size of [undefined, TEXT_PREVIEW_MAX_BYTES * 10]) {

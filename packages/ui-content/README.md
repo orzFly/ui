@@ -331,6 +331,8 @@ import { VideoPlayer } from "@orz/ui-content/attachment";
   textPreviewHardMaxBytes={10 * 1024 * 1024} // text above this never previews
   imageLook={{ background, smoothing }}      // controlled image look; default: held in memory
   onImageLookChange={(look) => void}
+  state={{ items, index } | { compare, index } | null} // controlled; default: held by the provider
+  onStateChange={(state) => void}            // each opening below it, each page, and null to close
 >
 
 useAttachmentViewer(): { open(items, index), show(file) } | null  // null outside a provider
@@ -347,6 +349,12 @@ the outer one, so a surface can page through its own set.
   returns undefined, "Open in new tab" is left out.
 - **`group`** lets a click on one file page through the set it belongs to, positioned on it. A file
   it returns null for opens alone.
+- **`state`** and **`onStateChange`** hand what the viewer shows to the app, so that it can live in
+  the app's history: Back closes the viewer, and the URL can name the file. Controlled, the
+  provider shows `state` alone (`null` is closed) and passes every opening below it, every page and
+  every close to `onStateChange`, a second close before the app has answered the first included;
+  the app pushes, replaces or steps back as its router does. Without `state` the provider holds it
+  and still reports each change.
 - **`useCanPreview`** is true when some registered renderer accepts the file in `"viewer"`
   placement and, for a text file, its size is known. A text file over `textPreviewMaxBytes` opens
   on "Large files aren't previewed automatically." with Preview anyway, which holds until the
@@ -362,8 +370,8 @@ for a file nothing can draw. The body sets `--attachment-pane-height` (`75vh`, o
 height when maximized); a renderer in `"viewer"` placement sizes to it, as in
 `max-h-(--attachment-pane-height)`. The title bar lends the renderer drawing the file a slot
 between the name and the pager, through `ContentTitleBar`, for controls of its own.
-`AttachmentViewer` is the same dialog, controlled, for an app that holds `{ items, index } | null`
-itself, and takes the same `imageLook` props.
+`AttachmentViewer` is the same dialog on its own, for an app that holds `{ items, index } | null`
+itself and has nothing below a provider to open it, and takes the same `imageLook` props.
 
 An image in the viewer sits on a canvas. The wheel zooms about the pointer, as do a trackpad pinch
 (ctrl+wheel, or Safari's gesture events) and a two-finger pinch on a phone; dragging pans once
