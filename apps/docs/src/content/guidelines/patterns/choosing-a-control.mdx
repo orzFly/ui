@@ -117,7 +117,9 @@ button that names the pick, and the menu closes on it. Use it once a list runs p
 one screen, or holds things people add themselves, whose number nobody can promise; a fixed set
 that fits, like the time zones above, stays a Select. A `FilterMenu` whose rows are places, a
 project switcher, goes rather than picks: each row is a link
-([Navigation](/guidelines/patterns/navigation/#switching-between-many-places)).
+([Navigation](/guidelines/patterns/navigation/#switching-between-many-places)). A long list that one
+of a menu's actions opens, moving a task to another project from its ⋯ menu, stays in that menu as
+a submenu that filters the same way ([Overlays](/guidelines/patterns/overlays/#long-submenus)).
 
 A pick that should leave the menu open calls `event.preventDefault()` in `onSelect`: one whose
 result comes later, where the menu closes once it has, or a row that only completes the query, as

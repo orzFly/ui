@@ -1,3 +1,4 @@
+import { PROJECTS } from "@orz/fixtures/projects.ts";
 import { Button } from "@orz/ui/components/button";
 import {
   DropdownMenu,
@@ -15,8 +16,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@orz/ui/components/dropdown-menu";
+import { MatchedText, matchText } from "@orz/ui/components/filter-menu";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { CopyIcon, PencilIcon, TrashIcon } from "lucide-react";
+import { CopyIcon, FolderInputIcon, PencilIcon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 import { fn } from "storybook/test";
 
@@ -70,6 +72,57 @@ export const Playground: Story = {
                   Title
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive">
+            <TrashIcon /> Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  },
+};
+
+export const FilteredSubmenu: Story = {
+  render: function Render(args) {
+    const [query, setQuery] = useState("");
+    const shown = PROJECTS.filter(
+      (project) =>
+        matchText(project.name, query) || matchText(project.key, query),
+    );
+    return (
+      <DropdownMenu {...args}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline">Actions</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56">
+          <DropdownMenuItem>
+            <PencilIcon /> Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <CopyIcon /> Copy link
+          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <FolderInputIcon /> Move to project
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent
+              query={query}
+              onQueryChange={setQuery}
+              placeholder="Filter projects…"
+              inputLabel="Filter projects"
+            >
+              {shown.map((project) => (
+                <DropdownMenuItem key={project.key} asChild>
+                  <a href={`#${project.key.toLowerCase()}`}>
+                    <MatchedText text={project.name} query={query} />
+                    <span className="ml-auto text-ui-sm text-muted-foreground">
+                      <MatchedText text={project.key} query={query} />
+                    </span>
+                  </a>
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuSeparator />
