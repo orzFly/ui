@@ -31,7 +31,10 @@ export type ContentHeaderProps = {
   lang?: string;
   /** A short muted note after the name, such as a size. */
   meta?: React.ReactNode;
-  /** The controls at the end: `ToolbarButton`s at `icon-xs`, a renderer's title-bar spot. */
+  /**
+   * The controls at the end: `ToolbarButton`s at `icon-xs`, a renderer's title-bar spot. They
+   * take the header's colour for its controls, under every style.
+   */
   children?: React.ReactNode;
   className?: string;
 };
@@ -66,7 +69,12 @@ export function ContentHeader({
         lang !== "" && <span className="truncate font-mono">{lang}</span>
       )}
       {meta !== undefined && <span className="shrink-0">{meta}</span>}
-      <span className="ml-auto flex shrink-0 items-center gap-0.5">
+      {/* A ghost button takes the colour it sits in until hovered: muted on
+          the strip, the text colour on raymond's face. */}
+      <span
+        data-slot="content-header-controls"
+        className="ml-auto flex shrink-0 items-center gap-0.5 raymond:text-foreground"
+      >
         {children}
       </span>
     </div>

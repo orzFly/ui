@@ -77,14 +77,19 @@ describe("ContentHeader", () => {
     expect(screen.getByText("a.md").nextElementSibling).toBe(meta);
   });
 
-  it("puts its controls at the end", () => {
-    render(
+  it("puts its controls at the end, in its colour for them under every style", () => {
+    const { container } = render(
       <ContentHeader icon={<FileIcon />} name="a.md">
         <button type="button">Copy</button>
       </ContentHeader>,
     );
     const end = screen.getByRole("button", { name: "Copy" }).parentElement;
-    expect(classes(end)).toEqual(expect.arrayContaining(["ml-auto"]));
+    expect(end?.dataset.slot).toBe("content-header-controls");
+    expect(classes(end)).toEqual(
+      expect.arrayContaining(["ml-auto", "raymond:text-foreground"]),
+    );
+    // Muted on the strip, which the buttons take until hovered.
+    expect(classes(header(container))).toContain("text-muted-foreground");
   });
 
   it("is a row tall, a hit area tall on touch, and a band of the face under raymond", () => {

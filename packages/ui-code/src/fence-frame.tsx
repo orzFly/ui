@@ -27,9 +27,6 @@ export const FENCE_COLLAPSE_LINES = 30;
 
 const COPIED_MS = 1500;
 
-/** A block header's buttons: muted on the strip, the text colour on raymond's face. */
-const BUTTON = "text-muted-foreground raymond:text-foreground";
-
 const InFrameContext = createContext(false);
 
 /**
@@ -43,7 +40,8 @@ export function useInFenceFrame(): boolean {
 /**
  * Copies `text` and answers on the button itself, a check for a moment and "Copied" for a screen
  * reader, rather than with a toast: the reader's eyes are already on it. A failure still toasts,
- * from `writeClipboard`.
+ * from `writeClipboard`. Its colour is the bar's it sits in, a `ContentHeader` or the frame's
+ * floating toolbar.
  */
 export function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -56,7 +54,6 @@ export function CopyButton({ text }: { text: string }) {
         size="icon-xs"
         aria-label="Copy"
         title="Copy"
-        className={BUTTON}
         onClick={async () => {
           if (!(await writeClipboard(text))) return;
           clearTimeout(timer.current);
@@ -160,7 +157,6 @@ export function FenceFrame({
           size="icon-xs"
           aria-label="Open in the viewer"
           title="Open in the viewer"
-          className={BUTTON}
           onClick={onOpen}
         >
           <Maximize2Icon />
@@ -213,7 +209,7 @@ export function FenceFrame({
             data-slot="fence-tools"
             data-always={toolbarAlwaysVisible ? "" : undefined}
             className={cn(
-              "relative z-10 mt-1 mr-1 -mb-3 ml-auto flex w-fit touch:mt-hit-xs items-center gap-0.5 rounded-control border bg-background p-px shadow-menu select-none print:hidden raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:p-0.5 raymond:shadow-raised",
+              "relative z-10 mt-1 mr-1 -mb-3 ml-auto flex w-fit touch:mt-hit-xs items-center gap-0.5 rounded-control border bg-background p-px text-muted-foreground shadow-menu select-none print:hidden raymond:rounded-none raymond:border-0 raymond:bg-(--3d-face) raymond:p-0.5 raymond:text-foreground raymond:shadow-raised",
               !toolbarAlwaysVisible &&
                 "transition-opacity duration-150 ease-out motion-reduce:transition-none can-hover:absolute can-hover:top-1 can-hover:right-1 can-hover:m-0 can-hover:opacity-0 can-hover:group-focus-within/fence:opacity-100 can-hover:group-hover/fence:opacity-100",
             )}

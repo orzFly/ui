@@ -20,10 +20,8 @@ const steps = (count: number) =>
 const LONG = steps(40);
 const SHORT = steps(6);
 
-const BUTTON = "text-muted-foreground raymond:text-foreground";
-
 const download = (name: string) => (
-  <ToolbarButton asChild size="icon-xs" className={BUTTON}>
+  <ToolbarButton asChild size="icon-xs">
     <a href={`#${name}`} download={name} aria-label={`download ${name}`}>
       <DownloadIcon />
     </a>

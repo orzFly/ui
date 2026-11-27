@@ -28,8 +28,6 @@ export type DocumentCardProps = {
   children: ReactNode;
 };
 
-const BUTTON = "text-muted-foreground raymond:text-foreground";
-
 /**
  * A bordered card with a filename header and a body cut at the shared cap, whose bar opens
  * `onExpand` (the viewer) or, without it, shows the rest in place. Generic on purpose: an
@@ -78,7 +76,7 @@ export function DocumentCard({
           )}
           {headerActions}
           {downloadUrl !== undefined && (
-            <ToolbarButton asChild size="icon-xs" className={BUTTON}>
+            <ToolbarButton asChild size="icon-xs">
               <a
                 href={downloadUrl}
                 download={name}
@@ -94,7 +92,6 @@ export function DocumentCard({
               size="icon-xs"
               onClick={onExpand}
               aria-label={`expand ${name}`}
-              className={BUTTON}
             >
               <Maximize2Icon />
             </ToolbarButton>

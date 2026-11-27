@@ -41,8 +41,16 @@ describe("FenceFrame", () => {
     expect(tools?.className).toContain("can-hover:opacity-0");
     expect(tools?.className).not.toMatch(/(^|\s)(absolute|opacity-0)\b/);
     expect(tools?.hasAttribute("data-always")).toBe(false);
-    expect(screen.getByRole("button", { name: "Copy" })).toBeTruthy();
-    expect(slot(container, "fence-head")).toBeNull();
+    // Copy takes the toolbar's colour, as it takes a header's.
+    expect(tools?.className.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        "text-muted-foreground",
+        "raymond:text-foreground",
+      ]),
+    );
+    const copy = screen.getByRole("button", { name: "Copy" });
+    expect(copy.className).not.toMatch(/(^|\s)text-muted-foreground\b/);
+    expect(slot(container, "content-header")).toBeNull();
   });
 
   it("copies the text and says so on the button for 1.5 s", async () => {

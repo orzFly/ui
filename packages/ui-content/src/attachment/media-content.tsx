@@ -202,11 +202,7 @@ function MediaHeader({ file }: { file: FileSource }) {
       name={<span title={file.name}>{file.name}</span>}
     >
       {file.url !== undefined && (
-        <ToolbarButton
-          asChild
-          size="icon-xs"
-          className="text-muted-foreground raymond:text-foreground"
-        >
+        <ToolbarButton asChild size="icon-xs">
           <a
             href={file.url}
             download={file.name}
