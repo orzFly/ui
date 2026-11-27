@@ -12,9 +12,10 @@ import { FakeResizeObserver } from "./fake-resize-observer.ts";
  * row the width the test sets. Everything is 28px
  * tall, an input 32px, and a box as tall as its tallest child; a
  * `data-test-width` or `data-test-height` sets either. Out-of-flow elements
- * (`absolute`) keep their own size but add none to their parent's.
+ * (`absolute`) keep their own size but add none to their parent's. `row` is
+ * the `data-slot` of the element whose `clientWidth` is the width set.
  */
-export function stubToolbarLayout(initial: number) {
+export function stubToolbarLayout(initial: number, row = "toolbar-row") {
   let rowWidth = initial;
   const inFlow = (el: Element) =>
     !(el.getAttribute("class") ?? "").split(/\s+/).includes("absolute") &&
@@ -76,7 +77,7 @@ export function stubToolbarLayout(initial: number) {
   Object.defineProperty(HTMLElement.prototype, "clientWidth", {
     configurable: true,
     get(this: Element) {
-      return (this as HTMLElement).dataset?.slot === "toolbar-row"
+      return (this as HTMLElement).dataset?.slot === row
         ? rowWidth
         : width(this);
     },
