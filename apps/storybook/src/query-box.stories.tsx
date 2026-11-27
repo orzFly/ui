@@ -1,13 +1,12 @@
 import { PROVIDERS, QUALIFIERS } from "@orz/fixtures/query.ts";
+import { type CompiledQuerySchema, defineQuerySchema } from "@orz/query";
+import { QueryBox } from "@orz/ui/components/query-box";
 import {
-  type CompiledQuerySchema,
-  defineQuerySchema,
-  parseQuery,
-} from "@orz/query";
-import { QueryBox, type RowSource } from "@orz/ui/components/query-box";
-import { highlightQuery } from "@orz/ui/components/query-highlight";
+  type QueryHistoryEntry,
+  useQueryHistory,
+} from "@orz/ui/hooks/use-query-history";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ClockIcon, SearchIcon } from "lucide-react";
+import { SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fn } from "storybook/test";
 import { withWidth } from "./decorators.tsx";
@@ -28,22 +27,22 @@ const SCHEMAS: Record<"plain" | "shell", CompiledQuerySchema> = {
   }),
 };
 
-type Past = { q: string };
-
-const INITIAL_HISTORY: readonly Past[] = [
-  { q: "is:open label:{kind:bug,area:web}" },
-  { q: "assignee:@me -label:area:ui" },
-  { q: "flaky test" },
+// Newest first, as useQueryHistory keeps them; the times matter to nothing
+// the box draws.
+const INITIAL_HISTORY: readonly QueryHistoryEntry[] = [
+  { q: "is:open label:{kind:bug,area:web}", t: 3 },
+  { q: "assignee:@me -label:area:ui", t: 2 },
+  { q: "flaky test", t: 1 },
 ];
 
-// Written by hand: the story wires a schema, providers, a history source and
-// highlightQuery into the box, and the generated snippet would print the
-// compiled schema, Map and all.
+// Written by hand: the story wires a schema, providers and a history into
+// the box, and the generated snippet would print the compiled schema, Map
+// and all.
 const querySource = (
   shell: boolean,
-) => `import { defineQuerySchema, parseQuery, type ValueProviders } from "@orz/query";
-import { QueryBox, type RowSource } from "@orz/ui/components/query-box";
-import { highlightQuery } from "@orz/ui/components/query-highlight";
+) => `import { defineQuerySchema, type ValueProviders } from "@orz/query";
+import { QueryBox } from "@orz/ui/components/query-box";
+import { useQueryHistory } from "@orz/ui/hooks/use-query-history";
 
 // Once, at module load: parsing is memoised per schema.
 const schema = defineQuerySchema({ qualifiers: { is, label, assignee }, braces: true, maxFilters: 8${shell ? ', escapes: "shell"' : ""} });
@@ -53,31 +52,42 @@ const providers: ValueProviders = {
   member: { search: (prefix, signal) => searchMembers(prefix, signal) },
 };
 
-type Past = { q: string };
-
 const [value, setValue] = useState("");
-const history: RowSource<Past> = {
-  id: "history",
-  matched: false,
-  yields: true,
-  rows: past.filter((e) => e.q.includes(value.trim())),
-  key: (row) => row.q,
-  render: (row, option) => (
-    <div {...option}>{highlightQuery(row.q, parseQuery(schema, row.q), schema, providers)}</div>
-  ),
-  apply: (row) => ({ value: row.q, caret: row.q.length }),
-  remove: (row) => forget(row),
-};
+const history = useQueryHistory({ storageKey: "app:search-history", scope: project.id });
 
 <QueryBox
   schema={schema}
   providers={providers}
   value={value}
   onValueChange={setValue}
-  onSubmit={(query, chosen) => search(chosen?.q ?? query)}
-  sources={[history]}
+  history={history}
+  onSubmit={(query) => {
+    history.record(query);
+    search(query);
+  }}
   renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
   inputProps={{ "aria-label": "Search" }}
+/>`;
+
+const storedSource = `import { QueryBox } from "@orz/ui/components/query-box";
+import { useQueryHistory } from "@orz/ui/hooks/use-query-history";
+
+const [value, setValue] = useState("");
+const history = useQueryHistory({ storageKey: "app:search-history", scope: "issues" });
+
+<QueryBox
+  schema={schema}
+  providers={providers}
+  value={value}
+  onValueChange={setValue}
+  history={history}
+  queryHref={(query) => \`/issues?q=\${encodeURIComponent(query)}\`}
+  onSubmit={(query) => {
+    history.record(query);
+    navigate(\`/issues?q=\${encodeURIComponent(query)}\`);
+  }}
+  renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
+  inputProps={{ "aria-label": "Search issues" }}
 />`;
 
 const meta = {
@@ -108,11 +118,14 @@ const meta = {
     schema: { control: false },
     providers: { control: false },
     sources: { control: false },
+    history: { control: false },
+    queryHref: { control: false },
     renderSubmitRow: { control: false },
     leading: { control: false },
   },
   parameters: {
     docs: { source: { code: querySource(false), language: "tsx" } },
+    guidelines: "/guidelines/patterns/search/",
   },
   decorators: [withWidth("max-w-xl")],
   // The text lives in state, not in the args: a late `updateArgs` would make
@@ -120,52 +133,34 @@ const meta = {
   render: function Render(args) {
     const [value, setValue] = useState(args.value);
     useEffect(() => setValue(args.value), [args.value]);
-    const [past, setPast] = useState<readonly Past[]>(INITIAL_HISTORY);
-    const needle = value.trim().toLowerCase();
-    const history: RowSource<Past> = {
-      id: "history",
-      matched: false,
-      yields: true,
-      rows: past.filter((e) => e.q.toLowerCase().includes(needle)),
-      key: (row) => row.q,
-      render: (row, option) => (
-        <div {...option}>
-          <ClockIcon
-            className="size-3.5 shrink-0 text-muted-foreground"
-            aria-hidden
-          />
-          <span className="truncate">
-            {highlightQuery(
-              row.q,
-              parseQuery(args.schema, row.q),
-              args.schema,
-              args.providers,
-            )}
-          </span>
-        </div>
-      ),
-      apply: (row) => ({ value: row.q, caret: row.q.length }),
-      remove: (row) => setPast((e) => e.filter((x) => x !== row)),
-    };
+    // Kept in memory, so the page opens on the same past queries every
+    // time; StoredHistory keeps them for real.
+    const [entries, setEntries] = useState(INITIAL_HISTORY);
     return (
-      <QueryBox<Past>
+      <QueryBox
         {...args}
         value={value}
-        sources={[history]}
+        history={{
+          entries,
+          remove: (query) =>
+            setEntries((all) => all.filter((e) => e.q !== query)),
+        }}
         onValueChange={(next) => {
           setValue(next);
           args.onValueChange(next);
         }}
-        onSubmit={(query, chosen) => {
-          const q = chosen?.q ?? query;
-          setValue(q);
-          setPast((e) => [{ q }, ...e.filter((x) => x.q !== q)]);
-          args.onSubmit(query, chosen);
+        onSubmit={(query, chosen, fromHistory) => {
+          setValue(query);
+          setEntries((all) => [
+            { q: query, t: Date.now() },
+            ...all.filter((e) => e.q.toLowerCase() !== query.toLowerCase()),
+          ]);
+          args.onSubmit(query, chosen, fromHistory);
         }}
       />
     );
   },
-} satisfies Meta<typeof QueryBox<Past>>;
+} satisfies Meta<typeof QueryBox>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -177,9 +172,11 @@ type Story = StoryObj<typeof meta>;
  * inside the group. A value the schema does not know (`is:opne`,
  * `label:nope`) is underlined.
  *
- * Past queries form the history source: they fill whatever room the
- * completions leave, Tab loads one into the box, and Shift+Delete on a
- * highlighted one forgets it. Escape closes the panel.
+ * Past queries come from `history`: an empty box lists them all; a typed
+ * value offers those it begins above the submit row and those it is only
+ * part of below, in whatever room the completions leave. Tab loads one into
+ * the box, Enter submits it, and its × or Shift+Delete forgets it. Escape
+ * closes the panel.
  *
  * Switch to `ShellEscapes` to quote inside values: `label:'In Progress'`
  * or `label:a\,b` hold one value each.
@@ -195,5 +192,42 @@ export const ShellEscapes: Story = {
   args: { schema: SCHEMAS.shell },
   parameters: {
     docs: { source: { code: querySource(true), language: "tsx" } },
+  },
+};
+
+/**
+ * A history `useQueryHistory` keeps in localStorage. Search a few times and
+ * reload: the queries are still offered. Open this story in a second tab
+ * and search there, and this one follows. Each past query is a link to its
+ * results (`queryHref`), so a middle click opens them in a new tab.
+ */
+export const StoredHistory: Story = {
+  parameters: {
+    docs: { source: { code: storedSource, language: "tsx" } },
+  },
+  render: function Render(args) {
+    const [value, setValue] = useState(args.value);
+    useEffect(() => setValue(args.value), [args.value]);
+    const history = useQueryHistory({
+      storageKey: "orz-storybook-query-history",
+      scope: "issues",
+    });
+    return (
+      <QueryBox
+        {...args}
+        value={value}
+        history={history}
+        queryHref={(query) => `#q=${encodeURIComponent(query)}`}
+        onValueChange={(next) => {
+          setValue(next);
+          args.onValueChange(next);
+        }}
+        onSubmit={(query, chosen, fromHistory) => {
+          history.record(query);
+          setValue(query);
+          args.onSubmit(query, chosen, fromHistory);
+        }}
+      />
+    );
   },
 };

@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { todouSchema } from "../../query/test/fixtures/todou-schema.ts";
 import { QueryBox, type RowSource } from "../src/components/query-box.tsx";
+import type { QueryHistoryEntry } from "../src/hooks/use-query-history.ts";
 
 const PROVIDERS: ValueProviders = {
   label: { options: [{ value: "area:web" }, { value: "kind:bug" }] },
@@ -13,19 +14,19 @@ const PROVIDERS: ValueProviders = {
 
 type Past = { q: string };
 
-/** A history-like source: rows that are whole past queries. */
-function history(
+/** An app's own source of whole past queries, as a box without `history` keeps. */
+function pastRows(
   entries: readonly string[],
   options: Partial<RowSource<Past>> = {},
 ): RowSource<Past> {
   return {
-    id: "history",
+    id: "past",
     matched: false,
     yields: true,
     rows: entries.map((q) => ({ q })),
     key: (row) => row.q,
     render: (row, option) => (
-      <div {...option} data-row="history">
+      <div {...option} data-row="past">
         {row.q}
       </div>
     ),
@@ -39,7 +40,11 @@ function Harness({
   ...props
 }: {
   initial?: string;
-  onSubmit?: (query: string, chosen: Past | undefined) => void;
+  onSubmit?: (
+    query: string,
+    chosen: Past | undefined,
+    fromHistory: boolean,
+  ) => void;
   onEscape?: () => void;
   onOpenChange?: (open: boolean) => void;
   sources?: readonly RowSource<Past>[];
@@ -48,16 +53,23 @@ function Harness({
   /** Load a submitted past query into the box, as an app would. */
   loadChosen?: boolean;
   onClick?: () => void;
+  /** Past queries, newest first, kept as an app's history would keep them. */
+  past?: readonly string[];
+  onRemovePast?: (query: string) => void;
+  queryHref?: (query: string) => string;
 }) {
   const [value, setValue] = useState(initial);
+  const [entries, setEntries] = useState<readonly QueryHistoryEntry[]>(() =>
+    (props.past ?? []).map((q, i) => ({ q, t: -i })),
+  );
   return (
     <QueryBox<Past>
       schema={todouSchema}
       providers={props.providers ?? PROVIDERS}
       value={value}
       onValueChange={setValue}
-      onSubmit={(query, chosen) => {
-        props.onSubmit?.(query, chosen);
+      onSubmit={(query, chosen, fromHistory) => {
+        props.onSubmit?.(query, chosen, fromHistory);
         if (props.loadChosen && chosen !== undefined) setValue(chosen.q);
       }}
       renderSubmitRow={(query, option) => (
@@ -75,6 +87,18 @@ function Harness({
         : { onOpenChange: props.onOpenChange })}
       {...(props.sources === undefined ? {} : { sources: props.sources })}
       {...(props.limit === undefined ? {} : { limit: props.limit })}
+      {...(props.past === undefined
+        ? {}
+        : {
+            history: {
+              entries,
+              remove: (query: string) => {
+                props.onRemovePast?.(query);
+                setEntries((all) => all.filter((e) => e.q !== query));
+              },
+            },
+          })}
+      {...(props.queryHref === undefined ? {} : { queryHref: props.queryHref })}
     />
   );
 }
@@ -110,7 +134,7 @@ describe("QueryBox · keyboard model", () => {
     ).not.toContain("true");
     expect(box.input.getAttribute("aria-activedescendant")).toBeNull();
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("har", undefined);
+    expect(onSubmit).toHaveBeenCalledWith("har", undefined, false);
   });
 
   it("submits the query trimmed, and an empty one not at all", () => {
@@ -121,7 +145,7 @@ describe("QueryBox · keyboard model", () => {
     expect(onSubmit).not.toHaveBeenCalled();
     box.type("  部署  ");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("部署", undefined);
+    expect(onSubmit).toHaveBeenCalledWith("部署", undefined, false);
   });
 
   it("takes the first completion on Tab with nothing highlighted", () => {
@@ -144,7 +168,7 @@ describe("QueryBox · keyboard model", () => {
   it("never falls back to the submit row or an app row on Tab", () => {
     // An unaimed Tab means "finish the word I am typing"; a whole past query
     // is a long way from that, and the submit row is not an offer at all.
-    const box = mount({ sources: [history(["plain words before"])] });
+    const box = mount({ sources: [pastRows(["plain words before"])] });
     box.type("plain words");
     expect(box.texts()).toEqual([
       "Search for “plain words”",
@@ -168,7 +192,7 @@ describe("QueryBox · keyboard model", () => {
   });
 
   it("takes an app row's `apply` on Tab when it is highlighted", () => {
-    const box = mount({ sources: [history(["label:kind:bug 部署"])] });
+    const box = mount({ sources: [pastRows(["label:kind:bug 部署"])] });
     box.type("部");
     box.key("ArrowDown");
     box.key("ArrowDown");
@@ -181,7 +205,7 @@ describe("QueryBox · keyboard model", () => {
   it("falls back to the first completion when an app row cannot apply", () => {
     const box = mount({
       sources: [
-        history(["harness:x"], {
+        pastRows(["harness:x"], {
           apply: () => null,
           matched: true,
           yields: false,
@@ -207,12 +231,12 @@ describe("QueryBox · keyboard model", () => {
 
   it("submits the highlighted app row as chosen", () => {
     const onSubmit = vi.fn();
-    const box = mount({ onSubmit, sources: [history(["部署 失败"])] });
+    const box = mount({ onSubmit, sources: [pastRows(["部署 失败"])] });
     box.type("部署");
     box.key("ArrowDown");
     box.key("ArrowDown");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("部署", { q: "部署 失败" });
+    expect(onSubmit).toHaveBeenCalledWith("部署", { q: "部署 失败" }, false);
     // Submitting closes the panel.
     expect(box.listbox()).toBeNull();
   });
@@ -240,13 +264,13 @@ describe("QueryBox · keyboard model", () => {
 
   it("submits the plain query after Escape, not an invisible highlight", () => {
     const onSubmit = vi.fn();
-    const box = mount({ onSubmit, sources: [history(["部署 失败"])] });
+    const box = mount({ onSubmit, sources: [pastRows(["部署 失败"])] });
     box.type("部署");
     box.key("ArrowDown");
     box.key("ArrowDown");
     box.key("Escape");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("部署", undefined);
+    expect(onSubmit).toHaveBeenCalledWith("部署", undefined, false);
   });
 
   it.each(["submit", "Escape"])(
@@ -256,14 +280,14 @@ describe("QueryBox · keyboard model", () => {
       const box = mount({
         onSubmit,
         loadChosen: true,
-        sources: [history(["foo bar"])],
+        sources: [pastRows(["foo bar"])],
       });
       box.type("foo");
       box.key("ArrowDown");
       box.key("ArrowDown");
       if (how === "submit") {
         box.key("Enter");
-        expect(onSubmit).toHaveBeenCalledWith("foo", { q: "foo bar" });
+        expect(onSubmit).toHaveBeenCalledWith("foo", { q: "foo bar" }, false);
         expect(box.input.value).toBe("foo bar");
       } else {
         box.key("Escape");
@@ -301,7 +325,7 @@ describe("QueryBox · keyboard model", () => {
       expect(box.texts()).toContain("alice");
       expect(box.input.getAttribute("aria-activedescendant")).toBe(submitRow());
       box.key("Enter");
-      expect(onSubmit).toHaveBeenCalledWith("assignee:", undefined);
+      expect(onSubmit).toHaveBeenCalledWith("assignee:", undefined, false);
     } finally {
       vi.useRealTimers();
     }
@@ -452,7 +476,7 @@ describe("QueryBox · the panel", () => {
   it("spends the limit on matched rows first and lets yielding rows take the rest", () => {
     const box = mount({
       limit: 3,
-      sources: [history(["label:old", "label:older", "label:oldest"])],
+      sources: [pastRows(["label:old", "label:older", "label:oldest"])],
     });
     box.type("label:");
     expect(box.texts()).toEqual([
@@ -465,7 +489,7 @@ describe("QueryBox · the panel", () => {
 
   it("removes the highlighted app row on Shift+Delete, panel still open", () => {
     const remove = vi.fn();
-    const box = mount({ sources: [history(["部署 失败"], { remove })] });
+    const box = mount({ sources: [pastRows(["部署 失败"], { remove })] });
     box.type("部署");
     box.key("ArrowDown");
     box.key("ArrowDown");
@@ -484,10 +508,10 @@ describe("QueryBox · the panel", () => {
 
   it("submits a clicked app row as chosen", () => {
     const onSubmit = vi.fn();
-    const box = mount({ onSubmit, sources: [history(["部署 失败"])] });
+    const box = mount({ onSubmit, sources: [pastRows(["部署 失败"])] });
     box.type("部署");
     fireEvent.click(box.options()[1] as Element);
-    expect(onSubmit).toHaveBeenCalledWith("部署", { q: "部署 失败" });
+    expect(onSubmit).toHaveBeenCalledWith("部署", { q: "部署 失败" }, false);
   });
 
   it("paints the query behind the input through the schema", () => {
@@ -541,7 +565,7 @@ describe("QueryBox · IME", () => {
     expect(onSubmit).not.toHaveBeenCalled();
 
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("bu", undefined);
+    expect(onSubmit).toHaveBeenCalledWith("bu", undefined, false);
   });
 
   it("leaves every key to the IME while it composes", () => {
@@ -584,7 +608,241 @@ describe("QueryBox · in a form", () => {
     fireEvent.change(input, { target: { value: "部署" } });
     // `false` is a prevented default, so no implicit submission follows.
     expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(false);
-    expect(onSubmit).toHaveBeenCalledWith("部署", undefined);
+    expect(onSubmit).toHaveBeenCalledWith("部署", undefined, false);
     expect(outer).not.toHaveBeenCalled();
+  });
+});
+
+describe("QueryBox · history", () => {
+  const PAST = ["flaky test", "Flaky tests on CI", "a flaky test", "is:open"];
+  const option = (box: ReturnType<typeof mount>, text: string) =>
+    box.options().find((o) => o.textContent === text) as HTMLElement;
+  const removeOf = (row: Element) =>
+    row.querySelector("[data-slot=query-history-remove]") as HTMLElement;
+  const highlighted = (box: ReturnType<typeof mount>) =>
+    document.getElementById(
+      box.input.getAttribute("aria-activedescendant") ?? "",
+    )?.textContent;
+
+  it("puts past queries the value begins above the submit row, those it is only part of below", () => {
+    const box = mount({ past: PAST });
+    box.type("flaky");
+    expect(box.texts()).toEqual([
+      "flaky test",
+      "Flaky tests on CI",
+      "Search for “flaky”",
+      "a flaky test",
+    ]);
+  });
+
+  it("leaves out the past query the value already is, whatever its case", () => {
+    const box = mount({ past: PAST });
+    box.type("Flaky Test");
+    expect(box.texts()).toEqual([
+      "Flaky tests on CI",
+      "Search for “Flaky Test”",
+      "a flaky test",
+    ]);
+  });
+
+  it("lists every past query when the box is empty, open on focus", () => {
+    const box = mount({ past: PAST });
+    act(() => box.input.focus());
+    expect(box.listbox()).not.toBeNull();
+    expect(box.texts().slice(0, PAST.length + 1)).toEqual([
+      ...PAST,
+      "Search for “”",
+    ]);
+  });
+
+  it("gives completions and the app's rows the limit first", () => {
+    const past = ["label:area:web is:open", "label:kind:bug"];
+    const tight = mount({ past, limit: 2 });
+    tight.type("label:");
+    expect(tight.texts()).toEqual([
+      "area:web",
+      "kind:bug",
+      "Search for “label:”",
+    ]);
+    tight.unmount();
+    const box = mount({
+      past,
+      limit: 4,
+      sources: [pastRows(["label:mine"], { matched: true, yields: false })],
+    });
+    box.type("label:");
+    expect(box.texts()).toEqual([
+      "label:mine",
+      "area:web",
+      "kind:bug",
+      "label:area:web is:open",
+      "Search for “label:”",
+    ]);
+  });
+
+  it("loads the highlighted past query whole on Tab, caret at its end", () => {
+    const onSubmit = vi.fn();
+    const box = mount({ past: PAST, onSubmit });
+    box.type("fla");
+    box.key("ArrowDown");
+    box.key("Tab");
+    expect(box.input.value).toBe("flaky test");
+    expect(box.input.selectionStart).toBe("flaky test".length);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("submits the highlighted past query on Enter, in place of the value", () => {
+    const onSubmit = vi.fn();
+    const box = mount({ past: PAST, onSubmit });
+    box.type("fla");
+    box.key("ArrowDown");
+    box.key("ArrowDown");
+    box.key("Enter");
+    expect(onSubmit).toHaveBeenCalledWith("Flaky tests on CI", undefined, true);
+    expect(box.input.value).toBe("Flaky tests on CI");
+    expect(box.listbox()).toBeNull();
+  });
+
+  it("submits a past query from an empty box", () => {
+    const onSubmit = vi.fn();
+    const box = mount({ past: PAST, onSubmit });
+    act(() => box.input.focus());
+    box.key("ArrowDown");
+    box.key("Enter");
+    expect(onSubmit).toHaveBeenCalledWith("flaky test", undefined, true);
+  });
+
+  it("submits a clicked past query", () => {
+    const onSubmit = vi.fn();
+    const box = mount({ past: PAST, onSubmit });
+    box.type("open");
+    fireEvent.click(option(box, "is:open"));
+    expect(onSubmit).toHaveBeenCalledWith("is:open", undefined, true);
+    expect(box.input.value).toBe("is:open");
+  });
+
+  it("forgets the highlighted past query on Shift+Delete, the highlight passing to the next", () => {
+    const onRemovePast = vi.fn();
+    const box = mount({ past: ["one a", "one b", "one c"], onRemovePast });
+    box.type("one");
+    box.key("ArrowDown");
+    expect(box.key("Delete", { shiftKey: true })).toBe(false);
+    expect(onRemovePast).toHaveBeenLastCalledWith("one a");
+    expect(box.texts()).toEqual(["one b", "one c", "Search for “one”"]);
+    expect(highlighted(box)).toBe("one b");
+    box.key("Delete", { shiftKey: true });
+    expect(highlighted(box)).toBe("one c");
+    expect(box.listbox()).not.toBeNull();
+  });
+
+  it("passes the highlight back up when the last row goes", () => {
+    const box = mount({ past: ["one x9", "two x9"] });
+    // Neither begins with the value, so both stand below the submit row.
+    box.type("x9");
+    expect(box.texts()).toEqual(["Search for “x9”", "one x9", "two x9"]);
+    box.key("End");
+    box.key("Delete", { shiftKey: true });
+    expect(box.texts()).toEqual(["Search for “x9”", "one x9"]);
+    expect(highlighted(box)).toBe("one x9");
+  });
+
+  it("passes the highlight to the next row after an app row's remove too", () => {
+    const remove = vi.fn();
+    const box = mount({
+      sources: [pastRows(["部署 a", "部署 b"], { remove })],
+    });
+    box.type("部署");
+    box.key("ArrowDown");
+    box.key("ArrowDown");
+    expect(highlighted(box)).toBe("部署 a");
+    box.key("Delete", { shiftKey: true });
+    expect(remove).toHaveBeenCalledWith({ q: "部署 a" });
+    // The app's remove is a spy that keeps the row, so the next row is
+    // still the one after it.
+    expect(highlighted(box)).toBe("部署 b");
+  });
+
+  it("forgets a past query from its ×, submitting nothing and highlighting nothing", () => {
+    const onSubmit = vi.fn();
+    const onRemovePast = vi.fn();
+    const box = mount({ past: PAST, onSubmit, onRemovePast });
+    box.type("flaky");
+    const row = option(box, "flaky test");
+    fireEvent.mouseMove(row);
+    expect(row.getAttribute("aria-selected")).toBe("true");
+    expect(fireEvent.click(removeOf(row))).toBe(false);
+    expect(onRemovePast).toHaveBeenCalledWith("flaky test");
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(box.texts()).not.toContain("flaky test");
+    expect(box.input.getAttribute("aria-activedescendant")).toBeNull();
+    expect(box.listbox()).not.toBeNull();
+  });
+
+  it("draws a past query in the schema's colours, its × hidden from the tree", () => {
+    const box = mount({ past: ["is:open flaky"] });
+    act(() => box.input.focus());
+    const row = option(box, "is:open flaky");
+    expect(row.tagName).toBe("DIV");
+    // Painted as the input paints it: the key in a span of its own.
+    expect(row.querySelector("span span")).not.toBeNull();
+    expect(removeOf(row).getAttribute("aria-hidden")).toBe("true");
+    // The option's name is the query alone: no control nested in it, and
+    // no label laid over it.
+    expect(row.querySelector("button, a, [tabindex='0']")).toBeNull();
+    expect(row.hasAttribute("aria-label")).toBe(false);
+    const named = row.cloneNode(true) as HTMLElement;
+    for (const hidden of named.querySelectorAll("[aria-hidden]")) {
+      hidden.remove();
+    }
+    expect(named.textContent).toBe("is:open flaky");
+  });
+
+  it("makes each past query a link to its results, given `queryHref`", () => {
+    const onSubmit = vi.fn();
+    const box = mount({
+      past: PAST,
+      onSubmit,
+      queryHref: (q) => `/search?q=${encodeURIComponent(q)}`,
+    });
+    box.type("open");
+    const row = option(box, "is:open");
+    expect(row.tagName).toBe("A");
+    expect(row.getAttribute("role")).toBe("option");
+    expect(row.getAttribute("href")).toBe("/search?q=is%3Aopen");
+    // A modified click is the browser's: a new tab, the box still open.
+    expect(fireEvent.click(row, { ctrlKey: true })).toBe(true);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(box.listbox()).not.toBeNull();
+    // A plain one is the app's, which decides where the query goes.
+    expect(fireEvent.click(row)).toBe(false);
+    expect(onSubmit).toHaveBeenCalledWith("is:open", undefined, true);
+  });
+
+  it("keeps a click on a link row's × from going anywhere", () => {
+    const onSubmit = vi.fn();
+    const box = mount({ past: PAST, onSubmit, queryHref: (q) => `#${q}` });
+    box.type("open");
+    const remove = removeOf(option(box, "is:open"));
+    const middle = new MouseEvent("auxclick", {
+      bubbles: true,
+      cancelable: true,
+      button: 1,
+    });
+    expect(fireEvent(remove, middle)).toBe(false);
+    expect(fireEvent.click(remove, { metaKey: true })).toBe(false);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(box.texts()).not.toContain("is:open");
+  });
+
+  it("swaps primary inside the highlighted row under raymond, so a query's keys stay seen", () => {
+    const box = mount({ past: PAST });
+    box.type("flaky");
+    box.key("ArrowDown");
+    expect(option(box, "flaky test").className).toContain(
+      "raymond:*:[--primary:var(--list-highlight-text)]",
+    );
+    expect(option(box, "a flaky test").className).not.toContain(
+      "--list-highlight",
+    );
   });
 });

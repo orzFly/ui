@@ -1,0 +1,63 @@
+export const meta = {
+  title: "Search",
+  description:
+    "A box people search from keeps the queries they ran: which boxes keep them, in which bucket, and when a query counts as searched.",
+  order: 38,
+  api: ["ui/QueryBox"],
+};
+
+import { IssueSearch } from "../../../examples/search/issue-search.tsx";
+
+**A box people search from keeps the queries they ran and offers them back. `QueryBox` turns the
+browser's own input history off, so a box given no `history` offers none.**
+
+<Example of={IssueSearch} />
+
+Search for `is:open` and then for `flaky test`, and click into the empty box: both wait there,
+newest first. Type `fl` and the one it begins rises above the submit row; type `test` and the one
+it only appears in waits below it. Tab loads a past query to keep editing; Enter or a click runs
+it again.
+
+## Which boxes keep a history
+
+Give `history` to a box a reader comes back to search from: the search in an app's header, the
+query over a list of issues or mail. Keep it from a query-typed field in a form, such as the
+filter rule on [Forms](/guidelines/patterns/forms/): that field holds one value the form saves,
+and a history there would offer other rules' queries as if they were this one's.
+
+## Where the queries are kept
+
+`useQueryHistory` keeps them in the browser, under a `storageKey` named after the app, and after
+the person signed in where several share one browser. Inside the key, each `scope` is a bucket of
+its own. Pick the scope from whatever a query's meaning depends on: a label of one project finds
+nothing in another, so each project gets its own. A box whose queries mean the same everywhere
+names its one bucket.
+
+## When a query counts as searched
+
+The box records nothing. Call `record` in `onSubmit`, where the app runs the search, and nowhere
+else:
+
+- A query that names one thing and goes straight to it, an issue's number say, is a jump, not a
+  search. Do not record it.
+- A submission the app refuses, a form field that fails its check, is not a search either.
+- A past query chosen from its row arrives with `fromHistory`. It was a search when it was
+  recorded, so search it as it is, without asking again whether it names one thing.
+
+Record a query that ran, whichever way it came; it moves back to the top.
+
+## Linking the results
+
+When the results have an address, give `queryHref`: each past query becomes a link to them, so a
+middle click or a modified click opens them in a new tab, as any place does on
+[Navigation](/guidelines/patterns/navigation/). A plain click still goes through `onSubmit`.
+
+## Forgetting a query
+
+Each past query carries an × that forgets it: on the highlighted row under a mouse, and on every
+row on a touch screen, where nothing is hovered. Shift+Delete forgets the highlighted one from the
+keyboard, as in a browser's address bar.
+
+Forgetting asks nothing and offers no Undo. What goes is a query, which can be searched again,
+and the row goes from under the finger that tapped its ×, so nothing vanishes unseen
+([Destructive actions](/guidelines/patterns/destructive-actions/)).
