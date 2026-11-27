@@ -2,6 +2,7 @@ import { CheckIcon, ChevronRightIcon, MinusIcon } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive, Slot } from "radix-ui";
 import type * as React from "react";
 import { createContext, useContext, useRef, useState } from "react";
+import { isModifiedClick } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
 import { ChoiceMark, MARK_ROOM, MarkPlace } from "./dropdown-menu/mark.tsx";
 
@@ -195,12 +196,7 @@ function DropdownMenuItem({
           linkClick.current = null;
           return;
         }
-        const plain =
-          event.button === 0 &&
-          !event.metaKey &&
-          !event.ctrlKey &&
-          !event.shiftKey &&
-          !event.altKey;
+        const plain = !isModifiedClick(event);
         linkClick.current = plain ? "plain" : "modified";
         // Radix selects, and so closes, only a click left to it.
         if (plain && event.defaultPrevented) context?.setOpen(false);

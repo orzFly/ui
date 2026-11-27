@@ -16,10 +16,24 @@ export function isPlainClick(event: React.MouseEvent<Element>): boolean {
  * link, has called `preventDefault` itself, and the reader still went to the place.
  */
 export function isPlainPress(event: React.MouseEvent<Element>): boolean {
-  if (event.button !== 0) return false;
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-    return false;
-  }
+  if (isModifiedClick(event)) return false;
   const target = event.currentTarget.getAttribute("target");
   return target === null || target === "" || target === "_self";
+}
+
+/**
+ * Whether the reader asked the browser for something of its own with a click on a link: a new
+ * tab, a new window, a download. That is a click with another button than the left, or with a
+ * modifier held, whatever the link's `target`. A menu or a list of places leaves such a click
+ * to the browser and stays open for the next one; it closes on any other, the reader having
+ * picked the place.
+ */
+export function isModifiedClick(event: React.MouseEvent<Element>): boolean {
+  return (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  );
 }
