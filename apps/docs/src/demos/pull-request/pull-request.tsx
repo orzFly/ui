@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useHash } from "../demo-state.ts";
+import { useViewerHistory } from "../viewer-history.ts";
 import { Commits, FilesChanged } from "./changes.tsx";
 import { Checks } from "./checks.tsx";
 import { Conversation } from "./conversation.tsx";
@@ -32,6 +33,7 @@ import { PANE, StatusIcon, UserAvatar } from "./parts.tsx";
 import {
   CI_RUN,
   COMMITS,
+  findArtifact,
   PULL_REQUEST,
   PULL_REQUEST_ME,
   type PullRequestEvent,
@@ -199,9 +201,13 @@ export function PullRequest() {
     setTab("checks");
   };
   const other = SECTIONS.find((each) => each.id === section);
+  const viewer = useViewerHistory(findArtifact);
   return (
     <ContentRenderers renderers={RENDERERS}>
-      <AttachmentViewerProvider>
+      <AttachmentViewerProvider
+        state={viewer.state}
+        onStateChange={viewer.onStateChange}
+      >
         <div className="flex min-h-full flex-col bg-background text-foreground">
           <AppBar />
           <RepoNav current={section} />

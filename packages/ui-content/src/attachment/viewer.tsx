@@ -124,6 +124,16 @@ export type AttachmentViewerProviderProps = {
   textPreviewMaxBytes?: number;
   /** Text files above this never preview; the viewer says so. Default 10 MiB. */
   textPreviewHardMaxBytes?: number;
+  /**
+   * What the viewer shows, controlled; null is closed. Default: held by the provider, which
+   * opens on a click below it.
+   */
+  state?: AttachmentViewerState | null;
+  /**
+   * Called with what the viewer should show next: an opening from anything below the provider,
+   * a page, or null when the reader closes it.
+   */
+  onStateChange?(state: AttachmentViewerState | null): void;
   children?: ReactNode;
 } & ImageLookProps;
 
@@ -137,28 +147,39 @@ export function AttachmentViewerProvider({
   group,
   textPreviewMaxBytes = TEXT_PREVIEW_MAX_BYTES,
   textPreviewHardMaxBytes = TEXT_PREVIEW_HARD_MAX_BYTES,
+  state: controlledState,
+  onStateChange,
   imageLook,
   onImageLookChange,
   children,
 }: AttachmentViewerProviderProps) {
-  const [state, setState] = useState<AttachmentViewerState | null>(null);
-  // Read at click time, so an inline `group` does not change `show` and
-  // re-render every chip that holds it.
-  const groupRef = useRef(group);
-  groupRef.current = group;
+  const [ownState, setOwnState] = useState<AttachmentViewerState | null>(null);
+  const controlled = controlledState !== undefined;
+  const state = controlled ? controlledState : ownState;
+  // Read at click time, so an inline `group` or `onStateChange` does not
+  // change the controls and re-render every chip that holds them.
+  const latest = useRef({ state, controlled, group, onStateChange });
+  latest.current = { state, controlled, group, onStateChange };
 
+  // Every change is reported, a second close included: an app that closes
+  // by stepping back through history may have that step refused (a router
+  // guarding unsaved work), and the reader must still be able to ask again.
+  const setState = useCallback((next: AttachmentViewerState | null) => {
+    if (!latest.current.controlled) setOwnState(next);
+    latest.current.onStateChange?.(next);
+  }, []);
   const open = useCallback(
     (items: ViewerSource[], index: number) => setState({ items, index }),
-    [],
+    [setState],
   );
   const show = useCallback(
     (file: FileSource) =>
-      setState(groupRef.current?.(file) ?? { items: [file], index: 0 }),
-    [],
+      setState(latest.current.group?.(file) ?? { items: [file], index: 0 }),
+    [setState],
   );
   const openCompare = useCallback(
     (compare: ComparePair[], index: number) => setState({ compare, index }),
-    [],
+    [setState],
   );
   const value = useMemo(
     () => ({
@@ -184,9 +205,10 @@ export function AttachmentViewerProvider({
       {children}
       <AttachmentViewer
         state={state}
-        onNavigate={(index) =>
-          setState((prev) => (prev === null ? prev : { ...prev, index }))
-        }
+        onNavigate={(index) => {
+          const current = latest.current.state;
+          if (current !== null) setState({ ...current, index });
+        }}
         onClose={() => setState(null)}
         imageLook={imageLook}
         onImageLookChange={onImageLookChange}

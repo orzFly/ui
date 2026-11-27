@@ -1,6 +1,7 @@
 import { FILES } from "@orz/fixtures/files.ts";
 import { NOTE_FOLDERS, NOTES, type Note } from "@orz/fixtures/notes.ts";
 import type { ContentSource } from "@orz/ui-content";
+import type { AttachmentViewerState } from "@orz/ui-content/attachment";
 
 export { NOTE_FOLDERS, NOTES, type Note };
 
@@ -76,4 +77,10 @@ export function tagCounts(bodies: readonly string[]): [string, number][] {
 export function resolveFile(href: string): ContentSource | null {
   const name = /^files\/(.+)$/.exec(href)?.[1];
   return name === undefined ? null : (FILES[name] ?? null);
+}
+
+/** The file named `name`, alone, as a note's link or embed opens it; null for any other name. */
+export function findFile(name: string): AttachmentViewerState | null {
+  const file = FILES[name];
+  return file === undefined ? null : { items: [file], index: 0 };
 }

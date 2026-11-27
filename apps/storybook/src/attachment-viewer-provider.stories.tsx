@@ -203,8 +203,11 @@ const meta = {
     children: { control: false },
     imageLook: { control: false },
     onImageLookChange: { control: false },
+    state: { control: false },
+    onStateChange: { control: false },
   },
   decorators: [withWidth("max-w-xl"), withRenderers(...ATTACHMENT_RENDERERS)],
+  parameters: { guidelines: "/guidelines/patterns/overlays/" },
 } satisfies Meta<typeof AttachmentViewerProvider>;
 
 export default meta;
@@ -245,6 +248,27 @@ export const TextPreviewLimits: Story = {
       <AttachmentList items={LARGE_ITEMS} />
     </AttachmentViewerProvider>
   ),
+};
+
+/**
+ * What the viewer shows, held by the app: a row's click, a page and a close reach
+ * `onStateChange`, and the viewer shows `state` alone, so the app can keep it in its history.
+ * Here the story's args hold it.
+ */
+export const Controlled: Story = {
+  args: { state: null },
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
+    return (
+      <AttachmentViewerProvider
+        {...args}
+        group={group}
+        onStateChange={(state) => updateArgs({ state })}
+      >
+        <AttachmentList items={MIXED_ITEMS} />
+      </AttachmentViewerProvider>
+    );
+  },
 };
 
 /** The nearest provider's controls: `open` pages through a list, `show` through `group(file)`. */

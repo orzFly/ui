@@ -50,7 +50,6 @@ import { codeContent, patchContent } from "@orz/ui-code";
 import { Content, ContentRenderers } from "@orz/ui-content";
 import {
   AttachmentViewer,
-  type AttachmentViewerState,
   audioContent,
   htmlContent,
   imageContent,
@@ -73,6 +72,7 @@ import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
 import { hrefOf as pageHref } from "../../routes.ts";
 import { setHash, useHash } from "../demo-state.ts";
+import { useViewerHistory } from "../viewer-history.ts";
 import {
   CHANGES,
   changeFile,
@@ -616,9 +616,11 @@ function Place({
  * in the viewer at one zoom on a click.
  */
 function ImageChanges({ change }: { change: ImageChange }) {
-  const [viewer, setViewer] = useState<AttachmentViewerState | null>(null);
   const before = { label: "HEAD", ...change.before };
   const after = { label: "Working tree", ...change.after };
+  // Reached through the Changes view, which the address does not keep, so the address does not
+  // name the comparison either: a reload would have nothing to open it over. Back still closes it.
+  const viewer = useViewerHistory(() => null);
   return (
     <div className="p-4">
       <MediaCompare
@@ -630,12 +632,16 @@ function ImageChanges({ change }: { change: ImageChange }) {
           ...after,
           content: <img src={after.file.url} alt="The version on disk" />,
         }}
-        onOpen={() => setViewer({ compare: [{ before, after }], index: 0 })}
+        onOpen={() =>
+          viewer.onStateChange({ compare: [{ before, after }], index: 0 })
+        }
       />
       <AttachmentViewer
-        state={viewer}
-        onNavigate={(index) => setViewer((s) => s && { ...s, index })}
-        onClose={() => setViewer(null)}
+        state={viewer.state}
+        onNavigate={(index) =>
+          viewer.state && viewer.onStateChange({ ...viewer.state, index })
+        }
+        onClose={() => viewer.onStateChange(null)}
       />
     </div>
   );
