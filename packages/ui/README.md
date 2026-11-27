@@ -66,8 +66,12 @@ Chinese, Japanese and Korean text takes the face its `lang` names from the syste
 your app loads. An app with fonts of its own sets `--font-ui` and `--font-mono` and skips
 `fonts.css`, and then installs and bundles none of Noto's files.
 
-`useOverlayScrollbars` needs the library's own stylesheet, which you import yourself:
-`@import "overlayscrollbars/overlayscrollbars.css";`.
+`useOverlayScrollbars` needs the library's own stylesheet, which you import yourself, before or
+after `styles.css`: `@import "overlayscrollbars/overlayscrollbars.css";`. Its bars wear the
+`os-theme-orz` theme from `styles.css`. A container that resizes them keeps that theme and adds a
+class of its own in `scrollbars.theme` (`"os-theme-orz wide"`), then sets its `--os-*` sizes on
+`.os-scrollbar.wide`, below `styles.css`. `.wide` alone loses to the theme, which is written with
+two classes so that the library's `.os-scrollbar` cannot reset it.
 
 ## Theme
 

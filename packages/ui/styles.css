@@ -15,9 +15,15 @@
    8px is the gutter exactly, --os-padding-perpendicular shrinks the drawn
    handle to 6px inside it, and any interactive-area-offset pushes the bar's
    hit area back over the content. At 10px/2px/4px the handle draws flush with
-   the content edge and still eats 6px of it (T-395). A container with a
-   different gutter overrides these on its own class. */
-.os-theme-orz {
+   the content edge and still eats 6px of it (T-395).
+
+   Two classes, because overlayscrollbars.css resets every one of these on
+   .os-scrollbar, the same element: at one class apiece the stylesheet an app
+   imports last wins, and with the library's last the bar is 0px wide
+   (UI-247). So a container with a different gutter adds a class of its own
+   to scrollbars.theme and overrides these on .os-scrollbar.<that class>,
+   below this stylesheet. */
+.os-scrollbar.os-theme-orz {
   --os-size: 8px;
   --os-padding-perpendicular: 1px;
   --os-padding-axis: 2px;

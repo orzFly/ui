@@ -208,3 +208,18 @@ describe("fonts", () => {
     expect([listed(shared), listed(own)]).toEqual([both, sansOnly]);
   });
 });
+
+describe("useOverlayScrollbars", () => {
+  it("is named in the README with the theme it applies", () => {
+    const [, applied] =
+      read("packages/ui/src/hooks/use-overlay-scrollbars.ts").match(
+        /theme: "([\w-]+)"/,
+      ) ?? [];
+    expect(applied).toBeDefined();
+    const named = [
+      ...read("packages/ui/README.md").matchAll(/os-theme-[\w-]+/g),
+    ].map(([name]) => name);
+    expect(named.length).toBeGreaterThan(0);
+    expect(new Set(named)).toEqual(new Set([applied]));
+  });
+});

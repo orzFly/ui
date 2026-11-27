@@ -24,7 +24,15 @@ function merged(options: PartialOptions | undefined): PartialOptions {
  * element `viewport` is on keeps its own classes, its own children and its own
  * native scrolling, and the bars are drawn in `slot`, a positioned parent
  * wrapped directly around it. Needs the `overlayscrollbars` peer, and the
- * consumer imports `overlayscrollbars/overlayscrollbars.css` itself.
+ * consumer imports `overlayscrollbars/overlayscrollbars.css` itself, before or
+ * after `@orz/ui/styles.css`, which holds the `os-theme-orz` theme the bars
+ * wear.
+ *
+ * The theme sizes the bar for a `p-2` gutter. A container with another one
+ * keeps the theme and adds a class of its own,
+ * `{ scrollbars: { theme: "os-theme-orz wide" } }`, then sets the `--os-*`
+ * sizes on `.os-scrollbar.wide` below `styles.css`: `.wide` alone loses to
+ * the theme's two-class rule.
  *
  * Both refs are needed. Letting the library build its own viewport moves the
  * children into an inserted div, where the container's `flex gap` no longer
