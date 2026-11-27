@@ -434,11 +434,13 @@ helpers from it directly.
 | `@orz/ui/components/highlighted-input` | `HighlightedInput`: a one-line input whose text is painted by a mirror layer underneath, so it can be coloured while selection, undo, autofill and IME composition stay native |
 | `@orz/ui/components/query-highlight` | `highlightQuery(text, parts, schema, providers)`: the spans `HighlightedInput` paints, with keys, punctuation and values coloured by verdict |
 | `@orz/ui/hooks/use-query-completion` | `useQueryCompletion({ schema, value, caret, providers, enabled })`: key and value completions at the caret; a `search` provider is asked after 150 ms of quiet, and its answers are cached per prefix |
-| `@orz/ui/components/query-box` | `QueryBox`: the three above as a combobox, with the app's own rows (history, jumps) as `RowSource`s |
+| `@orz/ui/hooks/use-query-history` | `useQueryHistory({ storageKey, scope })`: past queries in localStorage, one bucket per scope, following other tabs; `record` a query where a search really ran |
+| `@orz/ui/components/query-box` | `QueryBox`: the above as a combobox, with its own rows of past queries (`history`, from `useQueryHistory`) and the app's rows (jumps) as `RowSource`s |
 
 ```tsx
 import { defineQuerySchema } from "@orz/query";
 import { QueryBox } from "@orz/ui/components/query-box";
+import { useQueryHistory } from "@orz/ui/hooks/use-query-history";
 import { SearchIcon } from "lucide-react";
 
 const schema = defineQuerySchema({
@@ -448,12 +450,20 @@ const schema = defineQuerySchema({
   },
 });
 
+const resultsHref = (query: string) => `/search?q=${encodeURIComponent(query)}`;
+const history = useQueryHistory({ storageKey: "app:search-history", scope: project.id });
+
 <QueryBox
   schema={schema}
   providers={{ label: { options: labels?.map((name) => ({ value: name })) } }}
   value={value}
   onValueChange={setValue}
-  onSubmit={(query) => navigate(`/search?q=${encodeURIComponent(query)}`)}
+  history={history}
+  queryHref={resultsHref}
+  onSubmit={(query) => {
+    history.record(query);
+    navigate(resultsHref(query));
+  }}
   renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
   leading={<SearchIcon />}
   inputProps={{ "aria-label": "Search", placeholder: "Search…" }}
@@ -465,6 +475,10 @@ onto a row. Tab takes the highlighted completion, or the first one. Escape close
 second Escape goes to `onEscape`. Pass `options: undefined` for a list that has not loaded: its
 values paint as valid rather than flashing amber, and `onOpenChange` tells you when the box is in
 use, so loading can wait until then.
+
+Past queries follow everything else in the panel: Tab loads one, Enter submits it with
+`fromHistory`, and Shift+Delete or its × forgets it. The box records nothing itself; `record` a
+query in `onSubmit`, where the app knows a search ran.
 
 ## Filter menu
 
@@ -628,7 +642,7 @@ import { MediaControls } from "@orz/ui/components/media-controls";
 |---|---|
 | `@orz/ui` | `cn` |
 | `@orz/ui/components/<name>` | `avatar`, `badge`, `button`, `card`, `checkbox`, `color-picker`, `confirm-dialog`, `dialog`, `dropdown-menu`, `empty-state`, `field`, `file-tree`, `filter-menu`, `group-heading`, `highlighted-input`, `hover-card`, `info-popover`, `inline-code`, `input`, `kbd`, `label`, `link-card`, `link-chip`, `list`, `load-failure`, `load-more`, `media-controls`, `nav-list`, `number-input`, `pane`, `popover`, `query-box`, `query-highlight`, `radio-group`, `reorder`, `segmented-control`, `select`, `selection-action`, `selection-bar`, `separator`, `sheet`, `skeleton`, `slider`, `sonner`, `split-button`, `switch`, `tab-nav`, `table`, `tabs`, `text-link`, `textarea`, `theme-editor`, `theme-menu`, `toggle`, `toolbar`, `tooltip`, `tree`, `unsaved-changes-dialog` |
-| `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-selection`, `use-slash-shortcut`, `use-sweep-select`, `viewport-chrome` |
+| `@orz/ui/hooks/<name>` | `scroll-insets`, `use-element-height`, `use-media-query`, `use-overlay-scrollbars`, `use-paged-append`, `use-query-completion`, `use-query-history`, `use-selection`, `use-slash-shortcut`, `use-sweep-select`, `viewport-chrome` |
 | `@orz/ui/lib/<name>` | `cell-width`, `cell-width-table`, `clipboard`, `color`, `edge-scroll`, `file-tree`, `focus-return`, `link`, `other-window`, `platform`, `reorder-places`, `scroll-map`, `text-metrics`, `theme-file`, `tree-rows`, `tree-window`, `unsaved-guard`, `utils` |
 | `@orz/ui/theme` | `createThemeStore`, `ThemeProvider`, `useTheme`, `useTerminalTheme`, `useThemeSlots`, `useStyle`, `themePaintGuardScript`, `themePaintCookieStyle`, `themePaintCookieRootAttributes`, `normalizePref`, `parseStoredPref`, types (the theme data types re-exported from `@orz/themes`) |
 | `@orz/ui/styles.css` | baseline tokens (the `default` theme), base layer |

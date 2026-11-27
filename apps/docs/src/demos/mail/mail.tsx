@@ -17,6 +17,7 @@ import {
 } from "@orz/ui/components/sheet";
 import { TooltipProvider } from "@orz/ui/components/tooltip";
 import { usePagedAppend } from "@orz/ui/hooks/use-paged-append";
+import { useQueryHistory } from "@orz/ui/hooks/use-query-history";
 import { useVisualViewportInsets } from "@orz/ui/hooks/viewport-chrome";
 import { isPlainClick } from "@orz/ui/lib/link";
 import { cn } from "@orz/ui/lib/utils";
@@ -57,6 +58,7 @@ import {
 import {
   closeThread,
   openThread,
+  placeHref,
   showQuery,
   threadHref,
   useOpenThread,
@@ -305,6 +307,10 @@ function ThreadList({
 }) {
   const [value, setValue] = useState(search.query);
   useEffect(() => setValue(search.query), [search.query]);
+  const history = useQueryHistory({
+    storageKey: "orz-docs-mail-search-history",
+    scope: "mail",
+  });
   // Every page is read against the mailbox as it was when the search ran: a thread read since
   // stays where it was under `is:unread`, and the next page starts where the last one ended.
   const first = useMemo(
@@ -357,7 +363,14 @@ function ThreadList({
           providers={PROVIDERS}
           value={value}
           onValueChange={setValue}
-          onSubmit={(query) => onSearch(query)}
+          history={history}
+          queryHref={placeHref}
+          // Recorded here, not in onSearch, which the sidebar's folders call
+          // too: opening a folder searches nothing the reader typed.
+          onSubmit={(query) => {
+            history.record(query);
+            onSearch(query);
+          }}
           renderSubmitRow={(query, option) => (
             <div {...option}>
               <SearchIcon
