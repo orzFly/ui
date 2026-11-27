@@ -221,6 +221,19 @@ describe("TabNav", () => {
     expect(nav().style.getPropertyValue("--tab-nav-least")).toBe("51px");
   });
 
+  it("takes no flex size in a flex column, where it would be its height", async () => {
+    render(
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <Sections />
+      </div>,
+    );
+    await settle();
+    const classes = nav().className.split(/\s+/);
+    expect(classes).not.toContain("grow-1000");
+    expect(classes).not.toContain("basis-0");
+    expect(classes).toContain("w-(--tab-nav-full)");
+  });
+
   it("lets the caller's flex win over its own", async () => {
     render(<Sections className="flex-1" />);
     await settle();

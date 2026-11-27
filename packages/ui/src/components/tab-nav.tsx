@@ -53,6 +53,11 @@ function TabNav({
     () => store.measured,
     () => false,
   );
+  const column = React.useSyncExternalStore(
+    store.subscribe,
+    () => store.result.column,
+    () => false,
+  );
   const open = React.useSyncExternalStore(
     store.subscribe,
     () => store.overflowOpen,
@@ -83,14 +88,17 @@ function TabNav({
             // drawn in (`OverflowStore`'s `markRelayout`).
             "relative -mb-px flex items-stretch self-stretch border-b touch:min-h-touch data-relayout:**:transition-none raymond:mb-0 raymond:border-b-0",
             measured
-              ? // Its room in a row: none to start from, so a shortfall
-                // falls on the parts beside it first, down to its least;
-                // first claim on what is spare, up to its links' width,
-                // which a parent sized by its content reads too.
-                "grow-1000 basis-0 w-(--tab-nav-full) max-w-[min(var(--tab-nav-full),100%)] min-w-[min(var(--tab-nav-least),100%)]"
+              ? // As wide as its links, down to its least; a parent sized
+                // by its content reads the full width.
+                "w-(--tab-nav-full) max-w-[min(var(--tab-nav-full),100%)] min-w-[min(var(--tab-nav-least),100%)]"
               : // Not measured yet (a prerendered page): one line, cut off
                 // at its edge.
                 "min-w-0 overflow-x-clip",
+            // Its room in a flex row: none to start from, so a shortfall
+            // falls on the parts beside it first, down to its least, and
+            // first claim on what is spare. In a column the same would be
+            // its height.
+            measured && !column && "grow-1000 basis-0",
             className,
           )}
           {...props}

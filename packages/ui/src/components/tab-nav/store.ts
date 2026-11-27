@@ -13,7 +13,15 @@ export interface TabNavMeta extends PartMeta {
   name: string;
 }
 
-const EMPTY: TabNavLayout = {
+export interface TabNavResult extends TabNavLayout {
+  /**
+   * Its parent lays it out in a flex column, where a flex size would be its
+   * height: only its width is set there.
+   */
+  column: boolean;
+}
+
+const EMPTY: TabNavResult = {
   views: {},
   overflow: [],
   breaks: [],
@@ -22,16 +30,30 @@ const EMPTY: TabNavLayout = {
   currentName: null,
   full: 0,
   least: 0,
+  column: false,
 };
 
 const px = (value: string) => Number.parseFloat(value) || 0;
+
+/** Whether the box that lays `el` out is a flex column, past any `display: contents` between. */
+function inColumn(el: HTMLElement): boolean {
+  let parent = el.parentElement;
+  while (parent && getComputedStyle(parent).display === "contents") {
+    parent = parent.parentElement;
+  }
+  if (!parent) return false;
+  const style = getComputedStyle(parent);
+  return (
+    style.display.includes("flex") && style.flexDirection.startsWith("column")
+  );
+}
 
 /**
  * One TabNav's links on the shared overflow layer: they fold from the end,
  * the current one last, and the TabNav's own box is sized from the two
  * widths that measures, so it never resizes with what it has folded.
  */
-export class TabNavStore extends OverflowStore<TabNavMeta, TabNavLayout> {
+export class TabNavStore extends OverflowStore<TabNavMeta, TabNavResult> {
   /** Its widths are written: the box is sized from them. */
   measured = false;
 
@@ -52,7 +74,7 @@ export class TabNavStore extends OverflowStore<TabNavMeta, TabNavLayout> {
     available,
     gap,
     children,
-  }: PlanInput<TabNavMeta>): TabNavLayout {
+  }: PlanInput<TabNavMeta>): TabNavResult {
     const parts: TabNavPart[] = [];
     let currentName: string | null = null;
     for (const child of children) {
@@ -85,9 +107,9 @@ export class TabNavStore extends OverflowStore<TabNavMeta, TabNavLayout> {
       currentName,
     });
     // Measured as nothing, it is out of sight: it keeps what it had.
-    if (layout.full <= 0) return this.result;
+    if (layout.full <= 0 || !this.row) return this.result;
     this.size(layout);
-    return layout;
+    return { ...layout, column: inColumn(this.row) };
   }
 
   protected override solved() {
