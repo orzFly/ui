@@ -15,24 +15,6 @@ import { cn } from "@orz/ui/lib/utils";
 import type { ComponentProps } from "react";
 import { personOf, statusLabel } from "./board.ts";
 
-/** UTC, so the prerendered page and every reader's browser print the same thing. */
-const DAY = new Intl.DateTimeFormat("en", {
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-  timeZone: "UTC",
-});
-
-export function Stamp({ at }: { at: string }) {
-  return (
-    <time dateTime={at} className="tabular-nums">
-      {DAY.format(new Date(at))} UTC
-    </time>
-  );
-}
-
 const DOT: Record<TaskStatus, string> = {
   todo: "border-2 border-muted-foreground",
   "in-progress": "bg-warning",

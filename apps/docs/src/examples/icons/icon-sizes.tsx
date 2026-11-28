@@ -2,6 +2,7 @@ import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { EmptyState } from "@orz/ui/components/empty-state";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import { InboxIcon, SquarePenIcon, StarIcon, TagIcon } from "lucide-react";
 
 const thread = INBOX_THREADS.find(({ id }) => id === "touch-sizes");
@@ -28,7 +29,7 @@ export function IconSizes() {
           <p className="truncate text-ui">{thread?.subject}</p>
           <p className="flex items-center gap-1 text-muted-foreground text-ui-sm">
             <StarIcon aria-label="Starred" className="size-3 fill-current" />
-            <time dateTime="2026-10-27T10:50:00Z">Oct 27</time>
+            <Timestamp value="2026-10-27T10:50:00Z" format="date" />
           </p>
         </div>
       </div>

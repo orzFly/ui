@@ -65,13 +65,13 @@ describe("FenceFrame", () => {
       fireEvent.click(copy);
     });
     expect(writeClipboard).toHaveBeenCalledWith(TEXT);
-    expect(copy.querySelector("[data-icon=copied]")).not.toBeNull();
+    expect(copy.hasAttribute("data-copied")).toBe(true);
     expect(liveText(container)).toBe("Copied");
 
     act(() => {
       vi.advanceTimersByTime(1500);
     });
-    expect(copy.querySelector("[data-icon=copied]")).toBeNull();
+    expect(copy.hasAttribute("data-copied")).toBe(false);
     expect(liveText(container)).toBe("");
   });
 
@@ -86,7 +86,7 @@ describe("FenceFrame", () => {
     await act(async () => {
       fireEvent.click(copy);
     });
-    expect(copy.querySelector("[data-icon=copied]")).toBeNull();
+    expect(copy.hasAttribute("data-copied")).toBe(false);
     expect(liveText(container)).toBe("");
   });
 

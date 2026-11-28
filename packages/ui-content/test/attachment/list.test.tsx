@@ -1,3 +1,4 @@
+import { formatTimestamp } from "@orz/ui/components/timestamp";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -108,11 +109,10 @@ describe("the attachment list folds a long list", () => {
   it("prints each file's upload time", () => {
     const { container } = draw(shots(3));
     const row = container.querySelector("li") as HTMLLIElement;
-    const stamp = row.querySelector("span[title]") as HTMLSpanElement;
-    expect(stamp.getAttribute("title")).toBe("2026-09-01T00:01:00Z");
-    expect(stamp.textContent).toBe(
-      new Date("2026-09-01T00:01:00Z").toLocaleString(),
-    );
+    const stamp = row.querySelector("time") as HTMLTimeElement;
+    expect(stamp.getAttribute("datetime")).toBe("2026-09-01T00:01:00.000Z");
+    expect(stamp.textContent).toBe(formatTimestamp("2026-09-01T00:01:00Z"));
+    expect(stamp.getAttribute("title")).toMatch(/:01:00/);
   });
 
   it("renders nothing for an empty list", () => {
@@ -217,7 +217,7 @@ describe("the attachment list's upload time", () => {
   it("is a <time> carrying the instant it prints", () => {
     const { container } = draw(shots(1));
     const time = container.querySelector("li time");
-    expect(time?.getAttribute("dateTime")).toBe("2026-09-01T00:01:00Z");
+    expect(time?.getAttribute("dateTime")).toBe("2026-09-01T00:01:00.000Z");
   });
 });
 
@@ -242,6 +242,31 @@ function drawWith(
     </ContentRenderers>,
   );
 }
+
+describe("the attachment list's actions on every file", () => {
+  it("ends the header of a list that selects nothing with them, given every file", () => {
+    const { container } = drawWith(shots(2), {
+      listActions: (items) => (
+        <button type="button">
+          Download {items.map((item) => item.name).join(", ")}
+        </button>
+      ),
+    });
+    const button = screen.getByRole("button", {
+      name: "Download shot-1.png, shot-2.png",
+    });
+    const header = container.querySelector("section > div");
+    expect(header?.contains(button)).toBe(true);
+    expect(button.parentElement?.className).toContain("ml-auto");
+  });
+
+  it("draws no room for them when there are none", () => {
+    const { container } = drawWith(shots(2), { listActions: () => null });
+    expect(
+      container.querySelector("[data-slot=attachment-list-actions]"),
+    ).toBeNull();
+  });
+});
 
 describe("an unfolded attachment list", () => {
   it("keeps every row and draws no toggle", () => {
@@ -354,6 +379,25 @@ describe("a selectable attachment list", () => {
     fireEvent.click(box("select shot-2.png"));
     expect(screen.getByRole("button", { name: "Delete 1" })).toBeTruthy();
     expect(seen.at(-1)).toEqual(["shot-2.png"]);
+  });
+
+  it("holds the actions on every file while none is selected, and the selection's after", () => {
+    drawWith(shots(3), {
+      selectable: true,
+      listActions: (items) => (
+        <button type="button">Download all {items.length}</button>
+      ),
+      selectionActions: (items) => (
+        <button type="button">Download {items.length}</button>
+      ),
+    });
+    expect(screen.getByRole("button", { name: "Download all 3" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Download \d/ })).toBeNull();
+    fireEvent.click(box("select shot-2.png"));
+    expect(screen.queryByRole("button", { name: /^Download all/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Download 1" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Clear selection" }));
+    expect(screen.getByRole("button", { name: "Download all 3" })).toBeTruthy();
   });
 
   it("follows the selection the app holds", () => {

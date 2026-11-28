@@ -1,4 +1,4 @@
-import { copyToClipboard } from "@orz/ui/lib/clipboard";
+import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,7 +8,7 @@ import { AnsiView } from "../../src/view/ansi-view.tsx";
 import { LOG_SAMPLE } from "../parse/log-sample.ts";
 
 vi.mock("@orz/ui/lib/clipboard", () => ({
-  copyToClipboard: vi.fn(async () => true),
+  writeClipboard: vi.fn(async () => true),
 }));
 
 // happy-dom has no layout: 20px rows, 8px cells, 100 columns, 20 rows visible.
@@ -22,7 +22,7 @@ vi.mock("../../src/view/metrics.ts", () => ({
 }));
 
 beforeEach(() => {
-  vi.mocked(copyToClipboard).mockClear();
+  vi.mocked(writeClipboard).mockClear();
 });
 
 const LOG = LOG_SAMPLE.map(([line]) => line).join("\n");
@@ -462,9 +462,8 @@ describe("filtered copy", () => {
     renderLog();
     fireEvent.click(chip("INFO"), { shiftKey: true });
     fireEvent.click(screen.getByRole("button", { name: "Copy output" }));
-    expect(copyToClipboard).toHaveBeenCalledWith(
+    expect(writeClipboard).toHaveBeenCalledWith(
       [PLAIN[0], PLAIN[2], PLAIN[12], PLAIN[15]].join("\n"),
-      "Copied output",
     );
   });
 

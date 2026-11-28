@@ -5,24 +5,6 @@ import type { CSSProperties, ReactNode } from "react";
 import { ClientOnly } from "../../hydrated.tsx";
 import type { CiJob } from "./run.ts";
 
-/** UTC, so the prerender and every reader's browser print the same thing. */
-const STAMP = new Intl.DateTimeFormat("en", {
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-  timeZone: "UTC",
-});
-
-export function Stamp({ at }: { at: string }) {
-  return (
-    <time dateTime={at} className="tabular-nums">
-      {STAMP.format(new Date(at))} UTC
-    </time>
-  );
-}
-
 export function UserAvatar({
   login,
   size = "sm",

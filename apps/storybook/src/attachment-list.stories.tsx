@@ -8,7 +8,7 @@ import {
   AttachmentList,
 } from "@orz/ui-content/attachment";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Trash2Icon } from "lucide-react";
+import { DownloadIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { argsUpdater } from "./args.ts";
 import { withRenderers, withViewer, withWidth } from "./decorators.tsx";
@@ -44,6 +44,7 @@ const ACTIONS_SNIPPET = `import { AttachmentList } from "@orz/ui-content/attachm
 const meta = {
   title: "ui-content/AttachmentList",
   component: AttachmentList,
+  parameters: { guidelines: "/guidelines/patterns/actions-and-buttons/" },
   args: { items: LISTED },
   decorators: [
     withWidth("max-w-xl"),
@@ -190,6 +191,61 @@ export const Selectable: Story = {
           }}
         />
       </>
+    );
+  },
+};
+
+const LIST_ACTIONS_SNIPPET = `import { ToolbarButton } from "@orz/ui/components/toolbar";
+import { AttachmentList } from "@orz/ui-content/attachment";
+
+<AttachmentList
+  items={files}
+  selectable
+  // In the header while no file is selected: what the app does with all of them.
+  listActions={(all) => (
+    <ToolbarButton size="default" onClick={() => download(all)}>
+      <DownloadIcon />
+      Download all
+    </ToolbarButton>
+  )}
+  // Once any is, in their place: what it does with those.
+  selectionActions={(chosen) => (
+    <ToolbarButton size="default" onClick={() => download(chosen)}>
+      <DownloadIcon />
+      Download
+    </ToolbarButton>
+  )}
+/>`;
+
+/**
+ * `listActions` ends the header with the app's actions on every file while none is selected,
+ * here a Download all. Selecting a file swaps them for `selectionActions`, which take only the
+ * files selected. Without `selectable` they stay for good.
+ */
+export const ListActions: Story = {
+  args: { items: LISTED.slice(0, 6), selectable: true, selected: [] },
+  parameters: {
+    docs: { source: { code: LIST_ACTIONS_SNIPPET, language: "tsx" } },
+  },
+  render: function Render(args, context) {
+    const updateArgs = argsUpdater(context);
+    return (
+      <AttachmentList
+        {...args}
+        onSelectedChange={(selected) => updateArgs({ selected })}
+        listActions={() => (
+          <ToolbarButton size="default">
+            <DownloadIcon />
+            Download all
+          </ToolbarButton>
+        )}
+        selectionActions={() => (
+          <ToolbarButton size="default">
+            <DownloadIcon />
+            Download
+          </ToolbarButton>
+        )}
+      />
     );
   },
 };

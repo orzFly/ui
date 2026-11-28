@@ -106,7 +106,7 @@ uncapped, laying out every line of 1 MiB still held the main thread for 2.2 s.
 A code block's frame, which `codeContent`, `patchContent` and `@orz/ui-mermaid` put a fence in:
 
 - **Copy** answers on the button, a check for a moment and "Copied" for a screen reader, and
-  toasts only a failure (`writeClipboard` from `@orz/ui/lib/clipboard`).
+  toasts only a failure: `@orz/ui`'s `CopyButton`.
 - The block's `lang` and Copy sit in a toolbar that floats over the top-right corner where the
   pointer can hover (`can-hover:`), and shows on hover or once focus is inside. Without hover, or
   with `toolbarAlwaysVisible`, it takes a row of its own above the content instead, so it never

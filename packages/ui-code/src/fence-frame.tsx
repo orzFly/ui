@@ -1,5 +1,5 @@
+import { CopyButton } from "@orz/ui/components/copy-button";
 import { ToolbarButton } from "@orz/ui/components/toolbar";
-import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
 import {
   ContentCollapse,
@@ -7,25 +7,17 @@ import {
   ContentFrame,
   ContentHeader,
 } from "@orz/ui-content/attachment";
-import {
-  CheckIcon,
-  CopyIcon,
-  FileCode2Icon,
-  Maximize2Icon,
-} from "lucide-react";
+import { FileCode2Icon, Maximize2Icon } from "lucide-react";
 import {
   createContext,
   type ReactNode,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
 
 /** Lines past which a code block in a document is cut at the shared cap, behind Show all. */
 export const FENCE_COLLAPSE_LINES = 30;
-
-const COPIED_MS = 1500;
 
 const InFrameContext = createContext(false);
 
@@ -37,36 +29,17 @@ export function useInFenceFrame(): boolean {
   return useContext(InFrameContext);
 }
 
-/**
- * Copies `text` and answers on the button itself, a check for a moment and "Copied" for a screen
- * reader, rather than with a toast: the reader's eyes are already on it. A failure still toasts,
- * from `writeClipboard`. Its colour is the bar's it sits in, a `ContentHeader` or the frame's
- * floating toolbar.
- */
-export function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
+/** Copy, drawn as the commands of the header or the floating toolbar it sits among. */
+export function FenceCopy({ text }: { text: string }) {
   return (
-    <>
+    <CopyButton text={text} asChild>
       <ToolbarButton
         type="button"
         size="icon-xs"
         aria-label="Copy"
         title="Copy"
-        onClick={async () => {
-          if (!(await writeClipboard(text))) return;
-          clearTimeout(timer.current);
-          setCopied(true);
-          timer.current = setTimeout(() => setCopied(false), COPIED_MS);
-        }}
-      >
-        {copied ? <CheckIcon data-icon="copied" /> : <CopyIcon />}
-      </ToolbarButton>
-      <span className="sr-only" aria-live="polite">
-        {copied ? "Copied" : ""}
-      </span>
-    </>
+      />
+    </CopyButton>
   );
 }
 
@@ -162,7 +135,7 @@ export function FenceFrame({
           <Maximize2Icon />
         </ToolbarButton>
       )}
-      {text !== undefined && <CopyButton text={text} />}
+      {text !== undefined && <FenceCopy text={text} />}
     </>
   );
   const headed = title !== undefined || icon !== undefined;

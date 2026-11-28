@@ -1,7 +1,8 @@
 import { List, ListItem } from "@orz/ui/components/list";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import { Content } from "@orz/ui-content";
 import { useState } from "react";
-import { Pane, Stamp, UserAvatar } from "./parts.tsx";
+import { Pane, UserAvatar } from "./parts.tsx";
 import { COMMITS, runFiles } from "./run.ts";
 
 /** The pull request's commits, and the one picked drawn alone below them. */
@@ -34,7 +35,7 @@ export function Commits() {
                     {commit.hash}
                   </code>
                   <span className="text-muted-foreground text-ui-sm">
-                    {commit.author} committed <Stamp at={commit.at} />
+                    {commit.author} committed <Timestamp value={commit.at} />
                   </span>
                 </button>
               </li>

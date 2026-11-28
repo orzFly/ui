@@ -16,6 +16,7 @@ import {
   NavListLink,
 } from "@orz/ui/components/nav-list";
 import { Pane } from "@orz/ui/components/pane";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import {
   Tooltip,
   TooltipContent,
@@ -42,14 +43,10 @@ const FOLDERS = [
   { title: "Drafts", Icon: FileTextIcon, count: 1 },
 ];
 
-const ROWS = [
-  { id: "touch-sizes", day: "Oct 27" },
-  { id: "contrast-audit", day: "Oct 27" },
-  { id: "flaky-retry", day: "Oct 27" },
-].flatMap(({ id, day }) => {
+const ROWS = ["touch-sizes", "contrast-audit", "flaky-retry"].flatMap((id) => {
   const thread = INBOX_THREADS.find((each) => each.id === id);
   const last = thread?.messages.at(-1);
-  return thread && last ? [{ thread, last, day }] : [];
+  return thread && last ? [{ thread, last }] : [];
 });
 
 export function MailSurfaces() {
@@ -99,7 +96,7 @@ export function MailSurfaces() {
           </Pane>
           <List purpose="listbox">
             <ul aria-label="Conversations">
-              {ROWS.map(({ thread, last, day }) => (
+              {ROWS.map(({ thread, last }) => (
                 <ListItem key={thread.id} selected={thread.id === open} asChild>
                   <li className="flex items-start">
                     <button
@@ -111,12 +108,11 @@ export function MailSurfaces() {
                       <span className="truncate font-medium text-ui">
                         {INBOX_PEOPLE[last.from] ?? last.from}
                       </span>
-                      <time
-                        dateTime={last.at}
+                      <Timestamp
+                        value={last.at}
+                        format="date"
                         className="text-muted-foreground text-ui-sm"
-                      >
-                        {day}
-                      </time>
+                      />
                       <span className="col-span-2 truncate text-ui">
                         {thread.subject}
                       </span>

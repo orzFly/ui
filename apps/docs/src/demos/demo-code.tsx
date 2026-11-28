@@ -1,4 +1,4 @@
-import { Button } from "@orz/ui/components/button";
+import { CopyButton } from "@orz/ui/components/copy-button";
 import {
   NavList,
   NavListCount,
@@ -18,9 +18,7 @@ import {
   SelectValue,
 } from "@orz/ui/components/select";
 import { isPlainClick } from "@orz/ui/lib/link";
-import { cn } from "@orz/ui/lib/utils";
 import { CodeBlock } from "@orz/ui-code";
-import { CheckIcon, CopyIcon } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { sourceHref } from "./demo-page-state.ts";
 import { type DemoFile, loadDemoFiles } from "./demo-source.ts";
@@ -157,9 +155,12 @@ export function DemoCode({
           </span>
           <CopyButton
             key={file.name}
-            contents={file.contents}
+            text={file.contents}
+            size="sm"
             className="ml-auto"
-          />
+          >
+            Copy
+          </CopyButton>
         </div>
         <div className="min-h-0 flex-1 overflow-auto">
           <CodeBlock
@@ -171,33 +172,5 @@ export function DemoCode({
         </div>
       </div>
     </div>
-  );
-}
-
-function CopyButton({
-  contents,
-  className,
-}: {
-  contents: string;
-  className?: string;
-}) {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(timer);
-  }, [copied]);
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className={cn("shrink-0", className)}
-      onClick={() =>
-        void navigator.clipboard.writeText(contents).then(() => setCopied(true))
-      }
-    >
-      {copied ? <CheckIcon /> : <CopyIcon />}
-      {copied ? "Copied" : "Copy"}
-    </Button>
   );
 }

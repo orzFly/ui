@@ -6,6 +6,7 @@ import {
 } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
+import { CopyButton } from "@orz/ui/components/copy-button";
 import {
   FilterMenu,
   MatchedText,
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from "@orz/ui/components/select";
 import { Separator } from "@orz/ui/components/separator";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import { isPlainClick } from "@orz/ui/lib/link";
 import {
   CircleCheckIcon,
@@ -33,7 +35,7 @@ import {
 import { type ReactNode, useState } from "react";
 import { isOpen, STATUSES, taskKey } from "./board.ts";
 import { taskHref } from "./location.ts";
-import { IconButton, PersonAvatar, Stamp, StatusDot } from "./parts.tsx";
+import { IconButton, PersonAvatar, StatusDot } from "./parts.tsx";
 import { usePickedFirst } from "./use-picked-first.ts";
 
 /** What the details pane does to its task. */
@@ -47,7 +49,6 @@ export interface DetailActions {
   onClose: () => void;
   onReopen: () => void;
   onDelete: () => void;
-  onCopyLink: () => void;
   /** Show another task's details in place of these. */
   onOpen: (id: number) => void;
 }
@@ -269,7 +270,7 @@ export function TaskDetails({
           </span>
         </Field>
         <Field label="Updated">
-          <Stamp at={task.updated} />
+          <Timestamp value={task.updated} />
         </Field>
       </div>
       <section className="grid gap-2 text-ui">
@@ -304,10 +305,13 @@ export function TaskDetails({
               Reopen task
             </Button>
           )}
-          <Button variant="ghost" onClick={actions.onCopyLink}>
-            <LinkIcon />
+          <CopyButton
+            text={() => new URL(taskHref(task.id), location.href).href}
+            icon={<LinkIcon />}
+            copiedLabel="Link copied"
+          >
             Copy link
-          </Button>
+          </CopyButton>
           <Button
             variant="destructive"
             className="ml-auto"

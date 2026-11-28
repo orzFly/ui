@@ -1,14 +1,24 @@
 import { PROFILE } from "@orz/fixtures/account.ts";
 import { CI_RUN } from "@orz/fixtures/ci-run.ts";
+import { INBOX_THREADS } from "@orz/fixtures/inbox.ts";
 import { Button } from "@orz/ui/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@orz/ui/components/dropdown-menu";
 import { FieldDescription, FieldError } from "@orz/ui/components/field";
 import { Input } from "@orz/ui/components/input";
 import { Label } from "@orz/ui/components/label";
 import { List, ListItem } from "@orz/ui/components/list";
 import { RefreshFailure } from "@orz/ui/components/load-failure";
-import { LinkIcon } from "lucide-react";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
+import { EllipsisIcon, ForwardIcon, LinkIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+const [thread] = INBOX_THREADS;
 
 const check = (email: string) =>
   /^\S+@\S+\.\S+$/.test(email)
@@ -22,14 +32,28 @@ export function FeedbackKinds() {
   const [stale, setStale] = useState(true);
   return (
     <div className="grid gap-8">
-      <Button
-        variant="outline"
-        className="justify-self-start"
-        onClick={() => toast("Link copied")}
-      >
-        <LinkIcon />
-        Copy link
-      </Button>
+      <div className="flex max-w-md items-center gap-2">
+        <span className="flex-1 truncate font-medium text-ui">
+          {thread?.subject}
+        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <ToolbarButton aria-label="More actions" tooltip="More actions">
+              <EllipsisIcon />
+            </ToolbarButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem>
+              <ForwardIcon />
+              Forward
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => toast("Link copied")}>
+              <LinkIcon />
+              Copy link
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <form
         className="grid max-w-md gap-2"
         noValidate

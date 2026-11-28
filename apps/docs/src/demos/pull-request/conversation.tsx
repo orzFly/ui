@@ -10,6 +10,7 @@ import {
 } from "@orz/ui/components/selection-action";
 import { Separator } from "@orz/ui/components/separator";
 import { Skeleton } from "@orz/ui/components/skeleton";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import {
   MarkdownEditor,
   type MarkdownEditorHandle,
@@ -25,7 +26,7 @@ import {
 import { type RefObject, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ClientOnly } from "../../hydrated.tsx";
-import { Stamp, StatusIcon, UserAvatar } from "./parts.tsx";
+import { StatusIcon, UserAvatar } from "./parts.tsx";
 import {
   CI_RUN,
   COMMITS,
@@ -57,7 +58,7 @@ function Comment({
         <article className="min-w-0">
           <header className="flex flex-wrap items-baseline gap-x-1.5 border-b bg-muted/50 px-3 py-2 text-muted-foreground text-ui">
             <span className="font-medium text-foreground">{author}</span>
-            {verb} <Stamp at={at} />
+            {verb} <Timestamp value={at} />
             {author === PULL_REQUEST.author && (
               <Badge variant="outline" className="ml-auto">
                 Author
@@ -97,7 +98,7 @@ function Event({
           {commit?.subject}
         </span>
         <span className="ml-auto text-ui-sm">
-          <Stamp at={event.at} />
+          <Timestamp value={event.at} />
         </span>
       </li>
     );
@@ -117,7 +118,7 @@ function Event({
         Details
       </Button>
       <span className="ml-auto text-ui-sm">
-        <Stamp at={event.at} />
+        <Timestamp value={event.at} />
       </span>
     </li>
   );

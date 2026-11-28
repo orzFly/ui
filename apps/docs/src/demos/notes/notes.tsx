@@ -12,6 +12,7 @@ import {
   SegmentedControlItem,
 } from "@orz/ui/components/segmented-control";
 import { Skeleton } from "@orz/ui/components/skeleton";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import { ToolbarButton } from "@orz/ui/components/toolbar";
 import {
   Tooltip,
@@ -63,15 +64,6 @@ const MODES: { mode: Mode; label: string }[] = [
   { mode: "split", label: "Split" },
   { mode: "preview", label: "Preview" },
 ];
-
-const STAMP = new Intl.DateTimeFormat("en", {
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-  timeZone: "UTC",
-});
 
 function PreviewSkeleton() {
   return (
@@ -257,9 +249,7 @@ export function Notes() {
                         </h2>
                         <p className="truncate text-muted-foreground text-ui-sm">
                           {note.folder} · Edited{" "}
-                          <time dateTime={note.updated}>
-                            {STAMP.format(new Date(note.updated))} UTC
-                          </time>
+                          <Timestamp value={note.updated} />
                         </p>
                       </div>
                       <SegmentedControl

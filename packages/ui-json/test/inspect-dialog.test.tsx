@@ -97,7 +97,7 @@ describe("InspectDialog", () => {
     const { dialog } = open({ value: { a: 1 }, path: "$.o" });
     fireEvent.click(within(dialog).getByRole("button", { name: "Copy" }));
     await waitFor(() =>
-      expect(dialog.querySelector("[data-icon=copied]")).toBeTruthy(),
+      expect(dialog.querySelector("[data-copied]")).toBeTruthy(),
     );
     expect(writeText).toHaveBeenCalledWith('{"a":1}');
     expect(within(dialog).getByText("Copied")).toBeTruthy();

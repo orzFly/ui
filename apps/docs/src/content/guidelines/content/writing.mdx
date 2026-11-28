@@ -15,6 +15,7 @@ export const meta = {
     "ui/Primitives/Textarea",
     "ui/Primitives/InfoPopover",
     "ui/Primitives/FieldDescription",
+    "ui/Primitives/Timestamp",
   ],
 };
 
@@ -25,6 +26,7 @@ import { OffStateSwitch } from "../../../examples/writing/off-state-switch.tsx";
 import { OnStateSwitch } from "../../../examples/writing/on-state-switch.tsx";
 import { PullRequestChecks } from "../../../examples/writing/pull-request-checks.tsx";
 import { RevokeToken } from "../../../examples/writing/revoke-token.tsx";
+import { RunTimes } from "../../../examples/writing/run-times.tsx";
 import { YesNoAnswer } from "../../../examples/writing/yes-no-answer.tsx";
 
 > **Write what a person would say out loud: short, specific, in sentence case, and naming what
@@ -175,8 +177,33 @@ when the reader can do something about it, what that is.
   than writing "conversation(s)".
 - **The right character, where it has a job**: `…` for an ellipsis, `–` for a range ("10–20"),
   `×` for dimensions ("44 × 44"), `—` between two halves of a sentence.
-- **Dates and times** through `Intl.DateTimeFormat` in the reader's locale; a relative time ("3
-  minutes ago") carries the absolute one in its `title`.
+- **Dates and times** with `Timestamp`, in the reader's language and time zone; see below.
+
+## Dates and times
+
+<Example of={RunTimes} />
+
+A run from the Pull request demo. When it started is a time to set beside its log, so it takes the
+date and the time; how long its logs are kept needs only the day. Press **Refresh**: the checks
+were refreshed "now", and the words keep up as the minutes pass.
+
+`Timestamp` writes one instant, in the reader's language and time zone, and puts the whole of it,
+to the second and with the zone, in its `title`.
+
+- `datetime`, the default, for when something happened: a comment's header, an event on a
+  timeline, a task's **Updated** field.
+- `date` where the day is all that counts: when someone joined, when a file went to the trash.
+- `relative` where how fresh something is matters more than when: a list sorted by activity, the
+  last refresh or sync. It keeps itself current while it is on screen, and past a week it writes
+  the date.
+- Both of the other two leave the year out within the reader's current year and write it for any
+  other, so this year's dates stay short and an old one cannot pass for this year's.
+- One kind of time takes one format on every screen of an app: a comment's time is not
+  `datetime` in the timeline and `relative` in the inbox.
+- A relative time never stands alone where the exact time matters. Its `title` holds the time,
+  and a title shows on hover, never under a finger.
+- Do not format a date by hand, with `toLocaleString()` or a format string of your own: each one
+  writes a different shape, in a different zone.
 
 ## On each platform
 

@@ -15,6 +15,7 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@orz/ui/components/sheet";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import { TooltipProvider } from "@orz/ui/components/tooltip";
 import { usePagedAppend } from "@orz/ui/hooks/use-paged-append";
 import { useQueryHistory } from "@orz/ui/hooks/use-query-history";
@@ -94,12 +95,6 @@ import { type ComposerHandle, nameOf, Thread } from "./thread.tsx";
 
 // Fenced code in a message is drawn through the content registry.
 const RENDERERS = [codeContent];
-
-const DAY = new Intl.DateTimeFormat("en", {
-  month: "short",
-  day: "numeric",
-  timeZone: "UTC",
-});
 
 /** How long a finger rests on a row before it selects instead of opening. */
 const LONG_PRESS_MS = 450;
@@ -227,9 +222,7 @@ function ThreadRow({
             {thread.starred && (
               <StarIcon aria-label="Starred" className="size-3 fill-current" />
             )}
-            {last && (
-              <time dateTime={last.at}>{DAY.format(new Date(last.at))}</time>
-            )}
+            {last && <Timestamp value={last.at} format="date" />}
           </span>
           <span
             className={cn(
