@@ -1,3 +1,4 @@
+import { formatTimestamp } from "@orz/ui/components/timestamp";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -108,11 +109,10 @@ describe("the attachment list folds a long list", () => {
   it("prints each file's upload time", () => {
     const { container } = draw(shots(3));
     const row = container.querySelector("li") as HTMLLIElement;
-    const stamp = row.querySelector("span[title]") as HTMLSpanElement;
-    expect(stamp.getAttribute("title")).toBe("2026-09-01T00:01:00Z");
-    expect(stamp.textContent).toBe(
-      new Date("2026-09-01T00:01:00Z").toLocaleString(),
-    );
+    const stamp = row.querySelector("time") as HTMLTimeElement;
+    expect(stamp.getAttribute("datetime")).toBe("2026-09-01T00:01:00.000Z");
+    expect(stamp.textContent).toBe(formatTimestamp("2026-09-01T00:01:00Z"));
+    expect(stamp.getAttribute("title")).toMatch(/:01:00/);
   });
 
   it("renders nothing for an empty list", () => {
@@ -217,7 +217,7 @@ describe("the attachment list's upload time", () => {
   it("is a <time> carrying the instant it prints", () => {
     const { container } = draw(shots(1));
     const time = container.querySelector("li time");
-    expect(time?.getAttribute("dateTime")).toBe("2026-09-01T00:01:00Z");
+    expect(time?.getAttribute("dateTime")).toBe("2026-09-01T00:01:00.000Z");
   });
 });
 

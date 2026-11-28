@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@orz/ui/components/select";
 import { Separator } from "@orz/ui/components/separator";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import { isPlainClick } from "@orz/ui/lib/link";
 import {
   CircleCheckIcon,
@@ -34,7 +35,7 @@ import {
 import { type ReactNode, useState } from "react";
 import { isOpen, STATUSES, taskKey } from "./board.ts";
 import { taskHref } from "./location.ts";
-import { IconButton, PersonAvatar, Stamp, StatusDot } from "./parts.tsx";
+import { IconButton, PersonAvatar, StatusDot } from "./parts.tsx";
 import { usePickedFirst } from "./use-picked-first.ts";
 
 /** What the details pane does to its task. */
@@ -269,7 +270,7 @@ export function TaskDetails({
           </span>
         </Field>
         <Field label="Updated">
-          <Stamp at={task.updated} />
+          <Timestamp value={task.updated} />
         </Field>
       </div>
       <section className="grid gap-2 text-ui">

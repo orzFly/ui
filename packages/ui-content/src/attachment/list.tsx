@@ -1,6 +1,7 @@
 import { Button } from "@orz/ui/components/button";
 import { Checkbox, SelectSlot } from "@orz/ui/components/checkbox";
 import { SelectionBar } from "@orz/ui/components/selection-bar";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import { type Selection, useSelection } from "@orz/ui/hooks/use-selection";
 import { useSweepSelect } from "@orz/ui/hooks/use-sweep-select";
 import { isPlainClick } from "@orz/ui/lib/link";
@@ -161,14 +162,10 @@ function AttachmentRow({
             a third right-hand column would eat the filename, which is
             the one thing on the row nothing else replaces. */}
         {item.createdAt !== undefined && (
-          <span
+          <Timestamp
+            value={item.createdAt}
             className="hidden shrink-0 text-ui-sm text-muted-foreground sm:inline"
-            title={item.createdAt}
-          >
-            <time dateTime={item.createdAt}>
-              {new Date(item.createdAt).toLocaleString()}
-            </time>
-          </span>
+          />
         )}
       </a>
       {item.url !== undefined && (

@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
 } from "@orz/ui/components/dropdown-menu";
 import { Pane } from "@orz/ui/components/pane";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import {
   Toolbar,
   ToolbarMenu,
@@ -45,16 +46,6 @@ import {
   type InboxThread,
 } from "./mailbox.ts";
 
-/** UTC, so the prerender and every reader's browser print the same thing. */
-const STAMP = new Intl.DateTimeFormat("en", {
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-  timeZone: "UTC",
-});
-
 export const nameOf = (login: string) => INBOX_PEOPLE[login] ?? login;
 
 function Message({ message }: { message: InboxMessage }) {
@@ -71,12 +62,10 @@ function Message({ message }: { message: InboxMessage }) {
             to {message.to.map(nameOf).join(", ")}
           </span>
         )}
-        <time
-          dateTime={message.at}
-          className="text-muted-foreground text-ui-sm tabular-nums"
-        >
-          {STAMP.format(new Date(message.at))} UTC
-        </time>
+        <Timestamp
+          value={message.at}
+          className="text-muted-foreground text-ui-sm"
+        />
       </p>
       <Markdown className="col-start-2 min-w-0 text-ui">
         {message.body}

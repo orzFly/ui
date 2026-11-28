@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@orz/ui/components/table";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import { CircleCheckIcon, CircleXIcon } from "lucide-react";
 
 const review = PULL_REQUEST.timeline.find(
@@ -35,7 +36,7 @@ export function RunSummary() {
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="text-muted-foreground text-ui-sm">
-          Started <time dateTime={CI_RUN.startedAt}>Oct 21, 09:14 UTC</time> on{" "}
+          Started <Timestamp value={CI_RUN.startedAt} /> on{" "}
           <InlineCode>{CI_RUN.branch}</InlineCode> at{" "}
           <InlineCode>{CI_RUN.commit}</InlineCode>
         </div>

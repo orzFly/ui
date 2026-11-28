@@ -3,16 +3,10 @@ import { EmptyState } from "@orz/ui/components/empty-state";
 import { Input } from "@orz/ui/components/input";
 import { List, ListItem, ListLabel } from "@orz/ui/components/list";
 import { Pane } from "@orz/ui/components/pane";
+import { Timestamp } from "@orz/ui/components/timestamp";
 import { Toggle } from "@orz/ui/components/toggle";
 import { NotebookIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { NOTE_FOLDERS, snippetOf, titleOf } from "./notebook.ts";
-
-/** UTC, so the prerender and every reader's browser print the same day. */
-const DAY = new Intl.DateTimeFormat("en", {
-  month: "short",
-  day: "numeric",
-  timeZone: "UTC",
-});
 
 /** A note as the list shows it: the text as it stands, and when it last changed. */
 export interface ListedNote {
@@ -43,12 +37,11 @@ function NoteRow({
           <span className="truncate font-medium text-ui">
             {titleOf(note.body)}
           </span>
-          <time
-            dateTime={note.updated}
-            className="text-muted-foreground text-ui-sm tabular-nums"
-          >
-            {DAY.format(new Date(note.updated))}
-          </time>
+          <Timestamp
+            value={note.updated}
+            format="date"
+            className="text-muted-foreground text-ui-sm"
+          />
           <span className="col-span-2 line-clamp-2 text-muted-foreground text-ui-sm md:line-clamp-1">
             {snippetOf(note.body)}
           </span>
