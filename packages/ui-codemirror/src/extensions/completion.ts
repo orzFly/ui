@@ -107,7 +107,10 @@ export function reactOption(
  * set their text in the UI font rather than as code.
  */
 export const completionRowClass = {
-  /** A drawn part (an avatar) takes the type icon's place; the label stays. */
+  /**
+   * A drawn part (an avatar) takes the type icon's place; the label stays.
+   * An `Avatar` there is sized to the row's line, so the row keeps its height.
+   */
   drawn: "cm-completion-drawn",
   /**
    * The drawn part (a pill, a chip) shows the label itself, so neither the
@@ -209,6 +212,14 @@ export const completionTheme = EditorView.theme({
   // A flex box, so an inline part (a Badge) stands at its own height rather
   // than on a line of the row's, whose descent would add a pixel below it.
   [`.${PART}`]: { display: "flex", alignItems: "center" },
+  // An avatar in the icon's place is sized to the line of the row's words,
+  // whatever size the app drew, as a QueryBox value row's is: a person's row
+  // stands as tall as the rows around it, and a person is as big here as in
+  // a search box. Raymond's size is in styles.css.
+  [`.cm-completion-drawn .${PART} > [data-slot=avatar]`]: {
+    width: "1.125rem",
+    height: "1.125rem",
+  },
   ".cm-completion-drawn .cm-completionIcon, .cm-completion-face .cm-completionIcon, .cm-completion-face .cm-completionLabel":
     { display: "none" },
   ".cm-completion-drawn .cm-completionLabel": {
