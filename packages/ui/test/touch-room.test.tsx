@@ -408,8 +408,12 @@ describe("room on touch", () => {
     expect(classesOf(slot)).toEqual(
       expect.arrayContaining(["size-8", "touch:w-touch"]),
     );
+    // At the bar's end, past a ToolbarSpacer, rather than pushed there itself.
+    const clear = screen.getByRole("button", { name: "Clear selection" });
+    expect(classesOf(clear)).toContain("mx-(--hit-room)");
+    expect(classesOf(clear)).not.toContain("ml-auto");
     expect(
-      classesOf(screen.getByRole("button", { name: "Clear selection" })),
-    ).toEqual(expect.arrayContaining(["mx-(--hit-room)", "ml-auto"]));
+      clear.closest("[data-slot=toolbar-item]")?.previousElementSibling,
+    ).toHaveProperty("dataset.slot", "toolbar-spacer");
   });
 });
