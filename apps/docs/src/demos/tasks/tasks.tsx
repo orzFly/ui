@@ -224,7 +224,6 @@ export function Tasks() {
     onClose: () => close([task.id]),
     onReopen: () => reopen([task.id]),
     onDelete: () => askDelete([task.id]),
-    onCopyLink: () => copyLink(task.id),
     onOpen: openTask,
   };
 

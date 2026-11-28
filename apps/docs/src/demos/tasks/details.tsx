@@ -6,6 +6,7 @@ import {
 } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
+import { CopyButton } from "@orz/ui/components/copy-button";
 import {
   FilterMenu,
   MatchedText,
@@ -47,7 +48,6 @@ export interface DetailActions {
   onClose: () => void;
   onReopen: () => void;
   onDelete: () => void;
-  onCopyLink: () => void;
   /** Show another task's details in place of these. */
   onOpen: (id: number) => void;
 }
@@ -304,10 +304,13 @@ export function TaskDetails({
               Reopen task
             </Button>
           )}
-          <Button variant="ghost" onClick={actions.onCopyLink}>
-            <LinkIcon />
+          <CopyButton
+            text={() => new URL(taskHref(task.id), location.href).href}
+            icon={<LinkIcon />}
+            copiedLabel="Link copied"
+          >
             Copy link
-          </Button>
+          </CopyButton>
           <Button
             variant="destructive"
             className="ml-auto"

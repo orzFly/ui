@@ -49,7 +49,7 @@ vi.mock("../../src/view/geometry.ts", async (importOriginal) => {
 });
 
 vi.mock("@orz/ui/lib/clipboard", () => ({
-  copyToClipboard: vi.fn(async () => true),
+  writeClipboard: vi.fn(async () => true),
 }));
 
 beforeEach(() => {

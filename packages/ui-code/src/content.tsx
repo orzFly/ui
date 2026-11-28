@@ -11,8 +11,8 @@ import { createPortal } from "react-dom";
 import { CappedCodeBlock } from "./capped-code-block.tsx";
 import { fenceFilename } from "./code-block.tsx";
 import {
-  CopyButton,
   FENCE_COLLAPSE_LINES,
+  FenceCopy,
   FenceFrame,
   useInFenceFrame,
 } from "./fence-frame.tsx";
@@ -57,7 +57,7 @@ function CodeFile({
     <>
       {headed &&
         titleBar !== null &&
-        createPortal(<CopyButton text={text} />, titleBar)}
+        createPortal(<FenceCopy text={text} />, titleBar)}
       <CappedCodeBlock
         filename={source.name}
         contents={text}

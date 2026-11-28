@@ -1,7 +1,8 @@
 import installs from "virtual:orz-install";
 import packages from "virtual:orz-packages";
 import themeTable from "virtual:orz-themes";
-import { Button, buttonVariants } from "@orz/ui/components/button";
+import { buttonVariants } from "@orz/ui/components/button";
+import { CopyButton } from "@orz/ui/components/copy-button";
 import { InlineCode } from "@orz/ui/components/inline-code";
 import { Separator } from "@orz/ui/components/separator";
 import {
@@ -13,9 +14,7 @@ import {
   TableRow,
 } from "@orz/ui/components/table";
 import { TextLink } from "@orz/ui/components/text-link";
-import { copyToClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
-import { CopyIcon } from "lucide-react";
 import {
   type ComponentProps,
   isValidElement,
@@ -128,17 +127,13 @@ export function Command({ command }: { command: string }) {
       <span className="min-w-0 overflow-x-auto whitespace-nowrap">
         <InlineCode>{command}</InlineCode>
       </span>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
+      <CopyButton
+        text={command}
+        size="xs"
         aria-label={`Copy ${command}`}
-        title="Copy"
-        className="text-muted-foreground touch:hit-area"
-        onClick={() => void copyToClipboard(command, "Install line copied")}
-      >
-        <CopyIcon />
-      </Button>
+        tooltip="Copy"
+        className="text-muted-foreground"
+      />
     </span>
   );
 }

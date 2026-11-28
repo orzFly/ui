@@ -1,5 +1,4 @@
-import { Button } from "@orz/ui/components/button";
-import { copyToClipboard } from "@orz/ui/lib/clipboard";
+import { CopyButton } from "@orz/ui/components/copy-button";
 import { cn } from "@orz/ui/lib/utils";
 import {
   type ColorScheme,
@@ -968,17 +967,13 @@ export function CodeBlock({
       )}
     >
       <div className="min-w-0 flex-1">{block}</div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
+      <CopyButton
+        text={contents}
+        size="sm"
         aria-label="Copy code"
-        title="Copy code"
+        icon={<CopyIcon className="size-4 raymond:size-3" />}
         className="m-1 shrink-0 text-muted-foreground touch:m-hit-sm touch:hit-area raymond:bg-(--3d-face) raymond:text-foreground raymond:shadow-raised raymond:hover:bg-(--3d-face) raymond:active:shadow-pressed"
-        onClick={() => void copyToClipboard(contents, "Code copied")}
-      >
-        <CopyIcon className="size-4 raymond:size-3" />
-      </Button>
+      />
     </div>
   );
 }

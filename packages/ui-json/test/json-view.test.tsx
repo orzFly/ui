@@ -524,7 +524,7 @@ describe("JsonView props", () => {
     render(<JsonView value={value} />);
     fireEvent.click(screen.getByRole("button", { name: "Copy document" }));
     await waitFor(() =>
-      expect(document.querySelector("[data-icon=copied]")).toBeTruthy(),
+      expect(document.querySelector("[data-copied]")).toBeTruthy(),
     );
     expect(writeText).toHaveBeenCalledWith(JSON.stringify(value, null, 2));
     expect(toast.success).not.toHaveBeenCalled();

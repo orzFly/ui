@@ -1,6 +1,7 @@
 // Ported from PicoTera (BSD-3-Clause); see NOTICE.
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
+import { CopyButton } from "@orz/ui/components/copy-button";
 import {
   Dialog,
   DialogContent,
@@ -8,17 +9,9 @@ import {
   DialogTitle,
 } from "@orz/ui/components/dialog";
 import { Pane } from "@orz/ui/components/pane";
-import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  BracesIcon,
-  CheckIcon,
-  CopyIcon,
-  DownloadIcon,
-  TextIcon,
-  WrapTextIcon,
-} from "lucide-react";
+import { BracesIcon, DownloadIcon, TextIcon, WrapTextIcon } from "lucide-react";
 import {
   type ReactNode,
   useEffect,
@@ -43,8 +36,6 @@ import {
  * that one wrapped segment is a few lines, not a screenful.
  */
 const SEGMENT_SIZE = 2000;
-
-const COPIED_MS = 1500;
 
 const VALUE_CLASS: Record<JsonKind, string> = {
   string: "text-warning",
@@ -77,47 +68,6 @@ export function downloadName(path: string, text: boolean): string {
       ? "value"
       : path.split(/[.[]/).pop()?.replace(/["\]]/g, "") || "value";
   return `${name}.${text ? "txt" : "json"}`;
-}
-
-/** A Copy button that answers in place: a check for a moment, and "Copied" to a screen reader. */
-function CopyButton({
-  text,
-  label,
-  copied: copiedLabel,
-  icon,
-  disabled,
-}: {
-  text: () => string | null;
-  label: string;
-  copied: string;
-  icon: ReactNode;
-  disabled?: boolean;
-}) {
-  const [copied, setCopied] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
-  return (
-    <>
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={disabled}
-        onClick={async () => {
-          const value = text();
-          if (value === null || !(await writeClipboard(value))) return;
-          clearTimeout(timer.current);
-          setCopied(true);
-          timer.current = setTimeout(() => setCopied(false), COPIED_MS);
-        }}
-      >
-        {copied ? <CheckIcon data-icon="copied" /> : icon}
-        {label}
-      </Button>
-      <span className="sr-only" aria-live="polite">
-        {copied ? copiedLabel : ""}
-      </span>
-    </>
-  );
 }
 
 /** The object URL a Download link points at, made while the dialog is open and revoked after. */
@@ -322,18 +272,21 @@ function InspectContent({
       <div className="-my-2 flex flex-wrap items-center gap-1">
         <CopyButton
           text={() => (isText ? text : rawTextOf(value))}
-          label={labels.copy}
-          copied={labels.copied}
-          icon={<CopyIcon />}
-        />
+          size="sm"
+          copiedLabel={labels.copied}
+        >
+          {labels.copy}
+        </CopyButton>
         {!isText && (
           <CopyButton
             text={() => pretty}
-            label={labels.copyAsJson}
-            copied={labels.copied}
+            size="sm"
             icon={<BracesIcon />}
+            copiedLabel={labels.copied}
             disabled={pretty === null}
-          />
+          >
+            {labels.copyAsJson}
+          </CopyButton>
         )}
         <Button asChild variant="ghost" size="sm">
           <a href={url} download={downloadName(path, isText)}>

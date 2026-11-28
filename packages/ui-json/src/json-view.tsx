@@ -1,4 +1,6 @@
 // Ported from PicoTera (BSD-3-Clause); see NOTICE.
+
+import { CopyButton } from "@orz/ui/components/copy-button";
 import {
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -8,12 +10,11 @@ import {
 import { Input } from "@orz/ui/components/input";
 import { Pane } from "@orz/ui/components/pane";
 import { ToolbarButton } from "@orz/ui/components/toolbar";
-import { copyToClipboard, writeClipboard } from "@orz/ui/lib/clipboard";
+import { copyToClipboard } from "@orz/ui/lib/clipboard";
 import { cn } from "@orz/ui/lib/utils";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   BracesIcon,
-  CheckIcon,
   ChevronsDownUpIcon,
   ChevronsUpDownIcon,
   CodeIcon,
@@ -120,7 +121,6 @@ export type JsonViewProps = (
 
 /** How long typing rests before the full-depth search runs. */
 const SEARCH_DEBOUNCE_MS = 180;
-const COPIED_MS = 1500;
 /** The band along the scroller's edges where a drag scrolls it, and its top speed per frame. */
 const EDGE_PX = 40;
 const EDGE_SPEED = 18;
@@ -471,19 +471,10 @@ function JsonViewBody({
     await copyToClipboard(text, labels.copiedJson);
   };
 
-  const [copiedDocument, setCopiedDocument] = useState(false);
-  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(copiedTimer.current), []);
-  const copyDocument = async () => {
+  const documentText = () => {
     const pretty = prettyJsonOf(value, 2);
-    if (pretty === null) {
-      toast.error(labels.cannotSerialise);
-      return;
-    }
-    if (!(await writeClipboard(pretty))) return;
-    clearTimeout(copiedTimer.current);
-    setCopiedDocument(true);
-    copiedTimer.current = setTimeout(() => setCopiedDocument(false), COPIED_MS);
+    if (pretty === null) toast.error(labels.cannotSerialise);
+    return pretty;
   };
 
   // --- inspect ----------------------------------------------------------------
@@ -1039,17 +1030,13 @@ function JsonViewBody({
         >
           <ChevronsUpDownIcon />
         </ToolbarButton>
-        <ToolbarButton
-          size="icon-sm"
-          aria-label={labels.copyDocument}
-          title={labels.copyDocument}
-          onClick={() => void copyDocument()}
-        >
-          {copiedDocument ? <CheckIcon data-icon="copied" /> : <CopyIcon />}
-        </ToolbarButton>
-        <span className="sr-only" aria-live="polite">
-          {copiedDocument ? labels.copied : ""}
-        </span>
+        <CopyButton text={documentText} copiedLabel={labels.copied} asChild>
+          <ToolbarButton
+            size="icon-sm"
+            aria-label={labels.copyDocument}
+            title={labels.copyDocument}
+          />
+        </CopyButton>
         <ToolbarButton
           size="icon-sm"
           aria-label={labels.wrap}

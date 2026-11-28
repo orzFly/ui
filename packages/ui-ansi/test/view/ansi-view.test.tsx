@@ -1,4 +1,4 @@
-import { copyToClipboard } from "@orz/ui/lib/clipboard";
+import { writeClipboard } from "@orz/ui/lib/clipboard";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,7 +7,7 @@ import { stripAnsi } from "../../src/parse/parser.ts";
 import { AnsiView } from "../../src/view/ansi-view.tsx";
 
 vi.mock("@orz/ui/lib/clipboard", () => ({
-  copyToClipboard: vi.fn(async () => true),
+  writeClipboard: vi.fn(async () => true),
 }));
 
 // happy-dom has no layout: 20px rows, 8px cells, 100 columns, 20 rows visible.
@@ -29,7 +29,7 @@ vi.mock("../../src/view/metrics.ts", async (importOriginal) => {
 
 beforeEach(() => {
   metricsMode.real = false;
-  vi.mocked(copyToClipboard).mockClear();
+  vi.mocked(writeClipboard).mockClear();
 });
 
 function rows(container: HTMLElement) {
@@ -121,7 +121,7 @@ describe("AnsiView chrome", () => {
   it("copies the stripped text", () => {
     render(<AnsiView chrome="pane" text={"\x1b[31ma\x1b[0m\nb\rc"} />);
     fireEvent.click(screen.getByRole("button", { name: "Copy output" }));
-    expect(copyToClipboard).toHaveBeenCalledWith("a\nc", "Copied output");
+    expect(writeClipboard).toHaveBeenCalledWith("a\nc");
   });
 
   it("draws no gutter or header in a pane", () => {
@@ -544,10 +544,7 @@ describe("AnsiView Copy button", () => {
     it(`copies stripAnsi of the whole text: ${name}`, () => {
       render(<AnsiView chrome="pane" text={text} />);
       fireEvent.click(screen.getByRole("button", { name: "Copy output" }));
-      expect(copyToClipboard).toHaveBeenCalledWith(
-        stripAnsi(text),
-        "Copied output",
-      );
+      expect(writeClipboard).toHaveBeenCalledWith(stripAnsi(text));
     });
   }
 
@@ -555,14 +552,14 @@ describe("AnsiView Copy button", () => {
     const big = Array.from({ length: 20_000 }, (_, i) => `L${i}`).join("\n");
     render(<AnsiView chrome="file" text={big} />);
     fireEvent.click(screen.getByRole("button", { name: "Copy output" }));
-    expect(copyToClipboard).toHaveBeenCalledWith(big, "Copied output");
+    expect(writeClipboard).toHaveBeenCalledWith(big);
   });
 
   it("copies the new text after the prop changes", () => {
     const { rerender } = render(<AnsiView chrome="pane" text="old" />);
     rerender(<AnsiView chrome="pane" text={"\x1b[1mnew"} />);
     fireEvent.click(screen.getByRole("button", { name: "Copy output" }));
-    expect(copyToClipboard).toHaveBeenLastCalledWith("new", "Copied output");
+    expect(writeClipboard).toHaveBeenLastCalledWith("new");
   });
 
   it("copies the stripped whole text of a large log while still parsing", async () => {
@@ -570,18 +567,12 @@ describe("AnsiView Copy button", () => {
     const big = line.repeat(Math.ceil((1 << 20) / line.length) + 10);
     render(<AnsiView chrome="file" text={big} />);
     fireEvent.click(screen.getByRole("button", { name: "Copy output" }));
-    expect(copyToClipboard).toHaveBeenLastCalledWith(
-      stripAnsi(big),
-      "Copied output",
-    );
+    expect(writeClipboard).toHaveBeenLastCalledWith(stripAnsi(big));
     await waitFor(() => expect(screen.queryByText(/^Parsing…/)).toBeNull(), {
       timeout: 15_000,
     });
     fireEvent.click(screen.getByRole("button", { name: "Copy output" }));
-    expect(copyToClipboard).toHaveBeenLastCalledWith(
-      stripAnsi(big),
-      "Copied output",
-    );
+    expect(writeClipboard).toHaveBeenLastCalledWith(stripAnsi(big));
   }, 20_000);
 });
 
@@ -711,7 +702,7 @@ describe("AnsiView chrome details", () => {
     const { container } = render(<AnsiView chrome="pane" text="" />);
     expect(rows(container)).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "Copy output" }));
-    expect(copyToClipboard).toHaveBeenCalledWith("", "Copied output");
+    expect(writeClipboard).toHaveBeenCalledWith("");
   });
 
   it("a link with its own underline keeps its style; without one is dotted", () => {

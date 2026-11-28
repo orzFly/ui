@@ -1,15 +1,10 @@
 import { Button } from "@orz/ui/components/button";
 import { ModuleMarker } from "@orz/ui/components/card";
+import { CopyButton } from "@orz/ui/components/copy-button";
 import { cellWidth as codePointCells } from "@orz/ui/lib/cell-width";
-import { copyToClipboard } from "@orz/ui/lib/clipboard";
 import { rowsInViewport } from "@orz/ui/lib/scroll-map";
 import { cn } from "@orz/ui/lib/utils";
-import {
-  CopyIcon,
-  DownloadIcon,
-  SquareTerminalIcon,
-  WrapTextIcon,
-} from "lucide-react";
+import { DownloadIcon, SquareTerminalIcon, WrapTextIcon } from "lucide-react";
 import {
   type ClipboardEvent,
   type CSSProperties,
@@ -739,21 +734,17 @@ export function AnsiView({
     event.preventDefault();
   };
 
-  const copyAll = () => {
+  const allText = () => {
     if (shown) {
       const parts = new Array<string>(shown.length);
       for (let pos = 0; pos < shown.length; pos++) {
         parts[pos] = lines[shown[pos]].text;
       }
-      void copyToClipboard(parts.join("\n"), "Copied output");
-      return;
+      return parts.join("\n");
     }
     // Once parsed, the lines already are the stripped text; parsing a large
     // log again would block for as long as the first parse took.
-    const plain = done
-      ? lines.map((line) => line.text).join("\n")
-      : stripAnsi(text);
-    void copyToClipboard(plain, "Copied output");
+    return done ? lines.map((line) => line.text).join("\n") : stripAnsi(text);
   };
 
   const scrollToRow = (row: number, align: "top" | "center") => {
@@ -879,15 +870,7 @@ export function AnsiView({
       >
         <WrapTextIcon />
       </Button>
-      <Button
-        size="icon-xs"
-        variant="ghost"
-        aria-label="Copy output"
-        title="Copy output"
-        onClick={copyAll}
-      >
-        <CopyIcon />
-      </Button>
+      <CopyButton text={allText} size="xs" aria-label="Copy output" />
     </>
   );
 
