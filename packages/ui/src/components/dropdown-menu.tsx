@@ -525,7 +525,7 @@ function DropdownMenuSubTrigger({
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground data-open:state-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground data-open:state-cue data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
