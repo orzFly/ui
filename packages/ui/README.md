@@ -435,7 +435,7 @@ helpers from it directly.
 | `@orz/ui/components/query-highlight` | `highlightQuery(text, parts, schema, providers)`: the spans `HighlightedInput` paints, with keys, punctuation and values coloured by verdict |
 | `@orz/ui/hooks/use-query-completion` | `useQueryCompletion({ schema, value, caret, providers, enabled })`: key and value completions at the caret; a `search` provider is asked after 150 ms of quiet, and its answers are cached per prefix |
 | `@orz/ui/hooks/use-query-history` | `useQueryHistory({ storageKey, scope })`: past queries in localStorage, one bucket per scope, following other tabs; `record` a query where a search really ran |
-| `@orz/ui/components/query-box` | `QueryBox`: the above as a combobox, with its own rows of past queries (`history`, from `useQueryHistory`) and the app's rows (jumps) as `RowSource`s |
+| `@orz/ui/components/query-box` | `QueryBox`: the above as a combobox, with its own rows of past queries (`history`, from `useQueryHistory`) and the app's rows (jumps, words it finishes) as `RowSource`s |
 
 ```tsx
 import { defineQuerySchema } from "@orz/query";
@@ -473,10 +473,12 @@ const history = useQueryHistory({ storageKey: "app:search-history", scope: proje
 Nothing in the panel is preselected, so Enter submits the query as typed unless the reader arrowed
 onto a row; in an empty box it submits nothing, but picking the submit row there submits `""`, so
 draw that row as wherever an empty query goes. Tab takes the highlighted completion, or the first
-one. Escape closes the panel, and a
-second Escape goes to `onEscape`. Pass `options: undefined` for a list that has not loaded: its
-values paint as valid rather than flashing amber, and `onOpenChange` tells you when the box is in
-use, so loading can wait until then.
+one. A `RowSource` that `completes` finishes words the schema cannot: Enter and a click take its
+row's `apply` as they take a completion, and submit nothing. Escape closes the panel, and a second
+Escape goes to `onEscape`. `busy` marks the input `aria-busy` while the app waits on a query it was
+given. Pass `options: undefined` for a list that has not loaded: its values paint as valid rather
+than flashing amber, and `onOpenChange` tells you when the box is in use, so loading can wait until
+then.
 
 A value row is its value in monospace and its hint. `renderValue` draws it as the app draws that
 value elsewhere: given the option as its provider gave it, with the key and spec it is a value of,

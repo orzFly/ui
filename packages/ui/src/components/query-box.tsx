@@ -48,7 +48,10 @@ export type OptionProps = {
   onClick: () => void;
 };
 
-/** Rows the app adds to the panel: jumps, anything that is not syntax or history. */
+/**
+ * Rows the app adds to the panel: jumps, words the schema cannot complete,
+ * anything that is not syntax or history.
+ */
 export type RowSource<R> = {
   id: string;
   /** Whether the caret is on something this source recognises; see `orderRows`. */
@@ -60,6 +63,13 @@ export type RowSource<R> = {
   render: (row: R, option: OptionProps) => ReactNode;
   /** Tab takes it and keeps editing. */
   apply?: (row: R) => { value: string; caret: number } | null;
+  /**
+   * The rows finish the word being typed, as the schema's completions do:
+   * Enter and a click take `apply` too, and submit nothing, and Tab with
+   * nothing highlighted takes the first one above the submit row. A row
+   * whose `apply` gives null is submitted as any other app row.
+   */
+  completes?: boolean;
   /** Shift+Delete on the highlighted row. */
   remove?: (row: R) => void;
 };
@@ -280,6 +290,7 @@ export function QueryBox<R>({
   onOpenChange,
   listAlign = "centered",
   leading,
+  busy = false,
   inputProps = {},
   className,
   panelClassName,
@@ -329,7 +340,16 @@ export function QueryBox<R>({
   listAlign?: "centered" | "start";
   /** Drawn at the input's left edge, inside its border: a search icon. */
   leading?: ReactNode;
-  inputProps?: Omit<ComponentProps<"input">, "value" | "onChange">;
+  /**
+   * The app is waiting on a query it was given, a pasted reference being
+   * looked up, say: marked on the input as `aria-busy`, as the box marks its
+   * own wait for a value list.
+   */
+  busy?: boolean;
+  inputProps?: Omit<
+    ComponentProps<"input">,
+    "value" | "onChange" | "aria-busy"
+  >;
   className?: string;
   panelClassName?: string;
 }) {
@@ -453,14 +473,25 @@ export function QueryBox<R>({
     setPosition({ caret: apply.caret });
   });
 
+  /** What a row rewrites the query to when it finishes a word, or null. */
+  const completion = (
+    row: BoxRow<R>,
+  ): { value: string; caret: number } | null => {
+    if (row.kind === "completion") return row.row.apply;
+    if (row.kind === "app" && row.source.completes)
+      return row.source.apply?.(row.row) ?? null;
+    return null;
+  };
+
   /**
    * What Tab takes — the submit row is not an offer.
    *
    * A highlighted past query, or app row with `apply`, loads what it says
    * into the box, which is what Tab already means: take the offer and keep
    * editing. With nothing highlighted Tab still falls back to the first
-   * *completion* and never to either — an unaimed Tab means "finish the word
-   * I am typing", and a whole past query is a long way from that.
+   * *completion*, the schema's or a completing source's, and never to
+   * either — an unaimed Tab means "finish the word I am typing", and a
+   * whole past query is a long way from that.
    *
    * Only a completion above the submit row counts, one the typed word really
    * matches. The key table under an empty word is there to be read; taking
@@ -480,7 +511,8 @@ export function QueryBox<R>({
     }
     for (const row of rows) {
       if (row.kind === "submit") return null;
-      if (row.kind === "completion") return row.row.apply;
+      const apply = completion(row);
+      if (apply !== null) return apply;
     }
     return null;
   };
@@ -489,8 +521,9 @@ export function QueryBox<R>({
   const choose = (chosen: BoxRow<R> | undefined) => {
     // Enter on a completion takes it and stays put; the reader is still
     // building the query, not asking for it.
-    if (chosen?.kind === "completion") {
-      accept(chosen.row.apply);
+    const apply = chosen === undefined ? null : completion(chosen);
+    if (apply !== null) {
+      accept(apply);
       return;
     }
     // An empty box with nothing aimed at has nothing to submit. A row picked
@@ -633,7 +666,7 @@ export function QueryBox<R>({
         aria-controls={listId}
         aria-activedescendant={open && hl !== NONE ? optionId(hl) : undefined}
         aria-autocomplete="list"
-        aria-busy={loading || undefined}
+        aria-busy={busy || loading || undefined}
         value={value}
         onValueChange={(next) => {
           emit(next);

@@ -62,6 +62,7 @@ function Harness({
   onRemovePast?: (query: string) => void;
   queryHref?: (query: string) => string;
   renderValue?: (value: CompletionValue) => ValueRowContent | undefined;
+  busy?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   const [entries, setEntries] = useState<readonly QueryHistoryEntry[]>(() =>
@@ -107,6 +108,7 @@ function Harness({
       {...(props.renderValue === undefined
         ? {}
         : { renderValue: props.renderValue })}
+      {...(props.busy === undefined ? {} : { busy: props.busy })}
     />
   );
 }
@@ -946,5 +948,77 @@ describe("QueryBox · value rows the app draws", () => {
     const row = box.options()[0] as HTMLElement;
     expect(row.querySelector(".font-mono")?.textContent).toBe("open");
     expect(row.querySelector("[data-slot=query-value-leading]")).toBeNull();
+  });
+});
+
+describe("QueryBox · app rows that complete", () => {
+  /** A word the schema cannot complete: a project's prefix, as todou's are. */
+  const prefixes = (options: Partial<RowSource<Past>> = {}) =>
+    pastRows([], {
+      id: "prefix",
+      matched: true,
+      yields: false,
+      completes: true,
+      rows: [{ q: "ACC-" }],
+      apply: () => ({ value: "ACC-", caret: 4 }),
+      ...options,
+    });
+
+  it("takes the highlighted row on Enter, stays open and submits nothing", () => {
+    const onSubmit = vi.fn();
+    const box = mount({ onSubmit, sources: [prefixes()] });
+    box.type("ac");
+    expect(box.texts()).toEqual(["ACC-", "Search for “ac”"]);
+    box.key("ArrowDown");
+    box.key("Enter");
+    expect(box.input.value).toBe("ACC-");
+    expect(box.input.selectionStart).toBe(4);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(box.listbox()).not.toBeNull();
+  });
+
+  it("takes a clicked row the same way", () => {
+    const onSubmit = vi.fn();
+    const box = mount({ onSubmit, sources: [prefixes()] });
+    box.type("ac");
+    fireEvent.click(box.options()[0] as Element);
+    expect(box.input.value).toBe("ACC-");
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("is what Tab takes with nothing highlighted, above the submit row only", () => {
+    const box = mount({ sources: [prefixes()] });
+    box.type("ac");
+    box.key("Tab");
+    expect(box.input.value).toBe("ACC-");
+    box.unmount();
+    // Below the submit row it is only there to be read, as the key table is.
+    const below = mount({ sources: [prefixes({ matched: false })] });
+    below.type("ac");
+    expect(below.texts()).toEqual(["Search for “ac”", "ACC-"]);
+    expect(below.key("Tab")).toBe(true);
+    expect(below.input.value).toBe("ac");
+  });
+
+  it("submits a row whose `apply` gives nothing, as any app row", () => {
+    const onSubmit = vi.fn();
+    const box = mount({
+      onSubmit,
+      sources: [prefixes({ apply: () => null })],
+    });
+    box.type("ac");
+    box.key("ArrowDown");
+    box.key("Enter");
+    expect(onSubmit).toHaveBeenCalledWith("ac", { q: "ACC-" }, false);
+  });
+});
+
+describe("QueryBox · busy", () => {
+  it("marks the input busy while the app waits on what it was given", () => {
+    const idle = mount();
+    expect(idle.input.hasAttribute("aria-busy")).toBe(false);
+    idle.unmount();
+    const box = mount({ busy: true });
+    expect(box.input.getAttribute("aria-busy")).toBe("true");
   });
 });
