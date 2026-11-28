@@ -13,7 +13,7 @@ import {
   useQueryHistory,
 } from "@orz/ui/hooks/use-query-history";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { SearchIcon } from "lucide-react";
+import { FolderIcon, SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fn } from "storybook/test";
 import { withWidth } from "./decorators.tsx";
@@ -140,6 +140,52 @@ const providers: ValueProviders = {
   renderSubmitRow={(query, option) => (
     <div {...option}>{query === "" ? "All issues" : \`Search for “\${query}”\`}</div>
   )}
+  inputProps={{ "aria-label": "Search" }}
+/>`;
+
+/** Projects a word can name, as an issue reference begins with one. */
+const PROJECTS = [
+  { prefix: "ACC-", name: "Accounting" },
+  { prefix: "OPS-", name: "Operations" },
+  { prefix: "WEB-", name: "Website" },
+];
+
+// Written by hand: the story wires an app's source into the box, and the
+// generated snippet would print its functions as `() => {}`.
+const completingSource = `import { QueryBox, type RowSource } from "@orz/ui/components/query-box";
+
+const word = /\\S*$/.exec(value)?.[0] ?? "";
+const offered = word === "" ? [] : projects.filter((p) => p.prefix.toLowerCase().startsWith(word.toLowerCase()));
+
+// A word the schema cannot complete: a project's prefix, written for the
+// number that follows it.
+const projectPrefixes: RowSource<Project> = {
+  id: "project",
+  matched: offered.length > 0,
+  rows: offered,
+  key: (project) => project.prefix,
+  completes: true,
+  apply: (project) => {
+    const next = value.slice(0, value.length - word.length) + project.prefix;
+    return { value: next, caret: next.length };
+  },
+  render: (project, option) => (
+    <button type="button" {...option}>
+      <FolderIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+      <span className="truncate font-mono text-ui-sm">{project.prefix}</span>
+      <span className="truncate text-muted-foreground text-ui-sm">{project.name}</span>
+    </button>
+  ),
+};
+
+<QueryBox
+  schema={schema}
+  providers={providers}
+  value={value}
+  onValueChange={setValue}
+  sources={[projectPrefixes]}
+  onSubmit={search}
+  renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
   inputProps={{ "aria-label": "Search" }}
 />`;
 
@@ -324,5 +370,69 @@ export const RenderValue: Story = {
   },
   parameters: {
     docs: { source: { code: valueSource, language: "tsx" } },
+  },
+};
+
+/**
+ * A word the schema knows nothing of, finished by the app: type `ac`, then
+ * arrow onto `ACC-` and press Enter, click it, or press Tab. The box reads
+ * `ACC-` with the caret after it, waiting for the number, and nothing is
+ * submitted: the source `completes`, so its rows take `apply` as the
+ * schema's own completions do.
+ */
+export const CompletingSource: Story = {
+  parameters: {
+    docs: { source: { code: completingSource, language: "tsx" } },
+  },
+  render: function Render(args) {
+    const [value, setValue] = useState(args.value);
+    useEffect(() => setValue(args.value), [args.value]);
+    const word = /\S*$/.exec(value)?.[0] ?? "";
+    const typed = word.toLowerCase();
+    const offered =
+      typed === ""
+        ? []
+        : PROJECTS.filter((project) => {
+            const prefix = project.prefix.toLowerCase();
+            return prefix.startsWith(typed) && prefix !== typed;
+          });
+    return (
+      <QueryBox
+        {...args}
+        value={value}
+        onValueChange={(next) => {
+          setValue(next);
+          args.onValueChange(next);
+        }}
+        sources={[
+          {
+            id: "project",
+            matched: offered.length > 0,
+            rows: offered,
+            key: (project) => project.prefix,
+            completes: true,
+            apply: (project) => {
+              const next =
+                value.slice(0, value.length - word.length) + project.prefix;
+              return { value: next, caret: next.length };
+            },
+            render: (project, option) => (
+              <button type="button" {...option}>
+                <FolderIcon
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+                <span className="truncate font-mono text-ui-sm">
+                  {project.prefix}
+                </span>
+                <span className="truncate text-muted-foreground text-ui-sm">
+                  {project.name}
+                </span>
+              </button>
+            ),
+          },
+        ]}
+      />
+    );
   },
 };
