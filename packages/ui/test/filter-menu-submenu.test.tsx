@@ -12,6 +12,7 @@ import {
   type FilterMenuSection,
   matchText,
 } from "../src/components/filter-menu.tsx";
+import { roundedEdgePadding } from "../src/lib/collision-padding.ts";
 
 /** What a pick under single selection carries. */
 const PICKED = expect.objectContaining({ selected: true });
@@ -195,12 +196,14 @@ describe("FilterMenu submenus", () => {
     const width = vi.spyOn(root, "clientWidth", "get").mockReturnValue(1000);
     vi.spyOn(root, "clientHeight", "get").mockReturnValue(800);
     // happy-dom applies no CSS, so stand in for PopoverContent's max-width:
-    // the room right of the menu, less the 8px collision padding.
+    // the room right of the menu, less the right collision padding it hands
+    // Radix.
+    const { right: padding = 0 } = roundedEdgePadding(8);
     vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(
       function (this: HTMLElement) {
         return this.classList.contains("max-w-none")
           ? 240
-          : Math.min(240, root.clientWidth - 272 - 8);
+          : Math.min(240, root.clientWidth - 272 - padding);
       },
     );
     render(<Harness />);
