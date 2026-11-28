@@ -73,7 +73,7 @@ what keeps a finger on the right target rather than on drawing a dense screen la
 | Part | Pointer | Touch |
 |---|---|---|
 | `Input`, `HighlightedInput` (so `QueryBox`'s field) | {same(px(classes.input), px(classes.highlightedInput))} | {same(touch(classes.input), touch(classes.highlightedInput))}, at {font(classes.input, coarse)}px text |
-| `FilterMenu`'s search field | {px(classes.filterBox)} | {touch(classes.filterBox)}, at {font(classes.filterBox, coarse)}px text |
+| The search field of `FilterMenu` and of a filtering `DropdownMenu` submenu | {px(classes.filterBox)} | {touch(classes.filterBox)}, at {font(classes.filterBox, coarse)}px text |
 | `Select` trigger, default / `sm` | {px(classes.selectTrigger)} / {px(classes.selectTrigger, { size: "sm" })} | {px(classes.selectTrigger, coarse)} / {px(classes.selectTrigger, { ...coarse, size: "sm" })} |
 | `DropdownMenu` items, `Select` items, `FilterMenu` rows | {same(px(classes.dropdownMenuItem), px(classes.selectItem), px(classes.filterOption))} | {same(touch(classes.dropdownMenuItem), touch(classes.selectItem), touch(classes.filterOption))} |
 | `QueryBox` suggestions | {px(classes.queryOption)} | {touch(classes.queryOption)} |
@@ -187,8 +187,8 @@ it for their controls.
 
 ## Text fields
 
-- Fields are 16px text on touch at every width: `Input`, `Textarea`, `HighlightedInput` and
-  `FilterMenu`'s search field all are. Safari zooms the page into a field whose text is smaller
+- Fields are 16px text on touch at every width: `Input`, `Textarea`, `HighlightedInput` and the
+  search field of a `FilterMenu` or of a filtering `DropdownMenu` submenu all are. Safari zooms the page into a field whose text is smaller
   ([how Safari decides](https://thingsthemselves.com/no-input-zoom-in-safari-on-iphone-the-pixel-perfect-way/)),
   and leaves it zoomed after. A field you build takes `text-base md:text-ui touch:text-base`, and
   `h-control touch:h-field-touch` for the height that text needs, so it lines up with ours.
@@ -198,7 +198,8 @@ it for their controls.
   to read. Ask `useMediaQuery(POINTER_FINE)` first, as
   [Desktop & pointer](/guidelines/platforms/desktop-and-pointer/) shows. `FilterMenu` asks for
   itself: without a fine pointer it opens with the focus on its list, so the keyboard stays down
-  over the rows until the search field is tapped.
+  over the rows until the search field is tapped. A filtering `DropdownMenu` submenu does the same:
+  without a fine pointer its filter box waits for a tap.
 - Never turn off pinch zoom (`maximum-scale=1`, `user-scalable=no`): people who need larger text
   zoom ([WCAG 1.4.4](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)).
 
