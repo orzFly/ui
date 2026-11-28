@@ -1,4 +1,4 @@
-import { CompletionContext } from "@codemirror/autocomplete";
+import { type Completion, CompletionContext } from "@codemirror/autocomplete";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import {
@@ -8,7 +8,10 @@ import {
 } from "@orz/query";
 import { describe, expect, it } from "vitest";
 import { markdownLanguage } from "../src/components/markdown-editor.tsx";
-import { commandCompletionSource } from "../src/extensions/slash-commands.ts";
+import {
+  type CommandArgument,
+  commandCompletionSource,
+} from "../src/extensions/slash-commands.ts";
 
 type Compiled =
   | { type: "close" }
@@ -394,5 +397,120 @@ describe("a search provider", () => {
         throw new Error("offline");
       }),
     ).toBeNull();
+  });
+});
+
+describe("an app's own argument rows", () => {
+  type Status = { value: string; tone: string };
+  const statuses: Status[] = [
+    { value: "Todo", tone: "neutral" },
+    { value: "In Progress", tone: "warning" },
+    { value: "Done", tone: "success" },
+  ];
+  const providers: ValueProviders = {
+    status: { options: statuses },
+    member: { options: [{ value: "alice", hint: "Alice" }] },
+  };
+  const at = (
+    source: ReturnType<typeof commandCompletionSource>,
+    doc: string,
+  ) => {
+    const result = source(
+      new CompletionContext(EditorState.create({ doc }), doc.length, false),
+    );
+    if (result instanceof Promise) throw new Error("unexpected fetch");
+    return result;
+  };
+
+  it("hands each argument row over once it is complete, with the option it offers", () => {
+    const seen: { completion: Completion; argument: CommandArgument }[] = [];
+    const source = commandCompletionSource(
+      () => positional,
+      () => providers,
+      {
+        argumentOption: (completion, argument) => {
+          seen.push({ completion, argument });
+          return completion;
+        },
+      },
+    );
+    const offered = at(source, "/move ")?.options ?? [];
+    expect(seen.map(({ argument }) => argument)).toEqual(
+      statuses.map((option) => ({
+        option,
+        command: "move",
+        index: 0,
+        spec: { kind: "named", source: "status" },
+      })),
+    );
+    // The provider's own objects, so what the app put on them is there.
+    expect(seen[1]?.argument.option).toBe(statuses[1]);
+    // Label, boost and apply are set already; the row offered is the one returned.
+    expect(seen[1]?.completion).toMatchObject({
+      label: "In Progress",
+      boost: -1,
+    });
+    expect(typeof seen[1]?.completion.apply).toBe("function");
+    expect(offered).toEqual(seen.map(({ completion }) => completion));
+
+    seen.length = 0;
+    at(source, "/move Todo ");
+    // Neither the row that ends the command nor a command's name.
+    expect(seen.map(({ completion }) => completion.label)).toEqual([
+      "@me",
+      "alice",
+    ]);
+    expect(seen.map(({ argument }) => argument.index)).toEqual([1, 1]);
+    expect(seen[1]?.completion.detail).toBe("Alice");
+    seen.length = 0;
+    at(source, "/");
+    expect(seen).toEqual([]);
+  });
+
+  it("offers a new row in its place, which still applies as the old one did", () => {
+    const tones = new WeakMap<Completion, string>();
+    const source = commandCompletionSource(
+      () => positional,
+      () => providers,
+      {
+        argumentOption: (completion, { option }) => {
+          const drawn = { ...completion, type: "status" };
+          tones.set(drawn, (option as Status).tone);
+          return drawn;
+        },
+      },
+    );
+    const result = at(source, "/move In");
+    const row = result?.options.find((o) => o.label === "In Progress");
+    expect(row?.type).toBe("status");
+    expect(row && tones.get(row)).toBe("warning");
+    if (result === null || typeof row?.apply !== "function") {
+      throw new Error("no In Progress row");
+    }
+    const view = new EditorView({
+      state: EditorState.create({ doc: "/move In" }),
+    });
+    row.apply(view, row, result.from, 8);
+    expect(view.state.doc.toString()).toBe("/move 'In Progress' ");
+  });
+
+  it("hands over a search provider's rows as they were answered", async () => {
+    const answered = [{ value: "alice", login: "alice" }];
+    const options: CommandArgument["option"][] = [];
+    const source = commandCompletionSource(
+      () => positional,
+      () => ({ member: { search: async () => answered } }),
+      {
+        argumentOption: (completion, { option }) => {
+          options.push(option);
+          return completion;
+        },
+      },
+    );
+    await source(
+      new CompletionContext(EditorState.create({ doc: "/assign " }), 8, false),
+    );
+    expect(options).toEqual([{ value: "@me" }, answered[0]]);
+    expect(options[1]).toBe(answered[0]);
   });
 });
