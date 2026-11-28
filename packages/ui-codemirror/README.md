@@ -188,9 +188,10 @@ A row can draw more than a label: `completionWith`'s second argument takes CodeM
 `optionClass` and `addToOptions`. `reactOption(position, className, draw)` is an `addToOptions`
 entry that renders a part with React, an `Avatar` say, and unmounts it once its row is gone. Return
 `completionRowClass.drawn` from `optionClass` for a row whose part takes the type icon's place, or
-`completionRowClass.face` for one whose part (a pill, a chip) shows the label itself. An `Avatar` in
-a drawn row is sized to the row's line, whatever size it was given, so the row is as tall as the
-rest.
+`completionRowClass.face` for one whose part (a pill, a chip) shows the label itself, after the type
+icon. An `Avatar` in a drawn row is sized to the row's line, whatever size it was given, so the row
+is as tall as the rest, and centred on the icon column, so its label starts where every row's does,
+as a face row's part does.
 
 ### Slash commands
 

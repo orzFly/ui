@@ -83,6 +83,22 @@ describe("completion rows drawn by React", () => {
     expect(getComputedStyle(drawn).height).toBe("18px");
   });
 
+  it("stands a drawn part in the icon's column, so every row's text starts at one place", async () => {
+    const { container } = mount();
+    await open(container);
+    const [person, , plain] = container.querySelectorAll<HTMLElement>(
+      ".cm-tooltip-autocomplete li",
+    );
+    const icon = plain?.querySelector(".cm-completionIcon");
+    const part = person?.querySelector(".cm-completionAvatar");
+    if (!person || !plain || !icon || !part) throw new Error("rows not drawn");
+    expect(getComputedStyle(icon).width).toBe("14px");
+    expect(getComputedStyle(part).width).toBe("14px");
+    expect(getComputedStyle(part).justifyContent).toBe("center");
+    expect(getComputedStyle(part).flexShrink).toBe("0");
+    expect(getComputedStyle(person).gap).toBe(getComputedStyle(plain).gap);
+  });
+
   it("unmounts a part's root once its row has left the DOM", async () => {
     const { container } = mount();
     await open(container);
@@ -163,5 +179,11 @@ describe("slash-command argument rows drawn by the app", () => {
         row.querySelector("[data-tone]")?.getAttribute("data-tone"),
       ),
     ).toEqual(["neutral", "success"]);
+    // The face stands where the label would, with the type's icon ahead of
+    // it in the column every row shares.
+    const icon = rows[0]?.querySelector(".cm-completionIcon");
+    if (!icon) throw new Error("no icon column");
+    const style = getComputedStyle(icon);
+    expect([style.display, style.order]).toEqual(["inline-block", "-1"]);
   });
 });

@@ -104,17 +104,20 @@ export function reactOption(
 /**
  * Row classes `completionTheme` draws, for `CompletionRows.optionClass` to
  * return. Both centre a drawn part in the row, which grows to hold it, and
- * set their text in the UI font rather than as code.
+ * set their text in the UI font rather than as code. Either way the row's
+ * text starts where every other row's does.
  */
 export const completionRowClass = {
   /**
-   * A drawn part (an avatar) takes the type icon's place; the label stays.
-   * An `Avatar` there is sized to the row's line, so the row keeps its height.
+   * A drawn part (an avatar) takes the type icon's place, centred on its
+   * column; the label stays. An `Avatar` there is sized to the row's line,
+   * so the row keeps its height. Only the first part before the label is
+   * placed so.
    */
   drawn: "cm-completion-drawn",
   /**
-   * The drawn part (a pill, a chip) shows the label itself, so neither the
-   * icon nor the label text is printed.
+   * The drawn part (a pill, a chip) shows the label itself, so the label
+   * text is not printed; the type icon stays ahead of it, as in any row.
    */
   face: "cm-completion-face",
 } as const;
@@ -158,11 +161,13 @@ export const completionTheme = EditorView.theme({
   // Code and words share a baseline, which centring them would not keep
   // across two faces, so the padding is what centres the line: half of what
   // the row's height leaves of it. A coarse pointer's row height comes in
-  // through --completion-row, from styles.css.
+  // through --completion-row, from styles.css. The gap is a QueryBox
+  // suggestion's, which leaves an avatar wider than the icon column room
+  // before the name.
   ".cm-tooltip.cm-tooltip-autocomplete > ul > li": {
     display: "flex",
     alignItems: "baseline",
-    gap: "0.375rem",
+    gap: "0.5rem",
     minHeight: "var(--completion-row, var(--spacing-row))",
     padding:
       "max(0px, (var(--completion-row, var(--spacing-row)) - var(--text-ui--line-height)) / 2) 0.5rem",
@@ -208,10 +213,19 @@ export const completionTheme = EditorView.theme({
   // the row grows past its height by what the part needs. Named in full to
   // outrank the plain row.
   ".cm-tooltip.cm-tooltip-autocomplete > ul > li.cm-completion-drawn, .cm-tooltip.cm-tooltip-autocomplete > ul > li.cm-completion-face":
-    { alignItems: "center", gap: "0.5rem", paddingBlock: "0.25rem" },
+    { alignItems: "center", paddingBlock: "0.25rem" },
   // A flex box, so an inline part (a Badge) stands at its own height rather
   // than on a line of the row's, whose descent would add a pixel below it.
   [`.${PART}`]: { display: "flex", alignItems: "center" },
+  // The part in the icon's place takes the icon's column, and anything
+  // wider (an avatar) is centred on it, reaching past it evenly into the
+  // padding and the gap rather than pushing this one row's text along. It is
+  // the row's first span: the icon is a div, and the label a later span.
+  [`.cm-completion-drawn > .${PART}:first-of-type`]: {
+    flex: "none",
+    width: "0.875rem",
+    justifyContent: "center",
+  },
   // An avatar in the icon's place is sized to the line of the row's words,
   // whatever size the app drew, as a QueryBox value row's is: a person's row
   // stands as tall as the rows around it, and a person is as big here as in
@@ -220,14 +234,24 @@ export const completionTheme = EditorView.theme({
     width: "1.125rem",
     height: "1.125rem",
   },
-  ".cm-completion-drawn .cm-completionIcon, .cm-completion-face .cm-completionIcon, .cm-completion-face .cm-completionLabel":
+  ".cm-completion-drawn .cm-completionIcon, .cm-completion-face .cm-completionLabel":
     { display: "none" },
+  // A face's part stands where the label would, and the icon ahead of it, as
+  // a QueryBox value row draws its type's icon before a chip. CodeMirror puts
+  // a caller's parts before its own icon at one position.
+  ".cm-completion-face .cm-completionIcon": { order: "-1" },
   ".cm-completion-drawn .cm-completionLabel": {
     fontFamily: "inherit",
     fontSize: "inherit",
     lineHeight: "inherit",
   },
-  ".cm-completionIcon": { width: "1em", paddingRight: "0", opacity: "1" },
+  // One column every row shares, as wide as a QueryBox suggestion's icon.
+  ".cm-completionIcon": {
+    flex: "none",
+    width: "0.875rem",
+    paddingRight: "0",
+    opacity: "1",
+  },
   ".cm-completionIcon-command::after": {
     content: "'/'",
     color: "var(--primary)",
