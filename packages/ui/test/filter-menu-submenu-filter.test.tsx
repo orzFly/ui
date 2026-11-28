@@ -1,6 +1,12 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { useMemo, useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   FilterMenu,
   type FilterMenuSection,
@@ -111,6 +117,10 @@ function openApple() {
   return box;
 }
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("FilterMenu submenu filter", () => {
   it("puts a box over only the submenus that ask for one", () => {
     render(<Harness />);
@@ -179,6 +189,26 @@ describe("FilterMenu submenu filter", () => {
     // Enter with nothing highlighted picks nothing and keeps the menu.
     key(subBox(), "Enter");
     expect(screen.getByRole("listbox", { name: "Fruit" })).toBeTruthy();
+  });
+
+  it("tells a screen reader what typing in it left, the menu's own status silent", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    key(openApple(), "ArrowRight");
+    const submenu = screen.getByRole("listbox", { name: "Apple varieties" })
+      .parentElement as HTMLElement;
+    const said = (within: ParentNode) =>
+      [...within.querySelectorAll('[role="status"]')]
+        .map((el) => el.textContent)
+        .join("");
+    fireEvent.change(subBox(), { target: { value: "a" } });
+    act(() => vi.advanceTimersByTime(500));
+    // Crab is disabled, and still one of the options a screen reader counts.
+    expect(said(submenu)).toBe("3 results");
+    expect(said(document)).toBe("3 results");
+    fireEvent.change(subBox(), { target: { value: "zzz" } });
+    act(() => vi.advanceTimersByTime(500));
+    expect(said(submenu)).toBe('No matches for "zzz"');
   });
 
   it("enters a submenu filtered down to nothing", () => {

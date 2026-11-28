@@ -12,6 +12,7 @@ export const meta = {
     "ui/Primitives/Input",
     "ui/Primitives/Badge",
     "ui/Primitives/Toaster",
+    "ui/FilterMenu",
     "ui/ThemeEditor",
     "ui/Hooks/useScrollInsets",
     "ui/Hooks/useSlashShortcut",
@@ -175,7 +176,9 @@ Fix it and save: the toast that confirms it is announced without moving the focu
   it.
 - **Status is announced** ([SC 4.1.3](https://www.w3.org/TR/WCAG22/#status-messages)) without moving
   focus. `toast()` goes through the `Toaster`'s live region, and `LoadFailure` is a
-  `role="status"`; a message of your own that appears after an action needs one of the two.
+  `role="status"`; a message of your own that appears after an action needs one of the two. A
+  `FilterMenu`, or a submenu with a filter box, says what the typing left once it rests: how many
+  rows, or its empty state's words.
 - **An error says what to fix** ([SC 3.3.1](https://www.w3.org/TR/WCAG22/#error-identification)), in
   text beside the field, and the field gets `aria-invalid`, which @orz/ui's inputs draw in red.
 - **Structure is markup.** Headings are `h1`–`h3` in order, lists are lists, and a table of data is

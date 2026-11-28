@@ -33,6 +33,7 @@ function Harness({
   onRowClick,
   onRowSelect,
   empty,
+  countLabel,
   filtering = true,
   extra,
 }: {
@@ -41,6 +42,7 @@ function Harness({
   onRowClick?: (event: React.MouseEvent) => void;
   onRowSelect?: (event: Event) => void;
   empty?: (query: string) => ReactNode;
+  countLabel?: (count: number) => string;
   filtering?: boolean;
   extra?: ReactNode;
 }) {
@@ -77,6 +79,7 @@ function Harness({
               }}
               onEscapeKeyDown={onEscapeKeyDown}
               empty={empty}
+              countLabel={countLabel}
             >
               {rows}
               {extra}
@@ -111,6 +114,12 @@ const trigger = () => screen.getByRole("menuitem", { name: "Move to project" });
 const box = () =>
   screen.getByRole("combobox", { name: "Filter" }) as HTMLInputElement;
 const option = (name: string) => screen.getByRole("option", { name });
+/** What the status regions say, whichever of the two holds it. */
+const said = () =>
+  screen
+    .queryAllByRole("status")
+    .map((el) => el.textContent)
+    .join("");
 const highlighted = () =>
   document.getElementById(box().getAttribute("aria-activedescendant") ?? "")
     ?.textContent ?? null;
@@ -490,6 +499,47 @@ describe("DropdownMenuSubContent with a query: what it shows", () => {
     expect(screen.getByText('No matches for "zz"')).toBeTruthy();
     fireEvent.change(box(), { target: { value: "a" } });
     expect(screen.queryByText(/No matches/)).toBeNull();
+  });
+
+  it("tells a screen reader what typing left, once it rests", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    keyOpen();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(said()).toBe("");
+    fireEvent.change(box(), { target: { value: "e" } });
+    act(() => vi.advanceTimersByTime(499));
+    expect(said()).toBe("");
+    act(() => vi.advanceTimersByTime(1));
+    // Cinder is disabled, and still one of the options a screen reader counts.
+    expect(said()).toBe("4 results");
+    fireEvent.change(box(), { target: { value: "zz" } });
+    act(() => vi.advanceTimersByTime(500));
+    expect(said()).toBe('No matches for "zz"');
+  });
+
+  it("starts silent at the next opening", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    keyOpen();
+    fireEvent.change(box(), { target: { value: "e" } });
+    act(() => vi.advanceTimersByTime(500));
+    expect(said()).toBe("4 results");
+    fireEvent.keyDown(box(), { key: "Escape" });
+    expect(screen.queryByRole("combobox")).toBeNull();
+    fireEvent.keyDown(trigger(), { key: "ArrowRight" });
+    act(() => vi.advanceTimersByTime(1000));
+    expect(box().value).toBe("");
+    expect(said()).toBe("");
+  });
+
+  it("words the count with countLabel", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(<Harness countLabel={(n) => `${n} projects`} />);
+    keyOpen();
+    fireEvent.change(box(), { target: { value: "a" } });
+    act(() => vi.advanceTimersByTime(500));
+    expect(said()).toBe("3 projects");
   });
 
   it("shows the caller's empty state", () => {

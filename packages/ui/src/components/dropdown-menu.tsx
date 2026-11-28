@@ -17,6 +17,7 @@ import {
   finePointer,
   isComposing,
 } from "./dropdown-menu/filter-box.tsx";
+import { FilterStatus, resultCount } from "./dropdown-menu/filter-status.tsx";
 import { ChoiceMark, MARK_ROOM, MarkPlace } from "./dropdown-menu/mark.tsx";
 
 const OpenContext = createContext<{
@@ -627,6 +628,11 @@ type DropdownMenuSubFilterProps =
       inputLabel?: string;
       /** Shown where the rows go when there are none. Defaults to FilterMenu's. */
       empty?: (query: string) => React.ReactNode;
+      /**
+       * Spoken to a screen reader once typing in the box rests, with the rows
+       * left: `3 results`. With none left, `empty`'s words are spoken.
+       */
+      countLabel?: (count: number) => string;
     }
   | {
       query?: never;
@@ -634,6 +640,7 @@ type DropdownMenuSubFilterProps =
       placeholder?: never;
       inputLabel?: never;
       empty?: never;
+      countLabel?: never;
     };
 
 type SubFilter = Extract<DropdownMenuSubFilterProps, { query: string }>;
@@ -685,7 +692,11 @@ function useSubFilter(filter: SubFilter | null, props: SubContentProps) {
   const [lock, setLock] = useState<{ width: number; height: number } | null>(
     null,
   );
-  const [none, setNone] = useState(false);
+  // Options as drawn; null until the list has been read.
+  const [count, setCount] = useState<number | null>(null);
+  // Changes typed into the box since the submenu opened, for its status.
+  const [edits, setEdits] = useState(0);
+  const emptyRow = useRef<HTMLDivElement>(null);
   const [labelledBy, setLabelledBy] = useState<string>();
   // What the last press on the submenu came from: only a mouse drags a link.
   const pressedWith = useRef<string | null>(null);
@@ -711,6 +722,7 @@ function useSubFilter(filter: SubFilter | null, props: SubContentProps) {
     if (!open || now === null) return;
     setHighlight(NO_HIGHLIGHT);
     setLock(null);
+    setEdits(0);
     pressing.current = false;
     if (now.query !== "") now.onQueryChange("");
   }, [open]);
@@ -729,8 +741,8 @@ function useSubFilter(filter: SubFilter | null, props: SubContentProps) {
     ) {
       setHighlight(NO_HIGHLIGHT);
     }
-    const nothing = list.querySelector('[role="option"]') === null;
-    if (nothing !== none) setNone(nothing);
+    const options = list.querySelectorAll('[role="option"]').length;
+    if (options !== count) setCount(options);
     const label =
       list.parentElement?.getAttribute("aria-labelledby") ?? undefined;
     if (label !== labelledBy) setLabelledBy(label);
@@ -768,6 +780,7 @@ function useSubFilter(filter: SubFilter | null, props: SubContentProps) {
     placeholder = "Filter…",
     inputLabel = "Filter",
     empty = nothingMatches,
+    countLabel = resultCount,
   } = filter;
 
   const moveTo = (row: HTMLElement | undefined) => {
@@ -943,6 +956,7 @@ function useSubFilter(filter: SubFilter | null, props: SubContentProps) {
               setLock({ width, height });
             }
             setHighlight((now) => ({ id: now.id, by: "hit" }));
+            setEdits((n) => n + 1);
             onQueryChange(text);
           }}
           onKeyDown={onBoxKeyDown}
@@ -962,8 +976,9 @@ function useSubFilter(filter: SubFilter | null, props: SubContentProps) {
           >
             {props.children}
           </FilterContext.Provider>
-          {none && (
+          {count === 0 && (
             <div
+              ref={emptyRow}
               role="presentation"
               className="px-2 py-4 text-center text-muted-foreground text-ui"
             >
@@ -971,6 +986,13 @@ function useSubFilter(filter: SubFilter | null, props: SubContentProps) {
             </div>
           )}
         </div>
+        {/* Outside the listbox, which holds options and groups alone. */}
+        <FilterStatus
+          edits={edits}
+          count={count ?? 0}
+          empty={emptyRow}
+          countLabel={countLabel}
+        />
       </>
     ),
   };
@@ -991,7 +1013,8 @@ function useSubFilter(filter: SubFilter | null, props: SubContentProps) {
  * while it is open, from a mouse entering it, or from a mouse resting on its
  * trigger a moment. Without a fine pointer only a key or a tap on the box
  * gives it the focus, so no on-screen keyboard rises unasked. Each opening
- * starts unfiltered, calling `onQueryChange("")`.
+ * starts unfiltered, calling `onQueryChange("")`. When typing in the box
+ * rests, a screen reader hears how many rows are left, or the empty state.
  */
 function DropdownMenuSubContent({
   className,
@@ -1006,12 +1029,13 @@ function DropdownMenuSubContent({
   placeholder,
   inputLabel,
   empty,
+  countLabel,
   ...props
 }: SubContentProps & DropdownMenuSubFilterProps) {
   const filter = useSubFilter(
     query === undefined || onQueryChange === undefined
       ? null
-      : { query, onQueryChange, placeholder, inputLabel, empty },
+      : { query, onQueryChange, placeholder, inputLabel, empty, countLabel },
     props,
   );
   // A filtering submenu is named after its trigger, as its list is.

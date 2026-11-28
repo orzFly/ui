@@ -44,12 +44,14 @@ function Harness({
   onSelect = () => {},
   nuts = NUTS,
   handle,
+  countLabel,
 }: {
   selectedId?: string;
   onHighlight?: (row: Fruit | null) => void;
   onSelect?: (row: Fruit) => void;
   nuts?: Fruit[];
   handle?: React.Ref<FilterMenuHandle>;
+  countLabel?: (count: number) => string;
 }) {
   const [query, setQuery] = useState("");
   const sections = useMemo<FilterMenuSection<Fruit>[]>(() => {
@@ -74,6 +76,7 @@ function Harness({
         renderRow={(row) => <MatchedText text={row.label} query={query} />}
         inputLabel="Filter fruit"
         listLabel="Fruit"
+        countLabel={countLabel}
       >
         <button type="button">Pick</button>
       </FilterMenu>
@@ -102,7 +105,16 @@ function key(el: HTMLElement, k: string, init: KeyboardEventInit = {}) {
   fireEvent.keyDown(el, { key: k, ...init });
 }
 
+/** What the status regions say, whichever of the two holds it. */
+function said() {
+  return screen
+    .queryAllByRole("status")
+    .map((el) => el.textContent)
+    .join("");
+}
+
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -516,6 +528,95 @@ describe("FilterMenu", () => {
     expect(onHighlight.mock.calls.at(-1)?.[0]).toBeNull();
     rerender(menu(true, "pe"));
     expect(onQueryChange).toHaveBeenLastCalledWith("");
+  });
+});
+
+describe("FilterMenu status", () => {
+  it("tells a screen reader how many rows typing left, once it rests", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    const box = open();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(said()).toBe("");
+    fireEvent.change(box, { target: { value: "p" } });
+    act(() => vi.advanceTimersByTime(300));
+    fireEvent.change(box, { target: { value: "pe" } });
+    act(() => vi.advanceTimersByTime(499));
+    expect(said()).toBe("");
+    act(() => vi.advanceTimersByTime(1));
+    expect(options()).toEqual(["Pear", "Frappé", "Pecan"]);
+    expect(said()).toBe("3 results");
+    fireEvent.change(box, { target: { value: "pea" } });
+    act(() => vi.advanceTimersByTime(500));
+    expect(said()).toBe("1 result");
+  });
+
+  it("speaks the empty state's words when no rows are left", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    fireEvent.change(open(), { target: { value: "kiwi" } });
+    act(() => vi.advanceTimersByTime(500));
+    expect(said()).toBe('No matches for "kiwi"');
+  });
+
+  it("speaks the same count again after a letter that keeps it", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    const box = open();
+    const regions = () =>
+      screen.getAllByRole("status").map((el) => el.textContent);
+    fireEvent.change(box, { target: { value: "ap" } });
+    act(() => vi.advanceTimersByTime(500));
+    const first = regions();
+    fireEvent.change(box, { target: { value: "app" } });
+    act(() => vi.advanceTimersByTime(500));
+    expect(said()).toBe("2 results");
+    expect(regions()).toEqual([...first].reverse());
+  });
+
+  it("waits for rows that arrive after the query", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const props = {
+      onQueryChange: () => {},
+      onSelect: () => {},
+      renderRow: (row: Fruit) => row.label,
+      inputLabel: "Filter fruit",
+    };
+    const menu = (query: string, rows: Fruit[]) => (
+      <FilterMenu {...props} query={query} sections={[{ id: "all", rows }]}>
+        <button type="button">Pick</button>
+      </FilterMenu>
+    );
+    const { rerender } = render(menu("", FRUIT));
+    fireEvent.change(open(), { target: { value: "pe" } });
+    rerender(menu("pe", FRUIT));
+    act(() => vi.advanceTimersByTime(300));
+    rerender(menu("pe", [FRUIT[1] as Fruit]));
+    act(() => vi.advanceTimersByTime(300));
+    expect(said()).toBe("");
+    act(() => vi.advanceTimersByTime(200));
+    expect(said()).toBe("1 result");
+  });
+
+  it("starts silent at the next opening", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(<Harness />);
+    const box = open();
+    fireEvent.change(box, { target: { value: "pe" } });
+    act(() => vi.advanceTimersByTime(500));
+    expect(said()).toBe("3 results");
+    key(box, "Escape");
+    open();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(said()).toBe("");
+  });
+
+  it("words the count with countLabel", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    render(<Harness countLabel={(n) => `${n} fruit left`} />);
+    fireEvent.change(open(), { target: { value: "pe" } });
+    act(() => vi.advanceTimersByTime(500));
+    expect(said()).toBe("3 fruit left");
   });
 });
 

@@ -30,6 +30,7 @@ import {
   finePointer,
   isComposing,
 } from "./dropdown-menu/filter-box.tsx";
+import { FilterStatus, resultCount } from "./dropdown-menu/filter-status.tsx";
 import { DropdownMenuItem } from "./dropdown-menu.tsx";
 import {
   Popover,
@@ -191,6 +192,11 @@ export interface FilterMenuBaseProps<R extends FilterMenuRow> {
   inputLabel?: string;
   listLabel?: string;
   empty?: (query: string) => ReactNode;
+  /**
+   * Spoken to a screen reader once typing in a box rests, with the rows left
+   * in its list: `3 results`. With none left, `empty`'s words are spoken.
+   */
+  countLabel?: (count: number) => string;
   align?: ComponentProps<typeof PopoverContent>["align"];
   side?: ComponentProps<typeof PopoverContent>["side"];
   sideOffset?: number;
@@ -433,7 +439,8 @@ function Mark({
  * A popover with a filter box over a list, the combobox pattern: focus stays
  * in the box, so typing always filters, and the arrow keys walk a highlight
  * that `aria-activedescendant` follows. The caller filters; this component
- * owns the surface, the highlight and the keys.
+ * owns the surface, the highlight and the keys. When typing in a box rests,
+ * a screen reader hears how many rows are left, or the empty state.
  *
  * Under `selection="multiple"` each row is on or off by itself, drawn with a
  * checkbox's look, a partly selected one with its dash; a pick leaves the
@@ -475,6 +482,7 @@ export function FilterMenu<R extends FilterMenuRow>({
   inputLabel = "Filter",
   listLabel,
   empty = (q) => (q === "" ? "Nothing to pick" : `No matches for "${q}"`),
+  countLabel = resultCount,
   align = "start",
   side,
   sideOffset,
@@ -503,7 +511,13 @@ export function FilterMenu<R extends FilterMenuRow>({
      * toward its row and out from under the pointer, which closes it.
      */
     height: number;
+    /** Changes typed into the box, for its status. */
+    edits: number;
   } | null>(null);
+  // Changes typed into the menu's box since it opened, for its status.
+  const [edits, setEdits] = useState(0);
+  const emptyRow = useRef<HTMLDivElement>(null);
+  const subEmptyRow = useRef<HTMLDivElement>(null);
   // The submenu's filter box has focus, and with it the keys.
   const [subKeys, setSubKeys] = useState(false);
   // Like `mode`: typing in the submenu's box puts its highlight on the first
@@ -748,6 +762,7 @@ export function FilterMenu<R extends FilterMenuRow>({
   useLayoutEffect(() => {
     if (open === wasOpen.current) return;
     wasOpen.current = open;
+    setEdits(0);
     if (!open) report(null);
     else {
       setSubQuery(null);
@@ -1412,7 +1427,10 @@ export function FilterMenu<R extends FilterMenuRow>({
           }
           placeholder={placeholder}
           value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
+          onChange={(event) => {
+            setEdits((n) => n + 1);
+            onQueryChange(event.target.value);
+          }}
           onKeyDown={(event) => onKeyDown(event, "menu", event.currentTarget)}
           // Pressed back into while the submenu's box had the keys.
           onFocus={() => {
@@ -1462,6 +1480,7 @@ export function FilterMenu<R extends FilterMenuRow>({
         >
           {rows.length === 0 && (
             <div
+              ref={emptyRow}
               role="presentation"
               className="px-2 py-4 text-center text-muted-foreground text-ui"
             >
@@ -1618,6 +1637,13 @@ export function FilterMenu<R extends FilterMenuRow>({
             );
           })}
         </div>
+        {/* Outside the listbox, which holds options and groups alone. */}
+        <FilterStatus
+          edits={edits}
+          count={rows.length}
+          empty={emptyRow}
+          countLabel={countLabel}
+        />
         {footer}
         {/* Inside the parent's content, so Radix counts it as a child layer:
             pressing in it is not "outside" the menu. */}
@@ -1700,6 +1726,7 @@ export function FilterMenu<R extends FilterMenuRow>({
                       ownQuery?.height ??
                       submenu.current?.getBoundingClientRect().height ??
                       0,
+                    edits: (ownQuery?.edits ?? 0) + 1,
                   });
                 }}
                 onKeyDown={(event) =>
@@ -1720,6 +1747,7 @@ export function FilterMenu<R extends FilterMenuRow>({
               {/* Not while it fades out, emptied by the parent it lost. */}
               {submenuOpen && subRows.length === 0 && (
                 <div
+                  ref={subEmptyRow}
                   role="presentation"
                   className="px-2 py-4 text-center text-muted-foreground text-ui"
                 >
@@ -1776,6 +1804,14 @@ export function FilterMenu<R extends FilterMenuRow>({
                 );
               })}
             </div>
+            {subBox && (
+              <FilterStatus
+                edits={ownQuery?.edits ?? 0}
+                count={subRows.length}
+                empty={subEmptyRow}
+                countLabel={countLabel}
+              />
+            )}
           </PopoverContent>
         </Popover>
       </PopoverContent>
