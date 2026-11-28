@@ -144,12 +144,102 @@ export class ToolbarStore extends OverflowStore<
    * without catching the part before it unmounts.
    */
   lastFocused: Element | null = null;
+  /**
+   * The command Tab reaches, the one Tab stop of the bar's commands: the one
+   * the focus or a press went to last, while it can take the focus, else the
+   * first that can. It stands where it is drawn, so Tab meets it and the
+   * bar's other stops (a search's field) in the order they stand.
+   */
+  stop: HTMLElement | null = null;
+  /** The commands in the arrow-key order, as their `Roving` gave them. */
+  private rovers = new Set<HTMLElement>();
+  /** The one the focus or a press went to last. */
+  private rover: HTMLElement | null = null;
+  private stopListeners = new Set<() => void>();
+  private stopScheduled = false;
 
   constructor() {
     super(EMPTY);
   }
 
+  subscribeStop = (listener: () => void) => {
+    this.stopListeners.add(listener);
+    return () => {
+      this.stopListeners.delete(listener);
+    };
+  };
+
+  addRover(el: HTMLElement): () => void {
+    this.rovers.add(el);
+    this.scheduleStop();
+    return () => {
+      this.rovers.delete(el);
+      this.scheduleStop();
+    };
+  }
+
+  /** A command the focus or a press went to: Tab comes back to it. */
+  pointAt(el: HTMLElement) {
+    // A press on a disabled one takes no focus, and leaves the stop be.
+    if (this.rover === el || !this.rovers.has(el) || !this.canTakeFocus(el))
+      return;
+    this.rover = el;
+    this.scheduleStop();
+  }
+
+  /**
+   * Works the stop out again once the current commit is done: a command
+   * that goes and comes back within it (a ref given anew) moves nothing.
+   */
+  scheduleStop() {
+    if (this.stopScheduled) return;
+    this.stopScheduled = true;
+    queueMicrotask(() => {
+      this.stopScheduled = false;
+      this.refreshStop();
+    });
+  }
+
+  private refreshStop() {
+    const rover = this.rover;
+    let next =
+      rover && this.rovers.has(rover) && this.canTakeFocus(rover)
+        ? rover
+        : null;
+    if (!next) {
+      for (const el of this.rovers) {
+        if (!this.canTakeFocus(el)) continue;
+        if (
+          !next ||
+          next.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING
+        ) {
+          next = el;
+        }
+      }
+    }
+    if (next === this.stop) return;
+    this.stop = next;
+    for (const listener of [...this.stopListeners]) listener();
+  }
+
+  /**
+   * For the bar's own reasons only: held in place for the ⋯ menu, disabled,
+   * or undisplayed while a search holds the bar. A bar made inert or hidden
+   * from outside keeps its stop for when it is back, which nothing here
+   * would hear.
+   */
+  private canTakeFocus(el: HTMLElement): boolean {
+    const pane = this.pane;
+    if (!pane?.contains(el) || el.matches(":disabled")) return false;
+    const inert = el.closest("[inert]");
+    if (inert && inert !== pane && pane.contains(inert)) return false;
+    return (
+      !this.result.takeover || el.closest("[data-slot=toolbar-search]") !== null
+    );
+  }
+
   focusIn = (event: React.FocusEvent) => {
+    this.pointAt(event.target as HTMLElement);
     // A handler deeper in may have moved the focus on before this event got
     // here (a menu handing it to its first item, the bar to its current
     // command): the events of that move have said where it went.

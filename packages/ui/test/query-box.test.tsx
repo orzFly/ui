@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { todouSchema } from "../../query/test/fixtures/todou-schema.ts";
 import {
   QueryBox,
+  type QuerySubmission,
   type RowSource,
   type ValueRowContent,
 } from "../src/components/query-box.tsx";
@@ -44,11 +45,7 @@ function Harness({
   ...props
 }: {
   initial?: string;
-  onSubmit?: (
-    query: string,
-    chosen: Past | undefined,
-    fromHistory: boolean,
-  ) => void;
+  onSubmit?: (query: string, submission: QuerySubmission<Past>) => void;
   onEscape?: () => void;
   onOpenChange?: (open: boolean) => void;
   sources?: readonly RowSource<Past>[];
@@ -74,9 +71,11 @@ function Harness({
       providers={props.providers ?? PROVIDERS}
       value={value}
       onValueChange={setValue}
-      onSubmit={(query, chosen, fromHistory) => {
-        props.onSubmit?.(query, chosen, fromHistory);
-        if (props.loadChosen && chosen !== undefined) setValue(chosen.q);
+      onSubmit={(query, submission) => {
+        props.onSubmit?.(query, submission);
+        if (props.loadChosen && submission.from === "row") {
+          setValue(submission.row.q);
+        }
       }}
       renderSubmitRow={(query, option) => (
         <div {...option} data-row="submit">
@@ -144,7 +143,10 @@ describe("QueryBox · keyboard model", () => {
     ).not.toContain("true");
     expect(box.input.getAttribute("aria-activedescendant")).toBeNull();
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("har", undefined, false);
+    expect(onSubmit).toHaveBeenCalledWith("har", {
+      from: "input",
+      panelOpen: true,
+    });
   });
 
   it("submits the query trimmed, and an empty one not at all", () => {
@@ -155,7 +157,10 @@ describe("QueryBox · keyboard model", () => {
     expect(onSubmit).not.toHaveBeenCalled();
     box.type("  部署  ");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("部署", undefined, false);
+    expect(onSubmit).toHaveBeenCalledWith("部署", {
+      from: "input",
+      panelOpen: true,
+    });
   });
 
   it("submits an empty box from its submit row, aimed at or clicked", () => {
@@ -168,14 +173,14 @@ describe("QueryBox · keyboard model", () => {
       .findIndex((o) => o.matches("[data-row=submit]"));
     for (let i = 0; i <= submit; i += 1) box.key("ArrowDown");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("", undefined, false);
+    expect(onSubmit).toHaveBeenCalledWith("", { from: "submit-row" });
     expect(box.listbox()).toBeNull();
     box.type("");
     fireEvent.click(
       box.container.querySelector("[data-row=submit]") as HTMLElement,
     );
     expect(onSubmit).toHaveBeenCalledTimes(2);
-    expect(onSubmit).toHaveBeenLastCalledWith("", undefined, false);
+    expect(onSubmit).toHaveBeenLastCalledWith("", { from: "submit-row" });
     expect(box.listbox()).toBeNull();
   });
 
@@ -267,7 +272,10 @@ describe("QueryBox · keyboard model", () => {
     box.key("ArrowDown");
     box.key("ArrowDown");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("部署", { q: "部署 失败" }, false);
+    expect(onSubmit).toHaveBeenCalledWith("部署", {
+      from: "row",
+      row: { q: "部署 失败" },
+    });
     // Submitting closes the panel.
     expect(box.listbox()).toBeNull();
   });
@@ -293,6 +301,37 @@ describe("QueryBox · keyboard model", () => {
     expect(box.listbox()).not.toBeNull();
   });
 
+  it("tells an unaimed Enter from the submit row and from Enter after Escape", () => {
+    const onSubmit = vi.fn();
+    const box = mount({ onSubmit });
+    box.type("ABC-141");
+    box.key("Enter");
+    expect(onSubmit).toHaveBeenLastCalledWith("ABC-141", {
+      from: "input",
+      panelOpen: true,
+    });
+    box.type("ABC-142");
+    fireEvent.click(
+      box.container.querySelector("[data-row=submit]") as HTMLElement,
+    );
+    expect(onSubmit).toHaveBeenLastCalledWith("ABC-142", {
+      from: "submit-row",
+    });
+    box.type("ABC-143");
+    box.key("Escape");
+    box.key("Enter");
+    expect(onSubmit).toHaveBeenLastCalledWith("ABC-143", {
+      from: "input",
+      panelOpen: false,
+    });
+    // Enter again: the submit hid the panel as Escape does.
+    box.key("Enter");
+    expect(onSubmit).toHaveBeenLastCalledWith("ABC-143", {
+      from: "input",
+      panelOpen: false,
+    });
+  });
+
   it("submits the plain query after Escape, not an invisible highlight", () => {
     const onSubmit = vi.fn();
     const box = mount({ onSubmit, sources: [pastRows(["部署 失败"])] });
@@ -301,7 +340,10 @@ describe("QueryBox · keyboard model", () => {
     box.key("ArrowDown");
     box.key("Escape");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("部署", undefined, false);
+    expect(onSubmit).toHaveBeenCalledWith("部署", {
+      from: "input",
+      panelOpen: false,
+    });
   });
 
   it.each(["submit", "Escape"])(
@@ -318,7 +360,10 @@ describe("QueryBox · keyboard model", () => {
       box.key("ArrowDown");
       if (how === "submit") {
         box.key("Enter");
-        expect(onSubmit).toHaveBeenCalledWith("foo", { q: "foo bar" }, false);
+        expect(onSubmit).toHaveBeenCalledWith("foo", {
+          from: "row",
+          row: { q: "foo bar" },
+        });
         expect(box.input.value).toBe("foo bar");
       } else {
         box.key("Escape");
@@ -356,7 +401,9 @@ describe("QueryBox · keyboard model", () => {
       expect(box.texts()).toContain("alice");
       expect(box.input.getAttribute("aria-activedescendant")).toBe(submitRow());
       box.key("Enter");
-      expect(onSubmit).toHaveBeenCalledWith("assignee:", undefined, false);
+      expect(onSubmit).toHaveBeenCalledWith("assignee:", {
+        from: "submit-row",
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -542,7 +589,10 @@ describe("QueryBox · the panel", () => {
     const box = mount({ onSubmit, sources: [pastRows(["部署 失败"])] });
     box.type("部署");
     fireEvent.click(box.options()[1] as Element);
-    expect(onSubmit).toHaveBeenCalledWith("部署", { q: "部署 失败" }, false);
+    expect(onSubmit).toHaveBeenCalledWith("部署", {
+      from: "row",
+      row: { q: "部署 失败" },
+    });
   });
 
   it("paints the query behind the input through the schema", () => {
@@ -596,7 +646,10 @@ describe("QueryBox · IME", () => {
     expect(onSubmit).not.toHaveBeenCalled();
 
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("bu", undefined, false);
+    expect(onSubmit).toHaveBeenCalledWith("bu", {
+      from: "input",
+      panelOpen: true,
+    });
   });
 
   it("leaves every key to the IME while it composes", () => {
@@ -639,7 +692,10 @@ describe("QueryBox · in a form", () => {
     fireEvent.change(input, { target: { value: "部署" } });
     // `false` is a prevented default, so no implicit submission follows.
     expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(false);
-    expect(onSubmit).toHaveBeenCalledWith("部署", undefined, false);
+    expect(onSubmit).toHaveBeenCalledWith("部署", {
+      from: "input",
+      panelOpen: true,
+    });
     expect(outer).not.toHaveBeenCalled();
   });
 });
@@ -729,7 +785,9 @@ describe("QueryBox · history", () => {
     box.key("ArrowDown");
     box.key("ArrowDown");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("Flaky tests on CI", undefined, true);
+    expect(onSubmit).toHaveBeenCalledWith("Flaky tests on CI", {
+      from: "history",
+    });
     expect(box.input.value).toBe("Flaky tests on CI");
     expect(box.listbox()).toBeNull();
   });
@@ -740,7 +798,7 @@ describe("QueryBox · history", () => {
     act(() => box.input.focus());
     box.key("ArrowDown");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("flaky test", undefined, true);
+    expect(onSubmit).toHaveBeenCalledWith("flaky test", { from: "history" });
   });
 
   it("submits a clicked past query", () => {
@@ -748,7 +806,7 @@ describe("QueryBox · history", () => {
     const box = mount({ past: PAST, onSubmit });
     box.type("open");
     fireEvent.click(option(box, "is:open"));
-    expect(onSubmit).toHaveBeenCalledWith("is:open", undefined, true);
+    expect(onSubmit).toHaveBeenCalledWith("is:open", { from: "history" });
     expect(box.input.value).toBe("is:open");
   });
 
@@ -846,7 +904,7 @@ describe("QueryBox · history", () => {
     expect(box.listbox()).not.toBeNull();
     // A plain one is the app's, which decides where the query goes.
     expect(fireEvent.click(row)).toBe(false);
-    expect(onSubmit).toHaveBeenCalledWith("is:open", undefined, true);
+    expect(onSubmit).toHaveBeenCalledWith("is:open", { from: "history" });
   });
 
   it("keeps a click on a link row's × from going anywhere", () => {
@@ -1009,7 +1067,10 @@ describe("QueryBox · app rows that complete", () => {
     box.type("ac");
     box.key("ArrowDown");
     box.key("Enter");
-    expect(onSubmit).toHaveBeenCalledWith("ac", { q: "ACC-" }, false);
+    expect(onSubmit).toHaveBeenCalledWith("ac", {
+      from: "row",
+      row: { q: "ACC-" },
+    });
   });
 });
 

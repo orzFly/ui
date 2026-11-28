@@ -85,6 +85,24 @@ export type ValueRowContent = {
   body?: ReactNode;
 };
 
+/** What a query was submitted from: Enter in the box, or the row Enter or a click was on. */
+export type QuerySubmission<R> =
+  | {
+      /** Enter in the box with no row highlighted: the query as typed. */
+      from: "input";
+      /**
+       * The panel was showing. Escape hides it, and so does a submit, until
+       * the query changes or the box is focused again.
+       */
+      panelOpen: boolean;
+    }
+  /** The submit row, by Enter or a click: the query as typed. */
+  | { from: "submit-row" }
+  /** A past query: the query submitted is that one, as it was searched before. */
+  | { from: "history" }
+  /** One of the app's rows. */
+  | { from: "row"; row: R };
+
 type BoxRow<R> =
   | { kind: "submit" }
   | { kind: "completion"; row: CompletionRow }
@@ -101,6 +119,23 @@ const OPTION =
 
 /** Nothing highlighted. Enter then submits what was typed, not an offer. */
 const NONE = -1;
+
+/** A row taken that submits, or none: the box's own Enter. */
+function submissionOf<R>(
+  chosen: BoxRow<R> | undefined,
+  panelOpen: boolean,
+): QuerySubmission<R> {
+  switch (chosen?.kind) {
+    case undefined:
+      return { from: "input", panelOpen };
+    case "history":
+      return { from: "history" };
+    case "app":
+      return { from: "row", row: chosen.row };
+    default:
+      return { from: "submit-row" };
+  }
+}
 
 /** Also the React key; the highlight follows it, not an index. */
 function rowKey<R>(row: BoxRow<R>): string {
@@ -256,7 +291,7 @@ function HistoryRow({
 
 /**
  * A query box: `HighlightedInput` with the schema's colours, its completions,
- * and the app's own rows in one panel, behind todou's keyboard model.
+ * and the app's own rows in one panel, worked from the keyboard as follows.
  *
  * Enter submits it the way every search box on the web does, and where the
  * query goes is the app's: `onSubmit`. It is no `<form>` of its own, so it can
@@ -300,15 +335,10 @@ export function QueryBox<R>({
   value: string;
   onValueChange: (value: string) => void;
   /**
-   * Enter with nothing highlighted, or on the submit row; `chosen` when an app row was
-   * highlighted; `fromHistory` when a history row was, its query then being submitted as it
-   * was searched before. An empty box submits only from a row: `""` from its submit row.
+   * Enter, or a click on a row that submits, with what it was on. An empty
+   * box submits only from a row: `""` from its submit row.
    */
-  onSubmit: (
-    query: string,
-    chosen: R | undefined,
-    fromHistory: boolean,
-  ) => void;
+  onSubmit: (query: string, submission: QuerySubmission<R>) => void;
   sources?: readonly RowSource<R>[];
   /** Past queries offered in the panel: `useQueryHistory`'s, or any with the same shape. */
   history?: Pick<QueryHistory, "entries" | "remove">;
@@ -373,7 +403,7 @@ export function QueryBox<R>({
 
   const results: SourceResult<BoxRow<R>>[] = [
     // App sources first: a row the app recognises (a jump to what the query
-    // names) outranks finishing a word, as in todou.
+    // names) outranks finishing a word.
     ...sources.map((source) => ({
       matched: source.matched,
       ...(source.yields === undefined ? {} : { yields: source.yields }),
@@ -535,11 +565,7 @@ export function QueryBox<R>({
     if (chosen?.kind === "history") emit(submitted);
     setDismissed(true);
     setHighlight(NONE);
-    onSubmit(
-      submitted,
-      chosen?.kind === "app" ? chosen.row : undefined,
-      chosen?.kind === "history",
-    );
+    onSubmit(submitted, submissionOf(chosen, open));
   };
 
   /** Forgets a past query, or an app row that can be removed. */

@@ -12,8 +12,11 @@ import {
   type LabelHost,
   LabelHostContext,
   OUT_OF_FLOW,
+  type ToolbarInternal,
   ToolbarInternalContext,
+  type ToolbarStore,
   UnitLabelsContext,
+  useComposedRef,
 } from "./store.ts";
 
 /**
@@ -197,34 +200,105 @@ export function CommandTooltip({
  */
 export const RovingTaken = React.createContext(false);
 
-/**
- * A command's place in its toolbar's arrow-key order: one Tab stop for the
- * bar, the arrows moving between its commands. Outside a toolbar, nothing.
- */
-export function Roving({
-  link,
-  ...props
-}: React.ComponentProps<typeof Slot.Root> & {
+type RovingProps = React.ComponentProps<typeof Slot.Root> & {
   link?: boolean;
+  /** Its value as a toggle of a `ToolbarGroup` with a `selection`. */
+  toggle?: string;
   /** Skipped by the arrow keys, as the button it wraps is. */
   disabled?: boolean;
-}) {
+};
+
+/**
+ * A command's place in its toolbar's arrow-key order: one Tab stop for the
+ * bar's commands, the arrows moving between them. Outside a toolbar, nothing.
+ */
+export function Roving({ link, toggle, ...props }: RovingProps) {
   const internal = React.useContext(ToolbarInternalContext);
   const taken = React.useContext(RovingTaken);
   if (!internal || taken) return <Slot.Root {...props} />;
+  return <RovingItem link={link} toggle={toggle} {...props} />;
+}
+
+/**
+ * `Roving` whether or not a part around it has taken the arrow-key order
+ * over (`RovingTaken`): that part's own trigger. Only inside a toolbar.
+ */
+export function RovingItem({
+  link,
+  toggle,
+  ref,
+  onMouseDown,
+  ...props
+}: RovingProps) {
+  const { store } = React.useContext(ToolbarInternalContext) as ToolbarInternal;
+  const stop = useRovingStop(store);
+  const composed = useComposedRef(ref, stop.ref);
+  const own = {
+    ...props,
+    ref: composed,
+    tabIndex: stop.tabIndex,
+    // As Radix's own items do: where a press focuses no button, the one
+    // pressed is still the one Tab comes back to.
+    onMouseDown: (event: React.MouseEvent<HTMLElement>) => {
+      onMouseDown?.(event);
+      store.pointAt(event.currentTarget);
+    },
+  };
+  if (toggle !== undefined) {
+    return (
+      <ToolbarPrimitive.ToggleItem
+        asChild
+        value={toggle}
+        {...(own as Omit<
+          React.ComponentProps<typeof ToolbarPrimitive.ToggleItem>,
+          "value"
+        >)}
+      />
+    );
+  }
   // A link takes no `type`, which the button's part would write onto it.
   if (link) {
     return (
       <ToolbarPrimitive.Link
         asChild
-        {...(props as React.ComponentProps<typeof ToolbarPrimitive.Link>)}
+        {...(own as React.ComponentProps<typeof ToolbarPrimitive.Link>)}
       />
     );
   }
   return (
     <ToolbarPrimitive.Button
       asChild
-      {...(props as React.ComponentProps<typeof ToolbarPrimitive.Button>)}
+      {...(own as React.ComponentProps<typeof ToolbarPrimitive.Button>)}
     />
   );
+}
+
+/**
+ * Whether this command is the one its toolbar's Tab reaches (`stop`), as
+ * its `tabIndex`. Radix keeps that stop on the bar's own element, before
+ * everything in it, and hands the focus on from there: past a search's
+ * field that stands before the commands, and back to them from the field.
+ */
+function useRovingStop(store: ToolbarStore) {
+  const own = React.useRef<HTMLElement | null>(null);
+  const isStop = React.useSyncExternalStore(
+    store.subscribeStop,
+    () => own.current !== null && store.stop === own.current,
+    () => false,
+  );
+  const ref = React.useCallback(
+    (el: HTMLElement | null) => {
+      own.current = el;
+      if (!el) return;
+      const remove = store.addRover(el);
+      return () => {
+        own.current = null;
+        remove();
+      };
+    },
+    [store],
+  );
+  // Disabled, or enabled again, it may give the stop up or take it.
+  React.useLayoutEffect(() => store.scheduleStop());
+  return { ref, tabIndex: isStop ? 0 : -1 };
 }

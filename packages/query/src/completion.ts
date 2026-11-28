@@ -538,7 +538,7 @@ export function valueRows(
  * submit row is never spent, and whatever is left goes to the rest.
  *
  * A source marked `yields` waits for both of those to be served and takes
- * only the remainder. History is the one that does in todou (T-270): a
+ * only the remainder. History is the one that does in `QueryBox`: a
  * completion or a jump answers the string being typed right now, history
  * answers what was searched before, and the keys are the only place the
  * syntax can be discovered — so history is what gives way when the panel is

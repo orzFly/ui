@@ -1,12 +1,11 @@
 import { EllipsisIcon } from "lucide-react";
-import { Toolbar as ToolbarPrimitive } from "radix-ui";
 import * as React from "react";
 import { cn } from "../../lib/utils.ts";
 import { Badge } from "../badge.tsx";
 import { Button } from "../button.tsx";
 import { DropdownMenuLabel, DropdownMenuTrigger } from "../dropdown-menu.tsx";
 import { OverflowMenu as SharedOverflowMenu } from "../overflow/menu.tsx";
-import { CommandTooltip } from "./command.tsx";
+import { CommandTooltip, RovingItem } from "./command.tsx";
 import { FLAT, iconSize } from "./look.ts";
 import {
   ToolbarInternalContext,
@@ -137,7 +136,7 @@ export function OverflowTrigger({ className }: { className?: string }) {
   const label =
     count > 0 ? labels.overflowActiveLabel(count) : labels.overflowLabel;
   return (
-    <ToolbarPrimitive.Button asChild>
+    <RovingItem>
       <DropdownMenuTrigger asChild>
         <CommandTooltip enabled text={label}>
           <Button
@@ -152,7 +151,7 @@ export function OverflowTrigger({ className }: { className?: string }) {
           </Button>
         </CommandTooltip>
       </DropdownMenuTrigger>
-    </ToolbarPrimitive.Button>
+    </RovingItem>
   );
 }
 

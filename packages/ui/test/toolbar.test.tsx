@@ -85,6 +85,18 @@ async function openMore() {
 
 const settle = () => act(async () => {});
 
+/** What Tab stops on in the bar, in order, by name. */
+const tabStops = (bar: HTMLElement) =>
+  [bar, ...bar.querySelectorAll<HTMLElement>("*")]
+    .filter(
+      (el) =>
+        el.tabIndex >= 0 &&
+        !el.closest("[inert]") &&
+        !el.matches(":disabled") &&
+        getComputedStyle(el).display !== "none",
+    )
+    .map((el) => el.getAttribute("aria-label") ?? el.textContent);
+
 function Commands() {
   return (
     <Toolbar aria-label="Commands">
@@ -124,14 +136,26 @@ describe("Toolbar", () => {
     expect(overflowed("Snooze")).toBe(false);
   });
 
-  it("holds one Tab stop for the bar", async () => {
+  it("holds one Tab stop for its commands: the first, then the one last focused", async () => {
     render(<Commands />);
     await settle();
     const bar = screen.getByRole("toolbar", { name: "Commands" });
-    expect(bar.tabIndex).toBe(0);
-    for (const button of screen.getAllByRole("button")) {
-      expect(button.tabIndex).toBe(-1);
-    }
+    expect(tabStops(bar)).toEqual(["Archive"]);
+    act(() => screen.getByRole("button", { name: "Unread" }).focus());
+    await settle();
+    expect(tabStops(bar)).toEqual(["Unread"]);
+  });
+
+  it("gives the stop to the first command while the last one focused is in the ⋯ menu", async () => {
+    render(<Commands />);
+    await settle();
+    const bar = screen.getByRole("toolbar", { name: "Commands" });
+    act(() => screen.getByRole("button", { name: "Snooze" }).focus());
+    act(() => (document.activeElement as HTMLElement).blur());
+    await layout.resize(90);
+    expect(tabStops(bar)).toEqual(["Archive"]);
+    await layout.resize(1000);
+    expect(tabStops(bar)).toEqual(["Snooze"]);
   });
 
   it("hides labels on a fine pointer, keeping the button, its name and a tooltip", async () => {
@@ -607,6 +631,28 @@ describe("ToolbarSearch", () => {
         .querySelector("[data-slot=toolbar]")
         ?.hasAttribute("data-search-takeover"),
     ).toBe(true);
+  });
+
+  it("is a Tab stop where it stands, before the commands' one", async () => {
+    render(<Search />);
+    await settle();
+    const bar = screen.getByRole("toolbar", { name: "Issues" });
+    expect(tabStops(bar)).toEqual(["Search issues", "Archive"]);
+    act(() => screen.getByRole("button", { name: "Delete" }).focus());
+    act(() => screen.getByRole("searchbox").focus());
+    await settle();
+    expect(tabStops(bar)).toEqual(["Search issues", "Delete"]);
+  });
+
+  it("gives the commands' stop to its button back while it holds the bar", async () => {
+    render(<Search />);
+    await settle();
+    const bar = screen.getByRole("toolbar", { name: "Issues" });
+    await layout.resize(120);
+    fireEvent.click(screen.getByRole("button", { name: "Search issues" }));
+    await settle();
+    await settle();
+    expect(tabStops(bar)).toEqual(["Back", "Search issues"]);
   });
 
   it("keeps the bar as tall as its field while the icon stands in for it", async () => {

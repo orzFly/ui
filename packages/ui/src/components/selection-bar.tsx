@@ -23,8 +23,8 @@ import {
  * toolbar, while the checkbox, the count and the clear button stay. An app
  * with no toolbar of its own mounts the bar only while `count` is above zero.
  *
- * The bar is one Tab stop, the arrow keys going from the checkbox to the
- * clear button. It is as tall in both states as long as nothing in it is
+ * Its commands are one Tab stop, the arrow keys going from the checkbox to
+ * the clear button. It is as tall in both states as long as nothing in it is
  * taller than the checkbox's box, as no control of the library's is. When it
  * turns from one state to the other with the focus in the half that goes (an
  * action that used the selection up, the clear button, Escape inside it), the
