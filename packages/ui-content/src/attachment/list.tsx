@@ -2,6 +2,7 @@ import { Button } from "@orz/ui/components/button";
 import { Checkbox, SelectSlot } from "@orz/ui/components/checkbox";
 import { SelectionBar } from "@orz/ui/components/selection-bar";
 import { Timestamp } from "@orz/ui/components/timestamp";
+import { ToolbarItem } from "@orz/ui/components/toolbar";
 import { type Selection, useSelection } from "@orz/ui/hooks/use-selection";
 import { useSweepSelect } from "@orz/ui/hooks/use-sweep-select";
 import { isPlainClick } from "@orz/ui/lib/link";
@@ -59,12 +60,16 @@ export type AttachmentListProps = {
   onSelectedChange?: (selected: AttachmentItem["key"][]) => void;
   /**
    * The actions on the selected files, in the header while any are: `ToolbarButton`s, a delete
-   * that asks first. The list does nothing to the files itself.
+   * that asks first. The list does nothing to the files itself. Return the toolbar's parts
+   * themselves (a fragment of them, say), in no element of their own, so a narrow header can
+   * move them into its ⋯.
    */
   selectionActions?: (items: AttachmentItem[]) => ReactNode;
   /**
    * The actions on every file, at the end of the header while none is selected: `ToolbarButton`s,
-   * a Download all. Selecting a file swaps them for `selectionActions`.
+   * a Download all. Selecting a file swaps them for `selectionActions`. Return the toolbar's
+   * parts themselves (a fragment of them, say), in no element of their own, so a narrow header
+   * of a `selectable` list can move them into its ⋯.
    */
   listActions?: (items: AttachmentItem[]) => ReactNode;
   className?: string;
@@ -354,11 +359,12 @@ export function AttachmentList({
           icon={<PaperclipIcon className="size-3.5 text-muted-foreground" />}
           idle={
             <>
-              <span className="flex min-w-0 items-center gap-2 px-1">
+              {/* The room the actions leave, down to a title's worth. */}
+              <ToolbarItem flex minWidth={80} className="gap-2 px-1">
                 <span className="truncate font-medium">{title}</span>
                 <span className="text-muted-foreground">{items.length}</span>
-              </span>
-              {wholeActions}
+              </ToolbarItem>
+              {whole}
             </>
           }
         >

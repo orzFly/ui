@@ -439,7 +439,8 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
   own controls at the end of a row, such as a delete button, and `listActions(items)` its controls
   on every file at the end of the header, such as a Download all. A `selectable` list heads its
   rows with a `SelectionBar`; while any file is selected, `selectionActions(selected)` takes the
-  place of `listActions`. A list of eight or more rows keeps its newest five and folds the rest
+  place of `listActions`. Both return toolbar parts such as `ToolbarButton` themselves, in no
+  element of their own, so a narrow header can move them into its ⋯. A list of eight or more rows keeps its newest five and folds the rest
   behind a toggle; `fold={false}` keeps them all, for a list whose order is the point.
   `thumbnails` draws each image that has a `url` as a thumbnail under the rows instead of as a
   row. A plain click on a row or a thumbnail opens the viewer on the whole list, in its own order.
