@@ -23,6 +23,7 @@ const FILES: Record<string, string> = {
   "inner.md": "Inner body.\n\n![deepest](files/deepest.md)",
   "deepest.md": "Deepest body.",
   "titled.md": "# Embedded\n\n## Embedded part",
+  "lines.md": "First line\nsecond line",
 };
 
 const loaders = new Map(
@@ -62,6 +63,59 @@ describe("an embedded markdown file", () => {
     expect(nested?.querySelector("p[data-marked]")?.textContent).toBe(
       "Outer body.",
     );
+  });
+
+  it("is drawn without the host's plugins marked inherited: false (UI-236)", async () => {
+    const own: MarkdownPlugin = {
+      name: "own",
+      inherited: false,
+      components: {
+        p: ({ Next, ...props }) => <Next {...props} data-own="" />,
+      },
+    };
+    const { container } = render(
+      <ContentRenderers renderers={RENDERERS}>
+        <Markdown plugins={[...PLUGINS, own]}>
+          {"Host body.\n\n![outer](files/outer.md)"}
+        </Markdown>
+      </ContentRenderers>,
+    );
+    await settle();
+    expect(
+      [...container.querySelectorAll("p[data-own]")].map((p) => p.textContent),
+    ).toEqual(["Host body."]);
+    const nested = container.querySelector(".markdown-body .markdown-body");
+    expect(nested?.querySelector("p[data-marked]")?.textContent).toBe(
+      "Outer body.",
+    );
+  });
+
+  it("is not drawn again when only the host's own plugins change (UI-236)", async () => {
+    let parses = 0;
+    const counting: MarkdownPlugin = {
+      name: "counting",
+      remarkPlugins: [
+        () => (_tree: unknown, file: { value: unknown }) => {
+          if (file.value === FILES["outer.md"]) parses++;
+        },
+      ],
+    };
+    const own = (): MarkdownPlugin => ({ name: "own", inherited: false });
+    const tree = (plugins: MarkdownPlugin[]) => (
+      <ContentRenderers renderers={RENDERERS}>
+        <Markdown plugins={plugins}>{"![outer](files/outer.md)"}</Markdown>
+      </ContentRenderers>
+    );
+    const { container, rerender } = render(tree([...PLUGINS, counting, own()]));
+    await settle();
+    const text = () =>
+      container.querySelector(".markdown-body .markdown-body p")?.firstChild;
+    const before = text();
+    expect(parses).toBe(1);
+    rerender(tree([...PLUGINS, counting, own()]));
+    await settle();
+    expect(parses).toBe(1);
+    expect(text()).toBe(before);
   });
 
   it("starts its headings a level below its host's (UI-256)", async () => {
@@ -241,6 +295,72 @@ describe("paragraphs carrying embeds", () => {
       <Markdown plugins={PLUGINS}>{"See ![outer](files/outer.md)"}</Markdown>,
     );
     expect(container.querySelector("p > img")).not.toBeNull();
+  });
+});
+
+describe("a block embed under breaks (UI-233)", () => {
+  const chip: ContentRenderer = {
+    name: "chip",
+    accepts: (s) => s.kind === "file" && s.name.endsWith(".chip"),
+    display: "inline",
+    Component: ({ source }) => (
+      <span data-chip="">{source.kind === "file" ? source.name : ""}</span>
+    ),
+  };
+  const draw = (text: string, renderers = RENDERERS) =>
+    render(
+      <ContentRenderers renderers={renderers}>
+        <Markdown plugins={PLUGINS} breaks>
+          {text}
+        </Markdown>
+      </ContentRenderers>,
+    ).container;
+  /** Breaks in the element itself, not in a document it embeds. */
+  const ownBreaks = (container: HTMLElement, selector: string) =>
+    container.querySelectorAll(`.markdown-body > ${selector} > br`).length;
+
+  it("leaves no break between two embeds on consecutive lines", () => {
+    const container = draw(
+      "![outer](files/outer.md)\n![inner](files/inner.md)",
+    );
+    expect(ownBreaks(container, ".markdown-paragraph")).toBe(0);
+  });
+
+  it("leaves no break between an embed and the text under it", () => {
+    const container = draw("![outer](files/outer.md)\nafter");
+    expect(ownBreaks(container, ".markdown-paragraph")).toBe(0);
+    expect(container.textContent).toContain("after");
+  });
+
+  it("keeps the break between text and the embed under it", () => {
+    const container = draw("before\n![outer](files/outer.md)");
+    expect(ownBreaks(container, ".markdown-paragraph")).toBe(1);
+  });
+
+  it("keeps a hard break the author wrote after an embed", () => {
+    const container = draw("![outer](files/outer.md)  \nafter");
+    expect(ownBreaks(container, ".markdown-paragraph")).toBe(1);
+  });
+
+  it("does the same in a tight list item", () => {
+    const container = draw(
+      "- before\n  ![outer](files/outer.md)\n  after\n- next",
+    );
+    expect(ownBreaks(container, "ul > li")).toBe(1);
+  });
+
+  it("keeps the break between two inline embeds", () => {
+    const container = draw("![a](files/a.chip)\n![b](files/b.chip)", [chip]);
+    expect(ownBreaks(container, "p")).toBe(1);
+  });
+
+  it("draws an embedded document's own newlines as spaces", async () => {
+    const container = draw("before\nafter\n\n![lines](files/lines.md)");
+    await settle();
+    expect(ownBreaks(container, "p")).toBe(1);
+    const nested = container.querySelector(".markdown-body .markdown-body p");
+    expect(nested?.textContent).toBe(FILES["lines.md"]);
+    expect(nested?.querySelector("br")).toBeNull();
   });
 });
 

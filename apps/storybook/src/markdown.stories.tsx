@@ -256,6 +256,25 @@ const plugins = [markdownEmbeds({ resolve })];
 // \`#\` is an h2 here, and the guide's own \`#\` an h3.
 <Markdown headingLevel={2} plugins={plugins}>{source}</Markdown>`;
 
+const BREAKS_DOC = `Merged, thanks. Two things before the release:
+- the appendix still lists the old kinds
+- Save moved, so the screenshots need redoing
+
+The appendix as it stands:
+![appendix](files/appendix.md)
+I will update it tomorrow.
+
+![v1](files/settings-before.svg)
+→ ![v2](files/settings-after.svg)
+`;
+
+const BREAKS_SNIPPET = `import { imagePairs, Markdown, markdownEmbeds } from "@orz/ui-markdown";
+
+const plugins = [imagePairs({ resolve }), markdownEmbeds({ resolve })];
+
+// A comment, typed into a box: each newline its author typed is a line break.
+<Markdown breaks plugins={plugins}>{comment}</Markdown>`;
+
 /** In-memory documents, addressed as `files/<name>`: react-markdown refuses a `file:` URL. */
 const FILES: Record<string, string> = {
   "overview.md": `## Overview
@@ -320,7 +339,14 @@ const pluginNames: ContentRenderer = {
 /** `decorate`'s heading band, with no fence caption. */
 const band: MarkdownPlugin = { name: "band", components: BAND_COMPONENTS };
 
-const CONTEXT_PLUGINS = [band, markdownEmbeds({ resolve: resolveFile })];
+/** The source-line gutter, on the page's own document alone. */
+const hostLines: MarkdownPlugin = { ...SOURCE_LINES, inherited: false };
+
+const CONTEXT_PLUGINS = [
+  band,
+  markdownEmbeds({ resolve: resolveFile }),
+  hostLines,
+];
 const CONTEXT_RENDERERS = withRenderers(
   pluginNames,
   markdownContent(),
@@ -435,7 +461,7 @@ const decorate: MarkdownPlugin = {
   ),
 };
 
-// A module constant: a fresh array makes <Markdown> reparse and remount.
+// A module constant: a fresh array makes <Markdown> reparse.
 const plugins = [decorate];
 
 <Markdown plugins={plugins}>{source}</Markdown>`;
@@ -511,10 +537,14 @@ const plugins = [attachmentLinks({ resolve }), externalLinks()];
 
 <Markdown plugins={plugins}>{source}</Markdown>`;
 
-const CONTEXT_SNIPPET = `import { MarkdownPluginsContext } from "@orz/ui-markdown";
+const CONTEXT_SNIPPET = `import { type MarkdownPlugin, MarkdownPluginsContext } from "@orz/ui-markdown";
 import { useContext } from "react";
 
-const plugins = useContext(MarkdownPluginsContext); // the enclosing <Markdown>'s plugins; undefined outside one`;
+// A document embedded in the one this is passed to is drawn without it.
+const sourceLines: MarkdownPlugin = { name: "source-lines", inherited: false, … };
+
+// What a document embedded in the enclosing <Markdown> is drawn with; undefined outside one.
+const plugins = useContext(MarkdownPluginsContext);`;
 
 const code = (snippet: string) => ({
   docs: { source: { code: snippet, language: "tsx" } },
@@ -574,6 +604,18 @@ export const HeadingLevel: Story = {
   render: (args) => <Markdown {...args} plugins={EMBED_PLUGINS} />,
   decorators: ATTACHMENTS,
   parameters: code(HEADING_SNIPPET),
+};
+
+/**
+ * `breaks` draws each newline its author typed as a line break, as GitHub draws a comment. None
+ * is left under a block embed, which ends its own line, and a pair still pairs across lines. The
+ * embedded file keeps its own newlines spaces.
+ */
+export const Breaks: Story = {
+  args: { children: BREAKS_DOC, breaks: true },
+  render: (args) => <Markdown {...args} plugins={PAIR_PLUGINS} />,
+  decorators: ATTACHMENTS,
+  parameters: code(BREAKS_SNIPPET),
 };
 
 /** Raw HTML and refused links are shown as what was typed. */
@@ -641,8 +683,10 @@ export const ExternalLinks: Story = {
 };
 
 /**
- * The plugins of the enclosing `<Markdown>`, for a renderer drawn inside it. `markdownContent`
- * reads it, so an embedded document is drawn with its host's plugins: both headings are banded.
+ * The plugins of the enclosing `<Markdown>` that a document embedded in it inherits, for a
+ * renderer drawn inside it. `markdownContent` reads it, so an embedded document is drawn with its
+ * host's plugins: both headings are banded. The source-line gutter is marked `inherited: false`,
+ * so the embedded document has none.
  */
 export const MarkdownPluginsContext: Story = {
   args: { children: CONTEXT_DOC },

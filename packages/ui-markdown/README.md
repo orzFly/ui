@@ -39,6 +39,7 @@ import { Markdown } from "@orz/ui-markdown";
 <Markdown>{source}</Markdown>
 <Markdown plugins={plugins} className="text-sm" ref={rootRef}>{source}</Markdown>
 <Markdown headingLevel={2}>{source}</Markdown>
+<Markdown breaks>{comment}</Markdown>
 ```
 
 The fixed chain is: GFM; links whose protocol react-markdown refuses, drawn as their source text;
@@ -49,6 +50,12 @@ a different chain composes react-markdown with the `lib/*` pieces below.
 `headingLevel` is the level a `#` heading is drawn at, 1 by default; every deeper heading moves down
 with it, stopping at `h6`, and the styles follow the tag drawn. A `<Markdown>` inside another, as an
 embedded file is, starts a level below its host's `#`, so the page keeps one outline.
+
+`breaks` draws a single newline inside a paragraph as a line break, as GitHub does in a comment,
+rather than as a space; a hard break (two trailing spaces, or a backslash) is one either way, and
+code is left alone. A file embedded in such a text keeps its newlines spaces. Where a soft break
+follows a block embed, `markdownEmbeds` drops it: the embed already ends its line. An image pair may
+still run across lines.
 
 A `<pre>` holding one `<code>` is a code block. It renders inside
 `<div class="markdown-fence">`, which carries the `<pre>`'s classes and, under `rehypeSourceLines`,
@@ -76,15 +83,19 @@ A renderer for one language, such as `@orz/ui-mermaid`'s `mermaidContent`, goes 
 list.
 
 **Keep `plugins` stable**: a module constant, or a `useMemo`. A fresh array, or a fresh plugin object
-in it, makes react-markdown reparse the document and React remount every overridden element, and
-either one collapses a live text selection inside it. With the same text, plugins and class,
-`<Markdown>` does not render again at all: react-markdown keeps no parse cache.
+in it, makes react-markdown reparse the document. React keeps each element mounted as long as the
+wrappers its tag goes through are the same functions in the same order, so a plugin whose passes
+follow the app's data keeps its `components` and `fence` at module scope, or memoised apart, and
+rebuilds only its passes. A new wrapper remounts every element of its tag, which collapses a live
+text selection inside it. With the same text, plugins and class, `<Markdown>` does not render again
+at all: react-markdown keeps no parse cache.
 
 ## Writing a plugin
 
 ```ts
 type MarkdownPlugin = {
   name: string;
+  inherited?: boolean; // false: a document embedded in this one is drawn without it
   remarkPlugins?: PluggableList; // after the fixed syntax chain
   rehypePlugins?: PluggableList; // after rehypeDetails and rehypeHeadingLevels
   components?: { [Tag]?: ComponentType<ElementProps<Tag> & { Next }> }; // any tag but pre
@@ -121,6 +132,10 @@ const PLUGINS = [anchors];
 
 Element wrappers receive react-markdown's props, including the hast `node`; pass them on to `Next`.
 
+A document embedded in another (see below) is drawn with its host's plugins. Mark a plugin
+`inherited: false` when it belongs to the host document alone, as a pass over its own source lines
+does; changing such a plugin leaves the embedded documents alone.
+
 ## Embeds and markdown files
 
 ```tsx
@@ -150,7 +165,8 @@ function Doc({ source }: { source: string }) {
 - **`markdownContent({ plugins?, maxDepth? })`** accepts files named `*.md`/`*.markdown` or typed
   `text/markdown`, in either placement. It shows the fallback link while loading, the message and a
   Retry button on failure, and the document once loaded, with the plugins of the enclosing
-  `<Markdown>` (else `options.plugins`) and its headings a level below that `<Markdown>`'s. In
+  `<Markdown>` but those marked `inherited: false` (else `options.plugins`) and its headings a level
+  below that `<Markdown>`'s. In
   `"document"` placement, a document deeper than `maxDepth` (else the provider's `maxDepth`, else
   1) is a link: a document inside a document shows its own documents as links, which is what stops
   a document that embeds itself. A `"viewer"` placement is never limited. A "source" toggle in the
@@ -191,13 +207,13 @@ refuses is drawn as source text before `resolve` sees it: use relative addresses
 | Import | Contents |
 |---|---|
 | `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `imagePairs`, `markdownContent`, `MARKDOWN_RENDER_MAX_CHARS`, `fenceTitle`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
-| `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `parseMarkdown` |
+| `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `MESSAGE_SYNTAX_PLUGINS`, `isSoftBreak`, `parseMarkdown` |
 | `@orz/ui-markdown/lib/remark-frontmatter-table` | `remarkFrontmatterTable`, `frontmatterFields`, `FRONTMATTER_FLAVOURS`, node types |
 | `@orz/ui-markdown/lib/remark-rejected-urls` | `remarkRejectedUrlsAsText` |
 | `@orz/ui-markdown/lib/rehype-source-lines` | `rehypeSourceLines`, `SOURCE_LINE_ATTR`, `CODE_CONTENT_START_ATTR`, `parseSourceLoc` |
 | `@orz/ui-markdown/lib/rehype-details` | `rehypeDetails` |
 | `@orz/ui-markdown/lib/rehype-heading-levels` | `rehypeHeadingLevels`, `RehypeHeadingLevelsOptions` |
-| `@orz/ui-markdown/lib/rehype-image-pairs` | `rehypeImagePairs`, `imagePairOf`, `isPairImage`, `pairLabel`, `PAIR_ATTR`, `PAIR_BEFORE_SRC_ATTR`, `PAIR_BEFORE_ALT_ATTR` |
+| `@orz/ui-markdown/lib/rehype-image-pairs` | `rehypeImagePairs`, `imagePairOf`, `isPairImage`, `pairLabel`, `PAIR_ATTR`, `PAIR_BEFORE_SRC_ATTR`, `PAIR_BEFORE_ALT_ATTR`, `PAIR_BEFORE_AT_ATTR` |
 | `@orz/ui-markdown/lib/fence-meta` | `fenceTitle` |
 | `@orz/ui-markdown/styles.css` | the `.markdown-body` typography |
 

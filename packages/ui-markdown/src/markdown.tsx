@@ -12,7 +12,10 @@ import {
 import ReactMarkdown, { type Components } from "react-markdown";
 import type { PluggableList } from "unified";
 import { fenceTitle } from "./lib/fence-meta.ts";
-import { MARKDOWN_SYNTAX_PLUGINS } from "./lib/markdown-processor.ts";
+import {
+  MARKDOWN_SYNTAX_PLUGINS,
+  MESSAGE_SYNTAX_PLUGINS,
+} from "./lib/markdown-processor.ts";
 import { rehypeDetails } from "./lib/rehype-details.ts";
 import { rehypeHeadingLevels } from "./lib/rehype-heading-levels.ts";
 import {
@@ -30,12 +33,44 @@ import type {
 const NO_PLUGINS: readonly MarkdownPlugin[] = [];
 
 /**
- * The plugins of the nearest enclosing `<Markdown>`; undefined outside one. A document embedded
- * inside a document reads them, so it is drawn the way its host is.
+ * The plugins of the nearest enclosing `<Markdown>` that a document embedded in it inherits: all
+ * but those marked `inherited: false`. Undefined outside one. A document embedded inside a
+ * document reads them, so it is drawn the way its host is.
  */
 export const MarkdownPluginsContext = createContext<
   readonly MarkdownPlugin[] | undefined
 >(undefined);
+
+type Inherited = {
+  list?: readonly MarkdownPlugin[];
+  next: WeakMap<MarkdownPlugin, Inherited>;
+};
+
+const inherited: Inherited = { list: NO_PLUGINS, next: new WeakMap() };
+
+/**
+ * The plugins an embedded document inherits, as one array per sequence of plugin objects: when
+ * only a host's own plugins change, its embeds are handed the array they already hold, and
+ * neither reparse nor remount.
+ */
+function inheritedOf(
+  plugins: readonly MarkdownPlugin[],
+): readonly MarkdownPlugin[] {
+  let node = inherited;
+  const kept: MarkdownPlugin[] = [];
+  for (const plugin of plugins) {
+    if (plugin.inherited === false) continue;
+    kept.push(plugin);
+    let next = node.next.get(plugin);
+    if (next === undefined) {
+      next = { next: new WeakMap() };
+      node.next.set(plugin, next);
+    }
+    node = next;
+  }
+  node.list ??= kept;
+  return node.list;
+}
 
 /** Whether the nearest `<Markdown>` lets a long code block scroll in its frame. */
 const CollapseFencesContext = createContext(true);
@@ -103,22 +138,65 @@ function RegistryFence({ code, lang, meta }: FenceProps) {
   );
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: one cache holds every chain, whatever its props.
+type AnyComponent = ComponentType<any>;
+
+const wrapped = new WeakMap<
+  AnyComponent,
+  WeakMap<AnyComponent, AnyComponent>
+>();
+
+/**
+ * `Inner` wrapped in `Wrapper`, the same component every time for the same two. A chain is built
+ * from the inside out, so it comes back as the very component it was as long as its wrappers are
+ * the same functions in the same order: a plugin list that changes around them, or a plugin
+ * object rebuilt with new passes, leaves React's element types, and so the mounted elements, alone.
+ */
+function wrap<P extends object>(
+  Inner: ComponentType<P>,
+  Wrapper: ComponentType<P & { Next: ComponentType<P> }>,
+): ComponentType<P> {
+  let byWrapper = wrapped.get(Inner);
+  if (byWrapper === undefined) {
+    byWrapper = new WeakMap();
+    wrapped.set(Inner, byWrapper);
+  }
+  let chain: ComponentType<P> | undefined = byWrapper.get(Wrapper);
+  if (chain === undefined) {
+    chain = function Wrapped(props: P) {
+      return <Wrapper {...props} Next={Inner} />;
+    };
+    byWrapper.set(Wrapper, chain);
+  }
+  return chain;
+}
+
 function fenceChain(
   plugins: readonly MarkdownPlugin[],
 ): ComponentType<FenceProps> {
   let current: ComponentType<FenceProps> = RegistryFence;
   for (const plugin of [...plugins].reverse()) {
-    const Wrapper = plugin.fence;
-    if (Wrapper === undefined) continue;
-    const Inner = current;
-    current = function FenceWrapper(props: FenceProps) {
-      return <Wrapper {...props} Next={Inner} />;
-    };
+    if (plugin.fence !== undefined) current = wrap(current, plugin.fence);
   }
   return current;
 }
 
+const pres = new WeakMap<
+  ComponentType<FenceProps>,
+  ComponentType<ElementProps<"pre">>
+>();
+
+/** The `<pre>` override for a fence chain, one per chain, for the reason `wrap` gives. */
 function preFor(Fence: ComponentType<FenceProps>) {
+  let pre = pres.get(Fence);
+  if (pre === undefined) {
+    pre = preOf(Fence);
+    pres.set(Fence, pre);
+  }
+  return pre;
+}
+
+function preOf(Fence: ComponentType<FenceProps>) {
   return function MarkdownPre({
     node,
     children,
@@ -164,27 +242,32 @@ function preFor(Fence: ComponentType<FenceProps>) {
 /** Element props as the chain passes them along; each wrapper is typed per tag at the plugin. */
 type AnyElementProps = { node?: Element; [prop: string]: unknown };
 
+const plains = new Map<string, ComponentType<AnyElementProps>>();
+
+/** The bottom of a tag's chain: the element itself, without react-markdown's `node`. */
+function plainOf(tag: WrappableTag): ComponentType<AnyElementProps> {
+  let plain = plains.get(tag);
+  if (plain === undefined) {
+    plain = function Plain({ node: _node, ...props }: AnyElementProps) {
+      return createElement(tag, props);
+    };
+    plains.set(tag, plain);
+  }
+  return plain;
+}
+
 function elementChain(
   tag: WrappableTag,
   plugins: readonly MarkdownPlugin[],
 ): ComponentType<AnyElementProps> {
-  let current: ComponentType<AnyElementProps> = function Plain({
-    node: _node,
-    ...props
-  }: AnyElementProps) {
-    return createElement(tag, props);
-  };
+  let current = plainOf(tag);
   for (const plugin of [...plugins].reverse()) {
     const Wrapper = plugin.components?.[tag] as
       | ComponentType<
           AnyElementProps & { Next: ComponentType<AnyElementProps> }
         >
       | undefined;
-    if (Wrapper === undefined) continue;
-    const Inner = current;
-    current = function ElementWrapper(props: AnyElementProps) {
-      return <Wrapper {...props} Next={Inner} />;
-    };
+    if (Wrapper !== undefined) current = wrap(current, Wrapper);
   }
   return current;
 }
@@ -227,6 +310,11 @@ export type MarkdownProps = {
    * else 1.
    */
   headingLevel?: number;
+  /**
+   * A single newline inside a paragraph is a line break, as in a GitHub comment, rather than a
+   * space (default off). A document embedded in this one keeps its newlines spaces.
+   */
+  breaks?: boolean;
   ref?: Ref<HTMLDivElement>;
 };
 
@@ -238,11 +326,15 @@ export type MarkdownProps = {
  *
  * A document drawn inside another, such as a file `markdownContent` embeds, starts its headings a
  * level below its host's `#` (`headingLevel`), so its title sits under the host's and the page
- * keeps one outline.
+ * keeps one outline. It is drawn with its host's plugins, except those marked `inherited: false`,
+ * and never with its host's `breaks`: it is a file, whatever text it sits in.
  *
  * Keep `plugins` stable. A fresh array, or a fresh plugin object in it, makes react-markdown
- * reparse the document and React remount every overridden element, and either one collapses a live
- * text selection inside it (T-60).
+ * reparse the document. React keeps each element mounted as long as the wrappers its tag goes
+ * through are the same functions in the same order, so a plugin whose passes follow the host's
+ * data keeps its `components` and `fence` at module scope, or memoised apart, and rebuilds only
+ * its passes. A new wrapper remounts every element of its tag, which collapses a live text
+ * selection inside it (T-60).
  *
  * A re-render with the same text, plugins and class does nothing: react-markdown keeps no parse
  * cache, and a host re-renders for reasons that never touch the text (each keystroke in a composer
@@ -254,6 +346,7 @@ export const Markdown = memo(function Markdown({
   className,
   collapseLongFences,
   headingLevel,
+  breaks = false,
   ref,
 }: MarkdownProps) {
   // Unset, a document embedded in another follows its host.
@@ -263,12 +356,12 @@ export const Markdown = memo(function Markdown({
   const level = clampLevel(
     headingLevel ?? (outerLevel === undefined ? 1 : outerLevel + 1),
   );
-  // The override map must be referentially stable across re-renders: every
-  // entry is a component built here, and a fresh map makes React treat each
-  // one as a NEW component type, unmounting and rebuilding those DOM
-  // subtrees on every parent render. Rebuilt text nodes silently collapse
-  // any live text selection — which is what broke annotating a selection
-  // (T-60): a floating button's own appearance re-rendered the document and
+  // Every entry of the override map comes out of the chain caches, so a new
+  // map built for a new plugin list holds the component types the last one
+  // did wherever the wrappers are the same. A new type would unmount and
+  // rebuild that DOM subtree, and rebuilt text nodes silently collapse any
+  // live text selection — which is what broke annotating a selection (T-60):
+  // a floating button's own appearance re-rendered the document and
   // destroyed the selection it was offering to annotate.
   const components = useMemo(() => componentsFor(plugins), [plugins]);
 
@@ -279,10 +372,10 @@ export const Markdown = memo(function Markdown({
   // to the plugin lists react-markdown compares.
   const remarkPlugins = useMemo<PluggableList>(
     () => [
-      ...MARKDOWN_SYNTAX_PLUGINS,
+      ...(breaks ? MESSAGE_SYNTAX_PLUGINS : MARKDOWN_SYNTAX_PLUGINS),
       ...plugins.flatMap((plugin) => plugin.remarkPlugins ?? []),
     ],
-    [plugins],
+    [plugins, breaks],
   );
   const rehypePlugins = useMemo<PluggableList>(
     () => [
@@ -298,7 +391,7 @@ export const Markdown = memo(function Markdown({
       ref={ref}
       className={className ? `markdown-body ${className}` : "markdown-body"}
     >
-      <MarkdownPluginsContext.Provider value={plugins}>
+      <MarkdownPluginsContext.Provider value={inheritedOf(plugins)}>
         <CollapseFencesContext.Provider value={collapseFences}>
           <HeadingLevelContext.Provider value={level}>
             <ReactMarkdown

@@ -424,6 +424,55 @@ describe("fences", () => {
   });
 });
 
+describe("breaks (UI-233)", () => {
+  it("draws a single newline as a space, and as a line break under breaks", () => {
+    const plain = render(<Markdown>{"a\nb"}</Markdown>).container;
+    expect(plain.querySelector("p br")).toBeNull();
+    expect(plain.querySelector("p")?.textContent).toBe("a\nb");
+    const broken = render(<Markdown breaks>{"a\nb"}</Markdown>).container;
+    expect(broken.querySelectorAll("p br")).toHaveLength(1);
+  });
+
+  it.each([false, true])(
+    "keeps a hard break one break (breaks %s)",
+    (breaks) => {
+      const { container } = render(
+        <Markdown breaks={breaks}>{"a  \nb\\\nc"}</Markdown>,
+      );
+      expect(container.querySelectorAll("p br")).toHaveLength(2);
+    },
+  );
+
+  it("leaves code alone", () => {
+    const { container } = render(
+      <Markdown breaks>{"`a\nb`\n\n```\nc\nd\n```"}</Markdown>,
+    );
+    expect(container.querySelector("br")).toBeNull();
+  });
+
+  it("does not reach a <Markdown> inside it", () => {
+    const nested: MarkdownPlugin = {
+      name: "nested",
+      components: {
+        p: ({ Next, ...props }) =>
+          props.children === "nest" ? (
+            <Markdown>{"c\nd"}</Markdown>
+          ) : (
+            <Next {...props} />
+          ),
+      },
+    };
+    const { container } = render(
+      <Markdown plugins={[nested]} breaks>
+        {"a\nb\n\nnest"}
+      </Markdown>,
+    );
+    const [outer, inner] = container.querySelectorAll("p");
+    expect(outer?.querySelectorAll("br")).toHaveLength(1);
+    expect(inner?.textContent).toBe("c\nd");
+  });
+});
+
 describe("the root", () => {
   it("adds className to .markdown-body and forwards ref", () => {
     let node: HTMLDivElement | null = null;
@@ -467,6 +516,62 @@ describe("identity (T-60)", () => {
     expect(after.heading).toBe(before.heading);
     expect(after.paragraph).toBe(before.paragraph);
     expect(after.fence).toBe(before.fence);
+  });
+
+  describe("a plugin rebuilt around the same wrappers (UI-236)", () => {
+    const h2: NonNullable<MarkdownPlugin["components"]>["h2"] = ({
+      Next,
+      ...props
+    }) => (
+      <section>
+        <Next {...props} />
+      </section>
+    );
+    const p: NonNullable<MarkdownPlugin["components"]>["p"] = ({
+      Next,
+      ...props
+    }) => <Next {...props} />;
+    const fence: MarkdownPlugin["fence"] = ({ Next, ...props }) => (
+      <Next {...props} />
+    );
+    /** The plugin a host rebuilds as its data changes: new passes, the same wrappers. */
+    const pass = (value: string): MarkdownPlugin => ({
+      name: "pass",
+      rehypePlugins: [
+        () => (tree: HastRoot) => {
+          for (const child of tree.children) {
+            if (child.type === "element" && child.tagName === "p") {
+              child.properties.dataPass = value;
+            }
+          }
+        },
+      ],
+      components: { h2, p },
+      fence,
+    });
+    const SOURCE = "## Title\n\nSome *text*.\n\n```\ncode\n```";
+    const nodesOf = (container: HTMLElement) => ({
+      heading: container.querySelector("h2")?.firstChild,
+      paragraph: container.querySelector("p"),
+      fence: container.querySelector(".markdown-fence code")?.firstChild,
+    });
+
+    it("keeps every element mounted and runs the new passes", () => {
+      const { container, rerender } = render(
+        <Markdown plugins={[pass("one"), wrapH2("a")]}>{SOURCE}</Markdown>,
+      );
+      const before = nodesOf(container);
+      expect(before.paragraph?.dataset.pass).toBe("one");
+      rerender(
+        <Markdown plugins={[pass("two"), wrapH2("a")]}>{SOURCE}</Markdown>,
+      );
+      const after = nodesOf(container);
+      expect(after.paragraph).toBe(before.paragraph);
+      expect(after.paragraph?.dataset.pass).toBe("two");
+      expect(after.fence).toBe(before.fence);
+      // wrapH2 builds a new wrapper on every call, so the headings remount.
+      expect(after.heading).not.toBe(before.heading);
+    });
   });
 });
 

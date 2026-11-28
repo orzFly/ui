@@ -1,4 +1,6 @@
+import type { ElementContent } from "hast";
 import type { Nodes } from "mdast";
+import remarkBreaks from "remark-breaks";
 import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
@@ -28,6 +30,29 @@ export const MARKDOWN_SYNTAX_PLUGINS: PluggableList = [
   [remarkFrontmatter, FRONTMATTER_FLAVOURS],
   remarkFrontmatterTable,
 ];
+
+/**
+ * `MARKDOWN_SYNTAX_PLUGINS` for a text where a single newline is a line break, as in a GitHub
+ * comment: what `<Markdown breaks>` parses with. `remarkBreaks` goes last, so every pass the two
+ * share sees the same tree in both.
+ */
+export const MESSAGE_SYNTAX_PLUGINS: PluggableList = [
+  ...MARKDOWN_SYNTAX_PLUGINS,
+  remarkBreaks,
+];
+
+/**
+ * Whether a hast child is the `<br>` `MESSAGE_SYNTAX_PLUGINS` made of a single newline, rather
+ * than a hard break the author wrote: `remark-breaks` gives its breaks no position.
+ */
+export function isSoftBreak(child: ElementContent): boolean {
+  return (
+    child.type === "element" &&
+    child.tagName === "br" &&
+    child.position === undefined
+  );
+}
+
 const processor = unified().use(remarkParse).use(MARKDOWN_SYNTAX_PLUGINS);
 
 /**

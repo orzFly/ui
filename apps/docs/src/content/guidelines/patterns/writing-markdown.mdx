@@ -3,7 +3,11 @@ export const meta = {
   description:
     "Where people write more than a line, a comment, a description, a note, give them MarkdownEditor: files go in where they are pasted, and the reader keeps a plain text box if they ask for one.",
   order: 38,
-  api: ["ui-codemirror/MarkdownEditor", "ui/Primitives/Textarea"],
+  api: [
+    "ui-codemirror/MarkdownEditor",
+    "ui/Primitives/Textarea",
+    "ui-markdown/Markdown",
+  ],
 };
 
 import { CommentWithFiles } from "../../../examples/writing-markdown/comment-with-files.tsx";
@@ -28,6 +32,13 @@ shows the text that would be sent, the chip turned into a link.
 
 `MarkdownEditor` is the box people write Markdown in everywhere in an app, so its keys and its
 paste are learned once: Mod-Enter sends, Escape cancels, and a formatted paste becomes Markdown.
+
+## Line breaks
+
+Draw a text written in such a box with `breaks` on `Markdown`: its author pressed Enter to start a
+line and expects to see one, as GitHub shows a comment. A file keeps a single newline a space, the
+one a pane exists to show and one embedded in a comment alike, as GitHub shows a `.md` file: there
+the author breaks lines to keep the source readable, not the page.
 
 ## Files in the text
 

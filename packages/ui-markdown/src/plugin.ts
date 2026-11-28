@@ -29,6 +29,12 @@ export type ElementWrapper<Tag extends WrappableTag> = ComponentType<
 
 export type MarkdownPlugin = {
   name: string;
+  /**
+   * Whether a document embedded in the one the plugin is passed to, such as a file
+   * `markdownContent` draws, is drawn with it too (default true). False for what belongs to the
+   * host document alone, such as marks over its own source lines.
+   */
+  inherited?: boolean;
   /** Appended, in list order, after the fixed syntax chain. */
   remarkPlugins?: PluggableList;
   /** Appended, in list order, after `rehypeDetails` and `rehypeHeadingLevels`. */
