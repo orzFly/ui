@@ -16,6 +16,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ThemeEditor } from "../src/components/theme-editor.tsx";
 import { serializeThemeFile } from "../src/lib/theme-file.ts";
 import { ThemeProvider } from "../src/theme/index.ts";
+import { FakeDataTransfer, fireDrag } from "./fake-data-transfer.ts";
 import {
   dusk,
   ink,
@@ -77,7 +78,7 @@ const fileField = () =>
 const nameField = () =>
   screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement;
 const fileInput = () =>
-  screen.getByTestId("theme-file-input") as HTMLInputElement;
+  document.querySelector('[data-slot="file-drop-input"]') as HTMLInputElement;
 const paste = (text: string) =>
   fireEvent.change(fileField(), { target: { value: text } });
 const rows = () =>
@@ -212,10 +213,22 @@ describe("ThemeEditor: import", () => {
     fireEvent.click(button("Import…"));
     const text = serializeThemeFile([inkwell], builtinThemes);
     const file = new File([text], "inkwell.json");
-    fireEvent.drop(fileField(), {
-      dataTransfer: { files: [file], types: ["Files"] },
-    });
+    fireDrag("drop", fileField(), new FakeDataTransfer().addFile(file));
     await waitFor(() => expect(rows()).toHaveLength(1));
+  });
+
+  it("refuses a dropped file that is not JSON before reading it", async () => {
+    setup();
+    fireEvent.click(button("Import…"));
+    paste("{}");
+    const file = new File(["notes"], "notes.txt", { type: "text/plain" });
+    const read = vi.spyOn(file, "text");
+    fireDrag("drop", fileField(), new FakeDataTransfer().addFile(file));
+    expect(screen.getByRole("alert").textContent).toBe(
+      '"notes.txt" is not a JSON file.',
+    );
+    expect(fileField().value).toBe("{}");
+    expect(read).not.toHaveBeenCalled();
   });
 
   it("refuses an oversize file without reading it", async () => {

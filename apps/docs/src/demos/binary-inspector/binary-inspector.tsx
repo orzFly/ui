@@ -1,6 +1,8 @@
 import { Button } from "@orz/ui/components/button";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { FileDrop, FileDropTrigger } from "@orz/ui/components/file-drop";
 import { GroupHeading } from "@orz/ui/components/group-heading";
+import { InfoPopover } from "@orz/ui/components/info-popover";
 import { LoadFailure } from "@orz/ui/components/load-failure";
 import { NavListFrame } from "@orz/ui/components/nav-list";
 import { Pane } from "@orz/ui/components/pane";
@@ -56,7 +58,6 @@ import {
   Undo2Icon,
 } from "lucide-react";
 import {
-  type DragEvent,
   type ReactNode,
   useCallback,
   useEffect,
@@ -130,7 +131,7 @@ function useEdits(doc: HexDocument | undefined): number {
 
 /**
  * A hex editor for one file at a time: a sample, or one of the reader's own, opened with the
- * button or dropped on the screen and read in the browser alone. A PNG or a ZIP lists its chunks
+ * button, dropped on the window or pasted, and read in the browser alone. A PNG or a ZIP lists its chunks
  * and headers beside the bytes, and picking one selects its bytes; the inspector reads the
  * selection as numbers and text. Edits download as a new file. On a phone the structure is a
  * `Select` above the bytes and the inspector a sheet from the bottom bar.
@@ -151,9 +152,7 @@ export function BinaryInspector() {
   const [reverting, setReverting] = useState(false);
   // What opening another file would do, held while the reader decides about unsaved edits.
   const [leaving, setLeaving] = useState<(() => void) | null>(null);
-  const [dragging, setDragging] = useState(false);
   const editor = useRef<HexViewHandle>(null);
-  const picker = useRef<HTMLInputElement>(null);
 
   const doc = opened?.doc;
   const edits = useEdits(doc);
@@ -278,27 +277,8 @@ export function BinaryInspector() {
     );
   };
 
-  const onDragOver = (event: DragEvent) => {
-    if (!event.dataTransfer.types.includes("Files")) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
-    setDragging(true);
-  };
-  const onDrop = (event: DragEvent) => {
-    event.preventDefault();
-    setDragging(false);
-    const file = event.dataTransfer.files[0];
-    if (file) openFile(file);
-  };
-
   const name = fetching?.name ?? opened?.name ?? "";
-  const filePicker = (
-    <FilePicker
-      name={name}
-      onSample={openSample}
-      onOpen={() => picker.current?.click()}
-    />
-  );
+  const filePicker = <FilePicker name={name} onSample={openSample} />;
   const inspector = doc && (
     <HexInspector
       source={doc}
@@ -350,196 +330,183 @@ export function BinaryInspector() {
   }
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: dropping is a shortcut for Open file.
-    <div
-      className="relative flex h-full flex-col"
-      onDragOver={onDragOver}
-      onDragLeave={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setDragging(false);
-        }
-      }}
-      onDrop={onDrop}
-    >
-      <input
-        ref={picker}
-        type="file"
-        hidden
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          if (file) openFile(file);
-        }}
-      />
-      <div className="flex min-h-0 flex-1">
-        <Pane purpose="sidebar" edge="end" asChild>
-          <aside
-            aria-label="File and structure"
-            className="hidden w-64 shrink-0 flex-col md:flex"
-          >
-            <Pane purpose="panel" edge="bottom" className="grid gap-2 p-3">
-              {filePicker}
-            </Pane>
-            <GroupHeading asChild className="px-3 pt-3 pb-1">
-              <h2>Structure</h2>
-            </GroupHeading>
-            <NavListFrame className="mx-1.5 mb-3 flex min-h-0 flex-1 flex-col">
-              <nav
-                aria-label="Structure"
-                className="min-h-0 flex-1 overflow-y-auto"
+    <FileDrop asChild purpose="pane" onFile={openFile}>
+      <div className="flex h-full flex-col">
+        <div className="flex min-h-0 flex-1">
+          <Pane purpose="sidebar" edge="end" asChild>
+            <aside
+              aria-label="File and structure"
+              className="hidden w-64 shrink-0 flex-col md:flex"
+            >
+              <div className="flex items-center gap-1 px-3 pt-3 pb-1">
+                <GroupHeading asChild>
+                  <h2>File</h2>
+                </GroupHeading>
+                <InfoPopover label="About opening a file">
+                  Open a file, drop one on the window, or paste one. It is read
+                  in your browser and never uploaded.
+                </InfoPopover>
+              </div>
+              <Pane
+                purpose="panel"
+                edge="bottom"
+                className="grid gap-2 px-3 pt-1 pb-3"
               >
+                {filePicker}
+              </Pane>
+              <GroupHeading asChild className="px-3 pt-3 pb-1">
+                <h2>Structure</h2>
+              </GroupHeading>
+              <NavListFrame className="mx-1.5 mb-3 flex min-h-0 flex-1 flex-col">
+                <nav
+                  aria-label="Structure"
+                  className="min-h-0 flex-1 overflow-y-auto"
+                >
+                  {doc && !fetching && (
+                    <StructureList
+                      state={structureState}
+                      path={path}
+                      onPick={pick}
+                    />
+                  )}
+                </nav>
+              </NavListFrame>
+            </aside>
+          </Pane>
+          <Pane purpose="panel" asChild>
+            <main className="flex min-w-0 flex-1 flex-col">
+              <Pane
+                purpose="panel"
+                edge="bottom"
+                className="grid gap-2 p-2 md:hidden"
+              >
+                {filePicker}
                 {doc && !fetching && (
-                  <StructureList
+                  <StructureSelect
                     state={structureState}
                     path={path}
                     onPick={pick}
+                    className="w-full"
                   />
                 )}
-              </nav>
-            </NavListFrame>
-          </aside>
-        </Pane>
-        <Pane purpose="panel" asChild>
-          <main className="flex min-w-0 flex-1 flex-col">
-            <Pane
-              purpose="panel"
-              edge="bottom"
-              className="grid gap-2 p-2 md:hidden"
+              </Pane>
+              <div className="flex min-h-0 flex-1 p-2 md:p-3">{body}</div>
+            </main>
+          </Pane>
+          <Pane purpose="panel" edge="start" asChild>
+            <aside
+              aria-label="Inspector"
+              className="hidden w-72 shrink-0 overflow-y-auto p-3 lg:block"
             >
-              {filePicker}
-              {doc && !fetching && (
-                <StructureSelect
-                  state={structureState}
-                  path={path}
-                  onPick={pick}
-                  className="w-full"
-                />
-              )}
-            </Pane>
-            <div className="flex min-h-0 flex-1 p-2 md:p-3">{body}</div>
-          </main>
-        </Pane>
-        <Pane purpose="panel" edge="start" asChild>
-          <aside
-            aria-label="Inspector"
-            className="hidden w-72 shrink-0 overflow-y-auto p-3 lg:block"
-          >
-            {inspector}
-          </aside>
-        </Pane>
-      </div>
-      {/* The safe area pads below the bar, so a style that tightens the bar keeps clear of it. */}
-      <footer className="pb-[max(0px,calc(env(safe-area-inset-bottom)-0.5rem))]">
-        <Pane
-          purpose="toolbar"
-          edge="top"
-          className="flex flex-wrap items-center gap-x-3 gap-y-2 px-2 py-2 md:px-3"
-        >
-          <SegmentedControl
-            aria-label="Typing"
-            value={mode}
-            onValueChange={(next) => setMode(next as HexEditMode)}
-          >
-            <SegmentedControlItem value="overwrite">
-              Overwrite
-            </SegmentedControlItem>
-            <SegmentedControlItem value="insert">Insert</SegmentedControlItem>
-          </SegmentedControl>
-          <p className="min-w-0 flex-1 truncate text-muted-foreground text-ui max-sm:order-last max-sm:basis-full">
-            {doc && !fetching
-              ? [
-                  dirty ? "Modified" : changes ? "Downloaded" : "Unmodified",
-                  changes,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")
-              : ""}
-          </p>
-          <TooltipProvider>
-            <div className="ml-auto flex items-center gap-1">
-              <Named label="Undo">
-                <ToolbarButton
-                  aria-label="Undo"
-                  disabled={!doc || !canUndo}
-                  onClick={() => doc?.undo()}
-                >
-                  <Undo2Icon />
-                </ToolbarButton>
-              </Named>
-              <Named label="Redo">
-                <ToolbarButton
-                  aria-label="Redo"
-                  disabled={!doc || !canRedo}
-                  onClick={() => doc?.redo()}
-                >
-                  <Redo2Icon />
-                </ToolbarButton>
-              </Named>
-              <Sheet>
-                <Named label="Inspector">
-                  <SheetTrigger asChild>
-                    <ToolbarButton
-                      aria-label="Inspector"
-                      disabled={!doc}
-                      className="lg:hidden"
-                    >
-                      <ScanSearchIcon />
-                    </ToolbarButton>
-                  </SheetTrigger>
-                </Named>
-                <SheetContent side="bottom" className="gap-0">
-                  <SheetHeader className="pb-0">
-                    <SheetTitle>Inspector</SheetTitle>
-                    <SheetDescription className="sr-only">
-                      The selected bytes read as numbers and text
-                    </SheetDescription>
-                  </SheetHeader>
-                  <SheetBody className="p-4">{inspector}</SheetBody>
-                </SheetContent>
-              </Sheet>
-              <ToolbarButton
-                size="sm"
-                disabled={!changes || !!fetching}
-                onClick={() => setReverting(true)}
-              >
-                <RotateCcwIcon />
-                {/* Words on a phone too: nothing undoes a revert, and Download is what the bar is for. */}
-                Revert…
-              </ToolbarButton>
-              <Button size="sm" disabled={!doc || !!fetching} onClick={save}>
-                <DownloadIcon />
-                Download
-              </Button>
-            </div>
-          </TooltipProvider>
-        </Pane>
-      </footer>
-      {dragging && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-2 grid place-items-center rounded-xl border-2 border-primary border-dashed bg-background/85 font-medium text-ui"
-        >
-          Drop to open it here. Nothing is uploaded.
+              {inspector}
+            </aside>
+          </Pane>
         </div>
-      )}
-      <ConfirmDialog
-        open={reverting}
-        onOpenChange={setReverting}
-        title={`Revert ${opened?.name ?? "the file"}?`}
-        description={`Your edits to it (${changes}) are dropped, and Undo cannot bring them back. Download it first to keep a copy.`}
-        confirmLabel="Revert"
-        destructive
-        onConfirm={revert}
-      />
-      <UnsavedChangesDialog
-        open={leaving !== null}
-        onProceed={() => {
-          leaving?.();
-          setLeaving(null);
-        }}
-        onStay={() => setLeaving(null)}
-      />
-    </div>
+        {/* The safe area pads below the bar, so a style that tightens the bar keeps clear of it. */}
+        <footer className="pb-[max(0px,calc(env(safe-area-inset-bottom)-0.5rem))]">
+          <Pane
+            purpose="toolbar"
+            edge="top"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 px-2 py-2 md:px-3"
+          >
+            <SegmentedControl
+              aria-label="Typing"
+              value={mode}
+              onValueChange={(next) => setMode(next as HexEditMode)}
+            >
+              <SegmentedControlItem value="overwrite">
+                Overwrite
+              </SegmentedControlItem>
+              <SegmentedControlItem value="insert">Insert</SegmentedControlItem>
+            </SegmentedControl>
+            <p className="min-w-0 flex-1 truncate text-muted-foreground text-ui max-sm:order-last max-sm:basis-full">
+              {doc && !fetching
+                ? [
+                    dirty ? "Modified" : changes ? "Downloaded" : "Unmodified",
+                    changes,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : ""}
+            </p>
+            <TooltipProvider>
+              <div className="ml-auto flex items-center gap-1">
+                <Named label="Undo">
+                  <ToolbarButton
+                    aria-label="Undo"
+                    disabled={!doc || !canUndo}
+                    onClick={() => doc?.undo()}
+                  >
+                    <Undo2Icon />
+                  </ToolbarButton>
+                </Named>
+                <Named label="Redo">
+                  <ToolbarButton
+                    aria-label="Redo"
+                    disabled={!doc || !canRedo}
+                    onClick={() => doc?.redo()}
+                  >
+                    <Redo2Icon />
+                  </ToolbarButton>
+                </Named>
+                <Sheet>
+                  <Named label="Inspector">
+                    <SheetTrigger asChild>
+                      <ToolbarButton
+                        aria-label="Inspector"
+                        disabled={!doc}
+                        className="lg:hidden"
+                      >
+                        <ScanSearchIcon />
+                      </ToolbarButton>
+                    </SheetTrigger>
+                  </Named>
+                  <SheetContent side="bottom" className="gap-0">
+                    <SheetHeader className="pb-0">
+                      <SheetTitle>Inspector</SheetTitle>
+                      <SheetDescription className="sr-only">
+                        The selected bytes read as numbers and text
+                      </SheetDescription>
+                    </SheetHeader>
+                    <SheetBody className="p-4">{inspector}</SheetBody>
+                  </SheetContent>
+                </Sheet>
+                <ToolbarButton
+                  size="sm"
+                  disabled={!changes || !!fetching}
+                  onClick={() => setReverting(true)}
+                >
+                  <RotateCcwIcon />
+                  {/* Words on a phone too: nothing undoes a revert, and Download is what the bar is for. */}
+                  Revert…
+                </ToolbarButton>
+                <Button size="sm" disabled={!doc || !!fetching} onClick={save}>
+                  <DownloadIcon />
+                  Download
+                </Button>
+              </div>
+            </TooltipProvider>
+          </Pane>
+        </footer>
+        <ConfirmDialog
+          open={reverting}
+          onOpenChange={setReverting}
+          title={`Revert ${opened?.name ?? "the file"}?`}
+          description={`Your edits to it (${changes}) are dropped, and Undo cannot bring them back. Download it first to keep a copy.`}
+          confirmLabel="Revert"
+          destructive
+          onConfirm={revert}
+        />
+        <UnsavedChangesDialog
+          open={leaving !== null}
+          onProceed={() => {
+            leaving?.();
+            setLeaving(null);
+          }}
+          onStay={() => setLeaving(null)}
+        />
+      </div>
+    </FileDrop>
   );
 }
 
@@ -549,11 +516,9 @@ const PLACEHOLDER = createHexDocument(bytesSource(new Uint8Array()));
 function FilePicker({
   name,
   onSample,
-  onOpen,
 }: {
   name: string;
   onSample: (name: string) => void;
-  onOpen: () => void;
 }) {
   return (
     <div className="flex gap-2 md:grid">
@@ -574,13 +539,10 @@ function FilePicker({
           )}
         </SelectContent>
       </Select>
-      <Button variant="outline" onClick={onOpen}>
+      <FileDropTrigger>
         <FolderOpenIcon />
         Open file…
-      </Button>
-      <p className="hidden text-muted-foreground text-ui-sm md:block">
-        Or drop one here. It is read in your browser, never uploaded.
-      </p>
+      </FileDropTrigger>
     </div>
   );
 }

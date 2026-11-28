@@ -1,5 +1,5 @@
 import type { TerminalTheme } from "@orz/themes";
-import { type DragEvent, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   type ImportEntry,
   type ImportStatus,
@@ -10,6 +10,7 @@ import {
 import { cn } from "../../lib/utils.ts";
 import { Button } from "../button.tsx";
 import { Checkbox } from "../checkbox.tsx";
+import { FileDrop, FileDropTrigger } from "../file-drop.tsx";
 import { InfoPopover } from "../info-popover.tsx";
 import { Textarea } from "../textarea.tsx";
 
@@ -66,10 +67,9 @@ export function ImportPanel({
   // Rows the user unchecked, by index; a fresh parse checks every row again.
   const [excluded, setExcluded] = useState<ReadonlySet<number>>(new Set());
   const [fileError, setFileError] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
   const reading = useRef(0);
   const statusId = useId();
+  const headingId = useId();
 
   useEffect(() => {
     if (text.trim() === "") {
@@ -89,8 +89,7 @@ export function ImportPanel({
     setText(next);
   };
 
-  const readFile = async (file: File | undefined) => {
-    if (file === undefined) return;
+  const readFile = async (file: File) => {
     const token = ++reading.current;
     // Checked before reading, so a huge file is never loaded into memory.
     if (file.size > THEME_FILE_MAX_LENGTH) {
@@ -111,12 +110,6 @@ export function ImportPanel({
     setText(content);
   };
 
-  const drop = (event: DragEvent) => {
-    event.preventDefault();
-    setDragging(false);
-    void readFile(event.dataTransfer.files[0]);
-  };
-
   const entries = result?.ok ? result.entries : [];
   const picked = entries.flatMap((entry, i) =>
     entry.theme && !excluded.has(i) ? [entry.theme] : [],
@@ -132,27 +125,22 @@ export function ImportPanel({
     });
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: dropping a file is a shortcut; Choose file… is the accessible route.
-    <div
-      className={cn(
-        "-m-2 flex flex-col gap-3 rounded-frame p-2",
-        dragging && "bg-primary/5 ring-2 ring-primary/40",
-      )}
-      onDragOver={(event) => {
-        if (!event.dataTransfer.types.includes("Files")) return;
-        event.preventDefault();
-        setDragging(true);
+    <FileDrop
+      aria-labelledby={headingId}
+      accept=".json,application/json"
+      onFile={(file) => void readFile(file)}
+      onReject={(file) => {
+        // A file still being read must not land over this message.
+        reading.current++;
+        setFileError(`"${file.name}" is not a JSON file.`);
       }}
-      onDragLeave={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setDragging(false);
-        }
-      }}
-      onDrop={drop}
+      className="flex flex-col gap-3"
     >
       <div className="flex items-center gap-2">
         <div className="flex flex-1 items-center gap-1">
-          <h3 className="text-ui font-medium">Import themes</h3>
+          <h3 id={headingId} className="text-ui font-medium">
+            Import themes
+          </h3>
           <InfoPopover label="About importing themes">
             Paste a theme file, choose one, or drop it on this panel. Nothing is
             added until you import.
@@ -173,26 +161,7 @@ export function ImportPanel({
         onChange={(event) => edit(event.target.value)}
       />
       <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => fileInput.current?.click()}
-        >
-          Choose file…
-        </Button>
-        <input
-          ref={fileInput}
-          type="file"
-          accept=".json,application/json"
-          hidden
-          data-testid="theme-file-input"
-          onChange={(event) => {
-            void readFile(event.target.files?.[0]);
-            // The same file chosen again still fires a change.
-            event.target.value = "";
-          }}
-        />
+        <FileDropTrigger size="sm">Choose file…</FileDropTrigger>
       </div>
       {problem && (
         <p
@@ -236,7 +205,7 @@ export function ImportPanel({
           </Button>
         </div>
       )}
-    </div>
+    </FileDrop>
   );
 }
 

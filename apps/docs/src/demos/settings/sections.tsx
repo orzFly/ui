@@ -5,9 +5,12 @@ import {
   sameProfile,
   TIME_ZONES,
 } from "@orz/fixtures/account.ts";
+import { Avatar, AvatarFallback, AvatarImage } from "@orz/ui/components/avatar";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
 import { ConfirmDialog } from "@orz/ui/components/confirm-dialog";
+import { FieldError } from "@orz/ui/components/field";
+import { FileDrop, FileDropTrigger } from "@orz/ui/components/file-drop";
 import { GroupHeading } from "@orz/ui/components/group-heading";
 import { InfoPopover } from "@orz/ui/components/info-popover";
 import { Input } from "@orz/ui/components/input";
@@ -37,7 +40,12 @@ import { ThemeEditor } from "@orz/ui/components/theme-editor";
 import { ThemeMenu } from "@orz/ui/components/theme-menu";
 import { cn } from "@orz/ui/lib/utils";
 import { useTerminalTheme, useTheme } from "@orz/ui/theme";
-import { KeyRoundIcon, PaletteIcon } from "lucide-react";
+import {
+  KeyRoundIcon,
+  PaletteIcon,
+  Trash2Icon,
+  UploadIcon,
+} from "lucide-react";
 import {
   Children,
   Fragment,
@@ -484,6 +492,7 @@ export function ProfileSection({
   onSave(profile: Profile): void;
 }) {
   const [error, setError] = useState<string>();
+  const [avatarError, setAvatarError] = useState<string>();
   const emailRef = useRef<HTMLInputElement>(null);
   const check = (email: string) =>
     /^\S+@\S+\.\S+$/.test(email)
@@ -509,12 +518,59 @@ export function ProfileSection({
         const lost = draft;
         onDraft(saved);
         setError(undefined);
+        setAvatarError(undefined);
         if (sameProfile(lost, saved)) return;
         toast("Changes discarded", {
           action: { label: "Undo", onClick: () => onDraft(lost) },
         });
       }}
     >
+      <div className="grid gap-2">
+        <div className="flex items-center gap-1">
+          <Label id="settings-avatar-label">Avatar</Label>
+          <InfoPopover label="About the avatar">
+            Choose an image, drop one on this row, or paste one.
+          </InfoPopover>
+        </div>
+        <FileDrop
+          aria-labelledby="settings-avatar-label"
+          aria-describedby={avatarError ? "settings-avatar-error" : undefined}
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          onFile={(file) => {
+            setAvatarError(undefined);
+            // Never revoked: the saved profile, the draft and Discard's Undo
+            // may each still hold the address.
+            onDraft({ avatar: URL.createObjectURL(file) });
+          }}
+          onReject={() =>
+            setAvatarError("Choose a PNG, JPEG, WebP or GIF image.")
+          }
+          className="flex items-center gap-3"
+        >
+          <Avatar size="lg">
+            <AvatarImage src={draft.avatar ?? undefined} alt="Your avatar" />
+            <AvatarFallback>
+              {draft.name.trim().charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <FileDropTrigger>
+            <UploadIcon />
+            Upload…
+          </FileDropTrigger>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={draft.avatar === null}
+            onClick={() => onDraft({ avatar: null })}
+          >
+            <Trash2Icon />
+            Remove
+          </Button>
+        </FileDrop>
+        {avatarError && (
+          <FieldError id="settings-avatar-error">{avatarError}</FieldError>
+        )}
+      </div>
       <div className="grid gap-2">
         <Label htmlFor="settings-name">Display name</Label>
         <Input

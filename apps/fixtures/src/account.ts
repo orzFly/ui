@@ -4,6 +4,8 @@ export interface Profile {
   email: string;
   timeZone: string;
   showEmail: boolean;
+  /** The address of the profile's picture; null shows the name's initial instead. */
+  avatar: string | null;
 }
 
 export const PROFILE: Profile = {
@@ -11,13 +13,15 @@ export const PROFILE: Profile = {
   email: "alice@example.com",
   timeZone: "Europe/Berlin",
   showEmail: false,
+  avatar: null,
 };
 
 export const sameProfile = (a: Profile, b: Profile) =>
   a.name === b.name &&
   a.email === b.email &&
   a.timeZone === b.timeZone &&
-  a.showEmail === b.showEmail;
+  a.showEmail === b.showEmail &&
+  a.avatar === b.avatar;
 
 export const TIME_ZONES = [
   { value: "Pacific/Honolulu", label: "Honolulu (UTC−10)" },
