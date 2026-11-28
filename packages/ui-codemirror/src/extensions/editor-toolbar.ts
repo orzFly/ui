@@ -15,8 +15,7 @@ export const toolbarTheme = EditorView.theme({
     borderRadius: "min(var(--radius-overlay), 0.5rem)",
     backgroundColor: "var(--popover)",
     color: "var(--popover-foreground)",
-    boxShadow:
-      "0 4px 6px -1px color-mix(in oklab, var(--foreground) 12%, transparent)",
+    boxShadow: "var(--shadow-overlay)",
     fontFamily: "var(--font-ui)",
     display: "flex",
     alignItems: "center",
