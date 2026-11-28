@@ -1,5 +1,7 @@
 import { formatTimestamp } from "@orz/ui/components/timestamp";
+import { ToolbarButton } from "@orz/ui/components/toolbar";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { DownloadIcon } from "lucide-react";
 import { describe, expect, it, vi } from "vitest";
 import {
   type AttachmentItem,
@@ -398,6 +400,28 @@ describe("a selectable attachment list", () => {
     expect(screen.getByRole("button", { name: "Download 1" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Clear selection" }));
     expect(screen.getByRole("button", { name: "Download all 3" })).toBeTruthy();
+  });
+
+  it("lays its header out as a toolbar: the title in an item that takes the room left, the actions in the row itself", () => {
+    const { container } = drawWith(shots(3), {
+      selectable: true,
+      title: "Files",
+      listActions: () => (
+        <ToolbarButton aria-label="Download all">
+          <DownloadIcon />
+        </ToolbarButton>
+      ),
+    });
+    const title = screen.getByText("Files");
+    const item = title.closest("[data-slot=toolbar-item]");
+    expect(item?.textContent).toBe("Files3");
+    expect(
+      screen.getByRole("button", { name: "Download all" }).parentElement
+        ?.dataset.slot,
+    ).toBe("toolbar-row");
+    expect(
+      container.querySelector("[data-slot=attachment-list-actions]"),
+    ).toBeNull();
   });
 
   it("follows the selection the app holds", () => {

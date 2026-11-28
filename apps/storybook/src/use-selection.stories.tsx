@@ -1,7 +1,7 @@
 import { Checkbox } from "@orz/ui/components/checkbox";
 import { List, ListItem } from "@orz/ui/components/list";
 import { SelectionBar } from "@orz/ui/components/selection-bar";
-import { ToolbarButton } from "@orz/ui/components/toolbar";
+import { ToolbarButton, ToolbarItem } from "@orz/ui/components/toolbar";
 import { useSelection } from "@orz/ui/hooks/use-selection";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { RotateCcwIcon, Trash2Icon } from "lucide-react";
@@ -79,9 +79,11 @@ export const Usage: Story = {
           onClear={selection.clear}
           idle={
             <>
-              <span className="min-w-0 flex-1 truncate px-1 font-medium">
-                {files.length} files
-              </span>
+              <ToolbarItem flex minWidth={80}>
+                <span className="truncate px-1 font-medium">
+                  {files.length} files
+                </span>
+              </ToolbarItem>
               <ToolbarButton
                 aria-label="Put the files back"
                 onClick={() => setFiles(FILES)}

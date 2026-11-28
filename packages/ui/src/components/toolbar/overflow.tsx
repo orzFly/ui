@@ -230,6 +230,9 @@ export function OverflowMenu({ align }: { align: "start" | "end" }) {
       align={align}
       data-slot="toolbar-overflow-content"
       className={cn("w-auto min-w-44", own?.meta.contentClassName)}
+      // The bar's own handlers do not hear the menu, which is not inside it.
+      onFocus={store.focusIn}
+      onBlur={store.focusOut}
       surface={(children) => (
         <ToolbarItemContext.Provider value={item}>
           {children}

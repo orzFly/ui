@@ -100,19 +100,29 @@ item is a button that costs two taps.
 
 ## Acting on a selection
 
-A list or tree whose rows can be selected heads them with a `SelectionBar`. While nothing is
-selected it holds the list's own toolbar after a select-all checkbox; once a row is selected it
-says how many, offers the actions that take the whole selection, and ends with **Clear
-selection**.
+A list or tree whose rows can be selected heads them with a `SelectionBar`, a toolbar that starts
+with a select-all checkbox. While nothing is selected it holds the list's own toolbar; once a row
+is selected it says how many, offers the actions that take the whole selection, and ends with
+**Clear selection**.
 
 <Example of={SelectedThreads} />
 
 Select a second conversation, then press the checkbox in the bar: a partly checked box selects the
 rest, and a full one clears. Escape inside the bar clears too, and the focus stays on the checkbox.
+Drag the frame's corner narrower: the actions drop their words, then go into the `⋯`, while the
+checkbox, the count and **Clear selection** stay.
 
+- Pass the parts of the list's toolbar as `idle`, and the actions as the bar's children:
+  `ToolbarButton`s, a `ToolbarMenu`, a `FilterMenu`, as a [toolbar](/guidelines/patterns/toolbars/)
+  takes them. They give way as its commands do, and the bar stays one Tab stop and one height
+  whether or not anything is selected.
 - Put only the actions that apply to every selected row in the bar, icons first, a text action
   such as **Delete forever…** after them. The bar swaps them as the selection changes, as Mail's
   swaps **Archive** for **Move to Inbox** when the selection is archived.
+- An action that uses the selection up, as **Archive** does, or a **Set status** that moves the
+  rows out of the list, clears the selection once it is done. The focus goes to the checkbox
+  wherever in the bar the action was, on the bar, in its menu or in the `⋯`, rather than falling
+  to the page.
 - A list with no toolbar of its own mounts the bar only while something is selected. It is still
   there: on a touch screen, once a row is selected a tap selects too, and the bar's **Clear
   selection** is the visible way back.

@@ -18,6 +18,7 @@ import {
   SheetTitle,
 } from "@orz/ui/components/sheet";
 import { Timestamp } from "@orz/ui/components/timestamp";
+import { ToolbarButton, ToolbarItem } from "@orz/ui/components/toolbar";
 import { TooltipProvider } from "@orz/ui/components/tooltip";
 import { usePagedAppend } from "@orz/ui/hooks/use-paged-append";
 import { useQueryHistory } from "@orz/ui/hooks/use-query-history";
@@ -442,9 +443,11 @@ function ThreadList({
                 className={refresh.pending ? "animate-spin" : undefined}
               />
             </ActionButton>
-            <span className="min-w-0 flex-1 truncate px-1 font-medium">
-              {place?.title ?? "Search results"}
-            </span>
+            <ToolbarItem flex minWidth={80}>
+              <span className="truncate px-1 font-medium">
+                {place?.title ?? "Search results"}
+              </span>
+            </ToolbarItem>
             <span className="px-2 text-muted-foreground text-ui-sm tabular-nums">
               {threads.length} of {first.total}
             </span>
@@ -484,14 +487,12 @@ function ThreadList({
           {anyUnread ? <MailOpenIcon /> : <MailIcon />}
         </ActionButton>
         {allTrash && (
-          <Button
+          <ToolbarButton
             variant="destructive"
-            size="sm"
-            className="ml-1"
             onClick={() => bulk.onDeleteForever(ids)}
           >
             Delete forever…
-          </Button>
+          </ToolbarButton>
         )}
       </SelectionBar>
       {refresh.error && (

@@ -17,6 +17,8 @@ export function OverflowMenu<M extends PartMeta>({
   "data-slot": slot,
   surface,
   after,
+  onFocus,
+  onBlur,
 }: {
   store: OverflowStore<M, OverflowResult>;
   align: "start" | "end";
@@ -26,6 +28,8 @@ export function OverflowMenu<M extends PartMeta>({
   surface?: (children: React.ReactNode) => React.ReactNode;
   /** Items kept after the folded parts, parted from them by a separator. */
   after?: React.ReactNode;
+  onFocus?: React.FocusEventHandler<HTMLDivElement>;
+  onBlur?: React.FocusEventHandler<HTMLDivElement>;
 }) {
   React.useSyncExternalStore(
     store.subscribe,
@@ -52,7 +56,19 @@ export function OverflowMenu<M extends PartMeta>({
       align={align}
       data-slot={slot}
       className={className}
+      onFocus={onFocus}
+      onBlur={onBlur}
       onCloseAutoFocus={(event) => {
+        // Radix calls this a task after the menu has gone, the focus having
+        // fallen from it to the body. Found on an element, it was put there
+        // since (a dialog an item opened, the checkbox of a SelectionBar an
+        // item cleared), and taking it to the ⋯ would take it from there.
+        const active = document.activeElement;
+        if (active !== null && active !== document.body) {
+          store.keepFocusOnClose = false;
+          event.preventDefault();
+          return;
+        }
         // An item that opened its own surface has the focus, or is about to.
         if (!store.keepFocusOnClose) return;
         store.keepFocusOnClose = false;

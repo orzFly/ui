@@ -5,7 +5,7 @@ import {
   type PartRecord,
   type PlanInput,
 } from "../overflow/store.ts";
-import { outerHeight, outerWidth } from "../overflow/util.ts";
+import { dev, outerHeight, outerWidth } from "../overflow/util.ts";
 import {
   type SolverResult,
   type SolverUnit,
@@ -128,6 +128,7 @@ export class ToolbarStore extends OverflowStore<
   /** The row's min-height, and the frame that will write it. */
   private minHeight = "";
   private frame = 0;
+  private warnedSized = false;
   /** Under `fit`: the box the toolbar may grow to fill. */
   shell: HTMLElement | null = null;
   pane: HTMLElement | null = null;
@@ -136,10 +137,43 @@ export class ToolbarStore extends OverflowStore<
   /** The ⋯ with a one-digit count, and with the widest, `9+`. */
   countRuler: HTMLElement | null = null;
   wideCountRuler: HTMLElement | null = null;
+  /**
+   * The element in the bar that last took the focus, a surface opened from
+   * it and the ⋯ menu included. Kept when it is removed while holding the
+   * focus, so whoever reads it after a commit learns where the focus was
+   * without catching the part before it unmounts.
+   */
+  lastFocused: Element | null = null;
 
   constructor() {
     super(EMPTY);
   }
+
+  focusIn = (event: React.FocusEvent) => {
+    // A handler deeper in may have moved the focus on before this event got
+    // here (a menu handing it to its first item, the bar to its current
+    // command): the events of that move have said where it went.
+    if (event.target !== event.target.ownerDocument.activeElement) return;
+    this.lastFocused = event.target;
+  };
+
+  focusOut = (event: React.FocusEvent) => {
+    // Gone to another element: if that one is in the bar too, its focus
+    // event, next, writes it back.
+    if (event.relatedTarget) {
+      if (this.lastFocused === event.target) this.lastFocused = null;
+      return;
+    }
+    // Gone to nothing: a click on blank space or another window lets go of
+    // it, while a removal (its part unmounting) keeps it. Which one is only
+    // known once the commit that may remove it is done.
+    const left = event.target;
+    queueMicrotask(() => {
+      if (left.isConnected && this.lastFocused === left) {
+        this.lastFocused = null;
+      }
+    });
+  };
 
   override viewOf(id: string): UnitView {
     return (this.result.views[id] ?? "bar") as UnitView;
@@ -262,6 +296,7 @@ export class ToolbarStore extends OverflowStore<
     for (const child of children) {
       const { el, record } = child;
       if (!record) {
+        this.warnSized(el);
         tallest = Math.max(tallest, outerHeight(el));
         units.push({
           id: child.id,
@@ -347,6 +382,29 @@ export class ToolbarStore extends OverflowStore<
       this.frame = 0;
       if (this.row) this.row.style.minHeight = this.minHeight;
     });
+  }
+
+  /**
+   * A child the bar does not know is counted at the width it is drawn at,
+   * which a browser that grows it into spare room, or shrinks it below its
+   * content, has already set from the bar's room: counted that way the parts
+   * either never come back from the ⋯ or never go into it.
+   */
+  private warnSized(el: HTMLElement) {
+    if (this.warnedSized || !dev()) return;
+    const style = getComputedStyle(el);
+    const grows = (Number.parseFloat(style.flexGrow) || 0) > 0;
+    const shrink =
+      style.flexShrink === "" ? 1 : Number.parseFloat(style.flexShrink);
+    const below =
+      (style.minWidth !== "" && style.minWidth !== "auto") ||
+      (style.overflowX !== "" && style.overflowX !== "visible");
+    if (!grows && !(shrink > 0 && below)) return;
+    this.warnedSized = true;
+    console.warn(
+      "Toolbar: a child it does not know grows into the room left or shrinks below its content, so the bar counts it at the width the browser gave it and moves the wrong parts. Leave room with `ToolbarSpacer`, and put text that takes the room left in a `ToolbarItem` with `flex` and a `minWidth`.",
+      el,
+    );
   }
 
   /** Lets go of a search's hold on the bar. */

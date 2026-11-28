@@ -378,17 +378,12 @@ export function Repository() {
                       onSelectAll={() => setSelected(shown)}
                       onClear={() => setSelected([])}
                     >
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <ToolbarButton
-                            aria-label="Delete"
-                            onClick={() => remove(outermost)}
-                          >
-                            <Trash2Icon />
-                          </ToolbarButton>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete</TooltipContent>
-                      </Tooltip>
+                      <ToolbarButton
+                        aria-label="Delete"
+                        onClick={() => remove(outermost)}
+                      >
+                        <Trash2Icon />
+                      </ToolbarButton>
                     </SelectionBar>
                   )}
                   <div className="min-h-0 flex-1 overflow-y-auto pb-2">

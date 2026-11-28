@@ -1,7 +1,15 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { renderToString } from "react-dom/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from "vitest";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "../src/components/dropdown-menu.tsx";
 import { FilterMenu } from "../src/components/filter-menu.tsx";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../src/components/popover.tsx";
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -18,6 +31,10 @@ import {
   SplitButtonAction,
   SplitButtonMenu,
 } from "../src/components/split-button.tsx";
+import {
+  ToolbarInternalContext,
+  type ToolbarStore,
+} from "../src/components/toolbar/store.ts";
 import {
   Toolbar,
   ToolbarButton,
@@ -526,6 +543,13 @@ describe("Toolbar", () => {
     );
     expect(html).toContain("flex-wrap");
     expect(html).toContain("overflow-hidden");
+    // Cut off at a control's height, or at what the bar sets instead.
+    expect(html).toContain(
+      "max-h-[var(--toolbar-row-cap,var(--spacing-control))]",
+    );
+    expect(html).toContain(
+      "touch:max-h-[var(--toolbar-row-cap,var(--spacing-field-touch))]",
+    );
     expect(html).not.toContain("data-overflowed");
     // A permanent ⋯ is drawn from the start; one that only holds overflow is not.
     expect(html).toContain("toolbar-overflow-trigger");
@@ -957,6 +981,97 @@ describe("FilterMenu with a ToolbarButton for its trigger", () => {
     expect(await arrow()).toBe("Status");
     expect(await arrow()).toBe("Delete");
   });
+
+  function Labelled() {
+    const [query, setQuery] = useState("");
+    const [picked, setPicked] = useState<string[]>([]);
+    return (
+      <Toolbar aria-label="Issues">
+        <ToolbarButton>
+          <Icon />
+          <ToolbarLabel>Reply</ToolbarLabel>
+        </ToolbarButton>
+        <FilterMenu
+          selection="multiple"
+          selectedIds={picked}
+          query={query}
+          onQueryChange={setQuery}
+          sections={[{ id: "all", rows: [{ id: "bug" }, { id: "docs" }] }]}
+          renderRow={(row) => row.id}
+          onSelect={(row, event) =>
+            setPicked((ids) =>
+              event.selected
+                ? [...ids, row.id]
+                : ids.filter((id) => id !== row.id),
+            )
+          }
+          listLabel="Labels"
+        >
+          <ToolbarButton>
+            <Icon />
+            <ToolbarLabel>Labels</ToolbarLabel>
+          </ToolbarButton>
+        </FilterMenu>
+      </Toolbar>
+    );
+  }
+
+  const button = (name: string) =>
+    screen.getByRole("button", { name, hidden: true });
+  const wordsHidden = (name: string) =>
+    button(name)
+      .querySelector("[data-slot=toolbar-label]")
+      ?.getAttribute("aria-hidden") === "true";
+
+  it("hides the trigger's words with the other commands' on a fine pointer", async () => {
+    render(<Labelled />);
+    await settle();
+    // Full: 77 and 84; with the words hidden, 28 each.
+    await layout.resize(100);
+    expect(wordsHidden("Labels")).toBe(true);
+    expect(wordsHidden("Reply")).toBe(true);
+    expect(button("Labels").getAttribute("aria-label")).toBe("Labels");
+    expect(button("Labels").dataset.size).toBe("icon");
+    expect(button("Labels").closest("[data-overflowed]")).toBeNull();
+    expect(trigger()).toBeNull();
+    fireEvent.pointerMove(button("Labels"), { pointerType: "mouse" });
+    // The provider opens its first tooltip a task later, delayed by 0.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    expect(
+      [...document.querySelectorAll("[data-slot=tooltip-content]")].map(
+        (tooltip) => tooltip.firstChild?.textContent,
+      ),
+    ).toEqual(["Labels"]);
+  });
+
+  it("moves the trigger whole on a coarse pointer", async () => {
+    render(
+      <div data-pointer="coarse">
+        <Labelled />
+      </div>,
+    );
+    await settle();
+    // Reply and the ⋯ fit in 120; Labels does not beside them.
+    await layout.resize(120);
+    expect(wordsHidden("Labels")).toBe(false);
+    expect(button("Labels").closest("[data-overflowed]")).not.toBeNull();
+  });
+
+  it("keeps the trigger's words while it is open", async () => {
+    render(<Labelled />);
+    await settle();
+    fireEvent.click(button("Labels"));
+    await settle();
+    expect(screen.getByRole("listbox", { name: "Labels" })).toBeTruthy();
+    // Open, Labels takes no step: Reply's words go, and Labels' stay.
+    await layout.resize(130);
+    expect(wordsHidden("Reply")).toBe(true);
+    expect(wordsHidden("Labels")).toBe(false);
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
+    await settle();
+    await settle();
+    expect(wordsHidden("Labels")).toBe(true);
+  });
 });
 
 describe("SplitButton in a Toolbar", () => {
@@ -1284,5 +1399,236 @@ describe("Toolbar parts set away from their defaults", () => {
         .querySelector(".text-muted-foreground")?.textContent;
     expect(quiet("Status Closed")).toBeUndefined();
     expect(quiet("Owner Anyone")).toBe("Anyone");
+  });
+});
+
+describe("Toolbar warnings", () => {
+  let warn: MockInstance<typeof console.warn>;
+  beforeEach(() => {
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+  afterEach(() => warn.mockRestore());
+  const warned = (text: string) =>
+    warn.mock.calls.some(([message]) => String(message).includes(text));
+  const NESTED = "another toolbar's row";
+  const SIZED = "the width the browser gave it";
+
+  it("warns of a toolbar in another's row", async () => {
+    render(
+      <Toolbar aria-label="Outer">
+        <ToolbarButton aria-label="Archive">
+          <Icon />
+        </ToolbarButton>
+        <Toolbar aria-label="Inner">
+          <ToolbarButton aria-label="Bold">
+            <Icon />
+          </ToolbarButton>
+        </Toolbar>
+      </Toolbar>,
+    );
+    await settle();
+    expect(warned(NESTED)).toBe(true);
+  });
+
+  it("lets a toolbar stand in a surface a part opens", async () => {
+    render(
+      <Toolbar aria-label="Outer">
+        <ToolbarItem>
+          <Popover defaultOpen>
+            <PopoverTrigger asChild>
+              <button type="button">Format</button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <Toolbar aria-label="Inner">
+                <ToolbarButton aria-label="Bold">
+                  <Icon />
+                </ToolbarButton>
+              </Toolbar>
+            </PopoverContent>
+          </Popover>
+        </ToolbarItem>
+      </Toolbar>,
+    );
+    await settle();
+    expect(screen.getByRole("toolbar", { name: "Inner" })).toBeTruthy();
+    expect(warned(NESTED)).toBe(false);
+  });
+
+  it.each([
+    ["grows", { flexGrow: 1 }],
+    ["may shrink below its content", { minWidth: 0 }],
+    ["clips what it shrinks over", { overflowX: "hidden" }],
+  ] as const)("warns of a child it does not know that %s", async (_, style) => {
+    render(
+      <Toolbar aria-label="Inbox">
+        <span style={style}>Inbox</span>
+        <ToolbarButton aria-label="Refresh">
+          <Icon />
+        </ToolbarButton>
+      </Toolbar>,
+    );
+    await settle();
+    expect(warned(SIZED)).toBe(true);
+    expect(
+      warn.mock.calls.filter(([m]) => String(m).includes(SIZED)),
+    ).toHaveLength(1);
+  });
+
+  it("counts plain text, a child that keeps its width, a spacer and a flex ToolbarItem without a word", async () => {
+    render(
+      <Toolbar aria-label="Inbox">
+        <span>Inbox</span>
+        <span style={{ flexShrink: 0, minWidth: 0 }}>12</span>
+        <ToolbarSpacer />
+        <ToolbarItem flex minWidth={80}>
+          <span className="truncate">Search results</span>
+        </ToolbarItem>
+        <ToolbarButton aria-label="Refresh">
+          <Icon />
+        </ToolbarButton>
+      </Toolbar>,
+    );
+    await settle();
+    await layout.resize(100);
+    expect(warned(SIZED)).toBe(false);
+  });
+});
+
+describe("Toolbar remembering where the focus was", () => {
+  let store: ToolbarStore | null = null;
+  /** Reads the bar's store, drawing nothing. */
+  function Probe() {
+    store = useContext(ToolbarInternalContext)?.store ?? null;
+    return null;
+  }
+  const last = () => store?.lastFocused ?? null;
+  const tick = () =>
+    act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+  function Bar({
+    snooze = true,
+    onSnooze,
+  }: {
+    snooze?: boolean;
+    onSnooze?: () => void;
+  }) {
+    return (
+      <>
+        <Toolbar aria-label="Thread">
+          <Probe />
+          <ToolbarButton aria-label="Archive">
+            <Icon />
+          </ToolbarButton>
+          <ToolbarMenu icon={<Icon />} label="Status">
+            <DropdownMenuItem>Open</DropdownMenuItem>
+          </ToolbarMenu>
+          {snooze && (
+            <ToolbarButton aria-label="Snooze" onClick={onSnooze}>
+              <Icon />
+            </ToolbarButton>
+          )}
+        </Toolbar>
+        <button type="button">Outside</button>
+      </>
+    );
+  }
+
+  it("follows the focus in the bar, and forgets it once the focus leaves for another element", async () => {
+    render(<Bar />);
+    await settle();
+    const archive = screen.getByRole("button", { name: "Archive" });
+    archive.focus();
+    expect(last()).toBe(archive);
+    screen.getByRole("button", { name: "Outside" }).focus();
+    expect(last()).toBeNull();
+  });
+
+  it("counts a part's own menu, though it is elsewhere in the document", async () => {
+    render(<Bar />);
+    await settle();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Status" }), {
+      key: "Enter",
+    });
+    await settle();
+    const menu = screen.getByRole("menu");
+    expect(menu.closest("[data-slot=toolbar]")).toBeNull();
+    const active = document.activeElement;
+    expect(active !== null && menu.contains(active)).toBe(true);
+    expect(last()).toBe(active);
+  });
+
+  it("counts the ⋯ menu", async () => {
+    render(<Bar />);
+    await settle();
+    await layout.resize(60);
+    expect(await openMore()).toContain("Snooze");
+    const snooze = screen.getByRole("menuitem", { name: "Snooze" });
+    snooze.focus();
+    expect(last()).toBe(snooze);
+  });
+
+  it("keeps the element that held the focus as it is removed", async () => {
+    const { rerender } = render(<Bar />);
+    await settle();
+    const snooze = screen.getByRole("button", { name: "Snooze" });
+    snooze.focus();
+    rerender(<Bar snooze={false} />);
+    await settle();
+    expect(snooze.isConnected).toBe(false);
+    expect(last()).toBe(snooze);
+  });
+
+  it("forgets an element that lets go of the focus while still there", async () => {
+    render(<Bar />);
+    await settle();
+    const archive = screen.getByRole("button", { name: "Archive" });
+    archive.focus();
+    archive.blur();
+    expect(last()).toBe(archive);
+    await settle();
+    expect(last()).toBeNull();
+  });
+
+  it("gives the caller's ref the bar, and calls the caller's focus handlers too", async () => {
+    const ref = { current: null as HTMLDivElement | null };
+    const onFocus = vi.fn();
+    render(
+      <Toolbar aria-label="Thread" ref={ref} onFocus={onFocus}>
+        <Probe />
+        <ToolbarButton aria-label="Archive">
+          <Icon />
+        </ToolbarButton>
+      </Toolbar>,
+    );
+    await settle();
+    const bar = screen.getByRole("toolbar", { name: "Thread" });
+    expect(ref.current).toBe(bar);
+    // The store measures through the same element.
+    expect(store?.pane).toBe(bar);
+    const archive = screen.getByRole("button", { name: "Archive" });
+    archive.focus();
+    expect(onFocus).toHaveBeenCalled();
+    expect(last()).toBe(archive);
+  });
+
+  it("leaves the focus where it was put once the ⋯ menu has closed, and takes it back otherwise", async () => {
+    let outside: HTMLElement | null = null;
+    render(<Bar onSnooze={() => setTimeout(() => outside?.focus(), 0)} />);
+    await settle();
+    outside = screen.getByRole("button", { name: "Outside" });
+    await layout.resize(60);
+    await openMore();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Snooze" }));
+    await tick();
+    await tick();
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(document.activeElement).toBe(outside);
+
+    await openMore();
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+    await tick();
+    await tick();
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(document.activeElement).toBe(trigger());
   });
 });
