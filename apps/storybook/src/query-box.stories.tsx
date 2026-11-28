@@ -1,12 +1,19 @@
-import { PROVIDERS, QUALIFIERS } from "@orz/fixtures/query.ts";
+import {
+  type LabelOption,
+  type MemberOption,
+  PROVIDERS,
+  QUALIFIERS,
+} from "@orz/fixtures/query.ts";
 import { type CompiledQuerySchema, defineQuerySchema } from "@orz/query";
+import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
+import { Badge } from "@orz/ui/components/badge";
 import { QueryBox } from "@orz/ui/components/query-box";
 import {
   type QueryHistoryEntry,
   useQueryHistory,
 } from "@orz/ui/hooks/use-query-history";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { SearchIcon } from "lucide-react";
+import { FolderIcon, SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fn } from "storybook/test";
 import { withWidth } from "./decorators.tsx";
@@ -65,7 +72,9 @@ const history = useQueryHistory({ storageKey: "app:search-history", scope: proje
     history.record(query);
     search(query);
   }}
-  renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
+  renderSubmitRow={(query, option) => (
+    <div {...option}>{query === "" ? "All issues" : \`Search for “\${query}”\`}</div>
+  )}
   inputProps={{ "aria-label": "Search" }}
 />`;
 
@@ -86,8 +95,98 @@ const history = useQueryHistory({ storageKey: "app:search-history", scope: "issu
     history.record(query);
     navigate(\`/issues?q=\${encodeURIComponent(query)}\`);
   }}
-  renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
+  renderSubmitRow={(query, option) => (
+    <div {...option}>{query === "" ? "All issues" : \`Search for “\${query}”\`}</div>
+  )}
   inputProps={{ "aria-label": "Search issues" }}
+/>`;
+
+// Written by hand: `renderValue`'s body is the story's point, and the
+// generated snippet prints a function as `() => {}`.
+const valueSource = `import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
+import { Badge } from "@orz/ui/components/badge";
+import { QueryBox } from "@orz/ui/components/query-box";
+
+// The options carry what the app draws them from; the member search answers
+// \`@me\` too, with who that is.
+const providers: ValueProviders = {
+  label: { options: labels.map(({ name, color }) => ({ value: name, color })) },
+  member: { search: (prefix, signal) => searchMembers(prefix, signal) },
+};
+
+<QueryBox
+  schema={schema}
+  providers={providers}
+  value={value}
+  onValueChange={setValue}
+  onSubmit={search}
+  renderValue={({ option, spec }) => {
+    if (spec.kind !== "named") return;
+    if (spec.source === "label") {
+      const { color } = option as LabelOption;
+      return { body: <Badge variant="marker" color={color}>{option.value}</Badge> };
+    }
+    if (spec.source === "member" && "login" in option) {
+      const { login } = option as MemberOption;
+      return {
+        leading: (
+          <Avatar size="sm">
+            <AvatarFallback>{login.slice(0, 1).toUpperCase()}</AvatarFallback>
+          </Avatar>
+        ),
+      };
+    }
+  }}
+  renderSubmitRow={(query, option) => (
+    <div {...option}>{query === "" ? "All issues" : \`Search for “\${query}”\`}</div>
+  )}
+  inputProps={{ "aria-label": "Search" }}
+/>`;
+
+/** Projects a word can name, as an issue reference begins with one. */
+const PROJECTS = [
+  { prefix: "ACC-", name: "Accounting" },
+  { prefix: "OPS-", name: "Operations" },
+  { prefix: "WEB-", name: "Website" },
+];
+
+// Written by hand: the story wires an app's source into the box, and the
+// generated snippet would print its functions as `() => {}`.
+const completingSource = `import { QueryBox, type RowSource } from "@orz/ui/components/query-box";
+
+const word = /\\S*$/.exec(value)?.[0] ?? "";
+const offered = word === "" ? [] : projects.filter((p) => p.prefix.toLowerCase().startsWith(word.toLowerCase()));
+
+// A word the schema cannot complete: a project's prefix, written for the
+// number that follows it.
+const projectPrefixes: RowSource<Project> = {
+  id: "project",
+  matched: offered.length > 0,
+  rows: offered,
+  key: (project) => project.prefix,
+  completes: true,
+  apply: (project) => {
+    const next = value.slice(0, value.length - word.length) + project.prefix;
+    return { value: next, caret: next.length };
+  },
+  render: (project, option) => (
+    <button type="button" {...option}>
+      <FolderIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+      <span className="truncate font-mono text-ui-sm">{project.prefix}</span>
+      <span className="truncate text-muted-foreground text-ui-sm">{project.name}</span>
+    </button>
+  ),
+};
+
+<QueryBox
+  schema={schema}
+  providers={providers}
+  value={value}
+  onValueChange={setValue}
+  sources={[projectPrefixes]}
+  onSubmit={search}
+  renderSubmitRow={(query, option) => <div {...option}>Search for “{query}”</div>}
+  inputProps={{ "aria-label": "Search" }}
 />`;
 
 const meta = {
@@ -105,7 +204,9 @@ const meta = {
           className="size-3.5 shrink-0 text-muted-foreground"
           aria-hidden
         />
-        <span className="truncate">Search for “{query}”</span>
+        <span className="truncate">
+          {query === "" ? "All issues" : `Search for “${query}”`}
+        </span>
       </div>
     ),
     listAlign: "start",
@@ -121,6 +222,7 @@ const meta = {
     history: { control: false },
     queryHref: { control: false },
     renderSubmitRow: { control: false },
+    renderValue: { control: false },
     leading: { control: false },
   },
   parameters: {
@@ -151,10 +253,11 @@ const meta = {
         }}
         onSubmit={(query, chosen, fromHistory) => {
           setValue(query);
-          setEntries((all) => [
-            { q: query, t: Date.now() },
-            ...all.filter((e) => e.q.toLowerCase() !== query.toLowerCase()),
-          ]);
+          if (query !== "")
+            setEntries((all) => [
+              { q: query, t: Date.now() },
+              ...all.filter((e) => e.q.toLowerCase() !== query.toLowerCase()),
+            ]);
           args.onSubmit(query, chosen, fromHistory);
         }}
       />
@@ -228,6 +331,107 @@ export const StoredHistory: Story = {
           setValue(query);
           args.onSubmit(query, chosen, fromHistory);
         }}
+      />
+    );
+  },
+};
+
+/**
+ * Values drawn as the app draws them elsewhere: type `label:` for each
+ * label's chip, or `assignee:` for each member's avatar. The member search
+ * restates `@me` with who that is, and when it answers, `@me` gains its
+ * avatar in the place it already had rather than appearing twice.
+ */
+export const RenderValue: Story = {
+  args: {
+    renderValue: ({ option, spec }) => {
+      if (spec.kind !== "named") return;
+      if (spec.source === "label") {
+        const { color } = option as LabelOption;
+        return {
+          body: (
+            <Badge variant="marker" color={color}>
+              {option.value}
+            </Badge>
+          ),
+        };
+      }
+      if (spec.source === "member" && "login" in option) {
+        const { login } = option as MemberOption;
+        return {
+          leading: (
+            <Avatar size="sm">
+              <AvatarFallback>{login.slice(0, 1).toUpperCase()}</AvatarFallback>
+            </Avatar>
+          ),
+        };
+      }
+    },
+  },
+  parameters: {
+    docs: { source: { code: valueSource, language: "tsx" } },
+  },
+};
+
+/**
+ * A word the schema knows nothing of, finished by the app: type `ac`, then
+ * arrow onto `ACC-` and press Enter, click it, or press Tab. The box reads
+ * `ACC-` with the caret after it, waiting for the number, and nothing is
+ * submitted: the source `completes`, so its rows take `apply` as the
+ * schema's own completions do.
+ */
+export const CompletingSource: Story = {
+  parameters: {
+    docs: { source: { code: completingSource, language: "tsx" } },
+  },
+  render: function Render(args) {
+    const [value, setValue] = useState(args.value);
+    useEffect(() => setValue(args.value), [args.value]);
+    const word = /\S*$/.exec(value)?.[0] ?? "";
+    const typed = word.toLowerCase();
+    const offered =
+      typed === ""
+        ? []
+        : PROJECTS.filter((project) => {
+            const prefix = project.prefix.toLowerCase();
+            return prefix.startsWith(typed) && prefix !== typed;
+          });
+    return (
+      <QueryBox
+        {...args}
+        value={value}
+        onValueChange={(next) => {
+          setValue(next);
+          args.onValueChange(next);
+        }}
+        sources={[
+          {
+            id: "project",
+            matched: offered.length > 0,
+            rows: offered,
+            key: (project) => project.prefix,
+            completes: true,
+            apply: (project) => {
+              const next =
+                value.slice(0, value.length - word.length) + project.prefix;
+              return { value: next, caret: next.length };
+            },
+            render: (project, option) => (
+              <button type="button" {...option}>
+                <FolderIcon
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+                <span className="truncate font-mono text-ui-sm">
+                  {project.prefix}
+                </span>
+                <span className="truncate text-muted-foreground text-ui-sm">
+                  {project.name}
+                </span>
+              </button>
+            ),
+          },
+        ]}
       />
     );
   },

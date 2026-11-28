@@ -12,19 +12,28 @@ export const QUALIFIERS = {
   },
 } satisfies QuerySchema["qualifiers"];
 
-const MEMBERS: readonly ValueOption[] = [
-  { value: "alice", hint: "Alice" },
-  { value: "bot-one", hint: "a bot" },
-  { value: "claude-agent", hint: "an agent" },
-  { value: "newcomer", hint: "joined this week" },
+/** A label as an app keeps it: its name, and the tag colour its chip is drawn in. */
+export type LabelOption = ValueOption & { color: string };
+
+/** A member as an app keeps them: whose avatar the row shows, `@me` included. */
+export type MemberOption = ValueOption & { login: string };
+
+const MEMBERS: readonly MemberOption[] = [
+  { value: "alice", hint: "Alice", login: "alice" },
+  { value: "bot-one", hint: "a bot", login: "bot-one" },
+  { value: "claude-agent", hint: "an agent", login: "claude-agent" },
+  { value: "newcomer", hint: "joined this week", login: "newcomer" },
 ];
+
+/** The schema's `@me`, restated with who that is: the box offers it once, in its place. */
+const ME: MemberOption = { value: "@me", hint: "Alice", login: "alice" };
 
 /** Stands in for a server round trip, slow enough to see the wait. */
 const searchMembers = (prefix: string, signal: AbortSignal) =>
-  new Promise<readonly ValueOption[]>((resolve, reject) => {
+  new Promise<readonly MemberOption[]>((resolve, reject) => {
     const timer = setTimeout(() => {
       const lower = prefix.toLowerCase();
-      resolve(MEMBERS.filter((m) => m.value.startsWith(lower)));
+      resolve([ME, ...MEMBERS].filter((m) => m.value.startsWith(lower)));
     }, 400);
     signal.addEventListener("abort", () => {
       clearTimeout(timer);
@@ -32,15 +41,15 @@ const searchMembers = (prefix: string, signal: AbortSignal) =>
     });
   });
 
+const LABELS: readonly LabelOption[] = [
+  { value: "kind:bug", color: "red" },
+  { value: "kind:feature", color: "green" },
+  { value: "area:web", color: "blue" },
+  { value: "area:ui", color: "purple" },
+  { value: "In Progress", hint: "has a space", color: "yellow" },
+];
+
 export const PROVIDERS: ValueProviders = {
-  label: {
-    options: [
-      { value: "kind:bug" },
-      { value: "kind:feature" },
-      { value: "area:web" },
-      { value: "area:ui" },
-      { value: "In Progress", hint: "has a space" },
-    ],
-  },
+  label: { options: LABELS },
   member: { search: searchMembers },
 };

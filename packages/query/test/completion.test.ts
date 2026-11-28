@@ -5,6 +5,7 @@ import {
   commandCompletionSlot,
   filterOptions,
   keyRows,
+  mergeOptions,
   orderRows,
   queryCompletionSlot,
   quoteArgument,
@@ -166,6 +167,19 @@ describe("the qualifier value source", () => {
       "claude-code",
     ]);
     expect(values("assignee:|").rows.map((r) => r.text)).toContain("@me");
+  });
+
+  it("carries the option it offers, as given, with its key and spec", () => {
+    const { rows } = values("harness:co|");
+    expect(rows[0]?.value).toEqual({
+      option: { value: "codex", hint: "12" },
+      key: "harness",
+      spec: todouQualifiers.qualifiers.harness.value,
+    });
+    // The very object the provider gave, so whatever else an app put on it
+    // is there to draw from.
+    const harness = PROVIDERS.harness as { options: readonly object[] };
+    expect(rows[0]?.value?.option).toBe(harness.options[0]);
   });
 
   it("replaces only the value under the caret", () => {
@@ -605,6 +619,34 @@ describe("slot values", () => {
       { value: "@me" },
       { value: "bot-one" },
     ]);
+  });
+
+  it("lets the provider restate a special or an enum value in its place, once", () => {
+    const me = { value: "@ME", hint: "Alice" };
+    expect(
+      slotValues(slot(MEMBER), { options: [{ value: "bot-one" }, me] }),
+    ).toEqual([me, { value: "bot-one" }]);
+    expect(slotValues(slot(MEMBER), { search: async () => [] }, [me])).toEqual([
+      me,
+    ]);
+    expect(
+      slotValues(slot({ kind: "enum", values: ["open", "closed"] }), {
+        options: [{ value: "Closed", hint: "done" }],
+      }),
+    ).toEqual([{ value: "open" }, { value: "Closed", hint: "done" }]);
+  });
+
+  it("merges options, the first restatement winning, the rest after", () => {
+    expect(
+      mergeOptions(
+        [{ value: "a" }, { value: "b" }],
+        [
+          { value: "c" },
+          { value: "B", hint: "first" },
+          { value: "b", hint: "second" },
+        ],
+      ),
+    ).toEqual([{ value: "a" }, { value: "B", hint: "first" }, { value: "c" }]);
   });
 
   it("filters by prefix, case-insensitively", () => {

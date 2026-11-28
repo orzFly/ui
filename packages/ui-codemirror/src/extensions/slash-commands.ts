@@ -20,6 +20,7 @@ import {
   commandCompletionSlot,
   commandLinesOf,
   filterOptions,
+  mergeOptions,
   providerOf,
   quoteArgument,
   slotValues,
@@ -195,7 +196,7 @@ function argumentResult(
   const literal = fetched === undefined && source.slice(quote) === slot.typed;
   const offered = literal
     ? values
-    : [...filterOptions(values, slot.typed), ...(fetched ?? [])];
+    : mergeOptions(filterOptions(values, slot.typed), fetched ?? []);
   if (offered.length === 0) return null;
   const options = offered.map((o, index) =>
     argumentRow(slot, line.from, o, index, argumentOption),

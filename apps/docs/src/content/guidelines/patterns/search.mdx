@@ -1,7 +1,7 @@
 export const meta = {
   title: "Search",
   description:
-    "A box people search from keeps the queries they ran: which boxes keep them, in which bucket, and when a query counts as searched.",
+    "A box people search from keeps the queries they ran and draws values as the app does: which boxes keep them, in which bucket, when a query counts as searched, how a value looks, and the words an app finishes.",
   order: 38,
   api: ["ui/QueryBox"],
 };
@@ -17,6 +17,12 @@ Search for `is:open` and then for `flaky test`, and click into the empty box: bo
 newest first. Type `fl` and the one it begins rises above the submit row; type `test` and the one
 it only appears in waits below it. Tab loads a past query to keep editing; Enter or a click runs
 it again.
+
+## An empty box
+
+The submit row stays when the box is empty, and `renderSubmitRow` gets `""`. Choosing it submits
+the empty query, so draw the row as the place an empty query goes: every issue, all mail, or a
+search page that explains the syntax. Enter with no row picked still submits nothing.
 
 ## Which boxes keep a history
 
@@ -46,6 +52,13 @@ else:
 
 Record a query that ran, whichever way it came; it moves back to the top.
 
+## Waiting on a query
+
+Sometimes `onSubmit` cannot tell at once where a query goes: a pasted reference has to be looked
+up before the app knows whether it names one thing. Set `busy` until it knows. The box marks its
+input busy for a screen reader and draws nothing, because the wait is usually shorter than the
+half second under which [Loading](/guidelines/patterns/loading-empty-and-error/) adds nothing new.
+
 ## Linking the results
 
 When the results have an address, give `queryHref`: each past query becomes a link to them, so a
@@ -61,3 +74,25 @@ keyboard, as in a browser's address bar.
 Forgetting asks nothing and offers no Undo. What goes is a query, which can be searched again,
 and the row goes from under the finger that tapped its ×, so nothing vanishes unseen
 ([Destructive actions](/guidelines/patterns/destructive-actions/)).
+
+## Drawing values
+
+Draw a value in the panel as the app draws it everywhere else, so it is known at a glance: a label
+as its chip, a status as its pill, a person with their avatar. Put what each is drawn from on the
+provider's options (a label's colour, a person's login) and draw it in `renderValue`. A mark such
+as an avatar takes the icon's place and leaves the words where every row's words start; a chip
+takes the value's text; the hint still follows. Keep the value's name in the row either way: it is
+what a screen reader reads and what the reader matched by typing.
+
+Type `label:` or `assignee:` in the example at the top. The schema already offers `@me`; the
+member search restates it with who that is, and the box keeps one `@me`, where it stood, now with
+an avatar.
+
+## Words the app finishes
+
+Some words only the app can finish: a project's prefix, which an issue's number follows, means
+nothing to the schema. Offer them from a `RowSource` that `completes`, with an `apply` that writes
+the word into the query and puts the caret after it. Its rows then behave as the schema's own
+completions: Enter, a click or Tab rewrites the query and keeps the reader in the box, and nothing
+is searched. A row that goes somewhere, a jump to one issue, stays in a source without
+`completes`, so choosing it submits.

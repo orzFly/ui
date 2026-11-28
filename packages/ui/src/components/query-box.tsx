@@ -1,6 +1,7 @@
 import {
   type CompiledQuerySchema,
   type CompletionRow,
+  type CompletionValue,
   orderRows,
   parseQuery,
   type SourceResult,
@@ -47,7 +48,10 @@ export type OptionProps = {
   onClick: () => void;
 };
 
-/** Rows the app adds to the panel: jumps, anything that is not syntax or history. */
+/**
+ * Rows the app adds to the panel: jumps, words the schema cannot complete,
+ * anything that is not syntax or history.
+ */
 export type RowSource<R> = {
   id: string;
   /** Whether the caret is on something this source recognises; see `orderRows`. */
@@ -59,8 +63,26 @@ export type RowSource<R> = {
   render: (row: R, option: OptionProps) => ReactNode;
   /** Tab takes it and keeps editing. */
   apply?: (row: R) => { value: string; caret: number } | null;
+  /**
+   * The rows finish the word being typed, as the schema's completions do:
+   * Enter and a click take `apply` too, and submit nothing, and Tab with
+   * nothing highlighted takes the first one above the submit row. A row
+   * whose `apply` gives null is submitted as any other app row.
+   */
+  completes?: boolean;
   /** Shift+Delete on the highlighted row. */
   remove?: (row: R) => void;
+};
+
+/**
+ * What `renderValue` draws in a value row. Either part left out stays the
+ * box's own.
+ */
+export type ValueRowContent = {
+  /** In the icon's place: an avatar, a colour's swatch. */
+  leading?: ReactNode;
+  /** In place of the value's text: a label's chip, a status's pill. The hint still follows. */
+  body?: ReactNode;
 };
 
 type BoxRow<R> =
@@ -124,6 +146,18 @@ const COMPLETION_ICON = {
   key: FilterIcon,
   value: TagIcon,
 } satisfies Record<CompletionRow["icon"], typeof FilterIcon>;
+
+/**
+ * The icon column, which a value row's own `leading` stands in: as wide as
+ * the icon, so the text after it starts where every row's does. Anything
+ * wider, an avatar, is centred on it and reaches past it evenly into the
+ * padding and the gap, rather than pushing this one row's text along.
+ * An avatar is sized here to the line of the value's text (under raymond its
+ * own small size, let past the line by a pixel each way), so a person's row
+ * stands as tall as any other value's.
+ */
+const VALUE_LEADING =
+  "flex w-3.5 shrink-0 justify-center *:data-[slot=avatar]:size-4.5 raymond:*:data-[slot=avatar]:size-4 raymond:*:data-[slot=avatar]:-my-px";
 
 /**
  * A ghost icon button's look, but no button: a second action inside the
@@ -250,11 +284,13 @@ export function QueryBox<R>({
   history,
   queryHref,
   renderSubmitRow,
+  renderValue,
   limit = 20,
   onEscape,
   onOpenChange,
   listAlign = "centered",
   leading,
+  busy = false,
   inputProps = {},
   className,
   panelClassName,
@@ -266,7 +302,7 @@ export function QueryBox<R>({
   /**
    * Enter with nothing highlighted, or on the submit row; `chosen` when an app row was
    * highlighted; `fromHistory` when a history row was, its query then being submitted as it
-   * was searched before.
+   * was searched before. An empty box submits only from a row: `""` from its submit row.
    */
   onSubmit: (
     query: string,
@@ -278,8 +314,15 @@ export function QueryBox<R>({
   history?: Pick<QueryHistory, "entries" | "remove">;
   /** The address of a query's results; given, each history row is a link there. */
   queryHref?: (query: string) => string;
-  /** The row that submits the query as typed, always present. */
+  /** The row that submits the query as typed, always present; given `""` in an empty box. */
   renderSubmitRow: (query: string, option: OptionProps) => ReactNode;
+  /**
+   * Draws a value row's value as the app draws it elsewhere: a label as its
+   * chip, a person with their avatar. Given the option as its provider gave
+   * it, with the key and spec it is a value of; nothing returned draws the
+   * box's own.
+   */
+  renderValue?: (value: CompletionValue) => ValueRowContent | null | undefined;
   /** Rows offered at most, the submit row not counted. */
   limit?: number;
   /**
@@ -297,7 +340,16 @@ export function QueryBox<R>({
   listAlign?: "centered" | "start";
   /** Drawn at the input's left edge, inside its border: a search icon. */
   leading?: ReactNode;
-  inputProps?: Omit<ComponentProps<"input">, "value" | "onChange">;
+  /**
+   * The app is waiting on a query it was given, a pasted reference being
+   * looked up, say: marked on the input as `aria-busy`, as the box marks its
+   * own wait for a value list.
+   */
+  busy?: boolean;
+  inputProps?: Omit<
+    ComponentProps<"input">,
+    "value" | "onChange" | "aria-busy"
+  >;
   className?: string;
   panelClassName?: string;
 }) {
@@ -421,14 +473,25 @@ export function QueryBox<R>({
     setPosition({ caret: apply.caret });
   });
 
+  /** What a row rewrites the query to when it finishes a word, or null. */
+  const completion = (
+    row: BoxRow<R>,
+  ): { value: string; caret: number } | null => {
+    if (row.kind === "completion") return row.row.apply;
+    if (row.kind === "app" && row.source.completes)
+      return row.source.apply?.(row.row) ?? null;
+    return null;
+  };
+
   /**
    * What Tab takes — the submit row is not an offer.
    *
    * A highlighted past query, or app row with `apply`, loads what it says
    * into the box, which is what Tab already means: take the offer and keep
    * editing. With nothing highlighted Tab still falls back to the first
-   * *completion* and never to either — an unaimed Tab means "finish the word
-   * I am typing", and a whole past query is a long way from that.
+   * *completion*, the schema's or a completing source's, and never to
+   * either — an unaimed Tab means "finish the word I am typing", and a
+   * whole past query is a long way from that.
    *
    * Only a completion above the submit row counts, one the typed word really
    * matches. The key table under an empty word is there to be read; taking
@@ -448,7 +511,8 @@ export function QueryBox<R>({
     }
     for (const row of rows) {
       if (row.kind === "submit") return null;
-      if (row.kind === "completion") return row.row.apply;
+      const apply = completion(row);
+      if (apply !== null) return apply;
     }
     return null;
   };
@@ -457,14 +521,15 @@ export function QueryBox<R>({
   const choose = (chosen: BoxRow<R> | undefined) => {
     // Enter on a completion takes it and stays put; the reader is still
     // building the query, not asking for it.
-    if (chosen?.kind === "completion") {
-      accept(chosen.row.apply);
+    const apply = chosen === undefined ? null : completion(chosen);
+    if (apply !== null) {
+      accept(apply);
       return;
     }
-    // An empty box has nothing to submit — unless a row is what is being
-    // submitted, a past query say.
-    if (query === "" && chosen?.kind !== "app" && chosen?.kind !== "history")
-      return;
+    // An empty box with nothing aimed at has nothing to submit. A row picked
+    // there is submitted all the same, the submit row included: where an
+    // empty query goes (a search page, everything unfiltered) is the app's.
+    if (query === "" && chosen === undefined) return;
     // A past query is submitted as it was searched, in place of the value.
     const submitted = chosen?.kind === "history" ? chosen.entry.q : query;
     if (chosen?.kind === "history") emit(submitted);
@@ -601,7 +666,7 @@ export function QueryBox<R>({
         aria-controls={listId}
         aria-activedescendant={open && hl !== NONE ? optionId(hl) : undefined}
         aria-autocomplete="list"
-        aria-busy={loading || undefined}
+        aria-busy={busy || loading || undefined}
         value={value}
         onValueChange={(next) => {
           emit(next);
@@ -702,6 +767,10 @@ export function QueryBox<R>({
               );
             }
             const Icon = COMPLETION_ICON[row.row.icon];
+            const drawn =
+              row.row.value === undefined
+                ? undefined
+                : renderValue?.(row.row.value);
             return (
               // A button, not a link: it goes nowhere, it rewrites the query
               // in place. Focus stays in the input regardless — the listbox
@@ -712,13 +781,26 @@ export function QueryBox<R>({
                 {...option}
                 onClick={() => accept(row.row.apply)}
               >
-                <Icon
-                  className="size-3.5 shrink-0 text-muted-foreground"
-                  aria-hidden
-                />
-                <span className="truncate font-mono text-ui-sm">
-                  {row.row.text}
-                </span>
+                {drawn?.leading == null ? (
+                  <Icon
+                    className="size-3.5 shrink-0 text-muted-foreground"
+                    aria-hidden
+                  />
+                ) : (
+                  // The words say which value it is; the mark only shows it.
+                  <span
+                    aria-hidden
+                    data-slot="query-value-leading"
+                    className={VALUE_LEADING}
+                  >
+                    {drawn.leading}
+                  </span>
+                )}
+                {drawn?.body ?? (
+                  <span className="truncate font-mono text-ui-sm">
+                    {row.row.text}
+                  </span>
+                )}
                 {row.row.hint !== undefined && (
                   <span className="truncate text-muted-foreground text-ui-sm">
                     {row.row.hint}

@@ -94,8 +94,11 @@ before `compile` runs; the reason lands in `invalid`.
 `queryCompletionSlot` and `commandCompletionSlot` say what is being typed at the caret: a key, a
 value, a command or an argument, with its extent and value spec. Inside a brace group the slot is
 only the current alternative. `slotValues` lists what fits (or answers `"fetch"` for a `search`
-provider), `keyRows` and `valueRows` turn a query slot into rows that carry the rewritten query,
-and `orderRows` keeps the submit row first unless something is genuinely being completed.
+provider), and a provider's option that restates an enum value or a special takes its place rather
+than adding a second row (`mergeOptions`). `keyRows` and `valueRows` turn a query slot into rows that
+carry the rewritten query; a value row also carries, in `value`, the option it offers as it was
+given, with its key and spec, so an app can draw it as it draws that value elsewhere. `orderRows`
+keeps the submit row first unless something is genuinely being completed.
 
 ## Building blocks
 
