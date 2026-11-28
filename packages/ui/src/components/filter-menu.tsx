@@ -1,5 +1,5 @@
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
-import { Slot, Toolbar as ToolbarPrimitive } from "radix-ui";
+import { Slot } from "radix-ui";
 import type {
   ComponentProps,
   KeyboardEvent,
@@ -38,7 +38,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "./popover.tsx";
-import { RovingTaken } from "./toolbar/command.tsx";
+import { RovingItem, RovingTaken } from "./toolbar/command.tsx";
 import { OverflowName, OverflowValue } from "./toolbar/overflow.tsx";
 import {
   OUT_OF_FLOW,
@@ -1302,11 +1302,7 @@ export function FilterMenu<R extends FilterMenuRow>({
         setOpen(true);
       }}
     >
-      {unit.registered ? (
-        <ToolbarPrimitive.Button asChild>{children}</ToolbarPrimitive.Button>
-      ) : (
-        children
-      )}
+      {unit.registered ? <RovingItem>{children}</RovingItem> : children}
     </PopoverTrigger>
   );
   return (

@@ -316,12 +316,13 @@ describe("SelectionBar's parts as a toolbar's", () => {
     await settle();
     await selectTwo();
     await layout.resize(200);
-    expect(bar().tabIndex).toBe(0);
-    for (const each of bar().querySelectorAll("button")) {
-      expect(each.tabIndex).toBe(-1);
-    }
-    act(() => bar().focus());
-    expect(document.activeElement).toBe(checkbox());
+    expect(bar().tabIndex).toBe(-1);
+    expect(
+      [...bar().querySelectorAll("button")].filter(
+        (each) => each.tabIndex === 0,
+      ),
+    ).toEqual([checkbox()]);
+    act(() => checkbox().focus());
     expect(await arrow()).toBe(button("Archive"));
     expect(await arrow()).toBe(more());
     expect(await arrow()).toBe(button("Clear selection"));

@@ -1,5 +1,4 @@
 import { ChevronDownIcon } from "lucide-react";
-import { Toolbar as ToolbarPrimitive } from "radix-ui";
 import * as React from "react";
 
 import { cn } from "../lib/utils.ts";
@@ -11,7 +10,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "./dropdown-menu.tsx";
-import { CommandTooltip } from "./toolbar/command.tsx";
+import { CommandTooltip, RovingItem } from "./toolbar/command.tsx";
 import { FLAT, textSize } from "./toolbar/look.ts";
 import { OverflowLabel } from "./toolbar/overflow.tsx";
 import {
@@ -209,7 +208,7 @@ function SegmentedControl({
           )}
           {dropdown && (
             <DropdownMenu>
-              <ToolbarPrimitive.Button asChild>
+              <RovingItem>
                 <DropdownMenuTrigger asChild>
                   <CommandTooltip enabled={name !== undefined} text={name}>
                     <Button
@@ -223,7 +222,7 @@ function SegmentedControl({
                     </Button>
                   </CommandTooltip>
                 </DropdownMenuTrigger>
-              </ToolbarPrimitive.Button>
+              </RovingItem>
               <DropdownMenuContent align="start">
                 <DropdownMenuRadioGroup
                   aria-label={name}
@@ -306,11 +305,7 @@ function SegmentedControlItem({
     </button>
   );
   if (!context.roving) return button;
-  return (
-    <ToolbarPrimitive.Button asChild disabled={disabled}>
-      {button}
-    </ToolbarPrimitive.Button>
-  );
+  return <RovingItem disabled={disabled}>{button}</RovingItem>;
 }
 
 export { SegmentedControl, SegmentedControlItem };
