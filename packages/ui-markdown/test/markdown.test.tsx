@@ -468,6 +468,62 @@ describe("identity (T-60)", () => {
     expect(after.paragraph).toBe(before.paragraph);
     expect(after.fence).toBe(before.fence);
   });
+
+  describe("a plugin rebuilt around the same wrappers (UI-236)", () => {
+    const h2: NonNullable<MarkdownPlugin["components"]>["h2"] = ({
+      Next,
+      ...props
+    }) => (
+      <section>
+        <Next {...props} />
+      </section>
+    );
+    const p: NonNullable<MarkdownPlugin["components"]>["p"] = ({
+      Next,
+      ...props
+    }) => <Next {...props} />;
+    const fence: MarkdownPlugin["fence"] = ({ Next, ...props }) => (
+      <Next {...props} />
+    );
+    /** The plugin a host rebuilds as its data changes: new passes, the same wrappers. */
+    const pass = (value: string): MarkdownPlugin => ({
+      name: "pass",
+      rehypePlugins: [
+        () => (tree: HastRoot) => {
+          for (const child of tree.children) {
+            if (child.type === "element" && child.tagName === "p") {
+              child.properties.dataPass = value;
+            }
+          }
+        },
+      ],
+      components: { h2, p },
+      fence,
+    });
+    const SOURCE = "## Title\n\nSome *text*.\n\n```\ncode\n```";
+    const nodesOf = (container: HTMLElement) => ({
+      heading: container.querySelector("h2")?.firstChild,
+      paragraph: container.querySelector("p"),
+      fence: container.querySelector(".markdown-fence code")?.firstChild,
+    });
+
+    it("keeps every element mounted and runs the new passes", () => {
+      const { container, rerender } = render(
+        <Markdown plugins={[pass("one"), wrapH2("a")]}>{SOURCE}</Markdown>,
+      );
+      const before = nodesOf(container);
+      expect(before.paragraph?.dataset.pass).toBe("one");
+      rerender(
+        <Markdown plugins={[pass("two"), wrapH2("a")]}>{SOURCE}</Markdown>,
+      );
+      const after = nodesOf(container);
+      expect(after.paragraph).toBe(before.paragraph);
+      expect(after.paragraph?.dataset.pass).toBe("two");
+      expect(after.fence).toBe(before.fence);
+      // wrapH2 builds a new wrapper on every call, so the headings remount.
+      expect(after.heading).not.toBe(before.heading);
+    });
+  });
 });
 
 describe("re-rendering", () => {

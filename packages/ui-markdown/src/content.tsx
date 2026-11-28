@@ -19,7 +19,8 @@ import type { MarkdownPlugin } from "./plugin.ts";
 export type MarkdownContentOptions = {
   /**
    * Plugins for a document drawn outside any `<Markdown>`, such as in a viewer. Inside one, the
-   * enclosing document's plugins win, so an embed is drawn the way its host is.
+   * enclosing document's plugins win, so an embed is drawn the way its host is, without those the
+   * host marks `inherited: false`.
    */
   plugins?: readonly MarkdownPlugin[];
   /**

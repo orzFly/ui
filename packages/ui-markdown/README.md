@@ -76,15 +76,19 @@ A renderer for one language, such as `@orz/ui-mermaid`'s `mermaidContent`, goes 
 list.
 
 **Keep `plugins` stable**: a module constant, or a `useMemo`. A fresh array, or a fresh plugin object
-in it, makes react-markdown reparse the document and React remount every overridden element, and
-either one collapses a live text selection inside it. With the same text, plugins and class,
-`<Markdown>` does not render again at all: react-markdown keeps no parse cache.
+in it, makes react-markdown reparse the document. React keeps each element mounted as long as the
+wrappers its tag goes through are the same functions in the same order, so a plugin whose passes
+follow the app's data keeps its `components` and `fence` at module scope, or memoised apart, and
+rebuilds only its passes. A new wrapper remounts every element of its tag, which collapses a live
+text selection inside it. With the same text, plugins and class, `<Markdown>` does not render again
+at all: react-markdown keeps no parse cache.
 
 ## Writing a plugin
 
 ```ts
 type MarkdownPlugin = {
   name: string;
+  inherited?: boolean; // false: a document embedded in this one is drawn without it
   remarkPlugins?: PluggableList; // after the fixed syntax chain
   rehypePlugins?: PluggableList; // after rehypeDetails and rehypeHeadingLevels
   components?: { [Tag]?: ComponentType<ElementProps<Tag> & { Next }> }; // any tag but pre
@@ -121,6 +125,10 @@ const PLUGINS = [anchors];
 
 Element wrappers receive react-markdown's props, including the hast `node`; pass them on to `Next`.
 
+A document embedded in another (see below) is drawn with its host's plugins. Mark a plugin
+`inherited: false` when it belongs to the host document alone, as a pass over its own source lines
+does; changing such a plugin leaves the embedded documents alone.
+
 ## Embeds and markdown files
 
 ```tsx
@@ -150,7 +158,8 @@ function Doc({ source }: { source: string }) {
 - **`markdownContent({ plugins?, maxDepth? })`** accepts files named `*.md`/`*.markdown` or typed
   `text/markdown`, in either placement. It shows the fallback link while loading, the message and a
   Retry button on failure, and the document once loaded, with the plugins of the enclosing
-  `<Markdown>` (else `options.plugins`) and its headings a level below that `<Markdown>`'s. In
+  `<Markdown>` but those marked `inherited: false` (else `options.plugins`) and its headings a level
+  below that `<Markdown>`'s. In
   `"document"` placement, a document deeper than `maxDepth` (else the provider's `maxDepth`, else
   1) is a link: a document inside a document shows its own documents as links, which is what stops
   a document that embeds itself. A `"viewer"` placement is never limited. A "source" toggle in the

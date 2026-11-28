@@ -320,7 +320,14 @@ const pluginNames: ContentRenderer = {
 /** `decorate`'s heading band, with no fence caption. */
 const band: MarkdownPlugin = { name: "band", components: BAND_COMPONENTS };
 
-const CONTEXT_PLUGINS = [band, markdownEmbeds({ resolve: resolveFile })];
+/** The source-line gutter, on the page's own document alone. */
+const hostLines: MarkdownPlugin = { ...SOURCE_LINES, inherited: false };
+
+const CONTEXT_PLUGINS = [
+  band,
+  markdownEmbeds({ resolve: resolveFile }),
+  hostLines,
+];
 const CONTEXT_RENDERERS = withRenderers(
   pluginNames,
   markdownContent(),
@@ -435,7 +442,7 @@ const decorate: MarkdownPlugin = {
   ),
 };
 
-// A module constant: a fresh array makes <Markdown> reparse and remount.
+// A module constant: a fresh array makes <Markdown> reparse.
 const plugins = [decorate];
 
 <Markdown plugins={plugins}>{source}</Markdown>`;
@@ -511,10 +518,14 @@ const plugins = [attachmentLinks({ resolve }), externalLinks()];
 
 <Markdown plugins={plugins}>{source}</Markdown>`;
 
-const CONTEXT_SNIPPET = `import { MarkdownPluginsContext } from "@orz/ui-markdown";
+const CONTEXT_SNIPPET = `import { type MarkdownPlugin, MarkdownPluginsContext } from "@orz/ui-markdown";
 import { useContext } from "react";
 
-const plugins = useContext(MarkdownPluginsContext); // the enclosing <Markdown>'s plugins; undefined outside one`;
+// A document embedded in the one this is passed to is drawn without it.
+const sourceLines: MarkdownPlugin = { name: "source-lines", inherited: false, … };
+
+// What a document embedded in the enclosing <Markdown> is drawn with; undefined outside one.
+const plugins = useContext(MarkdownPluginsContext);`;
 
 const code = (snippet: string) => ({
   docs: { source: { code: snippet, language: "tsx" } },
@@ -641,8 +652,10 @@ export const ExternalLinks: Story = {
 };
 
 /**
- * The plugins of the enclosing `<Markdown>`, for a renderer drawn inside it. `markdownContent`
- * reads it, so an embedded document is drawn with its host's plugins: both headings are banded.
+ * The plugins of the enclosing `<Markdown>` that a document embedded in it inherits, for a
+ * renderer drawn inside it. `markdownContent` reads it, so an embedded document is drawn with its
+ * host's plugins: both headings are banded. The source-line gutter is marked `inherited: false`,
+ * so the embedded document has none.
  */
 export const MarkdownPluginsContext: Story = {
   args: { children: CONTEXT_DOC },

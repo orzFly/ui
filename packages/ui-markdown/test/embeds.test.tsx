@@ -64,6 +64,59 @@ describe("an embedded markdown file", () => {
     );
   });
 
+  it("is drawn without the host's plugins marked inherited: false (UI-236)", async () => {
+    const own: MarkdownPlugin = {
+      name: "own",
+      inherited: false,
+      components: {
+        p: ({ Next, ...props }) => <Next {...props} data-own="" />,
+      },
+    };
+    const { container } = render(
+      <ContentRenderers renderers={RENDERERS}>
+        <Markdown plugins={[...PLUGINS, own]}>
+          {"Host body.\n\n![outer](files/outer.md)"}
+        </Markdown>
+      </ContentRenderers>,
+    );
+    await settle();
+    expect(
+      [...container.querySelectorAll("p[data-own]")].map((p) => p.textContent),
+    ).toEqual(["Host body."]);
+    const nested = container.querySelector(".markdown-body .markdown-body");
+    expect(nested?.querySelector("p[data-marked]")?.textContent).toBe(
+      "Outer body.",
+    );
+  });
+
+  it("is not drawn again when only the host's own plugins change (UI-236)", async () => {
+    let parses = 0;
+    const counting: MarkdownPlugin = {
+      name: "counting",
+      remarkPlugins: [
+        () => (_tree: unknown, file: { value: unknown }) => {
+          if (file.value === FILES["outer.md"]) parses++;
+        },
+      ],
+    };
+    const own = (): MarkdownPlugin => ({ name: "own", inherited: false });
+    const tree = (plugins: MarkdownPlugin[]) => (
+      <ContentRenderers renderers={RENDERERS}>
+        <Markdown plugins={plugins}>{"![outer](files/outer.md)"}</Markdown>
+      </ContentRenderers>
+    );
+    const { container, rerender } = render(tree([...PLUGINS, counting, own()]));
+    await settle();
+    const text = () =>
+      container.querySelector(".markdown-body .markdown-body p")?.firstChild;
+    const before = text();
+    expect(parses).toBe(1);
+    rerender(tree([...PLUGINS, counting, own()]));
+    await settle();
+    expect(parses).toBe(1);
+    expect(text()).toBe(before);
+  });
+
   it("starts its headings a level below its host's (UI-256)", async () => {
     render(
       <ContentRenderers renderers={RENDERERS}>
