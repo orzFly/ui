@@ -110,6 +110,9 @@ function Toolbar({
   dir,
   className,
   children,
+  ref,
+  onFocus,
+  onBlur,
   ...props
 }: Omit<React.ComponentProps<"div">, "dir"> & {
   /** The side that meets the pane beside it, where the default style rules it off. */
@@ -155,6 +158,19 @@ function Toolbar({
       "Toolbar: what is pinned to it does not fit even alone, so it scrolls. Give a pinned part a form in the ⋯ menu, or a lower priority.",
     );
   }, [result.scrollable]);
+  React.useLayoutEffect(() => {
+    // Read from the document, not the context, which reaches into a surface
+    // a part opens, where a toolbar of its own is fine.
+    if (
+      !dev() ||
+      !store.pane?.parentElement?.closest("[data-slot=toolbar-row]")
+    )
+      return;
+    console.warn(
+      "Toolbar: it stands in another toolbar's row, so it draws a second bar, a second Tab stop and a second ⋯. Give its parts to the outer toolbar directly (a SelectionBar's `idle` or `children`).",
+      store.pane,
+    );
+  }, [store]);
 
   const internal = React.useMemo<ToolbarInternal>(
     () => ({ store, size, labelCollapse }),
@@ -198,6 +214,7 @@ function Toolbar({
     },
     [store],
   );
+  const rootRef = useComposedRef(ref, paneRef);
   const shellRef = React.useCallback(
     (el: HTMLDivElement | null) => {
       store.shell = el;
@@ -214,7 +231,7 @@ function Toolbar({
   const bar = (
     <Pane purpose="toolbar" edge={edge} frame={frame} asChild>
       <ToolbarPrimitive.Root
-        ref={paneRef}
+        ref={rootRef}
         loop={loop}
         dir={dir}
         data-slot="toolbar"
@@ -228,6 +245,14 @@ function Toolbar({
           fit && "w-fit max-w-full",
           className,
         )}
+        onFocus={(event) => {
+          onFocus?.(event);
+          store.focusIn(event);
+        }}
+        onBlur={(event) => {
+          onBlur?.(event);
+          store.focusOut(event);
+        }}
         {...props}
       >
         <div
@@ -239,10 +264,11 @@ function Toolbar({
             "relative flex min-w-0 flex-1 items-center gap-[inherit] data-relayout:**:transition-none",
             // Before the bar is measured (a prerendered page), what does not
             // fit wraps onto a line of its own, cut off, rather than show
-            // half a button.
+            // half a button. A bar that holds something taller than its
+            // controls (SelectionBar's box) sets `--toolbar-row-cap` to it.
             hydrated
               ? "flex-nowrap"
-              : "max-h-control flex-wrap overflow-hidden touch:max-h-field-touch",
+              : "max-h-[var(--toolbar-row-cap,var(--spacing-control))] flex-wrap overflow-hidden touch:max-h-[var(--toolbar-row-cap,var(--spacing-field-touch))]",
             result.takeover &&
               "[&>*:not([data-slot=toolbar-search],[data-toolbar-internal])]:hidden",
           )}

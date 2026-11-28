@@ -44,6 +44,7 @@ import {
   slotProps,
   ToolbarItemContext,
   type ToolbarPriority,
+  UnitLabelsContext,
   useToolbarUnit,
 } from "./toolbar/store.ts";
 
@@ -1296,19 +1297,23 @@ export function FilterMenu<R extends FilterMenuRow>({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       {unit.registered ? (
-        <ToolbarItemContext.Provider value={unit.item}>
-          <span
-            ref={unit.ref}
-            {...slotProps(overflowed)}
-            data-slot="toolbar-item"
-            className={cn(
-              "inline-flex shrink-0 items-center",
-              overflowed && OUT_OF_FLOW,
-            )}
-          >
-            <RovingTaken.Provider value>{triggerPart}</RovingTaken.Provider>
-          </span>
-        </ToolbarItemContext.Provider>
+        // A ToolbarButton given as the trigger hides its words to fit as
+        // any command's do, counted with this part's width.
+        <UnitLabelsContext.Provider value={unit.labels}>
+          <ToolbarItemContext.Provider value={unit.item}>
+            <span
+              ref={unit.ref}
+              {...slotProps(overflowed)}
+              data-slot="toolbar-item"
+              className={cn(
+                "inline-flex shrink-0 items-center",
+                overflowed && OUT_OF_FLOW,
+              )}
+            >
+              <RovingTaken.Provider value>{triggerPart}</RovingTaken.Provider>
+            </span>
+          </ToolbarItemContext.Provider>
+        </UnitLabelsContext.Provider>
       ) : (
         triggerPart
       )}
