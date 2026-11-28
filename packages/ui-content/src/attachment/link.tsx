@@ -54,8 +54,8 @@ export function AttachmentLink({
   return (
     <LinkChip
       href={href === "" ? undefined : href}
-      // The label is the chip's truncating child, so a long filename is cut
-      // where it used to wrap and stay whole.
+      // The chip truncates its label, so a long filename is cut where it
+      // used to wrap and stay whole.
       title={file.name}
       icon={fileIcon(file)}
       boxed={boxed}

@@ -14,11 +14,18 @@ export const RICH_CHIP_SKIN =
   "rounded-[min(var(--radius-chip),6px)] border bg-muted/40 px-[0.3em] py-px no-underline hover:border-ring hover:bg-muted focus-visible:focus-ring focus-visible:outline-offset-1";
 
 /**
- * `items-baseline` is what puts the chip's label baseline on the paragraph's:
- * every child then shares one baseline, and the container reports it as its
- * own. Measured at 1024px and 390px, the label sits 0.00px off the
- * surrounding text; `align-items: center` or the flex default puts it 2.39px
- * out.
+ * `inline-block`, not `inline-flex`: Chromium copies each flex item as a block
+ * of its own, so a sentence with a chip in it pasted with a line break before
+ * and after the label (UI-292). Everything inside is inline, and the chip
+ * itself is what truncates.
+ *
+ * `overflow-x-clip` is what lets it. `text-overflow` wants the box to clip,
+ * and `hidden` would make it a scroll container, whose baseline CSS puts at
+ * its bottom margin edge; a box that only clips keeps its line's baseline, so
+ * the label still sits on the paragraph's: measured at most 0.01px off the
+ * surrounding text in Chromium, Firefox and WebKit, as the flex chip was
+ * (T-460). Only the x axis, so a descender below the line is drawn rather
+ * than cut.
  *
  * `leading-[1.2]` is how tall the chip is drawn. Against the body's 1.6 it
  * has room to spare, and vscode's 1.25 does not — that one overruns the line
@@ -31,29 +38,32 @@ export const RICH_CHIP_SKIN =
  * neighbour (T-498). A line box measures an atomic inline by its margin box,
  * so giving those 4px back as margin is what the line reads, while the
  * border box still paints where the baseline puts it: unchanged at the
- * body's 22.39px, and T-460's 0.00px label baseline with it. The 2px is the
- * skin's own border and padding per side, so neither may move without this
+ * body's 22.39px, and the label's baseline with it. The 2px is the skin's
+ * own border and padding per side, so neither may move without this
  * following.
  */
 export const RICH_CHIP_STRUCTURE =
-  "inline-flex max-w-full items-baseline gap-[0.24em] align-baseline -my-[2px] leading-[1.2] whitespace-nowrap";
+  "inline-block max-w-full overflow-x-clip text-ellipsis align-baseline -my-[2px] leading-[1.2] whitespace-nowrap";
 
 /**
- * `self-center` sits the icon beside the text rather than above it: an SVG
- * has no baseline of its own, so under `items-baseline` it would hang its
- * whole box off the shared one, 1px taller a chip with the glyph riding high.
+ * `align-top` and `mt-[0.1em]` centre the 1em icon on the chip's 1.2em line,
+ * which is where the label's box is: an SVG has no baseline of its own, and
+ * `align-middle` centres it half an x-height above the baseline instead, which
+ * is not the line's middle. Its margin box stays inside the line, so the line
+ * is no taller.
  *
  * `1em`, because a chip inside a heading is drawn at the heading's font size
  * and a glyph in `rem` stays at the body's — 14px beside 28px text (T-495).
+ * The gap is a margin rather than a space, so a copied chip is its label.
  */
-export const RICH_CHIP_ICON = "inline size-[1em] self-center";
+export const RICH_CHIP_ICON =
+  "inline size-[1em] align-top mt-[0.1em] mr-[0.24em]";
 
 /**
- * `overflow: hidden` degrades an inline box's baseline to its bottom edge but
- * leaves a flex item's alone, which is why the label is a child of the chip
- * rather than the chip itself.
+ * @deprecated The chip truncates its own label now that it is not a flex
+ * box (see RICH_CHIP_STRUCTURE); a label needs no classes.
  */
-export const RICH_CHIP_LABEL = "min-w-0 flex-initial truncate";
+export const RICH_CHIP_LABEL = "";
 
 /** @deprecated Use `isPlainClick` from `@orz/ui/lib/link`. */
 export const isPlainLeftClick = isPlainClick;
@@ -85,7 +95,7 @@ export function LinkChip({
   const content = (label: React.ReactNode) => (
     <>
       {Icon && <Icon className={RICH_CHIP_ICON} />}
-      <span className={RICH_CHIP_LABEL}>{label}</span>
+      <span>{label}</span>
     </>
   );
   const chipProps = {

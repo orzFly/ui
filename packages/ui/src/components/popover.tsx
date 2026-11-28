@@ -1,6 +1,7 @@
 import { Popover as PopoverPrimitive } from "radix-ui";
 import type * as React from "react";
 import { useRef } from "react";
+import { roundedEdgePadding } from "../lib/collision-padding.ts";
 import { cn } from "../lib/utils.ts";
 
 function Popover({
@@ -52,7 +53,7 @@ function PopoverContent({
         align={align}
         sideOffset={sideOffset}
         sticky={sticky}
-        collisionPadding={collisionPadding}
+        collisionPadding={roundedEdgePadding(collisionPadding)}
         onOpenAutoFocus={(event) => {
           onOpenAutoFocus?.(event);
           // The trigger has to be found now, while the popover is open: unlike

@@ -1,5 +1,6 @@
 import { HoverCard as HoverCardPrimitive } from "radix-ui";
 import type * as React from "react";
+import { roundedEdgePadding } from "../lib/collision-padding.ts";
 import { cn } from "../lib/utils.ts";
 
 function HoverCard({
@@ -32,7 +33,7 @@ function HoverCardContent({
         data-slot="hover-card-content"
         align={align}
         sideOffset={sideOffset}
-        collisionPadding={collisionPadding}
+        collisionPadding={roundedEdgePadding(collisionPadding)}
         // `collisionPadding` moves a card, it cannot shrink one, so the fixed
         // `w-[28rem]` needs the cap beside it to survive a 390px viewport;
         // Radix has already deducted the padding from that variable.

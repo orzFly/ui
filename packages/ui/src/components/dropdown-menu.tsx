@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { roundedEdgePadding } from "../lib/collision-padding.ts";
 import { isModifiedClick } from "../lib/link.ts";
 import { cn } from "../lib/utils.ts";
 import {
@@ -198,7 +199,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         align={align}
         sticky={sticky}
-        collisionPadding={collisionPadding}
+        collisionPadding={roundedEdgePadding(collisionPadding)}
         onCloseAutoFocus={(event) => {
           onCloseAutoFocus?.(event);
           if (event.defaultPrevented) return;
@@ -1044,7 +1045,7 @@ function DropdownMenuSubContent({
     <DropdownMenuPrimitive.SubContent
       data-slot="dropdown-menu-sub-content"
       sticky={sticky}
-      collisionPadding={collisionPadding}
+      collisionPadding={roundedEdgePadding(collisionPadding)}
       className={cn(
         // A submenu is the one surface the collision middleware cannot rescue:
         // MenuSubContent hardwires side="right", and Radix configures shift
