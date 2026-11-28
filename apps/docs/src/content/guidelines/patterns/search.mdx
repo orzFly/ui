@@ -45,9 +45,12 @@ The box records nothing. Call `record` in `onSubmit`, where the app runs the sea
 else:
 
 - A query that names one thing and goes straight to it, an issue's number say, is a jump, not a
-  search. Do not record it.
+  search. Do not record it. Only Enter in the box with the panel showing and no row highlighted,
+  `{ from: "input", panelOpen: true }`, may jump.
+- The submit row asks for a search of exactly what was typed, and so does Enter after Escape hid
+  the panel (`panelOpen: false`). Search them as they are, even when they name one thing.
 - A submission the app refuses, a form field that fails its check, is not a search either.
-- A past query chosen from its row arrives with `fromHistory`. It was a search when it was
+- A past query chosen from its row arrives `from: "history"`. It was a search when it was
   recorded, so search it as it is, without asking again whether it names one thing.
 
 Record a query that ran, whichever way it came; it moves back to the top.

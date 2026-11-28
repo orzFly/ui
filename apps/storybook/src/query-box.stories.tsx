@@ -251,14 +251,14 @@ const meta = {
           setValue(next);
           args.onValueChange(next);
         }}
-        onSubmit={(query, chosen, fromHistory) => {
+        onSubmit={(query, submission) => {
           setValue(query);
           if (query !== "")
             setEntries((all) => [
               { q: query, t: Date.now() },
               ...all.filter((e) => e.q.toLowerCase() !== query.toLowerCase()),
             ]);
-          args.onSubmit(query, chosen, fromHistory);
+          args.onSubmit(query, submission);
         }}
       />
     );
@@ -326,10 +326,10 @@ export const StoredHistory: Story = {
           setValue(next);
           args.onValueChange(next);
         }}
-        onSubmit={(query, chosen, fromHistory) => {
+        onSubmit={(query, submission) => {
           history.record(query);
           setValue(query);
-          args.onSubmit(query, chosen, fromHistory);
+          args.onSubmit(query, submission);
         }}
       />
     );
