@@ -139,6 +139,9 @@ holds that window's page still, while the main window scrolls as before.
   plain click goes there and closes the menu; a click with a modifier, a middle click or a right
   click is the browser's (a new tab, a window, a download), and the menu stays open. A
   `FilterMenu` row that goes somewhere is a link the same way, through `rowLink`.
+- A submenu's trigger can go somewhere too, a `DropdownMenuSubTrigger` with `asChild` around an
+  `a`, such as **New task** going to a new task in this project and its submenu to one in another.
+  Hovering it or pressing → opens the submenu; a click goes there as a menu item's link does.
 
 ### Touch
 
@@ -146,6 +149,9 @@ holds that window's page still, while the main window scrolls as before.
   copy of anything.
 - A submenu's filter box takes the focus only when tapped, so the on-screen keyboard does not rise
   over the rows it filters.
+- A tap on a submenu's trigger opens the submenu, even when the trigger is a link: a finger has no
+  hover to open it with. Make the trigger's own place the submenu's first row, so a phone still
+  reaches it.
 - A Sheet is the phone's side panel: the site's own navigation on a phone is one. Prefer it over
   a Popover for anything longer than a field or two, where the on-screen keyboard would cover a
   Popover.

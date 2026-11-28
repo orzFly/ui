@@ -376,7 +376,7 @@ const completion = completionWith([mentions], {
 
 /**
  * Type `@` for the stub mention source. A person's row draws an avatar with
- * React (`reactOption`) where the type icon stands, in a taller row
+ * React (`reactOption`) where the type icon stands, sized to the row's line
  * (`completionRowClass.drawn`). An accepted mention leaves a space that punctuation typed next replaces.
  */
 export const Completion: Story = {

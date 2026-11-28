@@ -18,7 +18,13 @@ import {
 } from "@orz/ui/components/dropdown-menu";
 import { MatchedText, matchText } from "@orz/ui/components/filter-menu";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { CopyIcon, FolderInputIcon, PencilIcon, TrashIcon } from "lucide-react";
+import {
+  CopyIcon,
+  FolderInputIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { fn } from "storybook/test";
 
@@ -133,6 +139,39 @@ export const FilteredSubmenu: Story = {
       </DropdownMenu>
     );
   },
+};
+
+export const LinkSubTrigger: Story = {
+  render: (args) => (
+    <DropdownMenu {...args}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline">Actions</Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56">
+        <DropdownMenuItem>
+          <PencilIcon /> Edit
+        </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger asChild>
+            <a href="#new-atl">
+              <PlusIcon /> New task
+            </a>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {PROJECTS.slice(0, 5).map((project) => (
+              <DropdownMenuItem key={project.key} asChild>
+                <a href={`#new-${project.key.toLowerCase()}`}>{project.name}</a>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive">
+          <TrashIcon /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ),
 };
 
 export const Inset: Story = {

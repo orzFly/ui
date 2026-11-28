@@ -73,6 +73,16 @@ describe("completion rows drawn by React", () => {
     ).toEqual(["A", "B", null]);
   });
 
+  it("sizes an avatar in a drawn row to the row's line", async () => {
+    const { container } = mount();
+    await open(container);
+    const drawn = container.querySelector<HTMLElement>("[data-avatar]");
+    if (drawn === null) throw new Error("no avatar drawn");
+    drawn.dataset.slot = "avatar";
+    expect(getComputedStyle(drawn).width).toBe("18px");
+    expect(getComputedStyle(drawn).height).toBe("18px");
+  });
+
   it("unmounts a part's root once its row has left the DOM", async () => {
     const { container } = mount();
     await open(container);

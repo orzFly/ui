@@ -41,6 +41,14 @@
       padding-block: 1px;
     }
   }
+  /* An avatar at the style's own small size, as in a QueryBox, which fills
+     that tight row exactly. */
+  & > ul > li.cm-completion-drawn .cm-completionPart > [data-slot="avatar"] {
+    @variant raymond {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
   & > ul > li:not([aria-selected]):hover {
     @variant raymond {
       background-color: transparent;

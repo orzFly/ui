@@ -22,6 +22,8 @@ import { ChoiceMark, MARK_ROOM, MarkPlace } from "./dropdown-menu/mark.tsx";
 const OpenContext = createContext<{
   open: boolean;
   setOpen: (open: boolean) => void;
+  /** Whether the menu is open as of the last `setOpen`, ahead of the render it asks for. */
+  live: React.RefObject<boolean>;
 } | null>(null);
 
 /** From `DropdownMenuSub` to its trigger and content. */
@@ -107,12 +109,17 @@ function DropdownMenu({
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const open = openProp ?? uncontrolled;
+  const live = useRef(open);
+  useLayoutEffect(() => {
+    live.current = open;
+  });
   const setOpen = (next: boolean) => {
+    live.current = next;
     if (openProp === undefined) setUncontrolled(next);
     onOpenChange?.(next);
   };
   return (
-    <OpenContext.Provider value={{ open, setOpen }}>
+    <OpenContext.Provider value={{ open, setOpen, live }}>
       <DropdownMenuPrimitive.Root
         data-slot="dropdown-menu"
         open={open}
@@ -439,9 +446,14 @@ function DropdownMenuSub({
   onOpenChange,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
+  const menu = useContext(OpenContext);
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const open = openProp ?? uncontrolled;
   const setOpen = (next: boolean) => {
+    // A plain click on a trigger that is a link closes the whole menu, and
+    // Radix then opens the submenu from that same click: drawn, it would
+    // flash open over the menu fading out.
+    if (next && menu?.live.current === false) return;
     if (openProp === undefined) setUncontrolled(next);
     onOpenChange?.(next);
   };
@@ -480,6 +492,14 @@ const typesIntoBox = (event: React.KeyboardEvent) =>
   !event.altKey &&
   !isComposing(event.nativeEvent);
 
+/**
+ * A trigger that is also a place (`asChild` around an `a[href]`) goes there
+ * as a `DropdownMenuItem` link does: a plain click goes and closes the whole
+ * menu, even when the link's own `onClick` handled it in place, and a click
+ * with a modifier is the browser's, the menu staying open. A tap with a
+ * finger or a pen opens the submenu and goes nowhere. Hovering, → and Enter
+ * open it as on any trigger.
+ */
 function DropdownMenuSubTrigger({
   className,
   inset,
@@ -488,17 +508,24 @@ function DropdownMenuSubTrigger({
   onPointerMove,
   onFocus,
   onKeyDown,
+  onClickCapture,
+  onClick,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
   inset?: boolean;
 }) {
   const sub = useContext(SubContext);
+  const menu = useContext(OpenContext);
+  // The pointerType of the press the coming click ends; null after a key.
+  const pressedWith = useRef<string | null>(null);
+  // Whether the click being handled is a tap the capture phase took over.
+  const tapped = useRef(false);
   return (
     <DropdownMenuPrimitive.SubTrigger
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground data-open:state-cue [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex cursor-default items-center gap-1.5 rounded-item px-1.5 py-1 text-ui min-h-row touch:min-h-touch raymond:py-0.5 raymond:touch:py-1 outline-hidden select-none raymond:[--accent-foreground:var(--primary-foreground)] raymond:[--accent:var(--primary)] focus:bg-accent focus:text-accent-foreground focus:state-cue not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground data-open:state-cue data-disabled:pointer-events-none data-disabled:opacity-50 raymond:data-disabled:opacity-100 raymond:data-disabled:text-(--3d-shadow) raymond:data-disabled:[text-shadow:1px_1px_var(--3d-highlight)] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -507,7 +534,42 @@ function DropdownMenuSubTrigger({
       {...(sub?.filtered ? { "aria-haspopup": "dialog" as const } : {})}
       onPointerDown={(event) => {
         onPointerDown?.(event);
+        pressedWith.current = event.pointerType;
         if (sub !== null) sub.opener.current = event.pointerType;
+      }}
+      onClickCapture={(event) => {
+        onClickCapture?.(event);
+        const by = pressedWith.current;
+        tapped.current = false;
+        if (
+          (by !== "touch" && by !== "pen") ||
+          sub === null ||
+          props.disabled ||
+          event.defaultPrevented ||
+          isModifiedClick(event) ||
+          !event.currentTarget.matches("a[href]")
+        ) {
+          return;
+        }
+        // Radix opens a submenu only from a hover, which a finger has none
+        // of, or a click, which on a link would go first. In the capture
+        // phase the click is stopped before the link's own onClick, which a
+        // router's link skips once the click is handled.
+        event.preventDefault();
+        tapped.current = true;
+        event.currentTarget.focus({ preventScroll: true });
+        if (!sub.open) sub.setOpen(true);
+      }}
+      onClick={(event) => {
+        onClick?.(event);
+        const tap = tapped.current;
+        tapped.current = false;
+        pressedWith.current = null;
+        if (tap || props.disabled || !event.currentTarget.matches("a[href]")) {
+          return;
+        }
+        // Radix closes nothing from a trigger's click.
+        if (!isModifiedClick(event)) menu?.setOpen(false);
       }}
       onPointerMove={(event) => {
         onPointerMove?.(event);
@@ -526,6 +588,7 @@ function DropdownMenuSubTrigger({
       }}
       onKeyDown={(event) => {
         onKeyDown?.(event);
+        pressedWith.current = null;
         if (sub === null) return;
         sub.opener.current = null;
         const box = sub.box.current;
