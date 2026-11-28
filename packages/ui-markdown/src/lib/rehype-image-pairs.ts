@@ -1,4 +1,5 @@
 import type { Element, ElementContent, Root } from "hast";
+import { isSoftBreak } from "./markdown-processor.ts";
 
 /**
  * Marks the `<img>` that stands for a whole pair, as React hands it to an
@@ -23,12 +24,18 @@ const ARROW = /^\s*(?:→|->)\s*$/;
  * `->`) and an image, with nothing but whitespace and soft breaks around
  * them. `@orz/ui-codemirror`'s image-pairs extension holds the editor to the
  * same rule, and both are tested against one table of cases.
+ *
+ * Under `<Markdown breaks>` a soft break is a `<br>` (`isSoftBreak`), which
+ * counts as whitespace; a hard break the author wrote stops a pair, as the
+ * editor, which sees it in the source, says too.
  */
 export function imagePairOf(
   children: ElementContent[],
 ): { before: Element; after: Element } | null {
   const kids = children.filter(
-    (child) => !(child.type === "text" && child.value.trim() === ""),
+    (child) =>
+      !(child.type === "text" && child.value.trim() === "") &&
+      !isSoftBreak(child),
   );
   if (kids.length !== 3) return null;
   const [before, arrow, after] = kids;

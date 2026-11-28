@@ -42,11 +42,31 @@ function load(root: ParentNode, width = 720, height = 400) {
 }
 
 describe("imagePairs", () => {
-  it.each(IMAGE_PAIR_CASES)("$name → pair: $pair", ({ markdown, pair }) => {
+  // Under breaks a single newline is a <br>, and the rule gives both kinds of
+  // text one answer (UI-233).
+  it.each(
+    [false, true].flatMap((breaks) =>
+      IMAGE_PAIR_CASES.map((c) => ({ ...c, breaks })),
+    ),
+  )("breaks $breaks: $name → pair: $pair", ({ markdown, pair, breaks }) => {
     const { container } = render(
-      <Markdown plugins={PLUGINS}>{markdown}</Markdown>,
+      <Markdown plugins={PLUGINS} breaks={breaks}>
+        {markdown}
+      </Markdown>,
     );
     expect(compares(container).length > 0).toBe(pair);
+  });
+
+  it("leaves no break of a pair written across lines under breaks", () => {
+    const { container } = render(
+      <Markdown plugins={PLUGINS} breaks>
+        {
+          "- ![a](/a.png)\n  →\n  ![b](/b.png)\n\n![a](/a.png)\n→ ![b](/b.png)\n"
+        }
+      </Markdown>,
+    );
+    expect(compares(container)).toHaveLength(2);
+    expect(container.querySelector("br")).toBeNull();
   });
 
   it("draws one comparison in a paragraph that is a div, labelled by its alts", () => {

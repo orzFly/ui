@@ -424,6 +424,55 @@ describe("fences", () => {
   });
 });
 
+describe("breaks (UI-233)", () => {
+  it("draws a single newline as a space, and as a line break under breaks", () => {
+    const plain = render(<Markdown>{"a\nb"}</Markdown>).container;
+    expect(plain.querySelector("p br")).toBeNull();
+    expect(plain.querySelector("p")?.textContent).toBe("a\nb");
+    const broken = render(<Markdown breaks>{"a\nb"}</Markdown>).container;
+    expect(broken.querySelectorAll("p br")).toHaveLength(1);
+  });
+
+  it.each([false, true])(
+    "keeps a hard break one break (breaks %s)",
+    (breaks) => {
+      const { container } = render(
+        <Markdown breaks={breaks}>{"a  \nb\\\nc"}</Markdown>,
+      );
+      expect(container.querySelectorAll("p br")).toHaveLength(2);
+    },
+  );
+
+  it("leaves code alone", () => {
+    const { container } = render(
+      <Markdown breaks>{"`a\nb`\n\n```\nc\nd\n```"}</Markdown>,
+    );
+    expect(container.querySelector("br")).toBeNull();
+  });
+
+  it("does not reach a <Markdown> inside it", () => {
+    const nested: MarkdownPlugin = {
+      name: "nested",
+      components: {
+        p: ({ Next, ...props }) =>
+          props.children === "nest" ? (
+            <Markdown>{"c\nd"}</Markdown>
+          ) : (
+            <Next {...props} />
+          ),
+      },
+    };
+    const { container } = render(
+      <Markdown plugins={[nested]} breaks>
+        {"a\nb\n\nnest"}
+      </Markdown>,
+    );
+    const [outer, inner] = container.querySelectorAll("p");
+    expect(outer?.querySelectorAll("br")).toHaveLength(1);
+    expect(inner?.textContent).toBe("c\nd");
+  });
+});
+
 describe("the root", () => {
   it("adds className to .markdown-body and forwards ref", () => {
     let node: HTMLDivElement | null = null;

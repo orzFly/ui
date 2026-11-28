@@ -12,7 +12,10 @@ import {
 import ReactMarkdown, { type Components } from "react-markdown";
 import type { PluggableList } from "unified";
 import { fenceTitle } from "./lib/fence-meta.ts";
-import { MARKDOWN_SYNTAX_PLUGINS } from "./lib/markdown-processor.ts";
+import {
+  MARKDOWN_SYNTAX_PLUGINS,
+  MESSAGE_SYNTAX_PLUGINS,
+} from "./lib/markdown-processor.ts";
 import { rehypeDetails } from "./lib/rehype-details.ts";
 import { rehypeHeadingLevels } from "./lib/rehype-heading-levels.ts";
 import {
@@ -307,6 +310,11 @@ export type MarkdownProps = {
    * else 1.
    */
   headingLevel?: number;
+  /**
+   * A single newline inside a paragraph is a line break, as in a GitHub comment, rather than a
+   * space (default off). A document embedded in this one keeps its newlines spaces.
+   */
+  breaks?: boolean;
   ref?: Ref<HTMLDivElement>;
 };
 
@@ -318,7 +326,8 @@ export type MarkdownProps = {
  *
  * A document drawn inside another, such as a file `markdownContent` embeds, starts its headings a
  * level below its host's `#` (`headingLevel`), so its title sits under the host's and the page
- * keeps one outline. It is drawn with its host's plugins, except those marked `inherited: false`.
+ * keeps one outline. It is drawn with its host's plugins, except those marked `inherited: false`,
+ * and never with its host's `breaks`: it is a file, whatever text it sits in.
  *
  * Keep `plugins` stable. A fresh array, or a fresh plugin object in it, makes react-markdown
  * reparse the document. React keeps each element mounted as long as the wrappers its tag goes
@@ -337,6 +346,7 @@ export const Markdown = memo(function Markdown({
   className,
   collapseLongFences,
   headingLevel,
+  breaks = false,
   ref,
 }: MarkdownProps) {
   // Unset, a document embedded in another follows its host.
@@ -362,10 +372,10 @@ export const Markdown = memo(function Markdown({
   // to the plugin lists react-markdown compares.
   const remarkPlugins = useMemo<PluggableList>(
     () => [
-      ...MARKDOWN_SYNTAX_PLUGINS,
+      ...(breaks ? MESSAGE_SYNTAX_PLUGINS : MARKDOWN_SYNTAX_PLUGINS),
       ...plugins.flatMap((plugin) => plugin.remarkPlugins ?? []),
     ],
-    [plugins],
+    [plugins, breaks],
   );
   const rehypePlugins = useMemo<PluggableList>(
     () => [

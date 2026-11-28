@@ -39,6 +39,7 @@ import { Markdown } from "@orz/ui-markdown";
 <Markdown>{source}</Markdown>
 <Markdown plugins={plugins} className="text-sm" ref={rootRef}>{source}</Markdown>
 <Markdown headingLevel={2}>{source}</Markdown>
+<Markdown breaks>{comment}</Markdown>
 ```
 
 The fixed chain is: GFM; links whose protocol react-markdown refuses, drawn as their source text;
@@ -49,6 +50,12 @@ a different chain composes react-markdown with the `lib/*` pieces below.
 `headingLevel` is the level a `#` heading is drawn at, 1 by default; every deeper heading moves down
 with it, stopping at `h6`, and the styles follow the tag drawn. A `<Markdown>` inside another, as an
 embedded file is, starts a level below its host's `#`, so the page keeps one outline.
+
+`breaks` draws a single newline inside a paragraph as a line break, as GitHub does in a comment,
+rather than as a space; a hard break (two trailing spaces, or a backslash) is one either way, and
+code is left alone. A file embedded in such a text keeps its newlines spaces. Where a soft break
+follows a block embed, `markdownEmbeds` drops it: the embed already ends its line. An image pair may
+still run across lines.
 
 A `<pre>` holding one `<code>` is a code block. It renders inside
 `<div class="markdown-fence">`, which carries the `<pre>`'s classes and, under `rehypeSourceLines`,
@@ -200,7 +207,7 @@ refuses is drawn as source text before `resolve` sees it: use relative addresses
 | Import | Contents |
 |---|---|
 | `@orz/ui-markdown` | `Markdown`, `MarkdownPluginsContext`, `markdownEmbeds`, `attachmentLinks`, `externalLinks`, `isExternalHref`, `imagePairs`, `markdownContent`, `MARKDOWN_RENDER_MAX_CHARS`, `fenceTitle`, types (`MarkdownPlugin`, `FenceProps`, `ElementProps`, …) |
-| `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `parseMarkdown` |
+| `@orz/ui-markdown/lib/markdown-processor` | `MARKDOWN_SYNTAX_PLUGINS`, `MESSAGE_SYNTAX_PLUGINS`, `isSoftBreak`, `parseMarkdown` |
 | `@orz/ui-markdown/lib/remark-frontmatter-table` | `remarkFrontmatterTable`, `frontmatterFields`, `FRONTMATTER_FLAVOURS`, node types |
 | `@orz/ui-markdown/lib/remark-rejected-urls` | `remarkRejectedUrlsAsText` |
 | `@orz/ui-markdown/lib/rehype-source-lines` | `rehypeSourceLines`, `SOURCE_LINE_ATTR`, `CODE_CONTENT_START_ATTR`, `parseSourceLoc` |

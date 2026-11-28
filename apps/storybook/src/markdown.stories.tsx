@@ -256,6 +256,25 @@ const plugins = [markdownEmbeds({ resolve })];
 // \`#\` is an h2 here, and the guide's own \`#\` an h3.
 <Markdown headingLevel={2} plugins={plugins}>{source}</Markdown>`;
 
+const BREAKS_DOC = `Merged, thanks. Two things before the release:
+- the appendix still lists the old kinds
+- Save moved, so the screenshots need redoing
+
+The appendix as it stands:
+![appendix](files/appendix.md)
+I will update it tomorrow.
+
+![v1](files/settings-before.svg)
+→ ![v2](files/settings-after.svg)
+`;
+
+const BREAKS_SNIPPET = `import { imagePairs, Markdown, markdownEmbeds } from "@orz/ui-markdown";
+
+const plugins = [imagePairs({ resolve }), markdownEmbeds({ resolve })];
+
+// A comment, typed into a box: each newline its author typed is a line break.
+<Markdown breaks plugins={plugins}>{comment}</Markdown>`;
+
 /** In-memory documents, addressed as `files/<name>`: react-markdown refuses a `file:` URL. */
 const FILES: Record<string, string> = {
   "overview.md": `## Overview
@@ -585,6 +604,18 @@ export const HeadingLevel: Story = {
   render: (args) => <Markdown {...args} plugins={EMBED_PLUGINS} />,
   decorators: ATTACHMENTS,
   parameters: code(HEADING_SNIPPET),
+};
+
+/**
+ * `breaks` draws each newline its author typed as a line break, as GitHub draws a comment. None
+ * is left under a block embed, which ends its own line, and a pair still pairs across lines. The
+ * embedded file keeps its own newlines spaces.
+ */
+export const Breaks: Story = {
+  args: { children: BREAKS_DOC, breaks: true },
+  render: (args) => <Markdown {...args} plugins={PAIR_PLUGINS} />,
+  decorators: ATTACHMENTS,
+  parameters: code(BREAKS_SNIPPET),
 };
 
 /** Raw HTML and refused links are shown as what was typed. */

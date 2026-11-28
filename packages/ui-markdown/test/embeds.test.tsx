@@ -23,6 +23,7 @@ const FILES: Record<string, string> = {
   "inner.md": "Inner body.\n\n![deepest](files/deepest.md)",
   "deepest.md": "Deepest body.",
   "titled.md": "# Embedded\n\n## Embedded part",
+  "lines.md": "First line\nsecond line",
 };
 
 const loaders = new Map(
@@ -294,6 +295,72 @@ describe("paragraphs carrying embeds", () => {
       <Markdown plugins={PLUGINS}>{"See ![outer](files/outer.md)"}</Markdown>,
     );
     expect(container.querySelector("p > img")).not.toBeNull();
+  });
+});
+
+describe("a block embed under breaks (UI-233)", () => {
+  const chip: ContentRenderer = {
+    name: "chip",
+    accepts: (s) => s.kind === "file" && s.name.endsWith(".chip"),
+    display: "inline",
+    Component: ({ source }) => (
+      <span data-chip="">{source.kind === "file" ? source.name : ""}</span>
+    ),
+  };
+  const draw = (text: string, renderers = RENDERERS) =>
+    render(
+      <ContentRenderers renderers={renderers}>
+        <Markdown plugins={PLUGINS} breaks>
+          {text}
+        </Markdown>
+      </ContentRenderers>,
+    ).container;
+  /** Breaks in the element itself, not in a document it embeds. */
+  const ownBreaks = (container: HTMLElement, selector: string) =>
+    container.querySelectorAll(`.markdown-body > ${selector} > br`).length;
+
+  it("leaves no break between two embeds on consecutive lines", () => {
+    const container = draw(
+      "![outer](files/outer.md)\n![inner](files/inner.md)",
+    );
+    expect(ownBreaks(container, ".markdown-paragraph")).toBe(0);
+  });
+
+  it("leaves no break between an embed and the text under it", () => {
+    const container = draw("![outer](files/outer.md)\nafter");
+    expect(ownBreaks(container, ".markdown-paragraph")).toBe(0);
+    expect(container.textContent).toContain("after");
+  });
+
+  it("keeps the break between text and the embed under it", () => {
+    const container = draw("before\n![outer](files/outer.md)");
+    expect(ownBreaks(container, ".markdown-paragraph")).toBe(1);
+  });
+
+  it("keeps a hard break the author wrote after an embed", () => {
+    const container = draw("![outer](files/outer.md)  \nafter");
+    expect(ownBreaks(container, ".markdown-paragraph")).toBe(1);
+  });
+
+  it("does the same in a tight list item", () => {
+    const container = draw(
+      "- before\n  ![outer](files/outer.md)\n  after\n- next",
+    );
+    expect(ownBreaks(container, "ul > li")).toBe(1);
+  });
+
+  it("keeps the break between two inline embeds", () => {
+    const container = draw("![a](files/a.chip)\n![b](files/b.chip)", [chip]);
+    expect(ownBreaks(container, "p")).toBe(1);
+  });
+
+  it("draws an embedded document's own newlines as spaces", async () => {
+    const container = draw("before\nafter\n\n![lines](files/lines.md)");
+    await settle();
+    expect(ownBreaks(container, "p")).toBe(1);
+    const nested = container.querySelector(".markdown-body .markdown-body p");
+    expect(nested?.textContent).toBe(FILES["lines.md"]);
+    expect(nested?.querySelector("br")).toBeNull();
   });
 });
 
