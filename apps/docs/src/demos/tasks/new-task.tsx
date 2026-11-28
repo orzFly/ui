@@ -1,4 +1,4 @@
-import { TASK_LABEL_COLORS, TASK_PEOPLE } from "@orz/fixtures/tasks.ts";
+import { TASK_PEOPLE } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@orz/ui/components/select";
 import { useState } from "react";
+import { labelColor } from "./board.ts";
 
 export interface NewTask {
   title: string;
@@ -135,7 +136,7 @@ function NewTaskForm({
               <SelectItem value={NONE}>None</SelectItem>
               {labels.map((each) => (
                 <SelectItem key={each} value={each}>
-                  <Badge variant="marker" color={TASK_LABEL_COLORS[each]}>
+                  <Badge variant="marker" color={labelColor(each)}>
                     {each}
                   </Badge>
                 </SelectItem>

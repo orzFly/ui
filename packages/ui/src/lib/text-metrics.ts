@@ -30,6 +30,54 @@ export function textWidth(element: Element, start = 0, end = Infinity): number {
   return width;
 }
 
+const STRETCH_KEYWORDS = [
+  [50, "ultra-condensed"],
+  [62.5, "extra-condensed"],
+  [75, "condensed"],
+  [87.5, "semi-condensed"],
+  [100, "normal"],
+  [112.5, "semi-expanded"],
+  [125, "expanded"],
+  [150, "extra-expanded"],
+  [200, "ultra-expanded"],
+] as const;
+
+/**
+ * Rounded away from normal because CSS font matching searches that way first:
+ * for a family whose faces sit at keyword widths, the keyword picks the same
+ * face as the percentage. A width axis is drawn at the keyword's width instead.
+ */
+function stretchKeyword(computed: string): string {
+  const percent = Number.parseFloat(computed);
+  const [, keyword] =
+    percent <= 100
+      ? (STRETCH_KEYWORDS.findLast(([at]) => at <= percent) ??
+        STRETCH_KEYWORDS[0])
+      : (STRETCH_KEYWORDS.find(([at]) => at >= percent) ??
+        STRETCH_KEYWORDS[STRETCH_KEYWORDS.length - 1]);
+  return keyword;
+}
+
+/**
+ * CSSOM serializes `font` as "" once any longhand the shorthand cannot spell
+ * is set (`tabular-nums`, `font-feature-settings`, a percentage width, …), and
+ * canvas ignores "" for its default 10px sans-serif. Canvas has no setting for
+ * most of those, so they measure as if unset; size, family, weight and width
+ * still come through.
+ */
+function canvasFont(style: CSSStyleDeclaration): string {
+  if (style.font) return style.font;
+  return [
+    style.fontStyle,
+    style.fontWeight,
+    stretchKeyword(style.fontStretch),
+    style.fontSize,
+    style.fontFamily,
+  ]
+    .filter((part) => part !== "normal")
+    .join(" ");
+}
+
 function segmentMeasurer(element: Element, text: string) {
   const style = getComputedStyle(element);
   // A clipped DOM Range can report both the full text and an extra visual
@@ -41,7 +89,7 @@ function segmentMeasurer(element: Element, text: string) {
     // `font` carries the stretch as a keyword already. `fontStretch` is left
     // alone: computed style gives it as a percentage, which canvas rejects with
     // a console warning on every measure.
-    context.font = style.font;
+    context.font = canvasFont(style);
     context.fontKerning = style.fontKerning as CanvasFontKerning;
     context.fontVariantCaps = style.fontVariantCaps as CanvasFontVariantCaps;
     context.textRendering = style.textRendering as CanvasTextRendering;

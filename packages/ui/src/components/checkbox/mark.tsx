@@ -5,8 +5,9 @@ import { cn } from "../../lib/utils.ts";
 
 // Under raymond a sunken well on the window colour, the mark in the window's
 // own text colour rather than --foreground, which a highlighted row turns
-// white around it: 13px, the check a 7px pixel mark, grey while held down or
-// disabled.
+// white around it: 13px, grey while held down or disabled. The check and the
+// partial dash are both 7px pixel images: an icon that small antialiases into
+// a grey blur beside the hard-edged check.
 // Inline-level, as Radix expects: inside a form it adds a hidden input after
 // the box and pulls it back by its own width, which lands on the box only
 // when the two share a line. After a block-level box the input drops to the
@@ -17,11 +18,11 @@ export const CHECKBOX_BOX =
 
 /** What is inside the box while it is checked or partly checked. */
 export const CHECKBOX_INDICATOR =
-  "group grid place-content-center text-current [&>svg]:size-3.5 raymond:size-1.75 raymond:data-[state=checked]:[&>svg]:hidden raymond:data-[state=checked]:bg-no-repeat raymond:data-[state=checked]:bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%277%27%20height=%277%27%3E%3Cpath%20d=%27M6%200h1v3H6v1H5v1H4v1H3v1H2V6H1V5H0V2h1v1h1v1h1V3h1V2h1V1h1z%27/%3E%3C/svg%3E')] raymond:[&>svg]:size-1.75 raymond:[&>svg]:stroke-4";
+  "group grid place-content-center text-current [&>svg]:size-3.5 raymond:size-1.75 raymond:[&>svg]:hidden raymond:bg-no-repeat raymond:data-[state=checked]:bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%277%27%20height=%277%27%3E%3Cpath%20d=%27M6%200h1v3H6v1H5v1H4v1H3v1H2V6H1V5H0V2h1v1h1v1h1V3h1V2h1V1h1z%27/%3E%3C/svg%3E')] raymond:data-[state=indeterminate]:bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%277%27%20height=%277%27%3E%3Cpath%20d=%27M1%203h5v2H1z%27/%3E%3C/svg%3E')]";
 
 // A size class of their own, which the indicator's outranks: a row that sizes
 // every unsized icon it holds (a FilterMenu's) would otherwise outrank the
-// indicator and draw them a full 16px, past a raymond box's 7px mark.
+// indicator and draw them a full 16px, past the box's border.
 const ICON = "size-3.5";
 
 /**
