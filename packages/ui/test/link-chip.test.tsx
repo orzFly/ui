@@ -5,21 +5,29 @@ import { describe, expect, it } from "vitest";
 import {
   LinkChip,
   RICH_CHIP_ICON,
-  RICH_CHIP_LABEL,
   RICH_CHIP_SKIN,
+  RICH_CHIP_STRUCTURE,
 } from "../src/components/link-chip.tsx";
 
 const SKIN = RICH_CHIP_SKIN.split(" ")[0] as string;
 
 describe("LinkChip", () => {
-  it("is an anchor whose label is the truncating child", () => {
+  it("is an anchor that truncates its own label", () => {
     render(<LinkChip href="https://app.example/a">notes</LinkChip>);
     const link = screen.getByRole("link");
     expect(link.getAttribute("href")).toBe("https://app.example/a");
     expect(link.getAttribute("data-slot")).toBe("link-chip");
-    const label = link.lastElementChild as HTMLElement;
-    expect(label.textContent).toBe("notes");
-    expect(label.className).toBe(RICH_CHIP_LABEL);
+    expect(link.classList.contains("text-ellipsis")).toBe(true);
+    expect((link.lastElementChild as HTMLElement).textContent).toBe("notes");
+  });
+
+  // UI-292: a flex or grid chip makes each of its children a block, which
+  // Chromium copies on a line of its own.
+  it("lays out nothing inside it as a block", () => {
+    const display = RICH_CHIP_STRUCTURE.split(" ").filter((c) =>
+      /^(inline-)?(block|flex|grid)$/.test(c),
+    );
+    expect(display).toEqual(["inline-block"]);
   });
 
   it("underlines on hover unless boxed", () => {
