@@ -4,14 +4,21 @@ import type {
 } from "@codemirror/autocomplete";
 import { syntaxTree } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
-import { TASK_PEOPLE, type TaskPerson } from "@orz/fixtures/tasks.ts";
+import {
+  TASK_LABEL_COLORS,
+  TASK_LABELS,
+  TASK_PEOPLE,
+  type TaskPerson,
+} from "@orz/fixtures/tasks.ts";
 import {
   createCommandRegistry,
   type ParsedDraft,
   parseCommandLines,
+  type ValueOption,
   type ValueProviders,
 } from "@orz/query";
 import { Avatar, AvatarFallback } from "@orz/ui/components/avatar";
+import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
   Dialog,
@@ -31,6 +38,7 @@ import {
 } from "@orz/ui-codemirror/extensions/completion";
 import { applyWithSpace } from "@orz/ui-codemirror/extensions/completion-space";
 import {
+  type CommandArgument,
   commandCompletionSource,
   commandDecoration,
 } from "@orz/ui-codemirror/extensions/slash-commands";
@@ -40,7 +48,7 @@ import {
 } from "@orz/ui-codemirror/hooks/use-staged-files";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { PaperclipIcon, XIcon } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 import { fn } from "storybook/test";
 import { withWidth } from "./decorators.tsx";
 
@@ -83,8 +91,40 @@ const TAG_COMPLETION = `import { completionWith } from "@orz/ui-codemirror/exten
 <MarkdownEditor extensions={completionWith([])} />`;
 
 const SLASH_COMMANDS = `const registry = createCommandRegistry<Command>([/* close, label, assign, move… */]);
+
+// The options carry what the app draws them from: { value: "Done", tone: "success" },
+// { value: "bug", color: "red" }, { value: "alice", hint: "Maintainer", person }.
+const providers: ValueProviders = { status, label, member };
+
+// CodeMirror owns the Completion shape, so what a row draws lives beside it.
+const people = new WeakMap<Completion, Person>();
+const faces = new WeakMap<Completion, ReactNode>();
+
 const extensions = [
-  completionWith([commandCompletionSource(() => registry, () => providers)]),
+  completionWith(
+    [
+      commandCompletionSource(() => registry, () => providers, {
+        argumentOption: (completion, { option, spec }) => {
+          if (spec.kind !== "named") return completion;
+          if (spec.source === "member") people.set(completion, (option as Member).person);
+          if (spec.source === "status") faces.set(completion, <Badge variant={(option as Status).tone}>{option.value}</Badge>);
+          if (spec.source === "label") faces.set(completion, <Badge variant="marker" color={(option as Label).color}>{option.value}</Badge>);
+          return completion;
+        },
+      }),
+    ],
+    {
+      optionClass: (option) =>
+        people.has(option) ? completionRowClass.drawn : faces.has(option) ? completionRowClass.face : "",
+      addToOptions: [
+        reactOption(20, "cm-completionAvatar", (option) => {
+          const person = people.get(option);
+          return person === undefined ? null : <Avatar size="sm" aria-hidden><AvatarFallback>{person.name[0]}</AvatarFallback></Avatar>;
+        }),
+        reactOption(20, "cm-completionFace", (option) => faces.get(option) ?? null),
+      ],
+    },
+  ),
   commandDecoration(() => registry, () => providers),
 ];
 
@@ -394,18 +434,65 @@ type DemoCommand =
   | { type: "assign"; logins: readonly string[] }
   | { type: "move"; status: string; assignee?: string };
 
+// Each option carries what the app draws it from: a status its badge's tone,
+// a label its colour, a member who they are.
+type StatusOption = ValueOption & { tone: "outline" | "warning" | "success" };
+type LabelOption = ValueOption & { color: string };
+type MemberOption = ValueOption & { person: TaskPerson };
+
+const STATUSES: readonly StatusOption[] = [
+  { value: "Todo", tone: "outline" },
+  { value: "In Progress", tone: "warning" },
+  { value: "Done", tone: "success" },
+];
+
 const providers: ValueProviders = {
-  label: { options: [{ value: "bug" }, { value: "docs" }] },
-  status: {
-    options: [{ value: "Todo" }, { value: "In Progress" }, { value: "Done" }],
+  label: {
+    options: TASK_LABELS.map(
+      (value): LabelOption => ({
+        value,
+        color: TASK_LABEL_COLORS[value] ?? "",
+      }),
+    ),
   },
+  status: { options: STATUSES },
   member: {
-    options: [
-      { value: "alice", hint: "Alice" },
-      { value: "bot-one", hint: "a bot" },
-      { value: "claude-agent", hint: "an agent" },
-    ],
+    options: TASK_PEOPLE.map(
+      (person): MemberOption => ({
+        value: person.login,
+        hint: person.role,
+        person,
+      }),
+    ),
   },
+};
+
+// A status's or a label's badge stands in the row for its name.
+const faces = new WeakMap<CompletionOption, ReactNode>();
+const face = reactOption(20, "cm-completionFace", (option) => {
+  return faces.get(option) ?? null;
+});
+
+const drawArgument = (
+  completion: CompletionOption,
+  { option, spec }: CommandArgument,
+) => {
+  if (spec.kind !== "named") return completion;
+  if (spec.source === "member" && "person" in option) {
+    people.set(completion, (option as MemberOption).person);
+  } else if (spec.source === "status") {
+    const { tone } = option as StatusOption;
+    faces.set(completion, <Badge variant={tone}>{option.value}</Badge>);
+  } else if (spec.source === "label") {
+    const { color } = option as LabelOption;
+    faces.set(
+      completion,
+      <Badge variant="marker" color={color}>
+        {option.value}
+      </Badge>,
+    );
+  }
+  return completion;
 };
 
 const member = { kind: "named", source: "member", special: ["@me"] } as const;
@@ -467,7 +554,22 @@ const registry = createCommandRegistry<DemoCommand>([
 const getRegistry = () => registry;
 const getProviders = () => providers;
 const commands = [
-  completionWith([commandCompletionSource(getRegistry, getProviders)]),
+  completionWith(
+    [
+      commandCompletionSource(getRegistry, getProviders, {
+        argumentOption: drawArgument,
+      }),
+    ],
+    {
+      optionClass: (option) =>
+        people.has(option)
+          ? completionRowClass.drawn
+          : faces.has(option)
+            ? completionRowClass.face
+            : "",
+      addToOptions: [avatar, face],
+    },
+  ),
   commandDecoration(getRegistry, getProviders),
 ];
 
@@ -486,7 +588,9 @@ const SLASH_DRAFT = [
  * below is what a submit would see. Arguments are shell words, so
  * `'In Progress'` is one; `/assign {alice,bot-one}` expands to a list
  * because its argument is declared `multiple`, and `/label` takes the rest
- * of the line unquoted.
+ * of the line unquoted. `argumentOption` draws each argument row as the
+ * value is drawn elsewhere: a status as its badge, a label as its chip, a
+ * person with their avatar.
  */
 export const SlashCommands: Story = {
   args: { initialValue: SLASH_DRAFT, extensions: commands },

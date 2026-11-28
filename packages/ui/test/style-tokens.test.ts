@@ -61,20 +61,6 @@ const ALLOWED: readonly { file: string; utility: string; reason: string }[] = [
     reason: "the caret is an edge of the cell, drawn as an inset shadow",
   },
   {
-    file: "ui-codemirror/src/extensions/completion.ts",
-    utility:
-      "boxShadow: 0 4px 6px -1px color-mix(in oklab, var(--foreground) 12%, transparent)",
-    reason:
-      "the editor's popups tint their shadow from --foreground, which no shadow token does",
-  },
-  {
-    file: "ui-codemirror/src/extensions/editor-toolbar.ts",
-    utility:
-      "boxShadow: 0 4px 6px -1px color-mix(in oklab, var(--foreground) 12%, transparent)",
-    reason:
-      "the editor's popups tint their shadow from --foreground, which no shadow token does",
-  },
-  {
     file: "ui-asciinema/src/asciinema-player.tsx",
     utility: "shadow-md",
     reason: "the play glyph sits on the recording, which no style draws",

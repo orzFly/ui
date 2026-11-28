@@ -3,39 +3,62 @@
    shipped JS without writing an @source of its own. */
 @source "./dist";
 
-/* Under raymond the completion list is the period's address drop-down: a
-   white list in a 1px black frame, square and flat, its picked row in the
-   highlight. CodeMirror draws the popup from completionTheme, which no
-   raymond: class reaches, so a rule does. The class is named twice to
-   outrank the theme's scoped selector, which CodeMirror inserts after this
-   sheet. */
-.cm-tooltip.cm-tooltip.cm-tooltip-autocomplete {
+/* The completion list's looks that a variant decides. CodeMirror draws the
+   popup from completionTheme, which no touch: or raymond: class reaches, so
+   a rule does. Each class is named twice to outrank completionTheme's own
+   selectors, which CodeMirror scopes under a class of its own, wherever the
+   two sheets land in the cascade.
+
+   Under raymond the list is the period's address drop-down: a white list in
+   a 1px black frame, square and flat, its rows flush with the frame and
+   none lit under the pointer, the picked one in the highlight. Inside it
+   the text colours turn the highlight's, and primary and its text colour
+   swap, as in a List's highlighted row, so a drawn part's words and an icon
+   drawn in primary stay seen; the swap goes through --list-highlight, as
+   two properties naming each other would be a cycle and draw nothing. */
+.cm-tooltip.cm-tooltip.cm-tooltip-autocomplete.cm-tooltip-autocomplete {
   @variant raymond {
     border-color: var(--3d-dark-shadow);
     border-radius: 0;
     background-color: var(--window);
     box-shadow: none;
   }
-}
-.cm-tooltip-autocomplete.cm-tooltip-autocomplete > ul > li {
-  @variant raymond {
-    padding-block: 0;
+  & > ul {
+    @variant raymond {
+      padding: 0;
+    }
   }
-}
-/* A drawn row's own rule names one class more than a plain row's, so this
-   names one more again. The period's drop-down rows are as tight with an
-   icon as without. */
-.cm-tooltip.cm-tooltip.cm-tooltip-autocomplete
-  > ul
-  > li:is(.cm-completion-drawn, .cm-completion-face) {
-  @variant raymond {
-    min-height: 0;
-    padding-block: 1px;
+  /* A finger's row, as a menu's is, under every style. completionTheme sizes
+     the row and its padding from this. */
+  & > ul > li {
+    @variant touch {
+      --completion-row: var(--spacing-touch);
+    }
   }
-}
-.cm-tooltip-autocomplete.cm-tooltip-autocomplete > ul > li[aria-selected] {
-  @variant raymond {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
+  /* The period's drop-down rows are as tight with an icon as without. */
+  & > ul > li:is(.cm-completion-drawn, .cm-completion-face) {
+    @variant raymond {
+      padding-block: 1px;
+    }
+  }
+  & > ul > li:not([aria-selected]):hover {
+    @variant raymond {
+      background-color: transparent;
+    }
+  }
+  & > ul > li[aria-selected] {
+    @variant raymond {
+      background-color: var(--primary);
+      color: var(--primary-foreground);
+      --foreground: var(--primary-foreground);
+      --muted-foreground: var(--primary-foreground);
+      --border: var(--primary-foreground);
+      --list-highlight: var(--primary);
+      --list-highlight-text: var(--primary-foreground);
+      & > * {
+        --primary: var(--list-highlight-text);
+        --primary-foreground: var(--list-highlight);
+      }
+    }
   }
 }

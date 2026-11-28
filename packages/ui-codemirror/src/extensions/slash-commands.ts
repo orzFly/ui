@@ -25,6 +25,7 @@ import {
   slotValues,
   type ValueOption,
   type ValueProviders,
+  type ValueSpec,
   type ValueVerdict,
 } from "@orz/query";
 import { inCodeContext } from "./code-context.ts";
@@ -43,6 +44,36 @@ import { inCodeContext } from "./code-context.ts";
  */
 
 type ArgumentSlot = Extract<CompletionSlot, { kind: "argument" }>;
+
+/**
+ * Where an argument row's value came from: the option as its provider gave
+ * it (or as the spec spells an enum value or a special), and the command,
+ * which of its arguments, and that argument's spec. An app knows its options
+ * by `spec.source`, and draws them from whatever else it put on them.
+ */
+export type CommandArgument = {
+  option: ValueOption;
+  /** The command's name, without its slash. */
+  command: string;
+  /** Which of the command's arguments, from 0. */
+  index: number;
+  spec: ValueSpec;
+};
+
+export type CommandCompletionOptions = {
+  /**
+   * Called once for each argument row, after its label, detail, boost and
+   * apply are set, so an app can draw the value as it does elsewhere (a
+   * status as its pill, a person with their avatar). Return the row itself,
+   * after recording it for `completionWith`'s `optionClass` and
+   * `addToOptions` to read, or a new row that keeps its `label` and `apply`.
+   * Never called for a command's name or for the row that ends a command.
+   */
+  argumentOption?: (
+    completion: Completion,
+    argument: CommandArgument,
+  ) => Completion;
+};
 
 /** The whole line up to the cursor, which is all a command can occupy. */
 function lineBefore(context: CompletionContext): {
@@ -87,13 +118,14 @@ function firstLevelOption<T>(command: CommandDef<T>): Completion {
  * statuses would come out Done, In Progress, Todo; the descending boost keeps
  * the order the provider gave, as a status menu has it. Boosts stop at -99.
  */
-function argumentOption(
+function argumentRow(
   slot: ArgumentSlot,
   lineFrom: number,
   option: ValueOption,
   index: number,
+  argumentOption: CommandCompletionOptions["argumentOption"],
 ): Completion {
-  return {
+  const row: Completion = {
     label: option.value,
     ...(option.hint === undefined ? {} : { detail: option.hint }),
     type: "command",
@@ -110,6 +142,14 @@ function argumentOption(
       if (next) startCompletion(view);
     },
   };
+  return argumentOption === undefined
+    ? row
+    : argumentOption(row, {
+        option,
+        command: slot.command,
+        index: slot.index,
+        spec: slot.spec,
+      });
 }
 
 /**
@@ -143,6 +183,7 @@ const endOfCommand: Completion = {
 function argumentResult(
   slot: ArgumentSlot,
   line: { text: string; from: number },
+  argumentOption: CommandCompletionOptions["argumentOption"],
   values: readonly ValueOption[],
   fetched?: readonly ValueOption[],
 ): CompletionResult | null {
@@ -157,7 +198,7 @@ function argumentResult(
     : [...filterOptions(values, slot.typed), ...(fetched ?? [])];
   if (offered.length === 0) return null;
   const options = offered.map((o, index) =>
-    argumentOption(slot, line.from, o, index),
+    argumentRow(slot, line.from, o, index, argumentOption),
   );
   const ends =
     slot.optional &&
@@ -175,6 +216,7 @@ function argumentResult(
 export function commandCompletionSource<T>(
   getRegistry: () => CommandRegistry<T> | null,
   getProviders?: () => ValueProviders | null,
+  { argumentOption }: CommandCompletionOptions = {},
 ): (
   context: CompletionContext,
 ) => CompletionResult | null | Promise<CompletionResult | null> {
@@ -196,7 +238,8 @@ export function commandCompletionSource<T>(
 
     const provider = providerOf(slot.spec, getProviders?.() ?? undefined);
     const values = slotValues(slot, provider);
-    if (values !== "fetch") return argumentResult(slot, line, values);
+    if (values !== "fetch")
+      return argumentResult(slot, line, argumentOption, values);
     if (provider === undefined || !("search" in provider)) return null;
 
     // Another keystroke makes this answer stale before it arrives, so the
@@ -210,7 +253,7 @@ export function commandCompletionSource<T>(
     return provider.search(slot.typed, controller.signal).then(
       (fetched) => {
         if (context.aborted || fetched.length === 0) return null;
-        return argumentResult(slot, line, builtins, fetched);
+        return argumentResult(slot, line, argumentOption, builtins, fetched);
       },
       // A failed search means no panel; typing the command must still work.
       () => null,

@@ -65,7 +65,9 @@ author: never join images for them.
 A completion row that names a person shows the person as everywhere else in the app, an `Avatar`
 before the login, and a row that names a status or a label shows its pill or chip. Draw them with
 `reactOption` and the row classes `completionWith` takes, so the row reads the way the same thing
-reads in a picker. Values keep the order the app gives them: statuses in the order work moves
+reads in a picker. A slash command's arguments are such rows too: `commandCompletionSource`'s
+`argumentOption` hands each one over with the value it offers, for the app to draw as it draws
+that value elsewhere. Values keep the order the app gives them: statuses in the order work moves
 through them, not alphabetically.
 
 ## A plain text box

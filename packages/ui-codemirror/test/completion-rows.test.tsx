@@ -4,6 +4,7 @@ import {
   type CompletionSource,
   completionStatus,
 } from "@codemirror/autocomplete";
+import { createCommandRegistry, type ValueProviders } from "@orz/query";
 import { act, render, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { MarkdownEditor } from "../src/components/markdown-editor.tsx";
@@ -12,6 +13,7 @@ import {
   completionWith,
   reactOption,
 } from "../src/extensions/completion.ts";
+import { commandCompletionSource } from "../src/extensions/slash-commands.ts";
 import { cmType, cmView } from "./cm.ts";
 
 const people = new WeakMap<Completion, string>();
@@ -84,5 +86,72 @@ describe("completion rows drawn by React", () => {
     await delay(0);
     await open(container);
     expect(first?.childNodes).toHaveLength(0);
+  });
+});
+
+describe("slash-command argument rows drawn by the app", () => {
+  type Status = { value: string; tone: string };
+  const registry = createCommandRegistry([
+    {
+      name: "move",
+      detail: "change status",
+      args: [{ name: "status", value: { kind: "named", source: "status" } }],
+      summarize: () => "move",
+      compile: () => "move",
+    },
+  ]);
+  const options: Status[] = [
+    { value: "Todo", tone: "neutral" },
+    { value: "Done", tone: "success" },
+  ];
+  const providers: ValueProviders = { status: { options } };
+  const statuses = new WeakMap<Completion, Status>();
+  const pill = reactOption(20, "cm-completionPill", (completion) => {
+    const status = statuses.get(completion);
+    return status === undefined ? null : (
+      <b data-tone={status.tone}>{status.value}</b>
+    );
+  });
+
+  it("draws each argument as the app draws its value, in the row's face", async () => {
+    const { container } = render(
+      <MarkdownEditor
+        ariaLabel="Body"
+        extensions={completionWith(
+          [
+            commandCompletionSource(
+              () => registry,
+              () => providers,
+              {
+                argumentOption: (completion, { option, spec }) => {
+                  if (spec.kind === "named" && spec.source === "status") {
+                    statuses.set(completion, option as Status);
+                  }
+                  return completion;
+                },
+              },
+            ),
+          ],
+          {
+            optionClass: (c) =>
+              statuses.has(c) ? completionRowClass.face : "",
+            addToOptions: [pill],
+          },
+        )}
+      />,
+    );
+    act(() => cmType(container, "/move "));
+    await waitFor(() =>
+      expect(container.querySelectorAll("[data-tone]")).toHaveLength(2),
+    );
+    const rows = [...container.querySelectorAll(".cm-tooltip-autocomplete li")];
+    expect(
+      rows.map((row) => row.className.includes("cm-completion-face")),
+    ).toEqual([true, true]);
+    expect(
+      rows.map((row) =>
+        row.querySelector("[data-tone]")?.getAttribute("data-tone"),
+      ),
+    ).toEqual(["neutral", "success"]);
   });
 });

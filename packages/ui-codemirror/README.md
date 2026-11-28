@@ -278,6 +278,43 @@ tints recognized lines, marks the name (`cm-command-name`) and each argument (`c
 plus `-special` or `-invalid`), and redraws when the getters return a new registry or providers
 object, so replace `providers` rather than mutating it.
 
+An argument row is its value and its hint. To draw it as the app draws that value elsewhere, a
+status as its pill or a person with their avatar, pass `argumentOption` in the third argument. It
+gets each argument row once it is complete, with the option as its provider gave it (so whatever
+else the app put on it is there), the command, which argument, and its spec; record the row for
+`completionWith`'s `optionClass` and `addToOptions` to read and return it, or return a new row that
+keeps its `label` and `apply`:
+
+```tsx
+const statuses = new WeakMap<Completion, Status>();
+
+const extensions = [
+  completionWith(
+    [
+      commandCompletionSource(getRegistry, getProviders, {
+        argumentOption: (completion, { option, spec }) => {
+          // The provider's own object: here, a status the app keeps its tone on.
+          if (spec.kind === "named" && spec.source === "status") {
+            statuses.set(completion, option as Status);
+          }
+          return completion;
+        },
+      }),
+    ],
+    {
+      optionClass: (c) => (statuses.has(c) ? completionRowClass.face : ""),
+      addToOptions: [
+        reactOption(20, "cm-completionPill", (c) => {
+          const status = statuses.get(c);
+          return status === undefined ? null : <StatusPill status={status} />;
+        }),
+      ],
+    },
+  ),
+  commandDecoration(getRegistry, getProviders),
+];
+```
+
 ### Provenance
 
 `CodeEditorHandle.userChanged()` reports whether the reader changed the document since mount.
