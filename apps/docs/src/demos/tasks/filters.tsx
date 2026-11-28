@@ -1,4 +1,4 @@
-import { TASK_LABEL_COLORS, TASK_PEOPLE } from "@orz/fixtures/tasks.ts";
+import { TASK_PEOPLE } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import {
@@ -10,7 +10,12 @@ import {
 import { ToolbarButton } from "@orz/ui/components/toolbar";
 import { ChevronDownIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { DEFAULT_FILTERS, type Filters, STATUSES } from "./board.ts";
+import {
+  DEFAULT_FILTERS,
+  type Filters,
+  labelColor,
+  STATUSES,
+} from "./board.ts";
 import { PersonAvatar } from "./parts.tsx";
 import { usePickedFirst } from "./use-picked-first.ts";
 
@@ -146,7 +151,7 @@ function LabelFilter({
         )
       }
       renderRow={(row, state) => (
-        <Badge variant="marker" color={TASK_LABEL_COLORS[row.id]}>
+        <Badge variant="marker" color={labelColor(row.id)}>
           <MatchedText text={row.label} query={state.query} />
         </Badge>
       )}

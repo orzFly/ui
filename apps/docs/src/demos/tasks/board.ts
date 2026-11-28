@@ -1,8 +1,10 @@
 import {
+  TASK_LABEL_COLORS,
   TASK_PEOPLE,
   type Task,
   type TaskStatus,
 } from "@orz/fixtures/tasks.ts";
+import { autoTagColor } from "@orz/ui/lib/tag-color";
 
 export const STATUSES: readonly { value: TaskStatus; label: string }[] = [
   { value: "todo", label: "To do" },
@@ -20,6 +22,10 @@ export const taskKey = (id: number) => `T-${id}`;
 
 export const personOf = (login: string) =>
   TASK_PEOPLE.find((person) => person.login === login);
+
+/** A label made on the board has no stored colour, so it takes the one its name picks. */
+export const labelColor = (label: string) =>
+  TASK_LABEL_COLORS[label] ?? autoTagColor(label);
 
 /**
  * What the toolbar narrows the list to. `status` is a group (`open`, `closed`, `any`) or one

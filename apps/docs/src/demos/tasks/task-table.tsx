@@ -1,8 +1,4 @@
-import {
-  TASK_LABEL_COLORS,
-  TASK_PEOPLE,
-  type Task,
-} from "@orz/fixtures/tasks.ts";
+import { TASK_PEOPLE, type Task } from "@orz/fixtures/tasks.ts";
 import { Badge } from "@orz/ui/components/badge";
 import { Button } from "@orz/ui/components/button";
 import { Checkbox } from "@orz/ui/components/checkbox";
@@ -44,7 +40,7 @@ import {
   UserIcon,
 } from "lucide-react";
 import type { PointerEvent, ReactNode } from "react";
-import { isOpen, taskKey } from "./board.ts";
+import { isOpen, labelColor, taskKey } from "./board.ts";
 import { taskHref } from "./location.ts";
 import { Assignee, StatusDot } from "./parts.tsx";
 
@@ -266,7 +262,7 @@ export function TaskTable({
                     <Badge
                       key={label}
                       variant="marker"
-                      color={TASK_LABEL_COLORS[label]}
+                      color={labelColor(label)}
                     >
                       {label}
                     </Badge>

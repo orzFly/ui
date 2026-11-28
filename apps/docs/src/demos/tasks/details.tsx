@@ -1,5 +1,4 @@
 import {
-  TASK_LABEL_COLORS,
   TASK_PEOPLE,
   type Task,
   type TaskStatus,
@@ -33,7 +32,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { isOpen, STATUSES, taskKey } from "./board.ts";
+import { isOpen, labelColor, STATUSES, taskKey } from "./board.ts";
 import { taskHref } from "./location.ts";
 import { IconButton, PersonAvatar, StatusDot } from "./parts.tsx";
 import { usePickedFirst } from "./use-picked-first.ts";
@@ -128,7 +127,7 @@ function EditLabels({
             <span className="truncate">{row.label}</span>
           </>
         ) : (
-          <Badge variant="marker" color={TASK_LABEL_COLORS[row.id]}>
+          <Badge variant="marker" color={labelColor(row.id)}>
             <MatchedText text={row.label} query={state.query} />
           </Badge>
         )
@@ -257,11 +256,7 @@ export function TaskDetails({
               <span className="text-muted-foreground">None</span>
             ) : (
               task.labels.map((label) => (
-                <Badge
-                  key={label}
-                  variant="marker"
-                  color={TASK_LABEL_COLORS[label]}
-                >
+                <Badge key={label} variant="marker" color={labelColor(label)}>
                   {label}
                 </Badge>
               ))
