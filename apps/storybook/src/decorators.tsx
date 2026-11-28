@@ -20,6 +20,21 @@ export function withWidth(className: string): Decorator {
   );
 }
 
+/**
+ * A box the reader can drag narrower and wider by its corner, starting at `width`: what a
+ * toolbar fits follows its box, not the window.
+ */
+export function withResizable(width: number): Decorator {
+  return (Story) => (
+    <div
+      className="min-w-40 max-w-full resize-x overflow-hidden rounded-surface border border-dashed p-px"
+      style={{ width }}
+    >
+      <Story />
+    </div>
+  );
+}
+
 /** A fixed height, for a view that fills its parent (the hex views). */
 export function withHeight(height: number): Decorator {
   return (Story) => (

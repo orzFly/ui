@@ -28,7 +28,7 @@ import {
   ToolbarSeparator,
   ToolbarSpacer,
 } from "@orz/ui/components/toolbar";
-import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   AlignCenterIcon,
   AlignLeftIcon,
@@ -56,19 +56,7 @@ import {
   UserIcon,
 } from "lucide-react";
 import { useState } from "react";
-
-// A box the reader can drag narrower and wider by its corner, starting at
-// `width`: what a toolbar fits follows its box, not the window.
-function withResizable(width: number): Decorator {
-  return (Story) => (
-    <div
-      className="min-w-40 max-w-full resize-x overflow-hidden rounded-surface border border-dashed p-px"
-      style={{ width }}
-    >
-      <Story />
-    </div>
-  );
-}
+import { withResizable } from "./decorators.tsx";
 
 const meta = {
   title: "ui/Toolbar",

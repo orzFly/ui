@@ -8,6 +8,7 @@ export const meta = {
     "ui/Primitives/SplitButton",
     "ui/Primitives/SegmentedControl",
     "ui/FilterMenu",
+    "ui/SelectionBar",
   ],
 };
 
@@ -70,6 +71,12 @@ part, at an end or beside the `⋯`, is not drawn.
 Commands that are always in the `⋯`, Mail's **Forward** and **Copy link**, are the children of a
 `ToolbarOverflow`. Its `⋯` is always shown, and what the bar moves into it goes above them.
 
+A [`SelectionBar`](/guidelines/patterns/actions-and-buttons/#acting-on-a-selection) is a toolbar
+too: its select-all checkbox, the count and **Clear selection** never go into the `⋯`, and what
+it holds between them gives way as here. Give it the parts themselves, never a `Toolbar` of their
+own: a toolbar in another's row draws a second bar, a second Tab stop and a second `⋯`, and warns
+in development.
+
 ## One of a few
 
 <Example of={ViewAndAlignment} />
@@ -103,6 +110,10 @@ Anything else is a `ToolbarItem`. Give it `overflow`, what it is in the `⋯` me
 the bar. That form is drawn in the menu, outside the item: it reads nothing from the providers
 inside the item, so take what it needs from the code it is written in. A command moved into the
 menu is called with the menu item's event, not its button's.
+
+A title that takes the room the commands leave is a `ToolbarItem` with `flex` and a `minWidth`,
+never text that grows or shrinks by itself: the bar cannot know how wide such text wants to be,
+so it moves the wrong parts, and warns in development.
 
 ## Set away from its default
 
