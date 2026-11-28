@@ -433,14 +433,17 @@ other tabs; hand its pair to `imageLook` and `onImageLookChange`, and name the k
   file `useCanPreview` accepts opens the viewer. `boxed` draws it as a bordered chip. It is a
   `LinkChip` from `@orz/ui/components/link-chip`, which also exports the chip's classes. A file
   marked `deleted` is its name struck through, with no link.
-- **`<AttachmentList items actions? title? id? fold? thumbnails? className?>`** lists files
-  (`FileSource` plus a `key` and an optional ISO `createdAt`) with their icon, size, time and a
-  download button. `actions(item)` draws the app's own controls at the end of a row, such as a
-  delete button. A list of eight or more rows keeps its newest five and folds the rest behind a
-  toggle; `fold={false}` keeps them all, for a list whose order is the point. `thumbnails` draws
-  each image that has a `url` as a thumbnail under the rows instead of as a row. A plain click on
-  a row or a thumbnail opens the viewer on the whole list, in its own order. An empty list renders
-  nothing.
+- **`<AttachmentList items actions? listActions? selectable? selectionActions? title? id? fold?
+  thumbnails? className?>`** lists files (`FileSource` plus a `key` and an optional ISO
+  `createdAt`) with their icon, size, time and a download button. `actions(item)` draws the app's
+  own controls at the end of a row, such as a delete button, and `listActions(items)` its controls
+  on every file at the end of the header, such as a Download all. A `selectable` list heads its
+  rows with a `SelectionBar`; while any file is selected, `selectionActions(selected)` takes the
+  place of `listActions`. A list of eight or more rows keeps its newest five and folds the rest
+  behind a toggle; `fold={false}` keeps them all, for a list whose order is the point.
+  `thumbnails` draws each image that has a `url` as a thumbnail under the rows instead of as a
+  row. A plain click on a row or a thumbnail opens the viewer on the whole list, in its own order.
+  An empty list renders nothing.
 - **`<DeletedAttachmentMark name className?>`** is what a document shows for a link or embed of a
   deleted file: the name struck through, with the word "deleted". `@orz/ui-markdown`'s
   `attachmentLinks` and `markdownEmbeds` draw it for a file their `resolve` marks `deleted`.

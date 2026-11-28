@@ -62,6 +62,11 @@ export type AttachmentListProps = {
    * that asks first. The list does nothing to the files itself.
    */
   selectionActions?: (items: AttachmentItem[]) => ReactNode;
+  /**
+   * The actions on every file, at the end of the header while none is selected: `ToolbarButton`s,
+   * a Download all. Selecting a file swaps them for `selectionActions`.
+   */
+  listActions?: (items: AttachmentItem[]) => ReactNode;
   className?: string;
 };
 
@@ -276,6 +281,7 @@ export function AttachmentList({
   defaultSelected,
   onSelectedChange,
   selectionActions,
+  listActions,
   className,
 }: AttachmentListProps) {
   // Not persisted anywhere: expanding is "show me now", not a preference.
@@ -314,6 +320,15 @@ export function AttachmentList({
   // reversing it: the same array is what the viewer's previous/next page
   // through, and a list that read newest-first here would contradict it.
   const shown = folded ? rows.slice(-CAP) : rows;
+  const whole = listActions?.(items);
+  const wholeActions = whole != null && typeof whole !== "boolean" && (
+    <span
+      data-slot="attachment-list-actions"
+      className="ml-auto flex shrink-0 items-center gap-0.5"
+    >
+      {whole}
+    </span>
+  );
 
   return (
     // Under raymond the list is a list view: a sunken well in the window
@@ -338,10 +353,13 @@ export function AttachmentList({
           onClear={selection.clear}
           icon={<PaperclipIcon className="size-3.5 text-muted-foreground" />}
           idle={
-            <span className="flex items-center gap-2 px-1">
-              <span className="font-medium">{title}</span>
-              <span className="text-muted-foreground">{items.length}</span>
-            </span>
+            <>
+              <span className="flex min-w-0 items-center gap-2 px-1">
+                <span className="truncate font-medium">{title}</span>
+                <span className="text-muted-foreground">{items.length}</span>
+              </span>
+              {wholeActions}
+            </>
           }
         >
           {selectionActions?.(
@@ -350,9 +368,10 @@ export function AttachmentList({
         </SelectionBar>
       ) : (
         <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-ui raymond:border-b-0 raymond:bg-(--3d-face)">
-          <PaperclipIcon className="size-3.5 text-muted-foreground" />
-          <span className="font-medium">{title}</span>
+          <PaperclipIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="truncate font-medium">{title}</span>
           <span className="text-muted-foreground">{items.length}</span>
+          {wholeActions}
         </div>
       )}
       {collapsible && (

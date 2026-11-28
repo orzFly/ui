@@ -15,6 +15,7 @@ export const meta = {
     "ui/Hooks/useSelection",
     "ui/Hooks/useSweepSelect",
     "ui/SelectionAction",
+    "ui-content/AttachmentList",
   ],
 };
 
@@ -115,6 +116,10 @@ rest, and a full one clears. Escape inside the bar clears too, and the focus sta
 - A list with no toolbar of its own mounts the bar only while something is selected. It is still
   there: on a touch screen, once a row is selected a tap selects too, and the bar's **Clear
   selection** is the visible way back.
+- An action on the whole list, such as **Download all**, sits at the end of the bar while nothing
+  is selected, and gives way to the actions on the selection once something is: the selection is
+  then what an action takes. An `AttachmentList` takes the first as `listActions` and the second
+  as `selectionActions`; an action on one file stays on its row, as `actions`.
 - Select-all selects the rows the list holds now, never the ones still behind **Load more**.
 
 A list that is not a `Tree` keeps its selection in `useSelection`, which feeds the bar its count
